@@ -1,0 +1,10 @@
+create type public.subject as enum ('Mathématiques','Physique','Informatique','Français','Anglais');
+create type public.exercise_status as enum ('à faire','en cours','terminé');
+create table public.profiles (id uuid primary key references auth.users(id) on delete cascade, display_name text, daily_goal_minutes integer not null default 240 check (daily_goal_minutes > 0), contest_date date, created_at timestamptz not null default now());
+create table public.work_sessions (id uuid primary key default gen_random_uuid(), user_id uuid not null default auth.uid() references public.profiles(id) on delete cascade, subject public.subject not null, started_at timestamptz not null, ended_at timestamptz, duration_seconds integer not null default 0 check (duration_seconds >= 0), note text, created_at timestamptz not null default now());
+create table public.exercises (id uuid primary key default gen_random_uuid(), user_id uuid not null default auth.uid() references public.profiles(id) on delete cascade, subject public.subject not null, chapter text not null, source text not null, difficulty smallint not null check (difficulty between 1 and 5), status public.exercise_status not null default 'à faire', duration_minutes integer not null default 0 check (duration_minutes >= 0), note text, created_at timestamptz not null default now());
+alter table public.profiles enable row level security; alter table public.work_sessions enable row level security; alter table public.exercises enable row level security;
+create policy "owner profile" on public.profiles for all using (id = auth.uid()) with check (id = auth.uid());
+create policy "owner sessions" on public.work_sessions for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "owner exercises" on public.exercises for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+create index work_sessions_user_started_idx on public.work_sessions(user_id, started_at desc); create index exercises_user_status_idx on public.exercises(user_id, status);

@@ -1,0 +1,2 @@
+"use client"; import { useCallback, useEffect, useState } from "react"; import { workSessionService } from "@/lib/supabase/services"; import type { WorkSession } from "@/lib/supabase/types";
+export function useWorkSessions(){const[sessions,setSessions]=useState<WorkSession[]>([]);const[loading,setLoading]=useState(true);const refresh=useCallback(async()=>{setLoading(true);try{setSessions(await workSessionService.list())}finally{setLoading(false)}},[]);useEffect(()=>{refresh()},[refresh]);return{sessions,loading,refresh};}

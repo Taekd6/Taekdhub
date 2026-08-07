@@ -1,0 +1,1 @@
+import { ExerciseManager } from "@/components/exercise-manager"; import { PageHeader } from "@/components/page-header"; export default function ExercisesPage(){return <><PageHeader eyebrow="Bibliothèque" title="Exercices" description="Transforme chaque feuille en une liste de priorités nette."/><ExerciseManager/></>}

@@ -1,0 +1,1 @@
+import { PageHeader } from "@/components/page-header"; import { ProgressOverview } from "@/components/progress-overview"; export default function ProgressPage(){return <><PageHeader eyebrow="Analyse" title="Progression" description="Observer les faits pour ajuster ton travail."/><ProgressOverview/></>}
