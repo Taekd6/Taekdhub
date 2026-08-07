@@ -1,4 +1,118 @@
 "use client";
-import Link from "next/link"; import { usePathname } from "next/navigation"; import { BarChart3, BookOpenCheck, Clock3, History, LayoutDashboard, Settings, Sparkles, UserRound } from "lucide-react";
-const items = [{href:"/dashboard",label:"Tableau de bord",icon:LayoutDashboard},{href:"/timer",label:"Chronomètre",icon:Clock3},{href:"/exercises",label:"Exercices",icon:BookOpenCheck},{href:"/history",label:"Historique",icon:History},{href:"/progress",label:"Progression",icon:BarChart3},{href:"/profile",label:"Profil",icon:UserRound},{href:"/settings",label:"Réglages",icon:Settings}];
-export function AppSidebar() { const path = usePathname(); return <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 border-r border-line bg-[#0d0d0f] p-4 md:flex md:flex-col"><Link href="/dashboard" className="mb-10 flex items-center gap-3 px-2 text-lg font-semibold"><span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-black"><Sparkles size={16}/></span> Prepahub</Link><nav className="space-y-1">{items.map(({href,label,icon:Icon})=><Link key={href} href={href} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition ${path===href?"bg-zinc-800 text-ink":"text-muted hover:bg-zinc-900 hover:text-ink"}`}><Icon size={17}/>{label}</Link>)}</nav><div className="mt-auto rounded-xl border border-line bg-zinc-900/50 p-3"><p className="text-xs font-medium text-ink">Objectif du jour</p><p className="mt-1 text-xs text-muted">4 h de concentration</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-zinc-800"><div className="h-full w-[42%] rounded-full bg-accent"/></div></div></aside>; }
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
+import {
+  BarChart3,
+  BookOpenCheck,
+  Clock3,
+  History,
+  LayoutDashboard,
+  Settings,
+  Sparkles,
+  UserRound,
+  Zap,
+} from "lucide-react";
+import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { levelFromXp, totalXp } from "@/lib/gamification";
+import { cn } from "@/lib/cn";
+
+const items = [
+  { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+  { href: "/timer", label: "Focus", icon: Clock3 },
+  { href: "/exercises", label: "Exercices", icon: BookOpenCheck },
+  { href: "/history", label: "Historique", icon: History },
+  { href: "/progress", label: "Progression", icon: BarChart3 },
+  { href: "/profile", label: "Profil", icon: UserRound },
+  { href: "/settings", label: "Réglages", icon: Settings },
+];
+
+function NavItems({ compact = false }: { compact?: boolean }) {
+  const path = usePathname();
+  return (
+    <>
+      {items.map(({ href, label, icon: Icon }) => {
+        const active = path === href;
+        return (
+          <Link
+            key={href}
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "focus-ring group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+              active ? "text-white" : "text-zinc-400 hover:text-zinc-100",
+              compact ? "justify-center px-3" : ""
+            )}
+            title={compact ? label : undefined}
+          >
+            {active && (
+              <motion.span
+                layoutId="sidebar-active"
+                className="absolute inset-0 rounded-xl border border-white/[0.08] bg-white/[0.08] shadow-sm"
+                transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+              />
+            )}
+            <Icon size={18} strokeWidth={active ? 2.25 : 1.75} className="relative z-10" />
+            {!compact && <span className="relative z-10">{label}</span>}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
+export function AppSidebar() {
+  const { sessions, exercises, ready } = usePrepahubData();
+  const xp = ready ? totalXp(exercises, sessions) : 0;
+  const level = levelFromXp(xp);
+
+  return (
+    <>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-white/[0.07] bg-zinc-950/80 p-3 backdrop-blur-xl lg:flex">
+        <Link
+          href="/dashboard"
+          className="focus-ring mb-6 mt-1 flex items-center gap-3 rounded-xl px-3 text-lg font-semibold tracking-tight"
+        >
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-black shadow-glow">
+            <Sparkles size={16} />
+          </span>
+          Prepahub
+        </Link>
+
+        <nav className="space-y-1">
+          <NavItems />
+        </nav>
+
+        <div className="mt-auto space-y-3">
+          {ready && (
+            <div className="rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4">
+              <div className="flex items-center gap-2">
+                <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15">
+                  <Zap size={14} className="text-accent" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-zinc-200">Niveau {level}</p>
+                  <p className="text-2xs text-zinc-500">{xp.toLocaleString("fr-FR")} XP</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4">
+            <p className="text-xs font-semibold text-zinc-200">Règle du jour</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-500">
+              Une séance sans distraction vaut plus qu&apos;une longue liste.
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      <nav
+        aria-label="Navigation principale"
+        className="fixed inset-x-3 bottom-3 z-40 flex items-center justify-around rounded-2xl border border-white/[0.1] bg-zinc-950/85 p-1.5 shadow-2xl shadow-black/30 backdrop-blur-xl lg:hidden"
+      >
+        <NavItems compact />
+      </nav>
+    </>
+  );
+}
