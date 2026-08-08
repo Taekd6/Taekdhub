@@ -16,9 +16,10 @@ export default {
         muted: "#a1a1aa",
         subtle: "#71717a",
         accent: {
-          DEFAULT: "#d4f36b",
-          dim: "rgba(212,243,107,0.12)",
-          glow: "rgba(212,243,107,0.25)",
+          DEFAULT: "rgb(var(--accent-rgb) / <alpha-value>)",
+          dim: "rgb(var(--accent-rgb) / 0.12)",
+          glow: "rgb(var(--accent-rgb) / 0.25)",
+          foreground: "rgb(var(--accent-fg-rgb) / <alpha-value>)",
         },
       },
       borderRadius: {
@@ -31,7 +32,7 @@ export default {
       },
       boxShadow: {
         surface: "0 12px 34px rgba(0,0,0,.16)",
-        glow: "0 0 22px rgba(212,243,107,.18)",
+        glow: "0 0 22px rgb(var(--accent-rgb) / .18)",
         card: "0 1px 0 rgba(255,255,255,.04) inset, 0 12px 34px rgba(0,0,0,.16)",
       },
       fontSize: {

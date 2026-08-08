@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /** Accent personnalisable (Sprint identité visuelle, voir lib/theme.ts) — valeurs par défaut identiques à l'ancien accent fixe (#d4f36b / noir), donc aucun changement visuel tant que l'utilisateur ne choisit pas une autre teinte dans Réglages. */
+    --accent-rgb: 212 243 107;
+    --accent-fg-rgb: 0 0 0;
+  }
+
   * {
     box-sizing: border-box;
   }
@@ -28,9 +34,9 @@
     inset: 0;
     z-index: -1;
     background:
-      radial-gradient(circle at 10% 0%, rgba(151, 212, 98, 0.08), transparent 28rem),
+      radial-gradient(circle at 10% 0%, rgb(var(--accent-rgb) / 0.08), transparent 28rem),
       radial-gradient(circle at 85% 10%, rgba(125, 161, 255, 0.07), transparent 24rem),
-      radial-gradient(circle at 50% 100%, rgba(212, 243, 107, 0.03), transparent 40rem);
+      radial-gradient(circle at 50% 100%, rgb(var(--accent-rgb) / 0.03), transparent 40rem);
     pointer-events: none;
   }
 
@@ -42,8 +48,8 @@
   }
 
   ::selection {
-    background: #d4f36b;
-    color: #101010;
+    background: rgb(var(--accent-rgb));
+    color: rgb(var(--accent-fg-rgb));
   }
 }
 

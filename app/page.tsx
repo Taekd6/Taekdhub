@@ -15,7 +15,7 @@ export default function Home() {
       <div className="mx-auto max-w-5xl">
         <header className="flex min-h-[85vh] flex-col justify-center">
           <div className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-black shadow-glow">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-accent-foreground shadow-glow">
               <Sparkles size={16} />
             </span>
             <p className="eyebrow text-accent">TaekdHub</p>

@@ -1,4 +1,5 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
+import { DEFAULT_ACCENT } from "@/lib/theme";
 import type { Difficulty, Exercise, ExerciseStatus, ExerciseType, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
 
 const sessionsKey = "prepahub:sessions";
@@ -8,8 +9,9 @@ const chaptersKey = "prepahub:chapters";
 const lastBackupKey = "prepahub:last-backup";
 const weekSnapshotsKey = "prepahub:week-snapshots";
 
-export type Preferences = { displayName: string; dailyGoalMinutes: number; contestDate: string };
-const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, contestDate: "" };
+/** `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts. Absent d'une préférence enregistrée avant ce sprint : retombe sur `DEFAULT_ACCENT` via le merge avec `defaults` ci-dessous, comme tout autre champ ajouté après coup. */
+export type Preferences = { displayName: string; dailyGoalMinutes: number; contestDate: string; accent: string };
+const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, contestDate: "", accent: DEFAULT_ACCENT };
 
 /**
  * Chapitre/thème (Sprint 3D) — créé et géré par l'utilisateur, jamais

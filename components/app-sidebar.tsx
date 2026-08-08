@@ -75,7 +75,7 @@ export function AppSidebar() {
           href="/dashboard"
           className="focus-ring mb-6 mt-1 flex items-center gap-3 rounded-xl px-3 text-lg font-semibold tracking-tight"
         >
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-black shadow-glow">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-accent-foreground shadow-glow">
             <Sparkles size={16} />
           </span>
           TaekdHub
