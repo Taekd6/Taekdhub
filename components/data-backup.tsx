@@ -45,6 +45,8 @@ export function DataBackup() {
     localData.saveExercises(pendingImport.exercises);
     localData.saveSessions(pendingImport.sessions);
     localData.savePreferences(pendingImport.preferences);
+    // Sauvegarde d'avant le Sprint 2.1 : pas de weekSnapshots dans le fichier, restaurés à [] proprement.
+    localData.saveWeekSnapshots(pendingImport.weekSnapshots ?? []);
     setPendingImport(null);
     setMessage("Sauvegarde restaurée. Recharge la page.");
   }
@@ -87,11 +89,17 @@ export function DataBackup() {
                 <p className="font-semibold text-zinc-100">Remplacer tes données locales ?</p>
                 <p className="mt-1 text-zinc-400">
                   Ce fichier contient <span className="font-medium text-zinc-200">{pendingImport.exercises.length}</span> exercice
-                  {pendingImport.exercises.length > 1 ? "s" : ""} et{" "}
-                  <span className="font-medium text-zinc-200">{pendingImport.sessions.length}</span> séance
+                  {pendingImport.exercises.length > 1 ? "s" : ""}, <span className="font-medium text-zinc-200">{pendingImport.sessions.length}</span> séance
                   {pendingImport.sessions.length > 1 ? "s" : ""}
+                  {pendingImport.weekSnapshots?.length ? (
+                    <>
+                      {" "}
+                      et <span className="font-medium text-zinc-200">{pendingImport.weekSnapshots.length}</span> semaine
+                      {pendingImport.weekSnapshots.length > 1 ? "s" : ""} de progression
+                    </>
+                  ) : null}
                   {pendingImport.exportedAt && ` (exporté le ${new Date(pendingImport.exportedAt).toLocaleDateString("fr-FR")})`}. Cette
-                  action remplacera définitivement tes exercices, séances et préférences actuels sur cet appareil.
+                  action remplacera définitivement tes exercices, séances, préférences et historique de progression actuels sur cet appareil.
                 </p>
               </div>
             </div>

@@ -269,6 +269,7 @@ export function exportBackup(): void {
       exercises: localData.exercises(),
       sessions: localData.sessions(),
       preferences: localData.preferences(),
+      weekSnapshots: localData.weekSnapshots(),
     },
     null,
     2
@@ -282,13 +283,19 @@ export function exportBackup(): void {
   localData.saveLastBackupAt(new Date().toISOString());
 }
 
-/** Forme d'un fichier de sauvegarde exporté par components/data-backup.tsx. */
+/**
+ * Forme d'un fichier de sauvegarde exporté par components/data-backup.tsx.
+ * `weekSnapshots` est optionnel : une sauvegarde exportée avant le Sprint
+ * 2.1 n'a pas ce champ — voir `validateBackupPayload` et
+ * components/data-backup.tsx#confirmImport, qui restaurent `[]` dans ce cas.
+ */
 export interface BackupPayload {
   version: number;
   exportedAt: string;
   exercises: Exercise[];
   sessions: WorkSession[];
   preferences: Preferences;
+  weekSnapshots?: WeekSnapshot[];
 }
 
 /**
@@ -331,5 +338,10 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   if (!Array.isArray(data.exercises) || !data.exercises.every(isValidExerciseShape)) return false;
   if (!Array.isArray(data.sessions) || !data.sessions.every(isValidSessionShape)) return false;
   if (!isRecord(data.preferences)) return false;
+  // Absent (sauvegarde d'avant le Sprint 2.1) ou tableau — jamais required :
+  // c'est tout le sens de la rétrocompatibilité ici. La forme fine de chaque
+  // entrée est revalidée par `normalizeWeekSnapshot` à la prochaine lecture
+  // (même principe que exercises/sessions, voir plus haut).
+  if (data.weekSnapshots !== undefined && !Array.isArray(data.weekSnapshots)) return false;
   return true;
 }
