@@ -20,7 +20,7 @@ export default function DashboardPage() {
         title={greeting}
         description="Une séance claire, puis la suivante."
         action={
-          <Link href="/timer">
+          <Link href="/session">
             <Button>Démarrer une séance</Button>
           </Link>
         }

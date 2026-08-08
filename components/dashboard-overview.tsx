@@ -148,9 +148,9 @@ export function DashboardOverview() {
             </div>
           </div>
           <div className="flex flex-wrap gap-3 lg:flex-col">
-            <Link href="/timer">
+            <Link href="/session">
               <Button size="lg">
-                Démarrer un focus <ArrowRight size={16} />
+                Commencer ma séance <ArrowRight size={16} />
               </Button>
             </Link>
             <Link href="/exercises">

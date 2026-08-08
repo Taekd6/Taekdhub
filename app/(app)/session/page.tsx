@@ -1,0 +1,1 @@
+import { PageHeader } from "@/components/page-header"; import { SessionRunner } from "@/components/session/session-runner"; export default function SessionPage(){return <><PageHeader eyebrow="Aujourd'hui" title="Séance" description="Une sélection prête à l'emploi, à partir de ce qui compte le plus maintenant."/><SessionRunner/></>}

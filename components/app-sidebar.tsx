@@ -9,6 +9,7 @@ import {
   Clock3,
   History,
   LayoutDashboard,
+  PlayCircle,
   Settings,
   Sparkles,
   UserRound,
@@ -20,6 +21,7 @@ import { cn } from "@/lib/cn";
 
 const items = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+  { href: "/session", label: "Séance", icon: PlayCircle },
   { href: "/timer", label: "Focus", icon: Clock3 },
   { href: "/exercises", label: "Exercices", icon: BookOpenCheck },
   { href: "/history", label: "Historique", icon: History },
