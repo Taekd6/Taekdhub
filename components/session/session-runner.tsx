@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, PlayCircle, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -157,8 +158,20 @@ export function SessionRunner() {
     );
   }
 
+  if (phase === "focus") {
+    const current = recommendations[currentIndex]?.exercise;
+    if (!current) return null;
+    return <FocusView item={current} update={update} sessions={sessions} saveSessions={saveSessions} onClose={handleExerciseWorked} />;
+  }
+
+  // Contenu par phase, calculé (pas retourné directement) pour que chaque
+  // transition entre phases passe par le même fondu ci-dessous (voir le
+  // `return` final) — la phase "focus" reste un early return, déjà gérée par
+  // sa propre transition plein écran (FocusView).
+  let content: React.ReactNode;
+
   if (phase === "empty") {
-    return (
+    content = (
       <Card className="p-10 text-center">
         <Sparkles className="mx-auto text-accent" size={24} />
         <p className="mt-4 font-medium">
@@ -181,16 +194,8 @@ export function SessionRunner() {
         </div>
       </Card>
     );
-  }
-
-  if (phase === "focus") {
-    const current = recommendations[currentIndex]?.exercise;
-    if (!current) return null;
-    return <FocusView item={current} update={update} sessions={sessions} saveSessions={saveSessions} onClose={handleExerciseWorked} />;
-  }
-
-  if (phase === "preview") {
-    return (
+  } else if (phase === "preview") {
+    content = (
       <div className="space-y-5">
         <Card className="p-8 text-center">
           <PlayCircle className="mx-auto text-accent" size={28} />
@@ -273,12 +278,10 @@ export function SessionRunner() {
         )}
       </div>
     );
-  }
-
-  if (phase === "between") {
+  } else if (phase === "between") {
     const done = recommendations[currentIndex]?.exercise;
     const next = recommendations[currentIndex + 1]?.exercise;
-    return (
+    content = (
       <Card className="p-8 text-center">
         <CheckCircle2 className="mx-auto text-accent" size={28} />
         <h2 className="mt-4 text-xl font-semibold tracking-tight">Exercice travaillé</h2>
@@ -297,23 +300,37 @@ export function SessionRunner() {
         </div>
       </Card>
     );
+  } else {
+    // phase === "summary"
+    content = (
+      <Card className="p-10 text-center">
+        <CardTitle className="text-xl">Séance terminée</CardTitle>
+        <p className="mt-2 text-sm text-zinc-400">
+          {visitedCount} exercice{visitedCount > 1 ? "s" : ""} travaillé{visitedCount > 1 ? "s" : ""} durant cette séance.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link href="/dashboard">
+            <Button>Retour au tableau de bord</Button>
+          </Link>
+          <Link href="/exercises">
+            <Button variant="secondary">Voir les exercices</Button>
+          </Link>
+        </div>
+      </Card>
+    );
   }
 
-  // phase === "summary"
   return (
-    <Card className="p-10 text-center">
-      <CardTitle className="text-xl">Séance terminée</CardTitle>
-      <p className="mt-2 text-sm text-zinc-400">
-        {visitedCount} exercice{visitedCount > 1 ? "s" : ""} travaillé{visitedCount > 1 ? "s" : ""} durant cette séance.
-      </p>
-      <div className="mt-6 flex flex-wrap justify-center gap-3">
-        <Link href="/dashboard">
-          <Button>Retour au tableau de bord</Button>
-        </Link>
-        <Link href="/exercises">
-          <Button variant="secondary">Voir les exercices</Button>
-        </Link>
-      </div>
-    </Card>
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={phase}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
+      >
+        {content}
+      </motion.div>
+    </AnimatePresence>
   );
 }

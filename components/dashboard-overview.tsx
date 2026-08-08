@@ -143,9 +143,15 @@ export function DashboardOverview() {
               <Sparkles size={16} className="text-accent" />
               <p className="eyebrow">Niveau {model.level}</p>
             </div>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+            <motion.h2
+              key={model.objective >= 100 ? "done" : "progress"}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl"
+            >
               {model.objective >= 100 ? "Objectif atteint." : "Continue sur ta lancée."}
-            </h2>
+            </motion.h2>
             <p className="mt-2 max-w-lg text-sm leading-6 text-zinc-400">
               {formatDuration(model.todaySeconds)} travaillés aujourd&apos;hui
               {model.streak > 0 && ` · ${model.streak} jour${model.streak > 1 ? "s" : ""} de suite`}

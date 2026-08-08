@@ -1,8 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Eye, EyeOff, Minimize2, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Eye, EyeOff, Minimize2, Sparkles, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
@@ -33,6 +33,18 @@ export function FocusView({
   const { seconds, running, toggle, stop } = useWorkTimer<{ exerciseId: string }>(focusTimerKey(item.id), {
     exerciseId: item.id,
   });
+
+  /** Micro-célébration au moment précis où l'exercice devient "maîtrisé" — jamais au montage sur un exercice déjà maîtrisé, ni sur les autres transitions de statut. */
+  const [justMastered, setJustMastered] = useState(false);
+  const previousStatus = useRef(item.status);
+  useEffect(() => {
+    const wasMastered = previousStatus.current === "maîtrisé";
+    previousStatus.current = item.status;
+    if (wasMastered || item.status !== "maîtrisé") return;
+    setJustMastered(true);
+    const timeout = setTimeout(() => setJustMastered(false), 1600);
+    return () => clearTimeout(timeout);
+  }, [item.status]);
 
   // Clôt la séance quel que soit le chemin de sortie (Echap, croix, réduire) :
   // c'est le seul endroit qui décide de la fin du focus, pour ne jamais
@@ -151,7 +163,7 @@ export function FocusView({
           )}
         </div>
 
-        <div className="mt-8 flex gap-2">
+        <div className="mt-8 flex items-center gap-2">
           {(["à faire", "en cours", "à revoir", "maîtrisé"] as ExerciseStatus[]).map((s) => (
             <Button
               key={s}
@@ -162,6 +174,19 @@ export function FocusView({
               {s}
             </Button>
           ))}
+          <AnimatePresence>
+            {justMastered && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.7, x: -6 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.7 }}
+                transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
+                className="flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent"
+              >
+                <Sparkles size={13} /> Maîtrisé !
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

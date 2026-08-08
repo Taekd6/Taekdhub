@@ -1,6 +1,7 @@
 "use client";
 
 import { Flag } from "lucide-react";
+import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { ProgressBar } from "@/components/ui/progress";
 import { Select } from "@/components/ui/input";
@@ -60,9 +61,10 @@ export function PriorityPicker({ value, onChange }: { value: Priority; onChange:
   return (
     <div className="inline-flex gap-1" role="group" aria-label="Priorité">
       {options.map((option) => (
-        <button
+        <motion.button
           key={option}
           type="button"
+          whileTap={{ scale: 0.85 }}
           onClick={() => onChange(option)}
           aria-pressed={value === option}
           className={cn(
@@ -71,7 +73,7 @@ export function PriorityPicker({ value, onChange }: { value: Priority; onChange:
           )}
         >
           {option}
-        </button>
+        </motion.button>
       ))}
     </div>
   );
@@ -87,9 +89,10 @@ export function MasteryPicker({ value, onChange }: { value: Mastery; onChange: (
   return (
     <div className="inline-flex gap-1" role="group" aria-label="Maîtrise">
       {options.map((option) => (
-        <button
+        <motion.button
           key={option}
           type="button"
+          whileTap={{ scale: 0.85 }}
           onClick={() => onChange(option)}
           aria-pressed={value === option}
           className={cn(
@@ -98,7 +101,7 @@ export function MasteryPicker({ value, onChange }: { value: Mastery; onChange: (
           )}
         >
           {option}%
-        </button>
+        </motion.button>
       ))}
     </div>
   );
