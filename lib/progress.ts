@@ -1,4 +1,5 @@
 import { exerciseStatuses, masteryLevels, subjects } from "@/lib/study";
+import type { Chapter } from "@/lib/storage";
 import type { Exercise, ExerciseStatus, Mastery, Subject } from "@/lib/supabase/types";
 
 /**
@@ -101,4 +102,35 @@ export function statusDistribution(exercises: Exercise[]): StatusBucket[] {
     const count = active.filter((exercise) => exercise.status === status).length;
     return { status, count, percentage: active.length ? Math.round((count / active.length) * 100) : 0 };
   });
+}
+
+export interface ChapterProgress {
+  chapter: Chapter;
+  total: number;
+  mastered: number;
+  /** 0 si `total` est nul — évite une division par zéro côté appelant. */
+  completionRate: number;
+}
+
+/**
+ * Progression par chapitre (Sprint 3D) — uniquement les chapitres qui ont au
+ * moins un exercice actif assigné : un chapitre créé mais encore vide n'a
+ * rien à montrer ici (pas de bruit administratif sur la page Progression).
+ * Triés par nombre d'exercices décroissant.
+ */
+export function progressByChapter(exercises: Exercise[], chapters: Chapter[]): ChapterProgress[] {
+  const active = exercises.filter((exercise) => !exercise.archived);
+  return chapters
+    .map((chapter) => {
+      const chapterExercises = active.filter((exercise) => exercise.chapter_id === chapter.id);
+      const mastered = chapterExercises.filter((exercise) => exercise.status === "maîtrisé").length;
+      return {
+        chapter,
+        total: chapterExercises.length,
+        mastered,
+        completionRate: chapterExercises.length ? Math.round((mastered / chapterExercises.length) * 100) : 0,
+      };
+    })
+    .filter((entry) => entry.total > 0)
+    .sort((a, b) => b.total - a.total);
 }

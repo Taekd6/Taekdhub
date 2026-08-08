@@ -9,33 +9,31 @@ import { Heatmap } from "@/components/heatmap";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
-import { computeGlobalProgress, computeProgressBySubject, masteryDistribution, statusDistribution } from "@/lib/progress";
+import { computeGlobalProgress, computeProgressBySubject, masteryDistribution, progressByChapter, statusDistribution } from "@/lib/progress";
 import { statusMeta, subjectMeta, totalSeconds } from "@/lib/study";
 import { formatDuration } from "@/lib/utils";
 
 /**
- * Page Progression (Sprint 3B) — toute l'agrégation vient de lib/progress.ts
- * (et lib/gamification.ts pour la constance) : ce composant ne fait
- * qu'assembler et afficher, aucun calcul métier ici.
- *
- * Le bloc "Chapitres" retiré au Sprint 3B n'est pas remplacé : il groupait en
- * réalité par titre d'exercice (le catalogue de chapitres, lib/chapters.ts,
- * est vide) — une vraie vue par chapitre reviendra quand ce catalogue existera.
+ * Page Progression (Sprint 3B, bloc "Par chapitre" ajouté au Sprint 3D) —
+ * toute l'agrégation vient de lib/progress.ts (et lib/gamification.ts pour
+ * la constance) : ce composant ne fait qu'assembler et afficher, aucun
+ * calcul métier ici.
  */
 export function ProgressOverview() {
-  const { sessions, exercises, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, ready } = usePrepahubData();
 
   const model = useMemo(() => {
     return {
       global: computeGlobalProgress(exercises),
       bySubject: computeProgressBySubject(exercises),
+      byChapter: progressByChapter(exercises, chapters),
       mastery: masteryDistribution(exercises),
       status: statusDistribution(exercises),
       totalTime: totalSeconds(sessions),
       streak: computeStreak(sessions),
       workByDay: workByDayMap(sessions),
     };
-  }, [exercises, sessions]);
+  }, [exercises, chapters, sessions]);
 
   if (!ready) {
     return (
@@ -101,6 +99,31 @@ export function ProgressOverview() {
             ))}
           </div>
         </Card>
+      </section>
+
+      <section>
+        <p className="eyebrow">Répartition</p>
+        <h3 className="mb-4 mt-2 font-semibold tracking-tight">Par chapitre</h3>
+        {model.byChapter.length ? (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {model.byChapter.map(({ chapter, total, mastered, completionRate }) => (
+              <div key={chapter.id} className="rounded-xl border border-white/[0.07] p-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{chapter.label}</p>
+                    <p className="text-2xs text-zinc-500">{chapter.subject}</p>
+                  </div>
+                  <span className="whitespace-nowrap text-xs text-zinc-500">
+                    {mastered}/{total}
+                  </span>
+                </div>
+                <ProgressBar value={completionRate} animated={false} barClassName="bg-accent/80" className="mt-3 h-1.5" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Card className="p-8 text-center text-sm text-zinc-500">Crée des chapitres depuis un exercice pour voir leur progression ici.</Card>
+        )}
       </section>
 
       <section className="grid gap-5 xl:grid-cols-2">

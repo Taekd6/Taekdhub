@@ -9,16 +9,21 @@ import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryBar, PriorityBadge, SubjectAvatar, StatusSelect } from "@/components/exercises/exercise-badges";
 import { ExerciseDetail } from "@/components/exercises/exercise-detail";
 import { cn } from "@/lib/cn";
-import type { Exercise, ExerciseStatus } from "@/lib/supabase/types";
+import type { Chapter } from "@/lib/storage";
+import type { Exercise, ExerciseStatus, Subject } from "@/lib/supabase/types";
 
 interface ExerciseListRowProps {
   item: Exercise;
   selected: boolean;
   minutesSpent: number;
+  chapters: Chapter[];
   onToggle: (id: string) => void;
   onUpdate: (id: string, patch: Partial<Exercise>) => void;
   onFocus: (id: string) => void;
   onArchive: (id: string) => void;
+  onCreateChapter: (subject: Subject, label: string) => Chapter;
+  onRenameChapter: (id: string, label: string) => void;
+  onRemoveChapter: (id: string) => void;
 }
 
 /**
@@ -27,7 +32,19 @@ interface ExerciseListRowProps {
  * l'écran sans défiler. Réutilise ExerciseDetail au dépli — même comportement
  * qu'en mode Cartes, pas de logique dupliquée.
  */
-function ExerciseListRowImpl({ item, selected, minutesSpent, onToggle, onUpdate, onFocus, onArchive }: ExerciseListRowProps) {
+function ExerciseListRowImpl({
+  item,
+  selected,
+  minutesSpent,
+  chapters,
+  onToggle,
+  onUpdate,
+  onFocus,
+  onArchive,
+  onCreateChapter,
+  onRenameChapter,
+  onRemoveChapter,
+}: ExerciseListRowProps) {
   return (
     <motion.article id={`exercise-${item.id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={cn("surface overflow-hidden rounded-xl", selected && "border-accent/35")}>
       <div className="flex items-center gap-3 px-3 py-2 sm:px-4">
@@ -61,7 +78,15 @@ function ExerciseListRowImpl({ item, selected, minutesSpent, onToggle, onUpdate,
       <AnimatePresence>
         {selected && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-white/[0.07]">
-            <ExerciseDetail item={item} update={onUpdate} minutesSpent={minutesSpent} />
+            <ExerciseDetail
+              item={item}
+              update={onUpdate}
+              minutesSpent={minutesSpent}
+              chapters={chapters}
+              onCreateChapter={onCreateChapter}
+              onRenameChapter={onRenameChapter}
+              onRemoveChapter={onRemoveChapter}
+            />
           </motion.div>
         )}
       </AnimatePresence>

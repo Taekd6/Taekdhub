@@ -6,6 +6,7 @@ import { Input, Select } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
 import type { ExerciseFilters } from "@/lib/exercise-filters";
+import type { Chapter } from "@/lib/storage";
 import type { Difficulty, ExerciseStatus, ExerciseType, Mastery, Priority, Subject } from "@/lib/supabase/types";
 
 const MASTERY_VALUES: Mastery[] = [0, 25, 50, 75, 100];
@@ -25,7 +26,7 @@ export function ExerciseFiltersBar({
 }: {
   filters: ExerciseFilters;
   onChange: (patch: Partial<ExerciseFilters>) => void;
-  chapterOptions: string[];
+  chapterOptions: Chapter[];
   yearOptions: number[];
   onAddClick: () => void;
 }) {
@@ -54,9 +55,11 @@ export function ExerciseFiltersBar({
           ))}
         </Select>
         <Select value={filters.chapter} onChange={(event) => onChange({ chapter: event.target.value })} className="w-auto min-w-[130px]" disabled={chapterOptions.length === 0}>
-          <option>Tous</option>
-          {chapterOptions.map((value) => (
-            <option key={value}>{value}</option>
+          <option value="Tous">Tous</option>
+          {chapterOptions.map((chapter) => (
+            <option key={chapter.id} value={chapter.id}>
+              {chapter.label}
+            </option>
           ))}
         </Select>
         <Select value={filters.type} onChange={(event) => onChange({ type: event.target.value as ExerciseType | "Tous" })} className="w-auto min-w-[110px]">

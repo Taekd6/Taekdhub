@@ -1,5 +1,6 @@
 import { getChaptersForSubject } from "@/lib/chapters";
 import { subjects } from "@/lib/study";
+import type { Chapter } from "@/lib/storage";
 import type { Difficulty, Exercise, ExerciseStatus, ExerciseType, Mastery, Priority, Subject } from "@/lib/supabase/types";
 
 /**
@@ -66,17 +67,14 @@ export function filterExercises(exercises: Exercise[], filters: ExerciseFilters)
 }
 
 /**
- * Identifiants de chapitres disponibles pour le filtre "chapitre", pour une
- * matière donnée (ou toutes) — lus depuis le catalogue lib/chapters.ts.
- * Ce catalogue est vide aujourd'hui pour chaque matière (voir ce fichier) :
- * ce filtre n'aura donc aucune option tant qu'il n'aura pas été peuplé dans
- * un sprint dédié — comportement attendu, pas une régression.
+ * Chapitres disponibles pour le filtre "chapitre", pour une matière donnée
+ * (ou toutes) — créés par l'utilisateur (Sprint 3D, voir lib/chapters.ts).
+ * Retourne les chapitres complets (pas seulement leurs id) pour que l'UI
+ * puisse afficher le libellé plutôt que l'identifiant.
  */
-export function chapterOptionsForSubject(subject: Subject | "Toutes"): string[] {
-  if (subject === "Toutes") {
-    return Array.from(new Set(subjects.flatMap((item) => getChaptersForSubject(item).map((chapter) => chapter.id))));
-  }
-  return getChaptersForSubject(subject).map((chapter) => chapter.id);
+export function chapterOptionsForSubject(chapters: Chapter[], subject: Subject | "Toutes"): Chapter[] {
+  if (subject === "Toutes") return subjects.flatMap((item) => getChaptersForSubject(chapters, item));
+  return getChaptersForSubject(chapters, subject);
 }
 
 /** Années réellement présentes dans les exercices actifs, les plus récentes en premier — source du filtre "année" (pas de liste inventée, contrairement aux chapitres il n'y a pas de catalogue à respecter ici). */

@@ -1,24 +1,39 @@
 "use client";
 
-import { Clock3, Eye, EyeOff, Target } from "lucide-react";
+import { Clock3, Eye, EyeOff, Pencil, Target, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { ChapterPicker } from "@/components/exercises/chapter-picker";
 import { MasteryPicker, PriorityPicker } from "@/components/exercises/exercise-badges";
-import type { Exercise, Mastery, Priority } from "@/lib/supabase/types";
+import type { Chapter } from "@/lib/storage";
+import type { Exercise, Mastery, Priority, Subject } from "@/lib/supabase/types";
 
 export function ExerciseDetail({
   item,
   update,
   minutesSpent,
+  chapters,
+  onCreateChapter,
+  onRenameChapter,
+  onRemoveChapter,
 }: {
   item: Exercise;
   update: (id: string, patch: Partial<Exercise>) => void;
   /** Temps réellement passé sur cet exercice, en minutes — dérivé des WorkSession liées (voir lib/study.ts). */
   minutesSpent: number;
+  chapters: Chapter[];
+  onCreateChapter: (subject: Subject, label: string) => Chapter;
+  onRenameChapter: (id: string, label: string) => void;
+  onRemoveChapter: (id: string) => void;
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
   const [hintCount, setHintCount] = useState(0);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const currentChapter = chapters.find((chapter) => chapter.id === item.chapter_id) ?? null;
 
   return (
     <div className="grid gap-5 bg-black/10 p-5 md:grid-cols-2">
@@ -65,6 +80,89 @@ export function ExerciseDetail({
             Maîtrise
             <MasteryPicker value={item.mastery} onChange={(mastery: Mastery) => update(item.id, { mastery })} />
           </label>
+        </div>
+        <div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+            Chapitre
+            <ChapterPicker
+              subject={item.subject}
+              chapters={chapters}
+              value={item.chapter_id}
+              onChange={(chapterId) => update(item.id, { chapter_id: chapterId })}
+              onCreateChapter={onCreateChapter}
+            />
+            {currentChapter && !renaming && (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label="Renommer le chapitre"
+                  onClick={() => {
+                    setRenameValue(currentChapter.label);
+                    setRenaming(true);
+                  }}
+                >
+                  <Pencil size={14} />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label="Supprimer le chapitre"
+                  onClick={() => setConfirmingDelete(true)}
+                >
+                  <Trash2 size={14} />
+                </Button>
+              </>
+            )}
+          </div>
+          {renaming && currentChapter && (
+            <div className="mt-2 flex items-center gap-2">
+              <Input
+                autoFocus
+                value={renameValue}
+                onChange={(event) => setRenameValue(event.target.value)}
+                className="h-9 max-w-[200px]"
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  onRenameChapter(currentChapter.id, renameValue);
+                  setRenaming(false);
+                }}
+              >
+                Renommer
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setRenaming(false)}>
+                Annuler
+              </Button>
+            </div>
+          )}
+          {confirmingDelete && currentChapter && (
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+              <span>
+                Supprimer « {currentChapter.label} » ? Les exercices restent, seul le lien est retiré.
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="danger"
+                onClick={() => {
+                  onRemoveChapter(currentChapter.id);
+                  setConfirmingDelete(false);
+                }}
+              >
+                Confirmer
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmingDelete(false)}>
+                Annuler
+              </Button>
+            </div>
+          )}
         </div>
         {item.hints.slice(0, hintCount).map((hint, index) => (
           <p key={index} className="rounded-xl border border-accent/15 bg-accent/[0.055] p-3 text-sm leading-6 text-zinc-300">

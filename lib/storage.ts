@@ -4,9 +4,17 @@ import type { Difficulty, Exercise, ExerciseStatus, ExerciseType, Mastery, Prior
 const sessionsKey = "prepahub:sessions";
 const exercisesKey = "prepahub:exercises";
 const preferencesKey = "prepahub:preferences";
+const chaptersKey = "prepahub:chapters";
 
 export type Preferences = { displayName: string; dailyGoalMinutes: number; contestDate: string };
 const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, contestDate: "" };
+
+/**
+ * Chapitre/thème (Sprint 3D) — créé et géré par l'utilisateur, jamais
+ * pré-rempli (voir lib/chapters.ts). Pas de miroir Supabase : comme
+ * `Preferences`, ce concept n'existe qu'en local pour l'instant.
+ */
+export type Chapter = { id: string; subject: Subject; label: string };
 
 /**
  * Valeurs par défaut pour les champs Sprint 2.5 — proposées, à ajuster si
@@ -130,6 +138,13 @@ function normalizeExercise(raw: unknown): Exercise {
   };
 }
 
+/** Ramène un chapitre potentiellement corrompu (édition manuelle du localStorage) vers une forme valide, ou l'écarte. */
+function normalizeChapter(raw: unknown): Chapter | null {
+  const item = isRecord(raw) ? raw : {};
+  if (typeof item.id !== "string" || typeof item.label !== "string" || !item.label.trim()) return null;
+  return { id: item.id, subject: migrateSubject(item.subject), label: item.label };
+}
+
 export const localData = {
   sessions: (): WorkSession[] =>
     typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(sessionsKey) || "[]") as unknown[]).map(normalizeSession),
@@ -137,6 +152,11 @@ export const localData = {
   exercises: (): Exercise[] =>
     typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(exercisesKey) || "[]") as unknown[]).map(normalizeExercise),
   saveExercises: (items: Exercise[]) => localStorage.setItem(exercisesKey, JSON.stringify(items)),
+  chapters: (): Chapter[] =>
+    typeof window === "undefined"
+      ? []
+      : (JSON.parse(localStorage.getItem(chaptersKey) || "[]") as unknown[]).map(normalizeChapter).filter((item): item is Chapter => item !== null),
+  saveChapters: (items: Chapter[]) => localStorage.setItem(chaptersKey, JSON.stringify(items)),
   preferences: (): Preferences => (typeof window === "undefined" ? defaults : { ...defaults, ...JSON.parse(localStorage.getItem(preferencesKey) || "{}") }),
   savePreferences: (preferences: Preferences) => localStorage.setItem(preferencesKey, JSON.stringify(preferences)),
 };

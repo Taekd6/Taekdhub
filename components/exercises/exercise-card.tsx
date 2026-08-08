@@ -9,7 +9,8 @@ import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryBar, PriorityBadge, SubjectAvatar, StatusSelect } from "@/components/exercises/exercise-badges";
 import { ExerciseDetail } from "@/components/exercises/exercise-detail";
 import { cn } from "@/lib/cn";
-import type { Exercise, ExerciseStatus } from "@/lib/supabase/types";
+import type { Chapter } from "@/lib/storage";
+import type { Exercise, ExerciseStatus, Subject } from "@/lib/supabase/types";
 
 interface ExerciseCardProps {
   item: Exercise;
@@ -17,14 +18,31 @@ interface ExerciseCardProps {
   selected: boolean;
   /** Temps réellement passé sur cet exercice, en minutes — dérivé des WorkSession liées (voir lib/study.ts). */
   minutesSpent: number;
+  chapters: Chapter[];
   /** Callbacks stables (identité constante) fournis par le manager — condition pour que React.memo évite les re-renders inutiles sur une banque de centaines d'exercices. */
   onToggle: (id: string) => void;
   onUpdate: (id: string, patch: Partial<Exercise>) => void;
   onFocus: (id: string) => void;
   onArchive: (id: string) => void;
+  onCreateChapter: (subject: Subject, label: string) => Chapter;
+  onRenameChapter: (id: string, label: string) => void;
+  onRemoveChapter: (id: string) => void;
 }
 
-function ExerciseCardImpl({ item, index, selected, minutesSpent, onToggle, onUpdate, onFocus, onArchive }: ExerciseCardProps) {
+function ExerciseCardImpl({
+  item,
+  index,
+  selected,
+  minutesSpent,
+  chapters,
+  onToggle,
+  onUpdate,
+  onFocus,
+  onArchive,
+  onCreateChapter,
+  onRenameChapter,
+  onRemoveChapter,
+}: ExerciseCardProps) {
   return (
     <motion.article
       id={`exercise-${item.id}`}
@@ -73,7 +91,15 @@ function ExerciseCardImpl({ item, index, selected, minutesSpent, onToggle, onUpd
       <AnimatePresence>
         {selected && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-white/[0.07]">
-            <ExerciseDetail item={item} update={onUpdate} minutesSpent={minutesSpent} />
+            <ExerciseDetail
+              item={item}
+              update={onUpdate}
+              minutesSpent={minutesSpent}
+              chapters={chapters}
+              onCreateChapter={onCreateChapter}
+              onRenameChapter={onRenameChapter}
+              onRemoveChapter={onRemoveChapter}
+            />
           </motion.div>
         )}
       </AnimatePresence>

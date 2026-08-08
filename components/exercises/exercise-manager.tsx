@@ -14,17 +14,18 @@ import { ExerciseCard } from "@/components/exercises/exercise-card";
 import { ExerciseListRow } from "@/components/exercises/exercise-list-row";
 import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
+import { addChapter, removeChapter, renameChapter } from "@/lib/chapters";
 import { chapterOptionsForSubject, defaultExerciseFilters, distinctYears, filterExercises, type ExerciseFilters } from "@/lib/exercise-filters";
 import { defaultExerciseSort, exerciseSortOptions, sortExercises, type ExerciseSort } from "@/lib/exercise-sort";
-import { DEFAULT_MASTERY, DEFAULT_PRIORITY } from "@/lib/storage";
+import { DEFAULT_MASTERY, DEFAULT_PRIORITY, type Chapter } from "@/lib/storage";
 import { minutesByExerciseMap } from "@/lib/study";
 import { cn } from "@/lib/cn";
-import type { Exercise } from "@/lib/supabase/types";
+import type { Exercise, Subject } from "@/lib/supabase/types";
 
 type ViewMode = "cards" | "list";
 
 export function ExerciseManager() {
-  const { exercises, saveExercises, sessions, saveSessions, ready } = usePrepahubData();
+  const { exercises, saveExercises, sessions, saveSessions, chapters, saveChapters, ready } = usePrepahubData();
   const [filters, setFilters] = useState<ExerciseFilters>(defaultExerciseFilters);
   const [sort, setSort] = useState<ExerciseSort>(defaultExerciseSort);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
@@ -87,6 +88,36 @@ export function ExerciseManager() {
   }, []);
   const archiveExercise = useCallback((id: string) => update(id, { archived: true }), [update]);
 
+  // Chapitres (Sprint 3D) — mêmes conventions que `update` : fonctions pures
+  // (lib/chapters.ts) combinées ici avec la persistance. `handleRemoveChapter`
+  // lit `exercisesRef.current` (pas `exercises`) pour rester sur le chemin
+  // stable du memo des cartes, comme `update`/`archiveExercise` ci-dessus.
+  const handleCreateChapter = useCallback(
+    (subject: Subject, label: string) => {
+      const { chapters: next, chapter } = addChapter(chapters, subject, label);
+      saveChapters(next);
+      return chapter;
+    },
+    [chapters, saveChapters]
+  );
+  const handleRenameChapter = useCallback(
+    (id: string, label: string) => saveChapters(renameChapter(chapters, id, label)),
+    [chapters, saveChapters]
+  );
+  // Ne supprime jamais un exercice : seuls les `chapter_id` qui pointaient
+  // vers ce chapitre sont réinitialisés à `null` (exercice réassigné à
+  // "Sans chapitre", jamais perdu).
+  const handleRemoveChapter = useCallback(
+    (id: string) => {
+      saveChapters(removeChapter(chapters, id));
+      const updatedAt = new Date().toISOString();
+      const next = exercisesRef.current.map((item) => (item.chapter_id === id ? { ...item, chapter_id: null, updated_at: updatedAt } : item));
+      exercisesRef.current = next;
+      saveExercises(next);
+    },
+    [chapters, saveChapters, saveExercises]
+  );
+
   // Depuis le tableau "À revoir" : on réinitialise les filtres (l'exercice
   // visé pourrait être masqué par le filtrage courant), on le sélectionne,
   // puis on l'amène à l'écran — sans quoi le clic n'aurait visiblement aucun
@@ -124,9 +155,8 @@ export function ExerciseManager() {
         id: crypto.randomUUID(),
         subject: input.subject,
         title: input.title,
-        // Le catalogue de chapitres (lib/chapters.ts) est vide aujourd'hui ;
-        // aucune interface ne permet encore de choisir un chapitre.
-        chapter_id: null,
+        // Sprint 3D : chapitre choisi (ou créé à la volée) dans le formulaire, ou null ("Sans chapitre").
+        chapter_id: input.chapterId,
         source: input.source,
         // Aucune interface ne permet encore de renseigner l'année séparément de `source`.
         year: null,
@@ -161,14 +191,14 @@ export function ExerciseManager() {
     [saveExercises]
   );
 
-  const chapterOptions = useMemo(() => chapterOptionsForSubject(filters.subject), [filters.subject]);
+  const chapterOptions = useMemo(() => chapterOptionsForSubject(chapters, filters.subject), [chapters, filters.subject]);
   const yearOptions = useMemo(() => distinctYears(exercises), [exercises]);
 
   // Un chapitre filtré peut devenir invalide si on change de matière : on le
   // réinitialise plutôt que de laisser un filtre "impossible" masquer
   // silencieusement toute la liste.
   useEffect(() => {
-    if (filters.chapter !== "Tous" && !chapterOptions.includes(filters.chapter)) {
+    if (filters.chapter !== "Tous" && !chapterOptions.some((chapter) => chapter.id === filters.chapter)) {
       updateFilters({ chapter: "Tous" });
     }
   }, [chapterOptions, filters.chapter, updateFilters]);
@@ -233,7 +263,7 @@ export function ExerciseManager() {
         onAddClick={() => setFormOpen((value) => !value)}
       />
 
-      <ExerciseForm open={formOpen} onSubmit={create} onCancel={() => setFormOpen(false)} />
+      <ExerciseForm open={formOpen} chapters={chapters} onSubmit={create} onCancel={() => setFormOpen(false)} onCreateChapter={handleCreateChapter} />
 
       <div className="flex flex-wrap items-center justify-between gap-3 px-1">
         <p className="text-sm text-zinc-500">
@@ -278,10 +308,14 @@ export function ExerciseManager() {
               index={index}
               selected={selectedId === item.id}
               minutesSpent={minutesMap.get(item.id) ?? 0}
+              chapters={chapters}
               onToggle={toggleSelected}
               onUpdate={update}
               onFocus={enterFocus}
               onArchive={archiveExercise}
+              onCreateChapter={handleCreateChapter}
+              onRenameChapter={handleRenameChapter}
+              onRemoveChapter={handleRemoveChapter}
             />
           ) : (
             <ExerciseListRow
@@ -289,10 +323,14 @@ export function ExerciseManager() {
               item={item}
               selected={selectedId === item.id}
               minutesSpent={minutesMap.get(item.id) ?? 0}
+              chapters={chapters}
               onToggle={toggleSelected}
               onUpdate={update}
               onFocus={enterFocus}
               onArchive={archiveExercise}
+              onCreateChapter={handleCreateChapter}
+              onRenameChapter={handleRenameChapter}
+              onRemoveChapter={handleRemoveChapter}
             />
           )
         )}

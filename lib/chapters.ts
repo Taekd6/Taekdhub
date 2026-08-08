@@ -1,33 +1,40 @@
-import { subjects } from "@/lib/study";
+import type { Chapter } from "@/lib/storage";
 import type { Subject } from "@/lib/supabase/types";
 
-/** Un chapitre défini pour une matière donnée. */
-export interface ChapterDefinition {
-  /** Identifiant stable — ne doit jamais changer une fois des exercices créés avec ce chapitre. */
-  id: string;
-  label: string;
+/**
+ * Chapitres/thèmes (Sprint 3D) — créés et gérés par l'utilisateur au fil de
+ * ses exercices, jamais pré-remplis : un catalogue officiel par matière
+ * risquerait d'imposer un chapitre incomplet ou erroné (en particulier pour
+ * une filière comme MP). Voir components/exercises/chapter-picker.tsx pour
+ * le seul point de création (inline, depuis un exercice).
+ *
+ * Module purement fonctionnel — comme lib/study.ts et lib/exercise-filters.ts,
+ * aucun accès à localStorage ici : la persistance vit dans lib/storage.ts
+ * (`localData.chapters`/`saveChapters`), la réactivité dans
+ * hooks/use-prepahub-data.ts. Les appelants (exercise-manager.tsx) combinent
+ * ces fonctions pures avec `saveChapters`.
+ */
+
+export function getChaptersForSubject(chapters: Chapter[], subject: Subject): Chapter[] {
+  return chapters.filter((chapter) => chapter.subject === subject).sort((a, b) => a.label.localeCompare(b.label, "fr"));
+}
+
+export function addChapter(chapters: Chapter[], subject: Subject, label: string): { chapters: Chapter[]; chapter: Chapter } {
+  const chapter: Chapter = { id: crypto.randomUUID(), subject, label: label.trim() };
+  return { chapters: [...chapters, chapter], chapter };
+}
+
+export function renameChapter(chapters: Chapter[], id: string, label: string): Chapter[] {
+  const trimmed = label.trim();
+  return chapters.map((chapter) => (chapter.id === id ? { ...chapter, label: trimmed } : chapter));
 }
 
 /**
- * Catalogue des chapitres par matière.
- *
- * Volontairement vide pour l'instant, matière par matière : ces listes
- * seront définies dans un sprint dédié, pour éviter tout chapitre inventé,
- * incomplet ou erroné (en particulier pour MP). Tant qu'une matière n'a pas
- * de chapitres définis ici, la banque d'exercices utilise en secours les
- * intitulés de chapitre déjà saisis librement par l'utilisateur — voir
- * `distinctChapters` dans lib/exercise-filters.ts.
- *
- * Pour ajouter les chapitres d'une matière : compléter le tableau
- * correspondant ci-dessous avec des `{ id, label }`. Le reste de
- * l'application (filtres, formulaire) est déjà prêt à les consommer via
- * `getChaptersForSubject`.
+ * Retire le chapitre de la liste — ne touche jamais aux exercices qui le
+ * référençaient : c'est à l'appelant de réassigner `chapter_id` à `null` sur
+ * ces exercices (voir exercise-manager.tsx#handleRemoveChapter), pour ne
+ * jamais supprimer un exercice suite à la suppression d'un chapitre.
  */
-export const chaptersBySubject: Record<Subject, ChapterDefinition[]> = subjects.reduce(
-  (registry, subject) => ({ ...registry, [subject]: [] }),
-  {} as Record<Subject, ChapterDefinition[]>
-);
-
-export function getChaptersForSubject(subject: Subject): ChapterDefinition[] {
-  return chaptersBySubject[subject];
+export function removeChapter(chapters: Chapter[], id: string): Chapter[] {
+  return chapters.filter((chapter) => chapter.id !== id);
 }

@@ -4,15 +4,16 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
+import { ChapterPicker } from "@/components/exercises/chapter-picker";
 import { exerciseTypes, subjects } from "@/lib/study";
+import type { Chapter } from "@/lib/storage";
 import type { Difficulty, ExerciseType, Subject } from "@/lib/supabase/types";
 
 /**
  * Champs saisis à la création — le manager complète le reste (id, created_at,
- * updated_at, statut initial, chapter_id/priority/mastery/year par défaut,
- * compteurs à zéro…). Ce formulaire ne change pas au Sprint 2.5 : il ne
- * capture toujours qu'un titre libre, pas de chapitre (le catalogue est
- * vide) ni les nouveaux champs sans interface dédiée (priority, mastery, year).
+ * updated_at, statut initial, priority/mastery/year par défaut, compteurs à
+ * zéro…). `chapterId` (Sprint 3D) reste optionnel : aucun chapitre n'est
+ * imposé, l'utilisateur choisit "Sans chapitre" ou en crée un à la volée.
  */
 export interface NewExerciseInput {
   subject: Subject;
@@ -20,6 +21,7 @@ export interface NewExerciseInput {
   source: string;
   type: ExerciseType;
   difficulty: Difficulty;
+  chapterId: string | null;
   tags: string[];
   estimatedMinutes: number | null;
   note: string;
@@ -33,6 +35,7 @@ const emptyForm = {
   source: "",
   type: "TD" as ExerciseType,
   difficulty: 3,
+  chapterId: null as string | null,
   tags: "",
   estimatedMinutes: "",
   note: "",
@@ -40,7 +43,19 @@ const emptyForm = {
   correction: "",
 };
 
-export function ExerciseForm({ open, onSubmit, onCancel }: { open: boolean; onSubmit: (input: NewExerciseInput) => void; onCancel: () => void }) {
+export function ExerciseForm({
+  open,
+  chapters,
+  onSubmit,
+  onCancel,
+  onCreateChapter,
+}: {
+  open: boolean;
+  chapters: Chapter[];
+  onSubmit: (input: NewExerciseInput) => void;
+  onCancel: () => void;
+  onCreateChapter: (subject: Subject, label: string) => Chapter;
+}) {
   const [form, setForm] = useState(emptyForm);
 
   function handleSubmit(event: FormEvent) {
@@ -52,6 +67,7 @@ export function ExerciseForm({ open, onSubmit, onCancel }: { open: boolean; onSu
       source: form.source.trim(),
       type: form.type,
       difficulty: form.difficulty as Difficulty,
+      chapterId: form.chapterId,
       tags: form.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
       estimatedMinutes: form.estimatedMinutes.trim() ? Math.max(0, Number(form.estimatedMinutes)) : null,
       note: form.note.trim(),
@@ -73,7 +89,10 @@ export function ExerciseForm({ open, onSubmit, onCancel }: { open: boolean; onSu
         >
           <Input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Intitulé de l'exercice" />
           <Input required value={form.source} onChange={(event) => setForm({ ...form, source: event.target.value })} placeholder="Source (feuille, DM, livre…)" />
-          <Select value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value as Subject })}>
+          <Select
+            value={form.subject}
+            onChange={(event) => setForm({ ...form, subject: event.target.value as Subject, chapterId: null })}
+          >
             {subjects.map((value) => (
               <option key={value}>{value}</option>
             ))}
@@ -90,6 +109,16 @@ export function ExerciseForm({ open, onSubmit, onCancel }: { open: boolean; onSu
               </option>
             ))}
           </Select>
+          <label className="flex items-center gap-2 text-xs text-zinc-500 sm:col-span-2">
+            Chapitre
+            <ChapterPicker
+              subject={form.subject}
+              chapters={chapters}
+              value={form.chapterId}
+              onChange={(chapterId) => setForm({ ...form, chapterId })}
+              onCreateChapter={onCreateChapter}
+            />
+          </label>
           <Input
             type="number"
             min={0}
