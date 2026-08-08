@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
+  AlertCircle,
   ArrowRight,
   BookMarked,
   Clock3,
@@ -31,6 +32,7 @@ import {
 } from "@/lib/gamification";
 import { computeProgressBySubject, type SubjectProgress } from "@/lib/progress";
 import { completedExercises, dayKey, subjectMeta, totalSeconds } from "@/lib/study";
+import { computeWeeklySummary, type WeeklySummary } from "@/lib/week";
 import { formatDuration } from "@/lib/utils";
 
 /** Purement présentationnel — la progression par matière vient de lib/progress.ts (source unique, partagée avec la page Progression depuis le Sprint 3B). */
@@ -55,6 +57,29 @@ function SubjectProgressList({ progress }: { progress: SubjectProgress[] }) {
   );
 }
 
+/** Purement présentationnel — le temps par matière vient de lib/week.ts (source unique du bilan hebdomadaire). */
+function WeeklyBreakdown({ weekly }: { weekly: WeeklySummary }) {
+  const maxSeconds = Math.max(1, ...weekly.bySubject.map((entry) => entry.seconds));
+  return (
+    <div className="space-y-3">
+      {weekly.bySubject.map(({ subject, seconds }) => (
+        <div key={subject}>
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2">
+              <span className={`grid h-5 w-5 place-items-center rounded text-[9px] font-bold ${subjectMeta[subject].className}`}>
+                {subjectMeta[subject].short}
+              </span>
+              {subject}
+            </span>
+            <span className="text-zinc-500">{formatDuration(seconds)}</span>
+          </div>
+          <ProgressBar value={(seconds / maxSeconds) * 100} animated={false} className="mt-2 h-1.5" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function DashboardOverview() {
   const { sessions, exercises, preferences, ready } = usePrepahubData();
   const router = useRouter();
@@ -62,11 +87,9 @@ export function DashboardOverview() {
   const model = useMemo(() => {
     const now = new Date();
     const today = dayKey(now);
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
 
     const todaySeconds = totalSeconds(sessions.filter((s) => dayKey(s.started_at) === today));
-    const weekSeconds = totalSeconds(sessions.filter((s) => new Date(s.started_at) >= monday));
+    const weekly = computeWeeklySummary(exercises, sessions, preferences.dailyGoalMinutes, now);
     const workByDay = workByDayMap(sessions);
     const streak = computeStreak(sessions);
     const active = exercises.filter((e) => !e.archived);
@@ -88,7 +111,7 @@ export function DashboardOverview() {
 
     return {
       todaySeconds,
-      weekSeconds,
+      weekly,
       workByDay,
       streak,
       active,
@@ -165,7 +188,7 @@ export function DashboardOverview() {
       {/* Metrics */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Aujourd'hui" value={formatDuration(model.todaySeconds)} detail={`Objectif : ${formatDuration(preferences.dailyGoalMinutes * 60)}`} icon={Clock3} delay={0.05} />
-        <MetricCard label="Cette semaine" value={formatDuration(model.weekSeconds)} detail="Depuis lundi" icon={Target} delay={0.1} />
+        <MetricCard label="Cette semaine" value={formatDuration(model.weekly.totalSeconds)} detail="Depuis lundi" icon={Target} delay={0.1} />
         <MetricCard label="Série actuelle" value={`${model.streak} j`} detail="Jours consécutifs" icon={Flame} delay={0.15} />
         <MetricCard label="Concours" value={model.contest === null ? "—" : `${model.contest} j`} detail={model.contest === null ? "Ajoute une échéance" : "Avant l'échéance"} icon={Trophy} delay={0.2} />
       </section>
@@ -207,6 +230,41 @@ export function DashboardOverview() {
           <div className="mt-6 flex items-center gap-2 text-sm text-zinc-400">
             <BookMarked size={16} className="text-accent" /> Difficulté moyenne : {model.avgDifficulty}/5
           </div>
+        </Card>
+      </section>
+
+      {/* Bilan hebdomadaire (Sprint 3E) */}
+      <section>
+        <Card className="rounded-3xl p-6 sm:p-7">
+          <CardHeader>
+            <div>
+              <p className="eyebrow">Cette semaine</p>
+              <CardTitle className="mt-2 text-xl">Où est passé ton temps ?</CardTitle>
+            </div>
+            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">{model.weekly.progressPercent}%</span>
+          </CardHeader>
+          <CardContent className="mt-8 grid gap-8 lg:grid-cols-[.9fr_1.1fr]">
+            <div>
+              <p className="text-4xl font-semibold tracking-tight sm:text-5xl">
+                {formatDuration(model.weekly.totalSeconds)}{" "}
+                <span className="text-base font-normal text-zinc-500">/ {formatDuration(model.weekly.objectiveSeconds)}</span>
+              </p>
+              <p className="mt-1 text-sm text-zinc-500">Objectif hebdomadaire</p>
+              <ProgressBar value={model.weekly.progressPercent} className="mt-5" />
+
+              {model.weekly.neglected.length > 0 && (
+                <div className="mt-6 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-4 text-sm">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-300" />
+                  <p className="leading-6 text-zinc-300">
+                    <span className="font-semibold text-amber-200">{model.weekly.neglected.map((n) => n.subject).join(", ")}</span>{" "}
+                    {model.weekly.neglected.length > 1 ? "n'ont" : "n'a"} reçu aucun temps cette semaine, alors qu&apos;
+                    {model.weekly.neglected.length > 1 ? "elles ont" : "elle a"} encore des exercices non maîtrisés en attente.
+                  </p>
+                </div>
+              )}
+            </div>
+            <WeeklyBreakdown weekly={model.weekly} />
+          </CardContent>
         </Card>
       </section>
 
