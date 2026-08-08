@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { BarChart3, CheckCircle2, Clock3, Flame } from "lucide-react";
+import { BarChart3, CheckCircle2, Clock3, Flame, TrendingUp } from "lucide-react";
 import { MetricCard } from "@/components/ui/metric-card";
 import { Card, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress";
@@ -10,17 +10,98 @@ import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
 import { computeGlobalProgress, computeProgressBySubject, masteryDistribution, progressByChapter, statusDistribution } from "@/lib/progress";
+import type { WeekSnapshot } from "@/lib/storage";
 import { statusMeta, subjectMeta, totalSeconds } from "@/lib/study";
+import { compareToPreviousWeek, findPreviousWeekSnapshot } from "@/lib/week-snapshot";
 import { formatDuration } from "@/lib/utils";
+import type { Exercise, WorkSession } from "@/lib/supabase/types";
+
+/** `+8`, `-3` ou `±0` — convention unique de signe pour toutes les variations affichées dans "Évolution" (temps, exercices maîtrisés, points de progression). */
+function withSign(value: number, unit = ""): string {
+  if (value === 0) return `±0${unit}`;
+  return `${value > 0 ? "+" : ""}${value}${unit}`;
+}
+
+function withSignMinutes(seconds: number): string {
+  return withSign(Math.round(seconds / 60), " min");
+}
 
 /**
- * Page Progression (Sprint 3B, bloc "Par chapitre" ajouté au Sprint 3D) —
- * toute l'agrégation vient de lib/progress.ts (et lib/gamification.ts pour
- * la constance) : ce composant ne fait qu'assembler et afficher, aucun
- * calcul métier ici.
+ * Section "Évolution" (Sprint 5) — présentationnelle uniquement : toute la
+ * comparaison vient de `compareToPreviousWeek` (lib/week-snapshot.ts). Ne
+ * montre rien tant qu'aucune semaine précédente n'a été figée, plutôt que
+ * d'inventer une comparaison à partir de presque rien (même principe que
+ * lib/week.ts#neglectedSubjects).
+ */
+function WeekEvolution({ exercises, sessions, weekSnapshots }: { exercises: Exercise[]; sessions: WorkSession[]; weekSnapshots: WeekSnapshot[] }) {
+  const comparison = useMemo(() => {
+    const previous = findPreviousWeekSnapshot(weekSnapshots);
+    return previous ? compareToPreviousWeek(exercises, sessions, previous) : null;
+  }, [exercises, sessions, weekSnapshots]);
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-center gap-2">
+        <TrendingUp size={14} className="text-accent" />
+        <p className="eyebrow">Mémoire</p>
+      </div>
+      <CardTitle className="mt-2">Évolution</CardTitle>
+
+      {!comparison ? (
+        <p className="mt-4 text-sm text-zinc-500">TaekdHub commence à mesurer ta progression cette semaine.</p>
+      ) : (
+        <div className="mt-5 space-y-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-white/[0.06] p-3.5">
+              <p className="text-xs text-zinc-500">Temps travaillé</p>
+              <p className="mt-1.5 text-xl font-semibold tracking-tight">{formatDuration(comparison.currentTotalSeconds)}</p>
+              <p className="mt-0.5 text-xs text-zinc-500">{withSignMinutes(comparison.deltaTotalSeconds)} vs semaine précédente</p>
+            </div>
+            <div className="rounded-xl border border-white/[0.06] p-3.5">
+              <p className="text-xs text-zinc-500">Exercices maîtrisés</p>
+              <p className="mt-1.5 text-xl font-semibold tracking-tight">{comparison.currentMasteredCount}</p>
+              <p className="mt-0.5 text-xs text-zinc-500">{withSign(comparison.deltaMasteredCount)} vs semaine précédente</p>
+            </div>
+            <div className="rounded-xl border border-white/[0.06] p-3.5">
+              <p className="text-xs text-zinc-500">Progression globale</p>
+              <p className="mt-1.5 text-xl font-semibold tracking-tight">{comparison.currentCompletionRate}%</p>
+              <p className="mt-0.5 text-xs text-zinc-500">{withSign(comparison.deltaCompletionRate, " pt")} vs semaine précédente</p>
+            </div>
+          </div>
+
+          {(comparison.mostImprovedSubject || comparison.mostNeglectedSubject) && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {comparison.mostImprovedSubject && (
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-3.5 text-sm">
+                  <p className="text-xs text-zinc-500">A le plus progressé</p>
+                  <p className="mt-1 font-medium text-emerald-200">{comparison.mostImprovedSubject.subject}</p>
+                  <p className="mt-0.5 text-xs text-zinc-400">{withSign(comparison.mostImprovedSubject.deltaCompletionRate, " pt")} de maîtrise</p>
+                </div>
+              )}
+              {comparison.mostNeglectedSubject && (
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3.5 text-sm">
+                  <p className="text-xs text-zinc-500">La moins travaillée</p>
+                  <p className="mt-1 font-medium text-amber-200">{comparison.mostNeglectedSubject.subject}</p>
+                  <p className="mt-0.5 text-xs text-zinc-400">{formatDuration(comparison.mostNeglectedSubject.currentSeconds)} cette semaine</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+/**
+ * Page Progression (Sprint 3B, bloc "Par chapitre" ajouté au Sprint 3D,
+ * "Évolution" ajouté au Sprint 5) — toute l'agrégation vient de
+ * lib/progress.ts (et lib/gamification.ts pour la constance,
+ * lib/week-snapshot.ts pour l'évolution) : ce composant ne fait qu'assembler
+ * et afficher, aucun calcul métier ici.
  */
 export function ProgressOverview() {
-  const { sessions, exercises, chapters, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, weekSnapshots, ready } = usePrepahubData();
 
   const model = useMemo(() => {
     return {
@@ -59,6 +140,8 @@ export function ProgressOverview() {
         <MetricCard label="Progression globale" value={`${model.global.completionRate}%`} detail="Part maîtrisée" icon={BarChart3} delay={0.1} />
         <MetricCard label="Série actuelle" value={`${model.streak} j`} detail="Jours consécutifs" icon={Flame} delay={0.15} />
       </section>
+
+      <WeekEvolution exercises={exercises} sessions={sessions} weekSnapshots={weekSnapshots} />
 
       <section className="grid gap-5 xl:grid-cols-2">
         <Card className="p-6">

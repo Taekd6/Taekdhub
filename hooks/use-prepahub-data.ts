@@ -1,23 +1,45 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { localData, type Chapter, type Preferences } from "@/lib/storage";
+import { localData, type Chapter, type Preferences, type WeekSnapshot } from "@/lib/storage";
+import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 
 type DataState = {
   sessions: WorkSession[];
   exercises: Exercise[];
   chapters: Chapter[];
+  weekSnapshots: WeekSnapshot[];
   lastBackupAt: string | null;
   preferences: Preferences;
   ready: boolean;
 };
 
+/**
+ * Fige automatiquement la semaine précédente si elle ne l'est pas déjà
+ * (Sprint 5) — vérification idempotente : relit `weekSnapshots` à chaque
+ * appel et ne réagit que si `findMissingSnapshotWeekStart` la juge
+ * manquante, donc jamais de doublon même appelée à chaque montage/onglet.
+ */
+function ensureWeekSnapshot(exercises: Exercise[], sessions: WorkSession[], weekSnapshots: WeekSnapshot[]): WeekSnapshot[] {
+  const missingWeekStart = findMissingSnapshotWeekStart(exercises, sessions, weekSnapshots);
+  if (!missingWeekStart) return weekSnapshots;
+  const snapshot = captureWeekSnapshot(exercises, sessions, missingWeekStart);
+  const next = [...weekSnapshots, snapshot];
+  localData.saveWeekSnapshots(next);
+  return next;
+}
+
 function readAll(): Omit<DataState, "ready"> {
+  const exercises = localData.exercises();
+  const sessions = localData.sessions();
+  const weekSnapshots = ensureWeekSnapshot(exercises, sessions, localData.weekSnapshots());
+
   return {
-    sessions: localData.sessions(),
-    exercises: localData.exercises(),
+    sessions,
+    exercises,
     chapters: localData.chapters(),
+    weekSnapshots,
     lastBackupAt: localData.lastBackupAt(),
     preferences: localData.preferences(),
   };
@@ -28,6 +50,7 @@ export function usePrepahubData() {
     sessions: [],
     exercises: [],
     chapters: [],
+    weekSnapshots: [],
     lastBackupAt: null,
     preferences: localData.preferences(),
     ready: false,

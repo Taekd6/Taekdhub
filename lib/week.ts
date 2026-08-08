@@ -31,9 +31,29 @@ export function startOfWeek(reference: Date): Date {
   return start;
 }
 
+/** Bornes [début, fin) d'une semaine donnée par son lundi 00:00 — fin exclusive, toujours +7 jours. */
+export function weekBounds(weekStart: Date): { start: Date; end: Date } {
+  const end = new Date(weekStart);
+  end.setDate(end.getDate() + 7);
+  return { start: weekStart, end };
+}
+
+/**
+ * Séances dont `started_at` tombe dans une semaine donnée (bornes
+ * `weekBounds`) — généralisation de "cette semaine" à une semaine
+ * quelconque, notamment déjà écoulée (voir lib/week-snapshot.ts, qui fige
+ * l'état d'une semaine passée une fois qu'elle est terminée).
+ */
+export function sessionsInWeek(sessions: WorkSession[], weekStart: Date): WorkSession[] {
+  const { start, end } = weekBounds(weekStart);
+  return sessions.filter((session) => {
+    const startedAt = new Date(session.started_at);
+    return startedAt >= start && startedAt < end;
+  });
+}
+
 function sessionsThisWeek(sessions: WorkSession[], now: Date): WorkSession[] {
-  const monday = startOfWeek(now);
-  return sessions.filter((session) => new Date(session.started_at) >= monday);
+  return sessionsInWeek(sessions, startOfWeek(now));
 }
 
 export interface SubjectWeekTime {
@@ -41,13 +61,18 @@ export interface SubjectWeekTime {
   seconds: number;
 }
 
-/** Temps investi cette semaine, par matière, dans l'ordre de lib/study.ts#subjects. */
-export function weeklyTimeBySubject(sessions: WorkSession[], now: Date = new Date()): SubjectWeekTime[] {
-  const thisWeek = sessionsThisWeek(sessions, now);
+/** Temps investi durant une semaine donnée, par matière, dans l'ordre de lib/study.ts#subjects. */
+export function timeBySubjectInWeek(sessions: WorkSession[], weekStart: Date): SubjectWeekTime[] {
+  const weekSessions = sessionsInWeek(sessions, weekStart);
   return subjects.map((subject) => ({
     subject,
-    seconds: totalSeconds(thisWeek.filter((session) => session.subject === subject)),
+    seconds: totalSeconds(weekSessions.filter((session) => session.subject === subject)),
   }));
+}
+
+/** Temps investi cette semaine, par matière, dans l'ordre de lib/study.ts#subjects. */
+export function weeklyTimeBySubject(sessions: WorkSession[], now: Date = new Date()): SubjectWeekTime[] {
+  return timeBySubjectInWeek(sessions, startOfWeek(now));
 }
 
 export interface NeglectedSubject {

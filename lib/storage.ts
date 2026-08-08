@@ -6,6 +6,7 @@ const exercisesKey = "prepahub:exercises";
 const preferencesKey = "prepahub:preferences";
 const chaptersKey = "prepahub:chapters";
 const lastBackupKey = "prepahub:last-backup";
+const weekSnapshotsKey = "prepahub:week-snapshots";
 
 export type Preferences = { displayName: string; dailyGoalMinutes: number; contestDate: string };
 const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, contestDate: "" };
@@ -16,6 +17,46 @@ const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, contestD
  * `Preferences`, ce concept n'existe qu'en local pour l'instant.
  */
 export type Chapter = { id: string; subject: Subject; label: string };
+
+/** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
+export interface WeekSnapshotSubjectTime {
+  subject: Subject;
+  seconds: number;
+}
+
+/** Progression d'une matière au moment où la semaine a été figée — mêmes champs que `SubjectProgress` (lib/progress.ts), dupliqués ici en valeur (pas en référence) pour que le snapshot reste correct même si les règles de calcul évoluent plus tard. */
+export interface WeekSnapshotSubjectProgress {
+  subject: Subject;
+  total: number;
+  mastered: number;
+  completionRate: number;
+}
+
+/**
+ * Instantané figé d'une semaine ÉCOULÉE (Sprint 5) — la mémoire hebdomadaire
+ * de la progression. Créé une seule fois par semaine, jamais modifié ni
+ * dupliqué ensuite (voir lib/week-snapshot.ts#findMissingSnapshotWeekStart).
+ *
+ * `weekStart` (lundi 00:00 ISO, voir lib/week.ts#startOfWeek) sert
+ * d'identifiant unique — c'est la clé de dédoublonnage.
+ *
+ * Approximation assumée : `activeCount`/`masteredCount`/`completionRate`/
+ * `bySubjectProgress` reflètent l'état de la banque au moment de la capture
+ * (`capturedAt`), pas exactement à minuit le dimanche soir — la maîtrise
+ * n'étant pas elle-même historisée, c'est la meilleure donnée honnête
+ * disponible sans l'inventer.
+ */
+export interface WeekSnapshot {
+  weekStart: string;
+  /** Horodatage ISO de la capture réelle — peut être postérieur de quelques jours à la fin de la semaine si l'app n'a pas été ouverte au bon moment. */
+  capturedAt: string;
+  totalSeconds: number;
+  bySubject: WeekSnapshotSubjectTime[];
+  activeCount: number;
+  masteredCount: number;
+  completionRate: number;
+  bySubjectProgress: WeekSnapshotSubjectProgress[];
+}
 
 /**
  * Valeurs par défaut pour les champs Sprint 2.5 — proposées, à ajuster si
@@ -146,6 +187,41 @@ function normalizeChapter(raw: unknown): Chapter | null {
   return { id: item.id, subject: migrateSubject(item.subject), label: item.label };
 }
 
+function isNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function normalizeWeekSnapshotSubjectTime(raw: unknown): WeekSnapshotSubjectTime | null {
+  const item = isRecord(raw) ? raw : {};
+  if (typeof item.subject !== "string" || !isNumber(item.seconds)) return null;
+  return { subject: migrateSubject(item.subject), seconds: item.seconds };
+}
+
+function normalizeWeekSnapshotSubjectProgress(raw: unknown): WeekSnapshotSubjectProgress | null {
+  const item = isRecord(raw) ? raw : {};
+  if (typeof item.subject !== "string" || !isNumber(item.total) || !isNumber(item.mastered) || !isNumber(item.completionRate)) return null;
+  return { subject: migrateSubject(item.subject), total: item.total, mastered: item.mastered, completionRate: item.completionRate };
+}
+
+/** Ramène un snapshot hebdomadaire potentiellement corrompu vers une forme valide, ou l'écarte — entièrement généré par l'app (jamais saisi ni importé), donc peu de cas réels à couvrir. */
+function normalizeWeekSnapshot(raw: unknown): WeekSnapshot | null {
+  const item = isRecord(raw) ? raw : {};
+  if (typeof item.weekStart !== "string" || typeof item.capturedAt !== "string") return null;
+  if (!isNumber(item.totalSeconds) || !isNumber(item.activeCount) || !isNumber(item.masteredCount) || !isNumber(item.completionRate)) return null;
+  return {
+    weekStart: item.weekStart,
+    capturedAt: item.capturedAt,
+    totalSeconds: item.totalSeconds,
+    bySubject: Array.isArray(item.bySubject) ? item.bySubject.map(normalizeWeekSnapshotSubjectTime).filter((entry): entry is WeekSnapshotSubjectTime => entry !== null) : [],
+    activeCount: item.activeCount,
+    masteredCount: item.masteredCount,
+    completionRate: item.completionRate,
+    bySubjectProgress: Array.isArray(item.bySubjectProgress)
+      ? item.bySubjectProgress.map(normalizeWeekSnapshotSubjectProgress).filter((entry): entry is WeekSnapshotSubjectProgress => entry !== null)
+      : [],
+  };
+}
+
 export const localData = {
   sessions: (): WorkSession[] =>
     typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(sessionsKey) || "[]") as unknown[]).map(normalizeSession),
@@ -163,6 +239,11 @@ export const localData = {
   /** Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`), ou `null` si aucune n'a jamais été faite. */
   lastBackupAt: (): string | null => (typeof window === "undefined" ? null : localStorage.getItem(lastBackupKey)),
   saveLastBackupAt: (iso: string) => localStorage.setItem(lastBackupKey, iso),
+  weekSnapshots: (): WeekSnapshot[] =>
+    typeof window === "undefined"
+      ? []
+      : (JSON.parse(localStorage.getItem(weekSnapshotsKey) || "[]") as unknown[]).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
+  saveWeekSnapshots: (items: WeekSnapshot[]) => localStorage.setItem(weekSnapshotsKey, JSON.stringify(items)),
 };
 
 /** Rappel de sauvegarde (finalisation V1) : au-delà de ce nombre de jours sans export, la sauvegarde est considérée périmée. */
