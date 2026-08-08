@@ -2,26 +2,35 @@
 
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, PlayCircle, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
-import { recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { todaySeconds } from "@/lib/study";
+import { secondsToWholeMinutes } from "@/lib/utils";
 import type { Exercise } from "@/lib/supabase/types";
 
 type Phase = "loading" | "empty" | "preview" | "focus" | "between" | "summary";
 
+/** Préréglages de temps disponible (Sprint 4) — un point de départ rapide, le champ à côté reste éditable pour toute autre valeur. */
+const BUDGET_PRESETS = [15, 30, 45, 60];
+
 /**
- * Séance de travail intelligente (Sprint 3C).
+ * Séance de travail intelligente (Sprint 3C, bornée par le temps depuis le
+ * Sprint 4).
  *
  * `recommendExercises` (lib/recommendation.ts) est l'UNIQUE moteur de
  * sélection — ce composant ne fait qu'orchestrer l'affichage d'une file
  * d'exercices déjà classés, un par un, via `FocusView` réutilisé sans
- * aucune modification.
+ * aucune modification. Le budget de temps choisi dans l'aperçu (`budgetMinutes`)
+ * est transmis tel quel à `recommendExercises` — aucune règle de sélection
+ * n'est dupliquée ici.
  *
  * IMPORTANT (précision produit) : quitter le Focus signifie "exercice
  * travaillé", jamais "exercice réussi". Le statut et la maîtrise ne
@@ -30,33 +39,56 @@ type Phase = "loading" | "empty" | "preview" | "focus" | "between" | "summary";
  * ce composant ne les touche jamais lui-même.
  */
 export function SessionRunner() {
-  const { exercises, sessions, saveSessions, saveExercises, ready } = usePrepahubData();
+  const { exercises, sessions, preferences, saveSessions, saveExercises, ready } = usePrepahubData();
   const [phase, setPhase] = useState<Phase>("loading");
   const [recommendations, setRecommendations] = useState<ExerciseRecommendation[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visitedCount, setVisitedCount] = useState(0);
+  /** Temps disponible pour la séance à venir, en minutes — initialisé à l'objectif du jour restant, ajustable via les préréglages ou le champ libre. */
+  const [budgetMinutes, setBudgetMinutes] = useState(0);
   const initialized = useRef(false);
 
-  // Calcule la sélection une seule fois au montage — soit une reprise d'un
-  // focus interrompu (même mécanisme que exercise-manager.tsx), soit une
-  // nouvelle sélection fraîche via recommendExercises.
+  // Décide une seule fois, au montage, entre reprendre un focus interrompu
+  // (même mécanisme que exercise-manager.tsx) et proposer un nouvel aperçu de
+  // séance — la sélection définitive n'est calculée qu'au clic sur "Commencer
+  // ma séance" (voir startSession), une fois le budget choisi.
   useEffect(() => {
     if (!ready || initialized.current) return;
     initialized.current = true;
 
     const pendingId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX);
     const pending = pendingId ? exercises.find((item) => item.id === pendingId && !item.archived) : undefined;
-    const base = recommendExercises(exercises, sessions);
 
     if (pending) {
-      const rest = base.filter((item) => item.exercise.id !== pending.id);
+      const rest = recommendExercises(exercises, sessions).filter((item) => item.exercise.id !== pending.id);
       setRecommendations([{ exercise: pending, score: 0, reasons: ["Séance reprise"] }, ...rest]);
       setPhase("focus");
-    } else {
-      setRecommendations(base);
-      setPhase(base.length ? "preview" : "empty");
+      return;
     }
-  }, [ready, exercises, sessions]);
+
+    const hasAnyEligible = computeExerciseBankStats(exercises, sessions).toReviewCount > 0;
+    if (!hasAnyEligible) {
+      setPhase("empty");
+      return;
+    }
+
+    const remainingToday = Math.max(0, preferences.dailyGoalMinutes - secondsToWholeMinutes(todaySeconds(sessions)));
+    setBudgetMinutes(remainingToday);
+    setPhase("preview");
+  }, [ready, exercises, sessions, preferences.dailyGoalMinutes]);
+
+  // Aperçu recalculé en direct à chaque changement de budget — c'est la même
+  // fonction `recommendExercises` qui produira la sélection réelle au clic
+  // sur "Commencer ma séance" (voir startSession), donc l'aperçu ne ment
+  // jamais sur ce qui sera effectivement proposé.
+  const previewSelection = useMemo(
+    () => recommendExercises(exercises, sessions, 6, { availableMinutes: budgetMinutes }),
+    [exercises, sessions, budgetMinutes]
+  );
+  const previewMinutesUsed = useMemo(
+    () => previewSelection.reduce((sum, { exercise }) => sum + estimatedDurationMinutes(exercise, sessions), 0),
+    [previewSelection, sessions]
+  );
 
   // Même pattern que exercise-manager.tsx#update, sans l'optimisation par
   // ref : une seule fiche est affichée à la fois ici, pas une grille de
@@ -71,7 +103,14 @@ export function SessionRunner() {
 
   const hasNext = currentIndex + 1 < recommendations.length;
 
-  const startSession = useCallback(() => setPhase("focus"), []);
+  // Fige la sélection au moment du clic — l'aperçu peut continuer de changer
+  // avant ça (ajustement du budget), la séance elle-même reste stable une
+  // fois lancée, comme avant le Sprint 4.
+  const startSession = useCallback(() => {
+    setRecommendations(previewSelection);
+    setCurrentIndex(0);
+    setPhase("focus");
+  }, [previewSelection]);
 
   // Passé à FocusView en tant que `onClose` : FocusView a déjà proprement
   // arrêté le timer et sauvegardé la WorkSession avant d'appeler ceci (voir
@@ -123,33 +162,75 @@ export function SessionRunner() {
       <div className="space-y-5">
         <Card className="p-8 text-center">
           <PlayCircle className="mx-auto text-accent" size={28} />
-          <h2 className="mt-4 text-xl font-semibold tracking-tight">Ta séance est prête</h2>
+          <h2 className="mt-4 text-xl font-semibold tracking-tight">Combien de temps as-tu devant toi ?</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
-            {recommendations.length} exercice{recommendations.length > 1 ? "s" : ""} sélectionné{recommendations.length > 1 ? "s" : ""} à partir de ta
-            maîtrise, ta priorité et ton activité récente.
+            La séance tient dans ce temps — aucun exercice trop long n&apos;est jamais forcé dedans.
           </p>
-          <Button size="lg" className="mt-6" onClick={startSession}>
+
+          <div className="mx-auto mt-6 flex max-w-sm flex-wrap items-center justify-center gap-2">
+            {BUDGET_PRESETS.map((preset) => (
+              <Button
+                key={preset}
+                type="button"
+                size="sm"
+                variant={budgetMinutes === preset ? "primary" : "secondary"}
+                onClick={() => setBudgetMinutes(preset)}
+              >
+                {preset} min
+              </Button>
+            ))}
+            <div className="flex items-center gap-1.5">
+              <Input
+                type="number"
+                min={0}
+                step={5}
+                value={budgetMinutes}
+                onChange={(event) => setBudgetMinutes(Math.max(0, Math.round(Number(event.target.value) || 0)))}
+                className="w-20 text-center"
+                aria-label="Temps disponible, en minutes"
+              />
+              <span className="text-xs text-zinc-500">min</span>
+            </div>
+          </div>
+
+          {previewSelection.length > 0 ? (
+            <p className="mx-auto mt-5 max-w-md text-sm text-zinc-400">
+              {previewSelection.length} exercice{previewSelection.length > 1 ? "s" : ""} sélectionné{previewSelection.length > 1 ? "s" : ""} — environ{" "}
+              {previewMinutesUsed} min sur {budgetMinutes} min disponibles.
+            </p>
+          ) : (
+            <p className="mx-auto mt-5 max-w-md text-sm text-amber-300">
+              {budgetMinutes === 0
+                ? "Objectif du jour déjà atteint — choisis un temps si tu veux continuer."
+                : "Aucun exercice ne tient dans ce créneau. Augmente le temps disponible, ou choisis-en un directement dans la banque."}
+            </p>
+          )}
+
+          <Button size="lg" className="mt-6" onClick={startSession} disabled={previewSelection.length === 0}>
             Commencer ma séance <ArrowRight size={16} />
           </Button>
         </Card>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          {recommendations.map(({ exercise, reasons }) => (
-            <div key={exercise.id} className="flex items-start gap-3 rounded-xl border border-white/[0.06] p-3 text-sm">
-              <SubjectAvatar subject={exercise.subject} size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {reasons.map((reason) => (
-                    <Badge key={reason} variant="warning">
-                      {reason}
-                    </Badge>
-                  ))}
+        {previewSelection.length > 0 && (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {previewSelection.map(({ exercise, reasons }) => (
+              <div key={exercise.id} className="flex items-start gap-3 rounded-xl border border-white/[0.06] p-3 text-sm">
+                <SubjectAvatar subject={exercise.subject} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <Badge variant="accent">≈ {estimatedDurationMinutes(exercise, sessions)} min</Badge>
+                    {reasons.map((reason) => (
+                      <Badge key={reason} variant="warning">
+                        {reason}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }

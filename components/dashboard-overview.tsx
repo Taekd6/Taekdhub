@@ -32,7 +32,7 @@ import {
   xpProgressInLevel,
 } from "@/lib/gamification";
 import { computeProgressBySubject, type SubjectProgress } from "@/lib/progress";
-import { completedExercises, dayKey, subjectMeta, totalSeconds } from "@/lib/study";
+import { completedExercises, subjectMeta, todaySeconds } from "@/lib/study";
 import { computeWeeklySummary, type SubjectWeekTime } from "@/lib/week";
 import { formatDuration } from "@/lib/utils";
 
@@ -75,9 +75,8 @@ export function DashboardOverview() {
 
   const model = useMemo(() => {
     const now = new Date();
-    const today = dayKey(now);
 
-    const todaySeconds = totalSeconds(sessions.filter((s) => dayKey(s.started_at) === today));
+    const todaySecondsValue = todaySeconds(sessions, now);
     const weekly = computeWeeklySummary(exercises, sessions, preferences.dailyGoalMinutes, now);
     const workByDay = workByDayMap(sessions);
     const streak = computeStreak(sessions);
@@ -90,7 +89,7 @@ export function DashboardOverview() {
     const xp = totalXp(exercises, sessions);
     const level = levelFromXp(xp);
     const xpProgress = xpProgressInLevel(xp);
-    const objective = Math.min(100, Math.round((todaySeconds / (preferences.dailyGoalMinutes * 60)) * 100));
+    const objective = Math.min(100, Math.round((todaySecondsValue / (preferences.dailyGoalMinutes * 60)) * 100));
     const avgDifficulty = active.length
       ? (active.reduce((sum, item) => sum + item.difficulty, 0) / active.length).toFixed(1)
       : "—";
@@ -99,7 +98,7 @@ export function DashboardOverview() {
       .slice(0, 4);
 
     return {
-      todaySeconds,
+      todaySeconds: todaySecondsValue,
       weekly,
       workByDay,
       streak,

@@ -30,6 +30,12 @@ export function dayKey(value: string | Date) { return new Date(value).toLocaleDa
 export function completedExercises(exercises: Exercise[]) { return exercises.filter((exercise) => exercise.status === "maîtrisé" && !exercise.archived); }
 export function totalSeconds(sessions: WorkSession[]) { return sessions.reduce((total, session) => total + session.duration_seconds, 0); }
 
+/** Temps déjà investi aujourd'hui (toutes matières confondues), en secondes — source unique, réutilisée par le Dashboard et par la séance bornée par le temps (lib/recommendation.ts côté appelant). */
+export function todaySeconds(sessions: WorkSession[], now: Date = new Date()): number {
+  const today = dayKey(now);
+  return totalSeconds(sessions.filter((session) => dayKey(session.started_at) === today));
+}
+
 /**
  * Temps réellement passé par exercice, en MINUTES — dérivé des `WorkSession`
  * liées par `exercise_id` (Sprint 2.6, seule source de vérité). Calculé en
