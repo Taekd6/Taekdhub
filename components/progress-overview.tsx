@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { BarChart3, CheckCircle2, Clock3, Flame, TrendingUp } from "lucide-react";
+import { BarChart3, CheckCircle2, Clock3, Flame, GraduationCap, TrendingUp } from "lucide-react";
 import { MetricCard } from "@/components/ui/metric-card";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress";
 import { Heatmap } from "@/components/heatmap";
@@ -10,6 +11,7 @@ import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
 import { computeGlobalProgress, computeProgressBySubject, masteryDistribution, progressByChapter, statusDistribution } from "@/lib/progress";
+import { computeReadinessBySubject, type ReadinessLevel } from "@/lib/readiness";
 import type { WeekSnapshot } from "@/lib/storage";
 import { statusMeta, subjectMeta, totalSeconds } from "@/lib/study";
 import { compareToPreviousWeek, findPreviousWeekSnapshot } from "@/lib/week-snapshot";
@@ -93,12 +95,60 @@ function WeekEvolution({ exercises, sessions, weekSnapshots }: { exercises: Exer
   );
 }
 
+const READINESS_META: Record<ReadinessLevel, { label: string; badge: "success" | "warning" | "default"; border: string; bg: string }> = {
+  "prêt": { label: "Prêt", badge: "success", border: "border-emerald-500/20", bg: "bg-emerald-500/[0.06]" },
+  "à consolider": { label: "À consolider", badge: "warning", border: "border-amber-500/20", bg: "bg-amber-500/[0.06]" },
+  "pas prêt": { label: "Pas prêt", badge: "default", border: "border-rose-500/20", bg: "bg-rose-500/[0.06]" },
+};
+
+/**
+ * Section "Prêt pour le DS ?" (Sprint 6) — présentationnelle uniquement :
+ * tout vient de `computeReadinessBySubject` (lib/readiness.ts), qui n'est
+ * lui-même qu'un regroupement par matière de `recommendExercises`
+ * (lib/recommendation.ts, seule source de vérité pour "quoi travailler").
+ */
+function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions: WorkSession[] }) {
+  const readiness = useMemo(() => computeReadinessBySubject(exercises, sessions), [exercises, sessions]);
+
+  if (readiness.length === 0) return null;
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-center gap-2">
+        <GraduationCap size={14} className="text-accent" />
+        <p className="eyebrow">Échéances</p>
+      </div>
+      <CardTitle className="mt-2">Prêt pour le DS ?</CardTitle>
+      <p className="mt-1 text-xs text-zinc-500">Par matière, à partir de ce que le moteur de recommandation signale déjà.</p>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {readiness.map(({ subject, completionRate, flaggedCount, level }) => {
+          const meta = READINESS_META[level];
+          return (
+            <div key={subject} className={`rounded-xl border ${meta.border} ${meta.bg} p-3.5`}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium text-zinc-100">{subject}</p>
+                <Badge variant={meta.badge}>{meta.label}</Badge>
+              </div>
+              <p className="mt-2 text-xs text-zinc-400">
+                {completionRate}% maîtrisé
+                {flaggedCount > 0 && ` · ${flaggedCount} exercice${flaggedCount > 1 ? "s" : ""} à retravailler`}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
 /**
  * Page Progression (Sprint 3B, bloc "Par chapitre" ajouté au Sprint 3D,
- * "Évolution" ajouté au Sprint 5) — toute l'agrégation vient de
- * lib/progress.ts (et lib/gamification.ts pour la constance,
- * lib/week-snapshot.ts pour l'évolution) : ce composant ne fait qu'assembler
- * et afficher, aucun calcul métier ici.
+ * "Évolution" ajouté au Sprint 5, "Prêt pour le DS ?" ajouté au Sprint 6) —
+ * toute l'agrégation vient de lib/progress.ts (et lib/gamification.ts pour
+ * la constance, lib/week-snapshot.ts pour l'évolution, lib/readiness.ts
+ * pour la préparation aux DS) : ce composant ne fait qu'assembler et
+ * afficher, aucun calcul métier ici.
  */
 export function ProgressOverview() {
   const { sessions, exercises, chapters, weekSnapshots, ready } = usePrepahubData();
@@ -142,6 +192,7 @@ export function ProgressOverview() {
       </section>
 
       <WeekEvolution exercises={exercises} sessions={sessions} weekSnapshots={weekSnapshots} />
+      <DsReadiness exercises={exercises} sessions={sessions} />
 
       <section className="grid gap-5 xl:grid-cols-2">
         <Card className="p-6">
