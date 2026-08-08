@@ -5,6 +5,7 @@ const sessionsKey = "prepahub:sessions";
 const exercisesKey = "prepahub:exercises";
 const preferencesKey = "prepahub:preferences";
 const chaptersKey = "prepahub:chapters";
+const lastBackupKey = "prepahub:last-backup";
 
 export type Preferences = { displayName: string; dailyGoalMinutes: number; contestDate: string };
 const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, contestDate: "" };
@@ -159,7 +160,46 @@ export const localData = {
   saveChapters: (items: Chapter[]) => localStorage.setItem(chaptersKey, JSON.stringify(items)),
   preferences: (): Preferences => (typeof window === "undefined" ? defaults : { ...defaults, ...JSON.parse(localStorage.getItem(preferencesKey) || "{}") }),
   savePreferences: (preferences: Preferences) => localStorage.setItem(preferencesKey, JSON.stringify(preferences)),
+  /** Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`), ou `null` si aucune n'a jamais été faite. */
+  lastBackupAt: (): string | null => (typeof window === "undefined" ? null : localStorage.getItem(lastBackupKey)),
+  saveLastBackupAt: (iso: string) => localStorage.setItem(lastBackupKey, iso),
 };
+
+/** Rappel de sauvegarde (finalisation V1) : au-delà de ce nombre de jours sans export, la sauvegarde est considérée périmée. */
+export const BACKUP_REMINDER_DAYS = 14;
+
+/** Jours écoulés depuis la dernière sauvegarde, ou `null` si aucune n'a jamais été faite (distinct de 0, qui signifie "aujourd'hui"). */
+export function daysSinceBackup(lastBackupAt: string | null, now: Date = new Date()): number | null {
+  if (!lastBackupAt) return null;
+  return Math.floor((now.getTime() - new Date(lastBackupAt).getTime()) / 86400000);
+}
+
+/**
+ * Point d'export unique (finalisation V1) — réutilisé par Réglages (bouton
+ * "Exporter") et par le rappel de sauvegarde du Dashboard, pour ne jamais
+ * dupliquer le mécanisme de sauvegarde. Enregistre l'horodatage à chaque
+ * export réussi, seule donnée nouvelle introduite par le rappel.
+ */
+export function exportBackup(): void {
+  const data = JSON.stringify(
+    {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      exercises: localData.exercises(),
+      sessions: localData.sessions(),
+      preferences: localData.preferences(),
+    },
+    null,
+    2
+  );
+  const url = URL.createObjectURL(new Blob([data], { type: "application/json" }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `taekdhub-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+  localData.saveLastBackupAt(new Date().toISOString());
+}
 
 /** Forme d'un fichier de sauvegarde exporté par components/data-backup.tsx. */
 export interface BackupPayload {

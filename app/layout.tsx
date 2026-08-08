@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Prepahub — Ton système de travail en prépa",
+  title: "TaekdHub — Ton système de travail en prépa",
   description: "Pilote ton travail, consolide tes acquis et avance avec précision.",
 };
 

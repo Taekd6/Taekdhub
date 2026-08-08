@@ -78,7 +78,7 @@ export function AppSidebar() {
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-black shadow-glow">
             <Sparkles size={16} />
           </span>
-          Prepahub
+          TaekdHub
         </Link>
 
         <nav className="space-y-1">

@@ -16,6 +16,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useMemo } from "react";
+import { BackupReminder } from "@/components/backup-reminder";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/metric-card";
@@ -127,6 +128,8 @@ export function DashboardOverview() {
 
   return (
     <div className="space-y-7">
+      <BackupReminder />
+
       {/* Hero */}
       <motion.section
         initial={{ opacity: 0, y: 16 }}

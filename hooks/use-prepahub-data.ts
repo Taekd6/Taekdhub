@@ -8,6 +8,7 @@ type DataState = {
   sessions: WorkSession[];
   exercises: Exercise[];
   chapters: Chapter[];
+  lastBackupAt: string | null;
   preferences: Preferences;
   ready: boolean;
 };
@@ -17,12 +18,20 @@ function readAll(): Omit<DataState, "ready"> {
     sessions: localData.sessions(),
     exercises: localData.exercises(),
     chapters: localData.chapters(),
+    lastBackupAt: localData.lastBackupAt(),
     preferences: localData.preferences(),
   };
 }
 
 export function usePrepahubData() {
-  const [data, setData] = useState<DataState>({ sessions: [], exercises: [], chapters: [], preferences: localData.preferences(), ready: false });
+  const [data, setData] = useState<DataState>({
+    sessions: [],
+    exercises: [],
+    chapters: [],
+    lastBackupAt: null,
+    preferences: localData.preferences(),
+    ready: false,
+  });
 
   const refresh = useCallback(() => {
     setData({ ...readAll(), ready: true });

@@ -18,7 +18,7 @@ export default function Home() {
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-black shadow-glow">
               <Sparkles size={16} />
             </span>
-            <p className="eyebrow text-accent">Prepahub</p>
+            <p className="eyebrow text-accent">TaekdHub</p>
           </div>
           <h1 className="mt-6 max-w-3xl text-5xl font-semibold tracking-tight md:text-7xl">
             Chaque heure <span className="text-gradient">compte.</span>

@@ -5,31 +5,18 @@ import { AlertTriangle, Download, Upload } from "lucide-react";
 import { ChangeEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { localData, validateBackupPayload, type BackupPayload } from "@/lib/storage";
+import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { exportBackup, localData, validateBackupPayload, type BackupPayload } from "@/lib/storage";
 
 export function DataBackup() {
+  const { refresh } = usePrepahubData();
   const input = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
   const [pendingImport, setPendingImport] = useState<BackupPayload | null>(null);
 
   function exportData() {
-    const data = JSON.stringify(
-      {
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        exercises: localData.exercises(),
-        sessions: localData.sessions(),
-        preferences: localData.preferences(),
-      },
-      null,
-      2
-    );
-    const url = URL.createObjectURL(new Blob([data], { type: "application/json" }));
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `prepahub-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    exportBackup();
+    refresh();
     setMessage("Sauvegarde téléchargée.");
   }
 
@@ -47,7 +34,7 @@ export function DataBackup() {
         setPendingImport(data);
       } catch {
         setPendingImport(null);
-        setMessage("Ce fichier n'est pas une sauvegarde Prepahub valide.");
+        setMessage("Ce fichier n'est pas une sauvegarde TaekdHub valide.");
       }
     };
     reader.readAsText(file);
