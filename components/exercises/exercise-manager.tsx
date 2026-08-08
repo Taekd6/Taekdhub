@@ -309,6 +309,7 @@ export function ExerciseManager() {
               selected={selectedId === item.id}
               minutesSpent={minutesMap.get(item.id) ?? 0}
               chapters={chapters}
+              sessions={sessions}
               onToggle={toggleSelected}
               onUpdate={update}
               onFocus={enterFocus}
@@ -324,6 +325,7 @@ export function ExerciseManager() {
               selected={selectedId === item.id}
               minutesSpent={minutesMap.get(item.id) ?? 0}
               chapters={chapters}
+              sessions={sessions}
               onToggle={toggleSelected}
               onUpdate={update}
               onFocus={enterFocus}

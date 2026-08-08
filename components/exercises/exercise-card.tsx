@@ -10,7 +10,7 @@ import { MasteryBar, PriorityBadge, SubjectAvatar, StatusSelect } from "@/compon
 import { ExerciseDetail } from "@/components/exercises/exercise-detail";
 import { cn } from "@/lib/cn";
 import type { Chapter } from "@/lib/storage";
-import type { Exercise, ExerciseStatus, Subject } from "@/lib/supabase/types";
+import type { Exercise, ExerciseStatus, Subject, WorkSession } from "@/lib/supabase/types";
 
 interface ExerciseCardProps {
   item: Exercise;
@@ -19,6 +19,8 @@ interface ExerciseCardProps {
   /** Temps réellement passé sur cet exercice, en minutes — dérivé des WorkSession liées (voir lib/study.ts). */
   minutesSpent: number;
   chapters: Chapter[];
+  /** Pour la section "Séances" de ExerciseDetail (Sprint 3F) — non utilisé ici directement, simple passage. */
+  sessions: WorkSession[];
   /** Callbacks stables (identité constante) fournis par le manager — condition pour que React.memo évite les re-renders inutiles sur une banque de centaines d'exercices. */
   onToggle: (id: string) => void;
   onUpdate: (id: string, patch: Partial<Exercise>) => void;
@@ -35,6 +37,7 @@ function ExerciseCardImpl({
   selected,
   minutesSpent,
   chapters,
+  sessions,
   onToggle,
   onUpdate,
   onFocus,
@@ -96,6 +99,7 @@ function ExerciseCardImpl({
               update={onUpdate}
               minutesSpent={minutesSpent}
               chapters={chapters}
+              sessions={sessions}
               onCreateChapter={onCreateChapter}
               onRenameChapter={onRenameChapter}
               onRemoveChapter={onRemoveChapter}

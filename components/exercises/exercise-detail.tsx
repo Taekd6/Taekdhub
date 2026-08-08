@@ -6,14 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { ChapterPicker } from "@/components/exercises/chapter-picker";
 import { MasteryPicker, PriorityPicker } from "@/components/exercises/exercise-badges";
+import { SessionRow } from "@/components/history/session-row";
+import { sessionsForExercise } from "@/lib/history";
 import type { Chapter } from "@/lib/storage";
-import type { Exercise, Mastery, Priority, Subject } from "@/lib/supabase/types";
+import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
 
 export function ExerciseDetail({
   item,
   update,
   minutesSpent,
   chapters,
+  sessions,
   onCreateChapter,
   onRenameChapter,
   onRemoveChapter,
@@ -23,6 +26,8 @@ export function ExerciseDetail({
   /** Temps réellement passé sur cet exercice, en minutes — dérivé des WorkSession liées (voir lib/study.ts). */
   minutesSpent: number;
   chapters: Chapter[];
+  /** Pour la section "Séances" (Sprint 3F, lien exercice → historique) — voir lib/history.ts#sessionsForExercise. */
+  sessions: WorkSession[];
   onCreateChapter: (subject: Subject, label: string) => Chapter;
   onRenameChapter: (id: string, label: string) => void;
   onRemoveChapter: (id: string) => void;
@@ -34,6 +39,7 @@ export function ExerciseDetail({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const currentChapter = chapters.find((chapter) => chapter.id === item.chapter_id) ?? null;
+  const pastSessions = sessionsForExercise(sessions, item.id);
 
   return (
     <div className="grid gap-5 bg-black/10 p-5 md:grid-cols-2">
@@ -186,6 +192,19 @@ export function ExerciseDetail({
               </p>
             )}
           </div>
+        )}
+      </div>
+
+      <div className="md:col-span-2">
+        <p className="eyebrow">Séances</p>
+        {pastSessions.length ? (
+          <div className="mt-3 space-y-2">
+            {pastSessions.map((session) => (
+              <SessionRow key={session.id} session={session} chapterLabel={currentChapter?.label} />
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-zinc-500">Aucune séance enregistrée sur cet exercice pour l&apos;instant.</p>
         )}
       </div>
     </div>

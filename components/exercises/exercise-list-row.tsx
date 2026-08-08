@@ -10,13 +10,15 @@ import { MasteryBar, PriorityBadge, SubjectAvatar, StatusSelect } from "@/compon
 import { ExerciseDetail } from "@/components/exercises/exercise-detail";
 import { cn } from "@/lib/cn";
 import type { Chapter } from "@/lib/storage";
-import type { Exercise, ExerciseStatus, Subject } from "@/lib/supabase/types";
+import type { Exercise, ExerciseStatus, Subject, WorkSession } from "@/lib/supabase/types";
 
 interface ExerciseListRowProps {
   item: Exercise;
   selected: boolean;
   minutesSpent: number;
   chapters: Chapter[];
+  /** Pour la section "Séances" de ExerciseDetail (Sprint 3F) — non utilisé ici directement, simple passage. */
+  sessions: WorkSession[];
   onToggle: (id: string) => void;
   onUpdate: (id: string, patch: Partial<Exercise>) => void;
   onFocus: (id: string) => void;
@@ -37,6 +39,7 @@ function ExerciseListRowImpl({
   selected,
   minutesSpent,
   chapters,
+  sessions,
   onToggle,
   onUpdate,
   onFocus,
@@ -83,6 +86,7 @@ function ExerciseListRowImpl({
               update={onUpdate}
               minutesSpent={minutesSpent}
               chapters={chapters}
+              sessions={sessions}
               onCreateChapter={onCreateChapter}
               onRenameChapter={onRenameChapter}
               onRemoveChapter={onRemoveChapter}
