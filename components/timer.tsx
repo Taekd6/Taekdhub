@@ -7,66 +7,59 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { useWorkTimer } from "@/hooks/use-work-timer";
 import { subjects } from "@/lib/study";
 import { formatDuration } from "@/lib/utils";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
-import { cn } from "@/lib/cn";
+
+const TIMER_STORAGE_KEY = "prepahub:timer:free";
+
+interface TimerContext {
+  subject: Subject;
+}
 
 export function Timer() {
   const { sessions, saveSessions } = usePrepahubData();
-  const [seconds, setSeconds] = useState(0);
-  const [running, setRunning] = useState(false);
-  const [subject, setSubject] = useState<Subject>("Mathématiques");
-  const [startedAt, setStartedAt] = useState<string | null>(null);
+  const { seconds, running, context, setContext, start, toggle, stop } = useWorkTimer<TimerContext>(TIMER_STORAGE_KEY, {
+    subject: "Mathématiques",
+  });
   const [fullscreen, setFullscreen] = useState(false);
-
-  useEffect(() => {
-    if (!running) return;
-    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
-    return () => clearInterval(id);
-  }, [running]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === " " && document.activeElement?.tagName !== "SELECT") {
         event.preventDefault();
-        if (seconds === 0 && !startedAt) setStartedAt(new Date().toISOString());
-        setRunning((r) => !r);
+        toggle();
       }
       if (event.key === "Escape" && fullscreen) setFullscreen(false);
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [fullscreen, seconds, startedAt]);
+  }, [fullscreen, toggle]);
 
-  function start() {
-    if (!startedAt) setStartedAt(new Date().toISOString());
-    setRunning(true);
-  }
-
-  function stop() {
-    if (seconds > 0 && startedAt) {
+  function handleStop() {
+    stop(({ startedAt, seconds: finalSeconds }) => {
       const session: WorkSession = {
         id: crypto.randomUUID(),
-        subject,
+        subject: context.subject,
+        // Séance libre depuis le Timer principal : aucun exercice sélectionné.
+        exercise_id: null,
         started_at: startedAt,
         ended_at: new Date().toISOString(),
-        duration_seconds: seconds,
+        duration_seconds: finalSeconds,
         note: null,
+        created_at: new Date().toISOString(),
       };
       saveSessions([session, ...sessions]);
-    }
-    setRunning(false);
-    setSeconds(0);
-    setStartedAt(null);
+    });
   }
 
   const content = (
     <>
       <p className="eyebrow">Séance en cours</p>
       <Select
-        value={subject}
-        onChange={(e) => setSubject(e.target.value as Subject)}
+        value={context.subject}
+        onChange={(e) => setContext({ subject: e.target.value as Subject })}
         disabled={running}
         className="mx-auto mt-5 w-auto min-w-[180px] text-center"
       >
@@ -90,7 +83,7 @@ export function Timer() {
 
       <div className="mt-10 flex justify-center gap-3">
         {running ? (
-          <Button size="lg" variant="secondary" onClick={() => setRunning(false)}>
+          <Button size="lg" variant="secondary" onClick={toggle}>
             <Pause size={18} /> Pause
           </Button>
         ) : (
@@ -99,7 +92,7 @@ export function Timer() {
           </Button>
         )}
         {seconds > 0 && (
-          <Button size="lg" variant="secondary" onClick={stop}>
+          <Button size="lg" variant="secondary" onClick={handleStop}>
             <Square size={18} /> Terminer
           </Button>
         )}

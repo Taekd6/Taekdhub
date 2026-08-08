@@ -1,0 +1,15 @@
+-- Sprint 2.6 : une seule source de vérité pour le temps passé sur un exercice.
+-- Complète 0001_initial.sql, 0002_sprint2a_exercise_bank.sql et
+-- 0003_sprint25_definitive_model.sql sans les modifier. Non branchée à
+-- l'application (voir lib/supabase/client.ts) : ce fichier documente le
+-- schéma cible pour quand la persistance Supabase sera activée dans un futur
+-- sprint.
+--
+-- `exercises.duration_minutes` est supprimée : elle était maintenue en
+-- parallèle de `work_sessions` (via l'application), avec un risque de
+-- divergence entre les deux. Le temps réellement passé sur un exercice se
+-- calcule désormais à la demande en sommant `work_sessions.duration_seconds`
+-- pour les lignes dont `exercise_id` correspond (index déjà créé par
+-- 0003_sprint25_definitive_model.sql : work_sessions_exercise_idx).
+-- Voir lib/study.ts (minutesSpentOnExercise) côté client.
+alter table public.exercises drop column duration_minutes;

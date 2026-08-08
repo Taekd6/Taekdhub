@@ -18,11 +18,11 @@ export function ProgressOverview() {
     const doneExercises = completedExercises(activeExercises);
     const chapterGroups = Object.entries(
       activeExercises.reduce<Record<string, Exercise[]>>((groups, exercise) => {
-        const key = `${exercise.subject} · ${exercise.chapter}`;
+        const key = `${exercise.subject} · ${exercise.title}`;
         return { ...groups, [key]: [...(groups[key] || []), exercise] };
       }, {})
     )
-      .sort(([, a], [, b]) => Number(b.some((e) => e.status !== "terminé")) - Number(a.some((e) => e.status !== "terminé")))
+      .sort(([, a], [, b]) => Number(b.some((e) => e.status !== "maîtrisé")) - Number(a.some((e) => e.status !== "maîtrisé")))
       .slice(0, 8);
 
     return { active: activeExercises, done: doneExercises, chapters: chapterGroups };
@@ -82,7 +82,7 @@ export function ProgressOverview() {
           <CardContent className="mt-6 space-y-3">
             {chapters.length ? (
               chapters.map(([label, list]) => {
-                const complete = list.filter((e) => e.status === "terminé").length;
+                const complete = list.filter((e) => e.status === "maîtrisé").length;
                 const pct = list.length ? (complete / list.length) * 100 : 0;
                 return (
                   <div key={label} className="rounded-xl border border-white/[0.07] p-3.5">

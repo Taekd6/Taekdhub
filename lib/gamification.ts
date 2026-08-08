@@ -1,13 +1,14 @@
 import { completedExercises, dayKey, totalSeconds } from "@/lib/study";
+import { secondsToWholeMinutes } from "@/lib/utils";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 
 export function xpFromExercise(exercise: Exercise): number {
-  if (exercise.status !== "terminé" || exercise.archived) return 0;
+  if (exercise.status !== "maîtrisé" || exercise.archived) return 0;
   return exercise.difficulty * 25;
 }
 
 export function xpFromSession(session: WorkSession): number {
-  return Math.floor(session.duration_seconds / 60) * 5;
+  return secondsToWholeMinutes(session.duration_seconds) * 5;
 }
 
 export function totalXp(exercises: Exercise[], sessions: WorkSession[]): number {

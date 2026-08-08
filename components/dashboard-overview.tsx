@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -18,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/metric-card";
 import { CircularProgress, ProgressBar } from "@/components/ui/progress";
+import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import {
   computeStreak,
@@ -85,6 +87,7 @@ function SubjectProgress({ active, done }: { active: Exercise[]; done: Exercise[
 
 export function DashboardOverview() {
   const { sessions, exercises, preferences, ready } = usePrepahubData();
+  const router = useRouter();
 
   const model = useMemo(() => {
     const now = new Date();
@@ -108,10 +111,6 @@ export function DashboardOverview() {
     const avgDifficulty = active.length
       ? (active.reduce((sum, item) => sum + item.difficulty, 0) / active.length).toFixed(1)
       : "—";
-    const recommendations = active
-      .filter((e) => e.status !== "terminé")
-      .sort((a, b) => Number(b.favorite) - Number(a.favorite) || b.difficulty - a.difficulty)
-      .slice(0, 3);
     const recentSessions = [...sessions]
       .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
       .slice(0, 4);
@@ -129,7 +128,6 @@ export function DashboardOverview() {
       xpProgress,
       objective,
       avgDifficulty,
-      recommendations,
       recentSessions,
     };
   }, [sessions, exercises, preferences]);
@@ -267,39 +265,11 @@ export function DashboardOverview() {
 
       {/* Recommendations + Activity */}
       <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
-        <Card className="p-6">
-          <CardHeader>
-            <div>
-              <p className="eyebrow">Prochaine action</p>
-              <CardTitle className="mt-2">Exercices recommandés</CardTitle>
-            </div>
-            <Link href="/exercises" className="focus-ring text-sm text-accent">
-              Tout voir
-            </Link>
-          </CardHeader>
-          <div className="mt-5 space-y-2">
-            {model.recommendations.length ? (
-              model.recommendations.map((exercise, i) => (
-                <motion.div key={exercise.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Link
-                    href="/exercises"
-                    className="focus-ring flex items-center justify-between rounded-xl p-3 transition hover:bg-white/[0.045]"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">{exercise.chapter}</p>
-                      <p className="mt-1 text-xs text-zinc-500">
-                        {exercise.subject} · {exercise.source}
-                      </p>
-                    </div>
-                    <ArrowRight size={16} className="text-zinc-500" />
-                  </Link>
-                </motion.div>
-              ))
-            ) : (
-              <p className="py-7 text-sm text-zinc-500">Ta file de travail prendra forme au premier exercice ajouté.</p>
-            )}
-          </div>
-        </Card>
+        {/* Sprint 3A : remplace l'ancienne heuristique locale (favori + difficulté)
+            par le moteur centralisé (lib/recommendation.ts) — même composant
+            que sur la page Exercices, pour ne dupliquer aucune logique. Le
+            clic renvoie vers la fiche exacte via ?focus=<id>. */}
+        <ExerciseReviewPanel exercises={exercises} sessions={sessions} onSelect={(id) => router.push(`/exercises?focus=${id}`)} />
 
         <Card className="p-6">
           <div className="flex items-center gap-2">
@@ -330,7 +300,10 @@ export function DashboardOverview() {
       {/* Favorites */}
       <Card className="p-6">
         <p className="eyebrow">Favoris</p>
-        <CardTitle className="mt-2">À revoir en priorité</CardTitle>
+        {/* Sprint 3A : renommé (était "À revoir en priorité", qui prêtait à
+            confusion avec le nouveau panneau du même nom ci-dessus — cette
+            carte-ci ne montre que les favoris, pas une recommandation). */}
+        <CardTitle className="mt-2">Marqués comme favoris</CardTitle>
         <div className="mt-5 grid gap-2 sm:grid-cols-3">
           {model.active
             .filter((e) => e.favorite)
@@ -341,7 +314,7 @@ export function DashboardOverview() {
                 href="/exercises"
                 className="focus-ring block rounded-xl border border-white/[0.06] p-3 text-sm transition hover:border-white/[0.14]"
               >
-                <p className="font-medium">{exercise.chapter}</p>
+                <p className="font-medium">{exercise.title}</p>
                 <p className="mt-1 text-xs text-zinc-500">{exercise.source}</p>
               </Link>
             ))}

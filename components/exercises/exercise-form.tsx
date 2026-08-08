@@ -1,0 +1,114 @@
+"use client";
+
+import { AnimatePresence, motion } from "framer-motion";
+import { FormEvent, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input, Select, Textarea } from "@/components/ui/input";
+import { exerciseTypes, subjects } from "@/lib/study";
+import type { Difficulty, ExerciseType, Subject } from "@/lib/supabase/types";
+
+/**
+ * Champs saisis à la création — le manager complète le reste (id, created_at,
+ * updated_at, statut initial, chapter_id/priority/mastery/year par défaut,
+ * compteurs à zéro…). Ce formulaire ne change pas au Sprint 2.5 : il ne
+ * capture toujours qu'un titre libre, pas de chapitre (le catalogue est
+ * vide) ni les nouveaux champs sans interface dédiée (priority, mastery, year).
+ */
+export interface NewExerciseInput {
+  subject: Subject;
+  title: string;
+  source: string;
+  type: ExerciseType;
+  difficulty: Difficulty;
+  tags: string[];
+  estimatedMinutes: number | null;
+  note: string;
+  hints: string[];
+  correction: string;
+}
+
+const emptyForm = {
+  subject: "Mathématiques" as Subject,
+  title: "",
+  source: "",
+  type: "TD" as ExerciseType,
+  difficulty: 3,
+  tags: "",
+  estimatedMinutes: "",
+  note: "",
+  hints: "",
+  correction: "",
+};
+
+export function ExerciseForm({ open, onSubmit, onCancel }: { open: boolean; onSubmit: (input: NewExerciseInput) => void; onCancel: () => void }) {
+  const [form, setForm] = useState(emptyForm);
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!form.title.trim() || !form.source.trim()) return;
+    onSubmit({
+      subject: form.subject,
+      title: form.title.trim(),
+      source: form.source.trim(),
+      type: form.type,
+      difficulty: form.difficulty as Difficulty,
+      tags: form.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+      estimatedMinutes: form.estimatedMinutes.trim() ? Math.max(0, Number(form.estimatedMinutes)) : null,
+      note: form.note.trim(),
+      hints: form.hints.split("\n").map((hint) => hint.trim()).filter(Boolean),
+      correction: form.correction.trim(),
+    });
+    setForm(emptyForm);
+  }
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.form
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          onSubmit={handleSubmit}
+          className="surface grid gap-3 rounded-2xl p-5 sm:grid-cols-2"
+        >
+          <Input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Intitulé de l'exercice" />
+          <Input required value={form.source} onChange={(event) => setForm({ ...form, source: event.target.value })} placeholder="Source (feuille, DM, livre…)" />
+          <Select value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value as Subject })}>
+            {subjects.map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </Select>
+          <Select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as ExerciseType })}>
+            {exerciseTypes.map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </Select>
+          <Select value={form.difficulty} onChange={(event) => setForm({ ...form, difficulty: Number(event.target.value) })}>
+            {[1, 2, 3, 4, 5].map((value) => (
+              <option value={value} key={value}>
+                Difficulté {value}/5
+              </option>
+            ))}
+          </Select>
+          <Input
+            type="number"
+            min={0}
+            value={form.estimatedMinutes}
+            onChange={(event) => setForm({ ...form, estimatedMinutes: event.target.value })}
+            placeholder="Temps estimé (minutes)"
+          />
+          <Input value={form.tags} onChange={(event) => setForm({ ...form, tags: event.target.value })} className="sm:col-span-2" placeholder="Tags, séparés par des virgules" />
+          <Textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className="sm:col-span-2" placeholder="Note personnelle" />
+          <Textarea value={form.hints} onChange={(event) => setForm({ ...form, hints: event.target.value })} className="sm:col-span-2" placeholder="Indices progressifs — un indice par ligne" />
+          <Textarea value={form.correction} onChange={(event) => setForm({ ...form, correction: event.target.value })} className="sm:col-span-2" placeholder="Correction personnelle (restera masquée par défaut)" />
+          <div className="flex justify-end gap-2 sm:col-span-2">
+            <Button type="button" variant="ghost" onClick={onCancel}>
+              Annuler
+            </Button>
+            <Button type="submit">Créer l'exercice</Button>
+          </div>
+        </motion.form>
+      )}
+    </AnimatePresence>
+  );
+}

@@ -1,5 +1,163 @@
-export type Subject = "Mathématiques" | "Physique" | "Informatique" | "Français" | "Anglais";
-export type ExerciseStatus = "à faire" | "en cours" | "terminé";
+/**
+ * Matières couvertes par la banque d'exercices (voir lib/study.ts pour les
+ * métadonnées d'affichage — code court, couleur).
+ */
+export type Subject =
+  | "Mathématiques"
+  | "Physique"
+  | "Chimie"
+  | "Informatique TC"
+  | "Informatique Spé"
+  | "Français"
+  | "Anglais";
+
+/**
+ * Cycle de vie d'un exercice dans la banque.
+ * "à revoir" et "maîtrisé" distinguent un exercice déjà traité mais fragile
+ * d'un exercice réellement acquis — cette distinction sert de fondation aux
+ * futurs sprints (répétition espacée notamment) sans en implémenter la logique ici.
+ *
+ * Ne représente PAS le degré de maîtrise (voir `Exercise.mastery`, un concept
+ * volontairement distinct — décision Sprint 2.5, à ne jamais fusionner).
+ */
+export type ExerciseStatus = "à faire" | "en cours" | "à revoir" | "maîtrisé";
+
+/** Nature de l'exercice — sert à filtrer une banque qui mélangera TD, annales, colles… */
+export type ExerciseType = "TD" | "DM" | "DS" | "Colle" | "TP" | "Annale" | "Concours" | "Personnel";
+
+/** Difficulté INTRINSÈQUE de l'exercice (indépendante de l'élève qui le résout). Ne jamais mélanger avec `Exercise.mastery` (le degré de maîtrise de l'élève) ni `Exercise.priority` (l'ordre dans lequel l'élève veut le traiter). */
 export type Difficulty = 1 | 2 | 3 | 4 | 5;
-export interface WorkSession { id: string; subject: Subject; started_at: string; ended_at: string | null; duration_seconds: number; note: string | null; }
-export interface Exercise { id: string; subject: Subject; chapter: string; source: string; difficulty: Difficulty; status: ExerciseStatus; duration_minutes: number; note: string | null; created_at: string; tags?: string[]; favorite?: boolean; archived?: boolean; hints?: string[]; correction?: string | null; last_opened_at?: string | null; }
+
+/** Priorité donnée par l'élève pour traiter l'exercice — concept distinct de `Difficulty` (voir plus haut), même si l'échelle numérique coïncide. */
+export type Priority = 1 | 2 | 3 | 4 | 5;
+
+/** Degré de maîtrise de l'élève sur cet exercice, par paliers de 25 — distinct de `Difficulty` et de `ExerciseStatus` (voir plus haut). */
+export type Mastery = 0 | 25 | 50 | 75 | 100;
+
+/**
+ * Une séance de travail chronométrée (Timer ou FocusView).
+ * Unité de durée : SECONDES (`duration_seconds`), toujours un nombre entier.
+ * C'est la source de vérité utilisée par le Dashboard, la Heatmap, le Streak
+ * et les Statistiques — voir lib/study.ts et lib/gamification.ts.
+ *
+ * Miroir de la table `work_sessions` (supabase/migrations/0001_initial.sql,
+ * étendue par 0003_sprint25_definitive_model.sql). `user_id` n'est pas repris
+ * ici : c'est une colonne gérée par Supabase/RLS (default auth.uid()) qui n'a
+ * pas de sens tant que l'app fonctionne en local-first sans authentification
+ * branchée.
+ */
+export interface WorkSession {
+  id: string;
+  subject: Subject;
+  /**
+   * Exercice concerné par cette séance, ou null pour une séance libre (Timer
+   * principal, sans exercice sélectionné). Lien réel introduit au Sprint 2.5 :
+   * avant cela, seul `note` référençait l'exercice sous forme de texte.
+   * C'est l'UNIQUE source de vérité du temps passé par exercice depuis le
+   * Sprint 2.6 : `Exercise` ne stocke plus aucune durée cumulée — voir
+   * `minutesSpentOnExercise` dans lib/study.ts, qui la calcule à la demande
+   * en sommant les séances dont `exercise_id` correspond.
+   */
+  exercise_id: string | null;
+  /** Horodatage ISO du début réel de la séance. */
+  started_at: string;
+  /** Horodatage ISO de fin, ou null si la séance n'a jamais été clôturée proprement. */
+  ended_at: string | null;
+  /** Durée totale en SECONDES (jamais en minutes — voir lib/utils.ts pour les conversions). */
+  duration_seconds: number;
+  note: string | null;
+  /** Horodatage ISO de création de l'enregistrement (mirroir de `created_at` en base). */
+  created_at: string;
+}
+
+/**
+ * Une fiche d'exercice — l'unité de base de la banque d'exercices.
+ *
+ * ## Titre vs chapitre (Sprint 2.5)
+ * `title` (libre, obligatoire) décrit l'exercice lui-même. `chapter_id`
+ * (nullable) référencera une entrée du futur catalogue de chapitres
+ * (lib/chapters.ts, aujourd'hui vide pour chaque matière). Ces deux notions
+ * sont volontairement distinctes et ne doivent jamais être fusionnées.
+ * `chapter_id` vaut `null` pour tout exercice tant qu'aucun chapitre n'a été
+ * assigné — catalogue vide aujourd'hui, à peupler dans un sprint dédié.
+ *
+ * ## Durées
+ * `estimated_minutes` (MINUTES) est la seule durée stockée sur `Exercise` —
+ * une estimation posée par l'utilisateur (planification). Le temps
+ * RÉELLEMENT passé n'est PAS stocké ici (depuis le Sprint 2.6, pour éliminer
+ * tout risque de divergence) : il se calcule à la demande via
+ * `minutesSpentOnExercise` (lib/study.ts), qui somme les `WorkSession.duration_seconds`
+ * dont `exercise_id` correspond. Ni l'estimation ni ce calcul n'alimentent la
+ * Heatmap, le Streak ou les Statistiques globales, qui se basent sur
+ * l'ensemble des `WorkSession` sans filtrer par exercice (voir lib/study.ts
+ * et lib/gamification.ts).
+ *
+ * ## Difficulté, priorité, maîtrise, statut — quatre concepts distincts
+ * - `difficulty` : difficulté intrinsèque de l'exercice (voir `Difficulty`).
+ * - `priority` : ordre dans lequel l'élève veut le traiter (voir `Priority`).
+ * - `mastery` : degré de maîtrise de l'élève, par paliers de 25 (voir `Mastery`).
+ * - `status` : étape du cycle de vie (à faire / en cours / à revoir / maîtrisé).
+ * Ne jamais mélanger ces quatre notions (décision Sprint 2.5).
+ *
+ * ## Tentatives et dernière activité
+ * `attempts` est incrémenté AUTOMATIQUEMENT (Sprint 2.5) et `last_worked_at`
+ * est mis à jour (Sprint 2.6) à chaque séance focus achevée sur cet exercice
+ * avec au moins une minute enregistrée — aucun des deux n'a de contrôle
+ * manuel dans l'interface. `last_worked_at` ne reflète plus la simple
+ * ouverture de la fiche (comportement de `last_opened_at` avant le Sprint 2.6).
+ *
+ * ## Réservé pour de futurs sprints (non implémenté, architecture compatible)
+ * Ces notions ont été anticipées mais n'ont ni champ ni logique aujourd'hui :
+ * - `next_revision` (répétition espacée) : une date de prochaine révision.
+ * - `attachments` : pièces jointes (photo/PDF de correction, énoncé scanné…).
+ * - `review_history` : historique structuré des révisions (au-delà du simple
+ *   compteur `attempts`).
+ * Elles pourront être ajoutées sans casser ce modèle (nouveaux champs
+ * optionnels ou objets annexes reliés par `id`).
+ *
+ * Miroir de la table `exercises` (supabase/migrations/0001_initial.sql,
+ * étendue par 0002_sprint2a_exercise_bank.sql, 0003_sprint25_definitive_model.sql
+ * puis 0004_sprint26_duration_derived.sql — qui supprime la colonne
+ * `duration_minutes`). Comme pour WorkSession, `user_id`
+ * (géré par Supabase/RLS) n'est pas repris. Les colonnes `not null default
+ * ...` de la base sont typées comme requises ici, et non optionnelles : les
+ * valeurs par défaut sont appliquées une seule fois, à la lecture, dans
+ * lib/storage.ts (compatibilité avec d'anciennes données locales — y compris
+ * la migration des formes Sprint 1 / Sprint 2A, voir les fonctions
+ * `migrate*` dans ce même fichier).
+ */
+export interface Exercise {
+  id: string;
+  subject: Subject;
+  /** Décrit l'exercice lui-même — voir la note "Titre vs chapitre" ci-dessus. */
+  title: string;
+  /** Référence vers le futur catalogue de chapitres (lib/chapters.ts), ou null tant qu'aucun chapitre n'est assigné. */
+  chapter_id: string | null;
+  /** Origine libre de l'exercice (ex. "TD8", "Centrale", "Prof"). */
+  source: string;
+  /** Année associée à la source, distincte de `source` (ex. 2022 pour "Centrale 2022"), ou null si non pertinente/non renseignée. */
+  year: number | null;
+  type: ExerciseType;
+  /** Difficulté intrinsèque — voir `Difficulty`. */
+  difficulty: Difficulty;
+  /** Priorité donnée par l'élève — voir `Priority`. */
+  priority: Priority;
+  /** Degré de maîtrise de l'élève — voir `Mastery`. */
+  mastery: Mastery;
+  status: ExerciseStatus;
+  /** Temps estimé par l'utilisateur, en MINUTES, ou null si non renseigné. */
+  estimated_minutes: number | null;
+  /** Nombre de tentatives — incrémenté automatiquement (voir la note ci-dessus). */
+  attempts: number;
+  note: string | null;
+  created_at: string;
+  /** Horodatage ISO de dernière modification de la fiche (n'importe quel champ). */
+  updated_at: string;
+  tags: string[];
+  favorite: boolean;
+  archived: boolean;
+  hints: string[];
+  correction: string | null;
+  /** Fin de la dernière séance focus achevée (≥ 1 minute) sur cet exercice — voir "Tentatives et dernière activité" ci-dessus. Anciennement `last_opened_at` (mis à jour à l'ouverture de la fiche), renommé et resémantisé au Sprint 2.6. */
+  last_worked_at: string | null;
+}

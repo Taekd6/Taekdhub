@@ -1,0 +1,332 @@
+"use client";
+
+import { BookOpenCheck, LayoutGrid, List } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Select } from "@/components/ui/input";
+import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
+import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
+import { ExerciseFiltersBar } from "@/components/exercises/exercise-filters-bar";
+import { ExerciseForm, type NewExerciseInput } from "@/components/exercises/exercise-form";
+import { ExerciseCard } from "@/components/exercises/exercise-card";
+import { ExerciseListRow } from "@/components/exercises/exercise-list-row";
+import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
+import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
+import { chapterOptionsForSubject, defaultExerciseFilters, distinctYears, filterExercises, type ExerciseFilters } from "@/lib/exercise-filters";
+import { defaultExerciseSort, exerciseSortOptions, sortExercises, type ExerciseSort } from "@/lib/exercise-sort";
+import { DEFAULT_MASTERY, DEFAULT_PRIORITY } from "@/lib/storage";
+import { minutesByExerciseMap } from "@/lib/study";
+import { cn } from "@/lib/cn";
+import type { Exercise } from "@/lib/supabase/types";
+
+type ViewMode = "cards" | "list";
+
+export function ExerciseManager() {
+  const { exercises, saveExercises, sessions, saveSessions, ready } = usePrepahubData();
+  const [filters, setFilters] = useState<ExerciseFilters>(defaultExerciseFilters);
+  const [sort, setSort] = useState<ExerciseSort>(defaultExerciseSort);
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [formOpen, setFormOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [focusMode, setFocusMode] = useState(false);
+  const resumeChecked = useRef(false);
+
+  const updateFilters = useCallback((patch: Partial<ExerciseFilters>) => setFilters((prev) => ({ ...prev, ...patch })), []);
+
+  // Reprend automatiquement une séance focus interrompue par un rechargement
+  // de page (ex. F5 pendant un focus) : la clé sessionStorage laissée par
+  // useWorkTimer encode l'exercice concerné.
+  useEffect(() => {
+    if (!ready || resumeChecked.current) return;
+    resumeChecked.current = true;
+    const pendingExerciseId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX);
+    if (pendingExerciseId && exercises.some((item) => item.id === pendingExerciseId && !item.archived)) {
+      setSelectedId(pendingExerciseId);
+      setFocusMode(true);
+    }
+  }, [ready, exercises]);
+
+  // `exercisesRef` permet à `update` de lire la liste à jour sans dépendre de
+  // `exercises` dans ses propres dépendances : son identité reste stable
+  // d'un rendu à l'autre. Sur une banque de centaines d'exercices, c'est ce
+  // qui permet à React.memo (ExerciseCard / ExerciseListRow) d'éviter de
+  // re-rendre toutes les cartes à chaque modification d'une seule d'entre elles.
+  const exercisesRef = useRef(exercises);
+  useEffect(() => {
+    exercisesRef.current = exercises;
+  }, [exercises]);
+
+  // `updated_at` est maintenu automatiquement ici, pour toute modification,
+  // plutôt que d'être géré au cas par cas par chaque appelant.
+  //
+  // `exercisesRef.current` est aussi réassigné ICI, de façon synchrone, et
+  // pas seulement via l'effet ci-dessus : deux appels à `update` déclenchés
+  // dans le même tick (ex. deux clics rapprochés sur des sélecteurs
+  // différents, comme priorité puis maîtrise) doivent chacun voir le
+  // résultat du précédent. Sans cette ligne, le second appel lirait encore
+  // l'ancienne valeur de `exercisesRef.current` (l'effet ne s'exécute qu'au
+  // rendu suivant) et écraserait silencieusement la première modification.
+  const update = useCallback(
+    (id: string, patch: Partial<Exercise>) => {
+      const updatedAt = new Date().toISOString();
+      const next = exercisesRef.current.map((item) => (item.id === id ? { ...item, ...patch, updated_at: updatedAt } : item));
+      exercisesRef.current = next;
+      saveExercises(next);
+    },
+    [saveExercises]
+  );
+
+  // Callbacks à identité stable (jamais recréés) — condition pour que le
+  // memo des cartes/rangées serve vraiment à quelque chose.
+  const toggleSelected = useCallback((id: string) => setSelectedId((prev) => (prev === id ? null : id)), []);
+  const enterFocus = useCallback((id: string) => {
+    setSelectedId(id);
+    setFocusMode(true);
+  }, []);
+  const archiveExercise = useCallback((id: string) => update(id, { archived: true }), [update]);
+
+  // Depuis le tableau "À revoir" : on réinitialise les filtres (l'exercice
+  // visé pourrait être masqué par le filtrage courant), on le sélectionne,
+  // puis on l'amène à l'écran — sans quoi le clic n'aurait visiblement aucun
+  // effet si l'exercice n'était pas déjà dans la liste affichée.
+  const jumpToExercise = useCallback((id: string) => {
+    setFilters(defaultExerciseFilters);
+    setSelectedId(id);
+    requestAnimationFrame(() => {
+      document.getElementById(`exercise-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, []);
+
+  // Même geste que `jumpToExercise`, mais déclenché depuis une autre page
+  // (ex. le tableau "À revoir" du Dashboard) via `?focus=<id>` dans l'URL —
+  // voir `FocusQueryHandler` plus bas. On vérifie que l'exercice existe
+  // encore avant de sauter dessus (il a pu être archivé entre-temps).
+  //
+  // Dépend de `exercises` directement (pas `exercisesRef`) : ce callback
+  // n'est pas sur le chemin chaud du rendu des cartes (pas besoin d'identité
+  // stable pour React.memo) et, juste après le chargement des données, l'effet
+  // d'un composant enfant (FocusQueryHandler) peut s'exécuter avant que
+  // `exercisesRef` n'ait été resynchronisé par l'effet du parent — lire
+  // `exercises` évite cette course.
+  const jumpToExerciseFromQuery = useCallback(
+    (id: string) => {
+      if (exercises.some((item) => item.id === id && !item.archived)) jumpToExercise(id);
+    },
+    [exercises, jumpToExercise]
+  );
+
+  const create = useCallback(
+    (input: NewExerciseInput) => {
+      const now = new Date().toISOString();
+      const exercise: Exercise = {
+        id: crypto.randomUUID(),
+        subject: input.subject,
+        title: input.title,
+        // Le catalogue de chapitres (lib/chapters.ts) est vide aujourd'hui ;
+        // aucune interface ne permet encore de choisir un chapitre.
+        chapter_id: null,
+        source: input.source,
+        // Aucune interface ne permet encore de renseigner l'année séparément de `source`.
+        year: null,
+        type: input.type,
+        difficulty: input.difficulty,
+        // Valeurs par défaut proposées (voir rapport de sprint) — aucune
+        // interface ne permet encore de les régler à la création.
+        priority: DEFAULT_PRIORITY,
+        mastery: DEFAULT_MASTERY,
+        status: "à faire",
+        // Pas de duration_minutes : le temps passé se dérive des WorkSession
+        // liées (voir minutesByExerciseMap) — rien à initialiser ici.
+        estimated_minutes: input.estimatedMinutes,
+        // Incrémenté automatiquement par le mode focus — jamais réglé manuellement.
+        attempts: 0,
+        note: input.note || null,
+        created_at: now,
+        updated_at: now,
+        tags: input.tags,
+        hints: input.hints,
+        correction: input.correction || null,
+        favorite: false,
+        archived: false,
+        last_worked_at: null,
+      };
+      const next = [exercise, ...exercisesRef.current];
+      exercisesRef.current = next;
+      saveExercises(next);
+      setFormOpen(false);
+      setSelectedId(exercise.id);
+    },
+    [saveExercises]
+  );
+
+  const chapterOptions = useMemo(() => chapterOptionsForSubject(filters.subject), [filters.subject]);
+  const yearOptions = useMemo(() => distinctYears(exercises), [exercises]);
+
+  // Un chapitre filtré peut devenir invalide si on change de matière : on le
+  // réinitialise plutôt que de laisser un filtre "impossible" masquer
+  // silencieusement toute la liste.
+  useEffect(() => {
+    if (filters.chapter !== "Tous" && !chapterOptions.includes(filters.chapter)) {
+      updateFilters({ chapter: "Tous" });
+    }
+  }, [chapterOptions, filters.chapter, updateFilters]);
+
+  // Un seul passage sur `sessions` pour calculer le temps passé de TOUS les
+  // exercices (voir lib/study.ts) — recalculé uniquement quand `sessions`
+  // change, jamais par exercice ni à chaque rendu.
+  const minutesMap = useMemo(() => minutesByExerciseMap(sessions), [sessions]);
+  const visible = useMemo(() => filterExercises(exercises, filters), [exercises, filters]);
+  const sorted = useMemo(() => sortExercises(visible, sort, minutesMap), [visible, sort, minutesMap]);
+
+  const selected = exercises.find((item) => item.id === selectedId);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        if (focusMode) setFocusMode(false);
+        else if (formOpen) setFormOpen(false);
+        else if (selectedId) setSelectedId(null);
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key === "k") {
+        event.preventDefault();
+        document.getElementById("exercise-search")?.focus();
+      }
+      if (event.key === "n" && !event.metaKey && !event.ctrlKey && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+        setFormOpen(true);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [focusMode, formOpen, selectedId]);
+
+  if (focusMode && selected) {
+    return (
+      <FocusView
+        item={selected}
+        update={update}
+        sessions={sessions}
+        saveSessions={saveSessions}
+        onClose={() => setFocusMode(false)}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* `useSearchParams` exige une limite Suspense — isolée ici pour ne pas
+          faire basculer toute la page en rendu dynamique. */}
+      <Suspense fallback={null}>
+        <FocusQueryHandler ready={ready} onFocus={jumpToExerciseFromQuery} />
+      </Suspense>
+
+      <ExerciseBankStats exercises={exercises} sessions={sessions} />
+
+      <ExerciseReviewPanel exercises={exercises} sessions={sessions} onSelect={jumpToExercise} />
+
+      <ExerciseFiltersBar
+        filters={filters}
+        onChange={updateFilters}
+        chapterOptions={chapterOptions}
+        yearOptions={yearOptions}
+        onAddClick={() => setFormOpen((value) => !value)}
+      />
+
+      <ExerciseForm open={formOpen} onSubmit={create} onCancel={() => setFormOpen(false)} />
+
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <p className="text-sm text-zinc-500">
+          <span className="font-semibold text-zinc-200">{sorted.length}</span> exercice{sorted.length > 1 ? "s" : ""} affiché{sorted.length > 1 ? "s" : ""}
+        </p>
+        <div className="flex items-center gap-2">
+          <Select value={sort} onChange={(event) => setSort(event.target.value as ExerciseSort)} className="w-auto min-w-[150px] py-2 text-xs">
+            {exerciseSortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+          <div className="flex items-center gap-1 rounded-xl border border-white/[0.09] bg-black/20 p-1">
+            <button
+              onClick={() => setViewMode("cards")}
+              aria-label="Vue cartes"
+              aria-pressed={viewMode === "cards"}
+              className={cn("rounded-lg p-1.5 transition", viewMode === "cards" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
+            >
+              <LayoutGrid size={15} />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              aria-label="Vue liste compacte"
+              aria-pressed={viewMode === "list"}
+              className={cn("rounded-lg p-1.5 transition", viewMode === "list" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
+            >
+              <List size={15} />
+            </button>
+          </div>
+        </div>
+        <span className="hidden items-center gap-2 text-xs text-zinc-500 sm:flex">⌘K recherche · N nouvel exercice · Esc fermer</span>
+      </div>
+
+      <div className={viewMode === "cards" ? "grid gap-3" : "grid gap-2"}>
+        {sorted.map((item, index) =>
+          viewMode === "cards" ? (
+            <ExerciseCard
+              key={item.id}
+              item={item}
+              index={index}
+              selected={selectedId === item.id}
+              minutesSpent={minutesMap.get(item.id) ?? 0}
+              onToggle={toggleSelected}
+              onUpdate={update}
+              onFocus={enterFocus}
+              onArchive={archiveExercise}
+            />
+          ) : (
+            <ExerciseListRow
+              key={item.id}
+              item={item}
+              selected={selectedId === item.id}
+              minutesSpent={minutesMap.get(item.id) ?? 0}
+              onToggle={toggleSelected}
+              onUpdate={update}
+              onFocus={enterFocus}
+              onArchive={archiveExercise}
+            />
+          )
+        )}
+        {sorted.length === 0 && (
+          <Card className="px-6 py-16 text-center">
+            <BookOpenCheck className="mx-auto text-accent" />
+            <p className="mt-4 font-semibold">Aucun exercice ne correspond.</p>
+            <p className="mt-1 text-sm text-zinc-500">Ajuste les filtres ou ajoute une nouvelle fiche.</p>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Lit `?focus=<id>` dans l'URL (ex. lien "À revoir" du Dashboard), déclenche
+ * `onFocus` une seule fois, puis nettoie l'URL. Isolé dans son propre
+ * composant car `useSearchParams` impose une limite Suspense — inutile de
+ * l'imposer à tout `ExerciseManager`.
+ */
+function FocusQueryHandler({ ready, onFocus }: { ready: boolean; onFocus: (id: string) => void }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const handled = useRef(false);
+
+  useEffect(() => {
+    if (!ready || handled.current) return;
+    const focusId = searchParams.get("focus");
+    if (!focusId) return;
+    handled.current = true;
+    onFocus(focusId);
+    router.replace("/exercises", { scroll: false });
+  }, [ready, searchParams, onFocus, router]);
+
+  return null;
+}
