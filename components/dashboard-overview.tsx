@@ -20,67 +20,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/metric-card";
 import { CircularProgress, ProgressBar } from "@/components/ui/progress";
 import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
+import { Heatmap } from "@/components/heatmap";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import {
   computeStreak,
-  lastNDays,
   levelFromXp,
   totalXp,
   workByDayMap,
   xpProgressInLevel,
 } from "@/lib/gamification";
-import { completedExercises, dayKey, subjectMeta, subjects, totalSeconds } from "@/lib/study";
+import { computeProgressBySubject, type SubjectProgress } from "@/lib/progress";
+import { completedExercises, dayKey, subjectMeta, totalSeconds } from "@/lib/study";
 import { formatDuration } from "@/lib/utils";
 
-function Heatmap({ workByDay }: { workByDay: Record<string, number> }) {
-  const days = lastNDays(84);
-  const maxDay = Math.max(...Object.values(workByDay), 1);
-
-  return (
-    <div className="grid grid-flow-col grid-rows-7 gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-      {days.map((date) => {
-        const key = dayKey(date);
-        const seconds = workByDay[key] || 0;
-        const ratio = seconds / maxDay;
-        return (
-          <span
-            key={key}
-            title={`${date.toLocaleDateString("fr-FR")} : ${formatDuration(seconds)}`}
-            className="h-3.5 w-3.5 rounded-[4px] transition-colors"
-            style={{
-              backgroundColor: ratio ? `rgba(212,243,107,${0.17 + ratio * 0.83})` : "rgba(255,255,255,.055)",
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-import type { Exercise } from "@/lib/supabase/types";
-
-function SubjectProgress({ active, done }: { active: Exercise[]; done: Exercise[] }) {
+/** Purement présentationnel — la progression par matière vient de lib/progress.ts (source unique, partagée avec la page Progression depuis le Sprint 3B). */
+function SubjectProgressList({ progress }: { progress: SubjectProgress[] }) {
   return (
     <div className="space-y-4">
-      {subjects.map((subject) => {
-        const count = active.filter((e) => e.subject === subject).length;
-        const completed = done.filter((e) => e.subject === subject).length;
-        const pct = count ? (completed / count) * 100 : 0;
-        return (
-          <div key={subject}>
-            <div className="mb-2 flex justify-between text-sm">
-              <span className="flex items-center gap-2">
-                <span className={`h-2 w-2 rounded-full ${subjectMeta[subject].className}`} />
-                {subject}
-              </span>
-              <span className="text-zinc-500">
-                {completed}/{count}
-              </span>
-            </div>
-            <ProgressBar value={pct} animated={false} barClassName="bg-accent/80" className="h-1.5" />
+      {progress.map(({ subject, total, mastered, completionRate }) => (
+        <div key={subject}>
+          <div className="mb-2 flex justify-between text-sm">
+            <span className="flex items-center gap-2">
+              <span className={`h-2 w-2 rounded-full ${subjectMeta[subject].className}`} />
+              {subject}
+            </span>
+            <span className="text-zinc-500">
+              {mastered}/{total}
+            </span>
           </div>
-        );
-      })}
+          <ProgressBar value={completionRate} animated={false} barClassName="bg-accent/80" className="h-1.5" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -101,6 +71,7 @@ export function DashboardOverview() {
     const streak = computeStreak(sessions);
     const active = exercises.filter((e) => !e.archived);
     const done = completedExercises(active);
+    const subjectProgress = computeProgressBySubject(exercises);
     const contest = preferences.contestDate
       ? Math.max(0, Math.ceil((new Date(preferences.contestDate).getTime() - now.getTime()) / 86400000))
       : null;
@@ -122,6 +93,7 @@ export function DashboardOverview() {
       streak,
       active,
       done,
+      subjectProgress,
       contest,
       xp,
       level,
@@ -258,7 +230,7 @@ export function DashboardOverview() {
           <p className="eyebrow">Par matière</p>
           <CardTitle className="mt-2">Progression</CardTitle>
           <div className="mt-5">
-            <SubjectProgress active={model.active} done={model.done} />
+            <SubjectProgressList progress={model.subjectProgress} />
           </div>
         </Card>
       </section>

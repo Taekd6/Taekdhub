@@ -1,9 +1,11 @@
 import { secondsToWholeMinutes } from "@/lib/utils";
-import type { Exercise, ExerciseStatus, ExerciseType, Subject, WorkSession } from "@/lib/supabase/types";
+import type { Exercise, ExerciseStatus, ExerciseType, Mastery, Subject, WorkSession } from "@/lib/supabase/types";
 
 export const subjects: Subject[] = ["Mathématiques", "Physique", "Chimie", "Informatique TC", "Informatique Spé", "Français", "Anglais"];
 export const exerciseStatuses: ExerciseStatus[] = ["à faire", "en cours", "à revoir", "maîtrisé"];
 export const exerciseTypes: ExerciseType[] = ["TD", "DM", "DS", "Colle", "TP", "Annale", "Concours", "Personnel"];
+/** Paliers de maîtrise, dans l'ordre d'affichage — source unique pour toute UI qui énumère les paliers (voir lib/progress.ts). */
+export const masteryLevels: Mastery[] = [0, 25, 50, 75, 100];
 
 export const subjectMeta: Record<Subject, { short: string; className: string }> = {
   Mathématiques: { short: "M", className: "bg-violet-400/15 text-violet-200" },

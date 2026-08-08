@@ -30,8 +30,12 @@ import type { Exercise, ExerciseStatus, WorkSession } from "@/lib/supabase/types
  *   agrégats sans toucher à la recommandation elle-même.
  */
 
-/** Un exercice jamais travaillé : aucune tentative, aucune minute enregistrée. */
-function isNeverWorked(exercise: Exercise, minutesSpent: number): boolean {
+/**
+ * Un exercice jamais travaillé : aucune tentative, aucune minute enregistrée.
+ * Exportée (Sprint 3B) pour que lib/progress.ts et ses appelants réutilisent
+ * ce critère au lieu de le redéfinir.
+ */
+export function isNeverWorked(exercise: Exercise, minutesSpent: number): boolean {
   return exercise.attempts === 0 && minutesSpent === 0;
 }
 

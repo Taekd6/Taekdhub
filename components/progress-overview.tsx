@@ -1,108 +1,139 @@
 "use client";
 
 import { useMemo } from "react";
-import { BarChart3, CheckCircle2, Clock3 } from "lucide-react";
+import { BarChart3, CheckCircle2, Clock3, Flame } from "lucide-react";
 import { MetricCard } from "@/components/ui/metric-card";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { Card, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress";
+import { Heatmap } from "@/components/heatmap";
+import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { completedExercises, subjects, subjectMeta, totalSeconds } from "@/lib/study";
+import { computeStreak, workByDayMap } from "@/lib/gamification";
+import { computeGlobalProgress, computeProgressBySubject, masteryDistribution, statusDistribution } from "@/lib/progress";
+import { statusMeta, subjectMeta, totalSeconds } from "@/lib/study";
 import { formatDuration } from "@/lib/utils";
-import type { Exercise } from "@/lib/supabase/types";
 
+/**
+ * Page Progression (Sprint 3B) — toute l'agrégation vient de lib/progress.ts
+ * (et lib/gamification.ts pour la constance) : ce composant ne fait
+ * qu'assembler et afficher, aucun calcul métier ici.
+ *
+ * Le bloc "Chapitres" retiré au Sprint 3B n'est pas remplacé : il groupait en
+ * réalité par titre d'exercice (le catalogue de chapitres, lib/chapters.ts,
+ * est vide) — une vraie vue par chapitre reviendra quand ce catalogue existera.
+ */
 export function ProgressOverview() {
   const { sessions, exercises, ready } = usePrepahubData();
 
-  const { active, done, chapters } = useMemo(() => {
-    const activeExercises = exercises.filter((e) => !e.archived);
-    const doneExercises = completedExercises(activeExercises);
-    const chapterGroups = Object.entries(
-      activeExercises.reduce<Record<string, Exercise[]>>((groups, exercise) => {
-        const key = `${exercise.subject} · ${exercise.title}`;
-        return { ...groups, [key]: [...(groups[key] || []), exercise] };
-      }, {})
-    )
-      .sort(([, a], [, b]) => Number(b.some((e) => e.status !== "maîtrisé")) - Number(a.some((e) => e.status !== "maîtrisé")))
-      .slice(0, 8);
-
-    return { active: activeExercises, done: doneExercises, chapters: chapterGroups };
-  }, [exercises]);
+  const model = useMemo(() => {
+    return {
+      global: computeGlobalProgress(exercises),
+      bySubject: computeProgressBySubject(exercises),
+      mastery: masteryDistribution(exercises),
+      status: statusDistribution(exercises),
+      totalTime: totalSeconds(sessions),
+      streak: computeStreak(sessions),
+      workByDay: workByDayMap(sessions),
+    };
+  }, [exercises, sessions]);
 
   if (!ready) {
     return (
-      <div className="grid gap-4 sm:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => (
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="surface h-32 animate-pulse rounded-2xl" />
         ))}
       </div>
     );
   }
 
-  const totalTime = totalSeconds(sessions);
-  const completionRate = active.length ? Math.round((done.length / active.length) * 100) : 0;
-
   return (
     <div className="space-y-5">
-      <section className="grid gap-4 sm:grid-cols-3">
-        <MetricCard label="Temps cumulé" value={formatDuration(totalTime)} detail="Toutes les séances" icon={Clock3} />
-        <MetricCard label="Exercices terminés" value={`${done.length} / ${active.length}`} detail="Sur la banque active" icon={CheckCircle2} />
-        <MetricCard label="Taux de réussite" value={`${completionRate}%`} detail="Progression globale" icon={BarChart3} />
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="Temps cumulé" value={formatDuration(model.totalTime)} detail="Toutes les séances" icon={Clock3} />
+        <MetricCard
+          label="Exercices maîtrisés"
+          value={`${model.global.masteredCount} / ${model.global.activeCount}`}
+          detail="Sur la banque active"
+          icon={CheckCircle2}
+          delay={0.05}
+        />
+        <MetricCard label="Progression globale" value={`${model.global.completionRate}%`} detail="Part maîtrisée" icon={BarChart3} delay={0.1} />
+        <MetricCard label="Série actuelle" value={`${model.streak} j`} detail="Jours consécutifs" icon={Flame} delay={0.15} />
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[.9fr_1.1fr]">
+      <section className="grid gap-5 xl:grid-cols-2">
         <Card className="p-6">
           <p className="eyebrow">Répartition</p>
           <CardTitle className="mt-2">Progression par matière</CardTitle>
           <div className="mt-6 space-y-5">
-            {subjects.map((subject) => {
-              const all = active.filter((e) => e.subject === subject);
-              const completed = done.filter((e) => e.subject === subject);
-              const percentage = all.length ? Math.round((completed.length / all.length) * 100) : 0;
-              return (
-                <div key={subject}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <span className={`grid h-5 w-5 place-items-center rounded text-[9px] font-bold ${subjectMeta[subject].className}`}>
-                        {subjectMeta[subject].short}
-                      </span>
-                      {subject}
+            {model.bySubject.map(({ subject, total, mastered, completionRate }) => (
+              <div key={subject}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-2">
+                    <span className={`grid h-5 w-5 place-items-center rounded text-[9px] font-bold ${subjectMeta[subject].className}`}>
+                      {subjectMeta[subject].short}
                     </span>
-                    <span className="text-zinc-500">{percentage}%</span>
-                  </div>
-                  <ProgressBar value={percentage} animated={false} className="mt-2 h-2" />
+                    {subject}
+                  </span>
+                  <span className="text-zinc-500">
+                    {mastered}/{total}
+                  </span>
                 </div>
-              );
-            })}
+                <ProgressBar value={completionRate} animated={false} className="mt-2 h-2" />
+              </div>
+            ))}
           </div>
         </Card>
 
         <Card className="p-6">
-          <p className="eyebrow">Chapitres</p>
-          <CardTitle className="mt-2">Où concentrer ton énergie</CardTitle>
-          <CardContent className="mt-6 space-y-3">
-            {chapters.length ? (
-              chapters.map(([label, list]) => {
-                const complete = list.filter((e) => e.status === "maîtrisé").length;
-                const pct = list.length ? (complete / list.length) * 100 : 0;
-                return (
-                  <div key={label} className="rounded-xl border border-white/[0.07] p-3.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-medium">{label}</p>
-                      <span className="whitespace-nowrap text-xs text-zinc-500">
-                        {complete}/{list.length}
-                      </span>
-                    </div>
-                    <ProgressBar value={pct} animated={false} barClassName="bg-accent/80" className="mt-3 h-1.5" />
-                  </div>
-                );
-              })
-            ) : (
-              <p className="py-10 text-center text-sm text-zinc-500">
-                Crée tes premiers exercices pour voir les chapitres apparaître.
-              </p>
-            )}
-          </CardContent>
+          <p className="eyebrow">Répartition</p>
+          <CardTitle className="mt-2">Maîtrise de la banque</CardTitle>
+          <div className="mt-6 space-y-5">
+            {model.mastery.map(({ mastery, count, percentage }) => (
+              <div key={mastery}>
+                <div className="flex items-center justify-between text-sm">
+                  <span>{mastery}%</span>
+                  <span className="text-zinc-500">{count}</span>
+                </div>
+                <ProgressBar value={percentage} animated={false} className="mt-2 h-2" />
+              </div>
+            ))}
+          </div>
         </Card>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-2">
+        <Card className="p-6">
+          <p className="eyebrow">Répartition</p>
+          <CardTitle className="mt-2">Par statut</CardTitle>
+          <div className="mt-6 space-y-5">
+            {model.status.map(({ status, count, percentage }) => (
+              <div key={status}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className={`rounded-md px-2 py-0.5 text-xs font-medium capitalize ${statusMeta[status].className}`}>{status}</span>
+                  <span className="text-zinc-500">{count}</span>
+                </div>
+                <ProgressBar value={percentage} animated={false} className="mt-2 h-2" />
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <p className="eyebrow">Constance</p>
+          <CardTitle className="mt-2">84 derniers jours</CardTitle>
+          <div className="mt-6">
+            <Heatmap workByDay={model.workByDay} />
+            <p className="mt-5 text-xs text-zinc-500">Chaque case représente une journée de travail enregistrée.</p>
+          </div>
+        </Card>
+      </section>
+
+      <section>
+        <p className="eyebrow">Banque d&apos;exercices</p>
+        <h3 className="mb-4 mt-2 font-semibold tracking-tight">Ce qui mérite ton attention</h3>
+        <ExerciseBankStats exercises={exercises} sessions={sessions} />
       </section>
     </div>
   );
