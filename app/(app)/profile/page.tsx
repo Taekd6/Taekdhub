@@ -1,1 +1,0 @@
-import { PageHeader } from "@/components/page-header"; import { PreferencesForm } from "@/components/preferences-form"; export default function ProfilePage(){return <><PageHeader eyebrow="Espace personnel" title="Profil" description="Ton identité de travail."/><PreferencesForm mode="profile"/></>}

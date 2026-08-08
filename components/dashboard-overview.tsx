@@ -32,48 +32,36 @@ import {
 } from "@/lib/gamification";
 import { computeProgressBySubject, type SubjectProgress } from "@/lib/progress";
 import { completedExercises, dayKey, subjectMeta, totalSeconds } from "@/lib/study";
-import { computeWeeklySummary, type WeeklySummary } from "@/lib/week";
+import { computeWeeklySummary, type SubjectWeekTime } from "@/lib/week";
 import { formatDuration } from "@/lib/utils";
 
-/** Purement présentationnel — la progression par matière vient de lib/progress.ts (source unique, partagée avec la page Progression depuis le Sprint 3B). */
-function SubjectProgressList({ progress }: { progress: SubjectProgress[] }) {
+/**
+ * Purement présentationnel — une seule liste par matière (Sprint 3G),
+ * combinant la progression all-time (lib/progress.ts) et le temps investi
+ * cette semaine (lib/week.ts) plutôt que deux listes séparées quasi
+ * identiques visuellement : avant ce sprint, "Par matière" (complétion) et
+ * "Cette semaine" (temps) étaient deux cartes voisines, faciles à confondre.
+ * `progress` et `weeklyBySubject` viennent tous deux de `lib/study.ts#subjects`
+ * dans le même ordre — associées par index, sans lookup.
+ */
+function SubjectOverview({ progress, weeklyBySubject }: { progress: SubjectProgress[]; weeklyBySubject: SubjectWeekTime[] }) {
   return (
     <div className="space-y-4">
-      {progress.map(({ subject, total, mastered, completionRate }) => (
+      {progress.map(({ subject, total, mastered, completionRate }, index) => (
         <div key={subject}>
-          <div className="mb-2 flex justify-between text-sm">
+          <div className="mb-2 flex items-center justify-between text-sm">
             <span className="flex items-center gap-2">
               <span className={`h-2 w-2 rounded-full ${subjectMeta[subject].className}`} />
               {subject}
             </span>
-            <span className="text-zinc-500">
-              {mastered}/{total}
+            <span className="flex items-center gap-2 text-zinc-500">
+              <span className="text-2xs">{formatDuration(weeklyBySubject[index]?.seconds ?? 0)} cette sem.</span>
+              <span>
+                {mastered}/{total}
+              </span>
             </span>
           </div>
           <ProgressBar value={completionRate} animated={false} barClassName="bg-accent/80" className="h-1.5" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** Purement présentationnel — le temps par matière vient de lib/week.ts (source unique du bilan hebdomadaire). */
-function WeeklyBreakdown({ weekly }: { weekly: WeeklySummary }) {
-  const maxSeconds = Math.max(1, ...weekly.bySubject.map((entry) => entry.seconds));
-  return (
-    <div className="space-y-3">
-      {weekly.bySubject.map(({ subject, seconds }) => (
-        <div key={subject}>
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2">
-              <span className={`grid h-5 w-5 place-items-center rounded text-[9px] font-bold ${subjectMeta[subject].className}`}>
-                {subjectMeta[subject].short}
-              </span>
-              {subject}
-            </span>
-            <span className="text-zinc-500">{formatDuration(seconds)}</span>
-          </div>
-          <ProgressBar value={(seconds / maxSeconds) * 100} animated={false} className="mt-2 h-1.5" />
         </div>
       ))}
     </div>
@@ -233,42 +221,9 @@ export function DashboardOverview() {
         </Card>
       </section>
 
-      {/* Bilan hebdomadaire (Sprint 3E) */}
-      <section>
-        <Card className="rounded-3xl p-6 sm:p-7">
-          <CardHeader>
-            <div>
-              <p className="eyebrow">Cette semaine</p>
-              <CardTitle className="mt-2 text-xl">Où est passé ton temps ?</CardTitle>
-            </div>
-            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">{model.weekly.progressPercent}%</span>
-          </CardHeader>
-          <CardContent className="mt-8 grid gap-8 lg:grid-cols-[.9fr_1.1fr]">
-            <div>
-              <p className="text-4xl font-semibold tracking-tight sm:text-5xl">
-                {formatDuration(model.weekly.totalSeconds)}{" "}
-                <span className="text-base font-normal text-zinc-500">/ {formatDuration(model.weekly.objectiveSeconds)}</span>
-              </p>
-              <p className="mt-1 text-sm text-zinc-500">Objectif hebdomadaire</p>
-              <ProgressBar value={model.weekly.progressPercent} className="mt-5" />
-
-              {model.weekly.neglected.length > 0 && (
-                <div className="mt-6 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-4 text-sm">
-                  <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-300" />
-                  <p className="leading-6 text-zinc-300">
-                    <span className="font-semibold text-amber-200">{model.weekly.neglected.map((n) => n.subject).join(", ")}</span>{" "}
-                    {model.weekly.neglected.length > 1 ? "n'ont" : "n'a"} reçu aucun temps cette semaine, alors qu&apos;
-                    {model.weekly.neglected.length > 1 ? "elles ont" : "elle a"} encore des exercices non maîtrisés en attente.
-                  </p>
-                </div>
-              )}
-            </div>
-            <WeeklyBreakdown weekly={model.weekly} />
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Heatmap + Subjects */}
+      {/* Heatmap + Subjects (Sprint 3G : fusion de l'ancien bloc "Cette semaine" (3E) et
+          "Par matière" (3B) — deux cartes voisines quasi identiques visuellement,
+          l'une en complétion all-time, l'autre en temps hebdomadaire, souvent confondues. */}
       <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
         <Card className="p-6">
           <CardHeader>
@@ -285,10 +240,31 @@ export function DashboardOverview() {
         </Card>
 
         <Card className="p-6">
-          <p className="eyebrow">Par matière</p>
-          <CardTitle className="mt-2">Progression</CardTitle>
+          <CardHeader>
+            <div>
+              <p className="eyebrow">Par matière</p>
+              <CardTitle className="mt-2">Progression</CardTitle>
+            </div>
+            <span className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent">{model.weekly.progressPercent}%</span>
+          </CardHeader>
+          <p className="mt-3 text-xs text-zinc-500">
+            {formatDuration(model.weekly.totalSeconds)} / {formatDuration(model.weekly.objectiveSeconds)} cette semaine
+          </p>
+          <ProgressBar value={model.weekly.progressPercent} className="mt-2 h-1.5" />
+
+          {model.weekly.neglected.length > 0 && (
+            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3.5 text-sm">
+              <AlertCircle size={15} className="mt-0.5 shrink-0 text-amber-300" />
+              <p className="text-xs leading-5 text-zinc-300">
+                <span className="font-semibold text-amber-200">{model.weekly.neglected.map((n) => n.subject).join(", ")}</span>{" "}
+                {model.weekly.neglected.length > 1 ? "n'ont" : "n'a"} reçu aucun temps cette semaine, alors qu&apos;
+                {model.weekly.neglected.length > 1 ? "elles ont" : "elle a"} encore des exercices non maîtrisés en attente.
+              </p>
+            </div>
+          )}
+
           <div className="mt-5">
-            <SubjectProgressList progress={model.subjectProgress} />
+            <SubjectOverview progress={model.subjectProgress} weeklyBySubject={model.weekly.bySubject} />
           </div>
         </Card>
       </section>

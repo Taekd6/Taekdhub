@@ -12,13 +12,13 @@ import {
   PlayCircle,
   Settings,
   Sparkles,
-  UserRound,
   Zap,
 } from "lucide-react";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { levelFromXp, totalXp } from "@/lib/gamification";
 import { cn } from "@/lib/cn";
 
+/** Sprint 3G : "Profil" fusionné dans "Réglages" (deux pages à un seul champ chacune, jamais consultées séparément) — 7 entrées au lieu de 8, pour redonner de la marge tactile à la nav mobile compacte ci-dessous. */
 const items = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/session", label: "Séance", icon: PlayCircle },
@@ -26,7 +26,6 @@ const items = [
   { href: "/exercises", label: "Exercices", icon: BookOpenCheck },
   { href: "/history", label: "Historique", icon: History },
   { href: "/progress", label: "Progression", icon: BarChart3 },
-  { href: "/profile", label: "Profil", icon: UserRound },
   { href: "/settings", label: "Réglages", icon: Settings },
 ];
 
@@ -44,7 +43,7 @@ function NavItems({ compact = false }: { compact?: boolean }) {
             className={cn(
               "focus-ring group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
               active ? "text-white" : "text-zinc-400 hover:text-zinc-100",
-              compact ? "justify-center px-3" : ""
+              compact ? "justify-center px-2" : ""
             )}
             title={compact ? label : undefined}
           >
@@ -111,7 +110,7 @@ export function AppSidebar() {
 
       <nav
         aria-label="Navigation principale"
-        className="fixed inset-x-3 bottom-3 z-40 flex items-center justify-around rounded-2xl border border-white/[0.1] bg-zinc-950/85 p-1.5 shadow-2xl shadow-black/30 backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-3 bottom-3 z-40 flex items-center justify-around gap-1 rounded-2xl border border-white/[0.1] bg-zinc-950/85 p-1.5 shadow-2xl shadow-black/30 backdrop-blur-xl lg:hidden"
       >
         <NavItems compact />
       </nav>
