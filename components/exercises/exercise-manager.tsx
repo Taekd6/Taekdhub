@@ -1,12 +1,14 @@
 "use client";
 
-import { BookOpenCheck, LayoutGrid, List } from "lucide-react";
+import { Archive, ArrowLeft, BookOpenCheck, LayoutGrid, List } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/input";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
+import { ArchivedExercises } from "@/components/exercises/archived-exercises";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { ExerciseFiltersBar } from "@/components/exercises/exercise-filters-bar";
 import { ExerciseForm, type NewExerciseInput } from "@/components/exercises/exercise-form";
@@ -32,6 +34,7 @@ export function ExerciseManager() {
   const [formOpen, setFormOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [focusMode, setFocusMode] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const resumeChecked = useRef(false);
 
   const updateFilters = useCallback((patch: Partial<ExerciseFilters>) => setFilters((prev) => ({ ...prev, ...patch })), []);
@@ -87,6 +90,13 @@ export function ExerciseManager() {
     setFocusMode(true);
   }, []);
   const archiveExercise = useCallback((id: string) => update(id, { archived: true }), [update]);
+  // Symétrique d'archiveExercise (Sprint 3H) — même `update`, ne touche à
+  // rien d'autre que `archived` (+ `updated_at`, géré par `update` lui-même).
+  const restoreExercise = useCallback((id: string) => update(id, { archived: false }), [update]);
+  const archivedExercises = useMemo(
+    () => [...exercises].filter((item) => item.archived).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
+    [exercises]
+  );
 
   // Chapitres (Sprint 3D) — mêmes conventions que `update` : fonctions pures
   // (lib/chapters.ts) combinées ici avec la persistance. `handleRemoveChapter`
@@ -218,6 +228,7 @@ export function ExerciseManager() {
         if (focusMode) setFocusMode(false);
         else if (formOpen) setFormOpen(false);
         else if (selectedId) setSelectedId(null);
+        else if (showArchived) setShowArchived(false);
       }
       if ((event.metaKey || event.ctrlKey) && event.key === "k") {
         event.preventDefault();
@@ -229,7 +240,7 @@ export function ExerciseManager() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [focusMode, formOpen, selectedId]);
+  }, [focusMode, formOpen, selectedId, showArchived]);
 
   if (focusMode && selected) {
     return (
@@ -240,6 +251,23 @@ export function ExerciseManager() {
         saveSessions={saveSessions}
         onClose={() => setFocusMode(false)}
       />
+    );
+  }
+
+  if (showArchived) {
+    return (
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+          <Button variant="ghost" size="sm" onClick={() => setShowArchived(false)}>
+            <ArrowLeft size={15} /> Retour aux exercices
+          </Button>
+          <p className="text-sm text-zinc-500">
+            <span className="font-semibold text-zinc-200">{archivedExercises.length}</span> exercice
+            {archivedExercises.length > 1 ? "s" : ""} archivé{archivedExercises.length > 1 ? "s" : ""}
+          </p>
+        </div>
+        <ArchivedExercises exercises={archivedExercises} onRestore={restoreExercise} />
+      </div>
     );
   }
 
@@ -270,6 +298,9 @@ export function ExerciseManager() {
           <span className="font-semibold text-zinc-200">{sorted.length}</span> exercice{sorted.length > 1 ? "s" : ""} affiché{sorted.length > 1 ? "s" : ""}
         </p>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setShowArchived(true)}>
+            <Archive size={15} /> Archivés{archivedExercises.length > 0 && ` (${archivedExercises.length})`}
+          </Button>
           <Select value={sort} onChange={(event) => setSort(event.target.value as ExerciseSort)} className="w-auto min-w-[150px] py-2 text-xs">
             {exerciseSortOptions.map((option) => (
               <option key={option.value} value={option.value}>
