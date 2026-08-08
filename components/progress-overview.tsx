@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo } from "react";
-import { BarChart3, CheckCircle2, Clock3, Flame, GraduationCap, TrendingUp } from "lucide-react";
+import { ArrowRight, BarChart3, CheckCircle2, Clock3, Flame, GraduationCap, TrendingUp } from "lucide-react";
 import { MetricCard } from "@/components/ui/metric-card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress";
 import { Heatmap } from "@/components/heatmap";
@@ -122,7 +124,7 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
       <p className="mt-1 text-xs text-zinc-500">Par matière, à partir de ce que le moteur de recommandation signale déjà.</p>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {readiness.map(({ subject, completionRate, flaggedCount, level }) => {
+        {readiness.map(({ subject, completionRate, flaggedCount, estimatedMinutes, level }) => {
           const meta = READINESS_META[level];
           return (
             <div key={subject} className={`rounded-xl border ${meta.border} ${meta.bg} p-3.5`}>
@@ -132,8 +134,14 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
               </div>
               <p className="mt-2 text-xs text-zinc-400">
                 {completionRate}% maîtrisé
-                {flaggedCount > 0 && ` · ${flaggedCount} exercice${flaggedCount > 1 ? "s" : ""} à retravailler`}
+                {flaggedCount > 0 && ` · ${flaggedCount} exercice${flaggedCount > 1 ? "s" : ""} à retravailler · ≈ ${estimatedMinutes} min`}
               </p>
+              {/* Sprint 3.1 : réutilise tel quel /session?subject=… (voir SessionRunner), aucun nouveau système de séance. */}
+              <Link href={`/session?subject=${encodeURIComponent(subject)}`} className="mt-3 inline-block">
+                <Button size="sm" variant="secondary">
+                  Préparer maintenant <ArrowRight size={13} />
+                </Button>
+              </Link>
             </div>
           );
         })}

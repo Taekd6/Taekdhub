@@ -1,5 +1,5 @@
 import { computeProgressBySubject } from "@/lib/progress";
-import { recommendExercises } from "@/lib/recommendation";
+import { estimatedDurationMinutes, recommendExercises } from "@/lib/recommendation";
 import { subjects } from "@/lib/study";
 import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
@@ -20,6 +20,8 @@ export interface SubjectReadiness {
   completionRate: number;
   /** Nombre d'exercices de la matière actuellement signalés par `recommendExercises`. */
   flaggedCount: number;
+  /** Somme de `estimatedDurationMinutes` (lib/recommendation.ts) sur les exercices signalés — même estimation que celle utilisée par la séance bornée par le temps, jamais recalculée différemment ici. */
+  estimatedMinutes: number;
   level: ReadinessLevel;
 }
 
@@ -38,9 +40,12 @@ export function computeReadinessBySubject(exercises: Exercise[], sessions: WorkS
   const progress = computeProgressBySubject(exercises);
   const flagged = recommendExercises(exercises, sessions, exercises.length, { now });
 
-  const flaggedCountBySubject = new Map<Subject, number>();
+  const flaggedBySubject = new Map<Subject, { count: number; minutes: number }>();
   for (const { exercise } of flagged) {
-    flaggedCountBySubject.set(exercise.subject, (flaggedCountBySubject.get(exercise.subject) ?? 0) + 1);
+    const entry = flaggedBySubject.get(exercise.subject) ?? { count: 0, minutes: 0 };
+    entry.count += 1;
+    entry.minutes += estimatedDurationMinutes(exercise, sessions);
+    flaggedBySubject.set(exercise.subject, entry);
   }
 
   return subjects
@@ -48,8 +53,15 @@ export function computeReadinessBySubject(exercises: Exercise[], sessions: WorkS
       const entry = progress.find((item) => item.subject === subject);
       const total = entry?.total ?? 0;
       const completionRate = entry?.completionRate ?? 0;
-      const flaggedCount = flaggedCountBySubject.get(subject) ?? 0;
-      return { subject, total, completionRate, flaggedCount, level: readinessLevel(flaggedCount, completionRate) };
+      const flaggedEntry = flaggedBySubject.get(subject);
+      return {
+        subject,
+        total,
+        completionRate,
+        flaggedCount: flaggedEntry?.count ?? 0,
+        estimatedMinutes: flaggedEntry?.minutes ?? 0,
+        level: readinessLevel(flaggedEntry?.count ?? 0, completionRate),
+      };
     })
     .filter((entry) => entry.total > 0);
 }

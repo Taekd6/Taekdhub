@@ -12,9 +12,9 @@ import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
-import { todaySeconds } from "@/lib/study";
+import { subjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
-import type { Exercise } from "@/lib/supabase/types";
+import type { Exercise, Subject } from "@/lib/supabase/types";
 
 type Phase = "loading" | "empty" | "preview" | "focus" | "between" | "summary";
 
@@ -37,6 +37,12 @@ const BUDGET_PRESETS = [15, 30, 45, 60];
  * changent QUE si l'utilisateur les modifie explicitement dans `FocusView`
  * (PriorityPicker / MasteryPicker / boutons de statut, déjà existants) —
  * ce composant ne les touche jamais lui-même.
+ *
+ * Contexte matière (Sprint 3.1, depuis "Prêt pour le DS ?" — lib/readiness.ts) :
+ * `/session?subject=<matière>` restreint la banque considérée à cette seule
+ * matière AVANT l'appel à `recommendExercises` — le moteur lui-même n'est ni
+ * modifié ni dupliqué, seule la liste d'exercices qu'on lui passe change.
+ * `/session` sans paramètre garde exactement le comportement d'avant.
  */
 export function SessionRunner() {
   const { exercises, sessions, preferences, saveSessions, saveExercises, ready } = usePrepahubData();
@@ -46,6 +52,8 @@ export function SessionRunner() {
   const [visitedCount, setVisitedCount] = useState(0);
   /** Temps disponible pour la séance à venir, en minutes — initialisé à l'objectif du jour restant, ajustable via les préréglages ou le champ libre. */
   const [budgetMinutes, setBudgetMinutes] = useState(0);
+  /** Matière imposée par `?subject=`, ou `null` pour une séance normale (toute la banque) — voir la note Sprint 3.1 ci-dessus. */
+  const [contextSubject, setContextSubject] = useState<Subject | null>(null);
   const initialized = useRef(false);
 
   // Décide une seule fois, au montage, entre reprendre un focus interrompu
@@ -56,17 +64,22 @@ export function SessionRunner() {
     if (!ready || initialized.current) return;
     initialized.current = true;
 
+    const subjectParam = new URLSearchParams(window.location.search).get("subject");
+    const scopedSubject = subjectParam && (subjects as string[]).includes(subjectParam) ? (subjectParam as Subject) : null;
+    setContextSubject(scopedSubject);
+    const scoped = scopedSubject ? exercises.filter((item) => item.subject === scopedSubject) : exercises;
+
     const pendingId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX);
     const pending = pendingId ? exercises.find((item) => item.id === pendingId && !item.archived) : undefined;
 
     if (pending) {
-      const rest = recommendExercises(exercises, sessions).filter((item) => item.exercise.id !== pending.id);
+      const rest = recommendExercises(scoped, sessions).filter((item) => item.exercise.id !== pending.id);
       setRecommendations([{ exercise: pending, score: 0, reasons: ["Séance reprise"] }, ...rest]);
       setPhase("focus");
       return;
     }
 
-    const hasAnyEligible = computeExerciseBankStats(exercises, sessions).toReviewCount > 0;
+    const hasAnyEligible = computeExerciseBankStats(scoped, sessions).toReviewCount > 0;
     if (!hasAnyEligible) {
       setPhase("empty");
       return;
@@ -77,13 +90,19 @@ export function SessionRunner() {
     setPhase("preview");
   }, [ready, exercises, sessions, preferences.dailyGoalMinutes]);
 
+  /** Même banque que celle évaluée au montage (voir l'effet ci-dessus), recalculée pour l'aperçu réactif au budget. */
+  const scopedExercises = useMemo(
+    () => (contextSubject ? exercises.filter((item) => item.subject === contextSubject) : exercises),
+    [exercises, contextSubject]
+  );
+
   // Aperçu recalculé en direct à chaque changement de budget — c'est la même
   // fonction `recommendExercises` qui produira la sélection réelle au clic
   // sur "Commencer ma séance" (voir startSession), donc l'aperçu ne ment
   // jamais sur ce qui sera effectivement proposé.
   const previewSelection = useMemo(
-    () => recommendExercises(exercises, sessions, 6, { availableMinutes: budgetMinutes }),
-    [exercises, sessions, budgetMinutes]
+    () => recommendExercises(scopedExercises, sessions, 6, { availableMinutes: budgetMinutes }),
+    [scopedExercises, sessions, budgetMinutes]
   );
   const previewMinutesUsed = useMemo(
     () => previewSelection.reduce((sum, { exercise }) => sum + estimatedDurationMinutes(exercise, sessions), 0),
@@ -142,11 +161,24 @@ export function SessionRunner() {
     return (
       <Card className="p-10 text-center">
         <Sparkles className="mx-auto text-accent" size={24} />
-        <p className="mt-4 font-medium">Rien à travailler pour l&apos;instant.</p>
-        <p className="mt-2 text-sm text-zinc-500">Ta banque est à jour — reviens plus tard, ou explore tes exercices.</p>
-        <Link href="/exercises" className="mt-6 inline-block">
-          <Button variant="secondary">Voir les exercices</Button>
-        </Link>
+        <p className="mt-4 font-medium">
+          {contextSubject ? `Rien à travailler en ${contextSubject} pour l'instant.` : "Rien à travailler pour l'instant."}
+        </p>
+        <p className="mt-2 text-sm text-zinc-500">
+          {contextSubject
+            ? "Cette matière est à jour — reviens plus tard, ou explore tes exercices."
+            : "Ta banque est à jour — reviens plus tard, ou explore tes exercices."}
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link href="/exercises">
+            <Button variant="secondary">Voir les exercices</Button>
+          </Link>
+          {contextSubject && (
+            <Link href="/session">
+              <Button variant="ghost">Séance complète</Button>
+            </Link>
+          )}
+        </div>
       </Card>
     );
   }
@@ -166,6 +198,14 @@ export function SessionRunner() {
           <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
             La séance tient dans ce temps — aucun exercice trop long n&apos;est jamais forcé dedans.
           </p>
+          {contextSubject && (
+            <p className="mt-2 text-xs text-accent">
+              Ciblée sur {contextSubject} ·{" "}
+              <Link href="/session" className="underline underline-offset-2">
+                voir la séance complète
+              </Link>
+            </p>
+          )}
 
           <div className="mx-auto mt-6 flex max-w-sm flex-wrap items-center justify-center gap-2">
             {BUDGET_PRESETS.map((preset) => (
