@@ -1,0 +1,722 @@
+[
+  {
+    "title": "Racines n-ièmes de l'unité et polygone régulier",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Nombres complexes",
+    "estimatedMinutes": 20,
+    "tags": ["complexes", "racines de l'unité", "géométrie"],
+    "hints": [
+      "Les racines n-ièmes de 1 sont les e^(2ikπ/n) pour k = 0, ..., n-1 : place-les sur le cercle trigonométrique.",
+      "La somme de toutes les racines n-ièmes de l'unité vaut 0 pour n ≥ 2 (somme d'une suite géométrique de raison ≠ 1)."
+    ],
+    "correction": "Les n racines sont régulièrement espacées sur le cercle unité, d'angle 2π/n. Leur somme, en tant que somme géométrique de raison e^(2iπ/n) ≠ 1, vaut (1 - e^(2iπ))/(1 - e^(2iπ/n)) = 0.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Similitude plane directe définie par un nombre complexe",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Nombres complexes",
+    "estimatedMinutes": 35,
+    "tags": ["complexes", "similitude", "transformation du plan"],
+    "hints": [
+      "Une similitude directe s'écrit z ↦ az + b avec a ∈ ℂ*. Identifie le rapport |a| et l'angle arg(a).",
+      "Le point fixe (s'il existe, a ≠ 1) vérifie z₀ = az₀ + b, donc z₀ = b/(1-a)."
+    ],
+    "correction": "Pour f(z) = az + b avec a ≠ 1, le centre est z₀ = b/(1-a), le rapport |a| et l'angle de rotation arg(a). Si a = 1, f est une translation de vecteur b (pas de point fixe sauf b = 0).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Division euclidienne et racine multiple d'un polynôme",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Polynômes",
+    "estimatedMinutes": 20,
+    "tags": ["polynômes", "racines multiples", "division euclidienne"],
+    "hints": [
+      "a est racine d'ordre ≥ k de P si et seulement si P, P', ..., P^(k-1) s'annulent toutes en a.",
+      "Pour trouver l'ordre exact, dérive successivement et teste chaque valeur en a jusqu'à obtenir une dérivée non nulle."
+    ],
+    "correction": "On calcule P(a), P'(a), P''(a)... jusqu'à trouver la première dérivée non nulle en a : son ordre donne la multiplicité de la racine. La division euclidienne par (X-a)^k confirme le résultat sans reste.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Relations coefficients-racines pour un polynôme de degré 3",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Polynômes",
+    "estimatedMinutes": 30,
+    "tags": ["polynômes", "relations de Viète"],
+    "hints": [
+      "Pour P = X³ + pX² + qX + r de racines a, b, c : a+b+c = -p, ab+ac+bc = q, abc = -r.",
+      "Pour calculer a²+b²+c², utilise l'identité (a+b+c)² = a²+b²+c² + 2(ab+ac+bc)."
+    ],
+    "correction": "Avec σ1 = a+b+c = -p, σ2 = ab+ac+bc = q, σ3 = abc = -r, on obtient a²+b²+c² = σ1² - 2σ2 = p² - 2q. Toute expression symétrique des racines s'exprime ainsi en fonction des coefficients.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Suite récurrente linéaire d'ordre 2 (type Fibonacci)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 25,
+    "tags": ["suites", "récurrence linéaire"],
+    "hints": [
+      "Cherche l'équation caractéristique r² = r + 1 (ou l'équivalent pour ta relation) et ses racines.",
+      "La solution générale est une combinaison linéaire des racines élevées à la puissance n ; les conditions initiales fixent les coefficients."
+    ],
+    "correction": "L'équation caractéristique associée à u(n+2) = u(n+1) + u(n) est r² - r - 1 = 0, de racines φ = (1+√5)/2 et ψ = (1-√5)/2. La solution générale est u(n) = Aφⁿ + Bψⁿ, A et B déterminés par u(0) et u(1).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Suites adjacentes et irrationalité de e",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 50,
+    "tags": ["suites adjacentes", "irrationalité", "série exponentielle"],
+    "hints": [
+      "Pose u(n) = somme des 1/k! pour k=0 à n, et v(n) = u(n) + 1/(n·n!). Montre qu'elles sont adjacentes.",
+      "Pour l'irrationalité, suppose e = p/q rationnel et multiplie l'encadrement u(q) < e < v(q) par q! pour obtenir une contradiction d'entiers."
+    ],
+    "correction": "u(n) croît, v(n) décroît, et v(n)-u(n) = 1/(n·n!) → 0 : les suites sont adjacentes de limite commune e. En supposant e = p/q et en multipliant par q!, q!·u(q) est un entier et q!·e devrait l'être aussi si e est rationnel, ce qui contredit l'encadrement strict u(q) < e < v(q) une fois multiplié par q! (l'écart devient strictement compris entre 0 et 1). Donc e est irrationnel.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours. Démonstration classique, entièrement Sup (suites adjacentes + raisonnement par l'absurde).",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Développement limité et étude locale en 0",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Développements limités",
+    "estimatedMinutes": 20,
+    "tags": ["DL", "étude locale"],
+    "hints": [
+      "Utilise les DL usuels de référence (exp, sin, cos, ln(1+x), (1+x)^α) à l'ordre demandé.",
+      "Le signe du premier terme non nul après la valeur en 0 donne la position de la courbe par rapport à sa tangente."
+    ],
+    "correction": "En combinant les DL usuels et en simplifiant, on identifie le DL de la fonction à l'ordre voulu. Le terme dominant après le terme d'ordre 1 (tangente) donne directement la position locale de la courbe (au-dessus si positif, en dessous si négatif).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Calcul de limite par développement limité",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Développements limités",
+    "estimatedMinutes": 25,
+    "tags": ["DL", "forme indéterminée", "limites"],
+    "hints": [
+      "Identifie la forme indéterminée (0/0, ∞-∞...) puis remplace chaque terme par son DL à un ordre suffisant.",
+      "Ne t'arrête pas trop tôt dans l'ordre du DL : garde assez de termes pour que le premier terme non nul du résultat final apparaisse."
+    ],
+    "correction": "Après substitution des DL usuels au bon ordre et simplification (les termes constants et d'ordre 1 s'annulant souvent entre eux), il reste un terme dominant qui donne directement la limite (souvent 0, un réel non nul, ou ±∞ selon le signe et la puissance restante).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Calcul d'intégrales par changement de variable",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Intégration",
+    "estimatedMinutes": 20,
+    "tags": ["intégration", "changement de variable"],
+    "hints": [
+      "Repère une fonction et sa dérivée dans l'intégrande : c'est souvent le signal d'un changement de variable u = ...",
+      "N'oublie pas de changer les bornes d'intégration en fonction de la nouvelle variable."
+    ],
+    "correction": "Après le changement de variable adapté (bornes recalculées), l'intégrale se ramène à une primitive usuelle directement calculable.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Intégrales de Wallis — relation de récurrence",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Intégration",
+    "estimatedMinutes": 45,
+    "tags": ["intégration par parties", "récurrence", "Wallis"],
+    "hints": [
+      "Pose W(n) = intégrale de 0 à π/2 de sin^n(t) dt, et intègre par parties en écrivant sin^n = sin^(n-1) · sin.",
+      "Tu dois obtenir une relation du type n·W(n) = (n-1)·W(n-2) — vérifie-la sur W(0) et W(1) pour amorcer la récurrence."
+    ],
+    "correction": "L'intégration par parties donne n·W(n) = (n-1)·W(n-2) pour n ≥ 2, avec W(0) = π/2 et W(1) = 1. On en déduit les valeurs de proche en proche, séparément pour n pair et impair.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours. Classique de Sup (IPP + récurrence), ne nécessite aucune notion de Spé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Oscillateur harmonique — équation différentielle d'ordre 2",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Équations différentielles",
+    "estimatedMinutes": 30,
+    "tags": ["équations différentielles", "second ordre", "oscillateur"],
+    "hints": [
+      "L'équation y'' + ω²y = 0 a pour équation caractéristique r² + ω² = 0, de racines imaginaires pures ±iω.",
+      "La solution générale s'écrit y(t) = A cos(ωt) + B sin(ωt), ou de façon équivalente C cos(ωt + φ)."
+    ],
+    "correction": "Les racines ±iω de l'équation caractéristique donnent la solution générale y(t) = A cos(ωt) + B sin(ωt). Les constantes A et B se déterminent avec les conditions initiales y(0) et y'(0).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Noyau et image d'une application linéaire en dimension finie",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Algèbre linéaire",
+    "estimatedMinutes": 30,
+    "tags": ["algèbre linéaire", "noyau", "image", "théorème du rang"],
+    "hints": [
+      "Pour le noyau, résous f(x) = 0 en écrivant x dans la base de départ — c'est un système linéaire homogène.",
+      "Utilise le théorème du rang : dim(Ker f) + dim(Im f) = dim(espace de départ), pour vérifier ta réponse sur l'image."
+    ],
+    "correction": "Le noyau s'obtient en résolvant f(x) = 0, ce qui donne une base de Ker f et sa dimension. Le théorème du rang donne alors dim(Im f) = dim(E) - dim(Ker f), ce qui permet de vérifier la dimension de l'image trouvée en étudiant les images des vecteurs de base.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Résolution d'un système linéaire par pivot de Gauss",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Matrices et systèmes",
+    "estimatedMinutes": 15,
+    "tags": ["systèmes linéaires", "pivot de Gauss"],
+    "hints": [
+      "Échelonne le système ligne par ligne en éliminant une inconnue à la fois, en commençant par la première colonne.",
+      "Une fois le système triangulaire, résous par remontée (de la dernière équation vers la première)."
+    ],
+    "correction": "Après échelonnement par opérations élémentaires sur les lignes, le système triangulaire se résout par substitution en remontant depuis la dernière équation.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Discussion d'un système linéaire selon un paramètre",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Matrices et systèmes",
+    "estimatedMinutes": 35,
+    "tags": ["systèmes linéaires", "paramètre", "discussion"],
+    "hints": [
+      "Échelonne le système en gardant le paramètre m symbolique ; repère la valeur de m qui annule un pivot.",
+      "Traite séparément le cas où le pivot s'annule (système dégénéré, à ré-examiner ligne par ligne) et le cas général."
+    ],
+    "correction": "Pour la valeur critique du paramètre (celle qui annule le pivot lors de l'échelonnement), le système change de nature (infinité de solutions ou incompatible selon le second membre) ; pour toute autre valeur, le système admet une solution unique donnée par la résolution triangulaire.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Loi binomiale — probabilités et espérance",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Probabilités",
+    "estimatedMinutes": 20,
+    "tags": ["probabilités", "loi binomiale", "espérance"],
+    "hints": [
+      "Vérifie que les répétitions sont indépendantes et de même probabilité de succès p : c'est le cadre binomial B(n,p).",
+      "L'espérance d'une loi B(n,p) vaut np, la variance np(1-p) — pas besoin de recalculer la formule à chaque fois."
+    ],
+    "correction": "P(X=k) = C(n,k)·p^k·(1-p)^(n-k). L'espérance vaut E(X) = np directement par la formule du cours de la loi binomiale.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Convergence d'une série à termes positifs par comparaison",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Séries numériques",
+    "estimatedMinutes": 25,
+    "tags": ["séries", "convergence", "comparaison", "équivalents"],
+    "hints": [
+      "Cherche un équivalent simple du terme général quand n tend vers l'infini.",
+      "Compare ensuite à une série de Riemann 1/n^α connue : la série converge si et seulement si α > 1."
+    ],
+    "correction": "En trouvant l'équivalent du terme général et en le comparant à une série de Riemann de référence (convergente si l'exposant est > 1, divergente sinon), le critère de comparaison des séries à termes positifs tranche directement la nature de la série.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Étude complète d'une suite implicite (existence, unicité, asymptotique)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 5,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 70,
+    "tags": ["suites", "TVI", "monotonie", "asymptotique"],
+    "hints": [
+      "Pour chaque n, étudie la fonction f_n(x) = x^n + x - 1 sur [0,1] : montre qu'elle est strictement croissante, ce qui donne existence et unicité de la racine u(n).",
+      "Pour l'asymptotique, encadre u(n) et montre que u(n) → 1, puis pose v(n) = 1 - u(n) et cherche un équivalent de v(n) en revenant à l'équation."
+    ],
+    "correction": "f_n est continue, strictement croissante sur [0,1] (dérivée n·x^(n-1)+1 > 0), avec f_n(0) = -1 < 0 et f_n(1) = 1 > 0 : par TVI strictement monotone, u(n) existe et est unique. En montrant que la suite (u(n)) est croissante et majorée par 1, elle converge vers 1. En posant v(n) = 1 - u(n) et en réinjectant dans l'équation, un développement asymptotique donne v(n) ~ ln(n)/n, soit u(n) ~ 1 - ln(n)/n.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours. Difficile mais entièrement Sup : TVI, monotonie stricte, encadrement, pas de notion de Spé requise.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Chute libre avec frottement fluide linéaire",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Mécanique du point",
+    "estimatedMinutes": 25,
+    "tags": ["mécanique", "frottement", "équation différentielle"],
+    "hints": [
+      "Applique le principe fondamental de la dynamique : mv' = mg - kv (frottement proportionnel à la vitesse).",
+      "C'est une équation différentielle linéaire d'ordre 1 : identifie la vitesse limite (régime permanent, v'=0) avant de résoudre complètement."
+    ],
+    "correction": "La vitesse limite v_lim = mg/k s'obtient en annulant v' dans mv' = mg - kv. La solution complète est v(t) = v_lim·(1 - e^(-kt/m)) pour une chute partant du repos.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Mouvement circulaire uniforme et force centripète",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Mécanique du point",
+    "estimatedMinutes": 20,
+    "tags": ["mécanique", "mouvement circulaire"],
+    "hints": [
+      "En coordonnées polaires, l'accélération d'un mouvement circulaire de rayon R et vitesse angulaire ω constante est purement radiale, de norme Rω².",
+      "Applique le PFD selon la direction radiale pour identifier la force responsable de cette accélération centripète."
+    ],
+    "correction": "L'accélération vaut a = -Rω²·u_r (dirigée vers le centre). Le PFD projeté radialement donne la force centripète nécessaire F = mRω², assurée par la tension, la gravité ou la réaction selon le contexte.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Oscillateur harmonique non amorti — mise en équation",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Oscillateurs",
+    "estimatedMinutes": 20,
+    "tags": ["oscillateurs", "mécanique", "ressort"],
+    "hints": [
+      "Applique le PFD à la masse accrochée au ressort : mx'' = -kx (loi de Hooke, sans frottement).",
+      "Identifie la pulsation propre ω₀ = √(k/m) par identification avec x'' + ω₀²x = 0."
+    ],
+    "correction": "mx'' = -kx se réécrit x'' + (k/m)x = 0, soit ω₀² = k/m. La solution est x(t) = A cos(ω₀t + φ), avec A et φ fixés par les conditions initiales.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Oscillateur amorti — régimes et pseudo-période",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Oscillateurs",
+    "estimatedMinutes": 30,
+    "tags": ["oscillateurs", "amortissement", "régimes"],
+    "hints": [
+      "Écris l'équation x'' + 2λx' + ω₀²x = 0 et calcule le discriminant de l'équation caractéristique pour distinguer les trois régimes.",
+      "En régime pseudo-périodique (λ < ω₀), la pseudo-pulsation vaut ω = √(ω₀² - λ²) — pas ω₀ lui-même."
+    ],
+    "correction": "Selon le signe de λ² - ω₀² : régime apériodique (λ > ω₀, deux racines réelles), critique (λ = ω₀, racine double), ou pseudo-périodique (λ < ω₀, racines complexes conjuguées -λ ± iω avec ω = √(ω₀²-λ²)). La pseudo-période vaut T = 2π/ω.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Charge d'un condensateur à travers une résistance (circuit RC)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Électrocinétique",
+    "estimatedMinutes": 15,
+    "tags": ["électrocinétique", "RC", "régime transitoire"],
+    "hints": [
+      "La loi des mailles donne E = Ri + u_C, avec i = C·du_C/dt : c'est une équation différentielle linéaire d'ordre 1 en u_C.",
+      "La constante de temps du circuit RC vaut τ = RC."
+    ],
+    "correction": "L'équation RC·u_C' + u_C = E a pour solution u_C(t) = E·(1 - e^(-t/RC)), en partant d'un condensateur initialement déchargé.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Circuit RLC série en régime libre — étude des régimes",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Électrocinétique",
+    "estimatedMinutes": 30,
+    "tags": ["électrocinétique", "RLC", "régime transitoire"],
+    "hints": [
+      "L'équation différentielle du circuit RLC série (sans source) est formellement identique à celle de l'oscillateur mécanique amorti.",
+      "Identifie le facteur d'amortissement λ = R/(2L) et la pulsation propre ω₀ = 1/√(LC) pour retrouver les trois régimes."
+    ],
+    "correction": "Par analogie directe avec l'oscillateur mécanique amorti (λ = R/2L, ω₀ = 1/√(LC)), on retrouve les régimes apériodique, critique et pseudo-périodique selon le signe de λ² - ω₀².",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Circuit RLC en régime sinusoïdal forcé — résonance",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Électrocinétique",
+    "estimatedMinutes": 45,
+    "tags": ["électrocinétique", "RLC", "régime sinusoïdal forcé", "résonance"],
+    "hints": [
+      "Passe en notation complexe : l'impédance du circuit série est Z = R + j(Lω - 1/(Cω)).",
+      "L'amplitude du courant est maximale (résonance) quand |Z| est minimale, c'est-à-dire quand la partie imaginaire s'annule : Lω = 1/(Cω)."
+    ],
+    "correction": "|Z|² = R² + (Lω - 1/(Cω))². Le minimum de |Z| (donc le maximum du courant) est atteint pour ω₀ = 1/√(LC), à la résonance, où |Z| = R et I_max = E/R.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours. Notation complexe en régime sinusoïdal forcé : outil de Sup (pas de notion de Spé requise).",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Construction d'image par une lentille mince convergente",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Optique géométrique",
+    "estimatedMinutes": 15,
+    "tags": ["optique", "lentille", "construction géométrique"],
+    "hints": [
+      "Trace au moins deux rayons caractéristiques : celui passant par le centre optique (non dévié) et celui parallèle à l'axe (passe par le foyer image).",
+      "Utilise ensuite la relation de conjugaison de Descartes 1/OA' - 1/OA = 1/f' pour vérifier ta construction par le calcul."
+    ],
+    "correction": "La construction géométrique (rayon non dévié par le centre + rayon parallèle à l'axe réfracté par le foyer image) localise l'image. La relation de conjugaison 1/OA' - 1/OA = 1/f' confirme la position algébrique de l'image trouvée graphiquement.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Premier principe appliqué à une détente isotherme d'un gaz parfait",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Thermodynamique",
+    "estimatedMinutes": 20,
+    "tags": ["thermodynamique", "gaz parfait", "premier principe"],
+    "hints": [
+      "Pour un gaz parfait, l'énergie interne ne dépend que de la température : à température constante, ΔU = 0.",
+      "Le premier principe ΔU = W + Q donne alors directement Q = -W : calcule le travail des forces de pression pour en déduire le transfert thermique."
+    ],
+    "correction": "ΔU = 0 (gaz parfait, T constante). Le premier principe donne Q = -W. Pour une détente isotherme réversible, W = -nRT·ln(V_f/V_i), donc Q = nRT·ln(V_f/V_i) (positif si le gaz se détend, il reçoit de la chaleur).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Cycle thermodynamique simple — bilan énergétique",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Thermodynamique",
+    "estimatedMinutes": 35,
+    "tags": ["thermodynamique", "cycle", "bilan énergétique"],
+    "hints": [
+      "Décompose le cycle en transformations élémentaires (isotherme, isochore, isobare...) et calcule W et Q pour chacune séparément.",
+      "Sur un cycle complet, ΔU = 0 (retour à l'état initial) : c'est un bon moyen de vérifier tes calculs de W et Q totaux."
+    ],
+    "correction": "En sommant W et Q sur chaque étape du cycle, on vérifie ΔU_total = W_total + Q_total = 0. Le rendement (si moteur) se calcule ensuite comme le rapport du travail utile fourni sur la chaleur reçue de la source chaude.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Circuit RLC — étude complète (transitoire, forcé, énergétique)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "DM",
+    "difficulty": 5,
+    "chapter": "Électrocinétique",
+    "estimatedMinutes": 75,
+    "tags": ["électrocinétique", "RLC", "synthèse", "bilan énergétique"],
+    "hints": [
+      "Traite d'abord le régime libre (sans source) pour identifier λ et ω₀, puis le régime forcé sinusoïdal en notation complexe.",
+      "Pour le bilan énergétique, exprime l'énergie stockée dans L et C, et montre qu'à la résonance, la puissance moyenne dissipée dans R est maximale."
+    ],
+    "correction": "Régime libre : pseudo-périodique si R < 2√(L/C). Régime forcé : résonance en courant à ω₀ = 1/√(LC) où I_max = E/R. Énergie électromagnétique totale E_L + E_C oscille au cours du temps mais sa valeur moyenne sur une période reste constante en régime établi ; la puissance moyenne dissipée par effet Joule est maximale à la résonance (P_moy = E²/(2R) à ω₀).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours. Synthèse exigeante mais entièrement Sup : régimes transitoire et forcé + bilan de puissance, sans notion de Spé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Configuration électronique et position dans le tableau périodique",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Structure de la matière",
+    "estimatedMinutes": 15,
+    "tags": ["configuration électronique", "classification périodique"],
+    "hints": [
+      "Remplis les cases quantiques en respectant les règles de Klechkowski (ordre de remplissage), Pauli et Hund.",
+      "Le numéro de la période correspond à la couche externe (n maximal), la colonne se lit sur la configuration de valence."
+    ],
+    "correction": "La configuration électronique complète, obtenue en respectant Klechkowski/Pauli/Hund, donne directement la couche de valence : son numéro n indique la période, et le type/nombre d'électrons de valence indique la colonne du tableau périodique.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Évolution des propriétés périodiques (rayon, électronégativité)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Classification périodique",
+    "estimatedMinutes": 20,
+    "tags": ["classification périodique", "rayon atomique", "électronégativité"],
+    "hints": [
+      "Sur une période, la charge nucléaire effective augmente : le rayon atomique diminue et l'électronégativité augmente de gauche à droite.",
+      "Sur une colonne, l'ajout de couches électroniques l'emporte : le rayon atomique augmente et l'électronégativité diminue en descendant."
+    ],
+    "correction": "Rayon atomique : diminue de gauche à droite (période), augmente de haut en bas (colonne). Électronégativité : tendance inverse. Ces deux règles suffisent à classer les éléments demandés par comparaison de position dans le tableau.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Géométrie VSEPR de molécules simples",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Liaison chimique",
+    "estimatedMinutes": 20,
+    "tags": ["VSEPR", "géométrie moléculaire", "Lewis"],
+    "hints": [
+      "Établis d'abord le schéma de Lewis de la molécule pour compter les doublets liants et non liants autour de l'atome central.",
+      "Utilise la notation AXnEm : le nombre total (n+m) détermine la géométrie de base (linéaire, trigonale, tétraédrique...), que les doublets non liants viennent ensuite déformer."
+    ],
+    "correction": "Après établissement du schéma de Lewis, la formule AXnEm (n liaisons, m doublets non liants) donne la géométrie de base selon la théorie VSEPR (répulsion minimale des doublets), éventuellement déformée par la répulsion plus forte des doublets non liants.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Calcul de pH d'une solution d'acide fort ou faible",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Réactions acide-base",
+    "estimatedMinutes": 20,
+    "tags": ["acide-base", "pH", "Ka"],
+    "hints": [
+      "Pour un acide fort, la dissociation est totale : pH = -log(C) directement (si C n'est pas trop faible).",
+      "Pour un acide faible, écris l'équilibre et sa constante Ka, puis utilise l'approximation usuelle (réaction peu avancée) si elle est justifiée par le calcul du taux d'avancement."
+    ],
+    "correction": "Acide fort : pH = -log(C). Acide faible : à partir de Ka = [H3O+][A-]/[HA] et de la conservation de la matière, on résout (souvent avec l'approximation de la réaction limitée) pour obtenir [H3O+] puis le pH.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Titrage acido-basique — détermination d'une concentration",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Réactions acide-base",
+    "estimatedMinutes": 30,
+    "tags": ["titrage", "équivalence", "acide-base"],
+    "hints": [
+      "À l'équivalence, les quantités de matière introduites sont dans les proportions stœchiométriques de la réaction de titrage.",
+      "Repère le volume équivalent (saut de pH ou changement de couleur de l'indicateur) puis applique la relation C_a·V_a = C_b·V_b (cas 1:1)."
+    ],
+    "correction": "À l'équivalence, n(acide) = n(base) (stœchiométrie 1:1) : C_a·V_a = C_b·V_b, ce qui donne directement la concentration inconnue à partir du volume équivalent repéré expérimentalement.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Équilibrage d'une réaction d'oxydoréduction et calcul de potentiel",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Oxydoréduction",
+    "estimatedMinutes": 25,
+    "tags": ["oxydoréduction", "demi-équations", "potentiel standard"],
+    "hints": [
+      "Écris séparément les deux demi-équations d'oxydation et de réduction, équilibre les éléments puis les charges avec H+/H2O et électrons.",
+      "La réaction est favorable dans le sens direct si le potentiel standard du couple oxydant est supérieur à celui du couple réducteur (règle du gamma)."
+    ],
+    "correction": "Après équilibrage des deux demi-équations (éléments, puis charges via H+/H2O et e-) et combinaison pour éliminer les électrons, on obtient l'équation bilan. Le sens spontané de la réaction se détermine en comparant les potentiels standard des deux couples (règle du gamma : l'oxydant du couple de plus haut potentiel réagit avec le réducteur du couple de plus bas potentiel).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Calcul d'enthalpie de réaction par la loi de Hess",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Thermochimie",
+    "estimatedMinutes": 30,
+    "tags": ["thermochimie", "loi de Hess", "enthalpie de réaction"],
+    "hints": [
+      "L'enthalpie étant une fonction d'état, ΔrH de la réaction cible peut se calculer comme une combinaison linéaire des ΔrH de réactions intermédiaires connues.",
+      "Trouve les coefficients par lesquels multiplier (et éventuellement inverser) chaque réaction connue pour reconstituer exactement la réaction cible par addition."
+    ],
+    "correction": "En combinant linéairement (additions, soustractions, multiplications par un coefficient) les réactions dont les enthalpies sont connues, de façon à reconstituer exactement la réaction cible, on obtient ΔrH par la même combinaison des ΔrH connues (loi de Hess).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Vitesse de réaction et ordre — exploitation de données expérimentales",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Cinétique chimique",
+    "estimatedMinutes": 35,
+    "tags": ["cinétique chimique", "ordre de réaction", "vitesse"],
+    "hints": [
+      "Teste la linéarité de ln([A]) en fonction du temps (ordre 1) ou de 1/[A] en fonction du temps (ordre 2) à partir des données fournies.",
+      "Le tracé qui donne une droite indique l'ordre de la réaction ; sa pente est reliée à la constante de vitesse k."
+    ],
+    "correction": "En traçant successivement ln([A]) et 1/[A] en fonction du temps, le graphe linéaire identifie l'ordre de la réaction (1 ou 2 respectivement). La pente de la droite obtenue donne -k (ordre 1) ou k (ordre 2).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  }
+]

@@ -65,6 +65,18 @@ export function ExerciseManager() {
     exercisesRef.current = exercises;
   }, [exercises]);
 
+  // Même pattern pour `chapters` (voir `exercisesRef` ci-dessus) — nécessaire
+  // depuis l'import en masse (Sprint infrastructure banque concours) : créer
+  // plusieurs chapitres dans la même boucle synchrone (un appel à
+  // `handleCreateChapter` par chapitre manquant) verrait, sans ce ref, chaque
+  // appel lire le même `chapters` figé au rendu précédent — chaque
+  // `saveChapters` écraserait alors le précédent au lieu de s'accumuler, ne
+  // laissant survivre que le dernier chapitre créé.
+  const chaptersRef = useRef(chapters);
+  useEffect(() => {
+    chaptersRef.current = chapters;
+  }, [chapters]);
+
   // `updated_at` est maintenu automatiquement ici, pour toute modification,
   // plutôt que d'être géré au cas par cas par chaque appelant.
   //
@@ -107,28 +119,35 @@ export function ExerciseManager() {
   // stable du memo des cartes, comme `update`/`archiveExercise` ci-dessus.
   const handleCreateChapter = useCallback(
     (subject: Subject, label: string) => {
-      const { chapters: next, chapter } = addChapter(chapters, subject, label);
+      const { chapters: next, chapter } = addChapter(chaptersRef.current, subject, label);
+      chaptersRef.current = next;
       saveChapters(next);
       return chapter;
     },
-    [chapters, saveChapters]
+    [saveChapters]
   );
   const handleRenameChapter = useCallback(
-    (id: string, label: string) => saveChapters(renameChapter(chapters, id, label)),
-    [chapters, saveChapters]
+    (id: string, label: string) => {
+      const next = renameChapter(chaptersRef.current, id, label);
+      chaptersRef.current = next;
+      saveChapters(next);
+    },
+    [saveChapters]
   );
   // Ne supprime jamais un exercice : seuls les `chapter_id` qui pointaient
   // vers ce chapitre sont réinitialisés à `null` (exercice réassigné à
   // "Sans chapitre", jamais perdu).
   const handleRemoveChapter = useCallback(
     (id: string) => {
-      saveChapters(removeChapter(chapters, id));
+      const nextChapters = removeChapter(chaptersRef.current, id);
+      chaptersRef.current = nextChapters;
+      saveChapters(nextChapters);
       const updatedAt = new Date().toISOString();
       const next = exercisesRef.current.map((item) => (item.chapter_id === id ? { ...item, chapter_id: null, updated_at: updatedAt } : item));
       exercisesRef.current = next;
       saveExercises(next);
     },
-    [chapters, saveChapters, saveExercises]
+    [saveChapters, saveExercises]
   );
 
   // Depuis le tableau "À revoir" : on réinitialise les filtres (l'exercice

@@ -171,7 +171,7 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
     const type: ExerciseType = (typeRaw as ExerciseType) ?? "Personnel";
 
     const difficultyRaw = entry.difficulty;
-    if (difficultyRaw !== undefined && (typeof difficultyRaw !== "number" || difficultyRaw < 1 || difficultyRaw > 5)) {
+    if (difficultyRaw !== undefined && difficultyRaw !== null && (typeof difficultyRaw !== "number" || difficultyRaw < 1 || difficultyRaw > 5)) {
       errors.push({ index, message: `${label} ("${title}") — difficulté invalide (attendu un nombre entre 1 et 5).` });
       return;
     }
@@ -241,7 +241,7 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
     }
 
     const yearRaw = entry.year;
-    if (yearRaw !== undefined && (typeof yearRaw !== "number" || yearRaw < 1900 || yearRaw > 2100)) {
+    if (yearRaw !== undefined && yearRaw !== null && (typeof yearRaw !== "number" || yearRaw < 1900 || yearRaw > 2100)) {
       errors.push({ index, message: `${label} ("${title}") — année invalide (attendu un nombre, ex. 2022).` });
       return;
     }
