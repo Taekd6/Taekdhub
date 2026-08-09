@@ -21,7 +21,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "forme trigonométrique d'un complexe",
+      "somme d'une suite géométrique",
+      "cercle trigonométrique"
+    ],
+    "pedagogicalGoal": "classique : relier les racines n-ièmes de l'unité à leur interprétation géométrique (sommets d'un polygone régulier) et exploiter que leur somme est nulle (somme géométrique de raison ≠ 1)."
   },
   {
     "title": "Similitude plane directe définie par un nombre complexe",
@@ -45,7 +52,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "nombres complexes (forme algébrique)",
+      "module et argument",
+      "point fixe d'une transformation"
+    ],
+    "pedagogicalGoal": "consolidation : interpréter z↦az+b comme une similitude directe (centre, rapport |a|, angle arg(a)) — pont entre l'algèbre des complexes et la géométrie des transformations du plan."
   },
   {
     "title": "Division euclidienne et racine multiple d'un polynôme",
@@ -69,7 +83,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "dérivation d'un polynôme",
+      "division euclidienne de polynômes",
+      "racine d'un polynôme"
+    ],
+    "pedagogicalGoal": "classique : caractériser l'ordre de multiplicité d'une racine par l'annulation des dérivées successives, technique réutilisée dès qu'une racine multiple intervient."
   },
   {
     "title": "Relations coefficients-racines pour un polynôme de degré 3",
@@ -92,7 +113,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "relations de Viète",
+      "identités remarquables",
+      "fonctions symétriques des racines"
+    ],
+    "pedagogicalGoal": "consolidation : exprimer une fonction symétrique des racines (ex. a²+b²+c²) en fonction des coefficients via Viète, sans jamais calculer les racines explicitement."
   },
   {
     "title": "Suite récurrente linéaire d'ordre 2 (type Fibonacci)",
@@ -115,7 +143,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "équation caractéristique",
+      "suites géométriques",
+      "résolution d'un système 2×2"
+    ],
+    "pedagogicalGoal": "classique incontournable : résoudre une récurrence linéaire d'ordre 2 (type Fibonacci) via l'équation caractéristique et les conditions initiales."
   },
   {
     "title": "Suites adjacentes et irrationalité de e",
@@ -139,7 +174,15 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "suites adjacentes",
+      "raisonnement par l'absurde",
+      "factorielle",
+      "série de l'exponentielle"
+    ],
+    "pedagogicalGoal": "combinaison : relier suites adjacentes et raisonnement par l'absurde pour prouver l'irrationalité de e — modèle de preuve réutilisable et exigeant, entièrement de Sup."
   },
   {
     "title": "Développement limité et étude locale en 0",
@@ -162,7 +205,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "développements limités usuels",
+      "tangente en un point",
+      "position d'une courbe par rapport à sa tangente"
+    ],
+    "pedagogicalGoal": "classique : utiliser un DL pour l'étude locale (tangente puis position de la courbe par rapport à sa tangente via le premier terme non nul suivant)."
   },
   {
     "title": "Calcul de limite par développement limité",
@@ -186,7 +236,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "développements limités usuels",
+      "formes indéterminées",
+      "ordre d'un développement limité"
+    ],
+    "pedagogicalGoal": "consolidation : lever une forme indéterminée par DL en gardant l'ordre suffisant — piège fréquent de s'arrêter trop tôt et de retomber sur une forme indéterminée."
   },
   {
     "title": "Calcul d'intégrales par changement de variable",
@@ -209,7 +266,13 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "primitives usuelles",
+      "changement de variable dans une intégrale"
+    ],
+    "pedagogicalGoal": "classique : repérer une fonction et sa dérivée dans l'intégrande pour poser le bon changement de variable, sans oublier de recalculer les bornes."
   },
   {
     "title": "Intégrales de Wallis — relation de récurrence",
@@ -233,7 +296,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "intégration par parties",
+      "récurrence",
+      "intégrales de fonctions trigonométriques"
+    ],
+    "pedagogicalGoal": "consolidation : établir la relation de récurrence de Wallis par IPP, classique fondateur réutilisé pour de nombreux calculs d'intégrales et d'équivalents."
   },
   {
     "title": "Oscillateur harmonique — équation différentielle d'ordre 2",
@@ -257,7 +327,13 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "équation caractéristique",
+      "équations différentielles linéaires d'ordre 2 à coefficients constants"
+    ],
+    "pedagogicalGoal": "classique : résoudre y''+ω²y=0 (racines imaginaires pures) et écrire la solution sous forme A cos(ωt)+B sin(ωt) ou amplitude-phase."
   },
   {
     "title": "Noyau et image d'une application linéaire en dimension finie",
@@ -282,7 +358,15 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "applications linéaires",
+      "systèmes linéaires homogènes",
+      "théorème du rang",
+      "base et dimension"
+    ],
+    "pedagogicalGoal": "consolidation : déterminer noyau et image d'une application linéaire et vérifier la cohérence par le théorème du rang — cœur de l'algèbre linéaire de Sup."
   },
   {
     "title": "Résolution d'un système linéaire par pivot de Gauss",
@@ -305,7 +389,13 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "opérations élémentaires sur les lignes",
+      "systèmes linéaires"
+    ],
+    "pedagogicalGoal": "classique fondamental : résoudre un système par échelonnement (pivot de Gauss) puis remontée — méthode de base réutilisée partout en algèbre linéaire."
   },
   {
     "title": "Discussion d'un système linéaire selon un paramètre",
@@ -329,7 +419,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "pivot de Gauss",
+      "rang d'une matrice",
+      "discussion selon un paramètre"
+    ],
+    "pedagogicalGoal": "consolidation : mener une discussion d'un système selon un paramètre en repérant la valeur critique qui annule un pivot, et traiter séparément le cas dégénéré."
   },
   {
     "title": "Loi binomiale — probabilités et espérance",
@@ -353,7 +450,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "dénombrement (combinaisons)",
+      "épreuves de Bernoulli indépendantes",
+      "espérance et variance"
+    ],
+    "pedagogicalGoal": "classique : reconnaître un schéma de Bernoulli, écrire la loi binomiale B(n,p) et appliquer directement E(X)=np et V(X)=np(1-p)."
   },
   {
     "title": "Convergence d'une série à termes positifs par comparaison",
@@ -378,7 +482,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "séries à termes positifs",
+      "équivalents de suites",
+      "séries de Riemann de référence"
+    ],
+    "pedagogicalGoal": "classique fondamental : déterminer la nature d'une série à termes positifs par équivalent puis comparaison à une série de Riemann de référence."
   },
   {
     "title": "Étude complète d'une suite implicite (existence, unicité, asymptotique)",
@@ -403,7 +514,15 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "théorème de la bijection (TVI + stricte monotonie)",
+      "monotonie de suites",
+      "encadrement",
+      "développement asymptotique"
+    ],
+    "pedagogicalGoal": "simuler un problème de concours multi-questions : existence/unicité par TVI, convergence par monotonie, puis équivalent asymptotique — enchaînement long et rigoureux, entièrement de Sup."
   },
   {
     "title": "Chute libre avec frottement fluide linéaire",
@@ -427,7 +546,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "principe fondamental de la dynamique",
+      "équation différentielle linéaire d'ordre 1",
+      "régime permanent"
+    ],
+    "pedagogicalGoal": "classique : mettre en équation une chute avec frottement linéaire, identifier la vitesse limite (régime permanent, v'=0) avant de résoudre l'EDO complète."
   },
   {
     "title": "Mouvement circulaire uniforme et force centripète",
@@ -450,7 +576,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "coordonnées polaires",
+      "accélération en mouvement circulaire",
+      "principe fondamental de la dynamique"
+    ],
+    "pedagogicalGoal": "classique : relier accélération centripète (Rω²) et force nécessaire par le PFD projeté radialement — base de tout mouvement circulaire."
   },
   {
     "title": "Oscillateur harmonique non amorti — mise en équation",
@@ -474,7 +607,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "principe fondamental de la dynamique",
+      "loi de Hooke",
+      "équation différentielle d'ordre 2"
+    ],
+    "pedagogicalGoal": "classique : mettre en équation le système masse-ressort (mx''=-kx) et identifier la pulsation propre ω₀=√(k/m)."
   },
   {
     "title": "Oscillateur amorti — régimes et pseudo-période",
@@ -498,7 +638,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "équation différentielle d'ordre 2",
+      "discriminant de l'équation caractéristique",
+      "oscillateur harmonique"
+    ],
+    "pedagogicalGoal": "consolidation : distinguer les trois régimes (apériodique, critique, pseudo-périodique) selon le discriminant, et calculer la pseudo-période en régime pseudo-périodique."
   },
   {
     "title": "Charge d'un condensateur à travers une résistance (circuit RC)",
@@ -522,7 +669,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "loi des mailles",
+      "relation i=C·du/dt",
+      "équation différentielle linéaire d'ordre 1"
+    ],
+    "pedagogicalGoal": "classique : établir et résoudre l'EDO de charge d'un condensateur, identifier la constante de temps τ=RC — archétype du régime transitoire du premier ordre."
   },
   {
     "title": "Circuit RLC série en régime libre — étude des régimes",
@@ -546,7 +700,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "équation différentielle d'ordre 2",
+      "oscillateur amorti (analogie mécanique)",
+      "régimes transitoires"
+    ],
+    "pedagogicalGoal": "consolidation : exploiter l'analogie RLC ↔ oscillateur mécanique amorti pour retrouver les trois régimes sans refaire toute l'étude."
   },
   {
     "title": "Circuit RLC en régime sinusoïdal forcé — résonance",
@@ -571,7 +732,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "notation complexe (impédances)",
+      "régime sinusoïdal forcé",
+      "résonance"
+    ],
+    "pedagogicalGoal": "consolidation : établir l'impédance complexe d'un RLC série et localiser la résonance en courant (partie imaginaire nulle, ω₀=1/√(LC))."
   },
   {
     "title": "Construction d'image par une lentille mince convergente",
@@ -595,7 +763,13 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "rayons caractéristiques d'une lentille",
+      "relation de conjugaison de Descartes"
+    ],
+    "pedagogicalGoal": "automatisme : construire graphiquement l'image par une lentille convergente (rayons caractéristiques) et la confirmer par la relation de conjugaison."
   },
   {
     "title": "Premier principe appliqué à une détente isotherme d'un gaz parfait",
@@ -619,7 +793,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "premier principe de la thermodynamique",
+      "énergie interne d'un gaz parfait",
+      "travail des forces de pression"
+    ],
+    "pedagogicalGoal": "classique : exploiter ΔU=0 (gaz parfait isotherme) pour relier directement travail et transfert thermique (Q=-W)."
   },
   {
     "title": "Cycle thermodynamique simple — bilan énergétique",
@@ -643,7 +824,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "premier principe",
+      "transformations élémentaires (isotherme, isochore, isobare)",
+      "travail et transfert thermique"
+    ],
+    "pedagogicalGoal": "consolidation : décomposer un cycle en transformations élémentaires, calculer W et Q sur chacune, et vérifier ΔU=0 sur le cycle complet."
   },
   {
     "title": "Circuit RLC — étude complète (transitoire, forcé, énergétique)",
@@ -668,7 +856,15 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "régime transitoire d'ordre 2",
+      "notation complexe",
+      "résonance",
+      "bilan de puissance (effet Joule)"
+    ],
+    "pedagogicalGoal": "simuler un problème de concours de synthèse : régime libre, régime forcé et bilan énergétique d'un RLC dans un même sujet long — exigeant mais entièrement de Sup."
   },
   {
     "title": "Configuration électronique et position dans le tableau périodique",
@@ -691,7 +887,13 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "règles de Klechkowski, Pauli et Hund",
+      "couche de valence"
+    ],
+    "pedagogicalGoal": "automatisme : établir une configuration électronique (Klechkowski/Pauli/Hund) et en déduire la position (période, colonne) dans le tableau périodique."
   },
   {
     "title": "Évolution des propriétés périodiques (rayon, électronégativité)",
@@ -715,7 +917,13 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "structure du tableau périodique",
+      "charge nucléaire effective"
+    ],
+    "pedagogicalGoal": "classique : justifier et appliquer les tendances périodiques (rayon atomique, électronégativité) à partir de la position dans le tableau."
   },
   {
     "title": "Géométrie VSEPR de molécules simples",
@@ -739,7 +947,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "schéma de Lewis",
+      "doublets liants et non liants",
+      "théorie VSEPR"
+    ],
+    "pedagogicalGoal": "classique : passer du schéma de Lewis à la géométrie moléculaire par la méthode AXnEm (VSEPR)."
   },
   {
     "title": "Calcul de pH d'une solution d'acide fort ou faible",
@@ -763,7 +978,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "autoprotolyse de l'eau",
+      "constante d'acidité Ka",
+      "approximation de la réaction limitée"
+    ],
+    "pedagogicalGoal": "classique : calculer le pH d'un acide fort (dissociation totale) ou faible (équilibre Ka avec approximation justifiée par le taux d'avancement)."
   },
   {
     "title": "Titrage acido-basique — détermination d'une concentration",
@@ -787,7 +1009,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "équivalence d'un titrage",
+      "stœchiométrie",
+      "conservation de la matière"
+    ],
+    "pedagogicalGoal": "consolidation : exploiter l'équivalence d'un titrage (proportions stœchiométriques) pour déterminer une concentration inconnue à partir du volume équivalent."
   },
   {
     "title": "Équilibrage d'une réaction d'oxydoréduction et calcul de potentiel",
@@ -811,7 +1040,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "demi-équations redox",
+      "nombre d'oxydation",
+      "potentiel standard (règle du gamma)"
+    ],
+    "pedagogicalGoal": "classique : équilibrer une réaction redox par demi-équations et prévoir son sens spontané par comparaison des potentiels standard (règle du gamma)."
   },
   {
     "title": "Calcul d'enthalpie de réaction par la loi de Hess",
@@ -835,7 +1071,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "enthalpie comme fonction d'état",
+      "combinaison linéaire de réactions",
+      "enthalpie standard de réaction"
+    ],
+    "pedagogicalGoal": "consolidation : calculer une enthalpie de réaction par combinaison linéaire de réactions connues (loi de Hess), en exploitant le caractère de fonction d'état."
   },
   {
     "title": "Vitesse de réaction et ordre — exploitation de données expérimentales",
@@ -859,7 +1102,15 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "vitesse de réaction",
+      "ordre d'une réaction",
+      "intégration des lois de vitesse (ordre 1 et 2)",
+      "exploitation graphique"
+    ],
+    "pedagogicalGoal": "consolidation : déterminer l'ordre d'une réaction en testant la linéarité de ln[A] (ordre 1) ou 1/[A] (ordre 2) sur des données expérimentales, et en déduire k."
   },
   {
     "title": "Factorisation par identités remarquables",

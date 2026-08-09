@@ -7,7 +7,11 @@
     "difficulty": 2,
     "chapter": "Nombres complexes",
     "estimatedMinutes": 20,
-    "tags": ["complexes", "racines de l'unité", "géométrie"],
+    "tags": [
+      "complexes",
+      "racines de l'unité",
+      "géométrie"
+    ],
     "hints": [
       "Les racines n-ièmes de 1 sont les e^(2ikπ/n) pour k = 0, ..., n-1 : place-les sur le cercle trigonométrique.",
       "La somme de toutes les racines n-ièmes de l'unité vaut 0 pour n ≥ 2 (somme d'une suite géométrique de raison ≠ 1)."
@@ -17,7 +21,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "forme trigonométrique d'un complexe",
+      "somme d'une suite géométrique",
+      "cercle trigonométrique"
+    ],
+    "pedagogicalGoal": "classique : relier les racines n-ièmes de l'unité à leur interprétation géométrique (sommets d'un polygone régulier) et exploiter que leur somme est nulle (somme géométrique de raison ≠ 1)."
   },
   {
     "title": "Similitude plane directe définie par un nombre complexe",
@@ -27,7 +38,11 @@
     "difficulty": 3,
     "chapter": "Nombres complexes",
     "estimatedMinutes": 35,
-    "tags": ["complexes", "similitude", "transformation du plan"],
+    "tags": [
+      "complexes",
+      "similitude",
+      "transformation du plan"
+    ],
     "hints": [
       "Une similitude directe s'écrit z ↦ az + b avec a ∈ ℂ*. Identifie le rapport |a| et l'angle arg(a).",
       "Le point fixe (s'il existe, a ≠ 1) vérifie z₀ = az₀ + b, donc z₀ = b/(1-a)."
@@ -37,7 +52,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "nombres complexes (forme algébrique)",
+      "module et argument",
+      "point fixe d'une transformation"
+    ],
+    "pedagogicalGoal": "consolidation : interpréter z↦az+b comme une similitude directe (centre, rapport |a|, angle arg(a)) — pont entre l'algèbre des complexes et la géométrie des transformations du plan."
   },
   {
     "title": "Division euclidienne et racine multiple d'un polynôme",
@@ -47,7 +69,11 @@
     "difficulty": 2,
     "chapter": "Polynômes",
     "estimatedMinutes": 20,
-    "tags": ["polynômes", "racines multiples", "division euclidienne"],
+    "tags": [
+      "polynômes",
+      "racines multiples",
+      "division euclidienne"
+    ],
     "hints": [
       "a est racine d'ordre ≥ k de P si et seulement si P, P', ..., P^(k-1) s'annulent toutes en a.",
       "Pour trouver l'ordre exact, dérive successivement et teste chaque valeur en a jusqu'à obtenir une dérivée non nulle."
@@ -57,7 +83,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "dérivation d'un polynôme",
+      "division euclidienne de polynômes",
+      "racine d'un polynôme"
+    ],
+    "pedagogicalGoal": "classique : caractériser l'ordre de multiplicité d'une racine par l'annulation des dérivées successives, technique réutilisée dès qu'une racine multiple intervient."
   },
   {
     "title": "Relations coefficients-racines pour un polynôme de degré 3",
@@ -67,7 +100,10 @@
     "difficulty": 3,
     "chapter": "Polynômes",
     "estimatedMinutes": 30,
-    "tags": ["polynômes", "relations de Viète"],
+    "tags": [
+      "polynômes",
+      "relations de Viète"
+    ],
     "hints": [
       "Pour P = X³ + pX² + qX + r de racines a, b, c : a+b+c = -p, ab+ac+bc = q, abc = -r.",
       "Pour calculer a²+b²+c², utilise l'identité (a+b+c)² = a²+b²+c² + 2(ab+ac+bc)."
@@ -77,7 +113,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "relations de Viète",
+      "identités remarquables",
+      "fonctions symétriques des racines"
+    ],
+    "pedagogicalGoal": "consolidation : exprimer une fonction symétrique des racines (ex. a²+b²+c²) en fonction des coefficients via Viète, sans jamais calculer les racines explicitement."
   },
   {
     "title": "Suite récurrente linéaire d'ordre 2 (type Fibonacci)",
@@ -87,7 +130,10 @@
     "difficulty": 2,
     "chapter": "Suites numériques",
     "estimatedMinutes": 25,
-    "tags": ["suites", "récurrence linéaire"],
+    "tags": [
+      "suites",
+      "récurrence linéaire"
+    ],
     "hints": [
       "Cherche l'équation caractéristique r² = r + 1 (ou l'équivalent pour ta relation) et ses racines.",
       "La solution générale est une combinaison linéaire des racines élevées à la puissance n ; les conditions initiales fixent les coefficients."
@@ -97,7 +143,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "équation caractéristique",
+      "suites géométriques",
+      "résolution d'un système 2×2"
+    ],
+    "pedagogicalGoal": "classique incontournable : résoudre une récurrence linéaire d'ordre 2 (type Fibonacci) via l'équation caractéristique et les conditions initiales."
   },
   {
     "title": "Suites adjacentes et irrationalité de e",
@@ -107,7 +160,11 @@
     "difficulty": 4,
     "chapter": "Suites numériques",
     "estimatedMinutes": 50,
-    "tags": ["suites adjacentes", "irrationalité", "série exponentielle"],
+    "tags": [
+      "suites adjacentes",
+      "irrationalité",
+      "série exponentielle"
+    ],
     "hints": [
       "Pose u(n) = somme des 1/k! pour k=0 à n, et v(n) = u(n) + 1/(n·n!). Montre qu'elles sont adjacentes.",
       "Pour l'irrationalité, suppose e = p/q rationnel et multiplie l'encadrement u(q) < e < v(q) par q! pour obtenir une contradiction d'entiers."
@@ -117,7 +174,15 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "suites adjacentes",
+      "raisonnement par l'absurde",
+      "factorielle",
+      "série de l'exponentielle"
+    ],
+    "pedagogicalGoal": "combinaison : relier suites adjacentes et raisonnement par l'absurde pour prouver l'irrationalité de e — modèle de preuve réutilisable et exigeant, entièrement de Sup."
   },
   {
     "title": "Développement limité et étude locale en 0",
@@ -127,7 +192,10 @@
     "difficulty": 2,
     "chapter": "Développements limités",
     "estimatedMinutes": 20,
-    "tags": ["DL", "étude locale"],
+    "tags": [
+      "DL",
+      "étude locale"
+    ],
     "hints": [
       "Utilise les DL usuels de référence (exp, sin, cos, ln(1+x), (1+x)^α) à l'ordre demandé.",
       "Le signe du premier terme non nul après la valeur en 0 donne la position de la courbe par rapport à sa tangente."
@@ -137,7 +205,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "développements limités usuels",
+      "tangente en un point",
+      "position d'une courbe par rapport à sa tangente"
+    ],
+    "pedagogicalGoal": "classique : utiliser un DL pour l'étude locale (tangente puis position de la courbe par rapport à sa tangente via le premier terme non nul suivant)."
   },
   {
     "title": "Calcul de limite par développement limité",
@@ -147,7 +222,11 @@
     "difficulty": 3,
     "chapter": "Développements limités",
     "estimatedMinutes": 25,
-    "tags": ["DL", "forme indéterminée", "limites"],
+    "tags": [
+      "DL",
+      "forme indéterminée",
+      "limites"
+    ],
     "hints": [
       "Identifie la forme indéterminée (0/0, ∞-∞...) puis remplace chaque terme par son DL à un ordre suffisant.",
       "Ne t'arrête pas trop tôt dans l'ordre du DL : garde assez de termes pour que le premier terme non nul du résultat final apparaisse."
@@ -157,7 +236,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "développements limités usuels",
+      "formes indéterminées",
+      "ordre d'un développement limité"
+    ],
+    "pedagogicalGoal": "consolidation : lever une forme indéterminée par DL en gardant l'ordre suffisant — piège fréquent de s'arrêter trop tôt et de retomber sur une forme indéterminée."
   },
   {
     "title": "Calcul d'intégrales par changement de variable",
@@ -167,7 +253,10 @@
     "difficulty": 2,
     "chapter": "Intégration",
     "estimatedMinutes": 20,
-    "tags": ["intégration", "changement de variable"],
+    "tags": [
+      "intégration",
+      "changement de variable"
+    ],
     "hints": [
       "Repère une fonction et sa dérivée dans l'intégrande : c'est souvent le signal d'un changement de variable u = ...",
       "N'oublie pas de changer les bornes d'intégration en fonction de la nouvelle variable."
@@ -177,7 +266,13 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "primitives usuelles",
+      "changement de variable dans une intégrale"
+    ],
+    "pedagogicalGoal": "classique : repérer une fonction et sa dérivée dans l'intégrande pour poser le bon changement de variable, sans oublier de recalculer les bornes."
   },
   {
     "title": "Intégrales de Wallis — relation de récurrence",
@@ -187,7 +282,11 @@
     "difficulty": 4,
     "chapter": "Intégration",
     "estimatedMinutes": 45,
-    "tags": ["intégration par parties", "récurrence", "Wallis"],
+    "tags": [
+      "intégration par parties",
+      "récurrence",
+      "Wallis"
+    ],
     "hints": [
       "Pose W(n) = intégrale de 0 à π/2 de sin^n(t) dt, et intègre par parties en écrivant sin^n = sin^(n-1) · sin.",
       "Tu dois obtenir une relation du type n·W(n) = (n-1)·W(n-2) — vérifie-la sur W(0) et W(1) pour amorcer la récurrence."
@@ -197,7 +296,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "intégration par parties",
+      "récurrence",
+      "intégrales de fonctions trigonométriques"
+    ],
+    "pedagogicalGoal": "consolidation : établir la relation de récurrence de Wallis par IPP, classique fondateur réutilisé pour de nombreux calculs d'intégrales et d'équivalents."
   },
   {
     "title": "Oscillateur harmonique — équation différentielle d'ordre 2",
@@ -207,7 +313,11 @@
     "difficulty": 3,
     "chapter": "Équations différentielles",
     "estimatedMinutes": 30,
-    "tags": ["équations différentielles", "second ordre", "oscillateur"],
+    "tags": [
+      "équations différentielles",
+      "second ordre",
+      "oscillateur"
+    ],
     "hints": [
       "L'équation y'' + ω²y = 0 a pour équation caractéristique r² + ω² = 0, de racines imaginaires pures ±iω.",
       "La solution générale s'écrit y(t) = A cos(ωt) + B sin(ωt), ou de façon équivalente C cos(ωt + φ)."
@@ -217,7 +327,13 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "équation caractéristique",
+      "équations différentielles linéaires d'ordre 2 à coefficients constants"
+    ],
+    "pedagogicalGoal": "classique : résoudre y''+ω²y=0 (racines imaginaires pures) et écrire la solution sous forme A cos(ωt)+B sin(ωt) ou amplitude-phase."
   },
   {
     "title": "Noyau et image d'une application linéaire en dimension finie",
@@ -227,7 +343,12 @@
     "difficulty": 3,
     "chapter": "Algèbre linéaire",
     "estimatedMinutes": 30,
-    "tags": ["algèbre linéaire", "noyau", "image", "théorème du rang"],
+    "tags": [
+      "algèbre linéaire",
+      "noyau",
+      "image",
+      "théorème du rang"
+    ],
     "hints": [
       "Pour le noyau, résous f(x) = 0 en écrivant x dans la base de départ — c'est un système linéaire homogène.",
       "Utilise le théorème du rang : dim(Ker f) + dim(Im f) = dim(espace de départ), pour vérifier ta réponse sur l'image."
@@ -237,7 +358,15 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "applications linéaires",
+      "systèmes linéaires homogènes",
+      "théorème du rang",
+      "base et dimension"
+    ],
+    "pedagogicalGoal": "consolidation : déterminer noyau et image d'une application linéaire et vérifier la cohérence par le théorème du rang — cœur de l'algèbre linéaire de Sup."
   },
   {
     "title": "Résolution d'un système linéaire par pivot de Gauss",
@@ -247,7 +376,10 @@
     "difficulty": 1,
     "chapter": "Matrices et systèmes",
     "estimatedMinutes": 15,
-    "tags": ["systèmes linéaires", "pivot de Gauss"],
+    "tags": [
+      "systèmes linéaires",
+      "pivot de Gauss"
+    ],
     "hints": [
       "Échelonne le système ligne par ligne en éliminant une inconnue à la fois, en commençant par la première colonne.",
       "Une fois le système triangulaire, résous par remontée (de la dernière équation vers la première)."
@@ -257,7 +389,13 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "opérations élémentaires sur les lignes",
+      "systèmes linéaires"
+    ],
+    "pedagogicalGoal": "classique fondamental : résoudre un système par échelonnement (pivot de Gauss) puis remontée — méthode de base réutilisée partout en algèbre linéaire."
   },
   {
     "title": "Discussion d'un système linéaire selon un paramètre",
@@ -267,7 +405,11 @@
     "difficulty": 3,
     "chapter": "Matrices et systèmes",
     "estimatedMinutes": 35,
-    "tags": ["systèmes linéaires", "paramètre", "discussion"],
+    "tags": [
+      "systèmes linéaires",
+      "paramètre",
+      "discussion"
+    ],
     "hints": [
       "Échelonne le système en gardant le paramètre m symbolique ; repère la valeur de m qui annule un pivot.",
       "Traite séparément le cas où le pivot s'annule (système dégénéré, à ré-examiner ligne par ligne) et le cas général."
@@ -277,7 +419,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "pivot de Gauss",
+      "rang d'une matrice",
+      "discussion selon un paramètre"
+    ],
+    "pedagogicalGoal": "consolidation : mener une discussion d'un système selon un paramètre en repérant la valeur critique qui annule un pivot, et traiter séparément le cas dégénéré."
   },
   {
     "title": "Loi binomiale — probabilités et espérance",
@@ -287,7 +436,11 @@
     "difficulty": 2,
     "chapter": "Probabilités",
     "estimatedMinutes": 20,
-    "tags": ["probabilités", "loi binomiale", "espérance"],
+    "tags": [
+      "probabilités",
+      "loi binomiale",
+      "espérance"
+    ],
     "hints": [
       "Vérifie que les répétitions sont indépendantes et de même probabilité de succès p : c'est le cadre binomial B(n,p).",
       "L'espérance d'une loi B(n,p) vaut np, la variance np(1-p) — pas besoin de recalculer la formule à chaque fois."
@@ -297,7 +450,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "dénombrement (combinaisons)",
+      "épreuves de Bernoulli indépendantes",
+      "espérance et variance"
+    ],
+    "pedagogicalGoal": "classique : reconnaître un schéma de Bernoulli, écrire la loi binomiale B(n,p) et appliquer directement E(X)=np et V(X)=np(1-p)."
   },
   {
     "title": "Convergence d'une série à termes positifs par comparaison",
@@ -307,7 +467,12 @@
     "difficulty": 3,
     "chapter": "Séries numériques",
     "estimatedMinutes": 25,
-    "tags": ["séries", "convergence", "comparaison", "équivalents"],
+    "tags": [
+      "séries",
+      "convergence",
+      "comparaison",
+      "équivalents"
+    ],
     "hints": [
       "Cherche un équivalent simple du terme général quand n tend vers l'infini.",
       "Compare ensuite à une série de Riemann 1/n^α connue : la série converge si et seulement si α > 1."
@@ -317,7 +482,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "séries à termes positifs",
+      "équivalents de suites",
+      "séries de Riemann de référence"
+    ],
+    "pedagogicalGoal": "classique fondamental : déterminer la nature d'une série à termes positifs par équivalent puis comparaison à une série de Riemann de référence."
   },
   {
     "title": "Étude complète d'une suite implicite (existence, unicité, asymptotique)",
@@ -327,7 +499,12 @@
     "difficulty": 5,
     "chapter": "Suites numériques",
     "estimatedMinutes": 70,
-    "tags": ["suites", "TVI", "monotonie", "asymptotique"],
+    "tags": [
+      "suites",
+      "TVI",
+      "monotonie",
+      "asymptotique"
+    ],
     "hints": [
       "Pour chaque n, étudie la fonction f_n(x) = x^n + x - 1 sur [0,1] : montre qu'elle est strictement croissante, ce qui donne existence et unicité de la racine u(n).",
       "Pour l'asymptotique, encadre u(n) et montre que u(n) → 1, puis pose v(n) = 1 - u(n) et cherche un équivalent de v(n) en revenant à l'équation."
@@ -337,7 +514,15 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "théorème de la bijection (TVI + stricte monotonie)",
+      "monotonie de suites",
+      "encadrement",
+      "développement asymptotique"
+    ],
+    "pedagogicalGoal": "simuler un problème de concours multi-questions : existence/unicité par TVI, convergence par monotonie, puis équivalent asymptotique — enchaînement long et rigoureux, entièrement de Sup."
   },
   {
     "title": "Chute libre avec frottement fluide linéaire",
@@ -347,7 +532,11 @@
     "difficulty": 2,
     "chapter": "Mécanique du point",
     "estimatedMinutes": 25,
-    "tags": ["mécanique", "frottement", "équation différentielle"],
+    "tags": [
+      "mécanique",
+      "frottement",
+      "équation différentielle"
+    ],
     "hints": [
       "Applique le principe fondamental de la dynamique : mv' = mg - kv (frottement proportionnel à la vitesse).",
       "C'est une équation différentielle linéaire d'ordre 1 : identifie la vitesse limite (régime permanent, v'=0) avant de résoudre complètement."
@@ -357,7 +546,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "principe fondamental de la dynamique",
+      "équation différentielle linéaire d'ordre 1",
+      "régime permanent"
+    ],
+    "pedagogicalGoal": "classique : mettre en équation une chute avec frottement linéaire, identifier la vitesse limite (régime permanent, v'=0) avant de résoudre l'EDO complète."
   },
   {
     "title": "Mouvement circulaire uniforme et force centripète",
@@ -367,7 +563,10 @@
     "difficulty": 2,
     "chapter": "Mécanique du point",
     "estimatedMinutes": 20,
-    "tags": ["mécanique", "mouvement circulaire"],
+    "tags": [
+      "mécanique",
+      "mouvement circulaire"
+    ],
     "hints": [
       "En coordonnées polaires, l'accélération d'un mouvement circulaire de rayon R et vitesse angulaire ω constante est purement radiale, de norme Rω².",
       "Applique le PFD selon la direction radiale pour identifier la force responsable de cette accélération centripète."
@@ -377,7 +576,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "coordonnées polaires",
+      "accélération en mouvement circulaire",
+      "principe fondamental de la dynamique"
+    ],
+    "pedagogicalGoal": "classique : relier accélération centripète (Rω²) et force nécessaire par le PFD projeté radialement — base de tout mouvement circulaire."
   },
   {
     "title": "Oscillateur harmonique non amorti — mise en équation",
@@ -387,7 +593,11 @@
     "difficulty": 2,
     "chapter": "Oscillateurs",
     "estimatedMinutes": 20,
-    "tags": ["oscillateurs", "mécanique", "ressort"],
+    "tags": [
+      "oscillateurs",
+      "mécanique",
+      "ressort"
+    ],
     "hints": [
       "Applique le PFD à la masse accrochée au ressort : mx'' = -kx (loi de Hooke, sans frottement).",
       "Identifie la pulsation propre ω₀ = √(k/m) par identification avec x'' + ω₀²x = 0."
@@ -397,7 +607,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "principe fondamental de la dynamique",
+      "loi de Hooke",
+      "équation différentielle d'ordre 2"
+    ],
+    "pedagogicalGoal": "classique : mettre en équation le système masse-ressort (mx''=-kx) et identifier la pulsation propre ω₀=√(k/m)."
   },
   {
     "title": "Oscillateur amorti — régimes et pseudo-période",
@@ -407,7 +624,11 @@
     "difficulty": 3,
     "chapter": "Oscillateurs",
     "estimatedMinutes": 30,
-    "tags": ["oscillateurs", "amortissement", "régimes"],
+    "tags": [
+      "oscillateurs",
+      "amortissement",
+      "régimes"
+    ],
     "hints": [
       "Écris l'équation x'' + 2λx' + ω₀²x = 0 et calcule le discriminant de l'équation caractéristique pour distinguer les trois régimes.",
       "En régime pseudo-périodique (λ < ω₀), la pseudo-pulsation vaut ω = √(ω₀² - λ²) — pas ω₀ lui-même."
@@ -417,7 +638,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "équation différentielle d'ordre 2",
+      "discriminant de l'équation caractéristique",
+      "oscillateur harmonique"
+    ],
+    "pedagogicalGoal": "consolidation : distinguer les trois régimes (apériodique, critique, pseudo-périodique) selon le discriminant, et calculer la pseudo-période en régime pseudo-périodique."
   },
   {
     "title": "Charge d'un condensateur à travers une résistance (circuit RC)",
@@ -427,7 +655,11 @@
     "difficulty": 1,
     "chapter": "Électrocinétique",
     "estimatedMinutes": 15,
-    "tags": ["électrocinétique", "RC", "régime transitoire"],
+    "tags": [
+      "électrocinétique",
+      "RC",
+      "régime transitoire"
+    ],
     "hints": [
       "La loi des mailles donne E = Ri + u_C, avec i = C·du_C/dt : c'est une équation différentielle linéaire d'ordre 1 en u_C.",
       "La constante de temps du circuit RC vaut τ = RC."
@@ -437,7 +669,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "loi des mailles",
+      "relation i=C·du/dt",
+      "équation différentielle linéaire d'ordre 1"
+    ],
+    "pedagogicalGoal": "classique : établir et résoudre l'EDO de charge d'un condensateur, identifier la constante de temps τ=RC — archétype du régime transitoire du premier ordre."
   },
   {
     "title": "Circuit RLC série en régime libre — étude des régimes",
@@ -447,7 +686,11 @@
     "difficulty": 3,
     "chapter": "Électrocinétique",
     "estimatedMinutes": 30,
-    "tags": ["électrocinétique", "RLC", "régime transitoire"],
+    "tags": [
+      "électrocinétique",
+      "RLC",
+      "régime transitoire"
+    ],
     "hints": [
       "L'équation différentielle du circuit RLC série (sans source) est formellement identique à celle de l'oscillateur mécanique amorti.",
       "Identifie le facteur d'amortissement λ = R/(2L) et la pulsation propre ω₀ = 1/√(LC) pour retrouver les trois régimes."
@@ -457,7 +700,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "équation différentielle d'ordre 2",
+      "oscillateur amorti (analogie mécanique)",
+      "régimes transitoires"
+    ],
+    "pedagogicalGoal": "consolidation : exploiter l'analogie RLC ↔ oscillateur mécanique amorti pour retrouver les trois régimes sans refaire toute l'étude."
   },
   {
     "title": "Circuit RLC en régime sinusoïdal forcé — résonance",
@@ -467,7 +717,12 @@
     "difficulty": 4,
     "chapter": "Électrocinétique",
     "estimatedMinutes": 45,
-    "tags": ["électrocinétique", "RLC", "régime sinusoïdal forcé", "résonance"],
+    "tags": [
+      "électrocinétique",
+      "RLC",
+      "régime sinusoïdal forcé",
+      "résonance"
+    ],
     "hints": [
       "Passe en notation complexe : l'impédance du circuit série est Z = R + j(Lω - 1/(Cω)).",
       "L'amplitude du courant est maximale (résonance) quand |Z| est minimale, c'est-à-dire quand la partie imaginaire s'annule : Lω = 1/(Cω)."
@@ -477,7 +732,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "notation complexe (impédances)",
+      "régime sinusoïdal forcé",
+      "résonance"
+    ],
+    "pedagogicalGoal": "consolidation : établir l'impédance complexe d'un RLC série et localiser la résonance en courant (partie imaginaire nulle, ω₀=1/√(LC))."
   },
   {
     "title": "Construction d'image par une lentille mince convergente",
@@ -487,7 +749,11 @@
     "difficulty": 1,
     "chapter": "Optique géométrique",
     "estimatedMinutes": 15,
-    "tags": ["optique", "lentille", "construction géométrique"],
+    "tags": [
+      "optique",
+      "lentille",
+      "construction géométrique"
+    ],
     "hints": [
       "Trace au moins deux rayons caractéristiques : celui passant par le centre optique (non dévié) et celui parallèle à l'axe (passe par le foyer image).",
       "Utilise ensuite la relation de conjugaison de Descartes 1/OA' - 1/OA = 1/f' pour vérifier ta construction par le calcul."
@@ -497,7 +763,13 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "rayons caractéristiques d'une lentille",
+      "relation de conjugaison de Descartes"
+    ],
+    "pedagogicalGoal": "automatisme : construire graphiquement l'image par une lentille convergente (rayons caractéristiques) et la confirmer par la relation de conjugaison."
   },
   {
     "title": "Premier principe appliqué à une détente isotherme d'un gaz parfait",
@@ -507,7 +779,11 @@
     "difficulty": 2,
     "chapter": "Thermodynamique",
     "estimatedMinutes": 20,
-    "tags": ["thermodynamique", "gaz parfait", "premier principe"],
+    "tags": [
+      "thermodynamique",
+      "gaz parfait",
+      "premier principe"
+    ],
     "hints": [
       "Pour un gaz parfait, l'énergie interne ne dépend que de la température : à température constante, ΔU = 0.",
       "Le premier principe ΔU = W + Q donne alors directement Q = -W : calcule le travail des forces de pression pour en déduire le transfert thermique."
@@ -517,7 +793,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "premier principe de la thermodynamique",
+      "énergie interne d'un gaz parfait",
+      "travail des forces de pression"
+    ],
+    "pedagogicalGoal": "classique : exploiter ΔU=0 (gaz parfait isotherme) pour relier directement travail et transfert thermique (Q=-W)."
   },
   {
     "title": "Cycle thermodynamique simple — bilan énergétique",
@@ -527,7 +810,11 @@
     "difficulty": 3,
     "chapter": "Thermodynamique",
     "estimatedMinutes": 35,
-    "tags": ["thermodynamique", "cycle", "bilan énergétique"],
+    "tags": [
+      "thermodynamique",
+      "cycle",
+      "bilan énergétique"
+    ],
     "hints": [
       "Décompose le cycle en transformations élémentaires (isotherme, isochore, isobare...) et calcule W et Q pour chacune séparément.",
       "Sur un cycle complet, ΔU = 0 (retour à l'état initial) : c'est un bon moyen de vérifier tes calculs de W et Q totaux."
@@ -537,7 +824,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "premier principe",
+      "transformations élémentaires (isotherme, isochore, isobare)",
+      "travail et transfert thermique"
+    ],
+    "pedagogicalGoal": "consolidation : décomposer un cycle en transformations élémentaires, calculer W et Q sur chacune, et vérifier ΔU=0 sur le cycle complet."
   },
   {
     "title": "Circuit RLC — étude complète (transitoire, forcé, énergétique)",
@@ -547,7 +841,12 @@
     "difficulty": 5,
     "chapter": "Électrocinétique",
     "estimatedMinutes": 75,
-    "tags": ["électrocinétique", "RLC", "synthèse", "bilan énergétique"],
+    "tags": [
+      "électrocinétique",
+      "RLC",
+      "synthèse",
+      "bilan énergétique"
+    ],
     "hints": [
       "Traite d'abord le régime libre (sans source) pour identifier λ et ω₀, puis le régime forcé sinusoïdal en notation complexe.",
       "Pour le bilan énergétique, exprime l'énergie stockée dans L et C, et montre qu'à la résonance, la puissance moyenne dissipée dans R est maximale."
@@ -557,7 +856,15 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "régime transitoire d'ordre 2",
+      "notation complexe",
+      "résonance",
+      "bilan de puissance (effet Joule)"
+    ],
+    "pedagogicalGoal": "simuler un problème de concours de synthèse : régime libre, régime forcé et bilan énergétique d'un RLC dans un même sujet long — exigeant mais entièrement de Sup."
   },
   {
     "title": "Configuration électronique et position dans le tableau périodique",
@@ -567,7 +874,10 @@
     "difficulty": 1,
     "chapter": "Structure de la matière",
     "estimatedMinutes": 15,
-    "tags": ["configuration électronique", "classification périodique"],
+    "tags": [
+      "configuration électronique",
+      "classification périodique"
+    ],
     "hints": [
       "Remplis les cases quantiques en respectant les règles de Klechkowski (ordre de remplissage), Pauli et Hund.",
       "Le numéro de la période correspond à la couche externe (n maximal), la colonne se lit sur la configuration de valence."
@@ -577,7 +887,13 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "règles de Klechkowski, Pauli et Hund",
+      "couche de valence"
+    ],
+    "pedagogicalGoal": "automatisme : établir une configuration électronique (Klechkowski/Pauli/Hund) et en déduire la position (période, colonne) dans le tableau périodique."
   },
   {
     "title": "Évolution des propriétés périodiques (rayon, électronégativité)",
@@ -587,7 +903,11 @@
     "difficulty": 2,
     "chapter": "Classification périodique",
     "estimatedMinutes": 20,
-    "tags": ["classification périodique", "rayon atomique", "électronégativité"],
+    "tags": [
+      "classification périodique",
+      "rayon atomique",
+      "électronégativité"
+    ],
     "hints": [
       "Sur une période, la charge nucléaire effective augmente : le rayon atomique diminue et l'électronégativité augmente de gauche à droite.",
       "Sur une colonne, l'ajout de couches électroniques l'emporte : le rayon atomique augmente et l'électronégativité diminue en descendant."
@@ -597,7 +917,13 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "structure du tableau périodique",
+      "charge nucléaire effective"
+    ],
+    "pedagogicalGoal": "classique : justifier et appliquer les tendances périodiques (rayon atomique, électronégativité) à partir de la position dans le tableau."
   },
   {
     "title": "Géométrie VSEPR de molécules simples",
@@ -607,7 +933,11 @@
     "difficulty": 2,
     "chapter": "Liaison chimique",
     "estimatedMinutes": 20,
-    "tags": ["VSEPR", "géométrie moléculaire", "Lewis"],
+    "tags": [
+      "VSEPR",
+      "géométrie moléculaire",
+      "Lewis"
+    ],
     "hints": [
       "Établis d'abord le schéma de Lewis de la molécule pour compter les doublets liants et non liants autour de l'atome central.",
       "Utilise la notation AXnEm : le nombre total (n+m) détermine la géométrie de base (linéaire, trigonale, tétraédrique...), que les doublets non liants viennent ensuite déformer."
@@ -617,7 +947,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "schéma de Lewis",
+      "doublets liants et non liants",
+      "théorie VSEPR"
+    ],
+    "pedagogicalGoal": "classique : passer du schéma de Lewis à la géométrie moléculaire par la méthode AXnEm (VSEPR)."
   },
   {
     "title": "Calcul de pH d'une solution d'acide fort ou faible",
@@ -627,7 +964,11 @@
     "difficulty": 2,
     "chapter": "Réactions acide-base",
     "estimatedMinutes": 20,
-    "tags": ["acide-base", "pH", "Ka"],
+    "tags": [
+      "acide-base",
+      "pH",
+      "Ka"
+    ],
     "hints": [
       "Pour un acide fort, la dissociation est totale : pH = -log(C) directement (si C n'est pas trop faible).",
       "Pour un acide faible, écris l'équilibre et sa constante Ka, puis utilise l'approximation usuelle (réaction peu avancée) si elle est justifiée par le calcul du taux d'avancement."
@@ -637,7 +978,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "autoprotolyse de l'eau",
+      "constante d'acidité Ka",
+      "approximation de la réaction limitée"
+    ],
+    "pedagogicalGoal": "classique : calculer le pH d'un acide fort (dissociation totale) ou faible (équilibre Ka avec approximation justifiée par le taux d'avancement)."
   },
   {
     "title": "Titrage acido-basique — détermination d'une concentration",
@@ -647,7 +995,11 @@
     "difficulty": 3,
     "chapter": "Réactions acide-base",
     "estimatedMinutes": 30,
-    "tags": ["titrage", "équivalence", "acide-base"],
+    "tags": [
+      "titrage",
+      "équivalence",
+      "acide-base"
+    ],
     "hints": [
       "À l'équivalence, les quantités de matière introduites sont dans les proportions stœchiométriques de la réaction de titrage.",
       "Repère le volume équivalent (saut de pH ou changement de couleur de l'indicateur) puis applique la relation C_a·V_a = C_b·V_b (cas 1:1)."
@@ -657,7 +1009,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "équivalence d'un titrage",
+      "stœchiométrie",
+      "conservation de la matière"
+    ],
+    "pedagogicalGoal": "consolidation : exploiter l'équivalence d'un titrage (proportions stœchiométriques) pour déterminer une concentration inconnue à partir du volume équivalent."
   },
   {
     "title": "Équilibrage d'une réaction d'oxydoréduction et calcul de potentiel",
@@ -667,7 +1026,11 @@
     "difficulty": 2,
     "chapter": "Oxydoréduction",
     "estimatedMinutes": 25,
-    "tags": ["oxydoréduction", "demi-équations", "potentiel standard"],
+    "tags": [
+      "oxydoréduction",
+      "demi-équations",
+      "potentiel standard"
+    ],
     "hints": [
       "Écris séparément les deux demi-équations d'oxydation et de réduction, équilibre les éléments puis les charges avec H+/H2O et électrons.",
       "La réaction est favorable dans le sens direct si le potentiel standard du couple oxydant est supérieur à celui du couple réducteur (règle du gamma)."
@@ -677,7 +1040,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "demi-équations redox",
+      "nombre d'oxydation",
+      "potentiel standard (règle du gamma)"
+    ],
+    "pedagogicalGoal": "classique : équilibrer une réaction redox par demi-équations et prévoir son sens spontané par comparaison des potentiels standard (règle du gamma)."
   },
   {
     "title": "Calcul d'enthalpie de réaction par la loi de Hess",
@@ -687,7 +1057,11 @@
     "difficulty": 3,
     "chapter": "Thermochimie",
     "estimatedMinutes": 30,
-    "tags": ["thermochimie", "loi de Hess", "enthalpie de réaction"],
+    "tags": [
+      "thermochimie",
+      "loi de Hess",
+      "enthalpie de réaction"
+    ],
     "hints": [
       "L'enthalpie étant une fonction d'état, ΔrH de la réaction cible peut se calculer comme une combinaison linéaire des ΔrH de réactions intermédiaires connues.",
       "Trouve les coefficients par lesquels multiplier (et éventuellement inverser) chaque réaction connue pour reconstituer exactement la réaction cible par addition."
@@ -697,7 +1071,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "enthalpie comme fonction d'état",
+      "combinaison linéaire de réactions",
+      "enthalpie standard de réaction"
+    ],
+    "pedagogicalGoal": "consolidation : calculer une enthalpie de réaction par combinaison linéaire de réactions connues (loi de Hess), en exploitant le caractère de fonction d'état."
   },
   {
     "title": "Vitesse de réaction et ordre — exploitation de données expérimentales",
@@ -707,7 +1088,11 @@
     "difficulty": 3,
     "chapter": "Cinétique chimique",
     "estimatedMinutes": 35,
-    "tags": ["cinétique chimique", "ordre de réaction", "vitesse"],
+    "tags": [
+      "cinétique chimique",
+      "ordre de réaction",
+      "vitesse"
+    ],
     "hints": [
       "Teste la linéarité de ln([A]) en fonction du temps (ordre 1) ou de 1/[A] en fonction du temps (ordre 2) à partir des données fournies.",
       "Le tracé qui donne une droite indique l'ordre de la réaction ; sa pente est reliée à la constante de vitesse k."
@@ -717,6 +1102,14 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "vitesse de réaction",
+      "ordre d'une réaction",
+      "intégration des lois de vitesse (ordre 1 et 2)",
+      "exploitation graphique"
+    ],
+    "pedagogicalGoal": "consolidation : déterminer l'ordre d'une réaction en testant la linéarité de ln[A] (ordre 1) ou 1/[A] (ordre 2) sur des données expérimentales, et en déduire k."
   }
 ]
