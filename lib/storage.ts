@@ -1,6 +1,6 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
 import { DEFAULT_ACCENT } from "@/lib/theme";
-import type { Difficulty, Exercise, ExerciseStatus, ExerciseType, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
+import type { Difficulty, Exercise, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, Priority, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
 
 const sessionsKey = "prepahub:sessions";
 const exercisesKey = "prepahub:exercises";
@@ -70,6 +70,8 @@ export interface WeekSnapshot {
 export const DEFAULT_PRIORITY: Priority = 3;
 export const DEFAULT_MASTERY: Mastery = 0;
 const MASTERY_VALUES: readonly Mastery[] = [0, 25, 50, 75, 100];
+const PROGRAMME_LEVELS: readonly ProgrammeLevel[] = ["sup", "spe", "sup_spe"];
+const LICENSE_STATUSES: readonly LicenseStatus[] = ["libre", "à vérifier", "restreint"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -159,6 +161,15 @@ function normalizeExercise(raw: unknown): Exercise {
     chapter_id: typeof item.chapter_id === "string" ? item.chapter_id : null,
     source: typeof item.source === "string" ? item.source : "",
     year: typeof item.year === "number" ? item.year : null,
+    // Champs ajoutés pour l'infrastructure banque concours (sourcing/licence/
+    // niveau de programme) — absents de toute donnée antérieure, normalisés à
+    // `null` plutôt que devinés (voir lib/exercise-import.ts pour ce qui les
+    // renseigne réellement).
+    competition: typeof item.competition === "string" && item.competition.trim() ? item.competition : null,
+    programme_level: (PROGRAMME_LEVELS as string[]).includes(item.programme_level as string) ? (item.programme_level as ProgrammeLevel) : null,
+    license_status: (LICENSE_STATUSES as string[]).includes(item.license_status as string) ? (item.license_status as LicenseStatus) : null,
+    external_id: typeof item.external_id === "string" && item.external_id.trim() ? item.external_id : null,
+    source_url: typeof item.source_url === "string" && item.source_url.trim() ? item.source_url : null,
     type: migrateType(item.type),
     difficulty: migrateDifficulty(item.difficulty),
     priority: migratePriority(item.priority),

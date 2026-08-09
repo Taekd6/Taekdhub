@@ -175,6 +175,17 @@ export function ExerciseImport({
                 <CheckCircle2 size={14} className="shrink-0 text-accent" />
                 <span className="min-w-0 flex-1 truncate font-medium text-zinc-100">{row.input.title}</span>
                 <Badge className="shrink-0">{row.input.subject}</Badge>
+                {row.input.competition && (
+                  <Badge variant="accent" className="shrink-0">
+                    {row.input.competition}
+                    {row.input.year ? ` ${row.input.year}` : ""}
+                  </Badge>
+                )}
+                {row.input.licenseStatus === "à vérifier" && (
+                  <Badge variant="warning" className="shrink-0">
+                    licence à vérifier
+                  </Badge>
+                )}
                 {row.isNewChapter && row.chapterLabel && (
                   <Badge variant="warning" className="shrink-0">
                     + {row.chapterLabel}

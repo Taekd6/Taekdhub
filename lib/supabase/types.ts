@@ -25,7 +25,37 @@ export type ExerciseStatus = "à faire" | "en cours" | "à revoir" | "maîtrisé
 /** Nature de l'exercice — sert à filtrer une banque qui mélangera TD, annales, colles… */
 export type ExerciseType = "TD" | "DM" | "DS" | "Colle" | "TP" | "Annale" | "Concours" | "Personnel";
 
-/** Difficulté INTRINSÈQUE de l'exercice (indépendante de l'élève qui le résout). Ne jamais mélanger avec `Exercise.mastery` (le degré de maîtrise de l'élève) ni `Exercise.priority` (l'ordre dans lequel l'élève veut le traiter). */
+/**
+ * Niveau de programme requis pour résoudre l'exercice EN ENTIER — indépendant
+ * du concours d'origine et de `Difficulty` (voir plus bas). Un exercice CCINP
+ * peut être "sup" ; un exercice Mines-Ponts peut nécessiter la Spé : le
+ * concours ne détermine jamais ce champ, seul le contenu mathématique/physique
+ * réellement requis le détermine.
+ *
+ * `null` = non classifié (exercice personnel/de cours, ou fiche créée avant
+ * l'introduction de ce champ — jamais interprété comme "sup" par défaut).
+ */
+export type ProgrammeLevel = "sup" | "spe" | "sup_spe";
+
+/**
+ * Statut de réutilisation vérifié pour un exercice importé d'une source
+ * externe (concours notamment) — les sujets SCEI/CCINP/e3a/Centrale/Mines-Ponts
+ * sont publiés en libre consultation mais sans licence de redistribution
+ * explicite publiée ; ce champ enregistre l'état de vérification réel, jamais
+ * une présomption. "à vérifier" est un état d'attente, pas un état importable
+ * (voir lib/exercise-import.ts).
+ */
+export type LicenseStatus = "libre" | "à vérifier" | "restreint";
+
+/**
+ * Difficulté INTRINSÈQUE de l'exercice (indépendante de l'élève qui le
+ * résout). Ne jamais mélanger avec `Exercise.mastery` (le degré de maîtrise
+ * de l'élève) ni `Exercise.priority` (l'ordre dans lequel l'élève veut le
+ * traiter) — NI avec le prestige du concours d'origine (`Exercise.competition`) :
+ * un CCINP peut être difficile, un Mines-Ponts peut être accessible. Ce champ
+ * s'évalue toujours à l'intérieur du niveau de programme réel de l'exercice
+ * (voir `ProgrammeLevel`), jamais déduit automatiquement de la source.
+ */
 export type Difficulty = 1 | 2 | 3 | 4 | 5;
 
 /** Priorité donnée par l'élève pour traiter l'exercice — concept distinct de `Difficulty` (voir plus haut), même si l'échelle numérique coïncide. */
@@ -137,6 +167,21 @@ export interface Exercise {
   source: string;
   /** Année associée à la source, distincte de `source` (ex. 2022 pour "Centrale 2022"), ou null si non pertinente/non renseignée. */
   year: number | null;
+  /**
+   * Concours d'origine normalisé (ex. "CCINP", "Mines-Ponts", "e3a", "Centrale",
+   * "PT"), distinct de `source` (texte libre affiché, ex. "CCINP 2022 MP Maths 1").
+   * `null` si l'exercice ne vient pas d'un concours (TD, cours, personnel…).
+   * X/ENS n'apparaissent jamais ici dans le dataset principal — voir `ProgrammeLevel`.
+   */
+  competition: string | null;
+  /** Niveau de programme réellement requis — voir `ProgrammeLevel`. `null` = non classifié. */
+  programme_level: ProgrammeLevel | null;
+  /** Statut de réutilisation vérifié — voir `LicenseStatus`. `null` = non renseigné (exercice non issu d'une source externe, typiquement). */
+  license_status: LicenseStatus | null;
+  /** Identifiant externe (ex. référence SCEI), si disponible, sinon null. */
+  external_id: string | null;
+  /** URL vers la source originale, si disponible, sinon null. */
+  source_url: string | null;
   type: ExerciseType;
   /** Difficulté intrinsèque — voir `Difficulty`. */
   difficulty: Difficulty;

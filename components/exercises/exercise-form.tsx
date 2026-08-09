@@ -7,13 +7,18 @@ import { Input, Select, Textarea } from "@/components/ui/input";
 import { ChapterPicker } from "@/components/exercises/chapter-picker";
 import { exerciseTypes, subjects } from "@/lib/study";
 import type { Chapter } from "@/lib/storage";
-import type { Difficulty, ExerciseType, Subject } from "@/lib/supabase/types";
+import type { Difficulty, ExerciseType, LicenseStatus, ProgrammeLevel, Subject } from "@/lib/supabase/types";
 
 /**
  * Champs saisis à la création — le manager complète le reste (id, created_at,
  * updated_at, statut initial, priority/mastery/year par défaut, compteurs à
  * zéro…). `chapterId` (Sprint 3D) reste optionnel : aucun chapitre n'est
  * imposé, l'utilisateur choisit "Sans chapitre" ou en crée un à la volée.
+ *
+ * `competition`/`programmeLevel`/`licenseStatus`/`externalId`/`sourceUrl`
+ * (infrastructure banque concours) restent optionnels et absents du
+ * formulaire manuel ci-dessous — seul le pipeline d'import (Sprint infra
+ * concours, lib/exercise-import.ts) les renseigne aujourd'hui.
  */
 export interface NewExerciseInput {
   subject: Subject;
@@ -27,6 +32,12 @@ export interface NewExerciseInput {
   note: string;
   hints: string[];
   correction: string;
+  year?: number | null;
+  competition?: string | null;
+  programmeLevel?: ProgrammeLevel | null;
+  licenseStatus?: LicenseStatus | null;
+  externalId?: string | null;
+  sourceUrl?: string | null;
 }
 
 const emptyForm = {

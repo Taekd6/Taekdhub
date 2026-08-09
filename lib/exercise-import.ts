@@ -2,7 +2,7 @@ import { getChaptersForSubject } from "@/lib/chapters";
 import { DEFAULT_MASTERY, DEFAULT_PRIORITY, type Chapter } from "@/lib/storage";
 import { exerciseTypes, subjects } from "@/lib/study";
 import type { NewExerciseInput } from "@/components/exercises/exercise-form";
-import type { Difficulty, Exercise, ExerciseType, Subject } from "@/lib/supabase/types";
+import type { Difficulty, Exercise, ExerciseType, LicenseStatus, ProgrammeLevel, Subject } from "@/lib/supabase/types";
 
 /**
  * Import en masse d'exercices (Sprint infrastructure banque) — un fichier
@@ -13,6 +13,41 @@ import type { Difficulty, Exercise, ExerciseType, Subject } from "@/lib/supabase
  * — une erreur explicite par ligne vaut mieux qu'une matière silencieusement
  * remplacée par une autre.
  */
+
+/**
+ * Concours acceptés dans le dataset principal, par ordre de priorité pour la
+ * prépa MP (consigne produit) — clé : alias reconnus en entrée (minuscules,
+ * sans accent/tiret normalisés), valeur : libellé canonique stocké sur
+ * `Exercise.competition`. e3a et Banque PT sont acceptés mais doivent rester
+ * minoritaires dans le dataset (vérifié au niveau du rapport, pas ici).
+ */
+const COMPETITION_ALIASES: Record<string, string> = {
+  ccinp: "CCINP",
+  ccp: "CCINP",
+  "mines-ponts": "Mines-Ponts",
+  minesponts: "Mines-Ponts",
+  "mines ponts": "Mines-Ponts",
+  e3a: "e3a",
+  "e3a-polytech": "e3a",
+  "e3a polytech": "e3a",
+  pt: "PT",
+  "banque pt": "PT",
+  centrale: "Centrale",
+  "centrale-supelec": "Centrale",
+  "centrale supelec": "Centrale",
+  "centrale-supélec": "Centrale",
+};
+
+/** Explicitement HORS périmètre du dataset principal (consigne produit) — jamais importés, quelle que soit la casse ou l'orthographe. */
+const EXCLUDED_COMPETITIONS = new Set(["x", "ens", "polytechnique", "ens ulm", "ens lyon", "ens paris-saclay", "ens cachan", "ens rennes", "x-ens", "x/ens"]);
+
+function normalizeCompetitionKey(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+}
 
 /** Construit un Exercise complet à partir des champs saisis — seule source de
  * vérité pour les valeurs par défaut (priorité, maîtrise, statut initial…),
@@ -26,7 +61,12 @@ export function createExerciseFromInput(input: NewExerciseInput): Exercise {
     title: input.title,
     chapter_id: input.chapterId,
     source: input.source,
-    year: null,
+    year: input.year ?? null,
+    competition: input.competition ?? null,
+    programme_level: input.programmeLevel ?? null,
+    license_status: input.licenseStatus ?? null,
+    external_id: input.externalId ?? null,
+    source_url: input.sourceUrl ?? null,
     type: input.type,
     difficulty: input.difficulty,
     priority: DEFAULT_PRIORITY,
@@ -140,6 +180,76 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
     const estimatedRaw = entry.estimatedMinutes ?? entry.estimated_minutes;
     const estimatedMinutes = typeof estimatedRaw === "number" && estimatedRaw > 0 ? Math.round(estimatedRaw) : null;
 
+    // Concours (Sprint infrastructure banque concours) : X/ENS explicitement
+    // hors périmètre, tout autre concours reconnu est normalisé vers son
+    // libellé canonique — voir COMPETITION_ALIASES.
+    const competitionRaw = asTrimmedString(entry.competition);
+    let competition: string | null = null;
+    if (competitionRaw) {
+      const key = normalizeCompetitionKey(competitionRaw);
+      if (EXCLUDED_COMPETITIONS.has(key)) {
+        errors.push({ index, message: `${label} ("${title}") — X/ENS est explicitement hors périmètre du dataset principal (consigne produit), non importé.` });
+        return;
+      }
+      competition = COMPETITION_ALIASES[key] ?? null;
+      if (!competition) {
+        errors.push({
+          index,
+          message: `${label} ("${title}") — concours non reconnu ("${competitionRaw}"). Attendu : CCINP, Mines-Ponts, e3a, PT, Centrale.`,
+        });
+        return;
+      }
+    }
+
+    // Niveau de programme : obligatoire et strictement "sup" pour tout
+    // exercice de concours dans ce dataset (contrainte pédagogique produit) —
+    // jamais déduit du concours d'origine ni de la difficulté.
+    const programmeLevelRaw = asTrimmedString(entry.programmeLevel ?? entry.programme_level);
+    let programmeLevel: ProgrammeLevel | null = null;
+    if (programmeLevelRaw) {
+      if (!["sup", "spe", "sup_spe"].includes(programmeLevelRaw)) {
+        errors.push({ index, message: `${label} ("${title}") — programmeLevel invalide ("${programmeLevelRaw}"). Attendu : sup, spe, sup_spe.` });
+        return;
+      }
+      programmeLevel = programmeLevelRaw as ProgrammeLevel;
+    }
+    if (competition && programmeLevel !== "sup") {
+      errors.push({
+        index,
+        message: `${label} ("${title}") — dataset limité au programme de Sup : programmeLevel doit être "sup" pour un exercice de concours (fourni : ${programmeLevelRaw ?? "absent"}). Si un doute existe sur les prérequis, classe-le "à vérifier" hors de ce fichier plutôt que de l'importer.`,
+      });
+      return;
+    }
+
+    const licenseStatusRaw = asTrimmedString(entry.licenseStatus ?? entry.license_status);
+    let licenseStatus: LicenseStatus | null = null;
+    if (licenseStatusRaw) {
+      if (!["libre", "à vérifier", "restreint"].includes(licenseStatusRaw)) {
+        errors.push({ index, message: `${label} ("${title}") — licenseStatus invalide ("${licenseStatusRaw}"). Attendu : libre, à vérifier, restreint.` });
+        return;
+      }
+      if (licenseStatusRaw === "restreint") {
+        errors.push({ index, message: `${label} ("${title}") — statut de licence "restreint" : non importable.` });
+        return;
+      }
+      licenseStatus = licenseStatusRaw as LicenseStatus;
+    } else if (competition) {
+      // Concours sans statut de licence explicite : jamais présumé "libre"
+      // (voir note sur l'absence de licence publiée par les concours) —
+      // enregistré comme à vérifier plutôt que silencieusement omis.
+      licenseStatus = "à vérifier";
+    }
+
+    const yearRaw = entry.year;
+    if (yearRaw !== undefined && (typeof yearRaw !== "number" || yearRaw < 1900 || yearRaw > 2100)) {
+      errors.push({ index, message: `${label} ("${title}") — année invalide (attendu un nombre, ex. 2022).` });
+      return;
+    }
+    const year = typeof yearRaw === "number" ? yearRaw : null;
+
+    const externalId = asTrimmedString(entry.externalId ?? entry.external_id);
+    const sourceUrl = asTrimmedString(entry.sourceUrl ?? entry.source_url);
+
     const chapterLabel = asTrimmedString(entry.chapter);
     let chapterId: string | null = null;
     let isNewChapter = false;
@@ -165,6 +275,12 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
         note: asTrimmedString(entry.note) ?? "",
         hints: parseListField(entry.hints, "\n"),
         correction: asTrimmedString(entry.correction) ?? "",
+        year,
+        competition,
+        programmeLevel,
+        licenseStatus,
+        externalId,
+        sourceUrl,
       },
     });
   });
@@ -175,8 +291,11 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
 /**
  * Modèle téléchargeable — démontre le format attendu avec des valeurs
  * clairement identifiées comme placeholders (pas de faux contenu de prépa
- * présenté comme réel). Seuls `title`, `source` et `subject` sont
- * obligatoires ; tous les autres champs sont optionnels.
+ * présenté comme réel, aucun énoncé, aucune attribution à une année/un sujet
+ * précis). Seuls `title`, `source` et `subject` sont obligatoires ; tous les
+ * autres champs sont optionnels. `programmeLevel: "sup"` est obligatoire dès
+ * que `competition` est renseigné (dataset filtré sur le programme de Sup) —
+ * X/ENS sont rejetés à l'import, quel que soit `programmeLevel`.
  */
 export const EXERCISE_IMPORT_TEMPLATE = [
   {
@@ -198,6 +317,19 @@ export const EXERCISE_IMPORT_TEMPLATE = [
     subject: "Physique",
     type: "DM",
     difficulty: 2,
+  },
+  {
+    title: "Exemple à remplacer — exercice de concours (champs infra)",
+    source: "Modèle d'import TaekdHub — remplace par la vraie référence (ex. \"CCINP 2022 MP Maths 1\")",
+    subject: "Mathématiques",
+    type: "Concours",
+    difficulty: 3,
+    competition: "CCINP",
+    programmeLevel: "sup",
+    licenseStatus: "à vérifier",
+    year: 2022,
+    externalId: "",
+    sourceUrl: "",
   },
 ];
 
