@@ -38,6 +38,16 @@ export interface NewExerciseInput {
   licenseStatus?: LicenseStatus | null;
   externalId?: string | null;
   sourceUrl?: string | null;
+  prerequisites?: string[];
+  pedagogicalGoal?: string | null;
+  /**
+   * `true` pour un exercice importé hors périmètre "faisable maintenant"
+   * (ex. pilier de Spé) — réutilise le champ `archived` déjà existant (masqué
+   * des recommandations et de la liste par défaut, visible dans "Archivés")
+   * plutôt que de modifier le moteur de recommandation. `undefined`/`false`
+   * par défaut (comportement inchangé pour le formulaire manuel).
+   */
+  archived?: boolean;
 }
 
 const emptyForm = {

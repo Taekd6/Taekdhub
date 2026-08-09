@@ -170,6 +170,8 @@ function normalizeExercise(raw: unknown): Exercise {
     license_status: (LICENSE_STATUSES as string[]).includes(item.license_status as string) ? (item.license_status as LicenseStatus) : null,
     external_id: typeof item.external_id === "string" && item.external_id.trim() ? item.external_id : null,
     source_url: typeof item.source_url === "string" && item.source_url.trim() ? item.source_url : null,
+    prerequisites: stringArray(item.prerequisites),
+    pedagogical_goal: typeof item.pedagogical_goal === "string" && item.pedagogical_goal.trim() ? item.pedagogical_goal : null,
     type: migrateType(item.type),
     difficulty: migrateDifficulty(item.difficulty),
     priority: migratePriority(item.priority),

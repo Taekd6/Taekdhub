@@ -1,0 +1,2429 @@
+[
+  {
+    "title": "Factorisation par identités remarquables",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Calcul algébrique",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "identités remarquables"
+    ],
+    "prerequisites": [
+      "identités remarquables"
+    ],
+    "pedagogicalGoal": "automatisme : reconnaître instantanément a²-b², (a+b)² et (a-b)² dans une expression pour factoriser sans hésiter.",
+    "hints": [
+      "Repère la forme a²-b², (a±b)² avant de développer quoi que ce soit.",
+      "Une fois factorisé, vérifie en redéveloppant mentalement."
+    ],
+    "correction": "La reconnaissance directe des trois identités usuelles (a+b)², (a-b)², a²-b² évite tout calcul long — la factorisation est immédiate une fois la forme repérée.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Résolution d'inéquations avec valeur absolue",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Calcul algébrique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "automatisme",
+      "valeur absolue"
+    ],
+    "prerequisites": [
+      "définition de la valeur absolue"
+    ],
+    "pedagogicalGoal": "automatisme : traduire |x-a| < r en un encadrement a-r < x < a+r sans passer par une disjonction de cas systématique.",
+    "hints": [
+      "|x-a| < r équivaut à -r < x-a < r : traduis directement en encadrement plutôt que de disjoindre les cas.",
+      "Pour |f(x)| > r, la solution est une réunion de deux intervalles disjoints, jamais un encadrement unique."
+    ],
+    "correction": "|x-a| < r ⟺ a-r < x < a+r (intervalle). |x-a| > r ⟺ x < a-r ou x > a+r (réunion de deux demi-droites) — les deux cas ont des structures de solution opposées, à ne jamais confondre.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Manipulation d'exposants et de racines",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Calcul algébrique",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "exposants",
+      "racines"
+    ],
+    "prerequisites": [
+      "règles de calcul sur les puissances"
+    ],
+    "pedagogicalGoal": "automatisme : jongler avec a^(p/q), racines et exposants négatifs sans erreur de règle.",
+    "hints": [
+      "Réécris systématiquement les racines en exposants fractionnaires : ⁿ√x = x^(1/n).",
+      "Applique les règles a^p·a^q = a^(p+q) et (a^p)^q = a^(pq) une seule à la fois, dans l'ordre."
+    ],
+    "correction": "En réécrivant toute racine comme puissance fractionnaire, les règles usuelles des exposants (produit, quotient, puissance de puissance) s'appliquent uniformément, ce qui évite les erreurs propres à la notation racine.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Étude de signe d'un produit/quotient de facteurs affines",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Calcul algébrique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "tableau de signes"
+    ],
+    "prerequisites": [
+      "signe d'une fonction affine"
+    ],
+    "pedagogicalGoal": "classique incontournable : construire un tableau de signes propre, avec les valeurs interdites du quotient clairement marquées.",
+    "hints": [
+      "Détermine le signe de chaque facteur séparément avant de combiner — un tableau ligne par ligne évite les erreurs.",
+      "Pour un quotient, les valeurs qui annulent le dénominateur sont exclues du domaine, pas de simples zéros du tableau."
+    ],
+    "correction": "Un tableau de signes par facteur, combiné ligne par ligne (règle des signes du produit), donne le signe global. Pour un quotient, les racines du dénominateur sont marquées comme exclues (double barre), jamais comme un zéro de la fonction.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Sommes télescopiques",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Calcul algébrique",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "sommes"
+    ],
+    "prerequisites": [
+      "notation sigma",
+      "décomposition en éléments simples élémentaire"
+    ],
+    "pedagogicalGoal": "consolidation : reconnaître qu'une somme se réécrit comme différence de termes consécutifs qui s'annulent presque tous.",
+    "hints": [
+      "Cherche à écrire le terme général sous la forme f(k) - f(k+1) (ou f(k+1) - f(k)).",
+      "Une fois cette forme trouvée, seuls le premier et le dernier terme survivent après simplification."
+    ],
+    "correction": "En décomposant le terme général en f(k) - f(k+1), la somme se réduit à f(premier indice) - f(dernier indice + 1) : tous les termes intermédiaires s'annulent deux à deux.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : diviser par une expression qui peut s'annuler",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Calcul algébrique",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "résolution d'équations"
+    ],
+    "pedagogicalGoal": "piège classique : diviser les deux membres d'une équation par une expression contenant l'inconnue fait perdre des solutions si cette expression peut s'annuler.",
+    "hints": [
+      "Avant de diviser par une expression, demande-toi si elle peut valoir 0 pour une valeur de l'inconnue — si oui, traite ce cas séparément.",
+      "Compare le nombre de solutions trouvées après division à ce que donnerait une factorisation directe : un écart signale une solution perdue."
+    ],
+    "correction": "Diviser par g(x) suppose g(x) ≠ 0 : les valeurs annulant g(x) doivent être examinées séparément (souvent elles sont aussi solutions). La méthode sûre est de tout ramener à 0 et de factoriser, jamais de diviser directement par une expression contenant l'inconnue.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Étude complète d'une fonction rationnelle",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Fonctions",
+    "estimatedMinutes": 35,
+    "tags": [
+      "classique",
+      "étude de fonction"
+    ],
+    "prerequisites": [
+      "dérivation",
+      "limites usuelles"
+    ],
+    "pedagogicalGoal": "classique incontournable : mener une étude de fonction complète et méthodique (domaine, limites, dérivée, tableau de variations, asymptotes) sans en oublier une étape.",
+    "hints": [
+      "Commence toujours par le domaine de définition (valeurs qui annulent le dénominateur), avant tout calcul.",
+      "Cherche une asymptote oblique en effectuant la division euclidienne du numérateur par le dénominateur si les degrés le permettent."
+    ],
+    "correction": "Méthode standard : domaine (dénominateur ≠ 0), limites aux bornes et en ±∞, signe de la dérivée pour le tableau de variations, puis identification des asymptotes (verticale aux valeurs interdites, horizontale/oblique selon le comportement à l'infini, obtenu par division euclidienne si besoin).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Composition de fonctions et domaine de définition",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Fonctions",
+    "estimatedMinutes": 20,
+    "tags": [
+      "consolidation",
+      "composition"
+    ],
+    "prerequisites": [
+      "domaine de définition des fonctions usuelles"
+    ],
+    "pedagogicalGoal": "consolidation : déterminer le domaine d'une composée g∘f en imposant à la fois que f(x) soit défini ET que f(x) appartienne au domaine de g.",
+    "hints": [
+      "Le domaine de g∘f impose deux conditions : x dans le domaine de f, ET f(x) dans le domaine de g.",
+      "Traite les deux conditions séparément puis prends leur intersection."
+    ],
+    "correction": "Dom(g∘f) = {x ∈ Dom(f) : f(x) ∈ Dom(g)} — les deux conditions se traitent indépendamment (l'une sur x, l'autre sur f(x)) avant intersection ; oublier la seconde condition est l'erreur la plus fréquente.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Parité et périodicité d'une fonction",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Fonctions",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "parité"
+    ],
+    "prerequisites": [
+      "définitions de parité et périodicité"
+    ],
+    "pedagogicalGoal": "automatisme : tester rapidement f(-x) et f(x+T) pour classer une fonction, réflexe qui simplifie ensuite toute étude (réduction du domaine d'étude).",
+    "hints": [
+      "Calcule f(-x) et compare-le à f(x) (paire) ou -f(x) (impaire), sans développer inutilement.",
+      "Pour la périodicité, teste une période candidate évidente (2π pour les fonctions trigonométriques usuelles) avant d'en chercher une autre."
+    ],
+    "correction": "f est paire si f(-x)=f(x) pour tout x du domaine (symétrique par rapport à l'axe des ordonnées), impaire si f(-x)=-f(x) (symétrique par rapport à l'origine). Une fonction périodique de période T vérifie f(x+T)=f(x) : ces propriétés permettent de réduire le domaine d'étude.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Construction d'une fonction réciproque",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Fonctions",
+    "estimatedMinutes": 25,
+    "tags": [
+      "classique",
+      "bijection"
+    ],
+    "prerequisites": [
+      "monotonie stricte",
+      "théorème de la bijection"
+    ],
+    "pedagogicalGoal": "classique : établir qu'une fonction est bijective (monotonie stricte + continuité) avant de chercher explicitement sa réciproque.",
+    "hints": [
+      "Prouve d'abord la stricte monotonie (signe constant de la dérivée) : c'est ce qui garantit la bijectivité sur l'intervalle considéré.",
+      "Pour exprimer f⁻¹, pose y = f(x) et résous cette équation en x en fonction de y."
+    ],
+    "correction": "Une fonction continue et strictement monotone sur un intervalle réalise une bijection vers son image (théorème de la bijection). L'expression de f⁻¹ s'obtient en résolvant y = f(x) en x, puis en échangeant les rôles de x et y pour l'écriture finale.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : confondre l'étude du signe de f(x) et celle de x",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Fonctions",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "étude de signe"
+    ],
+    "pedagogicalGoal": "piège classique : le signe de f(x) ne se lit pas sur le signe de x, même pour des fonctions d'apparence simple — seule une étude explicite (dérivée, factorisation) le donne.",
+    "hints": [
+      "Ne suppose jamais que f(x) et x ont le même signe sans le démontrer — teste une valeur numérique pour t'en convaincre si besoin.",
+      "Factorise f(x) ou étudie sa dérivée : c'est la seule façon rigoureuse de connaître son signe."
+    ],
+    "correction": "Le signe d'une fonction se détermine par une étude explicite (factorisation, dérivée, tableau de signes) — jamais par analogie avec le signe de la variable, sauf preuve. Une valeur numérique test suffit souvent à révéler l'erreur.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Continuité aux raccords d'une fonction définie par morceaux",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Fonctions",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "continuité"
+    ],
+    "prerequisites": [
+      "limites à gauche et à droite",
+      "définition de la continuité"
+    ],
+    "pedagogicalGoal": "consolidation : vérifier la continuité (et la dérivabilité) aux points de raccord d'une fonction par morceaux, en comparant limites à gauche et à droite.",
+    "hints": [
+      "En un point de raccord, calcule séparément la limite à gauche et la limite à droite, et compare-les à la valeur de la fonction en ce point.",
+      "Pour la dérivabilité, compare de la même façon les dérivées à gauche et à droite (nombres dérivés)."
+    ],
+    "correction": "La continuité en un point de raccord a exige l'égalité des trois quantités : limite à gauche, limite à droite, et f(a). La dérivabilité, plus exigeante, requiert en plus l'égalité des nombres dérivés à gauche et à droite — une fonction peut être continue sans être dérivable en un tel point (point anguleux).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Suite arithmético-géométrique — résolution complète",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "arithmético-géométrique"
+    ],
+    "prerequisites": [
+      "suites arithmétiques",
+      "suites géométriques"
+    ],
+    "pedagogicalGoal": "classique incontournable : ramener u(n+1) = au(n) + b à une suite géométrique en cherchant le point fixe ℓ = aℓ + b.",
+    "hints": [
+      "Cherche le point fixe ℓ solution de ℓ = aℓ + b, puis pose v(n) = u(n) - ℓ.",
+      "Vérifie que v(n) est géométrique de raison a avant d'exprimer u(n) explicitement."
+    ],
+    "correction": "En posant v(n) = u(n) - ℓ (où ℓ = aℓ + b est le point fixe), on obtient v(n+1) = a·v(n) : v est géométrique de raison a, donc v(n) = v(0)·aⁿ, d'où u(n) = ℓ + (u(0)-ℓ)·aⁿ.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Monotonie d'une suite par étude du signe de u(n+1)-u(n)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "monotonie"
+    ],
+    "prerequisites": [
+      "définition de suite croissante/décroissante"
+    ],
+    "pedagogicalGoal": "automatisme : réflexe systématique pour établir la monotonie d'une suite, méthode qui marche même quand la forme explicite est compliquée.",
+    "hints": [
+      "Calcule u(n+1) - u(n) et détermine son signe — s'il est constant, la monotonie est établie directement.",
+      "Pour une suite à termes strictement positifs, comparer le quotient u(n+1)/u(n) à 1 est parfois plus simple."
+    ],
+    "correction": "Le signe constant de u(n+1) - u(n) (ou, pour une suite positive, la comparaison de u(n+1)/u(n) à 1) donne directement le sens de variation, sans passer par une étude de fonction.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Convergence par théorème d'encadrement (gendarmes)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "encadrement"
+    ],
+    "prerequisites": [
+      "limites de suites usuelles"
+    ],
+    "pedagogicalGoal": "classique incontournable : encadrer une suite complexe entre deux suites simples de même limite, sans calculer sa limite directement.",
+    "hints": [
+      "Cherche deux suites simples (souvent constantes divisées par n, ou géométriques) qui encadrent la suite étudiée à partir d'un certain rang.",
+      "Vérifie que les deux suites encadrantes tendent bien vers la MÊME limite avant de conclure."
+    ],
+    "correction": "Si v(n) ≤ u(n) ≤ w(n) à partir d'un certain rang et que v(n) et w(n) tendent vers la même limite ℓ, alors u(n) converge aussi vers ℓ (théorème d'encadrement) — utile quand u(n) n'a pas d'expression simple mais se majore/minore facilement.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : une suite bornée n'est pas forcément convergente",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "définition de convergence",
+      "suites bornées"
+    ],
+    "pedagogicalGoal": "piège classique : une suite bornée peut osciller indéfiniment (ex. (-1)ⁿ) sans converger — être bornée n'est qu'une condition nécessaire de convergence, jamais suffisante seule.",
+    "hints": [
+      "Cherche un contre-exemple simple : une suite bornée qui oscille entre deux valeurs sans jamais se stabiliser.",
+      "Rappelle-toi : borné + monotone ⟹ convergente (théorème de la limite monotone), mais borné SEUL ne suffit pas."
+    ],
+    "correction": "(-1)ⁿ est bornée (entre -1 et 1) mais ne converge pas : elle oscille indéfiniment. Le théorème correct est \"toute suite croissante majorée (ou décroissante minorée) converge\" — la monotonie est indispensable en plus du caractère borné.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Suite récurrente u(n+1)=f(u(n)) — étude par point fixe",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 35,
+    "tags": [
+      "combinaison",
+      "point fixe"
+    ],
+    "prerequisites": [
+      "étude de fonction",
+      "monotonie de suites",
+      "théorème de la limite monotone"
+    ],
+    "pedagogicalGoal": "combinaison : relier étude de fonction (variations, position par rapport à y=x) et étude de suite (monotonie, convergence) — méthode transférable à toute suite récurrente.",
+    "hints": [
+      "Étudie d'abord f : ses variations et sa position par rapport à la droite y=x déterminent le comportement de la suite.",
+      "Si f est croissante, la suite est monotone (son sens dépend de la position de u(0) par rapport au point fixe) ; si f est décroissante, étudie plutôt f∘f."
+    ],
+    "correction": "Si f est croissante sur un intervalle stable I contenant u(0), la suite (u(n)) est monotone : croissante si u(0) ≤ f(u(0)), décroissante sinon. Si la suite est de plus bornée par un point fixe de f, elle converge vers ce point fixe (théorème de la limite monotone).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Comparaison de croissances : géométrique vs polynomiale",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 15,
+    "tags": [
+      "consolidation",
+      "croissances comparées"
+    ],
+    "prerequisites": [
+      "croissances comparées usuelles"
+    ],
+    "pedagogicalGoal": "consolidation : mémoriser et savoir appliquer la hiérarchie des croissances (polynôme << exponentielle << factorielle) pour lever des formes indéterminées sans calcul.",
+    "hints": [
+      "Rappelle la hiérarchie : toute puissance de n est négligeable devant qⁿ (q>1), elle-même négligeable devant n!.",
+      "Utilise cette hiérarchie directement pour déterminer le signe/la limite d'une expression du type nᵏ/qⁿ, sans repasser par un calcul de limite classique."
+    ],
+    "correction": "Pour q > 1 et k fixé, nᵏ/qⁿ → 0 quand n → +∞ (l'exponentielle l'emporte toujours sur le polynôme) : cette hiérarchie de croissances comparées, une fois mémorisée, résout instantanément ce type de limite sans calcul intermédiaire.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Résolution d'équations trigonométriques cos(x)=cos(a)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Trigonométrie",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "équations trigonométriques"
+    ],
+    "prerequisites": [
+      "cercle trigonométrique"
+    ],
+    "pedagogicalGoal": "automatisme : retrouver instantanément les deux familles de solutions de cos(x)=cos(a) sans repasser par le cercle à chaque fois.",
+    "hints": [
+      "cos(x) = cos(a) équivaut à x = a + 2kπ OU x = -a + 2kπ, k entier relatif — deux familles, pas une seule.",
+      "Pour sin(x) = sin(a), les deux familles sont x = a + 2kπ ou x = π - a + 2kπ."
+    ],
+    "correction": "cos(x) = cos(a) ⟺ x ≡ a [2π] ou x ≡ -a [2π]. sin(x) = sin(a) ⟺ x ≡ a [2π] ou x ≡ π-a [2π]. Oublier une des deux familles est l'erreur la plus fréquente sur ce type d'équation.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Linéarisation de cos²(x) et sin²(x)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Trigonométrie",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "linéarisation"
+    ],
+    "prerequisites": [
+      "formules de duplication"
+    ],
+    "pedagogicalGoal": "automatisme indispensable avant tout calcul d'intégrale trigonométrique : cos²(x) = (1+cos(2x))/2, sin²(x) = (1-cos(2x))/2.",
+    "hints": [
+      "Pars de cos(2x) = 2cos²(x) - 1 = 1 - 2sin²(x) et isole cos²(x) puis sin²(x).",
+      "Ces deux formules sont à connaître par cœur : elles reviennent constamment en calcul intégral."
+    ],
+    "correction": "cos(2x) = 2cos²(x)-1 donne cos²(x) = (1+cos(2x))/2 ; de même sin(2x) = 1-2sin²(x) donne sin²(x) = (1-cos(2x))/2. Ces linéarisations transforment un carré (non intégrable simplement) en une somme directement intégrable.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Inéquations trigonométriques sur un intervalle donné",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Trigonométrie",
+    "estimatedMinutes": 20,
+    "tags": [
+      "consolidation",
+      "inéquations trigonométriques"
+    ],
+    "prerequisites": [
+      "cercle trigonométrique",
+      "variations de sin/cos"
+    ],
+    "pedagogicalGoal": "consolidation : localiser sur le cercle trigonométrique la zone solution d'une inéquation, plutôt que de mémoriser une formule.",
+    "hints": [
+      "Place d'abord les valeurs limites (où l'égalité est atteinte) sur le cercle trigonométrique.",
+      "Teste une valeur simple dans chaque zone délimitée pour déterminer si elle vérifie l'inéquation."
+    ],
+    "correction": "En plaçant les points où l'égalité a lieu sur le cercle trigonométrique, puis en testant une valeur dans chaque arc délimité, on identifie directement les arcs solutions — visuel et fiable, plus sûr qu'une manipulation algébrique à l'aveugle.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : perdre des solutions en divisant par sin(x) ou cos(x)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Trigonométrie",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "équations trigonométriques"
+    ],
+    "pedagogicalGoal": "piège classique : diviser une équation par sin(x) ou cos(x) fait perdre silencieusement les solutions où ce facteur s'annule.",
+    "hints": [
+      "Avant de diviser par sin(x) ou cos(x), vérifie si x = 0, π/2, π... (valeurs qui annulent ces facteurs) sont solutions de l'équation d'origine.",
+      "La méthode sûre : tout ramener à 0 et factoriser, jamais diviser par une expression contenant l'inconnue."
+    ],
+    "correction": "Diviser par sin(x) suppose sin(x) ≠ 0 : les valeurs x = kπ doivent être testées séparément dans l'équation d'origine. Factoriser (mettre sin(x) ou cos(x) en facteur commun) est la méthode sûre qui ne perd aucune solution.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Transformation a·cos(x)+b·sin(x) en R·cos(x-φ)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Trigonométrie",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "amplitude-phase"
+    ],
+    "prerequisites": [
+      "formules d'addition"
+    ],
+    "pedagogicalGoal": "classique très utilisé en physique (oscillateurs) : réécrire une combinaison de cos et sin sous une forme amplitude-phase unique.",
+    "hints": [
+      "Pose R = √(a²+b²), puis cherche φ tel que cos(φ) = a/R et sin(φ) = b/R.",
+      "Développe R·cos(x-φ) par la formule d'addition pour vérifier que tu retombes bien sur a·cos(x)+b·sin(x)."
+    ],
+    "correction": "Avec R = √(a²+b²) et φ tel que cos(φ)=a/R, sin(φ)=b/R, on a a·cos(x)+b·sin(x) = R·cos(x-φ) (formule d'addition développée à l'envers). Cette écriture donne directement l'amplitude R et le déphasage φ, utile pour résoudre des équations ou étudier des extrema.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Forme trigonométrique et puissances (formule de Moivre)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Nombres complexes",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "Moivre"
+    ],
+    "prerequisites": [
+      "forme trigonométrique d'un complexe"
+    ],
+    "pedagogicalGoal": "automatisme : passer sans hésiter de la forme algébrique à la forme trigonométrique pour calculer une puissance élevée.",
+    "hints": [
+      "Détermine le module r = |z| et un argument θ, puis écris z = r(cos θ + i sin θ).",
+      "zⁿ = rⁿ(cos(nθ) + i sin(nθ)) par la formule de Moivre — bien plus rapide qu'un développement direct de (a+ib)ⁿ."
+    ],
+    "correction": "En forme trigonométrique z = r·e^(iθ), on a zⁿ = rⁿ·e^(inθ) (formule de Moivre) : calculer une puissance élevée devient trivial, alors qu'un développement direct en forme algébrique serait très long.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Équation du second degré à discriminant négatif",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Nombres complexes",
+    "estimatedMinutes": 10,
+    "tags": [
+      "classique",
+      "équation du second degré"
+    ],
+    "prerequisites": [
+      "forme algébrique des complexes"
+    ],
+    "pedagogicalGoal": "classique incontournable : résoudre az²+bz+c=0 dans ℂ quand Δ<0, en écrivant Δ = (i√|Δ|)².",
+    "hints": [
+      "Quand Δ < 0, écris Δ = (i√|Δ|)² pour te ramener à la même formule que dans le cas Δ>0.",
+      "Les deux racines complexes obtenues sont conjuguées l'une de l'autre — un bon moyen de vérifier ton résultat."
+    ],
+    "correction": "Pour Δ < 0, en posant Δ = (i√|Δ|)², les racines s'écrivent z = (-b ± i√|Δ|)/(2a) — deux complexes conjugués, exactement la même formule que le cas réel, transposée dans ℂ.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Linéarisation trigonométrique via les formules d'Euler",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Nombres complexes",
+    "estimatedMinutes": 30,
+    "tags": [
+      "transfert",
+      "Euler"
+    ],
+    "prerequisites": [
+      "formules d'Euler",
+      "formule du binôme de Newton"
+    ],
+    "pedagogicalGoal": "transfert : réutiliser les complexes (formules d'Euler + binôme de Newton) pour linéariser cos^n(x) ou sin^n(x), méthode plus systématique que les identités trigonométriques répétées.",
+    "hints": [
+      "Écris cos(x) = (e^(ix)+e^(-ix))/2, élève à la puissance n, puis développe avec le binôme de Newton.",
+      "Regroupe ensuite les termes conjugués deux à deux pour faire réapparaître des cosinus (ou sinus) d'angles multiples."
+    ],
+    "correction": "En écrivant cos(x)=(e^(ix)+e^(-ix))/2 et en développant [cos(x)]ⁿ via le binôme de Newton, les termes se regroupent par paires conjuguées e^(ikx)+e^(-ikx) = 2cos(kx), donnant directement la linéarisation — méthode systématique, contrairement aux identités trigonométriques appliquées au cas par cas.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Lieu géométrique défini par une condition sur un module",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Nombres complexes",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "lieu géométrique"
+    ],
+    "prerequisites": [
+      "interprétation géométrique des complexes"
+    ],
+    "pedagogicalGoal": "consolidation : traduire une condition |z-a|=|z-b| ou |z-a|=r en objet géométrique reconnu (médiatrice, cercle), sans calcul superflu.",
+    "hints": [
+      "|z-a| = |z-b| signifie \"même distance à a et à b\" : c'est la définition géométrique de la médiatrice du segment [a,b].",
+      "|z-a| = r signifie \"distance constante à a\" : c'est un cercle de centre a et de rayon r."
+    ],
+    "correction": "|z-a| représente la distance du point d'affixe z au point d'affixe a. |z-a|=|z-b| décrit donc la médiatrice de [a,b] (équidistance), et |z-a|=r décrit le cercle de centre a et de rayon r — traduire directement en langage géométrique évite tout calcul algébrique.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : |z1+z2| ≠ |z1|+|z2| en général",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Nombres complexes",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "module d'un complexe"
+    ],
+    "pedagogicalGoal": "piège classique : le module d'une somme n'est PAS la somme des modules (sauf cas particulier d'alignement) — seule l'inégalité triangulaire |z1+z2| ≤ |z1|+|z2| est toujours vraie.",
+    "hints": [
+      "Teste avec z1 = 1 et z2 = i : calcule |z1+z2| et compare à |z1|+|z2| pour voir que l'égalité échoue en général.",
+      "L'égalité |z1+z2| = |z1|+|z2| a lieu exactement quand z1 et z2 sont \"positivement colinéaires\" (même argument)."
+    ],
+    "correction": "Avec z1=1, z2=i : |z1+z2|=|1+i|=√2, alors que |z1|+|z2|=2 : l'égalité échoue. Seule l'inégalité triangulaire |z1+z2| ≤ |z1|+|z2| est toujours valable ; l'égalité n'a lieu que si z1 et z2 ont le même argument.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Résolution d'une équation complexe par racine évidente",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Nombres complexes",
+    "estimatedMinutes": 30,
+    "tags": [
+      "combinaison",
+      "factorisation polynomiale"
+    ],
+    "prerequisites": [
+      "division euclidienne de polynômes",
+      "équation du second degré complexe"
+    ],
+    "pedagogicalGoal": "combinaison : repérer une racine évidente d'un polynôme de degré 3 à coefficients complexes, factoriser, puis résoudre le facteur restant de degré 2.",
+    "hints": [
+      "Teste des valeurs simples (1, -1, i, -i, 2...) pour trouver une racine évidente du polynôme.",
+      "Une fois la racine z0 trouvée, factorise par (z-z0) via division euclidienne, puis résous le facteur de degré 2 restant."
+    ],
+    "correction": "Après avoir trouvé une racine évidente z0 (par test de valeurs simples), la division euclidienne du polynôme par (z-z0) donne un facteur de degré 2, résolu par la formule usuelle (éventuellement à discriminant négatif). Les trois racines du polynôme de degré 3 sont ainsi obtenues.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Dérivée d'un produit et d'un quotient",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Dérivation",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "règles de dérivation"
+    ],
+    "prerequisites": [
+      "dérivées usuelles"
+    ],
+    "pedagogicalGoal": "automatisme fondamental : appliquer (uv)'=u'v+uv' et (u/v)'=(u'v-uv')/v² sans erreur de signe ni d'ordre.",
+    "hints": [
+      "Identifie clairement u et v avant de dériver, puis applique la formule du produit ou du quotient terme à terme.",
+      "Pour le quotient, le signe moins et l'ordre (u'v-uv', pas uv'-u'v) sont les deux pièges les plus fréquents."
+    ],
+    "correction": "(uv)' = u'v + uv' et (u/v)' = (u'v - uv')/v² (v≠0) : l'application directe et méthodique de ces deux formules, en identifiant clairement u et v au préalable, évite les erreurs de signe ou d'ordre les plus courantes.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Dérivée d'une composée (règle de la chaîne)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Dérivation",
+    "estimatedMinutes": 15,
+    "tags": [
+      "automatisme",
+      "règle de la chaîne"
+    ],
+    "prerequisites": [
+      "dérivées usuelles",
+      "notion de fonction composée"
+    ],
+    "pedagogicalGoal": "automatisme fondamental : dériver g∘f par (g∘f)'=f'·(g'∘f), réflexe indispensable pour tout calcul un peu avancé.",
+    "hints": [
+      "Repère la fonction \"extérieure\" g et la fonction \"intérieure\" f avant de dériver.",
+      "N'oublie jamais de multiplier par la dérivée de la fonction intérieure (f') — l'erreur la plus fréquente est de l'omettre."
+    ],
+    "correction": "(g∘f)'(x) = f'(x)·g'(f(x)) : on dérive la fonction extérieure au point f(x), puis on multiplie par la dérivée de la fonction intérieure. Oublier ce dernier facteur est l'erreur numéro un sur les fonctions composées.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : dériver sans vérifier la dérivabilité",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 3,
+    "chapter": "Dérivation",
+    "estimatedMinutes": 15,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "définition du nombre dérivé",
+      "dérivabilité"
+    ],
+    "pedagogicalGoal": "piège classique : une fonction avec une valeur absolue ou une racine peut ne pas être dérivable en un point précis (point anguleux ou tangente verticale) — vérifier avant d'appliquer les formules usuelles aveuglément.",
+    "hints": [
+      "Repère les points \"suspects\" : où un argument de valeur absolue s'annule, ou où une racine carrée s'annule.",
+      "En ces points, calcule séparément les nombres dérivés à gauche et à droite (limite du taux d'accroissement) plutôt que d'appliquer une formule générale."
+    ],
+    "correction": "|x| n'est pas dérivable en 0 (dérivée à gauche -1, à droite +1) ; √x n'est pas dérivable en 0 (tangente verticale). Avant d'appliquer une formule de dérivation, il faut identifier ces points sensibles et étudier séparément la limite du taux d'accroissement à gauche et à droite.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Théorème de Rolle et égalité des accroissements finis",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Dérivation",
+    "estimatedMinutes": 25,
+    "tags": [
+      "classique",
+      "Rolle",
+      "accroissements finis"
+    ],
+    "prerequisites": [
+      "continuité",
+      "dérivabilité",
+      "théorème de Rolle"
+    ],
+    "pedagogicalGoal": "classique : appliquer le théorème de Rolle (ou l'égalité des accroissements finis) pour prouver l'existence d'un point où la dérivée prend une valeur précise, sans le calculer explicitement.",
+    "hints": [
+      "Vérifie les trois hypothèses de Rolle : continuité sur [a,b], dérivabilité sur ]a,b[, et f(a)=f(b).",
+      "Si f(a)≠f(b), c'est l'égalité des accroissements finis qu'il faut utiliser : il existe c tel que f'(c) = (f(b)-f(a))/(b-a)."
+    ],
+    "correction": "Rolle : si f est continue sur [a,b], dérivable sur ]a,b[ et f(a)=f(b), alors il existe c ∈ ]a,b[ avec f'(c)=0. Égalité des accroissements finis (cas général f(a)≠f(b)) : il existe c tel que f'(c) = (f(b)-f(a))/(b-a) — l'existence est garantie sans que c soit calculable explicitement en général.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Dérivée logarithmique pour un produit de fonctions",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Dérivation",
+    "estimatedMinutes": 25,
+    "tags": [
+      "transfert",
+      "dérivée logarithmique"
+    ],
+    "prerequisites": [
+      "dérivée du logarithme",
+      "règle de la chaîne"
+    ],
+    "pedagogicalGoal": "transfert : utiliser ln|f| pour transformer un produit/quotient compliqué de fonctions en somme, puis dériver terme à terme avant de revenir à f' = f · (ln f)'.",
+    "hints": [
+      "Pose g = ln|f| : le produit ou quotient devient une somme ou différence de logarithmes, bien plus simple à dériver.",
+      "Une fois g' calculée, retrouve f' par la relation f' = f · g' (puisque g' = f'/f)."
+    ],
+    "correction": "En posant g = ln|f| (f produit/quotient de plusieurs facteurs), g devient une somme de ln des facteurs, dérivable terme à terme simplement. On récupère ensuite f' = f·g', ce qui évite d'appliquer directement et laborieusement la règle du produit à plusieurs facteurs.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Calcul de primitives usuelles",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Intégration",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "primitives usuelles"
+    ],
+    "prerequisites": [
+      "tableau des primitives usuelles"
+    ],
+    "pedagogicalGoal": "automatisme : reconnaître immédiatement la forme u'·f(u) dans une expression pour écrire sa primitive sans calcul intermédiaire.",
+    "hints": [
+      "Repère si l'expression a la forme u'(x)·g(u(x)) pour une primitive usuelle g connue.",
+      "Vérifie ta primitive en la dérivant mentalement : tu dois retrouver exactement l'expression de départ."
+    ],
+    "correction": "Reconnaître la structure u'·f(u) (ex. u'/u pour ln|u|, u'·e^u pour e^u, u'·uⁿ pour uⁿ⁺¹/(n+1)) permet d'écrire directement la primitive — la vérification par dérivation immédiate confirme le résultat.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Intégration par parties : produit polynôme × exponentielle",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Intégration",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "IPP"
+    ],
+    "prerequisites": [
+      "formule d'intégration par parties"
+    ],
+    "pedagogicalGoal": "classique incontournable : choisir judicieusement u et v' dans une IPP (dériver le polynôme pour le faire disparaître, intégrer l'exponentielle qui se reproduit).",
+    "hints": [
+      "Choisis u = polynôme (qui se simplifie en dérivant) et v' = exponentielle (qui reste une exponentielle en s'intégrant).",
+      "Si le polynôme est de degré n, il faudra répéter l'IPP n fois pour le faire disparaître complètement."
+    ],
+    "correction": "Avec u = P(x) (polynôme) et v' = e^(ax), l'IPP ∫u·v' = [uv] - ∫u'·v fait baisser le degré du polynôme à chaque application ; répétée autant de fois que le degré du polynôme, elle aboutit à une primitive explicite.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Intégrale d'une fraction rationnelle simple",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Intégration",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "fractions rationnelles"
+    ],
+    "prerequisites": [
+      "décomposition en éléments simples élémentaire"
+    ],
+    "pedagogicalGoal": "consolidation : décomposer une fraction rationnelle simple (dénominateur factorisé en facteurs distincts) en éléments simples avant d'intégrer terme à terme.",
+    "hints": [
+      "Décompose la fraction sous la forme a/(x-r1) + b/(x-r2) en identifiant a et b (par exemple en multipliant par chaque facteur puis en évaluant au pôle correspondant).",
+      "Chaque terme a/(x-r) s'intègre directement en a·ln|x-r|."
+    ],
+    "correction": "Après décomposition en éléments simples (coefficients obtenus en évaluant au pôle après multiplication par le facteur correspondant), chaque terme a/(x-r) a pour primitive a·ln|x-r| — l'intégration terme à terme est alors immédiate.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : oublier la valeur absolue dans une primitive en 1/x",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Intégration",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "primitive de 1/x"
+    ],
+    "pedagogicalGoal": "piège classique : la primitive de u'/u est ln|u|, jamais ln(u) sans valeur absolue — l'oubli est invisible si u est positif sur l'intervalle d'étude mais faux en général.",
+    "hints": [
+      "Vérifie toujours si le domaine d'intégration permet à u de changer de signe : si oui, la valeur absolue est indispensable.",
+      "Dérive ln|u| pour te convaincre que la valeur absolue ne change rien à la dérivée mais élargit le domaine de validité."
+    ],
+    "correction": "d/dx[ln|u(x)|] = u'(x)/u(x) que u soit positif ou négatif : la primitive correcte de u'/u est TOUJOURS ln|u| + C, pas ln(u) (qui n'est même pas défini si u<0). Écrire ln(u) sans valeur absolue est une erreur silencieuse tant que u reste positif sur l'intervalle étudié, mais devient fausse dès que ce n'est plus le cas.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Calcul d'aire entre deux courbes",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Intégration",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "calcul d'aire"
+    ],
+    "prerequisites": [
+      "intégrale et aire sous une courbe"
+    ],
+    "pedagogicalGoal": "classique : déterminer les bornes (points d'intersection) puis intégrer la différence des fonctions, en respectant l'ordre pour que l'intégrale soit positive.",
+    "hints": [
+      "Trouve d'abord les abscisses des points d'intersection en résolvant f(x)=g(x) : ce sont tes bornes d'intégration.",
+      "Vérifie quelle courbe est au-dessus de l'autre sur l'intervalle (teste une valeur), pour intégrer (f-g) et non l'inverse."
+    ],
+    "correction": "Les bornes s'obtiennent en résolvant f(x)=g(x). L'aire entre les deux courbes vaut ∫(fonction du dessus - fonction du dessous)dx sur cet intervalle — déterminer laquelle est au-dessus (par un test de valeur) évite une aire négative absurde.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Résolution d'une équation différentielle linéaire d'ordre 1 à coefficient variable",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Équations différentielles",
+    "estimatedMinutes": 30,
+    "tags": [
+      "consolidation",
+      "équation linéaire ordre 1"
+    ],
+    "prerequisites": [
+      "primitives",
+      "méthode de variation de la constante"
+    ],
+    "pedagogicalGoal": "consolidation : appliquer la méthode générale (équation homogène puis variation de la constante) même quand le coefficient de y n'est pas constant.",
+    "hints": [
+      "Résous d'abord l'équation homogène y'+a(x)y=0 : la solution est y = C·e^(-A(x)) où A est une primitive de a.",
+      "Pour l'équation complète, cherche une solution sous la forme y = C(x)·e^(-A(x)) et détermine C(x) en réinjectant dans l'équation (variation de la constante)."
+    ],
+    "correction": "L'équation homogène y'+a(x)y=0 a pour solution y=C·e^(-A(x)), A primitive de a. La méthode de variation de la constante (poser C=C(x) et réinjecter) donne une équation simple sur C'(x), qui s'intègre pour obtenir la solution générale de l'équation complète.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Solution particulière par identification (second membre polynomial)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Équations différentielles",
+    "estimatedMinutes": 25,
+    "tags": [
+      "classique",
+      "solution particulière"
+    ],
+    "prerequisites": [
+      "équations différentielles linéaires à coefficients constants"
+    ],
+    "pedagogicalGoal": "classique : chercher une solution particulière sous la forme d'un polynôme du même degré que le second membre, par identification des coefficients.",
+    "hints": [
+      "Si le second membre est un polynôme de degré n, cherche une solution particulière polynomiale de degré n (ou n+1 si 0 est racine de l'équation caractéristique).",
+      "Réinjecte la forme candidate dans l'équation et identifie les coefficients terme à terme."
+    ],
+    "correction": "Pour un second membre polynomial de degré n, on cherche y_p polynomiale de même degré (ou de degré n+1 si le cas est \"résonant\"), on réinjecte dans l'équation et on identifie les coefficients par degré décroissant — méthode systématique qui marche pour tout second membre polynomial.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : oublier la solution générale de l'équation homogène",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Équations différentielles",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "structure des solutions d'une équation linéaire"
+    ],
+    "pedagogicalGoal": "piège classique : la solution générale d'une équation différentielle linéaire est TOUJOURS solution particulière + solution générale de l'équation homogène — s'arrêter à la solution particulière est une réponse incomplète.",
+    "hints": [
+      "Une équation différentielle d'ordre 1 a une infinité de solutions (une constante libre) — si ta réponse n'en contient aucune, il en manque une partie.",
+      "N'oublie jamais d'ajouter la solution homogène (avec sa constante) à la solution particulière trouvée."
+    ],
+    "correction": "La solution générale s'écrit y = y_particulière + y_homogène (avec sa constante libre) — donner uniquement y_particulière ignore toute une famille de solutions et ne satisfait généralement pas une condition initiale donnée.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Problème de Cauchy — unicité avec condition initiale",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Équations différentielles",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "condition initiale"
+    ],
+    "prerequisites": [
+      "solution générale d'une équation différentielle linéaire"
+    ],
+    "pedagogicalGoal": "classique : utiliser une condition initiale pour fixer la constante et obtenir la solution unique du problème de Cauchy, dernière étape systématique après avoir trouvé la solution générale.",
+    "hints": [
+      "Substitue la condition initiale (valeur de y en un point donné) dans la solution générale pour déterminer la constante.",
+      "Vérifie ta solution finale en la réinjectant dans l'équation ET en vérifiant qu'elle satisfait bien la condition initiale."
+    ],
+    "correction": "En substituant la condition initiale dans la solution générale (qui contient une constante libre), on obtient une équation simple qui fixe cette constante de façon unique — c'est ce qui transforme une famille de solutions en LA solution du problème de Cauchy.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Produit matriciel et non-commutativité",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Matrices et systèmes",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "produit matriciel"
+    ],
+    "prerequisites": [
+      "définition du produit matriciel"
+    ],
+    "pedagogicalGoal": "automatisme essentiel : calculer AB ET BA pour la même paire de matrices, et constater qu'elles diffèrent en général — réflexe à avoir avant toute manipulation matricielle.",
+    "hints": [
+      "Vérifie toujours la compatibilité des dimensions avant de multiplier : le nombre de colonnes de la première doit égaler le nombre de lignes de la seconde.",
+      "Calcule AB et BA séparément et complètement — ne suppose jamais qu'ils sont égaux sans vérification."
+    ],
+    "correction": "Le produit matriciel n'est pas commutatif en général (AB ≠ BA), contrairement au produit de nombres réels — un contre-exemple numérique simple (deux matrices 2×2) suffit à s'en convaincre définitivement.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Inversion d'une matrice 2×2 par la formule directe",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Matrices et systèmes",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "inversion matricielle"
+    ],
+    "prerequisites": [
+      "déterminant d'une matrice 2×2"
+    ],
+    "pedagogicalGoal": "automatisme : appliquer la formule directe d'inversion d'une matrice 2×2, à condition de vérifier d'abord que le déterminant est non nul.",
+    "hints": [
+      "Calcule d'abord le déterminant ad-bc : si il est nul, la matrice n'est pas inversible, inutile d'aller plus loin.",
+      "Si le déterminant est non nul, la formule directe donne l'inverse en échangeant a et d, en changeant le signe de b et c, et en divisant par le déterminant."
+    ],
+    "correction": "Pour A=[[a,b],[c,d]] avec det(A)=ad-bc≠0, A⁻¹ = (1/det(A))·[[d,-b],[-c,a]] — vérifier systématiquement det(A)≠0 avant d'appliquer la formule, sous peine de diviser par zéro.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Rang d'une matrice par échelonnement",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Matrices et systèmes",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "rang",
+      "échelonnement"
+    ],
+    "prerequisites": [
+      "opérations élémentaires sur les lignes"
+    ],
+    "pedagogicalGoal": "classique : déterminer le rang d'une matrice en l'échelonnant par opérations élémentaires, puis en comptant les lignes non nulles.",
+    "hints": [
+      "Utilise les opérations élémentaires (combinaisons linéaires de lignes) pour faire apparaître des zéros sous la diagonale, une colonne à la fois.",
+      "Le rang est le nombre de lignes non nulles dans la forme échelonnée finale — pas le nombre de lignes de départ."
+    ],
+    "correction": "Après échelonnement complet par opérations élémentaires (qui préservent le rang), le nombre de lignes non nulles de la matrice échelonnée donne directement le rang de la matrice de départ.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Vérification des axiomes d'un sous-espace vectoriel",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Algèbre linéaire",
+    "estimatedMinutes": 20,
+    "tags": [
+      "consolidation",
+      "sous-espace vectoriel"
+    ],
+    "prerequisites": [
+      "définition d'espace vectoriel"
+    ],
+    "pedagogicalGoal": "consolidation : appliquer méthodiquement le critère de sous-espace vectoriel (non vide/contient 0, stable par combinaison linéaire) plutôt que de vérifier les 8 axiomes complets.",
+    "hints": [
+      "Vérifie d'abord que le vecteur nul appartient à l'ensemble (condition nécessaire immédiate, souvent la plus rapide à réfuter si fausse).",
+      "Puis vérifie la stabilité par combinaison linéaire : pour u,v dans l'ensemble et λ,μ réels, λu+μv doit aussi y être."
+    ],
+    "correction": "Un sous-ensemble non vide (contenant 0) et stable par combinaison linéaire (λu+μv appartient à l'ensemble pour tous u,v de l'ensemble et λ,μ réels) est un sous-espace vectoriel — ce critère condensé suffit, pas besoin de revérifier les 8 axiomes d'espace vectoriel un par un (hérités automatiquement de l'espace ambiant).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Famille libre ou liée par le critère du déterminant",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Algèbre linéaire",
+    "estimatedMinutes": 25,
+    "tags": [
+      "classique",
+      "famille libre"
+    ],
+    "prerequisites": [
+      "déterminant",
+      "définition de famille libre"
+    ],
+    "pedagogicalGoal": "classique : utiliser le déterminant (non nul ⟺ famille libre) comme raccourci en dimension 2 ou 3, plutôt que de résoudre le système λ1v1+...+λnvn=0 directement.",
+    "hints": [
+      "En dimension n, une famille de n vecteurs est libre si et seulement si le déterminant de la matrice formée par ces vecteurs (en colonnes) est non nul.",
+      "Pour une famille de vecteurs en nombre différent de la dimension, reviens à la définition (résoudre le système de combinaison linéaire nulle)."
+    ],
+    "correction": "En dimension n, n vecteurs forment une famille libre si et seulement si le déterminant de la matrice qu'ils composent (en colonnes) est non nul — critère rapide, mais valable uniquement quand le nombre de vecteurs égale la dimension de l'espace ; sinon, retour à la définition directe.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : confondre famille génératrice et famille libre",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Algèbre linéaire",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "famille libre",
+      "famille génératrice"
+    ],
+    "pedagogicalGoal": "piège classique : une famille génératrice peut être liée (contenir des vecteurs redondants), et une famille libre peut ne pas être génératrice — les deux notions sont indépendantes, seule une base cumule les deux.",
+    "hints": [
+      "Cherche un exemple de famille génératrice mais liée (ex. trois vecteurs pour engendrer un plan, dont un est combinaison des deux autres).",
+      "Cherche un exemple de famille libre mais non génératrice (ex. un seul vecteur non nul dans un espace de dimension 2)."
+    ],
+    "correction": "Une famille génératrice engendre l'espace mais peut contenir des vecteurs redondants (liée) ; une famille libre n'a pas de redondance mais peut ne pas suffire à tout engendrer. Seule une famille à la fois libre ET génératrice constitue une base — les deux propriétés doivent être vérifiées séparément, jamais déduites l'une de l'autre.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Probabilités sur un univers fini — dénombrement direct",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Probabilités",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "dénombrement"
+    ],
+    "prerequisites": [
+      "dénombrement de base (arrangements, combinaisons)"
+    ],
+    "pedagogicalGoal": "automatisme : dans un univers équiprobable, calculer P(A) = card(A)/card(Ω) après avoir correctement dénombré les deux cardinaux.",
+    "hints": [
+      "Vérifie d'abord que l'univers est bien équiprobable avant d'utiliser card(A)/card(Ω).",
+      "Dénombre card(Ω) et card(A) séparément et avec la même méthode (ordre ou non, répétition ou non) pour rester cohérent."
+    ],
+    "correction": "Dans un univers fini équiprobable, P(A) = card(A)/card(Ω). L'essentiel du travail est le dénombrement rigoureux (avec ou sans ordre, avec ou sans répétition) des deux cardinaux — une erreur de modélisation du dénombrement (pas de la formule elle-même) est la source d'erreur la plus fréquente.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Vérification de l'indépendance de deux événements par le calcul",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Probabilités",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "indépendance"
+    ],
+    "prerequisites": [
+      "définition de l'indépendance",
+      "probabilités conditionnelles"
+    ],
+    "pedagogicalGoal": "classique : l'indépendance de deux événements ne se suppose jamais par intuition — elle se vérifie par le calcul P(A∩B) = P(A)·P(B).",
+    "hints": [
+      "Calcule P(A), P(B) et P(A∩B) séparément avant de comparer P(A∩B) à P(A)·P(B).",
+      "Une intuition d'indépendance (\"ça semble indépendant\") n'est jamais une preuve — seul le calcul tranche."
+    ],
+    "correction": "A et B sont indépendants si et seulement si P(A∩B) = P(A)·P(B) — cette égalité se VÉRIFIE par le calcul des trois probabilités, elle ne se suppose jamais à partir d'une intuition intuitive sur le contexte de l'expérience.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Formule des probabilités totales",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Probabilités",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "probabilités totales"
+    ],
+    "prerequisites": [
+      "système complet d'événements",
+      "probabilités conditionnelles"
+    ],
+    "pedagogicalGoal": "classique : décomposer un événement selon un système complet d'événements (partition de l'univers) pour calculer sa probabilité par la formule des probabilités totales.",
+    "hints": [
+      "Identifie un système complet d'événements pertinent (une partition naturelle de l'univers pour le problème posé).",
+      "P(A) = Σ P(A|Bi)·P(Bi) sur tous les Bi du système complet — vérifie que les Bi sont bien disjoints et que leur réunion couvre tout l'univers."
+    ],
+    "correction": "Pour un système complet d'événements (B1,...,Bn) (partition de l'univers), P(A) = Σᵢ P(A|Bᵢ)·P(Bᵢ) — la clé est de choisir une partition naturelle par rapport à laquelle P(A|Bᵢ) devient simple à calculer.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : confondre P(A|B) et P(B|A)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Probabilités",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "probabilités conditionnelles"
+    ],
+    "pedagogicalGoal": "piège classique : P(A|B) et P(B|A) sont en général différents — les confondre est l'erreur la plus fréquente en probabilités conditionnelles, corrigée par la formule de Bayes.",
+    "hints": [
+      "Écris toujours explicitement ce que représente la barre \"sachant\" : P(A|B) se lit \"probabilité de A sachant que B est déjà réalisé\".",
+      "Si tu connais P(A|B) mais qu'on te demande P(B|A), utilise la formule de Bayes plutôt que de supposer qu'ils sont égaux."
+    ],
+    "correction": "P(A|B) = P(A∩B)/P(B) alors que P(B|A) = P(A∩B)/P(A) : ces deux quantités partagent le même numérateur mais ont des dénominateurs différents, donc sont égales seulement si P(A)=P(B). La formule de Bayes P(B|A) = P(A|B)·P(B)/P(A) permet de passer rigoureusement de l'une à l'autre.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Variable aléatoire — loi, espérance et variance",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Probabilités",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "variable aléatoire"
+    ],
+    "prerequisites": [
+      "loi de probabilité",
+      "définition de l'espérance et de la variance"
+    ],
+    "pedagogicalGoal": "consolidation : construire la loi d'une variable aléatoire à partir d'une expérience concrète, puis calculer E(X) et V(X) par la formule de König-Huygens.",
+    "hints": [
+      "Établis d'abord la loi (valeurs possibles et probabilités associées), en vérifiant que la somme des probabilités vaut 1.",
+      "Utilise V(X) = E(X²) - E(X)² (formule de König-Huygens) plutôt que la définition directe, souvent plus rapide à calculer."
+    ],
+    "correction": "Après avoir établi la loi de X (valeurs et probabilités, somme = 1), E(X) = Σxᵢ·P(X=xᵢ) et V(X) = E(X²) - [E(X)]² (König-Huygens) — cette dernière formule évite de calculer directement Σ(xᵢ-E(X))²·P(X=xᵢ), plus long.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Équation cartésienne d'une droite (point + vecteur directeur)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Géométrie",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "droite"
+    ],
+    "prerequisites": [
+      "vecteur directeur",
+      "produit vectoriel/déterminant 2D"
+    ],
+    "pedagogicalGoal": "automatisme : passer directement d'un point et d'un vecteur directeur à une équation cartésienne ax+by+c=0, sans repasser par une équation paramétrique intermédiaire.",
+    "hints": [
+      "Si (a,b) est un vecteur directeur, un vecteur normal est (-b,a) (rotation de 90°) : l'équation cartésienne est -b(x-x0)+a(y-y0)=0.",
+      "Vérifie ton équation en y substituant les coordonnées du point donné : elle doit être satisfaite."
+    ],
+    "correction": "Pour une droite de vecteur directeur (a,b) passant par (x0,y0), un vecteur normal est (-b,a), donnant l'équation cartésienne -b(x-x0)+a(y-y0)=0, soit -bx+ay+(bx0-ay0)=0 — méthode directe, sans paramétrage intermédiaire.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Distance d'un point à une droite",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Géométrie",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "distance point-droite"
+    ],
+    "prerequisites": [
+      "équation cartésienne d'une droite"
+    ],
+    "pedagogicalGoal": "classique : appliquer la formule directe de distance point-droite plutôt que de minimiser une distance par le calcul différentiel.",
+    "hints": [
+      "Mets d'abord l'équation de la droite sous forme ax+by+c=0.",
+      "La distance du point (x0,y0) à cette droite est |ax0+by0+c|/√(a²+b²) — applique directement sans repasser par une minimisation."
+    ],
+    "correction": "Pour une droite d'équation ax+by+c=0 et un point (x0,y0), la distance vaut |ax0+by0+c|/√(a²+b²) — formule directe qui évite toute minimisation, à condition que l'équation soit correctement mise sous forme ax+by+c=0 au préalable.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Étude d'un cercle par son équation cartésienne",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Géométrie",
+    "estimatedMinutes": 20,
+    "tags": [
+      "consolidation",
+      "cercle"
+    ],
+    "prerequisites": [
+      "forme canonique (mise sous forme canonique d'un trinôme)"
+    ],
+    "pedagogicalGoal": "consolidation : reconnaître qu'une équation x²+y²+dx+ey+f=0 décrit un cercle (ou un point, ou rien) en la mettant sous forme canonique, réutilisant une technique déjà connue (complétion du carré).",
+    "hints": [
+      "Regroupe les termes en x et les termes en y séparément, puis complète le carré pour chaque groupe.",
+      "Une fois sous la forme (x-a)²+(y-b)²=r², le signe de r² (positif, nul, négatif) détermine si c'est un vrai cercle, un point, ou l'ensemble vide."
+    ],
+    "correction": "En complétant le carré séparément sur x et sur y, x²+y²+dx+ey+f=0 se réécrit (x+d/2)²+(y+e/2)²=r² avec r²=(d²+e²)/4-f. Si r²>0, c'est un cercle de centre (-d/2,-e/2) et de rayon √(r²) ; si r²=0, un point ; si r²<0, l'ensemble vide.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Produit scalaire pour démontrer une orthogonalité",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Géométrie",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "produit scalaire"
+    ],
+    "prerequisites": [
+      "définition et propriétés du produit scalaire"
+    ],
+    "pedagogicalGoal": "classique : utiliser le produit scalaire nul comme critère direct d'orthogonalité, plutôt qu'un argument géométrique informel.",
+    "hints": [
+      "Calcule le produit scalaire des deux vecteurs concernés par leurs coordonnées : u·v = xu·xv + yu·yv en 2D.",
+      "Un produit scalaire nul prouve l'orthogonalité de façon totalement rigoureuse — pas besoin de figure pour convaincre."
+    ],
+    "correction": "Deux vecteurs sont orthogonaux si et seulement si leur produit scalaire est nul : u·v = xu·xv + yu·yv (2D) ou + zu·zv (3D). C'est une preuve calculatoire rigoureuse, indépendante de toute figure, contrairement à un argument \"visuellement perpendiculaire\".",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Démonstration par récurrence simple",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Raisonnement et logique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "récurrence"
+    ],
+    "prerequisites": [
+      "principe de récurrence"
+    ],
+    "pedagogicalGoal": "classique fondamental : rédiger une récurrence complète et propre (initialisation, hérédité clairement séparées, conclusion explicite) — la rigueur de rédaction compte autant que le calcul.",
+    "hints": [
+      "Sépare explicitement les trois étapes : initialisation (vérifier au premier rang), hérédité (supposer au rang n, démontrer au rang n+1), conclusion.",
+      "Dans l'hérédité, identifie précisément où l'hypothèse de récurrence est utilisée — c'est souvent l'endroit où une rédaction bâclée devient fausse."
+    ],
+    "correction": "Une récurrence rigoureuse suit toujours trois étapes explicites : initialisation (le cas de base), hérédité (P(n) ⟹ P(n+1), en utilisant clairement l'hypothèse de récurrence), et conclusion (P(n) vraie pour tout n à partir du rang initial, par principe de récurrence).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Récurrence forte — exemple d'application",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Raisonnement et logique",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "récurrence forte"
+    ],
+    "prerequisites": [
+      "principe de récurrence simple"
+    ],
+    "pedagogicalGoal": "consolidation : reconnaître les situations où l'hypothèse de récurrence simple (au seul rang n) ne suffit pas, et où il faut supposer la propriété vraie à TOUS les rangs précédents.",
+    "hints": [
+      "Si la propriété au rang n+1 dépend de plusieurs rangs précédents (pas seulement n), une récurrence simple ne suffit pas : utilise la récurrence forte.",
+      "En récurrence forte, l'hypothèse de récurrence est \"P(k) vraie pour tout k ≤ n\", pas seulement \"P(n) vraie\"."
+    ],
+    "correction": "La récurrence forte suppose P(k) vraie pour TOUS les k allant du rang initial jusqu'à n (pas seulement P(n) seul), ce qui est nécessaire quand P(n+1) dépend de plusieurs termes précédents (ex. suites définies par une relation faisant intervenir plusieurs rangs antérieurs, ou décomposition en facteurs premiers).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Raisonnement par l'absurde — irrationalité de √2",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Raisonnement et logique",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "raisonnement par l'absurde"
+    ],
+    "prerequisites": [
+      "nombres rationnels",
+      "parité"
+    ],
+    "pedagogicalGoal": "classique historique et incontournable : la démonstration par l'absurde de l'irrationalité de √2, modèle de raisonnement transférable à d'autres preuves d'irrationalité.",
+    "hints": [
+      "Suppose √2 = p/q avec p/q une fraction irréductible (hypothèse à nier pour obtenir la contradiction).",
+      "Montre que 2 divise p, puis que 2 divise q aussi — contradiction avec l'irréductibilité de p/q supposée au départ."
+    ],
+    "correction": "En supposant √2=p/q irréductible, on obtient p²=2q², donc p est pair (p=2k), d'où 4k²=2q² soit q²=2k² : q est pair aussi. Mais p et q pairs contredit l'irréductibilité supposée : l'hypothèse de départ est donc fausse, √2 est irrationnel.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : confondre \"pour tout\" et \"il existe\"",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Raisonnement et logique",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "quantificateurs"
+    ],
+    "prerequisites": [
+      "quantificateurs ∀ et ∃"
+    ],
+    "pedagogicalGoal": "piège classique : la négation de \"∀x, P(x)\" est \"∃x, non P(x)\" (pas \"∀x, non P(x)\") — inverser un quantificateur sans le nier correctement produit un énoncé complètement différent.",
+    "hints": [
+      "Pour nier \"∀x, P(x)\", il faut ÉCHANGER le quantificateur (devient ∃) ET nier la propriété — les deux opérations, jamais une seule.",
+      "Teste ta négation sur un exemple concret pour vérifier qu'elle dit bien le contraire de l'énoncé initial."
+    ],
+    "correction": "non(∀x, P(x)) = ∃x, non P(x) ; non(∃x, P(x)) = ∀x, non P(x) — le quantificateur change de nature ET la propriété se nie, les deux simultanément. Oublier de changer le quantificateur (ou de nier la propriété) produit un énoncé qui n'est pas la vraie négation.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Raisonnement par contraposée",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Raisonnement et logique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "consolidation",
+      "contraposée"
+    ],
+    "prerequisites": [
+      "implication logique"
+    ],
+    "pedagogicalGoal": "consolidation : reconnaître qu'une implication P⟹Q est parfois bien plus facile à prouver via sa contraposée (non Q)⟹(non P), strictement équivalente.",
+    "hints": [
+      "La contraposée de \"P⟹Q\" est \"(non Q)⟹(non P)\" — pas \"(non P)⟹(non Q)\" (ça, c'est la réciproque, non équivalente).",
+      "Si prouver directement P⟹Q semble difficile, essaie systématiquement la contraposée : elle est parfois beaucoup plus directe."
+    ],
+    "correction": "P⟹Q et sa contraposée (non Q)⟹(non P) sont logiquement équivalentes (l'une vraie si et seulement si l'autre l'est) — la réciproque (non P)⟹(non Q) n'est PAS équivalente en général. Choisir de prouver la contraposée est une stratégie légitime et parfois bien plus simple.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Recherche des valeurs propres d'une matrice 2×2 — première approche",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Réduction des endomorphismes (Spé)",
+    "estimatedMinutes": 20,
+    "tags": [
+      "piliers-spe",
+      "réduction",
+      "valeurs propres"
+    ],
+    "prerequisites": [
+      "réduction des endomorphismes",
+      "polynôme caractéristique"
+    ],
+    "pedagogicalGoal": "premier contact avec les valeurs propres : notion centrale de la Spé, introduite ici sur le cas le plus simple (2×2) pour préparer la théorie générale vue en cours.",
+    "hints": [
+      "Une valeur propre λ vérifie det(A-λI)=0 : c'est le polynôme caractéristique.",
+      "Pour chaque valeur propre trouvée, le sous-espace propre associé est Ker(A-λI)."
+    ],
+    "correction": "Le polynôme caractéristique det(A-λI)=0 donne les valeurs propres. Pour chacune, résoudre (A-λI)X=0 donne le sous-espace propre associé — première étape vers la diagonalisation étudiée en détail en Spé.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé : à débloquer une fois le cours de réduction des endomorphismes vu en classe.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Diagonalisabilité d'une matrice — critère et méthode",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Réduction des endomorphismes (Spé)",
+    "estimatedMinutes": 30,
+    "tags": [
+      "piliers-spe",
+      "réduction",
+      "diagonalisation"
+    ],
+    "prerequisites": [
+      "valeurs propres",
+      "sous-espaces propres",
+      "dimension"
+    ],
+    "pedagogicalGoal": "comprendre le critère complet de diagonalisabilité (somme des dimensions des sous-espaces propres égale la dimension de l'espace) avant de l'appliquer machinalement.",
+    "hints": [
+      "Une matrice est diagonalisable si et seulement si la somme des dimensions de ses sous-espaces propres égale la taille de la matrice.",
+      "Si toutes les valeurs propres sont distinctes (racines simples du polynôme caractéristique), la diagonalisabilité est automatique."
+    ],
+    "correction": "Une matrice n×n est diagonalisable ⟺ Σ dim(sous-espaces propres) = n. Cas particulier simplificateur : n valeurs propres distinctes ⟹ diagonalisable automatiquement (chaque sous-espace propre est alors de dimension 1).",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Calcul de puissances d'une matrice diagonalisable",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Réduction des endomorphismes (Spé)",
+    "estimatedMinutes": 25,
+    "tags": [
+      "piliers-spe",
+      "réduction",
+      "puissances de matrices"
+    ],
+    "prerequisites": [
+      "diagonalisation",
+      "produit matriciel"
+    ],
+    "pedagogicalGoal": "application phare de la diagonalisation : calculer Aⁿ pour n grand via A=PDP⁻¹, impossible à faire directement par produits répétés.",
+    "hints": [
+      "Si A=PDP⁻¹ avec D diagonale, alors Aⁿ=PDⁿP⁻¹, et Dⁿ se calcule terme à terme (chaque terme diagonal à la puissance n).",
+      "C'est exactement pour ce type de calcul que la diagonalisation devient un outil indispensable, pas juste une curiosité théorique."
+    ],
+    "correction": "Avec A=PDP⁻¹, Aⁿ=(PDP⁻¹)ⁿ=PDⁿP⁻¹ (les P⁻¹P intermédiaires s'annulent). Dⁿ, matrice diagonale, se calcule immédiatement (chaque coefficient diagonal à la puissance n) : c'est ce qui rend le calcul de Aⁿ praticable même pour n très grand.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Rayon de convergence d'une série entière",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Séries entières (Spé)",
+    "estimatedMinutes": 20,
+    "tags": [
+      "piliers-spe",
+      "séries entières",
+      "rayon de convergence"
+    ],
+    "prerequisites": [
+      "séries entières",
+      "règle de d'Alembert"
+    ],
+    "pedagogicalGoal": "premier calcul de rayon de convergence via la règle de d'Alembert, préparant la notion centrale des séries entières vue en Spé.",
+    "hints": [
+      "Applique la règle de d'Alembert au terme général : calcule la limite de |a(n+1)/a(n)| quand n tend vers l'infini.",
+      "Le rayon de convergence R est l'inverse de cette limite (ou +∞ si la limite est nulle, 0 si elle est infinie)."
+    ],
+    "correction": "Si |a(n+1)/a(n)| → ℓ, le rayon de convergence de Σaₙxⁿ vaut R=1/ℓ (avec les conventions R=+∞ si ℓ=0 et R=0 si ℓ=+∞) — la règle de d'Alembert appliquée aux coefficients donne directement le rayon.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Développement en série entière de fonctions usuelles",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Séries entières (Spé)",
+    "estimatedMinutes": 20,
+    "tags": [
+      "piliers-spe",
+      "séries entières",
+      "DSE"
+    ],
+    "prerequisites": [
+      "séries entières",
+      "développements limités"
+    ],
+    "pedagogicalGoal": "faire le pont entre les développements limités déjà connus (Sup) et les développements en série entière (Spé) — même idée, poussée à l'infini.",
+    "hints": [
+      "Un développement en série entière ressemble à un développement limité poussé à l'ordre infini — tu connais déjà les DL de exp, cos, sin en 0.",
+      "Vérifie le rayon de convergence de la série obtenue avant d'affirmer qu'elle représente bien la fonction sur tout son domaine."
+    ],
+    "correction": "Les développements en série entière usuels (exp, cos, sin, 1/(1-x)...) prolongent à l'infini les développements limités déjà connus en Sup — la nouveauté de la Spé est la question du rayon de convergence, absente du cadre local des DL.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Résolution d'une équation différentielle par série entière",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Séries entières (Spé)",
+    "estimatedMinutes": 40,
+    "tags": [
+      "piliers-spe",
+      "séries entières",
+      "équations différentielles"
+    ],
+    "prerequisites": [
+      "séries entières",
+      "équations différentielles",
+      "relations de récurrence sur les coefficients"
+    ],
+    "pedagogicalGoal": "application avancée combinant deux thèmes de Spé (séries entières et équations différentielles) — à garder pour plus tard dans l'année de Spé, pas en tout début.",
+    "hints": [
+      "Cherche une solution sous forme de série entière Σaₙxⁿ, réinjecte dans l'équation, et identifie une relation de récurrence entre les coefficients aₙ.",
+      "Résous la récurrence obtenue pour exprimer aₙ, puis identifie éventuellement la fonction somme comme une fonction usuelle."
+    ],
+    "correction": "En réinjectant y=Σaₙxⁿ dans l'équation différentielle, l'identification des coefficients de même puissance de x donne une relation de récurrence sur (aₙ), qui se résout explicitement — la série obtenue coïncide parfois avec le développement d'une fonction usuelle déjà connue.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé. Plus exigeant que les autres piliers : à réserver pour la seconde moitié de l'année de Spé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Produit scalaire sur un espace de fonctions",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Espaces préhilbertiens (Spé)",
+    "estimatedMinutes": 20,
+    "tags": [
+      "piliers-spe",
+      "préhilbertien",
+      "produit scalaire"
+    ],
+    "prerequisites": [
+      "espaces préhilbertiens",
+      "intégration"
+    ],
+    "pedagogicalGoal": "généraliser le produit scalaire (déjà connu en géométrie, Sup) à un espace de fonctions via une intégrale — première étape vers les espaces préhilbertiens de Spé.",
+    "hints": [
+      "Le produit scalaire ⟨f,g⟩=∫f(t)g(t)dt sur un intervalle généralise directement le produit scalaire géométrique déjà connu — les mêmes axiomes (bilinéarité, symétrie, positivité) s'appliquent.",
+      "Pour vérifier l'orthogonalité de deux fonctions, calcule simplement cette intégrale et regarde si elle est nulle, exactement comme en géométrie."
+    ],
+    "correction": "⟨f,g⟩=∫f(t)g(t)dt définit un produit scalaire sur un espace de fonctions (bilinéaire, symétrique, défini positif) — l'orthogonalité de deux fonctions se teste alors exactement comme en géométrie plane, mais avec une intégrale au lieu d'une somme de produits de coordonnées.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Norme associée à un produit scalaire et inégalité de Cauchy-Schwarz",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Espaces préhilbertiens (Spé)",
+    "estimatedMinutes": 25,
+    "tags": [
+      "piliers-spe",
+      "préhilbertien",
+      "Cauchy-Schwarz"
+    ],
+    "prerequisites": [
+      "produit scalaire",
+      "norme"
+    ],
+    "pedagogicalGoal": "découvrir l'inégalité de Cauchy-Schwarz |⟨u,v⟩| ≤ ‖u‖·‖v‖, outil transversal réutilisé dans tout le reste de la Spé (probabilités, analyse, algèbre).",
+    "hints": [
+      "La norme associée au produit scalaire est ‖u‖=√⟨u,u⟩ — vérifie que cette définition a bien un sens (positivité du produit scalaire d'un vecteur avec lui-même).",
+      "L'inégalité de Cauchy-Schwarz relie produit scalaire et normes : |⟨u,v⟩| ≤ ‖u‖·‖v‖, avec égalité si et seulement si u et v sont colinéaires."
+    ],
+    "correction": "‖u‖=√⟨u,u⟩ définit une norme à partir du produit scalaire. L'inégalité de Cauchy-Schwarz |⟨u,v⟩|≤‖u‖·‖v‖ (égalité ssi colinéarité) est un résultat central, réutilisé dans de nombreux contextes de Spé (majorations, espaces de fonctions, probabilités).",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Construction d'une famille orthonormée par le procédé de Gram-Schmidt",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Espaces préhilbertiens (Spé)",
+    "estimatedMinutes": 40,
+    "tags": [
+      "piliers-spe",
+      "préhilbertien",
+      "Gram-Schmidt"
+    ],
+    "prerequisites": [
+      "produit scalaire",
+      "familles libres",
+      "orthogonalité"
+    ],
+    "pedagogicalGoal": "procédé de Gram-Schmidt : transformer une famille libre quelconque en famille orthonormée, outil clé pour toute la suite du chapitre (projections orthogonales).",
+    "hints": [
+      "Le principe : à chaque étape, soustrais au vecteur suivant sa projection sur les vecteurs déjà orthogonalisés, puis normalise.",
+      "Traite les vecteurs un par un, dans l'ordre, sans sauter d'étape — chaque nouveau vecteur orthogonal dépend de tous les précédents."
+    ],
+    "correction": "Le procédé de Gram-Schmidt construit, vecteur par vecteur, une famille orthogonale en soustrayant à chaque nouveau vecteur ses projections sur les vecteurs déjà traités, puis normalise chaque résultat pour obtenir une famille orthonormée — base de toutes les projections orthogonales étudiées ensuite en Spé.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé. À réserver pour une fois le cours sur les espaces préhilbertiens bien avancé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Convergence simple et convergence uniforme d'une suite de fonctions",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Suites et séries de fonctions (Spé)",
+    "estimatedMinutes": 30,
+    "tags": [
+      "piliers-spe",
+      "convergence uniforme",
+      "suites de fonctions"
+    ],
+    "prerequisites": [
+      "convergence simple",
+      "borne supérieure"
+    ],
+    "pedagogicalGoal": "distinguer précisément convergence simple (point par point) et convergence uniforme (contrôle global de l'écart) — distinction subtile mais centrale de la Spé, source de nombreuses erreurs si mal comprise.",
+    "hints": [
+      "La convergence simple se vérifie point par point : pour chaque x fixé, (fₙ(x)) converge vers f(x).",
+      "La convergence uniforme est plus forte : sup_x |fₙ(x)-f(x)| doit tendre vers 0 — un seul contrôle global, pas un contrôle point par point."
+    ],
+    "correction": "Convergence simple : pour tout x fixé, fₙ(x) → f(x) (contrôle point par point, la vitesse peut varier selon x). Convergence uniforme : sup_x|fₙ(x)-f(x)| → 0 (contrôle global uniforme en x) — la convergence uniforme implique la simple, mais pas l'inverse, ce qui est souvent la source d'erreur.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Interversion limite-intégrale — pourquoi la convergence uniforme importe",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Suites et séries de fonctions (Spé)",
+    "estimatedMinutes": 25,
+    "tags": [
+      "piliers-spe",
+      "convergence uniforme",
+      "intégration"
+    ],
+    "prerequisites": [
+      "convergence uniforme",
+      "intégration"
+    ],
+    "pedagogicalGoal": "comprendre POURQUOI la convergence uniforme est exigée pour intervertir limite et intégrale — motivation concrète plutôt qu'une règle apprise par cœur.",
+    "hints": [
+      "Cherche un contre-exemple où la convergence est seulement simple : la limite de l'intégrale peut alors différer de l'intégrale de la limite.",
+      "Avec convergence uniforme sur un segment, l'interversion devient licite — c'est exactement la condition qui manque dans ton contre-exemple simple."
+    ],
+    "correction": "Sans convergence uniforme, lim∫fₙ peut différer de ∫lim fₙ (contre-exemple classique : une suite de \"bosses\" étroites qui convergent simplement vers 0 mais dont l'intégrale reste constante). Avec convergence uniforme sur un segment, l'interversion limite-intégrale est justifiée rigoureusement — comprendre ce contre-exemple éclaire pourquoi l'hypothèse est nécessaire, pas arbitraire.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Nature d'une intégrale généralisée (impropre)",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Intégrales généralisées (Spé)",
+    "estimatedMinutes": 20,
+    "tags": [
+      "piliers-spe",
+      "intégrales généralisées",
+      "convergence"
+    ],
+    "prerequisites": [
+      "intégrales généralisées",
+      "primitives"
+    ],
+    "pedagogicalGoal": "premier contact avec la notion d'intégrale sur un intervalle non borné (ou fonction non bornée) — étendre l'intégration déjà connue (Sup, sur un segment) à ce nouveau cadre.",
+    "hints": [
+      "Une intégrale généralisée se définit comme une limite : ∫[a,+∞[ f = lim (X→+∞) ∫[a,X] f — calcule d'abord l'intégrale sur [a,X], puis fais tendre X vers l'infini.",
+      "Si cette limite existe et est finie, l'intégrale généralisée converge ; sinon, elle diverge."
+    ],
+    "correction": "∫[a,+∞[ f(t)dt := lim(X→+∞) ∫[a,X] f(t)dt : on calcule d'abord une primitive sur [a,X] (méthode déjà connue de Sup), puis on étudie la limite quand X→+∞ — c'est cette étape de passage à la limite qui est nouvelle en Spé.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Critère de comparaison pour les intégrales généralisées",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Intégrales généralisées (Spé)",
+    "estimatedMinutes": 25,
+    "tags": [
+      "piliers-spe",
+      "intégrales généralisées",
+      "comparaison"
+    ],
+    "prerequisites": [
+      "intégrales généralisées",
+      "intégrales de Riemann de référence"
+    ],
+    "pedagogicalGoal": "transférer la méthode de comparaison déjà connue pour les séries numériques (équivalents, comparaison à une référence) au cadre des intégrales généralisées.",
+    "hints": [
+      "Cherche un équivalent simple de la fonction au voisinage du point problématique (borne infinie ou singularité).",
+      "Compare à une intégrale de Riemann de référence ∫1/tᵅ, convergente si et seulement si α>1 (en +∞) — exactement comme pour les séries."
+    ],
+    "correction": "La méthode est parallèle à celle des séries : trouver un équivalent au voisinage du point problématique, puis comparer à une intégrale de Riemann de référence (convergente en +∞ ssi l'exposant α>1) — la nature de l'intégrale généralisée s'en déduit directement par le critère de comparaison des fonctions positives.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Convergence absolue d'une série numérique",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Séries numériques (approfondissement Spé)",
+    "estimatedMinutes": 20,
+    "tags": [
+      "piliers-spe",
+      "séries",
+      "convergence absolue"
+    ],
+    "prerequisites": [
+      "séries à termes positifs (Sup)",
+      "valeur absolue"
+    ],
+    "pedagogicalGoal": "étendre aux séries à termes de signe quelconque la théorie de convergence déjà connue pour les séries à termes positifs (Sup), via la convergence absolue.",
+    "hints": [
+      "Pour une série à termes de signe quelconque, étudie d'abord la convergence de la série des valeurs absolues (tu retombes sur les critères de Sup, tous valables pour des termes positifs).",
+      "Convergence absolue ⟹ convergence (théorème à connaître), mais la réciproque est fausse : une série peut converger sans converger absolument (semi-convergence)."
+    ],
+    "correction": "Si Σ|aₙ| converge (convergence absolue), alors Σaₙ converge aussi — cela permet de réutiliser directement tous les critères de convergence des séries à termes positifs déjà maîtrisés en Sup, appliqués à |aₙ|. La réciproque est fausse : il existe des séries semi-convergentes (convergentes mais pas absolument), étudiées plus finement en Spé.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Application linéaire orthogonale et matrice orthogonale",
+    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Espaces préhilbertiens (Spé)",
+    "estimatedMinutes": 25,
+    "tags": [
+      "piliers-spe",
+      "préhilbertien",
+      "matrices orthogonales"
+    ],
+    "prerequisites": [
+      "produit scalaire",
+      "matrice transposée"
+    ],
+    "pedagogicalGoal": "reconnaître qu'une isométrie vectorielle se caractérise simplement par la relation matricielle A^T·A = I — pont entre l'aspect géométrique (conservation des distances) et l'aspect calculatoire (matrices).",
+    "hints": [
+      "Une application linéaire conserve le produit scalaire (donc les distances et les angles) si et seulement si sa matrice A vérifie A^T·A = I.",
+      "Vérifie cette relation directement par le calcul matriciel plutôt que par un argument géométrique informel."
+    ],
+    "correction": "Une matrice A représente une isométrie vectorielle (conservation du produit scalaire, donc des normes et angles) si et seulement si A^T·A = I (matrice orthogonale) — cette caractérisation purement calculatoire remplace avantageusement une vérification géométrique cas par cas.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "archived": true
+  },
+  {
+    "title": "Étude d'une suite définie par une intégrale à paramètre (type Wallis généralisé)",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 5,
+    "chapter": "Intégration",
+    "estimatedMinutes": 75,
+    "tags": [
+      "style-concours",
+      "combinaison",
+      "suite d'intégrales"
+    ],
+    "prerequisites": [
+      "intégration par parties",
+      "suites numériques",
+      "encadrement",
+      "croissances comparées"
+    ],
+    "pedagogicalGoal": "simuler un exercice de concours multi-questions : établir une relation de récurrence par IPP, en déduire la monotonie et la limite de la suite d'intégrales, puis un équivalent — combine intégration, suites et encadrements dans un même problème progressif.",
+    "hints": [
+      "Pour la relation de récurrence, intègre par parties en dérivant la puissance et en intégrant l'autre facteur — comme pour les intégrales de Wallis.",
+      "Pour l'équivalent final, encadre le terme général entre deux expressions dont le quotient tend vers 1, plutôt que de chercher une formule exacte."
+    ],
+    "correction": "Question 1 (récurrence) : IPP standard donnant une relation entre I(n) et I(n-1). Question 2 (monotonie/limite) : la suite est positive et décroissante (comparaison directe des intégrandes), donc converge, et l'encadrement obtenu montre que la limite est 0. Question 3 (équivalent) : en combinant la relation de récurrence avec n·I(n)·I(n-1) constant (produit télescopique), on obtient I(n) ~ C/√n pour une constante C explicite.",
+    "note": "Exercice original TaekdHub, non attribué à un concours réel — inspiré de la structure classique \"suite d'intégrales de Wallis\", mais rédigé intégralement par TaekdHub. Entièrement soluble avec le programme de Sup.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Polynôme et suite récurrente liée à ses racines",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Polynômes",
+    "estimatedMinutes": 55,
+    "tags": [
+      "style-concours",
+      "combinaison",
+      "polynômes",
+      "suites"
+    ],
+    "prerequisites": [
+      "relations coefficients-racines",
+      "suites récurrentes linéaires"
+    ],
+    "pedagogicalGoal": "relier deux chapitres a priori séparés (polynômes et suites) : les puissances des racines d'un polynôme vérifient une relation de récurrence linéaire dont les coefficients sont ceux du polynôme (relations de Newton simplifiées).",
+    "hints": [
+      "Si a, b, c sont les racines de X³+pX+q, montre que S(n)=aⁿ+bⁿ+cⁿ vérifie une relation de récurrence linéaire déduite directement de l'équation P(a)=P(b)=P(c)=0.",
+      "Utilise les relations coefficients-racines pour les premiers termes S(0), S(1), S(2), puis la récurrence pour les suivants."
+    ],
+    "correction": "Comme a,b,c vérifient x³=-px-q (racines de X³+pX+q), en sommant sur les trois racines à la puissance n : S(n+3) = -p·S(n+1) - q·S(n). Les valeurs initiales S(0)=3, S(1)=0 (somme des racines nulle ici), S(2) se déduisent des relations coefficients-racines, puis la récurrence donne tous les termes suivants sans jamais calculer les racines explicitement.",
+    "note": "Exercice original TaekdHub, non attribué à un concours réel — inspiré de l'esprit des relations de Newton, entièrement soluble avec le programme de Sup.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Étude d'une fonction implicite définie par une équation transcendante",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Fonctions",
+    "estimatedMinutes": 50,
+    "tags": [
+      "style-concours",
+      "combinaison",
+      "TVI",
+      "dérivation"
+    ],
+    "prerequisites": [
+      "théorème de la bijection",
+      "dérivation",
+      "étude de fonction"
+    ],
+    "pedagogicalGoal": "combiner théorème de la bijection et dérivation pour étudier une fonction définie implicitement (x + ln(x) = y, par exemple) sans jamais l'exprimer explicitement.",
+    "hints": [
+      "Montre d'abord que pour tout y, l'équation x+ln(x)=y a une unique solution x=φ(y) sur ]0,+∞[, via le théorème de la bijection appliqué à x↦x+ln(x).",
+      "Pour étudier la dérivabilité et calculer φ'(y), dérive l'égalité φ(y)+ln(φ(y))=y par rapport à y (dérivation d'une fonction composée)."
+    ],
+    "correction": "x↦x+ln(x) est continue et strictement croissante sur ]0,+∞[ (dérivée 1+1/x>0), de limites -∞ et +∞ : c'est une bijection vers ℝ, ce qui définit φ=son inverse. En dérivant φ(y)+ln(φ(y))=y par rapport à y : φ'(y)(1+1/φ(y))=1, donc φ'(y)=φ(y)/(φ(y)+1) — φ' s'exprime en fonction de φ elle-même, sans expression explicite nécessaire.",
+    "note": "Exercice original TaekdHub, non attribué à un concours réel. Entièrement soluble avec le programme de Sup (théorème de la bijection + dérivation de fonction réciproque).",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Système linéaire dépendant d'un paramètre — discussion complète",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Matrices et systèmes",
+    "estimatedMinutes": 45,
+    "tags": [
+      "style-concours",
+      "combinaison",
+      "systèmes linéaires",
+      "discussion"
+    ],
+    "prerequisites": [
+      "pivot de Gauss",
+      "rang d'une matrice",
+      "discussion selon un paramètre"
+    ],
+    "pedagogicalGoal": "mener une discussion complète et rigoureuse d'un système 3×3 selon un paramètre réel, avec plusieurs valeurs critiques à traiter séparément — exercice type de concours par sa longueur et sa rigueur exigée.",
+    "hints": [
+      "Échelonne le système en gardant le paramètre m symbolique, en repérant toutes les valeurs de m qui annulent un pivot au fil du calcul.",
+      "Pour chaque valeur critique de m, réexamine le système ORIGINAL (pas seulement la forme échelonnée générique) pour déterminer s'il est incompatible ou a une infinité de solutions."
+    ],
+    "correction": "L'échelonnement progressif fait apparaître deux valeurs critiques du paramètre (annulation de pivots successifs). Pour la première, le système admet une infinité de solutions (une équation devient une combinaison des autres) ; pour la seconde, il est incompatible (le second membre ne vérifie pas la condition de compatibilité) ; pour toute autre valeur, la solution est unique et s'exprime en fonction de m.",
+    "note": "Exercice original TaekdHub, non attribué à un concours réel. Entièrement soluble avec le programme de Sup.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Inégalité de convexité et application à une suite",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 5,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 60,
+    "tags": [
+      "style-concours",
+      "combinaison",
+      "convexité",
+      "inégalités"
+    ],
+    "prerequisites": [
+      "convexité (dérivée seconde)",
+      "inégalités classiques",
+      "suites numériques"
+    ],
+    "pedagogicalGoal": "utiliser la convexité d'une fonction (outil d'analyse) pour établir une inégalité, puis l'exploiter pour étudier la convergence d'une suite définie par une moyenne — transfert exigeant entre analyse et suites.",
+    "hints": [
+      "Montre la convexité de la fonction en étudiant le signe de sa dérivée seconde, puis traduis-la en inégalité (f((a+b)/2) ≤ (f(a)+f(b))/2 ou l'inégalité des pentes).",
+      "Applique ensuite cette inégalité aux termes de la suite pour encadrer u(n+1) en fonction de u(n) et en déduire la monotonie, puis la convergence par le théorème de la limite monotone."
+    ],
+    "correction": "La convexité (f''≥0) donne l'inégalité f((a+b)/2) ≤ (f(a)+f(b))/2. Appliquée à la suite définie par u(n+1)=f(u(n)) ou une moyenne de termes, cette inégalité fournit un encadrement qui établit la monotonie de la suite ; combinée à un encadrement (borne évidente), le théorème de la limite monotone garantit la convergence, dont la limite se détermine ensuite comme point fixe de f.",
+    "note": "Exercice original TaekdHub, non attribué à un concours réel. Difficile mais entièrement soluble avec le programme de Sup — aucune notion de Spé requise.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Étude d'une transformation géométrique complexe itérée",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Nombres complexes",
+    "estimatedMinutes": 50,
+    "tags": [
+      "style-concours",
+      "combinaison",
+      "complexes",
+      "suites"
+    ],
+    "prerequisites": [
+      "similitudes complexes",
+      "suites géométriques",
+      "module et argument"
+    ],
+    "pedagogicalGoal": "itérer une similitude complexe (transfert : suite définie par z(n+1)=az(n)+b) et étudier géométriquement la convergence de la suite de points associée — combine complexes et suites dans un contexte géométrique.",
+    "hints": [
+      "La suite z(n+1)=az(n)+b (|a|≠1) est arithmético-géométrique : ramène-toi au point fixe ω=aω+b comme pour une suite réelle du même type.",
+      "La convergence géométrique de la suite de points M(n) d'affixe z(n) vers le point fixe dépend uniquement de |a| : converge si |a|<1, diverge (en spirale) si |a|>1."
+    ],
+    "correction": "En posant ω=aω+b (point fixe de la similitude), la suite v(n)=z(n)-ω vérifie v(n+1)=a·v(n) : elle est géométrique de raison a, donc z(n)=ω+(z(0)-ω)aⁿ. Si |a|<1, z(n)→ω (les points M(n) spiralent vers le point fixe) ; si |a|>1, la suite diverge (spirale qui s'éloigne) ; si |a|=1, les points restent à distance constante de ω, tournant autour sans converger ni diverger en module.",
+    "note": "Exercice original TaekdHub, non attribué à un concours réel. Entièrement soluble avec le programme de Sup.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Comparaison série-intégrale pour un encadrement de somme",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 5,
+    "chapter": "Séries numériques",
+    "estimatedMinutes": 55,
+    "tags": [
+      "style-concours",
+      "combinaison",
+      "comparaison série-intégrale"
+    ],
+    "prerequisites": [
+      "intégration",
+      "monotonie de fonctions",
+      "sommes",
+      "encadrement"
+    ],
+    "pedagogicalGoal": "établir un encadrement d'une somme finie (type Σ1/k) par deux intégrales, technique puissante et entièrement de Sup malgré son apparence \"avancée\" — souvent perçue à tort comme un outil de Spé.",
+    "hints": [
+      "Pour f décroissante positive, encadre f(k) entre ∫[k,k+1]f et ∫[k-1,k]f (comparaison de l'aire d'un rectangle à celle sous la courbe).",
+      "Somme ces encadrements sur k de 1 à n pour obtenir un encadrement de la somme complète par deux intégrales calculables explicitement."
+    ],
+    "correction": "Pour f décroissante, ∫[k,k+1]f(t)dt ≤ f(k) ≤ ∫[k-1,k]f(t)dt. En sommant ces inégalités pour k de 1 à n, on obtient ∫[1,n+1]f ≤ Σf(k) ≤ f(1)+∫[1,n]f — un encadrement de la somme par deux intégrales explicitement calculables, qui donne souvent un équivalent précis de la somme (ex. Σ1/k ~ ln(n)).",
+    "note": "Exercice original TaekdHub, non attribué à un concours réel. Technique classique et entièrement de Sup (intégration + monotonie), malgré une réputation \"avancée\" trompeuse.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Endomorphisme vérifiant une relation polynomiale simple",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Algèbre linéaire",
+    "estimatedMinutes": 45,
+    "tags": [
+      "style-concours",
+      "combinaison",
+      "endomorphismes"
+    ],
+    "prerequisites": [
+      "noyau et image",
+      "somme directe",
+      "théorème du rang"
+    ],
+    "pedagogicalGoal": "exploiter une relation du type f²=f (projecteur) ou f²=Id pour établir une décomposition en somme directe de sous-espaces — sans recourir à la réduction générale (hors programme de Sup), uniquement noyau/image.",
+    "hints": [
+      "Pour f²=f, montre que Ker(f) et Im(f) sont en somme directe en utilisant directement la relation f²=f (pas de valeurs propres nécessaires).",
+      "Pour tout x, décompose x=(x-f(x))+f(x) et vérifie que le premier terme est dans Ker(f), le second dans Im(f) : c'est la décomposition cherchée."
+    ],
+    "correction": "Si f²=f (projecteur), pour tout x : x=(x-f(x))+f(x), avec f(x-f(x))=f(x)-f²(x)=f(x)-f(x)=0 (donc x-f(x)∈Ker f) et f(x)∈Im(f) évidemment. Cette décomposition, combinée à Ker(f)∩Im(f)={0} (si f(x)=0 et x=f(y) alors x=f(y)=f²(y)=f(x)=0), établit E=Ker(f)⊕Im(f) — entièrement via noyau/image, sans notion de valeurs propres.",
+    "note": "Exercice original TaekdHub, non attribué à un concours réel. Entièrement soluble avec le programme de Sup (noyau, image, somme directe) — volontairement construit pour NE PAS nécessiter la réduction des endomorphismes (Spé).",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  }
+]

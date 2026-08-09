@@ -186,6 +186,11 @@ export function ExerciseImport({
                     licence à vérifier
                   </Badge>
                 )}
+                {row.input.programmeLevel === "spe" && (
+                  <Badge variant="warning" className="shrink-0">
+                    Spé — archivé
+                  </Badge>
+                )}
                 {row.isNewChapter && row.chapterLabel && (
                   <Badge variant="warning" className="shrink-0">
                     + {row.chapterLabel}

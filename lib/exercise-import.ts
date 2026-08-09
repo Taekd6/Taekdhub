@@ -67,6 +67,8 @@ export function createExerciseFromInput(input: NewExerciseInput): Exercise {
     license_status: input.licenseStatus ?? null,
     external_id: input.externalId ?? null,
     source_url: input.sourceUrl ?? null,
+    prerequisites: input.prerequisites ?? [],
+    pedagogical_goal: input.pedagogicalGoal ?? null,
     type: input.type,
     difficulty: input.difficulty,
     priority: DEFAULT_PRIORITY,
@@ -81,7 +83,7 @@ export function createExerciseFromInput(input: NewExerciseInput): Exercise {
     hints: input.hints,
     correction: input.correction || null,
     favorite: false,
-    archived: false,
+    archived: input.archived ?? false,
     last_worked_at: null,
   };
 }
@@ -221,6 +223,21 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
       return;
     }
 
+    const archived = entry.archived === true;
+    // Contrainte pédagogique absolue (consigne produit) : un exercice "spe"
+    // ne doit JAMAIS apparaître dans les recommandations/la liste active tant
+    // que l'utilisateur n'a pas commencé la Spé — appliqué ici en exigeant
+    // `archived: true` plutôt qu'en modifiant recommendExercises (voir
+    // components/exercises/exercise-manager.tsx#ArchivedExercises, déjà
+    // masqué de la liste et des recommandations, restaurable manuellement).
+    if (programmeLevel === "spe" && !archived) {
+      errors.push({
+        index,
+        message: `${label} ("${title}") — programmeLevel "spe" doit obligatoirement être importé avec archived: true (jamais dans les recommandations actives tant que la Spé n'est pas commencée).`,
+      });
+      return;
+    }
+
     const licenseStatusRaw = asTrimmedString(entry.licenseStatus ?? entry.license_status);
     let licenseStatus: LicenseStatus | null = null;
     if (licenseStatusRaw) {
@@ -249,6 +266,8 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
 
     const externalId = asTrimmedString(entry.externalId ?? entry.external_id);
     const sourceUrl = asTrimmedString(entry.sourceUrl ?? entry.source_url);
+    const prerequisites = parseListField(entry.prerequisites, ",");
+    const pedagogicalGoal = asTrimmedString(entry.pedagogicalGoal ?? entry.pedagogical_goal);
 
     const chapterLabel = asTrimmedString(entry.chapter);
     let chapterId: string | null = null;
@@ -281,6 +300,9 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
         licenseStatus,
         externalId,
         sourceUrl,
+        prerequisites,
+        pedagogicalGoal,
+        archived,
       },
     });
   });
@@ -330,6 +352,19 @@ export const EXERCISE_IMPORT_TEMPLATE = [
     year: 2022,
     externalId: "",
     sourceUrl: "",
+    prerequisites: ["développements limités"],
+    pedagogicalGoal: "exemple de champ — décrit ce que l'exercice cherche réellement à entraîner",
+  },
+  {
+    title: "Exemple à remplacer — pilier de Spé (hors recommandations actives)",
+    source: "Modèle d'import TaekdHub",
+    subject: "Mathématiques",
+    type: "TD",
+    difficulty: 2,
+    programmeLevel: "spe",
+    archived: true,
+    prerequisites: ["réduction des endomorphismes"],
+    pedagogicalGoal: "introduction en douceur à une notion de 2e année, à débloquer soi-même une fois le cours vu",
   },
 ];
 

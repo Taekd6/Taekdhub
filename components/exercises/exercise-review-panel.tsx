@@ -44,7 +44,7 @@ export function ExerciseReviewPanel({
           <button
             key={exercise.id}
             onClick={() => onSelect(exercise.id)}
-            className="focus-ring flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] p-3 text-left transition hover:border-white/[0.14] hover:bg-white/[0.02]"
+            className="focus-ring flex min-w-0 items-center justify-between gap-3 rounded-xl border border-white/[0.06] p-3 text-left transition hover:border-white/[0.14] hover:bg-white/[0.02]"
           >
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">

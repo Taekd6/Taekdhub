@@ -182,6 +182,16 @@ export interface Exercise {
   external_id: string | null;
   /** URL vers la source originale, si disponible, sinon null. */
   source_url: string | null;
+  /**
+   * Notions explicitement requises pour résoudre l'exercice (ex. "développements
+   * limités", "réduction des endomorphismes") — la contrainte pédagogique
+   * absolue "jamais de Spé implicite dans une catégorie faisable maintenant"
+   * se vérifie ici, pas en le déduisant de `programme_level` seul. `[]` si
+   * non renseigné (jamais interprété comme "aucun prérequis").
+   */
+  prerequisites: string[];
+  /** Pourquoi cet exercice existe — ce qu'il cherche réellement à entraîner (ex. "transfert : même méthode qu'un DL, contexte matriciel"). `null` si non renseigné. */
+  pedagogical_goal: string | null;
   type: ExerciseType;
   /** Difficulté intrinsèque — voir `Difficulty`. */
   difficulty: Difficulty;
