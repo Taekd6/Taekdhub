@@ -13,13 +13,15 @@ import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { ExerciseFiltersBar } from "@/components/exercises/exercise-filters-bar";
 import { ExerciseForm, type NewExerciseInput } from "@/components/exercises/exercise-form";
 import { ExerciseCard } from "@/components/exercises/exercise-card";
+import { ExerciseImport } from "@/components/exercises/exercise-import";
 import { ExerciseListRow } from "@/components/exercises/exercise-list-row";
 import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { addChapter, removeChapter, renameChapter } from "@/lib/chapters";
 import { chapterOptionsForSubject, defaultExerciseFilters, distinctYears, filterExercises, type ExerciseFilters } from "@/lib/exercise-filters";
 import { defaultExerciseSort, exerciseSortOptions, sortExercises, type ExerciseSort } from "@/lib/exercise-sort";
-import { DEFAULT_MASTERY, DEFAULT_PRIORITY, type Chapter } from "@/lib/storage";
+import { createExerciseFromInput } from "@/lib/exercise-import";
+import type { Chapter } from "@/lib/storage";
 import { minutesByExerciseMap } from "@/lib/study";
 import { cn } from "@/lib/cn";
 import type { Exercise, Subject } from "@/lib/supabase/types";
@@ -32,6 +34,7 @@ export function ExerciseManager() {
   const [sort, setSort] = useState<ExerciseSort>(defaultExerciseSort);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [focusMode, setFocusMode] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -160,43 +163,26 @@ export function ExerciseManager() {
 
   const create = useCallback(
     (input: NewExerciseInput) => {
-      const now = new Date().toISOString();
-      const exercise: Exercise = {
-        id: crypto.randomUUID(),
-        subject: input.subject,
-        title: input.title,
-        // Sprint 3D : chapitre choisi (ou créé à la volée) dans le formulaire, ou null ("Sans chapitre").
-        chapter_id: input.chapterId,
-        source: input.source,
-        // Aucune interface ne permet encore de renseigner l'année séparément de `source`.
-        year: null,
-        type: input.type,
-        difficulty: input.difficulty,
-        // Valeurs par défaut proposées (voir rapport de sprint) — aucune
-        // interface ne permet encore de les régler à la création.
-        priority: DEFAULT_PRIORITY,
-        mastery: DEFAULT_MASTERY,
-        status: "à faire",
-        // Pas de duration_minutes : le temps passé se dérive des WorkSession
-        // liées (voir minutesByExerciseMap) — rien à initialiser ici.
-        estimated_minutes: input.estimatedMinutes,
-        // Incrémenté automatiquement par le mode focus — jamais réglé manuellement.
-        attempts: 0,
-        note: input.note || null,
-        created_at: now,
-        updated_at: now,
-        tags: input.tags,
-        hints: input.hints,
-        correction: input.correction || null,
-        favorite: false,
-        archived: false,
-        last_worked_at: null,
-      };
+      const exercise = createExerciseFromInput(input);
       const next = [exercise, ...exercisesRef.current];
       exercisesRef.current = next;
       saveExercises(next);
       setFormOpen(false);
       setSelectedId(exercise.id);
+    },
+    [saveExercises]
+  );
+
+  // Import en masse (Sprint infrastructure banque) — mêmes exercices que
+  // `create` (même constructeur `createExerciseFromInput`), en une seule
+  // écriture pour toute la sélection plutôt qu'un appel par exercice.
+  const importExercises = useCallback(
+    (inputs: NewExerciseInput[]) => {
+      const created = inputs.map(createExerciseFromInput);
+      const next = [...created, ...exercisesRef.current];
+      exercisesRef.current = next;
+      saveExercises(next);
+      setImportOpen(false);
     },
     [saveExercises]
   );
@@ -226,6 +212,7 @@ export function ExerciseManager() {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         if (focusMode) setFocusMode(false);
+        else if (importOpen) setImportOpen(false);
         else if (formOpen) setFormOpen(false);
         else if (selectedId) setSelectedId(null);
         else if (showArchived) setShowArchived(false);
@@ -240,7 +227,7 @@ export function ExerciseManager() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [focusMode, formOpen, selectedId, showArchived]);
+  }, [focusMode, formOpen, importOpen, selectedId, showArchived]);
 
   if (focusMode && selected) {
     return (
@@ -289,9 +276,18 @@ export function ExerciseManager() {
         chapterOptions={chapterOptions}
         yearOptions={yearOptions}
         onAddClick={() => setFormOpen((value) => !value)}
+        onImportClick={() => setImportOpen((value) => !value)}
       />
 
       <ExerciseForm open={formOpen} chapters={chapters} onSubmit={create} onCancel={() => setFormOpen(false)} onCreateChapter={handleCreateChapter} />
+
+      <ExerciseImport
+        open={importOpen}
+        chapters={chapters}
+        onCommit={importExercises}
+        onCreateChapter={handleCreateChapter}
+        onCancel={() => setImportOpen(false)}
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3 px-1">
         <p className="text-sm text-zinc-500">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Search, Star } from "lucide-react";
+import { Plus, Search, Star, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -23,12 +23,14 @@ export function ExerciseFiltersBar({
   chapterOptions,
   yearOptions,
   onAddClick,
+  onImportClick,
 }: {
   filters: ExerciseFilters;
   onChange: (patch: Partial<ExerciseFilters>) => void;
   chapterOptions: Chapter[];
   yearOptions: number[];
   onAddClick: () => void;
+  onImportClick: () => void;
 }) {
   return (
     <Card className="p-3 sm:p-4">
@@ -43,6 +45,9 @@ export function ExerciseFiltersBar({
             placeholder="Rechercher un titre, une source, un tag, une année, un type…"
           />
         </div>
+        <Button variant="secondary" onClick={onImportClick} className="shrink-0">
+          <Upload size={17} /> Importer
+        </Button>
         <Button onClick={onAddClick} className="shrink-0">
           <Plus size={17} /> Ajouter
         </Button>
