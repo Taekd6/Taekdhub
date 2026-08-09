@@ -45,6 +45,10 @@ export function DataBackup() {
     localData.saveExercises(pendingImport.exercises);
     localData.saveSessions(pendingImport.sessions);
     localData.savePreferences(pendingImport.preferences);
+    // Chapitres : indispensables pour que les `chapter_id` des exercices
+    // pointent vers un catalogue réel. Absents d'une sauvegarde ancienne
+    // (exportée avant l'ajout des chapitres à l'export) → restaurés à [].
+    localData.saveChapters(pendingImport.chapters ?? []);
     // Sauvegarde d'avant le Sprint 2.1 : pas de weekSnapshots dans le fichier, restaurés à [] proprement.
     localData.saveWeekSnapshots(pendingImport.weekSnapshots ?? []);
     setPendingImport(null);
@@ -91,6 +95,12 @@ export function DataBackup() {
                   Ce fichier contient <span className="font-medium text-zinc-200">{pendingImport.exercises.length}</span> exercice
                   {pendingImport.exercises.length > 1 ? "s" : ""}, <span className="font-medium text-zinc-200">{pendingImport.sessions.length}</span> séance
                   {pendingImport.sessions.length > 1 ? "s" : ""}
+                  {pendingImport.chapters?.length ? (
+                    <>
+                      , <span className="font-medium text-zinc-200">{pendingImport.chapters.length}</span> chapitre
+                      {pendingImport.chapters.length > 1 ? "s" : ""}
+                    </>
+                  ) : null}
                   {pendingImport.weekSnapshots?.length ? (
                     <>
                       {" "}
@@ -99,7 +109,7 @@ export function DataBackup() {
                     </>
                   ) : null}
                   {pendingImport.exportedAt && ` (exporté le ${new Date(pendingImport.exportedAt).toLocaleDateString("fr-FR")})`}. Cette
-                  action remplacera définitivement tes exercices, séances, préférences et historique de progression actuels sur cet appareil.
+                  action remplacera définitivement tes exercices, chapitres, séances, préférences et historique de progression actuels sur cet appareil.
                 </p>
               </div>
             </div>

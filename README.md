@@ -1,6 +1,34 @@
 # TaekdHub
 
-Système de travail personnel pour prépa scientifique (timer, banque d'exercices, progression, gamification). Next.js 15 + React 19 + TypeScript, données stockées en `localStorage` (Supabase optionnel pour la sauvegarde cloud).
+Système de travail personnel pour prépa scientifique (timer, banque d'exercices, progression, gamification). Next.js 15 + React 19 + TypeScript, données stockées en `localStorage` du navigateur.
+
+**Application en ligne (stable) : [https://taekdhub.vercel.app](https://taekdhub.vercel.app)** — déploiement Vercel automatique depuis la branche `main`.
+
+## Changer d'ordinateur
+
+Tes données (exercices, chapitres, séances, préférences, progression) vivent dans le `localStorage` du navigateur, pas sur un serveur. Pour les emporter sur une autre machine :
+
+**Sur l'ancien ordinateur — exporter :**
+1. Ouvrir [https://taekdhub.vercel.app](https://taekdhub.vercel.app) → **Réglages** → **Exporter**.
+2. Un fichier `taekdhub-sauvegarde-AAAA-MM-JJ.json` est téléchargé. Il contient **tout** : exercices, chapitres, séances, préférences (dont la couleur d'accent) et l'historique de progression (weekSnapshots). Garde ce fichier (clé USB, cloud, e-mail à toi-même…).
+
+**Sur le nouvel ordinateur — importer :**
+1. Ouvrir [https://taekdhub.vercel.app](https://taekdhub.vercel.app) (aucune installation nécessaire — c'est un site web ; optionnellement « Installer l'application » depuis le navigateur pour l'avoir comme une app).
+2. **Réglages** → **Restaurer** → choisir le fichier `.json`.
+3. Confirmer le remplacement, puis recharger la page. Toutes tes données sont là, à l'identique.
+
+> Le format de sauvegarde est rétrocompatible : un fichier exporté par une ancienne version reste importable (les champs absents sont restaurés à vide sans erreur).
+
+**Pour continuer le développement sur le nouvel ordinateur :**
+
+```bash
+git clone https://github.com/Taekd6/Taekdhub.git
+cd Taekdhub
+pnpm install
+pnpm dev
+```
+
+Puis lancer `claude` dans le dossier. Le dépôt GitHub est la source complète — aucune donnée personnelle n'y est stockée (elle reste dans ton navigateur / ta sauvegarde JSON).
 
 ## Installation
 

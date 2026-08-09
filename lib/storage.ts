@@ -286,6 +286,11 @@ export function exportBackup(): void {
       exercises: localData.exercises(),
       sessions: localData.sessions(),
       preferences: localData.preferences(),
+      // `chapters` (Sprint 3D) : indispensable dans la sauvegarde — les
+      // exercices y renvoient par `chapter_id`. Sans lui, un changement
+      // d'ordinateur restaurerait des exercices avec des chapitres
+      // fantômes (chapter_id pointant vers un catalogue vide).
+      chapters: localData.chapters(),
       weekSnapshots: localData.weekSnapshots(),
     },
     null,
@@ -312,6 +317,8 @@ export interface BackupPayload {
   exercises: Exercise[];
   sessions: WorkSession[];
   preferences: Preferences;
+  /** Optionnel : une sauvegarde exportée avant l'ajout des chapitres à l'export n'a pas ce champ ; restauré à `[]` dans ce cas (voir components/data-backup.tsx#confirmImport). */
+  chapters?: Chapter[];
   weekSnapshots?: WeekSnapshot[];
 }
 
@@ -360,5 +367,8 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   // entrée est revalidée par `normalizeWeekSnapshot` à la prochaine lecture
   // (même principe que exercises/sessions, voir plus haut).
   if (data.weekSnapshots !== undefined && !Array.isArray(data.weekSnapshots)) return false;
+  // Idem : absent d'une sauvegarde exportée avant l'ajout des chapitres à
+  // l'export ; chaque entrée est revalidée par `normalizeChapter` à la lecture.
+  if (data.chapters !== undefined && !Array.isArray(data.chapters)) return false;
   return true;
 }
