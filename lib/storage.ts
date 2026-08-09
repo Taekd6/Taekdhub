@@ -1,6 +1,6 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
 import { DEFAULT_ACCENT } from "@/lib/theme";
-import type { Difficulty, Exercise, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, Priority, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
+import type { Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, Priority, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
 
 const sessionsKey = "prepahub:sessions";
 const exercisesKey = "prepahub:exercises";
@@ -71,6 +71,7 @@ export const DEFAULT_PRIORITY: Priority = 3;
 export const DEFAULT_MASTERY: Mastery = 0;
 const MASTERY_VALUES: readonly Mastery[] = [0, 25, 50, 75, 100];
 const PROGRAMME_LEVELS: readonly ProgrammeLevel[] = ["sup", "spe", "sup_spe"];
+const EXERCISE_LEVELS: readonly ExerciseLevel[] = [1, 2, 3, 4, 5, 6];
 const LICENSE_STATUSES: readonly LicenseStatus[] = ["libre", "à vérifier", "restreint"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -172,6 +173,7 @@ function normalizeExercise(raw: unknown): Exercise {
     source_url: typeof item.source_url === "string" && item.source_url.trim() ? item.source_url : null,
     prerequisites: stringArray(item.prerequisites),
     pedagogical_goal: typeof item.pedagogical_goal === "string" && item.pedagogical_goal.trim() ? item.pedagogical_goal : null,
+    level: (EXERCISE_LEVELS as number[]).includes(item.level as number) ? (item.level as ExerciseLevel) : null,
     type: migrateType(item.type),
     difficulty: migrateDifficulty(item.difficulty),
     priority: migratePriority(item.priority),

@@ -24,7 +24,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Résolution d'inéquations avec valeur absolue",
@@ -51,7 +52,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Manipulation d'exposants et de racines",
@@ -79,7 +81,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Étude de signe d'un produit/quotient de facteurs affines",
@@ -106,7 +109,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Sommes télescopiques",
@@ -134,7 +138,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Piège : diviser par une expression qui peut s'annuler",
@@ -161,7 +166,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Étude complète d'une fonction rationnelle",
@@ -189,7 +195,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Composition de fonctions et domaine de définition",
@@ -216,7 +223,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Parité et périodicité d'une fonction",
@@ -243,7 +251,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Construction d'une fonction réciproque",
@@ -271,7 +280,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Piège : confondre l'étude du signe de f(x) et celle de x",
@@ -298,7 +308,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Continuité aux raccords d'une fonction définie par morceaux",
@@ -326,7 +337,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Suite arithmético-géométrique — résolution complète",
@@ -354,7 +366,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Monotonie d'une suite par étude du signe de u(n+1)-u(n)",
@@ -381,7 +394,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Convergence par théorème d'encadrement (gendarmes)",
@@ -408,7 +422,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Piège : une suite bornée n'est pas forcément convergente",
@@ -436,7 +451,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Suite récurrente u(n+1)=f(u(n)) — étude par point fixe",
@@ -465,7 +481,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Comparaison de croissances : géométrique vs polynomiale",
@@ -492,7 +509,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Résolution d'équations trigonométriques cos(x)=cos(a)",
@@ -519,7 +537,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Linéarisation de cos²(x) et sin²(x)",
@@ -546,7 +565,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Inéquations trigonométriques sur un intervalle donné",
@@ -574,7 +594,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Piège : perdre des solutions en divisant par sin(x) ou cos(x)",
@@ -601,7 +622,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Transformation a·cos(x)+b·sin(x) en R·cos(x-φ)",
@@ -628,7 +650,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Forme trigonométrique et puissances (formule de Moivre)",
@@ -655,7 +678,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Équation du second degré à discriminant négatif",
@@ -682,7 +706,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Linéarisation trigonométrique via les formules d'Euler",
@@ -710,7 +735,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Lieu géométrique défini par une condition sur un module",
@@ -737,7 +763,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Piège : |z1+z2| ≠ |z1|+|z2| en général",
@@ -764,7 +791,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Résolution d'une équation complexe par racine évidente",
@@ -792,7 +820,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Dérivée d'un produit et d'un quotient",
@@ -819,7 +848,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Dérivée d'une composée (règle de la chaîne)",
@@ -847,7 +877,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Piège : dériver sans vérifier la dérivabilité",
@@ -875,7 +906,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Théorème de Rolle et égalité des accroissements finis",
@@ -905,7 +937,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Dérivée logarithmique pour un produit de fonctions",
@@ -933,7 +966,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Calcul de primitives usuelles",
@@ -960,7 +994,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Intégration par parties : produit polynôme × exponentielle",
@@ -987,7 +1022,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Intégrale d'une fraction rationnelle simple",
@@ -1014,7 +1050,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Piège : oublier la valeur absolue dans une primitive en 1/x",
@@ -1041,7 +1078,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Calcul d'aire entre deux courbes",
@@ -1068,7 +1106,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Résolution d'une équation différentielle linéaire d'ordre 1 à coefficient variable",
@@ -1096,7 +1135,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Solution particulière par identification (second membre polynomial)",
@@ -1123,7 +1163,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Piège : oublier la solution générale de l'équation homogène",
@@ -1150,7 +1191,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Problème de Cauchy — unicité avec condition initiale",
@@ -1177,7 +1219,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Produit matriciel et non-commutativité",
@@ -1204,7 +1247,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Inversion d'une matrice 2×2 par la formule directe",
@@ -1231,7 +1275,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Rang d'une matrice par échelonnement",
@@ -1259,7 +1304,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Vérification des axiomes d'un sous-espace vectoriel",
@@ -1286,7 +1332,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Famille libre ou liée par le critère du déterminant",
@@ -1314,7 +1361,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Piège : confondre famille génératrice et famille libre",
@@ -1342,7 +1390,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Probabilités sur un univers fini — dénombrement direct",
@@ -1369,7 +1418,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Vérification de l'indépendance de deux événements par le calcul",
@@ -1397,7 +1447,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Formule des probabilités totales",
@@ -1425,7 +1476,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Piège : confondre P(A|B) et P(B|A)",
@@ -1452,7 +1504,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Variable aléatoire — loi, espérance et variance",
@@ -1480,7 +1533,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Équation cartésienne d'une droite (point + vecteur directeur)",
@@ -1508,7 +1562,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 1
   },
   {
     "title": "Distance d'un point à une droite",
@@ -1535,7 +1590,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Étude d'un cercle par son équation cartésienne",
@@ -1562,7 +1618,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Produit scalaire pour démontrer une orthogonalité",
@@ -1589,7 +1646,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Démonstration par récurrence simple",
@@ -1616,7 +1674,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Récurrence forte — exemple d'application",
@@ -1643,7 +1702,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Raisonnement par l'absurde — irrationalité de √2",
@@ -1671,7 +1731,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Piège : confondre \"pour tout\" et \"il existe\"",
@@ -1698,7 +1759,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 2
   },
   {
     "title": "Raisonnement par contraposée",
@@ -1725,7 +1787,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 3
   },
   {
     "title": "Recherche des valeurs propres d'une matrice 2×2 — première approche",
@@ -1755,7 +1818,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 4
   },
   {
     "title": "Diagonalisabilité d'une matrice — critère et méthode",
@@ -1786,7 +1850,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 4
   },
   {
     "title": "Calcul de puissances d'une matrice diagonalisable",
@@ -1816,7 +1881,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 4
   },
   {
     "title": "Rayon de convergence d'une série entière",
@@ -1846,7 +1912,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 4
   },
   {
     "title": "Développement en série entière de fonctions usuelles",
@@ -1876,7 +1943,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 4
   },
   {
     "title": "Résolution d'une équation différentielle par série entière",
@@ -1907,7 +1975,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 6
   },
   {
     "title": "Produit scalaire sur un espace de fonctions",
@@ -1937,7 +2006,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 4
   },
   {
     "title": "Norme associée à un produit scalaire et inégalité de Cauchy-Schwarz",
@@ -1967,7 +2037,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 4
   },
   {
     "title": "Construction d'une famille orthonormée par le procédé de Gram-Schmidt",
@@ -1998,7 +2069,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 6
   },
   {
     "title": "Convergence simple et convergence uniforme d'une suite de fonctions",
@@ -2028,7 +2100,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 4
   },
   {
     "title": "Interversion limite-intégrale — pourquoi la convergence uniforme importe",
@@ -2058,7 +2131,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 4
   },
   {
     "title": "Nature d'une intégrale généralisée (impropre)",
@@ -2088,7 +2162,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 4
   },
   {
     "title": "Critère de comparaison pour les intégrales généralisées",
@@ -2118,7 +2193,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 4
   },
   {
     "title": "Convergence absolue d'une série numérique",
@@ -2148,7 +2224,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 4
   },
   {
     "title": "Application linéaire orthogonale et matrice orthogonale",
@@ -2178,7 +2255,8 @@
     "competition": null,
     "programmeLevel": "spe",
     "licenseStatus": "libre",
-    "archived": true
+    "archived": true,
+    "level": 4
   },
   {
     "title": "Étude d'une suite définie par une intégrale à paramètre (type Wallis généralisé)",
@@ -2209,7 +2287,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 5
   },
   {
     "title": "Polynôme et suite récurrente liée à ses racines",
@@ -2239,7 +2318,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 5
   },
   {
     "title": "Étude d'une fonction implicite définie par une équation transcendante",
@@ -2270,7 +2350,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 5
   },
   {
     "title": "Système linéaire dépendant d'un paramètre — discussion complète",
@@ -2301,7 +2382,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 5
   },
   {
     "title": "Inégalité de convexité et application à une suite",
@@ -2332,7 +2414,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 5
   },
   {
     "title": "Étude d'une transformation géométrique complexe itérée",
@@ -2363,7 +2446,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 5
   },
   {
     "title": "Comparaison série-intégrale pour un encadrement de somme",
@@ -2394,7 +2478,8 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 5
   },
   {
     "title": "Endomorphisme vérifiant une relation polynomiale simple",
@@ -2424,6 +2509,7 @@
     "year": null,
     "competition": null,
     "programmeLevel": "sup",
-    "licenseStatus": "libre"
+    "licenseStatus": "libre",
+    "level": 5
   }
 ]

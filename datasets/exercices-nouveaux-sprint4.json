@@ -1,0 +1,1512 @@
+[
+  {
+    "title": "CCINP Maths 1 MP-MPI 2024 — référence officielle",
+    "source": "CCINP Maths 1 MP-MPI 2024",
+    "subject": "Mathématiques",
+    "type": "Annale",
+    "difficulty": 3,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique vers un sujet officiel réel — à traiter une fois le programme de Spé vu, pour s'entraîner sur une épreuve authentique. TaekdHub ne reproduit pas l'énoncé (droits d'auteur) : le lien officiel donne accès au sujet complet.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub. Consulte le sujet complet et le corrigé officiel via source_url. Difficulté/chapitre non évalués par TaekdHub (nécessiterait de lire l'énoncé complet, qui n'est pas reproduit ici).",
+    "year": 2024,
+    "competition": "CCINP",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "CCINP Maths 2 MP-MPI 2024 — référence officielle",
+    "source": "CCINP Maths 2 MP-MPI 2024",
+    "subject": "Mathématiques",
+    "type": "Annale",
+    "difficulty": 3,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique vers un sujet officiel réel — à traiter une fois le programme de Spé vu. TaekdHub ne reproduit pas l'énoncé.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub. Consulte le sujet complet via source_url.",
+    "year": 2024,
+    "competition": "CCINP",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "CCINP Maths 1 MP-MPI 2023 — référence officielle",
+    "source": "CCINP Maths 1 MP-MPI 2023",
+    "subject": "Mathématiques",
+    "type": "Annale",
+    "difficulty": 3,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique vers un sujet officiel réel — à traiter une fois le programme de Spé vu.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2023,
+    "competition": "CCINP",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "CCINP Physique-Chimie MP 2023 — référence officielle",
+    "source": "CCINP Physique-Chimie MP 2023",
+    "subject": "Physique",
+    "type": "Annale",
+    "difficulty": 3,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique vers un sujet officiel réel — à traiter une fois le programme de Spé vu.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2023,
+    "competition": "CCINP",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "Mines-Ponts Maths 1 MP-MPI 2024 — référence officielle",
+    "source": "Mines-Ponts Maths 1 MP-MPI 2024",
+    "subject": "Mathématiques",
+    "type": "Annale",
+    "difficulty": 4,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique vers un sujet officiel réel, concours réputé exigeant — à traiter une fois le programme de Spé bien maîtrisé.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2024,
+    "competition": "Mines-Ponts",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://concoursminesponts.fr/",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "Mines-Ponts Maths 2 MP-MPI 2024 — référence officielle",
+    "source": "Mines-Ponts Maths 2 MP-MPI 2024",
+    "subject": "Mathématiques",
+    "type": "Annale",
+    "difficulty": 4,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique vers un sujet officiel réel.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2024,
+    "competition": "Mines-Ponts",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://concoursminesponts.fr/",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "Mines-Ponts Maths 2 MP-MPI 2023 (fonction de Wallis) — référence officielle",
+    "source": "Mines-Ponts Maths 2 MP-MPI 2023",
+    "subject": "Mathématiques",
+    "type": "Annale",
+    "difficulty": 4,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique — thème public connu (fonction de Wallis), énoncé complet non reproduit.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2023,
+    "competition": "Mines-Ponts",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://concoursminesponts.fr/",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "Mines-Ponts Physique 1 MP-MPI 2024 — référence officielle",
+    "source": "Mines-Ponts Physique 1 MP-MPI 2024",
+    "subject": "Physique",
+    "type": "Annale",
+    "difficulty": 4,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique vers un sujet officiel réel.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2024,
+    "competition": "Mines-Ponts",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://concoursminesponts.fr/",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "Mines Chimie MP 2023 (complexe du chrome) — référence officielle",
+    "source": "Mines-Ponts Chimie MP 2023",
+    "subject": "Chimie",
+    "type": "Annale",
+    "difficulty": 4,
+    "estimatedMinutes": 180,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique — thème public connu (chimie de coordination), énoncé complet non reproduit.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2023,
+    "competition": "Mines-Ponts",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://concoursminesponts.fr/",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "e3a Mathématiques MP-MPI 2024 — référence officielle",
+    "source": "e3a Mathématiques MP-MPI 2024",
+    "subject": "Mathématiques",
+    "type": "Annale",
+    "difficulty": 3,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique vers un sujet officiel réel — e3a est généralement considéré plus accessible que Mines-Ponts/Centrale, bon point d'entrée dans les annales réelles.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2024,
+    "competition": "e3a",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://www.e3a-polytech.fr/annales-et-rapport/",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "e3a Mathématiques MP-MPI 2023 (polynômes, intégrales à paramètre) — référence officielle",
+    "source": "e3a Mathématiques MP-MPI 2023",
+    "subject": "Mathématiques",
+    "type": "Annale",
+    "difficulty": 3,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique — thème public connu (polynômes, intégrales à paramètre), énoncé complet non reproduit.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2023,
+    "competition": "e3a",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://www.e3a-polytech.fr/annales-et-rapport/",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "e3a Physique-Chimie MP 2024 — référence officielle",
+    "source": "e3a Physique-Chimie MP 2024",
+    "subject": "Physique",
+    "type": "Annale",
+    "difficulty": 3,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique vers un sujet officiel réel.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2024,
+    "competition": "e3a",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://www.e3a-polytech.fr/annales-et-rapport/",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "Centrale-Supélec Maths 1 MP-MPI 2024 (calcul ombral) — référence officielle",
+    "source": "Centrale-Supélec Maths 1 MP-MPI 2024",
+    "subject": "Mathématiques",
+    "type": "Annale",
+    "difficulty": 4,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique — thème public connu (calcul ombral), énoncé complet non reproduit.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2024,
+    "competition": "Centrale",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://www.concours-centrale-supelec.fr/",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "Centrale-Supélec Maths 2 MP-MPI 2024 (fonction gaussienne) — référence officielle",
+    "source": "Centrale-Supélec Maths 2 MP-MPI 2024",
+    "subject": "Mathématiques",
+    "type": "Annale",
+    "difficulty": 4,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique — thème public connu (applications de la fonction gaussienne), énoncé complet non reproduit.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2024,
+    "competition": "Centrale",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://www.concours-centrale-supelec.fr/",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "Centrale-Supélec Physique-Chimie 1 MP 2023 (changement climatique) — référence officielle",
+    "source": "Centrale-Supélec Physique-Chimie 1 MP 2023",
+    "subject": "Physique",
+    "type": "Annale",
+    "difficulty": 4,
+    "estimatedMinutes": 240,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique — thème public connu (contexte climatique), énoncé complet non reproduit.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2023,
+    "competition": "Centrale",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://www.concours-centrale-supelec.fr/",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "Centrale-Supélec Informatique optionnelle MP 2024 (langages et automates) — référence officielle",
+    "source": "Centrale-Supélec Informatique optionnelle MP 2024",
+    "subject": "Informatique Spé",
+    "type": "Annale",
+    "difficulty": 4,
+    "estimatedMinutes": 180,
+    "tags": [
+      "référence-externe",
+      "annale-réelle"
+    ],
+    "prerequisites": [
+      "programme complet de Sup et Spé (épreuve de fin de 2e année)"
+    ],
+    "pedagogicalGoal": "référence bibliographique — thème public connu (langages, automates), énoncé complet non reproduit.",
+    "hints": [],
+    "correction": "",
+    "note": "Référence uniquement — énoncé NON reproduit dans TaekdHub.",
+    "year": 2024,
+    "competition": "Centrale",
+    "programmeLevel": "spe",
+    "licenseStatus": "à vérifier",
+    "sourceUrl": "https://www.concours-centrale-supelec.fr/",
+    "archived": true,
+    "level": 6
+  },
+  {
+    "title": "Chute libre sans frottement — équations horaires",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Mécanique du point",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "chute libre"
+    ],
+    "prerequisites": [
+      "principe fondamental de la dynamique",
+      "primitives usuelles"
+    ],
+    "pedagogicalGoal": "automatisme : intégrer deux fois l'accélération constante pour retrouver vitesse et position — geste réflexe qui revient dans tout problème de mécanique du point.",
+    "hints": [
+      "L'accélération est constante (=g) : intègre-la une fois pour v(t), une seconde fois pour x(t), en utilisant les conditions initiales à chaque étape.",
+      "N'oublie pas la constante d'intégration à chaque étape — c'est elle qui encode les conditions initiales (v0, x0)."
+    ],
+    "correction": "a(t)=-g (axe vertical vers le haut) donne v(t)=-gt+v0 puis x(t)=-½gt²+v0t+x0, les constantes v0 et x0 étant fixées par les conditions initiales du problème.",
+    "note": "Exercice original TaekdHub.",
+    "level": 1,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Théorème de l'énergie cinétique — application simple",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Mécanique du point",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "énergie cinétique"
+    ],
+    "prerequisites": [
+      "travail d'une force",
+      "théorème de l'énergie cinétique"
+    ],
+    "pedagogicalGoal": "classique incontournable : utiliser le théorème de l'énergie cinétique (ΔEc=ΣW) comme raccourci évitant d'intégrer directement le PFD.",
+    "hints": [
+      "Identifie toutes les forces qui travaillent (et celles qui ne travaillent pas, comme une réaction normale sans frottement).",
+      "ΔEc = travail total : cette seule équation scalaire suffit souvent à trouver une vitesse, sans jamais écrire l'équation différentielle du mouvement."
+    ],
+    "correction": "ΔEc = Ec(final) - Ec(initial) = ΣW(forces) : en calculant le travail de chaque force (poids, frottement...) entre deux points, on obtient directement la vitesse finale sans résoudre d'équation différentielle — un raccourci puissant quand seule une vitesse (pas la trajectoire complète) est demandée.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Pendule simple — petites oscillations",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Oscillateurs",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "pendule"
+    ],
+    "prerequisites": [
+      "PFD en rotation ou projection",
+      "approximation des petits angles"
+    ],
+    "pedagogicalGoal": "classique : établir l'équation différentielle du pendule simple et reconnaître, via l'approximation sin(θ)≈θ, la même forme que l'oscillateur harmonique déjà connu.",
+    "hints": [
+      "Projette le PFD sur la direction orthoradiale pour obtenir θ''=-(g/L)sin(θ).",
+      "Pour les petites oscillations, sin(θ)≈θ : l'équation devient celle d'un oscillateur harmonique de pulsation propre ω0=√(g/L)."
+    ],
+    "correction": "θ''=-(g/L)sin(θ) devient, pour θ petit (sin θ≈θ), θ''+（g/L）θ=0 : c'est exactement l'équation de l'oscillateur harmonique, de pulsation ω0=√(g/L) et de période T=2π√(L/g) — indépendante de l'amplitude (isochronisme des petites oscillations).",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : confondre poids et masse dans les équations",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "Colle",
+    "difficulty": 1,
+    "chapter": "Mécanique du point",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "deuxième loi de Newton"
+    ],
+    "pedagogicalGoal": "piège classique : la masse (kg, propriété intrinsèque) et le poids (N, force qui dépend de g) sont deux grandeurs différentes — les confondre casse l'homogénéité de toute équation.",
+    "hints": [
+      "Vérifie systématiquement les unités : une masse se mesure en kg, une force (dont le poids) en newtons.",
+      "Le poids est P=mg (une force), jamais \"le poids vaut m\" — cette confusion casse l'homogénéité dimensionnelle de l'équation entière."
+    ],
+    "correction": "La masse m (kg) est une propriété intrinsèque de l'objet ; le poids P=mg (N) est une force qui en dépend. Une équation qui mélange les deux sans le facteur g n'est pas homogène — une vérification systématique des unités repère immédiatement cette erreur.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Association de résistances (série/parallèle)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Électrocinétique",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "résistances"
+    ],
+    "prerequisites": [
+      "loi d'Ohm"
+    ],
+    "pedagogicalGoal": "automatisme : reconnaître instantanément une association série (résistances s'additionnent) ou parallèle (inverses s'additionnent) dans un circuit.",
+    "hints": [
+      "En série (même courant), les résistances s'additionnent directement : Req=R1+R2+...",
+      "En parallèle (même tension), ce sont les inverses qui s'additionnent : 1/Req=1/R1+1/R2+..."
+    ],
+    "correction": "Série : Req=ΣRi (même courant traverse toutes les résistances). Parallèle : 1/Req=Σ(1/Ri) (même tension aux bornes de chacune) — reconnaître la topologie du circuit (courant commun ou tension commune) donne directement la bonne formule.",
+    "note": "Exercice original TaekdHub.",
+    "level": 1,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Loi des mailles et loi des nœuds — application à un circuit simple",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Électrocinétique",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "lois de Kirchhoff"
+    ],
+    "prerequisites": [
+      "loi des mailles",
+      "loi des nœuds"
+    ],
+    "pedagogicalGoal": "classique incontournable : poser méthodiquement les équations de maille et de nœud pour résoudre un circuit à plusieurs branches — base de toute l'électrocinétique.",
+    "hints": [
+      "Oriente d'abord tous les courants (choix arbitraire mais à fixer avant tout calcul), puis écris une équation de nœud par nœud indépendant et une équation de maille par maille indépendante.",
+      "Le nombre d'équations nécessaires est égal au nombre d'inconnues (courants) — arrête-toi une fois ce nombre atteint."
+    ],
+    "correction": "En orientant les courants puis en appliquant systématiquement loi des nœuds (Σcourants entrants = Σcourants sortants) et loi des mailles (Σtensions = 0 sur une boucle fermée), on obtient un système linéaire dont la résolution donne tous les courants et tensions du circuit.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : oublier le signe dans la loi des mailles",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Électrocinétique",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "loi des mailles",
+      "convention récepteur/générateur"
+    ],
+    "pedagogicalGoal": "piège classique : le signe de chaque tension dans une équation de maille dépend du sens de parcours choisi par rapport à l'orientation du courant — une erreur de signe est la source d'erreur numéro un en électrocinétique.",
+    "hints": [
+      "Fixe un sens de parcours de la maille AVANT d'écrire l'équation, et respecte-le pour chaque terme sans exception.",
+      "Une tension est comptée positivement si le sens de parcours va du + vers le - du dipôle (convention à vérifier composant par composant)."
+    ],
+    "correction": "Le signe de chaque terme dans Σtensions=0 dépend strictement du sens de parcours choisi par rapport à l'orientation de chaque dipôle — fixer ce sens une fois pour toutes, avant d'écrire l'équation, et l'appliquer uniformément à tous les termes évite l'erreur de signe la plus fréquente.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Image et grandissement par une lentille — calcul",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Optique géométrique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "grandissement"
+    ],
+    "prerequisites": [
+      "relation de conjugaison",
+      "formule du grandissement"
+    ],
+    "pedagogicalGoal": "classique : combiner la relation de conjugaison (position de l'image) et la formule du grandissement (taille et orientation de l'image) dans un même calcul.",
+    "hints": [
+      "Utilise la relation de conjugaison 1/OA'-1/OA=1/f' pour trouver la position de l'image.",
+      "Le grandissement γ=OA'/OA donne à la fois la taille (|γ|) et l'orientation (signe de γ : image droite si positif, renversée si négatif)."
+    ],
+    "correction": "La relation de conjugaison donne OA' (position de l'image), puis γ=OA'/OA donne le grandissement : |γ| est le facteur d'agrandissement, et le signe de γ indique si l'image est droite (γ>0) ou renversée (γ<0) par rapport à l'objet.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Association de deux lentilles minces",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Optique géométrique",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "association de lentilles"
+    ],
+    "prerequisites": [
+      "relation de conjugaison",
+      "grandissement"
+    ],
+    "pedagogicalGoal": "consolidation : traiter un système à deux lentilles en cascade, l'image de la première devenant l'objet de la seconde — méthode transférable à tout système optique complexe.",
+    "hints": [
+      "Traite les deux lentilles séparément et dans l'ordre : l'image formée par la première lentille sert d'objet pour la seconde.",
+      "Le grandissement total du système est le PRODUIT des grandissements de chaque lentille, pas leur somme."
+    ],
+    "correction": "En traitant les lentilles l'une après l'autre (image de la première = objet de la seconde, avec changement de repère si nécessaire), et en multipliant les grandissements individuels (γ_total=γ1×γ2), on obtient position et taille de l'image finale — méthode systématique quel que soit le nombre de lentilles en cascade.",
+    "note": "Exercice original TaekdHub.",
+    "level": 3,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Travail des forces de pression — transformation isobare",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Thermodynamique",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "travail des forces de pression"
+    ],
+    "prerequisites": [
+      "premier principe",
+      "transformation isobare"
+    ],
+    "pedagogicalGoal": "classique : calculer directement W=-PΔV pour une transformation isobare (pression constante), cas le plus simple avant les transformations plus générales.",
+    "hints": [
+      "Pour une transformation isobare (P constante), le travail des forces de pression se calcule directement sans intégrale : W=-PΔV.",
+      "Attention au signe : W est reçu par le système (positif si le gaz est comprimé, négatif s'il se détend)."
+    ],
+    "correction": "Pour P constante, W=-P(Vf-Vi)=-PΔV directement, sans passer par l'intégrale générale W=-∫PdV (qui reste valable mais inutilement compliquée quand P est constante). Le signe négatif traduit la convention \"reçu par le système\" : compression (ΔV<0) donne W>0.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Diagramme de Clapeyron — lecture et calcul de travail",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Thermodynamique",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "diagramme de Clapeyron"
+    ],
+    "prerequisites": [
+      "travail des forces de pression",
+      "lecture graphique"
+    ],
+    "pedagogicalGoal": "consolidation : interpréter géométriquement le travail comme une aire sous la courbe dans un diagramme (P,V), sans recalculer systématiquement une intégrale.",
+    "hints": [
+      "Le travail échangé au cours d'une transformation correspond (au signe près) à l'aire sous la courbe dans le diagramme (P,V).",
+      "Pour un cycle fermé, l'aire ENCLOSE par le cycle donne le travail total échangé sur le cycle complet."
+    ],
+    "correction": "L'aire sous la courbe P(V) entre les deux états représente |W| (travail des forces de pression) — une lecture graphique directe, sans calcul d'intégrale si la courbe est simple (segments de droite). Pour un cycle, l'aire intérieure au contour fermé donne le travail net du cycle.",
+    "note": "Exercice original TaekdHub.",
+    "level": 3,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Résonance mécanique — étude qualitative",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Oscillateurs",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "résonance"
+    ],
+    "prerequisites": [
+      "oscillateur amorti",
+      "régime sinusoïdal forcé"
+    ],
+    "pedagogicalGoal": "consolidation : comprendre qualitativement (avant tout calcul complexe) pourquoi et quand la résonance apparaît, et comment l'amortissement en atténue l'amplitude.",
+    "hints": [
+      "La résonance apparaît quand la pulsation d'excitation se rapproche de la pulsation propre de l'oscillateur — l'amplitude de la réponse devient alors maximale.",
+      "Plus l'amortissement est fort, plus la résonance est \"aplatie\" (amplitude maximale plus faible, pic moins marqué) — relie ce comportement à l'analogie avec le circuit RLC déjà étudié."
+    ],
+    "correction": "L'amplitude de la réponse d'un oscillateur forcé est maximale quand la pulsation d'excitation est proche de la pulsation propre (résonance). Un amortissement plus fort réduit l'amplitude au pic et élargit la plage de pulsations autour de la résonance — même comportement que le circuit RLC forcé, par analogie mécanique/électrique directe.",
+    "note": "Exercice original TaekdHub.",
+    "level": 3,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : confondre amplitude et énergie d'un oscillateur",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Oscillateurs",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "énergie d'un oscillateur harmonique"
+    ],
+    "pedagogicalGoal": "piège classique : l'énergie d'un oscillateur harmonique est proportionnelle au CARRÉ de l'amplitude, pas à l'amplitude elle-même — doubler l'amplitude quadruple l'énergie.",
+    "hints": [
+      "Écris l'énergie totale E=½kA² (pour un ressort) : c'est bien A² qui apparaît, pas A.",
+      "Si l'amplitude double, l'énergie est multipliée par 4 (2²), pas par 2 — vérifie ce résultat sur un exemple numérique simple pour bien l'intégrer."
+    ],
+    "correction": "E=½kA² (énergie totale d'un oscillateur harmonique, ressort de raideur k et amplitude A) : la dépendance est quadratique en A, pas linéaire. Doubler l'amplitude multiplie l'énergie par 4, une erreur fréquente est de supposer une simple proportionnalité.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Analyse dimensionnelle — vérification d'une formule",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Outils physiques",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "analyse dimensionnelle"
+    ],
+    "prerequisites": [
+      "dimensions des grandeurs physiques usuelles"
+    ],
+    "pedagogicalGoal": "automatisme fondamental : vérifier l'homogénéité d'une formule AVANT de faire confiance à un calcul — un réflexe qui détecte instantanément une erreur de frappe ou d'unité.",
+    "hints": [
+      "Décompose chaque grandeur en dimensions de base (masse M, longueur L, temps T) et vérifie que les deux membres de l'égalité ont la même dimension.",
+      "Une formule non homogène est FORCÉMENT fausse — ce test ne prouve jamais qu'une formule est juste, mais il élimine instantanément les erreurs grossières."
+    ],
+    "correction": "En décomposant chaque terme en puissances de M, L, T (masse, longueur, temps), l'égalité des dimensions de part et d'autre est une condition nécessaire (pas suffisante) de validité — un contrôle systématique, rapide, qui repère immédiatement une erreur de frappe (facteur oublié, exposant faux).",
+    "note": "Exercice original TaekdHub.",
+    "level": 1,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Ordre de grandeur — estimation physique",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Outils physiques",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "ordre de grandeur"
+    ],
+    "prerequisites": [
+      "puissances de 10",
+      "grandeurs physiques usuelles"
+    ],
+    "pedagogicalGoal": "automatisme : estimer rapidement un ordre de grandeur avec des valeurs approximatives, compétence attendue en début de résolution ET en vérification finale d'un résultat.",
+    "hints": [
+      "Arrondis chaque grandeur à sa puissance de 10 la plus proche avant de combiner — la précision décimale n'a aucune importance ici.",
+      "Compare toujours ton résultat final à un ordre de grandeur physiquement raisonnable : un résultat absurde (trop grand/petit de plusieurs ordres) signale presque toujours une erreur de calcul."
+    ],
+    "correction": "En arrondissant chaque grandeur à sa puissance de 10, le calcul se simplifie à une addition d'exposants — la précision du résultat final (à un facteur 2-3 près) suffit pour vérifier la cohérence physique d'un résultat plus précis obtenu par ailleurs.",
+    "note": "Exercice original TaekdHub.",
+    "level": 1,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Point matériel sur un plan incliné avec frottement",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Mécanique du point",
+    "estimatedMinutes": 30,
+    "tags": [
+      "consolidation",
+      "plan incliné",
+      "frottement"
+    ],
+    "prerequisites": [
+      "PFD",
+      "projection dans une base adaptée",
+      "lois de Coulomb du frottement"
+    ],
+    "pedagogicalGoal": "consolidation : choisir une base de projection adaptée à la géométrie (axes parallèle/perpendiculaire au plan) et distinguer frottement statique et dynamique.",
+    "hints": [
+      "Choisis des axes parallèle et perpendiculaire au plan incliné (pas horizontal/vertical) : les calculs de projection du poids en deviennent bien plus simples.",
+      "Distingue le cas \"pas de mouvement\" (frottement statique, à déterminer par équilibre) du cas \"glissement\" (frottement dynamique, valeur fixée par la loi de Coulomb)."
+    ],
+    "correction": "En projetant dans la base (parallèle, perpendiculaire) au plan incliné, le poids se décompose en mg·sin(α) (moteur) et mg·cos(α) (qui détermine la réaction normale, donc le frottement maximal possible). Comparer la composante motrice au frottement maximal statique détermine s'il y a mouvement ou équilibre.",
+    "note": "Exercice original TaekdHub.",
+    "level": 3,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Circuit RC en régime sinusoïdal forcé — filtre passe-bas",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Électrocinétique",
+    "estimatedMinutes": 30,
+    "tags": [
+      "consolidation",
+      "filtre",
+      "régime sinusoïdal forcé"
+    ],
+    "prerequisites": [
+      "notation complexe",
+      "diviseur de tension"
+    ],
+    "pedagogicalGoal": "consolidation : établir la fonction de transfert d'un filtre RC simple et en déduire son comportement passe-bas — première rencontre avec la notion de filtrage fréquentiel.",
+    "hints": [
+      "Utilise le diviseur de tension en notation complexe : H(jω)=1/(1+jRCω).",
+      "Étudie le comportement de |H| aux basses fréquences (ω→0, |H|→1) et hautes fréquences (ω→∞, |H|→0) pour justifier le nom \"passe-bas\"."
+    ],
+    "correction": "H(jω)=Zc/(R+Zc)=1/(1+jRCω) : |H|→1 quand ω→0 (les basses fréquences passent) et |H|→0 quand ω→∞ (les hautes fréquences sont atténuées) — comportement de filtre passe-bas, de pulsation de coupure ωc=1/(RC) où |H|=1/√2.",
+    "note": "Exercice original TaekdHub.",
+    "level": 3,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Loi de Snell-Descartes — réfraction",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Optique géométrique",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "réfraction"
+    ],
+    "prerequisites": [
+      "loi de Snell-Descartes"
+    ],
+    "pedagogicalGoal": "automatisme : appliquer directement n1·sin(i1)=n2·sin(i2), avec une attention systématique à la définition des angles par rapport à la normale (pas à la surface).",
+    "hints": [
+      "Les angles i1 et i2 se mesurent TOUJOURS par rapport à la normale à la surface, jamais par rapport à la surface elle-même.",
+      "Si le milieu 2 est plus réfringent (n2>n1), le rayon se rapproche de la normale (i2<i1) — bon réflexe pour vérifier la cohérence de ton résultat."
+    ],
+    "correction": "n1·sin(i1)=n2·sin(i2), angles mesurés par rapport à la normale. En passant d'un milieu moins réfringent à plus réfringent (n2>n1), le rayon se rapproche de la normale (i2<i1) — vérifier ce sens de variation est un contrôle rapide de cohérence du résultat.",
+    "note": "Exercice original TaekdHub.",
+    "level": 1,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Réflexion totale — angle limite",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Optique géométrique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "réflexion totale"
+    ],
+    "prerequisites": [
+      "loi de Snell-Descartes"
+    ],
+    "pedagogicalGoal": "classique : établir la condition d'existence de l'angle limite (passage d'un milieu plus réfringent vers moins réfringent) et calculer sa valeur.",
+    "hints": [
+      "La réflexion totale n'existe que si le milieu 1 est plus réfringent que le milieu 2 (n1>n2) — sinon aucun angle limite n'existe.",
+      "L'angle limite correspond à i2=90° dans la loi de Snell-Descartes : sin(i_lim)=n2/n1."
+    ],
+    "correction": "Pour n1>n2, l'angle limite vérifie sin(i_lim)=n2/n1 (obtenu en posant i2=90° dans la loi de Snell-Descartes). Au-delà de cet angle d'incidence, il n'existe plus de rayon réfracté : toute la lumière est réfléchie (réflexion totale), principe de base des fibres optiques.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Détermination du nombre d'oxydation",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Oxydoréduction",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "nombre d'oxydation"
+    ],
+    "prerequisites": [
+      "règles d'attribution du nombre d'oxydation"
+    ],
+    "pedagogicalGoal": "automatisme préalable à toute équation d'oxydoréduction : attribuer rapidement et correctement le nombre d'oxydation de chaque élément.",
+    "hints": [
+      "Applique les règles dans l'ordre : élément seul = 0, ion monoatomique = sa charge, O = -II (sauf exceptions), H = +I (sauf hydrures).",
+      "La somme des nombres d'oxydation dans une espèce neutre vaut 0 ; dans un ion, elle vaut la charge de l'ion — utilise cette somme pour déduire le nombre d'oxydation inconnu d'un élément."
+    ],
+    "correction": "En appliquant les règles usuelles (O=-II sauf peroxydes, H=+I sauf hydrures métalliques, somme=charge totale de l'espèce), le nombre d'oxydation de l'élément recherché se déduit par différence — technique systématique, sans exception à mémoriser au cas par cas au-delà des règles de base.",
+    "note": "Exercice original TaekdHub.",
+    "level": 1,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Écriture de Lewis d'une molécule",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Liaison chimique",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "Lewis"
+    ],
+    "prerequisites": [
+      "règle de l'octet",
+      "électrons de valence"
+    ],
+    "pedagogicalGoal": "automatisme : construire méthodiquement un schéma de Lewis (compter les électrons de valence, placer les doublets liants puis non liants) avant toute analyse VSEPR ou de polarité.",
+    "hints": [
+      "Compte d'abord le nombre total d'électrons de valence disponibles (somme sur tous les atomes, ajustée de la charge éventuelle).",
+      "Place les doublets liants pour respecter la connectivité, puis complète l'octet de chaque atome avec des doublets non liants avant de vérifier le compte total."
+    ],
+    "correction": "Après avoir compté le nombre total d'électrons de valence disponibles, on place les liaisons (doublets liants) selon la connectivité de la molécule, puis on complète chaque atome par des doublets non liants pour respecter la règle de l'octet — une vérification finale du compte total d'électrons confirme la cohérence du schéma.",
+    "note": "Exercice original TaekdHub.",
+    "level": 1,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : confondre nombre d'oxydation et charge formelle",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Oxydoréduction",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "nombre d'oxydation",
+      "charge formelle"
+    ],
+    "pedagogicalGoal": "piège classique : le nombre d'oxydation (attribution conventionnelle, ionique) et la charge formelle (calcul sur le schéma de Lewis) sont deux notions distinctes qui peuvent donner des valeurs différentes pour le même atome.",
+    "hints": [
+      "Le nombre d'oxydation suppose que TOUTE liaison est ionique (l'atome le plus électronégatif \"prend\" tous les électrons de la liaison).",
+      "La charge formelle répartit les électrons de liaison ÉQUITABLEMENT entre les deux atomes — les deux calculs partent d'hypothèses différentes, il ne faut jamais les confondre ni les additionner."
+    ],
+    "correction": "Le nombre d'oxydation attribue conventionnellement tous les électrons de liaison à l'atome le plus électronégatif (hypothèse ionique) ; la charge formelle les répartit également entre les deux atomes liés (hypothèse covalente pure). Ces deux conventions différentes donnent généralement des valeurs numériques différentes pour le même atome — les confondre est une erreur fréquente en début d'apprentissage.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Calcul de quantité de matière et concentration",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Outils chimiques",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "quantité de matière"
+    ],
+    "prerequisites": [
+      "relation n=m/M",
+      "définition de la concentration molaire"
+    ],
+    "pedagogicalGoal": "automatisme fondamental : jongler entre masse, quantité de matière et concentration sans hésitation — base de tout calcul de chimie des solutions.",
+    "hints": [
+      "n=m/M (masse molaire) pour passer de la masse à la quantité de matière, puis c=n/V pour la concentration.",
+      "Vérifie systématiquement les unités (g, mol, L) : une incohérence d'unité est la source d'erreur la plus fréquente sur ce type de calcul."
+    ],
+    "correction": "n=m/M puis c=n/V (avec V en litres) : deux relations simples mais à enchaîner sans erreur d'unité — la vérification systématique des unités (g pour la masse, g/mol pour M, L pour V, mol/L pour c) élimine la quasi-totalité des erreurs sur ce type de calcul.",
+    "note": "Exercice original TaekdHub.",
+    "level": 1,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Dilution d'une solution — calcul de facteur",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Outils chimiques",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "dilution"
+    ],
+    "prerequisites": [
+      "conservation de la quantité de matière lors d'une dilution"
+    ],
+    "pedagogicalGoal": "automatisme : appliquer C1V1=C2V2 (conservation de la quantité de matière de soluté) sans jamais avoir besoin de recalculer la quantité de matière explicitement.",
+    "hints": [
+      "La dilution ne change pas la quantité de matière de soluté, seulement le volume : c'est exactement ce que traduit C1V1=C2V2.",
+      "Le facteur de dilution F=C1/C2=V2/V1 (volume final sur volume initial) est ce qu'on cherche le plus souvent — identifie directement lequel des quatre termes est l'inconnue."
+    ],
+    "correction": "C1V1=C2V2 (conservation de la quantité de matière de soluté lors d'une dilution) — les quatre termes ne demandent généralement qu'à isoler l'inconnue directement, sans jamais recalculer n=C×V à une étape intermédiaire.",
+    "note": "Exercice original TaekdHub.",
+    "level": 1,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Détermination du réactif limitant",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Réactions chimiques",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "réactif limitant"
+    ],
+    "prerequisites": [
+      "tableau d'avancement",
+      "stœchiométrie"
+    ],
+    "pedagogicalGoal": "classique incontournable : construire un tableau d'avancement et identifier le réactif qui s'épuise en premier, base de tout calcul de rendement ou de composition finale.",
+    "hints": [
+      "Construis le tableau d'avancement complet, avec les quantités initiales et l'expression en fonction de l'avancement x pour chaque espèce.",
+      "Le réactif limitant est celui dont la quantité de matière restante s'annule pour la plus PETITE valeur de x — teste chaque réactif séparément."
+    ],
+    "correction": "Pour chaque réactif, on calcule la valeur de x qui annule sa quantité restante (n_initial/coefficient stœchiométrique) : le réactif limitant est celui donnant la plus petite valeur de x, qui fixe l'avancement maximal réel de la réaction.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Calcul de rendement d'une réaction",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Réactions chimiques",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "rendement"
+    ],
+    "prerequisites": [
+      "réactif limitant",
+      "avancement maximal théorique"
+    ],
+    "pedagogicalGoal": "classique : comparer la quantité réellement obtenue à la quantité théorique maximale (basée sur le réactif limitant) pour calculer un rendement.",
+    "hints": [
+      "Le rendement est TOUJOURS calculé par rapport à l'avancement maximal théorique (déterminé par le réactif limitant), jamais par rapport à une quantité initiale.",
+      "Rendement = quantité réellement obtenue / quantité théorique maximale (× 100 pour un pourcentage) — vérifie que ce rapport est bien ≤ 1 (ou 100%), sinon il y a une erreur en amont."
+    ],
+    "correction": "Rendement = n(obtenu réellement)/n(théorique maximal, calculé à partir du réactif limitant) — un résultat supérieur à 1 (100%) signale une erreur de calcul en amont (mauvaise identification du réactif limitant, ou erreur de stœchiométrie), jamais un résultat physiquement valide.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : confondre avancement et concentration",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Réactions chimiques",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "avancement de réaction",
+      "tableau d'avancement"
+    ],
+    "pedagogicalGoal": "piège classique : l'avancement x (en mol) et la concentration (en mol/L) sont deux grandeurs différentes — un tableau d'avancement en concentration nécessite de diviser par le volume, souvent oublié.",
+    "hints": [
+      "Vérifie si ton tableau d'avancement est écrit en quantité de matière (mol) ou en concentration (mol/L) — les deux formulations existent, ne les mélange jamais dans le même tableau.",
+      "Si le volume varie au cours de la réaction (mélange de solutions par exemple), la conversion entre les deux n'est pas juste une division par une constante."
+    ],
+    "correction": "Un tableau d'avancement peut être écrit soit en quantité de matière (x en mol) soit en concentration (x/V en mol/L) — les deux formulations sont valables mais ne doivent jamais être mélangées dans le même tableau. Si le volume total change en cours de réaction, la conversion entre les deux formes n'est plus une simple division par une constante.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "pH d'un mélange de deux solutions acides",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Réactions acide-base",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "mélange",
+      "pH"
+    ],
+    "prerequisites": [
+      "calcul de pH d'un acide fort",
+      "conservation de la quantité de matière lors d'un mélange"
+    ],
+    "pedagogicalGoal": "consolidation : combiner conservation de la matière (dilution par mélange) et calcul de pH pour un mélange de deux solutions, cas plus riche que le calcul isolé.",
+    "hints": [
+      "Calcule d'abord la quantité de matière totale d'ions H3O+ apportée par chaque solution (n=C×V), puis additionne-les avant de diviser par le volume total du mélange.",
+      "Le pH du mélange n'est PAS la moyenne des deux pH initiaux — il faut repasser par les concentrations en ions H3O+ (grandeurs qui s'additionnent), pas par le pH directement (grandeur logarithmique)."
+    ],
+    "correction": "La quantité totale d'ions H3O+ après mélange est la somme des quantités apportées par chaque solution (n1+n2), divisée par le volume total (V1+V2) pour obtenir la concentration finale, puis le pH par pH=-log[H3O+] — le pH ne se moyenne JAMAIS directement entre les deux solutions initiales, à cause de sa nature logarithmique.",
+    "note": "Exercice original TaekdHub.",
+    "level": 3,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Diagramme de prédominance acido-basique",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Réactions acide-base",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "diagramme de prédominance"
+    ],
+    "prerequisites": [
+      "pKa",
+      "relation de Henderson-Hasselbalch"
+    ],
+    "pedagogicalGoal": "classique : construire et lire un diagramme de prédominance pour identifier immédiatement l'espèce majoritaire (acide ou base conjuguée) à un pH donné.",
+    "hints": [
+      "La frontière du diagramme se situe exactement à pH=pKa, où les concentrations d'acide et de base conjuguée sont égales.",
+      "Pour pH>pKa, la base conjuguée prédomine ; pour pH<pKa, c'est l'acide — retiens ce sens plutôt qu'une formule."
+    ],
+    "correction": "À pH=pKa, [acide]=[base conjuguée] (frontière du diagramme). Pour pH>pKa, la base conjuguée prédomine (le milieu est \"assez basique\" pour déprotoner l'acide) ; pour pH<pKa, c'est l'acide qui prédomine — un simple repérage de la position du pH par rapport au pKa suffit à lire le diagramme sans calcul.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Calcul de constante d'équilibre",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Équilibres chimiques",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "constante d'équilibre"
+    ],
+    "prerequisites": [
+      "quotient de réaction",
+      "tableau d'avancement à l'équilibre"
+    ],
+    "pedagogicalGoal": "classique : calculer Keq à partir des concentrations à l'équilibre (obtenues via un tableau d'avancement), en respectant les conventions (solides/solvant exclus).",
+    "hints": [
+      "Construis le tableau d'avancement jusqu'à l'état final (équilibre), puis exprime Keq=Πproduits/Πréactifs avec les concentrations à l'équilibre (exposants = coefficients stœchiométriques).",
+      "Les espèces solides pures et le solvant n'apparaissent JAMAIS dans l'expression de Keq (activité conventionnellement égale à 1)."
+    ],
+    "correction": "Après avoir exprimé les concentrations à l'équilibre à partir du tableau d'avancement, Keq=Π[produits]^coefficients / Π[réactifs]^coefficients, en excluant systématiquement les solides purs et le solvant (dont l'activité vaut conventionnellement 1, donc n'apparaissent pas dans le quotient).",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Loi de modération (Le Chatelier) — application qualitative",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Équilibres chimiques",
+    "estimatedMinutes": 20,
+    "tags": [
+      "consolidation",
+      "Le Chatelier"
+    ],
+    "prerequisites": [
+      "constante d'équilibre",
+      "quotient de réaction"
+    ],
+    "pedagogicalGoal": "consolidation : prévoir qualitativement le sens de déplacement d'un équilibre face à une perturbation (ajout de réactif, changement de volume, de température), sans recalculer systématiquement Keq.",
+    "hints": [
+      "Compare le quotient de réaction Q (après perturbation) à Keq : si Q<Keq, la réaction évolue dans le sens direct pour s'en rapprocher (et inversement).",
+      "Pour une perturbation par ajout d'un constituant, augmenter la concentration d'un réactif déplace l'équilibre dans le sens qui le consomme (sens direct) — raisonnement qualitatif, sans calcul explicite de Q nécessaire dans les cas simples."
+    ],
+    "correction": "Après une perturbation, la comparaison de Q (quotient de réaction recalculé juste après la perturbation) à Keq indique le sens d'évolution : Q<Keq → sens direct (le système \"n'est pas encore assez avancé\"), Q>Keq → sens indirect. La loi de modération qualitative (ajout de réactif → consommation partielle par déplacement direct) permet souvent de conclure sans calcul explicite.",
+    "note": "Exercice original TaekdHub.",
+    "level": 3,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Nomenclature des molécules organiques simples",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Chimie organique",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "nomenclature"
+    ],
+    "prerequisites": [
+      "règles de nomenclature IUPAC de base"
+    ],
+    "pedagogicalGoal": "automatisme : identifier la chaîne principale, numéroter pour donner les indices les plus petits, et nommer les substituants — geste répété à chaque nouvelle molécule rencontrée.",
+    "hints": [
+      "Repère d'abord la chaîne carbonée la plus longue contenant le groupe caractéristique prioritaire.",
+      "Numérote la chaîne dans le sens qui donne les indices les plus petits à l'ensemble des substituants — pas seulement au premier rencontré."
+    ],
+    "correction": "La chaîne principale est la plus longue contenant le groupe caractéristique prioritaire ; la numérotation choisie est celle qui minimise l'ensemble des indices de substitution (règle du \"plus petit ensemble d'indices\", comparée terme à terme). Les substituants sont ensuite cités par ordre alphabétique dans le nom final.",
+    "note": "Exercice original TaekdHub.",
+    "level": 1,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Identification de types d'isomérie",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Chimie organique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "isomérie"
+    ],
+    "prerequisites": [
+      "isomérie de constitution",
+      "stéréoisomérie"
+    ],
+    "pedagogicalGoal": "classique : distinguer méthodiquement isomérie de constitution (connectivité différente) et stéréoisomérie (même connectivité, disposition spatiale différente), première étape de toute analyse structurale comparée.",
+    "hints": [
+      "Compare d'abord la connectivité (quel atome est lié à quel atome) : si elle diffère, c'est une isomérie de constitution.",
+      "Si la connectivité est identique mais la disposition spatiale diffère (ex. autour d'une double liaison ou d'un carbone asymétrique), c'est une stéréoisomérie — à subdiviser ensuite en configuration ou conformation selon le contexte."
+    ],
+    "correction": "Isomérie de constitution : connectivité différente (atomes liés différemment). Stéréoisomérie : même connectivité, disposition spatiale différente (ex. Z/E autour d'une double liaison, ou R/S autour d'un carbone asymétrique) — la comparaison systématique de la connectivité d'abord, puis de la géométrie, permet de classer sans ambiguïté toute paire de molécules.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Série géométrique — somme et convergence",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Séries numériques",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "série géométrique"
+    ],
+    "prerequisites": [
+      "somme d'une suite géométrique finie"
+    ],
+    "pedagogicalGoal": "automatisme fondamental : reconnaître une série géométrique, connaître sa condition de convergence (|q|<1) et sa somme sans recalculer à chaque fois.",
+    "hints": [
+      "Une série géométrique de raison q converge si et seulement si |q|<1 — mémorise cette condition, elle revient dans presque tous les critères de comparaison de séries.",
+      "Si elle converge, sa somme vaut a/(1-q) où a est le premier terme — formule à connaître par cœur, pas à redémontrer à chaque exercice."
+    ],
+    "correction": "Σaqⁿ (n≥0) converge si et seulement si |q|<1, et vaut alors a/(1-q) — condition et formule à connaître par cœur, base de comparaison pour la convergence de nombreuses autres séries (comparaison à une série géométrique de référence).",
+    "note": "Exercice original TaekdHub.",
+    "level": 1,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Critère de d'Alembert pour les séries à termes positifs",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Séries numériques",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "critère de d'Alembert"
+    ],
+    "prerequisites": [
+      "séries à termes positifs",
+      "limites de suites"
+    ],
+    "pedagogicalGoal": "classique : appliquer le critère de d'Alembert (limite du rapport u(n+1)/u(n)) pour trancher rapidement la convergence d'une série, particulièrement efficace avec des factorielles ou des puissances.",
+    "hints": [
+      "Calcule la limite ℓ de u(n+1)/u(n) quand n tend vers l'infini : si ℓ<1, la série converge ; si ℓ>1, elle diverge.",
+      "Si ℓ=1, le critère de d'Alembert ne conclut PAS — il faut alors utiliser une autre méthode (comparaison, équivalent) plutôt que de conclure à tort."
+    ],
+    "correction": "Si u(n+1)/u(n) → ℓ, la série Σu(n) converge si ℓ<1, diverge si ℓ>1 — le cas ℓ=1 est un cas d'échec du critère (aucune conclusion possible directement), qui nécessite une méthode alternative (comparaison à une série de référence, équivalent).",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Division euclidienne de polynômes",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Polynômes",
+    "estimatedMinutes": 15,
+    "tags": [
+      "automatisme",
+      "division euclidienne"
+    ],
+    "prerequisites": [
+      "degré d'un polynôme"
+    ],
+    "pedagogicalGoal": "automatisme : mener une division euclidienne de polynômes avec la même méthode systématique que la division d'entiers, jusqu'à obtenir un reste de degré strictement inférieur au diviseur.",
+    "hints": [
+      "À chaque étape, élimine le terme de plus haut degré du dividende en multipliant le diviseur par le monôme adéquat.",
+      "Arrête-toi quand le degré du reste est STRICTEMENT inférieur au degré du diviseur — c'est la condition d'arrêt, pas \"reste nul\"."
+    ],
+    "correction": "La division euclidienne de A par B (B≠0) donne A=BQ+R avec deg(R)<deg(B) (ou R=0) : à chaque étape, on élimine le terme dominant du dividende courant en soustrayant B multiplié par le monôme adéquat, jusqu'à ce que cette condition de degré soit atteinte.",
+    "note": "Exercice original TaekdHub.",
+    "level": 1,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "Piège : confondre racine et coefficient d'un polynôme",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Polynômes",
+    "estimatedMinutes": 10,
+    "tags": [
+      "piège",
+      "erreur classique"
+    ],
+    "prerequisites": [
+      "définition de racine d'un polynôme"
+    ],
+    "pedagogicalGoal": "piège classique : une racine α d'un polynôme (valeur qui l'annule) n'a a priori AUCUN lien numérique direct avec ses coefficients — les deux notions se confondent facilement chez un débutant.",
+    "hints": [
+      "Une racine est une VALEUR qui annule le polynôme quand on l'évalue ; un coefficient est un NOMBRE qui multiplie une puissance de X dans l'écriture du polynôme — deux objets de nature différente.",
+      "Les SEULS liens numériques entre racines et coefficients sont les relations de Viète (somme, produit des racines) — jamais une racine = un coefficient directement, sauf coïncidence."
+    ],
+    "correction": "Une racine α vérifie P(α)=0 (c'est une propriété du polynôme évalué en ce point) ; un coefficient est un nombre de l'écriture P=Σaᵢ Xⁱ. Le seul pont rigoureux entre les deux est donné par les relations de Viète (sommes/produits de racines exprimées en fonction des coefficients) — jamais une identification terme à terme directe.",
+    "note": "Exercice original TaekdHub.",
+    "level": 2,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  },
+  {
+    "title": "PGCD de deux polynômes par l'algorithme d'Euclide",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Polynômes",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "PGCD",
+      "algorithme d'Euclide"
+    ],
+    "prerequisites": [
+      "division euclidienne de polynômes"
+    ],
+    "pedagogicalGoal": "consolidation : transférer l'algorithme d'Euclide (déjà connu sur les entiers) au cas des polynômes, même principe de divisions successives jusqu'à un reste nul.",
+    "hints": [
+      "Applique l'algorithme d'Euclide exactement comme pour des entiers : divise A par B, puis B par le reste, et ainsi de suite jusqu'à obtenir un reste nul.",
+      "Le PGCD est le DERNIER reste non nul de cette suite de divisions (à un facteur constant près, puisque les polynômes sont définis à une constante multiplicative près)."
+    ],
+    "correction": "L'algorithme d'Euclide sur les polynômes suit exactement le même principe que sur les entiers : divisions euclidiennes successives (A par B, puis B par le reste R1, puis R1 par R2...) jusqu'à un reste nul — le dernier reste non nul est le PGCD (défini à une constante multiplicative près).",
+    "note": "Exercice original TaekdHub.",
+    "level": 3,
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre"
+  }
+]

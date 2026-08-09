@@ -2,7 +2,7 @@ import { getChaptersForSubject } from "@/lib/chapters";
 import { DEFAULT_MASTERY, DEFAULT_PRIORITY, type Chapter } from "@/lib/storage";
 import { exerciseTypes, subjects } from "@/lib/study";
 import type { NewExerciseInput } from "@/components/exercises/exercise-form";
-import type { Difficulty, Exercise, ExerciseType, LicenseStatus, ProgrammeLevel, Subject } from "@/lib/supabase/types";
+import type { Difficulty, Exercise, ExerciseLevel, ExerciseType, LicenseStatus, ProgrammeLevel, Subject } from "@/lib/supabase/types";
 
 /**
  * Import en masse d'exercices (Sprint infrastructure banque) — un fichier
@@ -69,6 +69,7 @@ export function createExerciseFromInput(input: NewExerciseInput): Exercise {
     source_url: input.sourceUrl ?? null,
     prerequisites: input.prerequisites ?? [],
     pedagogical_goal: input.pedagogicalGoal ?? null,
+    level: input.level ?? null,
     type: input.type,
     difficulty: input.difficulty,
     priority: DEFAULT_PRIORITY,
@@ -203,9 +204,14 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
       }
     }
 
-    // Niveau de programme : obligatoire et strictement "sup" pour tout
-    // exercice de concours dans ce dataset (contrainte pédagogique produit) —
-    // jamais déduit du concours d'origine ni de la difficulté.
+    const archived = entry.archived === true;
+
+    // Niveau de programme : pour un exercice de concours ACTIF (non archivé),
+    // strictement "sup" (contrainte pédagogique produit — jamais déduit du
+    // concours d'origine ni de la difficulté). Un exercice de concours "spe"
+    // reste importable s'il est explicitement archivé (Sprint 4 : catalogue
+    // de références réelles, quarantaine tant que la Spé n'est pas commencée
+    // — voir la même logique appliquée à `level` 4/6 plus bas).
     const programmeLevelRaw = asTrimmedString(entry.programmeLevel ?? entry.programme_level);
     let programmeLevel: ProgrammeLevel | null = null;
     if (programmeLevelRaw) {
@@ -215,15 +221,14 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
       }
       programmeLevel = programmeLevelRaw as ProgrammeLevel;
     }
-    if (competition && programmeLevel !== "sup") {
+    if (competition && !archived && programmeLevel !== "sup") {
       errors.push({
         index,
-        message: `${label} ("${title}") — dataset limité au programme de Sup : programmeLevel doit être "sup" pour un exercice de concours (fourni : ${programmeLevelRaw ?? "absent"}). Si un doute existe sur les prérequis, classe-le "à vérifier" hors de ce fichier plutôt que de l'importer.`,
+        message: `${label} ("${title}") — un exercice de concours actif (non archivé) doit avoir programmeLevel "sup" (fourni : ${programmeLevelRaw ?? "absent"}). Pour référencer un sujet réel de niveau Spé, importe-le avec archived: true.`,
       });
       return;
     }
 
-    const archived = entry.archived === true;
     // Contrainte pédagogique absolue (consigne produit) : un exercice "spe"
     // ne doit JAMAIS apparaître dans les recommandations/la liste active tant
     // que l'utilisateur n'a pas commencé la Spé — appliqué ici en exigeant
@@ -236,6 +241,27 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
         message: `${label} ("${title}") — programmeLevel "spe" doit obligatoirement être importé avec archived: true (jamais dans les recommandations actives tant que la Spé n'est pas commencée).`,
       });
       return;
+    }
+
+    // Palier pédagogique (Sprint 4) — même garde-fou que programmeLevel "spe"
+    // ci-dessus : les paliers "transition Spé" (4) et "expert" (6) sont par
+    // nature hors du "faisable maintenant" et doivent être archivés, sinon le
+    // moteur de recommandation les mélangerait aux niveaux actifs.
+    const levelRaw = entry.level;
+    let level: ExerciseLevel | null = null;
+    if (levelRaw !== undefined && levelRaw !== null) {
+      if (typeof levelRaw !== "number" || !Number.isInteger(levelRaw) || levelRaw < 1 || levelRaw > 6) {
+        errors.push({ index, message: `${label} ("${title}") — level invalide (${levelRaw}). Attendu : un entier de 1 à 6.` });
+        return;
+      }
+      level = levelRaw as ExerciseLevel;
+      if ((level === 4 || level === 6) && !archived) {
+        errors.push({
+          index,
+          message: `${label} ("${title}") — level ${level} (${level === 4 ? "transition Spé" : "expert"}) doit obligatoirement être importé avec archived: true.`,
+        });
+        return;
+      }
     }
 
     const licenseStatusRaw = asTrimmedString(entry.licenseStatus ?? entry.license_status);
@@ -303,6 +329,7 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
         prerequisites,
         pedagogicalGoal,
         archived,
+        level,
       },
     });
   });

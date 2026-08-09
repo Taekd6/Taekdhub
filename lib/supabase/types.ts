@@ -48,6 +48,27 @@ export type ProgrammeLevel = "sup" | "spe" | "sup_spe";
 export type LicenseStatus = "libre" | "à vérifier" | "restreint";
 
 /**
+ * Palier PÉDAGOGIQUE de l'exercice (Sprint 4) — où il se situe dans la
+ * progression d'apprentissage, DISTINCT de `Difficulty` (sa difficulté
+ * intrinsèque) et de `ProgrammeLevel` (le prérequis strict pour le résoudre).
+ * Deux exercices de même `level` peuvent avoir des `difficulty` différentes,
+ * et inversement.
+ *
+ * 1 = Automatismes (très courts, réflexe/rapidité)
+ * 2 = Classiques Sup (méthodes fondamentales à maîtriser)
+ * 3 = Consolidation (combine ou approfondit plusieurs classiques)
+ * 4 = Transition Spé (prépare l'entrée en 2e année — voir contrainte ci-dessous)
+ * 5 = Concours (plus long/subtil, mais reste accessible avec le programme actuel)
+ * 6 = Expert (à débloquer beaucoup plus tard)
+ *
+ * Contrainte produit (Sprint 4) : les niveaux 4 et 6 doivent TOUJOURS être
+ * importés avec `archived: true` — jamais mélangés aux recommandations
+ * actuelles (voir lib/exercise-import.ts, qui l'impose au niveau du pipeline,
+ * pas seulement par convention).
+ */
+export type ExerciseLevel = 1 | 2 | 3 | 4 | 5 | 6;
+
+/**
  * Difficulté INTRINSÈQUE de l'exercice (indépendante de l'élève qui le
  * résout). Ne jamais mélanger avec `Exercise.mastery` (le degré de maîtrise
  * de l'élève) ni `Exercise.priority` (l'ordre dans lequel l'élève veut le
@@ -192,6 +213,8 @@ export interface Exercise {
   prerequisites: string[];
   /** Pourquoi cet exercice existe — ce qu'il cherche réellement à entraîner (ex. "transfert : même méthode qu'un DL, contexte matriciel"). `null` si non renseigné. */
   pedagogical_goal: string | null;
+  /** Palier pédagogique (1 à 6) — voir `ExerciseLevel`. `null` = non classifié. */
+  level: ExerciseLevel | null;
   type: ExerciseType;
   /** Difficulté intrinsèque — voir `Difficulty`. */
   difficulty: Difficulty;
