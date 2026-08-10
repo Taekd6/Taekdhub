@@ -59,6 +59,7 @@ export function createExerciseFromInput(input: NewExerciseInput): Exercise {
     id: crypto.randomUUID(),
     subject: input.subject,
     title: input.title,
+    statement: input.statement ?? "",
     chapter_id: input.chapterId,
     source: input.source,
     year: input.year ?? null,
@@ -290,6 +291,13 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
     }
     const year = typeof yearRaw === "number" ? yearRaw : null;
 
+    // `statement` peut être multi-lignes (énoncé complet) : on ne veut pas le
+    // réduire à `null` s'il ne contient que des espaces en début/fin, mais on
+    // ne le rejette jamais non plus — contrairement aux champs stricts
+    // ci-dessus, absent ou invalide vaut simplement "" (voir la doc du champ
+    // dans lib/supabase/types.ts).
+    const statement = typeof entry.statement === "string" ? entry.statement.trim() : "";
+
     const externalId = asTrimmedString(entry.externalId ?? entry.external_id);
     const sourceUrl = asTrimmedString(entry.sourceUrl ?? entry.source_url);
     const prerequisites = parseListField(entry.prerequisites, ",");
@@ -311,6 +319,7 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
       input: {
         subject,
         title,
+        statement,
         source,
         type,
         difficulty,
@@ -349,6 +358,9 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
 export const EXERCISE_IMPORT_TEMPLATE = [
   {
     title: "Exemple à remplacer — Calcul de dérivées",
+    // `statement` (optionnel) : énoncé complet, en texte brut avec LaTeX
+    // inline ($…$) ou en bloc ($$…$$) — rendu par RichMath dans l'app.
+    statement: "Soit $f(x) = x^2 e^{-x}$. Calculer $f'(x)$ puis étudier son signe sur $\\mathbb{R}$.",
     source: "Modèle d'import TaekdHub",
     subject: "Mathématiques",
     type: "TD",

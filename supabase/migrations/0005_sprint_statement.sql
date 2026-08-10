@@ -1,0 +1,12 @@
+-- Ajoute l'énoncé complet de l'exercice, jusqu'ici absent du modèle : une
+-- fiche ne portait que titre + indices + correction, jamais le corps du
+-- problème à résoudre (voir lib/supabase/types.ts#Exercise.statement).
+-- Complète 0001_initial.sql .. 0004_sprint26_duration_derived.sql sans les
+-- modifier. Non branchée à l'application (voir lib/supabase/client.ts) :
+-- ce fichier documente le schéma cible pour quand la persistance Supabase
+-- sera activée dans un futur sprint.
+--
+-- `not null default ''` reflète exactement la normalisation appliquée côté
+-- client (lib/storage.ts#normalizeExercise) : une ligne existante sans
+-- énoncé devient "" plutôt que NULL, jamais interprétée comme une erreur.
+alter table public.exercises add column statement text not null default '';

@@ -182,6 +182,21 @@ export interface Exercise {
   subject: Subject;
   /** Décrit l'exercice lui-même — voir la note "Titre vs chapitre" ci-dessus. */
   title: string;
+  /**
+   * Corps complet de l'énoncé — ce que l'élève doit réellement lire pour
+   * traiter l'exercice, distinct de `title` (l'intitulé court). Texte brut
+   * pouvant contenir des segments LaTeX (`$…$` inline, `$$…$$` en bloc),
+   * rendus par le composant `RichMath` (components/rich-math.tsx) partout où
+   * l'énoncé est affiché — jamais interprété comme du Markdown.
+   *
+   * `""` par défaut : la quasi-totalité des exercices existants (import massé
+   * avant ce champ) n'ont pas encore d'énoncé saisi ; une chaîne vide n'est
+   * jamais interprétée comme une erreur, juste comme "à compléter" — voir
+   * `normalizeExercise` (lib/storage.ts) pour la migration des anciennes
+   * données et `parseExerciseImportPayload` (lib/exercise-import.ts) pour
+   * l'import (champ optionnel, absent → `""`).
+   */
+  statement: string;
   /** Référence vers le futur catalogue de chapitres (lib/chapters.ts), ou null tant qu'aucun chapitre n'est assigné. */
   chapter_id: string | null;
   /** Origine libre de l'exercice (ex. "TD8", "Centrale", "Prof"). */

@@ -23,6 +23,8 @@ import type { Difficulty, ExerciseLevel, ExerciseType, LicenseStatus, ProgrammeL
 export interface NewExerciseInput {
   subject: Subject;
   title: string;
+  /** Énoncé complet — voir la doc du champ `statement` sur `Exercise` (lib/supabase/types.ts). "" si non renseigné. */
+  statement: string;
   source: string;
   type: ExerciseType;
   difficulty: Difficulty;
@@ -54,6 +56,7 @@ export interface NewExerciseInput {
 const emptyForm = {
   subject: "Mathématiques" as Subject,
   title: "",
+  statement: "",
   source: "",
   type: "TD" as ExerciseType,
   difficulty: 3,
@@ -86,6 +89,7 @@ export function ExerciseForm({
     onSubmit({
       subject: form.subject,
       title: form.title.trim(),
+      statement: form.statement.trim(),
       source: form.source.trim(),
       type: form.type,
       difficulty: form.difficulty as Difficulty,
@@ -111,6 +115,12 @@ export function ExerciseForm({
         >
           <Input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Intitulé de l'exercice" />
           <Input required value={form.source} onChange={(event) => setForm({ ...form, source: event.target.value })} placeholder="Source (feuille, DM, livre…)" />
+          <Textarea
+            value={form.statement}
+            onChange={(event) => setForm({ ...form, statement: event.target.value })}
+            className="min-h-28 sm:col-span-2"
+            placeholder={"Énoncé complet — maths en LaTeX : $x^2$ inline, $$\\int_0^1 f$$ en bloc"}
+          />
           <Select
             value={form.subject}
             onChange={(event) => setForm({ ...form, subject: event.target.value as Subject, chapterId: null })}

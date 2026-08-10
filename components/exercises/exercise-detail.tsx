@@ -43,6 +43,15 @@ export function ExerciseDetail({
 
   return (
     <div className="grid gap-5 bg-black/10 p-5 md:grid-cols-2">
+      <div className="md:col-span-2">
+        <p className="eyebrow">Énoncé</p>
+        <Textarea
+          value={item.statement || ""}
+          onChange={(event) => update(item.id, { statement: event.target.value })}
+          className="mt-2 min-h-32"
+          placeholder={"Énoncé complet — maths en LaTeX : $x^2$ inline, $$\\int_0^1 f$$ en bloc"}
+        />
+      </div>
       <div>
         <p className="eyebrow">Notes</p>
         <Textarea

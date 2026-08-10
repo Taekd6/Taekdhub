@@ -152,6 +152,10 @@ function normalizeExercise(raw: unknown): Exercise {
   // Sprint 2.5 : `chapter` (Sprint 1/2A) devient `title` ; `chapter_id` est un
   // nouveau champ qui référencera le futur catalogue de chapitres.
   const title = typeof item.title === "string" ? item.title : typeof item.chapter === "string" ? item.chapter : "";
+  // Absent de toute donnée antérieure à ce champ (import/localStorage/sauvegarde) :
+  // "" par défaut, jamais deviné à partir d'un autre champ (voir la doc du
+  // champ dans lib/supabase/types.ts).
+  const statement = typeof item.statement === "string" ? item.statement : "";
   const createdAt = typeof item.created_at === "string" ? item.created_at : new Date().toISOString();
   // Sprint 2.5 : `last_opened_at` renommé `last_worked_at`.
   const lastWorkedAt = typeof item.last_worked_at === "string" ? item.last_worked_at : typeof item.last_opened_at === "string" ? item.last_opened_at : null;
@@ -159,6 +163,7 @@ function normalizeExercise(raw: unknown): Exercise {
     id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
     subject: migrateSubject(item.subject),
     title,
+    statement,
     chapter_id: typeof item.chapter_id === "string" ? item.chapter_id : null,
     source: typeof item.source === "string" ? item.source : "",
     year: typeof item.year === "number" ? item.year : null,
