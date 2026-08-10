@@ -316,6 +316,7 @@
   },
   {
     "title": "Oscillateur harmonique — équation différentielle d'ordre 2",
+    "statement": "Résoudre sur $\\mathbb{R}$ l'équation différentielle\n$$y'' + \\omega^2 y = 0, \\qquad \\omega > 0,$$\npuis déterminer la solution particulière vérifiant les conditions initiales $y(0) = 1$ et $y'(0) = 0$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -540,6 +541,7 @@
   },
   {
     "title": "Chute libre avec frottement fluide linéaire",
+    "statement": "Un point matériel de masse $m$, lâché sans vitesse initiale, chute verticalement dans un fluide exerçant une force de frottement $\\vec{f} = -k\\vec{v}$ proportionnelle à la vitesse ($k>0$).\n1. À l'aide du principe fondamental de la dynamique, établir l'équation différentielle vérifiée par la vitesse $v(t)$.\n2. Déterminer la vitesse limite $v_{lim}$ atteinte en régime permanent.\n3. Résoudre l'équation différentielle et donner l'expression de $v(t)$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
@@ -571,6 +573,7 @@
   },
   {
     "title": "Mouvement circulaire uniforme et force centripète",
+    "statement": "Un point matériel de masse $m$ décrit un mouvement circulaire uniforme de rayon $R$ à la vitesse angulaire constante $\\omega$.\n1. Exprimer, en coordonnées polaires, le vecteur accélération du point.\n2. En appliquant le principe fondamental de la dynamique selon la direction radiale, exprimer la norme de la force centripète nécessaire à ce mouvement, en fonction de $m$, $R$ et $\\omega$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
@@ -2272,6 +2275,7 @@
   },
   {
     "title": "Résolution d'une équation différentielle linéaire d'ordre 1 à coefficient variable",
+    "statement": "Résoudre sur $]0,+\\infty[$ l'équation différentielle\n$$y' + \\frac{1}{x}y = x, \\qquad x > 0,$$\nen utilisant la méthode de variation de la constante.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2301,6 +2305,7 @@
   },
   {
     "title": "Solution particulière par identification (second membre polynomial)",
+    "statement": "Résoudre sur $\\mathbb{R}$ l'équation différentielle\n$$y' - 2y = x,$$\nen cherchant une solution particulière sous forme polynomiale, puis en ajoutant la solution générale de l'équation homogène associée.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2329,6 +2334,7 @@
   },
   {
     "title": "Piège : oublier la solution générale de l'équation homogène",
+    "statement": "On considère l'équation différentielle $y' - y = 2$.\nUn élève propose la solution $y(x) = -2$ (solution particulière constante) et s'arrête là.\n1. Vérifier que $y(x)=-2$ est bien solution de l'équation.\n2. Cette réponse est-elle complète ? Donner la solution générale de l'équation, et expliquer ce qui manque à la réponse de l'élève.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "Colle",
@@ -2357,6 +2363,7 @@
   },
   {
     "title": "Problème de Cauchy — unicité avec condition initiale",
+    "statement": "Résoudre le problème de Cauchy suivant :\n$$y' + 3y = 6, \\qquad y(0) = 5.$$",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -4105,6 +4112,7 @@
   },
   {
     "title": "Chute libre sans frottement — équations horaires",
+    "statement": "Un point matériel est lâché en chute libre verticale, sans frottement, avec une vitesse initiale $v_0$ et une position initiale $x_0$ (axe vertical orienté vers le haut).\n1. Donner l'expression de l'accélération $a(t)$.\n2. En déduire, par intégrations successives, les expressions de la vitesse $v(t)$ et de la position $x(t)$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
@@ -4134,6 +4142,7 @@
   },
   {
     "title": "Théorème de l'énergie cinétique — application simple",
+    "statement": "Un skieur de masse $m$ part sans vitesse initiale du sommet d'une piste rectiligne inclinée d'un angle $\\alpha$ par rapport à l'horizontale, de longueur $L$. On néglige tout frottement.\nÀ l'aide du théorème de l'énergie cinétique, déterminer la vitesse du skieur au bas de la piste, en fonction de $m$, $g$, $L$ et $\\alpha$ (sans écrire l'équation différentielle du mouvement).",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
@@ -4192,6 +4201,7 @@
   },
   {
     "title": "Piège : confondre poids et masse dans les équations",
+    "statement": "Un objet de masse $m = 5\\ \\text{kg}$ est posé sur une table.\nUn élève écrit l'équation d'équilibre sous la forme « $R = m$ », où $R$ est la réaction normale de la table. Cette équation est-elle homogène ? Corriger l'erreur en explicitant la relation correcte entre le poids $P$, la masse $m$ et l'intensité de la pesanteur $g$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "Colle",
@@ -4539,6 +4549,7 @@
   },
   {
     "title": "Point matériel sur un plan incliné avec frottement",
+    "statement": "Un point matériel de masse $m$ est posé sur un plan incliné d'un angle $\\alpha$ par rapport à l'horizontale. Le contact entre le point et le plan est caractérisé par un coefficient de frottement statique $\\mu_s$.\n1. En projetant le poids dans une base (parallèle, perpendiculaire) au plan incliné, exprimer la composante motrice du poids ainsi que la réaction normale $N$ du support.\n2. En comparant la composante motrice du poids à la force de frottement statique maximale $\\mu_s N$, déterminer la condition sur $\\alpha$ (en fonction de $\\mu_s$) pour que le point reste immobile.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
