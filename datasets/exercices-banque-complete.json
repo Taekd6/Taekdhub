@@ -252,6 +252,7 @@
   },
   {
     "title": "Calcul d'intégrales par changement de variable",
+    "statement": "Calculer l'intégrale\n$$\\int_0^{1} x\\, e^{x^2}\\, dx$$\nà l'aide d'un changement de variable adapté (on précisera la nouvelle variable et les nouvelles bornes).",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1294,6 +1295,7 @@
   },
   {
     "title": "Étude complète d'une fonction rationnelle",
+    "statement": "Étudier la fonction $f$ définie par\n$$f(x) = \\frac{x^2 - 1}{x - 2}$$\n(domaine de définition, limites aux bornes, variations, asymptotes) et donner l'allure de sa courbe représentative.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "DM",
@@ -1323,6 +1325,7 @@
   },
   {
     "title": "Composition de fonctions et domaine de définition",
+    "statement": "On considère les fonctions $f(x) = \\sqrt{x}$ et $g(x) = \\ln(x-1)$.\nDéterminer le domaine de définition de $g \\circ f$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1351,6 +1354,7 @@
   },
   {
     "title": "Parité et périodicité d'une fonction",
+    "statement": "Étudier la parité et la périodicité de la fonction $f(x) = x^2 \\cos(x)$ définie sur $\\mathbb{R}$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1379,6 +1383,7 @@
   },
   {
     "title": "Construction d'une fonction réciproque",
+    "statement": "Soit $f$ la fonction définie sur $\\mathbb{R}$ par $f(x) = x^3 + x$.\n1. Montrer que $f$ réalise une bijection de $\\mathbb{R}$ vers $\\mathbb{R}$.\n2. La fonction réciproque $f^{-1}$ admet-elle une expression explicite simple ? Justifier l'existence de $f^{-1}$ sans nécessairement l'expliciter.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1408,6 +1413,7 @@
   },
   {
     "title": "Piège : confondre l'étude du signe de f(x) et celle de x",
+    "statement": "Soit $f(x) = x^3 - 3x + 1$ sur $\\mathbb{R}$.\nA-t-on nécessairement $f(x)$ du même signe que $x$ ? Justifier en étudiant le signe de $f$ (on pourra tester une valeur numérique bien choisie), sans se contenter d'une analogie avec le signe de $x$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "Colle",
@@ -1436,6 +1442,7 @@
   },
   {
     "title": "Continuité aux raccords d'une fonction définie par morceaux",
+    "statement": "On définit la fonction $f$ sur $\\mathbb{R}$ par\n$$f(x) = \\begin{cases} x^2 & \\text{si } x \\leq 1 \\\\ 3x - 2 & \\text{si } x > 1 \\end{cases}$$\n1. Étudier la continuité de $f$ au point de raccord $x=1$.\n2. Étudier la dérivabilité de $f$ en ce même point.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2106,6 +2113,7 @@
   },
   {
     "title": "Calcul de primitives usuelles",
+    "statement": "Déterminer une primitive de chacune des fonctions suivantes sur leur domaine de définition :\n1. $f(x) = \\dfrac{2x}{x^2+1}$\n2. $g(x) = \\cos(x)\\, e^{\\sin(x)}$\n3. $h(x) = x^2(x^3+1)^4$",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2134,6 +2142,7 @@
   },
   {
     "title": "Intégration par parties : produit polynôme × exponentielle",
+    "statement": "Calculer, à l'aide d'une ou plusieurs intégrations par parties,\n$$\\int_0^{1} (x^2 - 1)\\, e^{x}\\, dx.$$",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2162,6 +2171,7 @@
   },
   {
     "title": "Intégrale d'une fraction rationnelle simple",
+    "statement": "Calculer\n$$\\int \\frac{3x+1}{(x-1)(x+2)}\\, dx$$\nen décomposant d'abord l'intégrande en éléments simples sous la forme $\\dfrac{a}{x-1} + \\dfrac{b}{x+2}$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2190,6 +2200,7 @@
   },
   {
     "title": "Piège : oublier la valeur absolue dans une primitive en 1/x",
+    "statement": "On considère la fonction $f(x) = \\dfrac{1}{x}$ sur $\\mathbb{R}^*$.\n1. Calculer $\\dfrac{d}{dx}\\big[\\ln|x|\\big]$ pour $x < 0$ et pour $x > 0$.\n2. En déduire une primitive de $f$ valable sur $]-\\infty, 0[$ ainsi que sur $]0, +\\infty[$. Pourquoi écrire simplement $\\ln(x)$ serait incorrect sur $]-\\infty,0[$ ?",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "Colle",
@@ -2218,6 +2229,7 @@
   },
   {
     "title": "Calcul d'aire entre deux courbes",
+    "statement": "On considère les fonctions $f(x) = 4 - x^2$ et $g(x) = x^2 - 2x$ définies sur $\\mathbb{R}$.\n1. Déterminer les abscisses des points d'intersection des courbes de $f$ et $g$.\n2. Calculer l'aire du domaine délimité par les deux courbes entre ces deux abscisses.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -3395,6 +3407,7 @@
   },
   {
     "title": "Étude d'une suite définie par une intégrale à paramètre (type Wallis généralisé)",
+    "statement": "Pour $n \\in \\mathbb{N}$, on pose\n$$I_n = \\int_0^{\\pi/2} \\sin^n(t)\\, dt.$$\n1. À l'aide d'une intégration par parties, établir une relation de récurrence entre $I_n$ et $I_{n-1}$ (pour $n \\geq 1$).\n2. Montrer que la suite $(I_n)$ est positive et décroissante, puis qu'elle converge vers une limite que l'on déterminera.\n3. En étudiant le produit $n \\cdot I_n \\cdot I_{n-1}$, montrer qu'il existe une constante $C > 0$ telle que $I_n \\sim \\dfrac{C}{\\sqrt{n}}$ quand $n \\to +\\infty$, et déterminer $C$.",
     "source": "TaekdHub — exercice original, style concours (Sup)",
     "subject": "Mathématiques",
     "type": "DM",
@@ -3458,6 +3471,7 @@
   },
   {
     "title": "Étude d'une fonction implicite définie par une équation transcendante",
+    "statement": "On considère l'équation, d'inconnue $x \\in\\ ]0,+\\infty[$ et de paramètre $y \\in \\mathbb{R}$ :\n$$x + \\ln(x) = y.$$\n1. Montrer que pour tout $y \\in \\mathbb{R}$, cette équation admet une unique solution $x = \\varphi(y)$ sur $]0,+\\infty[$.\n2. Montrer que $\\varphi$ est dérivable sur $\\mathbb{R}$ et exprimer $\\varphi'(y)$ en fonction de $\\varphi(y)$.",
     "source": "TaekdHub — exercice original, style concours (Sup)",
     "subject": "Mathématiques",
     "type": "DM",
