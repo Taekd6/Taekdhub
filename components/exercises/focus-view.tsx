@@ -117,77 +117,91 @@ export function FocusView({
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col items-center justify-center px-6">
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <DifficultyDots value={item.difficulty} />
-          <Badge>{item.type}</Badge>
-          <label className="flex items-center gap-2 text-xs text-zinc-500">
-            Priorité
-            <PriorityPicker value={item.priority} onChange={(priority: Priority) => update(item.id, { priority })} />
-          </label>
-          <label className="flex items-center gap-2 text-xs text-zinc-500">
-            Maîtrise
-            <MasteryPicker value={item.mastery} onChange={(mastery: Mastery) => update(item.id, { mastery })} />
-          </label>
-        </div>
-        <h1 className="mt-6 max-w-2xl text-center text-3xl font-semibold tracking-tight sm:text-4xl">{item.title}</h1>
-        <p className="mt-3 text-sm text-zinc-500">{item.subject} · {item.source}</p>
+      {/* Contenu défilable : l'énoncé (contenu principal) prime sur le chrono, resté dans le bandeau supérieur, secondaire dans la hiérarchie visuelle. */}
+      <div className="flex-1 overflow-y-auto px-6 py-8">
+        <div className="mx-auto w-full max-w-2xl">
+          <div className="flex flex-wrap items-center gap-3">
+            <DifficultyDots value={item.difficulty} />
+            <Badge>{item.type}</Badge>
+            <label className="flex items-center gap-2 text-xs text-zinc-500">
+              Priorité
+              <PriorityPicker value={item.priority} onChange={(priority: Priority) => update(item.id, { priority })} />
+            </label>
+            <label className="flex items-center gap-2 text-xs text-zinc-500">
+              Maîtrise
+              <MasteryPicker value={item.mastery} onChange={(mastery: Mastery) => update(item.id, { mastery })} />
+            </label>
+          </div>
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">{item.title}</h1>
+          <p className="mt-1 text-sm text-zinc-500">{item.subject} · {item.source}</p>
 
-        <div className="mt-12 w-full max-w-xl space-y-4">
-          {item.hints.slice(0, hintCount).map((hint, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl border border-accent/15 bg-accent/[0.055] p-4 text-sm leading-7 text-zinc-300"
-            >
-              <RichMath text={`Indice ${index + 1} — ${hint}`} />
-            </motion.div>
-          ))}
-          {hintCount < item.hints.length && (
-            <Button variant="secondary" onClick={() => setHintCount((c) => c + 1)} className="w-full">
-              Afficher l&apos;indice {hintCount + 1}
-            </Button>
-          )}
-          {item.correction && (
-            <div className="text-center">
-              <Button variant="ghost" onClick={() => setCorrectionVisible((v) => !v)}>
-                {correctionVisible ? <EyeOff size={16} /> : <Eye size={16} />}
-                {correctionVisible ? "Masquer la correction" : "Afficher la correction"}
-              </Button>
-              {correctionVisible && (
-                <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.035] p-4 text-left text-sm leading-7 text-zinc-300">
-                  <RichMath text={item.correction} />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="mt-8 flex items-center gap-2">
-          {(["à faire", "en cours", "à revoir", "maîtrisé"] as ExerciseStatus[]).map((s) => (
-            <Button
-              key={s}
-              variant={item.status === s ? "primary" : "secondary"}
-              size="sm"
-              onClick={() => update(item.id, { status: s })}
-            >
-              {s}
-            </Button>
-          ))}
-          <AnimatePresence>
-            {justMastered && (
-              <motion.span
-                initial={{ opacity: 0, scale: 0.7, x: -6 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.7 }}
-                transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
-                className="flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent"
-              >
-                <Sparkles size={13} /> Maîtrisé !
-              </motion.span>
+          {/* Énoncé — cœur de la séance : immédiatement visible, sans clic ni révélation, contrairement aux indices/correction. */}
+          <div className="mt-6 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-5 sm:p-6">
+            {item.statement.trim() ? (
+              <RichMath text={item.statement} className="text-base leading-8 text-zinc-100" />
+            ) : (
+              <p className="text-sm italic leading-7 text-zinc-500">
+                Aucun énoncé renseigné pour cet exercice — ouvre sa fiche (hors mode focus) pour l&apos;ajouter.
+              </p>
             )}
-          </AnimatePresence>
+          </div>
+
+          <div className="mt-6 space-y-3">
+            {item.hints.slice(0, hintCount).map((hint, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-xl border border-accent/15 bg-accent/[0.055] p-4 text-sm leading-7 text-zinc-300"
+              >
+                <RichMath text={`Indice ${index + 1} — ${hint}`} />
+              </motion.div>
+            ))}
+            {hintCount < item.hints.length && (
+              <Button variant="secondary" onClick={() => setHintCount((c) => c + 1)} className="w-full">
+                Afficher l&apos;indice {hintCount + 1}
+              </Button>
+            )}
+            {item.correction && (
+              <div>
+                <Button variant="ghost" onClick={() => setCorrectionVisible((v) => !v)}>
+                  {correctionVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {correctionVisible ? "Masquer la correction" : "Afficher la correction"}
+                </Button>
+                {correctionVisible && (
+                  <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.035] p-4 text-left text-sm leading-7 text-zinc-300">
+                    <RichMath text={item.correction} />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center gap-2">
+            {(["à faire", "en cours", "à revoir", "maîtrisé"] as ExerciseStatus[]).map((s) => (
+              <Button
+                key={s}
+                variant={item.status === s ? "primary" : "secondary"}
+                size="sm"
+                onClick={() => update(item.id, { status: s })}
+              >
+                {s}
+              </Button>
+            ))}
+            <AnimatePresence>
+              {justMastered && (
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.7, x: -6 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.7 }}
+                  transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
+                  className="flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent"
+                >
+                  <Sparkles size={13} /> Maîtrisé !
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
