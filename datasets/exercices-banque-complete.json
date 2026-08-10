@@ -1668,6 +1668,7 @@
   },
   {
     "title": "Résolution d'équations trigonométriques cos(x)=cos(a)",
+    "statement": "Résoudre dans $\\mathbb{R}$ l'équation\n$$\\cos(x) = \\cos\\left(\\frac{\\pi}{3}\\right).$$\nDonner l'ensemble des solutions sous la forme de deux familles indexées par $k \\in \\mathbb{Z}$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1696,6 +1697,7 @@
   },
   {
     "title": "Linéarisation de cos²(x) et sin²(x)",
+    "statement": "Linéariser les expressions $\\cos^2(x)$ et $\\sin^2(x)$, c'est-à-dire les exprimer en fonction de $\\cos(2x)$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1724,6 +1726,7 @@
   },
   {
     "title": "Inéquations trigonométriques sur un intervalle donné",
+    "statement": "Résoudre dans $[0, 2\\pi[$ l'inéquation\n$$\\cos(x) \\geq \\frac{1}{2}.$$",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1753,6 +1756,7 @@
   },
   {
     "title": "Piège : perdre des solutions en divisant par sin(x) ou cos(x)",
+    "statement": "Résoudre dans $\\mathbb{R}$ l'équation\n$$\\sin(x)\\cos(x) = \\sin(x).$$\nUn élève propose de diviser les deux membres par $\\sin(x)$ pour obtenir directement $\\cos(x) = 1$. Cette méthode est-elle correcte ? Résoudre rigoureusement en factorisant, et comparer avec le résultat obtenu par division.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "Colle",
@@ -1781,6 +1785,7 @@
   },
   {
     "title": "Transformation a·cos(x)+b·sin(x) en R·cos(x-φ)",
+    "statement": "On considère l'expression $f(x) = \\sqrt{3}\\cos(x) + \\sin(x)$.\nÉcrire $f(x)$ sous la forme $R\\cos(x-\\varphi)$, en précisant les valeurs de $R$ et $\\varphi$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1985,6 +1990,7 @@
   },
   {
     "title": "Dérivée d'un produit et d'un quotient",
+    "statement": "Calculer la dérivée des fonctions suivantes :\n1. $f(x) = x^2 \\ln(x)$ (pour $x>0$)\n2. $g(x) = \\dfrac{x+1}{x^2+1}$",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2013,6 +2019,7 @@
   },
   {
     "title": "Dérivée d'une composée (règle de la chaîne)",
+    "statement": "Calculer la dérivée de la fonction $h(x) = \\cos(x^3 + 1)$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2042,6 +2049,7 @@
   },
   {
     "title": "Piège : dériver sans vérifier la dérivabilité",
+    "statement": "On considère les fonctions $f(x) = |x|$ et $g(x) = \\sqrt{x}$.\n1. Étudier la dérivabilité de $f$ en $0$ en calculant séparément les nombres dérivés à gauche et à droite.\n2. Étudier la dérivabilité de $g$ en $0$ (on pourra étudier la limite du taux d'accroissement $\\dfrac{g(x)-g(0)}{x-0}$ quand $x \\to 0^+$).",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "Colle",
@@ -2071,6 +2079,7 @@
   },
   {
     "title": "Théorème de Rolle et égalité des accroissements finis",
+    "statement": "Soit $f(x) = x^3 - x$ définie sur $\\mathbb{R}$.\n1. Vérifier que $f(-1) = f(1)$, et en déduire, à l'aide du théorème de Rolle, qu'il existe $c \\in\\ ]-1,1[$ tel que $f'(c) = 0$. Déterminer explicitement ce ou ces réels $c$.\n2. Soit $g(x) = x^2$ définie sur $[0,2]$. Montrer que $g(0) \\neq g(2)$, puis utiliser l'égalité des accroissements finis pour établir l'existence d'un réel $c \\in\\ ]0,2[$ tel que $g'(c) = \\dfrac{g(2)-g(0)}{2-0}$, et déterminer $c$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2102,6 +2111,7 @@
   },
   {
     "title": "Dérivée logarithmique pour un produit de fonctions",
+    "statement": "On considère la fonction $f(x) = \\dfrac{(x-1)^2(x+3)}{\\sqrt{x^2+1}}$, définie et non nulle sur $]1, +\\infty[$.\nEn posant $g = \\ln|f|$, calculer $g'(x)$, puis en déduire $f'(x)$ à l'aide de la relation $f' = f \\cdot g'$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
