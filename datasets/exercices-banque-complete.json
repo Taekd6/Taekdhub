@@ -896,6 +896,7 @@
   },
   {
     "title": "Configuration électronique et position dans le tableau périodique",
+    "statement": "Donner la configuration électronique de l'atome de chlore ($Z=17$) à l'état fondamental, en respectant les règles de Klechkowski, Pauli et Hund.\nEn déduire la période et la colonne du tableau périodique auxquelles appartient le chlore.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -925,6 +926,7 @@
   },
   {
     "title": "Évolution des propriétés périodiques (rayon, électronégativité)",
+    "statement": "On considère les éléments suivants du tableau périodique : sodium ($Na$, $Z=11$), magnésium ($Mg$, $Z=12$) et potassium ($K$, $Z=19$).\n1. Classer ces trois éléments par rayon atomique croissant.\n2. Classer ces trois éléments par électronégativité croissante.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -1083,6 +1085,7 @@
   },
   {
     "title": "Calcul d'enthalpie de réaction par la loi de Hess",
+    "statement": "On souhaite déterminer l'enthalpie standard de réaction $\\Delta_rH°$ de la réaction\n$$C(s) + \\frac{1}{2}O_2(g) \\longrightarrow CO(g),$$\nà partir des deux réactions suivantes, dont les enthalpies standard sont connues :\n$$\\text{(1)} \\quad C(s) + O_2(g) \\longrightarrow CO_2(g), \\qquad \\Delta_rH_1° = -393{,}5\\ \\text{kJ/mol}$$\n$$\\text{(2)} \\quad CO(g) + \\frac{1}{2}O_2(g) \\longrightarrow CO_2(g), \\qquad \\Delta_rH_2° = -283{,}0\\ \\text{kJ/mol}$$\nEn combinant linéairement les réactions (1) et (2), déterminer $\\Delta_rH°$ de la réaction cible.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -1114,6 +1117,7 @@
   },
   {
     "title": "Vitesse de réaction et ordre — exploitation de données expérimentales",
+    "statement": "On étudie la cinétique de disparition d'un réactif $A$ au cours du temps, et on mesure sa concentration $[A]$ à différents instants $t$. On souhaite déterminer l'ordre de la réaction par exploitation graphique de ces données expérimentales.\n1. Expliquer quelle grandeur tracer en fonction de $t$ pour tester un ordre 1, et quelle grandeur tracer pour tester un ordre 2.\n2. On suppose qu'on obtient une droite en traçant $\\ln([A])$ en fonction de $t$. Quel est l'ordre de la réaction ? Comment obtient-on la constante de vitesse $k$ à partir de cette droite ?",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "DM",
@@ -5012,6 +5016,7 @@
   },
   {
     "title": "Calcul de constante d'équilibre",
+    "statement": "On considère la réaction en phase gazeuse\n$$N_2O_4(g) \\rightleftharpoons 2NO_2(g).$$\nÀ l'équilibre, dans un récipient de volume $V = 1{,}0\\ \\text{L}$, on trouve $n(N_2O_4) = 0{,}20\\ \\text{mol}$ et $n(NO_2) = 0{,}10\\ \\text{mol}$.\nCalculer la constante d'équilibre $K_{eq}$ de cette réaction (en fonction des concentrations).",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -5041,6 +5046,7 @@
   },
   {
     "title": "Loi de modération (Le Chatelier) — application qualitative",
+    "statement": "On considère l'équilibre en phase gazeuse\n$$N_2O_4(g) \\rightleftharpoons 2NO_2(g)$$\nà l'équilibre dans un récipient à volume et température constants. On ajoute, à volume constant, une quantité supplémentaire de $N_2O_4$ dans le récipient.\n1. Comparer le quotient de réaction $Q$ juste après cet ajout à la constante d'équilibre $K_{eq}$.\n2. En déduire, à l'aide de la loi de modération, dans quel sens évolue le système pour revenir à l'équilibre.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -5070,6 +5076,7 @@
   },
   {
     "title": "Nomenclature des molécules organiques simples",
+    "statement": "Donner le nom en nomenclature IUPAC de la molécule suivante : $CH_3-CH(CH_3)-CH_2-CH_2-OH$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -5098,6 +5105,7 @@
   },
   {
     "title": "Identification de types d'isomérie",
+    "statement": "On considère les deux paires de molécules suivantes :\n1. Le butan-1-ol ($CH_3CH_2CH_2CH_2OH$) et le butan-2-ol ($CH_3CH(OH)CH_2CH_3$).\n2. Le (Z)-but-2-ène et le (E)-but-2-ène.\nPour chaque paire, préciser le type d'isomérie (isomérie de constitution ou stéréoisomérie) en justifiant par comparaison de la connectivité et, si nécessaire, de la géométrie.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
