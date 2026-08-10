@@ -223,6 +223,7 @@
   },
   {
     "title": "Calcul de limite par développement limité",
+    "statement": "Calculer, à l'aide d'un développement limité, la limite suivante :\n$$\\lim_{x \\to 0} \\frac{e^x - 1 - x}{x^2}.$$",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2732,6 +2733,7 @@
   },
   {
     "title": "Équation cartésienne d'une droite (point + vecteur directeur)",
+    "statement": "Dans le plan muni d'un repère orthonormé, on considère la droite $\\mathcal{D}$ passant par le point $A(2,-1)$ et de vecteur directeur $\\vec{u}(3,4)$.\nDéterminer une équation cartésienne de $\\mathcal{D}$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2761,6 +2763,7 @@
   },
   {
     "title": "Distance d'un point à une droite",
+    "statement": "Dans le plan muni d'un repère orthonormé, on considère la droite $\\mathcal{D}$ d'équation $3x - 4y + 5 = 0$ et le point $A(2, 1)$.\nCalculer la distance du point $A$ à la droite $\\mathcal{D}$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2789,6 +2792,7 @@
   },
   {
     "title": "Étude d'un cercle par son équation cartésienne",
+    "statement": "Déterminer la nature de l'ensemble des points $M(x,y)$ du plan vérifiant\n$$x^2 + y^2 - 4x + 6y - 12 = 0.$$\nSi c'est un cercle, préciser son centre et son rayon.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2817,6 +2821,7 @@
   },
   {
     "title": "Produit scalaire pour démontrer une orthogonalité",
+    "statement": "Dans le plan muni d'un repère orthonormé, on considère les points $A(1,2)$, $B(4,3)$ et $C(2,-1)$.\nMontrer, à l'aide d'un produit scalaire, que les droites $(AB)$ et $(AC)$ sont perpendiculaires.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -4524,6 +4529,7 @@
   },
   {
     "title": "Analyse dimensionnelle — vérification d'une formule",
+    "statement": "La période $T$ des oscillations d'un pendule simple de longueur $L$, dans un champ de pesanteur d'intensité $g$, est donnée par la formule\n$$T = 2\\pi \\sqrt{\\frac{L}{g}}.$$\nVérifier, par analyse dimensionnelle, que cette formule est homogène.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
@@ -4552,6 +4558,7 @@
   },
   {
     "title": "Ordre de grandeur — estimation physique",
+    "statement": "Estimer, par un calcul d'ordre de grandeur, le nombre de molécules d'eau contenues dans un verre d'eau de volume $V \\approx 200\\ \\text{mL}$.\nOn donne : masse volumique de l'eau $\\rho \\approx 1\\ \\text{g/cm}^3$, masse molaire de l'eau $M \\approx 18\\ \\text{g/mol}$, nombre d'Avogadro $\\mathcal{N}_A \\approx 6 \\times 10^{23}\\ \\text{mol}^{-1}$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
