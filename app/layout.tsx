@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { ThemeSync } from "@/components/theme-sync";
+import "katex/dist/katex.min.css";
 import "./globals.css";
 
 /**
