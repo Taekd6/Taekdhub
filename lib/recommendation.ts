@@ -106,6 +106,11 @@ function evaluateExercise(exercise: Exercise, minutesSpent: number, now: Date): 
     const days = daysSinceLastWorked(exercise, now);
     reasons.push(days === null ? "Maîtrisé, jamais retravaillé" : `Non retravaillé depuis ${days} j`);
   }
+  // Le favori n'est jamais un critère d'inclusion à lui seul (un exercice
+  // favori déjà maîtrisé et récent n'a aucune raison de revenir) : il ne
+  // s'ajoute qu'aux raisons déjà réunies, pour un exercice retenu par
+  // ailleurs — voir `urgencyScore` pour son (léger) effet sur le tri.
+  if (reasons.length > 0 && exercise.favorite) reasons.push("Favori");
   return reasons;
 }
 
@@ -153,7 +158,12 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, now: Date): numb
   // au point d'éclipser une priorité élevée ou une maîtrise très faible.
   const momentumBonus = Math.min(minutesSpent, 60) * 0.3; // 0 à 18
   const staleBonus = staleMasteryBonus(exercise, now); // 0 à 30, voir staleMasteryBonus
-  return masteryGap + priorityWeight + statusWeight + neverWorkedBonus + momentumBonus + staleBonus;
+  // Léger coup de pouce, jamais déterminant seul (comparable à neverWorkedBonus) :
+  // entre deux exercices par ailleurs comparables, celui marqué favori remonte
+  // légèrement — mais un favori ne devient jamais éligible que par ce bonus
+  // (voir la garde `reasons.length > 0` dans `evaluateExercise`).
+  const favoriteBonus = exercise.favorite ? 10 : 0;
+  return masteryGap + priorityWeight + statusWeight + neverWorkedBonus + momentumBonus + staleBonus + favoriteBonus;
 }
 
 export interface ExerciseRecommendation {
@@ -240,6 +250,50 @@ export interface RecommendationOptions {
  * Fonction pure : aucun effet de bord, aucune dépendance à autre chose que
  * ses arguments.
  */
+/**
+ * Réordonne les candidats (déjà triés par score décroissant) pour éviter que
+ * les premiers de la liste s'entassent sur un seul chapitre : un exercice
+ * sans `chapter_id` compte comme son propre groupe par matière (jamais
+ * mélangé à un autre chapitre, ni traité comme "diversifié" à tort).
+ *
+ * Round-robin déterministe, pas une pénalité numérique de plus à calibrer :
+ * on prend le meilleur candidat de chaque chapitre représenté, dans l'ordre
+ * où ces chapitres sont apparus (donc le chapitre le plus urgent d'abord),
+ * puis on recommence un tour pour le deuxième meilleur de chaque chapitre,
+ * etc. Le score d'origine décide QUELS chapitres passent en premier ; le
+ * round-robin décide seulement de ne jamais répéter un chapitre tant qu'une
+ * alternative existe. Aucun candidat n'est perdu — un chapitre épuisé est
+ * simplement sauté aux tours suivants, jamais remplacé par du bourrage.
+ */
+function diversifyByChapter(candidates: ExerciseRecommendation[]): ExerciseRecommendation[] {
+  const byGroup = new Map<string, ExerciseRecommendation[]>();
+  const groupOrder: string[] = [];
+  for (const candidate of candidates) {
+    const key = candidate.exercise.chapter_id ?? `subject:${candidate.exercise.subject}`;
+    let group = byGroup.get(key);
+    if (!group) {
+      group = [];
+      byGroup.set(key, group);
+      groupOrder.push(key);
+    }
+    group.push(candidate);
+  }
+
+  const result: ExerciseRecommendation[] = [];
+  for (let round = 0; result.length < candidates.length; round++) {
+    let addedThisRound = false;
+    for (const key of groupOrder) {
+      const group = byGroup.get(key)!;
+      if (round < group.length) {
+        result.push(group[round]);
+        addedThisRound = true;
+      }
+    }
+    if (!addedThisRound) break;
+  }
+  return result;
+}
+
 export function recommendExercises(
   exercises: Exercise[],
   sessions: WorkSession[],
@@ -257,9 +311,10 @@ export function recommendExercises(
     candidates.push({ exercise, score: urgencyScore(exercise, minutesSpent, now), reasons });
   }
   candidates.sort((a, b) => b.score - a.score);
+  const diversified = diversifyByChapter(candidates);
 
-  if (options.availableMinutes === undefined) return candidates.slice(0, limit);
-  return selectWithinBudget(candidates, sessions, limit, options.availableMinutes);
+  if (options.availableMinutes === undefined) return diversified.slice(0, limit);
+  return selectWithinBudget(diversified, sessions, limit, options.availableMinutes);
 }
 
 export interface ExerciseBankStats {
