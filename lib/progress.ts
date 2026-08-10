@@ -51,6 +51,8 @@ export interface SubjectProgress {
   mastered: number;
   /** 0 si `total` est nul — évite une division par zéro côté appelant. */
   completionRate: number;
+  /** Moyenne de `Exercise.mastery` (0-100) sur les exercices actifs de la matière, arrondie à l'entier — même calcul que `computeExerciseBankStats` (lib/recommendation.ts), à l'échelle de la matière. 0 si `total` est nul. */
+  averageMastery: number;
 }
 
 /**
@@ -68,6 +70,9 @@ export function computeProgressBySubject(exercises: Exercise[]): SubjectProgress
       total: subjectExercises.length,
       mastered,
       completionRate: subjectExercises.length ? Math.round((mastered / subjectExercises.length) * 100) : 0,
+      averageMastery: subjectExercises.length
+        ? Math.round(subjectExercises.reduce((sum, exercise) => sum + exercise.mastery, 0) / subjectExercises.length)
+        : 0,
     };
   });
 }
@@ -110,6 +115,8 @@ export interface ChapterProgress {
   mastered: number;
   /** 0 si `total` est nul — évite une division par zéro côté appelant. */
   completionRate: number;
+  /** Moyenne de `Exercise.mastery` (0-100) sur les exercices actifs du chapitre, arrondie à l'entier — même calcul que `computeExerciseBankStats` (lib/recommendation.ts), à l'échelle du chapitre. 0 si `total` est nul. */
+  averageMastery: number;
 }
 
 /**
@@ -129,6 +136,9 @@ export function progressByChapter(exercises: Exercise[], chapters: Chapter[]): C
         total: chapterExercises.length,
         mastered,
         completionRate: chapterExercises.length ? Math.round((mastered / chapterExercises.length) * 100) : 0,
+        averageMastery: chapterExercises.length
+          ? Math.round(chapterExercises.reduce((sum, exercise) => sum + exercise.mastery, 0) / chapterExercises.length)
+          : 0,
       };
     })
     .filter((entry) => entry.total > 0)

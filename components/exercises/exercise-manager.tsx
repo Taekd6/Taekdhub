@@ -10,6 +10,7 @@ import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { ArchivedExercises } from "@/components/exercises/archived-exercises";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
+import { ExerciseBrowser } from "@/components/exercises/exercise-browser";
 import { ExerciseFiltersBar } from "@/components/exercises/exercise-filters-bar";
 import { ExerciseForm, type NewExerciseInput } from "@/components/exercises/exercise-form";
 import { ExerciseCard } from "@/components/exercises/exercise-card";
@@ -31,6 +32,14 @@ type ViewMode = "cards" | "list";
 export function ExerciseManager() {
   const { exercises, saveExercises, sessions, saveSessions, chapters, saveChapters, ready } = usePrepahubData();
   const [filters, setFilters] = useState<ExerciseFilters>(defaultExerciseFilters);
+  // Vrai tant que l'utilisateur parcourt la hiérarchie Matière → Chapitre
+  // (ExerciseBrowser) sans avoir encore demandé de résultats précis : la
+  // liste plate reste masquée pour ne pas reproduire, à l'échelle d'une
+  // matière, le problème qu'elle est censée résoudre (des dizaines
+  // d'exercices d'un coup avant même d'avoir choisi un chapitre). Passe à
+  // `false` dès qu'un chapitre est choisi, qu'un filtre de la barre est
+  // utilisé, ou qu'on saute vers un exercice précis (ex. depuis "À revoir").
+  const [browseMode, setBrowseMode] = useState(true);
   const [sort, setSort] = useState<ExerciseSort>(defaultExerciseSort);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [formOpen, setFormOpen] = useState(false);
@@ -156,6 +165,10 @@ export function ExerciseManager() {
   // effet si l'exercice n'était pas déjà dans la liste affichée.
   const jumpToExercise = useCallback((id: string) => {
     setFilters(defaultExerciseFilters);
+    // Quitte le mode navigation (voir sa définition plus haut) : sans ça, la
+    // liste plate resterait masquée au profit de la grille de matières et le
+    // clic depuis "À revoir" n'amènerait visiblement rien à l'écran.
+    setBrowseMode(false);
     setSelectedId(id);
     requestAnimationFrame(() => {
       document.getElementById(`exercise-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -225,6 +238,39 @@ export function ExerciseManager() {
   const visible = useMemo(() => filterExercises(exercises, filters), [exercises, filters]);
   const sorted = useMemo(() => sortExercises(visible, sort, minutesMap), [visible, sort, minutesMap]);
 
+  // Callbacks dédiés d'ExerciseBrowser (Matière → Chapitre) : choisir une
+  // matière ou remonter garde le mode navigation actif (on reste dans la
+  // hiérarchie) ; choisir un chapitre en sort (ses exercices s'affichent en
+  // liste normale, juste en dessous). `filters` reste l'unique source de
+  // vérité du "où en est-on" — ces callbacks ne font que l'écrire.
+  const goHome = useCallback(() => {
+    setFilters(defaultExerciseFilters);
+    setBrowseMode(true);
+  }, []);
+  const selectSubject = useCallback((subject: Subject) => {
+    setFilters((prev) => ({ ...prev, subject, chapter: "Tous" }));
+    setBrowseMode(true);
+  }, []);
+  const goToChapters = useCallback(() => {
+    setFilters((prev) => ({ ...prev, chapter: "Tous" }));
+    setBrowseMode(true);
+  }, []);
+  const selectChapter = useCallback((chapterId: string) => {
+    setFilters((prev) => ({ ...prev, chapter: chapterId }));
+    setBrowseMode(false);
+  }, []);
+
+  // Toute interaction directe avec la barre de filtres (recherche, un des
+  // sélecteurs) exprime une intention explicite de voir des résultats — sort
+  // du mode navigation, quel que soit le champ modifié.
+  const updateFiltersFromBar = useCallback(
+    (patch: Partial<ExerciseFilters>) => {
+      setBrowseMode(false);
+      updateFilters(patch);
+    },
+    [updateFilters]
+  );
+
   const selected = exercises.find((item) => item.id === selectedId);
 
   useEffect(() => {
@@ -289,9 +335,19 @@ export function ExerciseManager() {
 
       <ExerciseReviewPanel exercises={exercises} sessions={sessions} onSelect={jumpToExercise} />
 
+      <ExerciseBrowser
+        exercises={exercises}
+        chapters={chapters}
+        filters={filters}
+        onGoHome={goHome}
+        onSelectSubject={selectSubject}
+        onGoToChapters={goToChapters}
+        onSelectChapter={selectChapter}
+      />
+
       <ExerciseFiltersBar
         filters={filters}
-        onChange={updateFilters}
+        onChange={updateFiltersFromBar}
         chapterOptions={chapterOptions}
         yearOptions={yearOptions}
         onAddClick={() => setFormOpen((value) => !value)}
@@ -308,88 +364,95 @@ export function ExerciseManager() {
         onCancel={() => setImportOpen(false)}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-        <p className="text-sm text-zinc-500">
-          <span className="font-semibold text-zinc-200">{sorted.length}</span> exercice{sorted.length > 1 ? "s" : ""} affiché{sorted.length > 1 ? "s" : ""}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setShowArchived(true)}>
-            <Archive size={15} /> Archivés{archivedExercises.length > 0 && ` (${archivedExercises.length})`}
-          </Button>
-          <Select value={sort} onChange={(event) => setSort(event.target.value as ExerciseSort)} className="w-auto min-w-[150px] py-2 text-xs">
-            {exerciseSortOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
-          <div className="flex items-center gap-1 rounded-xl border border-white/[0.09] bg-black/20 p-1">
-            <button
-              onClick={() => setViewMode("cards")}
-              aria-label="Vue cartes"
-              aria-pressed={viewMode === "cards"}
-              className={cn("rounded-lg p-1.5 transition", viewMode === "cards" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
-            >
-              <LayoutGrid size={15} />
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              aria-label="Vue liste compacte"
-              aria-pressed={viewMode === "list"}
-              className={cn("rounded-lg p-1.5 transition", viewMode === "list" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
-            >
-              <List size={15} />
-            </button>
-          </div>
-        </div>
-        <span className="hidden items-center gap-2 text-xs text-zinc-500 sm:flex">⌘K recherche · N nouvel exercice · Esc fermer</span>
+      <div className="flex justify-end px-1">
+        <Button variant="ghost" size="sm" onClick={() => setShowArchived(true)}>
+          <Archive size={15} /> Archivés{archivedExercises.length > 0 && ` (${archivedExercises.length})`}
+        </Button>
       </div>
 
-      <div className={viewMode === "cards" ? "grid gap-3" : "grid gap-2"}>
-        {sorted.map((item, index) =>
-          viewMode === "cards" ? (
-            <ExerciseCard
-              key={item.id}
-              item={item}
-              index={index}
-              selected={selectedId === item.id}
-              minutesSpent={minutesMap.get(item.id) ?? 0}
-              chapters={chapters}
-              sessions={sessions}
-              onToggle={toggleSelected}
-              onUpdate={update}
-              onFocus={enterFocus}
-              onArchive={archiveExercise}
-              onCreateChapter={handleCreateChapter}
-              onRenameChapter={handleRenameChapter}
-              onRemoveChapter={handleRemoveChapter}
-            />
-          ) : (
-            <ExerciseListRow
-              key={item.id}
-              item={item}
-              selected={selectedId === item.id}
-              minutesSpent={minutesMap.get(item.id) ?? 0}
-              chapters={chapters}
-              sessions={sessions}
-              onToggle={toggleSelected}
-              onUpdate={update}
-              onFocus={enterFocus}
-              onArchive={archiveExercise}
-              onCreateChapter={handleCreateChapter}
-              onRenameChapter={handleRenameChapter}
-              onRemoveChapter={handleRemoveChapter}
-            />
-          )
-        )}
-        {sorted.length === 0 && (
-          <Card className="px-6 py-16 text-center">
-            <BookOpenCheck className="mx-auto text-accent" />
-            <p className="mt-4 font-semibold">Aucun exercice ne correspond.</p>
-            <p className="mt-1 text-sm text-zinc-500">Ajuste les filtres ou ajoute une nouvelle fiche.</p>
-          </Card>
-        )}
-      </div>
+      {!browseMode && (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+            <p className="text-sm text-zinc-500">
+              <span className="font-semibold text-zinc-200">{sorted.length}</span> exercice{sorted.length > 1 ? "s" : ""} affiché{sorted.length > 1 ? "s" : ""}
+            </p>
+            <div className="flex items-center gap-2">
+              <Select value={sort} onChange={(event) => setSort(event.target.value as ExerciseSort)} className="w-auto min-w-[150px] py-2 text-xs">
+                {exerciseSortOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+              <div className="flex items-center gap-1 rounded-xl border border-white/[0.09] bg-black/20 p-1">
+                <button
+                  onClick={() => setViewMode("cards")}
+                  aria-label="Vue cartes"
+                  aria-pressed={viewMode === "cards"}
+                  className={cn("rounded-lg p-1.5 transition", viewMode === "cards" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
+                >
+                  <LayoutGrid size={15} />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  aria-label="Vue liste compacte"
+                  aria-pressed={viewMode === "list"}
+                  className={cn("rounded-lg p-1.5 transition", viewMode === "list" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
+                >
+                  <List size={15} />
+                </button>
+              </div>
+            </div>
+            <span className="hidden items-center gap-2 text-xs text-zinc-500 sm:flex">⌘K recherche · N nouvel exercice · Esc fermer</span>
+          </div>
+
+          <div className={viewMode === "cards" ? "grid gap-3" : "grid gap-2"}>
+            {sorted.map((item, index) =>
+              viewMode === "cards" ? (
+                <ExerciseCard
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  selected={selectedId === item.id}
+                  minutesSpent={minutesMap.get(item.id) ?? 0}
+                  chapters={chapters}
+                  sessions={sessions}
+                  onToggle={toggleSelected}
+                  onUpdate={update}
+                  onFocus={enterFocus}
+                  onArchive={archiveExercise}
+                  onCreateChapter={handleCreateChapter}
+                  onRenameChapter={handleRenameChapter}
+                  onRemoveChapter={handleRemoveChapter}
+                />
+              ) : (
+                <ExerciseListRow
+                  key={item.id}
+                  item={item}
+                  selected={selectedId === item.id}
+                  minutesSpent={minutesMap.get(item.id) ?? 0}
+                  chapters={chapters}
+                  sessions={sessions}
+                  onToggle={toggleSelected}
+                  onUpdate={update}
+                  onFocus={enterFocus}
+                  onArchive={archiveExercise}
+                  onCreateChapter={handleCreateChapter}
+                  onRenameChapter={handleRenameChapter}
+                  onRemoveChapter={handleRemoveChapter}
+                />
+              )
+            )}
+            {sorted.length === 0 && (
+              <Card className="px-6 py-16 text-center">
+                <BookOpenCheck className="mx-auto text-accent" />
+                <p className="mt-4 font-semibold">Aucun exercice ne correspond.</p>
+                <p className="mt-1 text-sm text-zinc-500">Ajuste les filtres ou ajoute une nouvelle fiche.</p>
+              </Card>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
