@@ -13,6 +13,7 @@ import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { cn } from "@/lib/cn";
 import { subjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
 import type { Exercise, Subject } from "@/lib/supabase/types";
@@ -21,6 +22,10 @@ type Phase = "loading" | "empty" | "preview" | "focus" | "between" | "summary";
 
 /** Préréglages de temps disponible (Sprint 4) — un point de départ rapide, le champ à côté reste éditable pour toute autre valeur. */
 const BUDGET_PRESETS = [15, 30, 45, 60];
+/** Préréglages "par nombre d'exercices" (révisions intelligentes) — même logique que BUDGET_PRESETS, pour l'autre façon de dimensionner une séance. */
+const COUNT_PRESETS = [5, 10, 15, 20];
+/** Deux façons équivalentes de dimensionner la séance à venir — voir `recommendExercises` (lib/recommendation.ts) : `availableMinutes` pour la première, `limit` seul pour la seconde. Aucune troisième source de vérité, juste deux paramètres différents passés au même moteur. */
+type SizingMode = "time" | "count";
 
 /**
  * Séance de travail intelligente (Sprint 3C, bornée par le temps depuis le
@@ -53,6 +58,9 @@ export function SessionRunner() {
   const [visitedCount, setVisitedCount] = useState(0);
   /** Temps disponible pour la séance à venir, en minutes — initialisé à l'objectif du jour restant, ajustable via les préréglages ou le champ libre. */
   const [budgetMinutes, setBudgetMinutes] = useState(0);
+  /** Façon de dimensionner la séance à venir — "time" (comportement historique) ou "count", un nombre d'exercices fixe sans notion de durée. */
+  const [sizingMode, setSizingMode] = useState<SizingMode>("time");
+  const [countTarget, setCountTarget] = useState(10);
   /** Matière imposée par `?subject=`, ou `null` pour une séance normale (toute la banque) — voir la note Sprint 3.1 ci-dessus. */
   const [contextSubject, setContextSubject] = useState<Subject | null>(null);
   const initialized = useRef(false);
@@ -97,13 +105,19 @@ export function SessionRunner() {
     [exercises, contextSubject]
   );
 
-  // Aperçu recalculé en direct à chaque changement de budget — c'est la même
-  // fonction `recommendExercises` qui produira la sélection réelle au clic
-  // sur "Commencer ma séance" (voir startSession), donc l'aperçu ne ment
-  // jamais sur ce qui sera effectivement proposé.
+  // Aperçu recalculé en direct à chaque changement de budget/mode — c'est la
+  // même fonction `recommendExercises` qui produira la sélection réelle au
+  // clic sur "Commencer ma séance" (voir startSession), donc l'aperçu ne
+  // ment jamais sur ce qui sera effectivement proposé. En mode "count", pas
+  // de `availableMinutes` : `limit` (le nombre choisi) suffit, exactement le
+  // même paramètre que le "top N" déjà utilisé partout ailleurs
+  // (ExerciseReviewPanel notamment) — aucune nouvelle fonction nécessaire.
   const previewSelection = useMemo(
-    () => recommendExercises(scopedExercises, sessions, 6, { availableMinutes: budgetMinutes }),
-    [scopedExercises, sessions, budgetMinutes]
+    () =>
+      sizingMode === "count"
+        ? recommendExercises(scopedExercises, sessions, countTarget)
+        : recommendExercises(scopedExercises, sessions, 6, { availableMinutes: budgetMinutes }),
+    [scopedExercises, sessions, sizingMode, countTarget, budgetMinutes]
   );
   const previewMinutesUsed = useMemo(
     () => previewSelection.reduce((sum, { exercise }) => sum + estimatedDurationMinutes(exercise, sessions), 0),
@@ -199,9 +213,13 @@ export function SessionRunner() {
       <div className="space-y-5">
         <Card className="p-8 text-center">
           <PlayCircle className="mx-auto text-accent" size={28} />
-          <h2 className="mt-4 text-xl font-semibold tracking-tight">Combien de temps as-tu devant toi ?</h2>
+          <h2 className="mt-4 text-xl font-semibold tracking-tight">
+            {sizingMode === "time" ? "Combien de temps as-tu devant toi ?" : "Combien d'exercices veux-tu travailler ?"}
+          </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
-            La séance tient dans ce temps — aucun exercice trop long n&apos;est jamais forcé dedans.
+            {sizingMode === "time"
+              ? "La séance tient dans ce temps — aucun exercice trop long n'est jamais forcé dedans."
+              : "Une sélection de ce nombre exact, classée par urgence et répartie sur plusieurs chapitres."}
           </p>
           {contextSubject && (
             <p className="mt-2 text-xs text-accent">
@@ -212,42 +230,100 @@ export function SessionRunner() {
             </p>
           )}
 
-          <div className="mx-auto mt-6 flex max-w-sm flex-wrap items-center justify-center gap-2">
-            {BUDGET_PRESETS.map((preset) => (
-              <Button
-                key={preset}
-                type="button"
-                size="sm"
-                variant={budgetMinutes === preset ? "primary" : "secondary"}
-                onClick={() => setBudgetMinutes(preset)}
-              >
-                {preset} min
-              </Button>
-            ))}
-            <div className="flex items-center gap-1.5">
-              <Input
-                type="number"
-                min={0}
-                step={5}
-                value={budgetMinutes}
-                onChange={(event) => setBudgetMinutes(Math.max(0, Math.round(Number(event.target.value) || 0)))}
-                className="w-20 text-center"
-                aria-label="Temps disponible, en minutes"
-              />
-              <span className="text-xs text-zinc-500">min</span>
-            </div>
+          <div className="mx-auto mt-5 inline-flex items-center gap-1 rounded-xl border border-white/[0.09] bg-black/20 p-1">
+            <button
+              type="button"
+              onClick={() => setSizingMode("time")}
+              aria-pressed={sizingMode === "time"}
+              className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "time" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
+            >
+              Par temps
+            </button>
+            <button
+              type="button"
+              onClick={() => setSizingMode("count")}
+              aria-pressed={sizingMode === "count"}
+              className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "count" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
+            >
+              Par nombre d&apos;exercices
+            </button>
           </div>
+
+          {sizingMode === "time" ? (
+            <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
+              {BUDGET_PRESETS.map((preset) => (
+                <Button
+                  key={preset}
+                  type="button"
+                  size="sm"
+                  variant={budgetMinutes === preset ? "primary" : "secondary"}
+                  onClick={() => setBudgetMinutes(preset)}
+                >
+                  {preset} min
+                </Button>
+              ))}
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="number"
+                  min={0}
+                  step={5}
+                  value={budgetMinutes}
+                  onChange={(event) => setBudgetMinutes(Math.max(0, Math.round(Number(event.target.value) || 0)))}
+                  className="w-20 text-center"
+                  aria-label="Temps disponible, en minutes"
+                />
+                <span className="text-xs text-zinc-500">min</span>
+              </div>
+            </div>
+          ) : (
+            <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
+              {COUNT_PRESETS.map((preset) => (
+                <Button
+                  key={preset}
+                  type="button"
+                  size="sm"
+                  variant={countTarget === preset ? "primary" : "secondary"}
+                  onClick={() => setCountTarget(preset)}
+                >
+                  {preset}
+                </Button>
+              ))}
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={countTarget}
+                  onChange={(event) => setCountTarget(Math.max(1, Math.round(Number(event.target.value) || 0)))}
+                  className="w-20 text-center"
+                  aria-label="Nombre d'exercices"
+                />
+                <span className="text-xs text-zinc-500">exercice{countTarget > 1 ? "s" : ""}</span>
+              </div>
+            </div>
+          )}
 
           {previewSelection.length > 0 ? (
             <p className="mx-auto mt-5 max-w-md text-sm text-zinc-400">
-              {previewSelection.length} exercice{previewSelection.length > 1 ? "s" : ""} sélectionné{previewSelection.length > 1 ? "s" : ""} — environ{" "}
-              {previewMinutesUsed} min sur {budgetMinutes} min disponibles.
+              {sizingMode === "time" ? (
+                <>
+                  {previewSelection.length} exercice{previewSelection.length > 1 ? "s" : ""} sélectionné{previewSelection.length > 1 ? "s" : ""} — environ{" "}
+                  {previewMinutesUsed} min sur {budgetMinutes} min disponibles.
+                </>
+              ) : (
+                <>
+                  {previewSelection.length} exercice{previewSelection.length > 1 ? "s" : ""} sélectionné{previewSelection.length > 1 ? "s" : ""} — environ{" "}
+                  {previewMinutesUsed} min au total.
+                </>
+              )}
             </p>
           ) : (
             <p className="mx-auto mt-5 max-w-md text-sm text-amber-300">
-              {budgetMinutes === 0
+              {sizingMode === "time" && budgetMinutes === 0
                 ? "Objectif du jour déjà atteint — choisis un temps si tu veux continuer."
-                : "Aucun exercice ne tient dans ce créneau. Augmente le temps disponible, ou choisis-en un directement dans la banque."}
+                : sizingMode === "time"
+                  ? "Aucun exercice ne tient dans ce créneau. Augmente le temps disponible, ou choisis-en un directement dans la banque."
+                  : "Rien à proposer pour l'instant — la banque est à jour."}
             </p>
           )}
 
