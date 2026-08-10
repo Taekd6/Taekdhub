@@ -8,7 +8,7 @@ import { ChapterPicker } from "@/components/exercises/chapter-picker";
 import { MasteryPicker, PriorityPicker } from "@/components/exercises/exercise-badges";
 import { SessionRow } from "@/components/history/session-row";
 import { RichMath } from "@/components/rich-math";
-import { sessionsForExercise } from "@/lib/history";
+import { resultCounts, sessionsForExercise } from "@/lib/history";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
 
@@ -41,6 +41,7 @@ export function ExerciseDetail({
 
   const currentChapter = chapters.find((chapter) => chapter.id === item.chapter_id) ?? null;
   const pastSessions = sessionsForExercise(sessions, item.id);
+  const results = resultCounts(pastSessions);
 
   return (
     <div className="grid gap-5 bg-black/10 p-5 md:grid-cols-2">
@@ -212,7 +213,15 @@ export function ExerciseDetail({
       </div>
 
       <div className="md:col-span-2">
-        <p className="eyebrow">Séances</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="eyebrow">Séances</p>
+          {results.attempted > 0 && (
+            <p className="text-xs text-zinc-500">
+              {results.success} réussite{results.success > 1 ? "s" : ""} · {results.partial} partielle{results.partial > 1 ? "s" : ""} ·{" "}
+              {results.failure} échec{results.failure > 1 ? "s" : ""} · {results.successRate}% de réussite
+            </p>
+          )}
+        </div>
         {pastSessions.length ? (
           <div className="mt-3 space-y-2">
             {pastSessions.map((session) => (

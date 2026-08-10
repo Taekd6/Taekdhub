@@ -131,8 +131,14 @@ function stringArray(raw: unknown): string[] {
   return Array.isArray(raw) ? raw.filter((value): value is string => typeof value === "string") : [];
 }
 
-/** Ramène une session, potentiellement issue d'une ancienne sauvegarde (matière, champs manquants), vers la forme actuelle de `WorkSession`. */
-function normalizeSession(raw: unknown): WorkSession {
+/**
+ * Ramène une session, potentiellement issue d'une ancienne sauvegarde
+ * (matière, champs manquants), vers la forme actuelle de `WorkSession`.
+ * Exportée (Sprint 5) pour que lib/storage.test.ts vérifie directement la
+ * rétrocompatibilité et le round-trip export/import de `result`, sans avoir
+ * à simuler `localStorage`.
+ */
+export function normalizeSession(raw: unknown): WorkSession {
   const item = isRecord(raw) ? raw : {};
   const startedAt = typeof item.started_at === "string" ? item.started_at : new Date().toISOString();
   return {

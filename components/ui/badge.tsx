@@ -5,6 +5,7 @@ const variants = {
   accent: "bg-accent/10 text-accent",
   success: "bg-emerald-400/10 text-emerald-300",
   warning: "bg-amber-400/10 text-amber-300",
+  danger: "bg-rose-400/10 text-rose-300",
   subject: "",
 };
 

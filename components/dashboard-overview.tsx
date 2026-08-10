@@ -23,6 +23,7 @@ import { MetricCard } from "@/components/ui/metric-card";
 import { CircularProgress, ProgressBar } from "@/components/ui/progress";
 import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
 import { Heatmap } from "@/components/heatmap";
+import { SessionRow } from "@/components/history/session-row";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import {
   computeStreak,
@@ -293,16 +294,16 @@ export function DashboardOverview() {
           <CardTitle className="mt-2">Dernières séances</CardTitle>
           <div className="mt-5 space-y-2">
             {model.recentSessions.length ? (
+              // Sprint 5 : réutilise SessionRow (déjà utilisé par l'Historique et
+              // la fiche exercice) au lieu d'une mise en page maison — ce qui
+              // fait apparaître ici, sans code en plus, le résultat de chaque
+              // séance qualifiée (voir components/history/session-row.tsx).
               model.recentSessions.map((session) => (
-                <div key={session.id} className="flex items-center justify-between rounded-xl border border-white/[0.06] p-3 text-sm">
-                  <div>
-                    <p className="font-medium">{session.subject}</p>
-                    <p className="mt-0.5 text-xs text-zinc-500">
-                      {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(session.started_at))}
-                    </p>
-                  </div>
-                  <span className="font-semibold tabular-nums text-accent">{formatDuration(session.duration_seconds)}</span>
-                </div>
+                <SessionRow
+                  key={session.id}
+                  session={session}
+                  exerciseTitle={session.exercise_id ? exercises.find((e) => e.id === session.exercise_id)?.title : null}
+                />
               ))
             ) : (
               <p className="py-7 text-sm text-zinc-500">Termine une séance focus pour voir ton activité ici.</p>

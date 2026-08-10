@@ -27,7 +27,8 @@ export function FocusView({
   update: (id: string, patch: Partial<Exercise>) => void;
   sessions: WorkSession[];
   saveSessions: (sessions: WorkSession[]) => void;
-  onClose: () => void;
+  /** Appelé à la fermeture du focus, avec le résultat choisi — `null`/`undefined` si aucune séance n'a été enregistrée (rien à qualifier) ou si l'utilisateur a passé l'étape. */
+  onClose: (result?: AttemptResult | null) => void;
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
   const [hintCount, setHintCount] = useState(0);
@@ -99,7 +100,7 @@ export function FocusView({
           update(item.id, { attempts: item.attempts + 1, last_worked_at: new Date().toISOString() });
         }
       }
-      onClose();
+      onClose(result);
     },
     [draftSession, sessions, saveSessions, item, update, onClose]
   );

@@ -163,6 +163,77 @@ describe("recommendExercises — budget de temps (comportement existant préserv
   });
 });
 
+describe("recommendExercises — signaux échec/réussite (Sprint 5)", () => {
+  it("un échec récent suffit à inclure un exercice par ailleurs neutre, avec la raison 'Échec récent'", () => {
+    const exercise = makeExercise({ status: "maîtrisé", mastery: 100, priority: 1, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const sessions = [makeSession(exercise.id, { started_at: "2026-08-09T00:00:00.000Z", result: "échoué" })];
+    const [result] = recommendExercises([exercise], sessions, 10, { now: NOW });
+    expect(result).toBeDefined();
+    expect(result.reasons).toContain("Échec récent");
+  });
+
+  it("plusieurs échecs récents remplacent la raison par 'Plusieurs échecs' et augmentent le score par rapport à un seul échec", () => {
+    const single = makeExercise({ status: "maîtrisé", mastery: 100, priority: 1, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const singleSessions = [makeSession(single.id, { started_at: "2026-08-09T00:00:00.000Z", result: "échoué" })];
+
+    const repeated = makeExercise({ status: "maîtrisé", mastery: 100, priority: 1, attempts: 3, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const repeatedSessions = [
+      makeSession(repeated.id, { started_at: "2026-08-09T00:00:00.000Z", result: "échoué" }),
+      makeSession(repeated.id, { started_at: "2026-08-08T00:00:00.000Z", result: "échoué" }),
+      makeSession(repeated.id, { started_at: "2026-08-07T00:00:00.000Z", result: "réussi" }),
+    ];
+
+    const [singleResult] = recommendExercises([single], singleSessions, 10, { now: NOW });
+    const [repeatedResult] = recommendExercises([repeated], repeatedSessions, 10, { now: NOW });
+
+    expect(singleResult.reasons).toContain("Échec récent");
+    expect(repeatedResult.reasons).toContain("Plusieurs échecs");
+    expect(repeatedResult.reasons).not.toContain("Échec récent");
+    expect(repeatedResult.score).toBeGreaterThan(singleResult.score);
+  });
+
+  it("une réussite récente n'inclut jamais un exercice à elle seule (même logique que Favori)", () => {
+    const exercise = makeExercise({ status: "maîtrisé", mastery: 100, priority: 1, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const sessions = [makeSession(exercise.id, { started_at: "2026-08-09T00:00:00.000Z", result: "réussi" })];
+    const result = recommendExercises([exercise], sessions, 10, { now: NOW });
+    expect(result).toHaveLength(0);
+  });
+
+  it("une série de réussites fait redescendre le score d'un exercice déjà retenu par ailleurs, sans jamais l'exclure", () => {
+    const noStreak = makeExercise({ status: "à revoir", mastery: 25, priority: 3 });
+    const withStreak = makeExercise({ status: "à revoir", mastery: 25, priority: 3 });
+    const streakSessions = [
+      makeSession(withStreak.id, { started_at: "2026-08-09T00:00:00.000Z", result: "réussi" }),
+      makeSession(withStreak.id, { started_at: "2026-08-08T00:00:00.000Z", result: "réussi" }),
+      makeSession(withStreak.id, { started_at: "2026-08-07T00:00:00.000Z", result: "réussi" }),
+    ];
+
+    const result = recommendExercises([noStreak, withStreak], streakSessions, 10, { now: NOW });
+    const noStreakResult = result.find((r) => r.exercise.id === noStreak.id)!;
+    const withStreakResult = result.find((r) => r.exercise.id === withStreak.id)!;
+
+    expect(withStreakResult.reasons).toContain("Réussi récemment");
+    expect(withStreakResult.score).toBeLessThan(noStreakResult.score);
+    // Toujours retenu — "à revoir" reste "à revoir" malgré les réussites.
+    expect(withStreakResult).toBeDefined();
+  });
+
+  it("une séance sans résultat (result: null) n'a aucun effet — comportement 'jamais tenté'/'à revoir' inchangé", () => {
+    const exercise = makeExercise();
+    const sessions = [makeSession(exercise.id, { result: null })];
+    const [result] = recommendExercises([exercise], sessions, 10, { now: NOW });
+    expect(result.reasons).not.toContain("Échec récent");
+    expect(result.reasons).not.toContain("Plusieurs échecs");
+    expect(result.reasons).not.toContain("Réussi récemment");
+  });
+
+  it("un exercice jamais travaillé garde exactement 'Jamais travaillé', sans signal échec/réussite parasite", () => {
+    const exercise = makeExercise({ mastery: 50, priority: 3, status: "à faire" });
+    const [result] = recommendExercises([exercise], [], 10, { now: NOW });
+    expect(result.reasons).toEqual(["Jamais travaillé"]);
+  });
+});
+
 describe("isNeverWorked / computeExerciseBankStats — smoke tests de non-régression", () => {
   it("isNeverWorked vrai seulement sans tentative ni minute", () => {
     expect(isNeverWorked(makeExercise({ attempts: 0 }), 0)).toBe(true);

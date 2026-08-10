@@ -1,10 +1,18 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
 import { subjectMeta } from "@/lib/study";
 import { formatDuration } from "@/lib/utils";
 import { cn } from "@/lib/cn";
-import type { WorkSession } from "@/lib/supabase/types";
+import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
+
+/** Étiquette + couleur du résultat d'une tentative — un seul point de vérité pour tout affichage de `WorkSession.result`. */
+const RESULT_BADGE: Record<AttemptResult, { label: string; variant: "success" | "warning" | "danger" }> = {
+  réussi: { label: "Réussi", variant: "success" },
+  partiel: { label: "Partiel", variant: "warning" },
+  échoué: { label: "Échoué", variant: "danger" },
+};
 
 /**
  * Une ligne de séance — partagée entre la page Historique et la section
@@ -21,6 +29,7 @@ export function SessionRow({
   exerciseTitle?: string | null;
   chapterLabel?: string | null;
 }) {
+  const resultBadge = session.result ? RESULT_BADGE[session.result] : null;
   return (
     <motion.article
       initial={{ opacity: 0, y: 6 }}
@@ -40,7 +49,10 @@ export function SessionRow({
           </p>
         </div>
       </div>
-      <p className="shrink-0 font-semibold tabular-nums text-accent">{formatDuration(session.duration_seconds)}</p>
+      <div className="flex shrink-0 items-center gap-2">
+        {resultBadge && <Badge variant={resultBadge.variant}>{resultBadge.label}</Badge>}
+        <p className="font-semibold tabular-nums text-accent">{formatDuration(session.duration_seconds)}</p>
+      </div>
     </motion.article>
   );
 }

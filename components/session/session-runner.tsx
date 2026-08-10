@@ -16,7 +16,7 @@ import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises,
 import { cn } from "@/lib/cn";
 import { subjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
-import type { Exercise, Subject } from "@/lib/supabase/types";
+import type { AttemptResult, Exercise, Subject } from "@/lib/supabase/types";
 
 type Phase = "loading" | "empty" | "preview" | "focus" | "between" | "summary";
 
@@ -56,6 +56,8 @@ export function SessionRunner() {
   const [recommendations, setRecommendations] = useState<ExerciseRecommendation[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visitedCount, setVisitedCount] = useState(0);
+  /** Résultats saisis (Focus View) durant cette séance, un par exercice qualifié — pour le résumé de fin de séance. Ni sauvegarde ni source de vérité : purement l'affichage, `WorkSession.result` reste la seule donnée persistée. */
+  const [runResults, setRunResults] = useState<AttemptResult[]>([]);
   /** Temps disponible pour la séance à venir, en minutes — initialisé à l'objectif du jour restant, ajustable via les préréglages ou le champ libre. */
   const [budgetMinutes, setBudgetMinutes] = useState(0);
   /** Façon de dimensionner la séance à venir — "time" (comportement historique) ou "count", un nombre d'exercices fixe sans notion de durée. */
@@ -150,10 +152,14 @@ export function SessionRunner() {
   // arrêté le timer et sauvegardé la WorkSession avant d'appeler ceci (voir
   // focus-view.tsx#endSession) — on ne fait ici qu'avancer dans la séance,
   // sans jamais toucher au statut ni à la maîtrise de l'exercice.
-  const handleExerciseWorked = useCallback(() => {
-    setVisitedCount((count) => count + 1);
-    setPhase(hasNext ? "between" : "summary");
-  }, [hasNext]);
+  const handleExerciseWorked = useCallback(
+    (result?: AttemptResult | null) => {
+      setVisitedCount((count) => count + 1);
+      if (result) setRunResults((results) => [...results, result]);
+      setPhase(hasNext ? "between" : "summary");
+    },
+    [hasNext]
+  );
 
   const continueToNext = useCallback(() => {
     setCurrentIndex((index) => index + 1);
@@ -378,12 +384,34 @@ export function SessionRunner() {
     );
   } else {
     // phase === "summary"
+    const runSuccessCount = runResults.filter((result) => result === "réussi").length;
+    const runPartialCount = runResults.filter((result) => result === "partiel").length;
+    const runFailureCount = runResults.filter((result) => result === "échoué").length;
     content = (
       <Card className="p-10 text-center">
         <CardTitle className="text-xl">Séance terminée</CardTitle>
         <p className="mt-2 text-sm text-zinc-400">
           {visitedCount} exercice{visitedCount > 1 ? "s" : ""} travaillé{visitedCount > 1 ? "s" : ""} durant cette séance.
         </p>
+        {runResults.length > 0 && (
+          <div className="mx-auto mt-3 flex max-w-sm flex-wrap items-center justify-center gap-1.5">
+            {runSuccessCount > 0 && (
+              <Badge variant="success">
+                {runSuccessCount} réussi{runSuccessCount > 1 ? "s" : ""}
+              </Badge>
+            )}
+            {runPartialCount > 0 && (
+              <Badge variant="warning">
+                {runPartialCount} partiel{runPartialCount > 1 ? "s" : ""}
+              </Badge>
+            )}
+            {runFailureCount > 0 && (
+              <Badge variant="danger">
+                {runFailureCount} échoué{runFailureCount > 1 ? "s" : ""}
+              </Badge>
+            )}
+          </div>
+        )}
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link href="/dashboard">
             <Button>Retour au tableau de bord</Button>

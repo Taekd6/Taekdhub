@@ -75,3 +75,46 @@ export function sessionsForExercise(sessions: WorkSession[], exerciseId: string)
     .filter((session) => session.exercise_id === exerciseId)
     .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
 }
+
+export interface ResultCounts {
+  success: number;
+  partial: number;
+  failure: number;
+  /** Séances sans résultat renseigné dans ce même ensemble — pas une erreur, juste non comptée dans `attempted`/`successRate`. */
+  unrecorded: number;
+  /** success + partial + failure — dénominateur de `successRate`, exclut `unrecorded`. */
+  attempted: number;
+  /** Pourcentage de réussites parmi les tentatives avec résultat, arrondi à l'entier — `null` si `attempted === 0` (rien à mesurer, pas 0%). */
+  successRate: number | null;
+}
+
+/**
+ * Compte les résultats (réussi/partiel/échoué) sur un ensemble de séances déjà
+ * choisi par l'appelant — pas de filtre implicite ici (ni matière, ni
+ * période, ni exercice) : `sessionsForExercise`, `filterSessions`, ou toute
+ * autre sélection en amont. Une séance sans résultat (`result === null`,
+ * séance libre ou antérieure à ce champ — voir `WorkSession.result`) compte
+ * dans `unrecorded`, jamais dans `attempted` ni `successRate` : on ne devine
+ * jamais un résultat manquant.
+ */
+export function resultCounts(sessions: WorkSession[]): ResultCounts {
+  let success = 0;
+  let partial = 0;
+  let failure = 0;
+  let unrecorded = 0;
+  for (const session of sessions) {
+    if (session.result === "réussi") success++;
+    else if (session.result === "partiel") partial++;
+    else if (session.result === "échoué") failure++;
+    else unrecorded++;
+  }
+  const attempted = success + partial + failure;
+  return {
+    success,
+    partial,
+    failure,
+    unrecorded,
+    attempted,
+    successRate: attempted > 0 ? Math.round((success / attempted) * 100) : null,
+  };
+}

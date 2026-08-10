@@ -85,6 +85,37 @@ function isStaleMastery(exercise: Exercise, now: Date): boolean {
 }
 
 /**
+ * Tentatives avec résultat renseigné pour un exercice donné, les plus
+ * récentes en premier — Sprint 5 (suivi réel des résultats). Les séances sans
+ * résultat (`result === null`, séance libre ou antérieure à ce champ) sont
+ * ignorées : on ne sait rien de leur issue, donc elles ne doivent influencer
+ * ni les raisons ni le score (voir la doc de `WorkSession.result`).
+ */
+function attemptsWithResult(sessions: WorkSession[], exerciseId: string): WorkSession[] {
+  return sessions
+    .filter((session) => session.exercise_id === exerciseId && session.result)
+    .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
+}
+
+/** Fenêtre d'analyse pour détecter des échecs répétés — les 3 tentatives les plus récentes, pas tout l'historique. */
+const RECENT_ATTEMPTS_WINDOW = 3;
+
+/** Nombre d'échecs parmi les tentatives récentes (déjà triées, plus récentes en premier). */
+function recentFailureCount(attempts: WorkSession[]): number {
+  return attempts.slice(0, RECENT_ATTEMPTS_WINDOW).filter((attempt) => attempt.result === "échoué").length;
+}
+
+/** Longueur de la série de réussites consécutives la plus récente (s'arrête à la première tentative non réussie). */
+function recentSuccessStreak(attempts: WorkSession[]): number {
+  let streak = 0;
+  for (const attempt of attempts) {
+    if (attempt.result !== "réussi") break;
+    streak++;
+  }
+  return streak;
+}
+
+/**
  * Décide si un exercice mérite d'être proposé pour révision, et pourquoi.
  * Chaque critère est indépendant et lisible en une ligne — c'est ici, et
  * uniquement ici, qu'on ajoute un nouveau critère d'inclusion.
@@ -94,8 +125,15 @@ function isStaleMastery(exercise: Exercise, now: Date): boolean {
  * Un exercice marqué "maîtrisé" mais dont la maîtrise réelle est basse doit
  * pouvoir remonter — c'est une incohérence réelle que l'utilisateur a
  * intérêt à voir, pas un bug à masquer.
+ *
+ * `attempts` (Sprint 5) : tentatives avec résultat, déjà filtrées pour cet
+ * exercice et triées par récence (voir `attemptsWithResult`). Un exercice
+ * sans tentative avec résultat (tableau vide — jamais tenté, ou seulement des
+ * séances sans résultat renseigné) n'obtient aucune raison ni bonus
+ * supplémentaire de cette section : le comportement "jamais tenté" / "à
+ * revoir" existant reste strictement inchangé.
  */
-function evaluateExercise(exercise: Exercise, minutesSpent: number, now: Date): string[] {
+function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date): string[] {
   const reasons: string[] = [];
   if (exercise.mastery <= 25) reasons.push("Maîtrise faible");
   if (exercise.priority >= 4) reasons.push("Priorité élevée");
@@ -106,6 +144,17 @@ function evaluateExercise(exercise: Exercise, minutesSpent: number, now: Date): 
     const days = daysSinceLastWorked(exercise, now);
     reasons.push(days === null ? "Maîtrisé, jamais retravaillé" : `Non retravaillé depuis ${days} j`);
   }
+  // Échec récent : signal fort, exprimé comme un critère d'inclusion à part
+  // entière (un échec suffit à justifier de revoir l'exercice, même si aucun
+  // autre critère n'est réuni). Deux raisons mutuellement exclusives : la
+  // plus forte ("Plusieurs échecs") remplace la plus faible.
+  const failures = recentFailureCount(attempts);
+  if (failures >= 2) reasons.push("Plusieurs échecs");
+  else if (attempts[0]?.result === "échoué") reasons.push("Échec récent");
+  // Une réussite récente n'est jamais, à elle seule, un critère d'inclusion
+  // (même logique que "Favori" ci-dessous) : elle ne fait que compléter les
+  // raisons d'un exercice déjà retenu par ailleurs.
+  if (reasons.length > 0 && attempts[0]?.result === "réussi") reasons.push("Réussi récemment");
   // Le favori n'est jamais un critère d'inclusion à lui seul (un exercice
   // favori déjà maîtrisé et récent n'a aucune raison de revenir) : il ne
   // s'ajoute qu'aux raisons déjà réunies, pour un exercice retenu par
@@ -147,8 +196,12 @@ function staleMasteryBonus(exercise: Exercise, now: Date): number {
  * déjà retenus par `evaluateExercise` (pas pour décider de leur inclusion).
  * Chaque terme est indépendant et pondéré séparément — ajuster un poids ou
  * ajouter un terme n'affecte pas les autres.
+ *
+ * `attempts` (Sprint 5) : voir la doc de `evaluateExercise` — sans tentative
+ * avec résultat, `failureBonus` et `successPenalty` valent 0 et le score est
+ * strictement identique à avant ce sprint.
  */
-function urgencyScore(exercise: Exercise, minutesSpent: number, now: Date): number {
+function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date): number {
   const masteryGap = (100 - exercise.mastery) * 0.6; // 0 (maîtrisé à 100%) à 60 (maîtrisé à 0%)
   const priorityWeight = exercise.priority * 8; // 8 à 40
   const statusWeight = STATUS_WEIGHT[exercise.status]; // -30 à 40
@@ -163,7 +216,27 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, now: Date): numb
   // légèrement — mais un favori ne devient jamais éligible que par ce bonus
   // (voir la garde `reasons.length > 0` dans `evaluateExercise`).
   const favoriteBonus = exercise.favorite ? 10 : 0;
-  return masteryGap + priorityWeight + statusWeight + neverWorkedBonus + momentumBonus + staleBonus + favoriteBonus;
+  // Un échec récent doit remonter fortement l'exercice — comparable en
+  // amplitude à masteryGap/statusWeight, deux échecs récents pèsent plus
+  // qu'une simple priorité élevée. Plafonné pour ne jamais, à lui seul,
+  // écraser tous les autres signaux.
+  const failureBonus = Math.min(45, recentFailureCount(attempts) * 20); // 0 à 45
+  // À l'inverse, une série de réussites récentes fait progressivement
+  // redescendre l'exercice — jamais jusqu'à l'exclure (ce n'est pas un
+  // critère d'exclusion, seulement un effet sur le tri), et d'une amplitude
+  // comparable à favoriteBonus/momentumBonus, pas dominante.
+  const successPenalty = Math.min(24, recentSuccessStreak(attempts) * 8); // 0 à 24
+  return (
+    masteryGap +
+    priorityWeight +
+    statusWeight +
+    neverWorkedBonus +
+    momentumBonus +
+    staleBonus +
+    favoriteBonus +
+    failureBonus -
+    successPenalty
+  );
 }
 
 export interface ExerciseRecommendation {
@@ -306,9 +379,10 @@ export function recommendExercises(
   for (const exercise of exercises) {
     if (exercise.archived) continue;
     const minutesSpent = minutesByExercise.get(exercise.id) ?? 0;
-    const reasons = evaluateExercise(exercise, minutesSpent, now);
+    const attempts = attemptsWithResult(sessions, exercise.id);
+    const reasons = evaluateExercise(exercise, minutesSpent, attempts, now);
     if (reasons.length === 0) continue;
-    candidates.push({ exercise, score: urgencyScore(exercise, minutesSpent, now), reasons });
+    candidates.push({ exercise, score: urgencyScore(exercise, minutesSpent, attempts, now), reasons });
   }
   candidates.sort((a, b) => b.score - a.score);
   const diversified = diversifyByChapter(candidates);
@@ -339,7 +413,8 @@ export function computeExerciseBankStats(exercises: Exercise[], sessions: WorkSe
 
   for (const exercise of active) {
     const minutesSpent = minutesByExercise.get(exercise.id) ?? 0;
-    if (evaluateExercise(exercise, minutesSpent, now).length > 0) toReviewCount++;
+    const attempts = attemptsWithResult(sessions, exercise.id);
+    if (evaluateExercise(exercise, minutesSpent, attempts, now).length > 0) toReviewCount++;
     if (isNeverWorked(exercise, minutesSpent)) neverWorkedCount++;
     masterySum += exercise.mastery;
     prioritySum += exercise.priority;
