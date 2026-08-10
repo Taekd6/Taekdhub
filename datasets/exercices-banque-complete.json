@@ -664,6 +664,7 @@
   },
   {
     "title": "Charge d'un condensateur à travers une résistance (circuit RC)",
+    "statement": "On considère un circuit constitué d'un générateur de force électromotrice $E$, d'une résistance $R$ et d'un condensateur de capacité $C$, montés en série. À l'instant $t=0$, le condensateur est initialement déchargé et on ferme l'interrupteur.\n1. Établir l'équation différentielle vérifiée par la tension $u_C(t)$ aux bornes du condensateur.\n2. Résoudre cette équation et donner l'expression de $u_C(t)$ pour $t \\geq 0$.\n3. Définir la constante de temps $\\tau$ du circuit et l'exprimer en fonction de $R$ et $C$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
@@ -695,6 +696,7 @@
   },
   {
     "title": "Circuit RLC série en régime libre — étude des régimes",
+    "statement": "On considère un circuit RLC série, sans générateur, dont la charge initiale du condensateur et le courant initial sont non nuls.\n1. Établir l'équation différentielle vérifiée par la tension $u_C(t)$ aux bornes du condensateur.\n2. Par analogie avec l'oscillateur mécanique amorti, identifier le facteur d'amortissement $\\lambda$ et la pulsation propre $\\omega_0$ en fonction de $R$, $L$, $C$.\n3. Discuter, selon le signe de $\\lambda^2 - \\omega_0^2$, les trois régimes possibles (apériodique, critique, pseudo-périodique).",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
@@ -726,6 +728,7 @@
   },
   {
     "title": "Circuit RLC en régime sinusoïdal forcé — résonance",
+    "statement": "On considère un circuit RLC série alimenté par un générateur de tension sinusoïdale de pulsation $\\omega$ réglable et d'amplitude $E$.\n1. En notation complexe, exprimer l'impédance $\\underline{Z}$ du circuit en fonction de $R$, $L$, $C$ et $\\omega$.\n2. Montrer que l'amplitude du courant est maximale pour une pulsation $\\omega_0$ que l'on déterminera, et donner la valeur du courant maximal $I_{max}$ à cette résonance.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "DM",
@@ -850,6 +853,7 @@
   },
   {
     "title": "Circuit RLC — étude complète (transitoire, forcé, énergétique)",
+    "statement": "On considère un circuit RLC série, alimenté par un générateur de tension sinusoïdale de pulsation $\\omega$ et d'amplitude $E$, susceptible d'être débranché pour étudier le régime libre.\n1. En régime libre (générateur débranché), établir la condition sur $R$, $L$, $C$ pour que le régime soit pseudo-périodique.\n2. En régime forcé sinusoïdal, déterminer la pulsation de résonance en courant $\\omega_0$ ainsi que l'amplitude maximale du courant $I_{max}$.\n3. Établir l'expression de la puissance moyenne dissipée par effet Joule $P_{moy}$ en fonction de $\\omega$, et montrer qu'elle est maximale à la résonance ; donner sa valeur à $\\omega_0$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "DM",
@@ -4216,6 +4220,7 @@
   },
   {
     "title": "Association de résistances (série/parallèle)",
+    "statement": "On dispose de deux résistances $R_1 = 100\\ \\Omega$ et $R_2 = 300\\ \\Omega$.\n1. Calculer la résistance équivalente $R_{eq}$ lorsque $R_1$ et $R_2$ sont associées en série.\n2. Calculer la résistance équivalente $R_{eq}$ lorsque $R_1$ et $R_2$ sont associées en parallèle.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
@@ -4244,6 +4249,7 @@
   },
   {
     "title": "Loi des mailles et loi des nœuds — application à un circuit simple",
+    "statement": "On considère un circuit comportant un générateur de force électromotrice $E$ de résistance interne négligeable, et deux résistances $R_1$ et $R_2$ montées en parallèle, l'ensemble alimenté par le générateur.\n1. En orientant les courants, écrire la loi des nœuds au point de jonction entre $R_1$ et $R_2$.\n2. En appliquant la loi des mailles, exprimer le courant total $I$ délivré par le générateur, ainsi que les courants $I_1$ et $I_2$ traversant respectivement $R_1$ et $R_2$, en fonction de $E$, $R_1$ et $R_2$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
@@ -4273,6 +4279,7 @@
   },
   {
     "title": "Piège : oublier le signe dans la loi des mailles",
+    "statement": "On considère une maille comportant un générateur de force électromotrice $E$ et deux résistances $R_1$, $R_2$ parcourues par un même courant $I$.\n1. En fixant un sens de parcours de la maille, établir l'équation issue de la loi des mailles ($\\Sigma$ tensions $= 0$).\n2. Expliquer pourquoi le signe de chaque terme dépend du sens de parcours choisi par rapport à l'orientation de chaque dipôle, et comment éviter l'erreur de signe la plus fréquente.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "Colle",
@@ -4563,6 +4570,7 @@
   },
   {
     "title": "Circuit RC en régime sinusoïdal forcé — filtre passe-bas",
+    "statement": "On considère un circuit RC série alimenté par une tension sinusoïdale d'entrée, la tension de sortie étant prélevée aux bornes du condensateur.\n1. À l'aide d'un diviseur de tension en notation complexe, établir la fonction de transfert $\\underline{H}(j\\omega) = \\dfrac{\\underline{u_s}}{\\underline{u_e}}$ de ce circuit.\n2. Étudier le comportement de $|\\underline{H}|$ lorsque $\\omega \\to 0$ puis $\\omega \\to +\\infty$, et justifier que ce circuit se comporte comme un filtre passe-bas.\n3. Déterminer la pulsation de coupure $\\omega_c$ (telle que $|\\underline{H}(j\\omega_c)| = \\dfrac{1}{\\sqrt{2}}$) en fonction de $R$ et $C$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
