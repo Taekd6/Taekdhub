@@ -955,6 +955,7 @@
   },
   {
     "title": "Géométrie VSEPR de molécules simples",
+    "statement": "Déterminer la géométrie, selon la théorie VSEPR, des molécules suivantes :\n1. $NH_3$ (ammoniac)\n2. $CO_2$ (dioxyde de carbone)",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -4741,6 +4742,7 @@
   },
   {
     "title": "Écriture de Lewis d'une molécule",
+    "statement": "Établir le schéma de Lewis de la molécule d'ammoniac $NH_3$ (numéro atomique de l'azote : $Z=7$, de l'hydrogène : $Z=1$).",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -4800,6 +4802,7 @@
   },
   {
     "title": "Calcul de quantité de matière et concentration",
+    "statement": "On dissout $m = 5{,}85\\ \\text{g}$ de chlorure de sodium $NaCl$ (masse molaire $M = 58{,}5\\ \\text{g/mol}$) dans de l'eau pour obtenir $V = 250\\ \\text{mL}$ de solution.\nCalculer la quantité de matière de $NaCl$ dissoute, puis la concentration molaire de la solution obtenue.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -4829,6 +4832,7 @@
   },
   {
     "title": "Dilution d'une solution — calcul de facteur",
+    "statement": "On souhaite préparer $V_2 = 100\\ \\text{mL}$ d'une solution de concentration $C_2 = 0{,}020\\ \\text{mol/L}$ par dilution d'une solution mère de concentration $C_1 = 0{,}50\\ \\text{mol/L}$.\nCalculer le volume $V_1$ de solution mère à prélever.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -4857,6 +4861,7 @@
   },
   {
     "title": "Détermination du réactif limitant",
+    "statement": "On fait réagir $n_1 = 0{,}24\\ \\text{mol}$ de dihydrogène $H_2$ avec $n_2 = 0{,}10\\ \\text{mol}$ de diazote $N_2$ selon la réaction\n$$N_2 + 3H_2 \\longrightarrow 2NH_3.$$\nDéterminer le réactif limitant, en construisant le tableau d'avancement.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -4886,6 +4891,7 @@
   },
   {
     "title": "Calcul de rendement d'une réaction",
+    "statement": "Une réaction de synthèse, dont le réactif limitant permet théoriquement d'obtenir $n_{th} = 0{,}050\\ \\text{mol}$ de produit, fournit en réalité $n_{obtenu} = 0{,}038\\ \\text{mol}$ de ce produit.\nCalculer le rendement de cette réaction.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -4915,6 +4921,7 @@
   },
   {
     "title": "Piège : confondre avancement et concentration",
+    "statement": "On mélange un volume $V_1 = 50\\ \\text{mL}$ d'une solution de réactif $A$ de concentration $C_1 = 0{,}20\\ \\text{mol/L}$ avec un volume $V_2 = 50\\ \\text{mL}$ d'une solution de réactif $B$ de concentration $C_2 = 0{,}20\\ \\text{mol/L}$, qui réagissent selon $A + B \\rightarrow C$.\n1. Construire le tableau d'avancement en quantité de matière (mol), en notant $x$ l'avancement.\n2. Un élève propose de construire directement le même tableau en concentration (mol/L), en utilisant $x/V_2$ (volume d'une seule des deux solutions) comme facteur de conversion. Expliquer pourquoi cette conversion est incorrecte, sachant que le volume total du mélange vaut $V_1+V_2$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "Colle",
