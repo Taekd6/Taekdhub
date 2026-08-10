@@ -986,6 +986,7 @@
   },
   {
     "title": "Calcul de pH d'une solution d'acide fort ou faible",
+    "statement": "On prépare deux solutions aqueuses de concentration $C = 1{,}0 \\times 10^{-2}\\ \\text{mol/L}$ :\n1. Une solution d'acide chlorhydrique (acide fort). Calculer son pH.\n2. Une solution d'acide éthanoïque (acide faible, $pK_a = 4{,}8$). En supposant la réaction de dissociation peu avancée, établir l'expression du pH en fonction de $C$ et $pK_a$, puis calculer sa valeur.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -1017,6 +1018,7 @@
   },
   {
     "title": "Titrage acido-basique — détermination d'une concentration",
+    "statement": "On titre un volume $V_a = 20{,}0\\ \\text{mL}$ d'une solution d'acide chlorhydrique de concentration inconnue $C_a$ par une solution d'hydroxyde de sodium de concentration $C_b = 0{,}10\\ \\text{mol/L}$. L'équivalence est repérée pour un volume versé $V_b = 15{,}0\\ \\text{mL}$.\nDéterminer la concentration $C_a$ de la solution d'acide.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -1048,6 +1050,7 @@
   },
   {
     "title": "Équilibrage d'une réaction d'oxydoréduction et calcul de potentiel",
+    "statement": "On considère la réaction entre les ions permanganate $MnO_4^-$ et les ions fer(II) $Fe^{2+}$ en milieu acide, donnant des ions manganèse(II) $Mn^{2+}$ et fer(III) $Fe^{3+}$.\n1. Écrire les deux demi-équations d'oxydation et de réduction associées.\n2. En déduire l'équation bilan équilibrée de la réaction.\n3. Sachant que $E°(MnO_4^-/Mn^{2+}) = 1{,}51\\ \\text{V}$ et $E°(Fe^{3+}/Fe^{2+}) = 0{,}77\\ \\text{V}$, justifier que cette réaction est favorable dans le sens direct.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -4709,6 +4712,7 @@
   },
   {
     "title": "Détermination du nombre d'oxydation",
+    "statement": "Déterminer le nombre d'oxydation du soufre dans les espèces suivantes :\n1. $H_2SO_4$\n2. $SO_4^{2-}$\n3. $S_2O_3^{2-}$ (ion thiosulfate)",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -4766,6 +4770,7 @@
   },
   {
     "title": "Piège : confondre nombre d'oxydation et charge formelle",
+    "statement": "On considère la molécule de monoxyde de carbone $CO$, dont la structure de Lewis fait apparaître une triple liaison entre $C$ et $O$, avec un doublet non liant sur chaque atome et une charge formelle $-1$ sur le carbone et $+1$ sur l'oxygène.\n1. Déterminer le nombre d'oxydation du carbone et de l'oxygène dans $CO$ (en supposant la liaison purement ionique, électrons attribués à l'atome le plus électronégatif).\n2. Comparer ces valeurs aux charges formelles données dans l'énoncé, et expliquer pourquoi ces deux grandeurs diffèrent.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "Colle",
@@ -4939,6 +4944,7 @@
   },
   {
     "title": "pH d'un mélange de deux solutions acides",
+    "statement": "On mélange un volume $V_1 = 100\\ \\text{mL}$ d'une solution d'acide chlorhydrique de concentration $C_1 = 0{,}010\\ \\text{mol/L}$ avec un volume $V_2 = 200\\ \\text{mL}$ d'une solution d'acide chlorhydrique de concentration $C_2 = 0{,}040\\ \\text{mol/L}$.\nDéterminer le pH de la solution obtenue après mélange (on ne se contentera pas de moyenner les deux pH initiaux).",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
@@ -4969,6 +4975,7 @@
   },
   {
     "title": "Diagramme de prédominance acido-basique",
+    "statement": "On considère le couple acide/base $CH_3COOH/CH_3COO^-$, de $pK_a = 4{,}8$.\n1. Représenter le diagramme de prédominance de ce couple en fonction du pH.\n2. Dans une solution de pH $= 6{,}0$, quelle espèce ($CH_3COOH$ ou $CH_3COO^-$) prédomine ? Justifier.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "TD",
