@@ -126,6 +126,7 @@
   },
   {
     "title": "Suite récurrente linéaire d'ordre 2 (type Fibonacci)",
+    "statement": "On considère une suite réelle $(u_n)_{n \\geq 0}$ vérifiant la relation de récurrence linéaire d'ordre 2\n$$u_{n+2} = u_{n+1} + u_n \\quad \\text{pour tout } n \\geq 0.$$\n1. Écrire l'équation caractéristique associée à cette récurrence et déterminer ses racines $\\varphi$ et $\\psi$.\n2. En déduire que $(u_n)$ s'écrit sous la forme $u_n = A\\varphi^n + B\\psi^n$, où $A$ et $B$ sont deux constantes réelles déterminées par les valeurs de $u_0$ et $u_1$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -156,6 +157,7 @@
   },
   {
     "title": "Suites adjacentes et irrationalité de e",
+    "statement": "Pour $n \\in \\mathbb{N}$, on pose\n$$u_n = \\sum_{k=0}^{n} \\frac{1}{k!}, \\qquad v_n = u_n + \\frac{1}{n \\cdot n!} \\ (n \\geq 1).$$\n1. Montrer que les suites $(u_n)$ et $(v_n)$ sont adjacentes.\n2. On admet que leur limite commune vaut $e$. En supposant que $e = \\dfrac{p}{q}$ avec $p, q \\in \\mathbb{N}^*$, étudier l'entier $q!\\, u_q$ et aboutir à une contradiction pour conclure que $e$ est irrationnel.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "DM",
@@ -1463,6 +1465,7 @@
   },
   {
     "title": "Suite arithmético-géométrique — résolution complète",
+    "statement": "Soit $(u_n)_{n \\geq 0}$ une suite réelle définie par $u_0 \\in \\mathbb{R}$ et, pour tout $n \\geq 0$,\n$$u_{n+1} = a\\, u_n + b, \\qquad \\text{avec } a, b \\in \\mathbb{R},\\ a \\neq 1.$$\n1. Déterminer le réel $\\ell$ tel que $\\ell = a\\ell + b$ (point fixe de la relation).\n2. On pose $v_n = u_n - \\ell$. Montrer que $(v_n)$ est géométrique de raison $a$.\n3. En déduire l'expression de $u_n$ en fonction de $n$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1492,6 +1495,7 @@
   },
   {
     "title": "Monotonie d'une suite par étude du signe de u(n+1)-u(n)",
+    "statement": "Soit $(u_n)_{n \\geq 0}$ une suite réelle. On souhaite étudier son sens de variation.\n1. Rappeler pourquoi il suffit d'étudier le signe de $u_{n+1} - u_n$ pour conclure sur la monotonie de $(u_n)$.\n2. Dans le cas où $(u_n)$ est à termes strictement positifs, montrer qu'il est équivalent d'étudier la position de $\\dfrac{u_{n+1}}{u_n}$ par rapport à $1$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1520,6 +1524,7 @@
   },
   {
     "title": "Convergence par théorème d'encadrement (gendarmes)",
+    "statement": "Soit $(u_n)_{n \\geq 0}$ une suite réelle, et soient $(v_n)_{n \\geq 0}$, $(w_n)_{n \\geq 0}$ deux suites réelles telles que, à partir d'un certain rang,\n$$v_n \\leq u_n \\leq w_n.$$\n1. On suppose que $(v_n)$ et $(w_n)$ convergent vers une même limite $\\ell \\in \\mathbb{R}$. Montrer que $(u_n)$ converge également vers $\\ell$ (théorème d'encadrement, dit « des gendarmes »).\n2. Expliquer en quoi ce résultat est utile lorsque $u_n$ n'admet pas d'expression simple, mais se majore et se minore facilement.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1548,6 +1553,7 @@
   },
   {
     "title": "Piège : une suite bornée n'est pas forcément convergente",
+    "statement": "On rappelle qu'une suite réelle $(u_n)$ est dite bornée s'il existe $M > 0$ tel que $|u_n| \\leq M$ pour tout $n$.\n1. Une suite bornée est-elle nécessairement convergente ? Justifier ta réponse à l'aide d'un contre-exemple.\n2. Énoncer précisément le théorème correct reliant monotonie, caractère borné et convergence d'une suite réelle.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "Colle",
@@ -1577,6 +1583,7 @@
   },
   {
     "title": "Suite récurrente u(n+1)=f(u(n)) — étude par point fixe",
+    "statement": "Soit $f : I \\to I$ une fonction définie sur un intervalle $I$ stable par $f$ (c'est-à-dire $f(I) \\subset I$), et soit $(u_n)_{n \\geq 0}$ la suite définie par $u_0 \\in I$ et $u_{n+1} = f(u_n)$ pour tout $n \\geq 0$.\n1. On suppose $f$ croissante sur $I$. Montrer que $(u_n)$ est monotone, et préciser son sens de variation en fonction de la position de $u_0$ par rapport à $f(u_0)$.\n2. On suppose de plus que $(u_n)$ est bornée. Montrer qu'elle converge, et que sa limite est un point fixe de $f$.\n3. Que peut-on dire lorsque $f$ est décroissante sur $I$ ?",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "DM",
@@ -1607,6 +1614,7 @@
   },
   {
     "title": "Comparaison de croissances : géométrique vs polynomiale",
+    "statement": "Soit $q > 1$ un réel et $k \\in \\mathbb{N}$ fixé. On s'intéresse au comportement de la suite de terme général\n$$\\frac{n^k}{q^n} \\quad \\text{quand } n \\to +\\infty.$$\n1. Rappeler la hiérarchie des croissances comparées entre $n^k$, $q^n$ et $n!$.\n2. En déduire, sans calcul supplémentaire, la limite de $\\dfrac{n^k}{q^n}$ quand $n \\to +\\infty$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1776,6 +1784,7 @@
   },
   {
     "title": "Forme trigonométrique et puissances (formule de Moivre)",
+    "statement": "Soit $z = 3 + 3i\\sqrt{3}$.\n1. Déterminer le module $r = |z|$ et un argument $\\theta$ de $z$, et écrire $z$ sous forme trigonométrique $z = r(\\cos\\theta + i\\sin\\theta)$.\n2. En déduire, à l'aide de la formule de Moivre, la forme trigonométrique puis algébrique de $z^6$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1804,6 +1813,7 @@
   },
   {
     "title": "Équation du second degré à discriminant négatif",
+    "statement": "Résoudre dans $\\mathbb{C}$ l'équation du second degré\n$$z^2 - 2z + 5 = 0.$$\nVérifier que les deux solutions obtenues sont conjuguées l'une de l'autre.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1832,6 +1842,7 @@
   },
   {
     "title": "Linéarisation trigonométrique via les formules d'Euler",
+    "statement": "Linéariser $\\cos^4(x)$, c'est-à-dire l'exprimer comme une combinaison linéaire de $\\cos(kx)$ pour différentes valeurs entières de $k$.\nIndication : utiliser $\\cos(x) = \\dfrac{e^{ix}+e^{-ix}}{2}$ et la formule du binôme de Newton.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1861,6 +1872,7 @@
   },
   {
     "title": "Lieu géométrique défini par une condition sur un module",
+    "statement": "Le plan complexe est muni d'un repère orthonormé direct. On note $A$ et $B$ les points d'affixes respectives $a = -2$ et $b = 4$.\nDéterminer et représenter l'ensemble des points $M$ d'affixe $z$ tels que :\n1. $|z - a| = |z - b|$ ;\n2. $|z - a| = 3$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1889,6 +1901,7 @@
   },
   {
     "title": "Piège : |z1+z2| ≠ |z1|+|z2| en général",
+    "statement": "On considère les deux nombres complexes $z_1 = 1$ et $z_2 = i$.\n1. Calculer $|z_1 + z_2|$ et $|z_1| + |z_2|$, et comparer ces deux quantités.\n2. L'inégalité triangulaire $|z_1+z_2| \\leq |z_1|+|z_2|$ est-elle toujours vraie ? À quelle condition sur $z_1$ et $z_2$ a-t-on égalité ?",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "Colle",
@@ -1917,6 +1930,7 @@
   },
   {
     "title": "Résolution d'une équation complexe par racine évidente",
+    "statement": "Résoudre dans $\\mathbb{C}$ l'équation\n$$z^3 - 3z^2 + 4 = 0.$$\nIndication : chercher d'abord une racine évidente parmi les valeurs simples ($1, -1, i, -i, 2, \\dots$), puis factoriser.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "DM",
@@ -3508,6 +3522,7 @@
   },
   {
     "title": "Inégalité de convexité et application à une suite",
+    "statement": "Soit $f : I \\to \\mathbb{R}$ une fonction deux fois dérivable sur un intervalle $I$, telle que $f'' \\geq 0$ sur $I$ (c'est-à-dire $f$ convexe).\n1. Montrer que pour tous $a, b \\in I$,\n$$f\\left(\\frac{a+b}{2}\\right) \\leq \\frac{f(a) + f(b)}{2}.$$\n2. On considère une suite $(u_n)$ définie par une relation du type $u_{n+1} = f(u_n)$ (ou une moyenne de deux termes consécutifs). Montrer comment l'inégalité précédente permet d'encadrer $u_{n+1}$ en fonction de $u_n$, d'en déduire la monotonie de $(u_n)$, puis sa convergence à l'aide du théorème de la limite monotone.",
     "source": "TaekdHub — exercice original, style concours (Sup)",
     "subject": "Mathématiques",
     "type": "DM",
@@ -3540,6 +3555,7 @@
   },
   {
     "title": "Étude d'une transformation géométrique complexe itérée",
+    "statement": "On considère la suite de points $(M_n)$ du plan complexe, d'affixes $z_n$ définies par $z_0 \\in \\mathbb{C}$ et, pour tout $n \\geq 0$,\n$$z_{n+1} = a\\, z_n + b, \\qquad a, b \\in \\mathbb{C},\\ |a| \\neq 1.$$\n1. Montrer qu'il existe un unique point fixe $\\omega$ de cette transformation, et l'exprimer en fonction de $a$ et $b$.\n2. En posant $v_n = z_n - \\omega$, montrer que $(v_n)$ est géométrique de raison $a$, et en déduire l'expression de $z_n$ en fonction de $n$.\n3. Étudier, selon la valeur de $|a|$, le comportement de la suite de points $(M_n)$ (convergence vers $\\omega$, divergence, ou maintien à distance constante).",
     "source": "TaekdHub — exercice original, style concours (Sup)",
     "subject": "Mathématiques",
     "type": "DM",
