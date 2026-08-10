@@ -475,6 +475,7 @@
   },
   {
     "title": "Convergence d'une série à termes positifs par comparaison",
+    "statement": "Étudier la nature (convergence ou divergence) de la série de terme général\n$$u_n = \\frac{n+1}{n^3 - 2}, \\qquad n \\geq 2,$$\nen cherchant un équivalent simple de $u_n$ quand $n \\to +\\infty$ et en le comparant à une série de Riemann de référence.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2841,6 +2842,7 @@
   },
   {
     "title": "Démonstration par récurrence simple",
+    "statement": "Montrer par récurrence que, pour tout entier $n \\geq 1$,\n$$\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}.$$",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2869,6 +2871,7 @@
   },
   {
     "title": "Récurrence forte — exemple d'application",
+    "statement": "On définit une suite $(u_n)$ par $u_0 = 1$, $u_1 = 2$ et, pour tout $n \\geq 0$,\n$$u_{n+2} = u_{n+1} + 2u_n.$$\nMontrer par récurrence forte que, pour tout $n \\in \\mathbb{N}$, $u_n \\leq 2^n$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2897,6 +2900,7 @@
   },
   {
     "title": "Raisonnement par l'absurde — irrationalité de √2",
+    "statement": "Montrer, par un raisonnement par l'absurde, que $\\sqrt{2}$ est irrationnel.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2926,6 +2930,7 @@
   },
   {
     "title": "Piège : confondre \"pour tout\" et \"il existe\"",
+    "statement": "On considère la propriété suivante, où $f : \\mathbb{R} \\to \\mathbb{R}$ :\n$$\\forall x \\in \\mathbb{R},\\ f(x) > 0.$$\n1. Écrire rigoureusement la négation de cette propriété.\n2. Un élève propose comme négation : « $\\forall x \\in \\mathbb{R},\\ f(x) \\leq 0$ ». Cette négation est-elle correcte ? Justifier, en illustrant si besoin sur un exemple de fonction $f$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "Colle",
@@ -2954,6 +2959,7 @@
   },
   {
     "title": "Raisonnement par contraposée",
+    "statement": "Soit $n \\in \\mathbb{N}$. On considère la propriété : « si $n^2$ est pair, alors $n$ est pair ».\nDémontrer cette propriété en raisonnant par contraposée.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -3647,6 +3653,7 @@
   },
   {
     "title": "Comparaison série-intégrale pour un encadrement de somme",
+    "statement": "On considère la fonction $f(x) = \\dfrac{1}{x}$, décroissante et positive sur $[1,+\\infty[$.\n1. Montrer que, pour tout $k \\geq 1$,\n$$\\int_k^{k+1} f(t)\\, dt \\leq f(k) \\leq \\int_{k-1}^{k} f(t)\\, dt.$$\n2. En sommant ces inégalités pour $k$ allant de $1$ à $n$, établir un encadrement de $\\displaystyle\\sum_{k=1}^{n} \\frac{1}{k}$ par deux quantités faisant intervenir $\\ln(n)$.\n3. En déduire un équivalent de $\\displaystyle\\sum_{k=1}^{n} \\frac{1}{k}$ quand $n \\to +\\infty$.",
     "source": "TaekdHub — exercice original, style concours (Sup)",
     "subject": "Mathématiques",
     "type": "DM",
@@ -5090,6 +5097,7 @@
   },
   {
     "title": "Série géométrique — somme et convergence",
+    "statement": "On considère la série de terme général $u_n = 3 \\cdot \\left(\\dfrac{1}{2}\\right)^n$, pour $n \\geq 0$.\n1. Justifier que cette série converge.\n2. Calculer sa somme $\\displaystyle\\sum_{n=0}^{+\\infty} u_n$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -5118,6 +5126,7 @@
   },
   {
     "title": "Critère de d'Alembert pour les séries à termes positifs",
+    "statement": "Étudier, à l'aide du critère de d'Alembert, la nature de la série de terme général\n$$u_n = \\frac{n!}{n^n}, \\qquad n \\geq 1.$$",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
