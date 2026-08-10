@@ -442,6 +442,7 @@
   },
   {
     "title": "Loi binomiale — probabilités et espérance",
+    "statement": "Une urne contient des boules dont $30\\%$ sont rouges. On tire successivement, avec remise, $8$ boules de cette urne, et on note $X$ le nombre de boules rouges obtenues.\n1. Justifier que $X$ suit une loi binomiale, et préciser ses paramètres.\n2. Calculer $P(X=3)$.\n3. Donner l'espérance $E(X)$ et la variance $V(X)$ de $X$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1128,6 +1129,7 @@
   },
   {
     "title": "Factorisation par identités remarquables",
+    "statement": "Factoriser les expressions suivantes :\n1. $x^2 - 9$\n2. $4x^2 + 12x + 9$\n3. $(2x+1)^2 - (x-3)^2$",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1156,6 +1158,7 @@
   },
   {
     "title": "Résolution d'inéquations avec valeur absolue",
+    "statement": "Résoudre dans $\\mathbb{R}$ les inéquations suivantes :\n1. $|x - 2| < 3$\n2. $|2x + 1| > 5$",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1184,6 +1187,7 @@
   },
   {
     "title": "Manipulation d'exposants et de racines",
+    "statement": "Simplifier les expressions suivantes, en réécrivant chaque racine comme une puissance fractionnaire :\n1. $\\sqrt{x} \\cdot \\sqrt[3]{x}$ (pour $x > 0$)\n2. $\\left(x^{2/3}\\right)^{3/4}$\n3. $\\dfrac{x^{5/2}}{\\sqrt{x}}$ (pour $x > 0$)",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1213,6 +1217,7 @@
   },
   {
     "title": "Étude de signe d'un produit/quotient de facteurs affines",
+    "statement": "Étudier le signe, en fonction de $x \\in \\mathbb{R}$, de l'expression\n$$f(x) = \\frac{(x-1)(2x+4)}{x-3}.$$",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1241,6 +1246,7 @@
   },
   {
     "title": "Sommes télescopiques",
+    "statement": "Calculer, pour $n \\in \\mathbb{N}^*$, la somme\n$$S_n = \\sum_{k=1}^{n} \\frac{1}{k(k+1)}.$$\nIndication : décomposer $\\dfrac{1}{k(k+1)}$ sous la forme $\\dfrac{1}{k} - \\dfrac{1}{k+1}$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -1270,6 +1276,7 @@
   },
   {
     "title": "Piège : diviser par une expression qui peut s'annuler",
+    "statement": "Résoudre dans $\\mathbb{R}$ l'équation\n$$x^2 = 3x.$$\nUn élève propose de diviser les deux membres par $x$ pour obtenir directement $x=3$. Cette méthode est-elle correcte ? Résoudre l'équation par une méthode rigoureuse et comparer avec le résultat obtenu par division.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "Colle",
@@ -2548,6 +2555,7 @@
   },
   {
     "title": "Probabilités sur un univers fini — dénombrement direct",
+    "statement": "On tire simultanément $3$ cartes d'un jeu de $32$ cartes. On note $A$ l'événement « les $3$ cartes tirées sont des as » (le jeu compte $4$ as).\nCalculer $P(A)$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2576,6 +2584,7 @@
   },
   {
     "title": "Vérification de l'indépendance de deux événements par le calcul",
+    "statement": "On lance deux dés équilibrés à $6$ faces, indépendamment l'un de l'autre. On note $A$ l'événement « le premier dé donne un résultat pair » et $B$ l'événement « la somme des deux dés vaut $7$ ».\nLes événements $A$ et $B$ sont-ils indépendants ? Justifier par le calcul de $P(A)$, $P(B)$ et $P(A \\cap B)$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2605,6 +2614,7 @@
   },
   {
     "title": "Formule des probabilités totales",
+    "statement": "Une usine dispose de trois machines $M_1$, $M_2$, $M_3$ qui produisent respectivement $50\\%$, $30\\%$ et $20\\%$ de la production totale. Les taux de pièces défectueuses sont respectivement de $2\\%$, $3\\%$ et $5\\%$ pour $M_1$, $M_2$, $M_3$.\nOn prélève une pièce au hasard dans la production totale. Calculer la probabilité qu'elle soit défectueuse.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2634,6 +2644,7 @@
   },
   {
     "title": "Piège : confondre P(A|B) et P(B|A)",
+    "statement": "Dans une population, on sait que $1\\%$ des individus sont porteurs d'une certaine maladie $M$. Un test de dépistage donne un résultat positif chez $95\\%$ des malades, et chez $2\\%$ des non-malades (faux positifs). On note $M$ l'événement « être malade » et $T$ l'événement « avoir un test positif ».\n1. Donner les valeurs de $P(T \\mid M)$ et de $P(M)$.\n2. À l'aide de la formule de Bayes, calculer $P(M \\mid T)$, la probabilité d'être réellement malade sachant que le test est positif. Le résultat te surprend-il par rapport à $P(T\\mid M)$ ?",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "Colle",
@@ -2662,6 +2673,7 @@
   },
   {
     "title": "Variable aléatoire — loi, espérance et variance",
+    "statement": "On lance un dé équilibré à $4$ faces (numérotées de $1$ à $4$) deux fois de suite, de manière indépendante. On note $X$ le plus grand des deux résultats obtenus.\n1. Déterminer la loi de $X$ (valeurs possibles et probabilités associées), en vérifiant que la somme des probabilités vaut $1$.\n2. Calculer $E(X)$ et $V(X)$ à l'aide de la formule de König-Huygens.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
