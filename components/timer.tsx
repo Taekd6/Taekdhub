@@ -49,6 +49,10 @@ export function Timer() {
         duration_seconds: finalSeconds,
         note: null,
         created_at: new Date().toISOString(),
+        // Séance libre, sans exercice précis : la question "réussi/échoué"
+        // n'a pas de sens ici (voir focus-view.tsx pour le seul endroit où
+        // un résultat est demandé).
+        result: null,
       };
       saveSessions([session, ...sessions]);
     });

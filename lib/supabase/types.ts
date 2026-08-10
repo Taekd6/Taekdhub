@@ -119,7 +119,26 @@ export interface WorkSession {
   note: string | null;
   /** Horodatage ISO de création de l'enregistrement (mirroir de `created_at` en base). */
   created_at: string;
+  /**
+   * Résultat de la tentative, saisi par l'élève en fin de séance focus
+   * (voir focus-view.tsx) — `null` si non renseigné : soit une séance libre
+   * (Timer principal, sans exercice), soit l'utilisateur a passé l'étape
+   * ("Passer"), soit — le cas le plus fréquent — une séance antérieure à
+   * l'introduction de ce champ. Jamais déduit ni deviné a posteriori : une
+   * séance sans résultat reste un simple signal de temps passé, exactement
+   * comme avant ce champ (voir `normalizeSession`, lib/storage.ts).
+   *
+   * Distinct de `Exercise.status`/`Exercise.mastery` (auto-évalués par
+   * l'élève sur la fiche, à un instant donné) : `result` est un fait
+   * ponctuel attaché à CETTE tentative précise, jamais réécrit après coup.
+   * `lib/recommendation.ts` l'utilise comme signal supplémentaire, sans
+   * jamais modifier `status`/`mastery` lui-même.
+   */
+  result: AttemptResult | null;
 }
+
+/** Résultat d'une tentative de travail sur un exercice — voir `WorkSession.result`. */
+export type AttemptResult = "réussi" | "partiel" | "échoué";
 
 /**
  * Une fiche d'exercice — l'unité de base de la banque d'exercices.

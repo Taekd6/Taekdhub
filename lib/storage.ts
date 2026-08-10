@@ -1,6 +1,8 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
 import { DEFAULT_ACCENT } from "@/lib/theme";
-import type { Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, Priority, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
+import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, Priority, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
+
+const ATTEMPT_RESULTS: readonly AttemptResult[] = ["réussi", "partiel", "échoué"];
 
 const sessionsKey = "prepahub:sessions";
 const exercisesKey = "prepahub:exercises";
@@ -143,6 +145,10 @@ function normalizeSession(raw: unknown): WorkSession {
     duration_seconds: typeof item.duration_seconds === "number" ? item.duration_seconds : 0,
     note: typeof item.note === "string" ? item.note : null,
     created_at: typeof item.created_at === "string" ? item.created_at : startedAt,
+    // Absent de toute séance antérieure à ce champ (et de toute séance libre,
+    // sans exercice) : null, jamais deviné — voir la doc du champ dans
+    // lib/supabase/types.ts.
+    result: (ATTEMPT_RESULTS as string[]).includes(item.result as string) ? (item.result as AttemptResult) : null,
   };
 }
 

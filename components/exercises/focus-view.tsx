@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Eye, EyeOff, Minimize2, Sparkles, X } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Minimize2, MinusCircle, Sparkles, X, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,7 @@ import { MasteryPicker, PriorityPicker, SubjectAvatar } from "@/components/exerc
 import { RichMath } from "@/components/rich-math";
 import { useWorkTimer } from "@/hooks/use-work-timer";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
-import type { Exercise, ExerciseStatus, Mastery, Priority, WorkSession } from "@/lib/supabase/types";
+import type { AttemptResult, Exercise, ExerciseStatus, Mastery, Priority, WorkSession } from "@/lib/supabase/types";
 
 /** Une seule séance focus à la fois : la clé encode l'exercice concerné, ce qui permet de retrouver après un rechargement lequel reprendre automatiquement. */
 export const FOCUS_TIMER_PREFIX = "prepahub:timer:focus:";
@@ -47,38 +47,71 @@ export function FocusView({
     return () => clearTimeout(timeout);
   }, [item.status]);
 
-  // Clôt la séance quel que soit le chemin de sortie (Echap, croix, réduire) :
-  // c'est le seul endroit qui décide de la fin du focus, pour ne jamais
-  // perdre de temps enregistré ni oublier de créer la WorkSession.
+  // Séance arrêtée (timer stoppé, WorkSession pas encore sauvegardée) en
+  // attente d'un résultat — voir `endSession`/`commitResult` ci-dessous.
+  // `null` : soit le focus est toujours en cours, soit aucune séance n'a
+  // jamais démarré (rien à qualifier).
+  const [draftSession, setDraftSession] = useState<WorkSession | null>(null);
+
+  // Arrête le timer et construit la WorkSession SANS la sauvegarder ni fermer
+  // le focus — voir `commitResult`, seul endroit qui la sauvegarde vraiment,
+  // une fois le résultat choisi (ou explicitement passé). `stop()` appelle
+  // son callback de façon SYNCHRONE (hooks/use-work-timer.ts) : la variable
+  // locale `captured` reflète donc fidèlement, dès la fin de cet appel, s'il
+  // y avait quelque chose à enregistrer.
   const endSession = useCallback(() => {
+    let captured: { startedAt: string; seconds: number } | null = null;
     stop(({ startedAt, seconds: finalSeconds }) => {
-      const session: WorkSession = {
-        id: crypto.randomUUID(),
-        subject: item.subject,
-        // Sprint 2.5 : lien réel vers l'exercice (avant, seul `note` le référençait en texte).
-        exercise_id: item.id,
-        started_at: startedAt,
-        ended_at: new Date().toISOString(),
-        duration_seconds: finalSeconds,
-        note: `Exercice focus : ${item.title} (${item.source})`,
-        created_at: new Date().toISOString(),
-      };
-      saveSessions([session, ...sessions]);
-      // Une séance d'au moins une minute compte comme une vraie séance de
-      // travail : incrémente `attempts` (Sprint 2.5) et marque
-      // `last_worked_at` (Sprint 2.6) — aucun des deux n'a de contrôle
-      // manuel. Pas de mise à jour de durée ici : depuis le Sprint 2.6, le
-      // temps passé se dérive des WorkSession liées (minutesSpentOnExercise,
-      // lib/study.ts), il n'est plus stocké sur `Exercise`.
-      if (secondsToWholeMinutes(finalSeconds) > 0) {
-        update(item.id, { attempts: item.attempts + 1, last_worked_at: new Date().toISOString() });
-      }
+      captured = { startedAt, seconds: finalSeconds };
     });
-    onClose();
-  }, [stop, item, sessions, saveSessions, update, onClose]);
+    if (!captured) {
+      // Aucune seconde enregistrée (focus ouvert puis refermé aussitôt) :
+      // rien à qualifier, comportement inchangé — on ferme directement.
+      onClose();
+      return;
+    }
+    const { startedAt, seconds: finalSeconds } = captured;
+    setDraftSession({
+      id: crypto.randomUUID(),
+      subject: item.subject,
+      // Sprint 2.5 : lien réel vers l'exercice (avant, seul `note` le référençait en texte).
+      exercise_id: item.id,
+      started_at: startedAt,
+      ended_at: new Date().toISOString(),
+      duration_seconds: finalSeconds,
+      note: `Exercice focus : ${item.title} (${item.source})`,
+      created_at: new Date().toISOString(),
+      result: null,
+    });
+  }, [stop, item, onClose]);
+
+  // Sauvegarde réellement la séance — avec le résultat choisi, ou `null` si
+  // l'utilisateur a préféré passer cette étape (Échap depuis l'écran de
+  // résultat, ou bouton "Passer") : dans les deux cas, exactement le même
+  // comportement qu'avant l'introduction du résultat (temps enregistré,
+  // `attempts`/`last_worked_at` mis à jour si ≥ 1 minute), rien n'est perdu.
+  const commitResult = useCallback(
+    (result: AttemptResult | null) => {
+      if (draftSession) {
+        const finalSession: WorkSession = { ...draftSession, result };
+        saveSessions([finalSession, ...sessions]);
+        if (secondsToWholeMinutes(finalSession.duration_seconds) > 0) {
+          update(item.id, { attempts: item.attempts + 1, last_worked_at: new Date().toISOString() });
+        }
+      }
+      onClose();
+    },
+    [draftSession, sessions, saveSessions, item, update, onClose]
+  );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      if (draftSession) {
+        // Écran de résultat : Échap = passer (pas de choix forcé), le reste
+        // (barre d'espace notamment) n'a plus de sens ici, timer déjà arrêté.
+        if (event.key === "Escape") commitResult(null);
+        return;
+      }
       if (event.key === "Escape") endSession();
       if (event.key === " ") {
         event.preventDefault();
@@ -87,7 +120,52 @@ export function FocusView({
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [endSession, toggle]);
+  }, [draftSession, commitResult, endSession, toggle]);
+
+  if (draftSession) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-7 bg-canvas px-6 text-center"
+      >
+        <div>
+          <p className="text-base font-semibold text-zinc-100">Comment s&apos;est passé l&apos;exercice ?</p>
+          <p className="mt-1.5 text-sm text-zinc-500">{item.title}</p>
+        </div>
+        <div className="flex w-full max-w-xs flex-col gap-2.5">
+          <Button
+            size="lg"
+            onClick={() => commitResult("réussi")}
+            className="justify-start gap-3 border border-emerald-400/20 bg-emerald-400/[0.12] text-emerald-200 hover:bg-emerald-400/20"
+          >
+            <CheckCircle2 size={18} /> Réussi
+          </Button>
+          <Button
+            size="lg"
+            onClick={() => commitResult("partiel")}
+            className="justify-start gap-3 border border-amber-400/20 bg-amber-400/[0.12] text-amber-200 hover:bg-amber-400/20"
+          >
+            <MinusCircle size={18} /> Partiellement réussi
+          </Button>
+          <Button
+            size="lg"
+            onClick={() => commitResult("échoué")}
+            className="justify-start gap-3 border border-rose-400/20 bg-rose-400/[0.12] text-rose-200 hover:bg-rose-400/20"
+          >
+            <XCircle size={18} /> Échoué
+          </Button>
+        </div>
+        <button
+          type="button"
+          onClick={() => commitResult(null)}
+          className="focus-ring rounded-lg px-2 py-1 text-xs text-zinc-600 underline underline-offset-2 transition hover:text-zinc-400"
+        >
+          Passer
+        </button>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
