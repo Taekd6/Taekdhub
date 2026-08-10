@@ -636,6 +636,7 @@
   },
   {
     "title": "Oscillateur amorti — régimes et pseudo-période",
+    "statement": "On considère un oscillateur mécanique amorti dont l'équation du mouvement s'écrit\n$$x'' + 2\\lambda x' + \\omega_0^2 x = 0, \\qquad \\lambda > 0,\\ \\omega_0 > 0.$$\n1. Écrire l'équation caractéristique associée et discuter, selon le signe de $\\lambda^2 - \\omega_0^2$, les trois régimes possibles (apériodique, critique, pseudo-périodique).\n2. Dans le cas pseudo-périodique ($\\lambda < \\omega_0$), donner l'expression de la pseudo-pulsation $\\omega$ et de la pseudo-période $T$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
@@ -2480,6 +2481,7 @@
   },
   {
     "title": "Vérification des axiomes d'un sous-espace vectoriel",
+    "statement": "On considère l'ensemble\n$$F = \\{(x,y,z) \\in \\mathbb{R}^3 \\mid x + 2y - z = 0\\}.$$\nMontrer que $F$ est un sous-espace vectoriel de $\\mathbb{R}^3$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2508,6 +2510,7 @@
   },
   {
     "title": "Famille libre ou liée par le critère du déterminant",
+    "statement": "Dans $\\mathbb{R}^3$, on considère les vecteurs\n$$u_1 = (1,2,1), \\quad u_2 = (0,1,2), \\quad u_3 = (1,0,-3).$$\nLa famille $(u_1, u_2, u_3)$ est-elle libre ? Justifier à l'aide du déterminant de la matrice formée par ces vecteurs.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "TD",
@@ -2537,6 +2540,7 @@
   },
   {
     "title": "Piège : confondre famille génératrice et famille libre",
+    "statement": "Dans $\\mathbb{R}^2$, on considère les trois vecteurs $v_1=(1,0)$, $v_2=(0,1)$, $v_3=(1,1)$, ainsi que le vecteur $w=(1,0)$ seul.\n1. Montrer que la famille $(v_1,v_2,v_3)$ est génératrice de $\\mathbb{R}^2$ mais n'est pas libre.\n2. Montrer que la famille $(w)$ est libre mais n'est pas génératrice de $\\mathbb{R}^2$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Mathématiques",
     "type": "Colle",
@@ -3665,6 +3669,7 @@
   },
   {
     "title": "Endomorphisme vérifiant une relation polynomiale simple",
+    "statement": "Soit $E$ un espace vectoriel et $f \\in \\mathcal{L}(E)$ un endomorphisme vérifiant $f^2 = f$ (on dit que $f$ est un projecteur).\n1. Montrer que pour tout $x \\in E$, on a $x = (x - f(x)) + f(x)$, avec $x - f(x) \\in \\mathrm{Ker}(f)$ et $f(x) \\in \\mathrm{Im}(f)$.\n2. Montrer que $\\mathrm{Ker}(f) \\cap \\mathrm{Im}(f) = \\{0\\}$.\n3. En déduire que $E = \\mathrm{Ker}(f) \\oplus \\mathrm{Im}(f)$.",
     "source": "TaekdHub — exercice original, style concours (Sup)",
     "subject": "Mathématiques",
     "type": "DM",
@@ -4172,6 +4177,7 @@
   },
   {
     "title": "Pendule simple — petites oscillations",
+    "statement": "Un pendule simple est constitué d'une masse ponctuelle $m$ suspendue à un fil inextensible de longueur $L$, dans le champ de pesanteur $g$. On note $\\theta(t)$ l'angle que fait le fil avec la verticale.\n1. À l'aide du principe fondamental de la dynamique projeté selon la direction orthoradiale, établir l'équation différentielle vérifiée par $\\theta(t)$.\n2. Dans l'approximation des petites oscillations ($\\theta$ petit), montrer que $\\theta(t)$ vérifie l'équation d'un oscillateur harmonique, et donner sa pulsation propre $\\omega_0$ ainsi que sa période $T$.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
@@ -4435,6 +4441,7 @@
   },
   {
     "title": "Résonance mécanique — étude qualitative",
+    "statement": "On soumet un oscillateur mécanique amorti, de pulsation propre $\\omega_0$, à une excitation sinusoïdale forcée de pulsation $\\omega$ réglable.\n1. Décrire qualitativement comment l'amplitude de la réponse de l'oscillateur varie en fonction de $\\omega$, et préciser à quelle condition sur $\\omega$ elle est maximale (résonance).\n2. Expliquer, sans calcul, l'effet d'un amortissement plus fort sur l'allure de la courbe de résonance (hauteur et largeur du pic), en établissant le parallèle avec le circuit RLC forcé étudié précédemment.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
@@ -4464,6 +4471,7 @@
   },
   {
     "title": "Piège : confondre amplitude et énergie d'un oscillateur",
+    "statement": "Un oscillateur harmonique constitué d'une masse accrochée à un ressort de raideur $k$ oscille avec une amplitude $A$.\n1. Rappeler l'expression de l'énergie mécanique totale $E$ de cet oscillateur en fonction de $k$ et $A$.\n2. Si l'amplitude des oscillations est doublée, par quel facteur l'énergie totale est-elle multipliée ? Justifier, sans supposer une simple proportionnalité entre amplitude et énergie.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "Colle",
