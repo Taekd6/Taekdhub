@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryPicker, PriorityPicker, SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { RichMath } from "@/components/rich-math";
 import { useWorkTimer } from "@/hooks/use-work-timer";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
 import type { Exercise, ExerciseStatus, Mastery, Priority, WorkSession } from "@/lib/supabase/types";
@@ -134,14 +135,14 @@ export function FocusView({
 
         <div className="mt-12 w-full max-w-xl space-y-4">
           {item.hints.slice(0, hintCount).map((hint, index) => (
-            <motion.p
+            <motion.div
               key={index}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               className="rounded-xl border border-accent/15 bg-accent/[0.055] p-4 text-sm leading-7 text-zinc-300"
             >
-              Indice {index + 1} — {hint}
-            </motion.p>
+              <RichMath text={`Indice ${index + 1} — ${hint}`} />
+            </motion.div>
           ))}
           {hintCount < item.hints.length && (
             <Button variant="secondary" onClick={() => setHintCount((c) => c + 1)} className="w-full">
@@ -155,9 +156,9 @@ export function FocusView({
                 {correctionVisible ? "Masquer la correction" : "Afficher la correction"}
               </Button>
               {correctionVisible && (
-                <p className="mt-4 whitespace-pre-line rounded-xl border border-white/[0.08] bg-white/[0.035] p-4 text-left text-sm leading-7 text-zinc-300">
-                  {item.correction}
-                </p>
+                <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.035] p-4 text-left text-sm leading-7 text-zinc-300">
+                  <RichMath text={item.correction} />
+                </div>
               )}
             </div>
           )}

@@ -7,6 +7,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { ChapterPicker } from "@/components/exercises/chapter-picker";
 import { MasteryPicker, PriorityPicker } from "@/components/exercises/exercise-badges";
 import { SessionRow } from "@/components/history/session-row";
+import { RichMath } from "@/components/rich-math";
 import { sessionsForExercise } from "@/lib/history";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
@@ -51,6 +52,12 @@ export function ExerciseDetail({
           className="mt-2 min-h-32"
           placeholder={"Énoncé complet — maths en LaTeX : $x^2$ inline, $$\\int_0^1 f$$ en bloc"}
         />
+        {item.statement.trim() && (
+          <div className="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.035] p-3 text-sm leading-6 text-zinc-300">
+            <p className="mb-1 text-2xs uppercase tracking-wide text-zinc-600">Aperçu</p>
+            <RichMath text={item.statement} />
+          </div>
+        )}
       </div>
       <div>
         <p className="eyebrow">Notes</p>
@@ -180,9 +187,9 @@ export function ExerciseDetail({
           )}
         </div>
         {item.hints.slice(0, hintCount).map((hint, index) => (
-          <p key={index} className="rounded-xl border border-accent/15 bg-accent/[0.055] p-3 text-sm leading-6 text-zinc-300">
-            Indice {index + 1} — {hint}
-          </p>
+          <div key={index} className="rounded-xl border border-accent/15 bg-accent/[0.055] p-3 text-sm leading-6 text-zinc-300">
+            <RichMath text={`Indice ${index + 1} — ${hint}`} />
+          </div>
         ))}
         {hintCount < item.hints.length && (
           <Button variant="ghost" onClick={() => setHintCount((count) => count + 1)} className="text-accent">
@@ -196,9 +203,9 @@ export function ExerciseDetail({
               {correctionVisible ? "Masquer la correction" : "Afficher la correction"}
             </Button>
             {correctionVisible && (
-              <p className="mt-3 whitespace-pre-line rounded-xl border border-white/[0.08] bg-white/[0.035] p-3 text-sm leading-6 text-zinc-300">
-                {item.correction}
-              </p>
+              <div className="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.035] p-3 text-sm leading-6 text-zinc-300">
+                <RichMath text={item.correction} />
+              </div>
             )}
           </div>
         )}
