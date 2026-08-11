@@ -7,7 +7,7 @@ import { HistoryFilters } from "@/components/history/history-filters";
 import { HistorySummary } from "@/components/history/history-summary";
 import { SessionRow } from "@/components/history/session-row";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { defaultHistoryFilters, filterSessions, summarizeSessions, type HistoryFilters as HistoryFiltersState } from "@/lib/history";
+import { defaultHistoryFilters, filterSessions, resultCounts, summarizeSessions, type HistoryFilters as HistoryFiltersState } from "@/lib/history";
 
 /**
  * Page Historique (Sprint 3F) — orchestration uniquement : filtrage et
@@ -24,6 +24,7 @@ export function SessionHistory() {
 
   const filtered = useMemo(() => filterSessions(sessions, filters), [sessions, filters]);
   const summary = useMemo(() => summarizeSessions(filtered), [filtered]);
+  const results = useMemo(() => resultCounts(filtered), [filtered]);
   const sorted = useMemo(
     () => [...filtered].sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()),
     [filtered]
@@ -59,7 +60,7 @@ export function SessionHistory() {
   return (
     <div className="space-y-5">
       <HistoryFilters filters={filters} onChange={updateFilters} />
-      <HistorySummary summary={summary} />
+      <HistorySummary summary={summary} results={results} />
       <div className="space-y-3">
         {sorted.length ? (
           sorted.map((session) => {

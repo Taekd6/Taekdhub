@@ -13,6 +13,7 @@ import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { PLAN_STORAGE_KEY, type StoredPlan } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 import { subjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
@@ -65,6 +66,8 @@ export function SessionRunner() {
   const [countTarget, setCountTarget] = useState(10);
   /** Matière imposée par `?subject=`, ou `null` pour une séance normale (toute la banque) — voir la note Sprint 3.1 ci-dessus. */
   const [contextSubject, setContextSubject] = useState<Subject | null>(null);
+  /** Sélection déposée par le Dashboard ("Commencer le plan", voir lib/plan.ts) — remplace `computedSelection` tel quel quand elle est présente, jamais recalculée ici. `null` : comportement normal, inchangé. */
+  const [planSelection, setPlanSelection] = useState<ExerciseRecommendation[] | null>(null);
   const initialized = useRef(false);
 
   // Décide une seule fois, au montage, entre reprendre un focus interrompu
@@ -98,6 +101,33 @@ export function SessionRunner() {
       return;
     }
 
+    // Plan du jour (Sprint Plan de travail) : un plan déposé par le Dashboard
+    // ("Commencer le plan") prime sur le calcul habituel ci-dessous — mêmes
+    // exercices, même ordre, AUCUNE recommandation recalculée ici (voir
+    // lib/plan.ts#computeDailyPlan, qui a déjà tranché). Clé retirée dès
+    // lecture : c'est un transfert à usage unique, pas un état persistant.
+    const storedPlanRaw = sessionStorage.getItem(PLAN_STORAGE_KEY);
+    if (storedPlanRaw) {
+      sessionStorage.removeItem(PLAN_STORAGE_KEY);
+      try {
+        const stored = JSON.parse(storedPlanRaw) as StoredPlan;
+        const picks = stored.items
+          .map(({ exerciseId, reasons }) => {
+            const exercise = exercises.find((item) => item.id === exerciseId && !item.archived);
+            return exercise ? { exercise, score: 0, reasons } : null;
+          })
+          .filter((item): item is ExerciseRecommendation => item !== null);
+        if (picks.length > 0) {
+          setPlanSelection(picks);
+          setBudgetMinutes(stored.requestedMinutes);
+          setPhase("preview");
+          return;
+        }
+      } catch {
+        // Plan corrompu ou périmé (exercices supprimés entre-temps) : on retombe sur le comportement normal ci-dessous.
+      }
+    }
+
     const hasAnyEligible = computeExerciseBankStats(scoped, sessions).toReviewCount > 0;
     if (!hasAnyEligible) {
       setPhase("empty");
@@ -122,13 +152,14 @@ export function SessionRunner() {
   // de `availableMinutes` : `limit` (le nombre choisi) suffit, exactement le
   // même paramètre que le "top N" déjà utilisé partout ailleurs
   // (ExerciseReviewPanel notamment) — aucune nouvelle fonction nécessaire.
-  const previewSelection = useMemo(
+  const computedSelection = useMemo(
     () =>
       sizingMode === "count"
         ? recommendExercises(scopedExercises, sessions, countTarget)
         : recommendExercises(scopedExercises, sessions, 6, { availableMinutes: budgetMinutes }),
     [scopedExercises, sessions, sizingMode, countTarget, budgetMinutes]
   );
+  const previewSelection = planSelection ?? computedSelection;
   const previewMinutesUsed = useMemo(
     () => previewSelection.reduce((sum, { exercise }) => sum + estimatedDurationMinutes(exercise, sessions), 0),
     [previewSelection, sessions]
@@ -227,94 +258,106 @@ export function SessionRunner() {
       <div className="space-y-5">
         <Card className="p-8 text-center">
           <PlayCircle className="mx-auto text-accent" size={28} />
-          <h2 className="mt-4 text-xl font-semibold tracking-tight">
-            {sizingMode === "time" ? "Combien de temps as-tu devant toi ?" : "Combien d'exercices veux-tu travailler ?"}
-          </h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
-            {sizingMode === "time"
-              ? "La séance tient dans ce temps — aucun exercice trop long n'est jamais forcé dedans."
-              : "Une sélection de ce nombre exact, classée par urgence et répartie sur plusieurs chapitres."}
-          </p>
-          {contextSubject && (
-            <p className="mt-2 text-xs text-accent">
-              Ciblée sur {contextSubject} ·{" "}
-              <Link href="/session" className="underline underline-offset-2">
-                voir la séance complète
-              </Link>
-            </p>
-          )}
 
-          <div className="mx-auto mt-5 inline-flex items-center gap-1 rounded-xl border border-white/[0.09] bg-black/20 p-1">
-            <button
-              type="button"
-              onClick={() => setSizingMode("time")}
-              aria-pressed={sizingMode === "time"}
-              className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "time" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
-            >
-              Par temps
-            </button>
-            <button
-              type="button"
-              onClick={() => setSizingMode("count")}
-              aria-pressed={sizingMode === "count"}
-              className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "count" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
-            >
-              Par nombre d&apos;exercices
-            </button>
-          </div>
-
-          {sizingMode === "time" ? (
-            <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
-              {BUDGET_PRESETS.map((preset) => (
-                <Button
-                  key={preset}
-                  type="button"
-                  size="sm"
-                  variant={budgetMinutes === preset ? "primary" : "secondary"}
-                  onClick={() => setBudgetMinutes(preset)}
-                >
-                  {preset} min
-                </Button>
-              ))}
-              <div className="flex items-center gap-1.5">
-                <Input
-                  type="number"
-                  min={0}
-                  step={5}
-                  value={budgetMinutes}
-                  onChange={(event) => setBudgetMinutes(Math.max(0, Math.round(Number(event.target.value) || 0)))}
-                  className="w-20 text-center"
-                  aria-label="Temps disponible, en minutes"
-                />
-                <span className="text-xs text-zinc-500">min</span>
-              </div>
-            </div>
+          {planSelection ? (
+            <>
+              <h2 className="mt-4 text-xl font-semibold tracking-tight">Ton plan du jour</h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+                Réparti sur tes matières prioritaires, dans le temps que tu as choisi depuis le tableau de bord.
+              </p>
+            </>
           ) : (
-            <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
-              {COUNT_PRESETS.map((preset) => (
-                <Button
-                  key={preset}
+            <>
+              <h2 className="mt-4 text-xl font-semibold tracking-tight">
+                {sizingMode === "time" ? "Combien de temps as-tu devant toi ?" : "Combien d'exercices veux-tu travailler ?"}
+              </h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+                {sizingMode === "time"
+                  ? "La séance tient dans ce temps — aucun exercice trop long n'est jamais forcé dedans."
+                  : "Une sélection de ce nombre exact, classée par urgence et répartie sur plusieurs chapitres."}
+              </p>
+              {contextSubject && (
+                <p className="mt-2 text-xs text-accent">
+                  Ciblée sur {contextSubject} ·{" "}
+                  <Link href="/session" className="underline underline-offset-2">
+                    voir la séance complète
+                  </Link>
+                </p>
+              )}
+
+              <div className="mx-auto mt-5 inline-flex items-center gap-1 rounded-xl border border-white/[0.09] bg-black/20 p-1">
+                <button
                   type="button"
-                  size="sm"
-                  variant={countTarget === preset ? "primary" : "secondary"}
-                  onClick={() => setCountTarget(preset)}
+                  onClick={() => setSizingMode("time")}
+                  aria-pressed={sizingMode === "time"}
+                  className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "time" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
                 >
-                  {preset}
-                </Button>
-              ))}
-              <div className="flex items-center gap-1.5">
-                <Input
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={countTarget}
-                  onChange={(event) => setCountTarget(Math.max(1, Math.round(Number(event.target.value) || 0)))}
-                  className="w-20 text-center"
-                  aria-label="Nombre d'exercices"
-                />
-                <span className="text-xs text-zinc-500">exercice{countTarget > 1 ? "s" : ""}</span>
+                  Par temps
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSizingMode("count")}
+                  aria-pressed={sizingMode === "count"}
+                  className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "count" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
+                >
+                  Par nombre d&apos;exercices
+                </button>
               </div>
-            </div>
+
+              {sizingMode === "time" ? (
+                <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
+                  {BUDGET_PRESETS.map((preset) => (
+                    <Button
+                      key={preset}
+                      type="button"
+                      size="sm"
+                      variant={budgetMinutes === preset ? "primary" : "secondary"}
+                      onClick={() => setBudgetMinutes(preset)}
+                    >
+                      {preset} min
+                    </Button>
+                  ))}
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      type="number"
+                      min={0}
+                      step={5}
+                      value={budgetMinutes}
+                      onChange={(event) => setBudgetMinutes(Math.max(0, Math.round(Number(event.target.value) || 0)))}
+                      className="w-20 text-center"
+                      aria-label="Temps disponible, en minutes"
+                    />
+                    <span className="text-xs text-zinc-500">min</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
+                  {COUNT_PRESETS.map((preset) => (
+                    <Button
+                      key={preset}
+                      type="button"
+                      size="sm"
+                      variant={countTarget === preset ? "primary" : "secondary"}
+                      onClick={() => setCountTarget(preset)}
+                    >
+                      {preset}
+                    </Button>
+                  ))}
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={countTarget}
+                      onChange={(event) => setCountTarget(Math.max(1, Math.round(Number(event.target.value) || 0)))}
+                      className="w-20 text-center"
+                      aria-label="Nombre d'exercices"
+                    />
+                    <span className="text-xs text-zinc-500">exercice{countTarget > 1 ? "s" : ""}</span>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {previewSelection.length > 0 ? (

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -8,16 +9,19 @@ import {
   BarChart3,
   BookOpenCheck,
   CalendarClock,
+  CalendarRange,
   Clock3,
+  Flag,
   Flame,
   GraduationCap,
   History as HistoryIcon,
   ListChecks,
+  ListTodo,
   Sparkles,
   Target,
   Trophy,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +29,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { cn } from "@/lib/cn";
 import { computeStreak } from "@/lib/gamification";
 import { recentDaySummaries } from "@/lib/history";
 import {
@@ -34,19 +39,33 @@ import {
   computeNextAction,
   computeUpcoming,
 } from "@/lib/next-action";
+import {
+  computeDailyPlan,
+  computeSubjectPriorities,
+  DEFAULT_PLAN_MINUTES,
+  PLAN_DURATION_PRESETS,
+  PLAN_STORAGE_KEY,
+  serializePlan,
+  type SubjectPriorityLevel,
+} from "@/lib/plan";
 import { computeProgressBySubject } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META } from "@/lib/readiness";
 import { subjectMeta } from "@/lib/study";
-import { formatDuration } from "@/lib/utils";
+import { formatDuration, formatMinutes } from "@/lib/utils";
+import { computeWeeklySummary } from "@/lib/week";
 import type { UpcomingItem } from "@/lib/next-action";
-
-/** Préréglages de temps disponible pour les démarrages rapides — mêmes valeurs partout sur le Dashboard (objectif du jour ET raccourcis), pour rester cohérent avec l'aperçu de séance (components/session/session-runner.tsx#BUDGET_PRESETS). */
-const QUICK_SESSION_PRESETS = [30, 45, 60];
 
 const UPCOMING_META: Record<UpcomingItem["key"], { label: string; icon: typeof BookOpenCheck }> = {
   chapter: { label: "Chapitre à consolider", icon: BookOpenCheck },
   subject: { label: "Matière délaissée", icon: CalendarClock },
   review: { label: "Révision due", icon: ListChecks },
+};
+
+/** Point de statut "Priorités de la semaine" — mêmes couleurs que `READINESS_DOT_CLASS` ci-dessous, un seul vocabulaire visuel pour tout niveau qualitatif du Dashboard. */
+const PRIORITY_META: Record<SubjectPriorityLevel, { dot: string; label: string }> = {
+  "critique": { dot: "bg-rose-400", label: "Critique" },
+  "à surveiller": { dot: "bg-amber-400", label: "À surveiller" },
+  "correct": { dot: "bg-emerald-400", label: "Correct" },
 };
 
 /** Couleur du point de statut "Prêt pour le DS ?" — dérivée de la même variante de badge que `READINESS_META` (lib/readiness.ts), jamais un second système de couleurs. */
@@ -67,6 +86,9 @@ const READINESS_DOT_CLASS: Record<"success" | "warning" | "default", string> = {
  */
 export function DashboardOverview() {
   const { sessions, exercises, chapters, preferences, ready } = usePrepahubData();
+  const router = useRouter();
+  /** Durée choisie pour "Plan du jour" — état purement local à cette page, jamais persisté (voir Phase 3 du sprint : pas de système de calendrier). */
+  const [planMinutes, setPlanMinutes] = useState<number>(DEFAULT_PLAN_MINUTES);
 
   const model = useMemo(() => {
     const now = new Date();
@@ -79,12 +101,30 @@ export function DashboardOverview() {
       toConsolidate: computeChaptersToConsolidate(exercises, sessions, chapters, now),
       recentDays: recentDaySummaries(sessions, now, 5),
       readiness: computeReadinessBySubject(exercises, sessions, now),
+      weeklySummary: computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now),
+      subjectPriorities: computeSubjectPriorities(exercises, sessions, now),
       streak: computeStreak(sessions),
       contestDays: preferences.contestDate
         ? Math.max(0, Math.ceil((new Date(preferences.contestDate).getTime() - now.getTime()) / 86400000))
         : null,
     };
   }, [exercises, sessions, chapters, preferences]);
+
+  // Séparé de `model` : ne dépend que du choix de durée, pas besoin de
+  // recalculer tout le reste du Dashboard à chaque clic sur 30/45/60 min.
+  const dailyPlan = useMemo(
+    () => computeDailyPlan(exercises, sessions, chapters, planMinutes, new Date()),
+    [exercises, sessions, chapters, planMinutes]
+  );
+
+  // Dépose le plan dans sessionStorage puis navigue vers /session, qui le lit
+  // au montage et construit la séance avec exactement ces exercices, dans cet
+  // ordre — voir components/session/session-runner.tsx et lib/plan.ts. Aucune
+  // sélection n'est recalculée côté /session.
+  const startPlan = useCallback(() => {
+    sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(serializePlan(dailyPlan)));
+    router.push("/session");
+  }, [dailyPlan, router]);
 
   if (!ready) {
     return (
@@ -96,7 +136,7 @@ export function DashboardOverview() {
     );
   }
 
-  const { nextAction, objective, upcoming, progress, bySubject, toConsolidate, recentDays, readiness, streak, contestDays } = model;
+  const { nextAction, objective, upcoming, progress, bySubject, toConsolidate, recentDays, readiness, weeklySummary, subjectPriorities, streak, contestDays } = model;
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
   const secondaryPicks = nextAction.picks.slice(1);
   // "Revoir mes priorités" (Phase 8) : ouvre directement le premier exercice déjà signalé par le moteur de recommandation — même convention que computeUpcoming (lib/next-action.ts), aucune nouvelle route.
@@ -195,6 +235,67 @@ export function DashboardOverview() {
         </Link>
       </section>
 
+      {/* PLAN DU JOUR */}
+      <Card className="p-6 sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <ListTodo size={14} className="text-accent" />
+            <div>
+              <p className="eyebrow">Plan du jour</p>
+              <CardTitle className="mt-1 text-lg">Ce que tu devrais travailler aujourd&apos;hui</CardTitle>
+            </div>
+          </div>
+          <div className="inline-flex items-center gap-1 rounded-xl border border-white/[0.09] bg-black/20 p-1">
+            {PLAN_DURATION_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setPlanMinutes(preset)}
+                aria-pressed={planMinutes === preset}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                  planMinutes === preset ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300"
+                )}
+              >
+                {preset} min
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {dailyPlan.blocks.length === 0 ? (
+          <p className="mt-5 text-sm text-zinc-500">
+            {nextAction.kind === "empty-bank" ? "Ajoute des exercices pour que TaekdHub puisse te construire un plan." : "Rien à planifier pour l'instant — ta banque est à jour."}
+          </p>
+        ) : (
+          <>
+            <ol className="mt-5 space-y-2.5">
+              {dailyPlan.blocks.map((block, index) => (
+                <li key={block.subject} className="flex items-start gap-3 rounded-xl border border-white/[0.06] p-3.5 text-sm">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent">{index + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <p className="truncate font-medium text-zinc-100">{block.label}</p>
+                      <span className="shrink-0 text-xs text-zinc-500">{block.estimatedMinutes} min</span>
+                    </div>
+                    <p className="mt-1 text-xs text-zinc-500">{block.pickLabel}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-5">
+              <p className="text-sm text-zinc-400">
+                Total : <span className="font-semibold text-zinc-100">{formatMinutes(dailyPlan.totalMinutes)}</span> · {dailyPlan.totalExercises} exercice
+                {dailyPlan.totalExercises > 1 ? "s" : ""}
+              </p>
+              <Button onClick={startPlan}>
+                Commencer le plan <ArrowRight size={16} />
+              </Button>
+            </div>
+          </>
+        )}
+      </Card>
+
       {/* OBJECTIF DU JOUR + TA PROGRESSION */}
       <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
         <Card className="rounded-3xl p-6 sm:p-7">
@@ -230,7 +331,7 @@ export function DashboardOverview() {
                 </Button>
               </Link>
             ) : (
-              QUICK_SESSION_PRESETS.map((preset) => (
+              PLAN_DURATION_PRESETS.map((preset) => (
                 <Link key={preset} href={`/session?minutes=${preset}`}>
                   <Button variant="secondary" size="sm">
                     {preset} min
@@ -272,6 +373,33 @@ export function DashboardOverview() {
           </Link>
         </Card>
       </section>
+
+      {/* CETTE SEMAINE */}
+      <Card className="p-6">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2">
+            <CalendarRange size={14} className="text-accent" />
+            <div>
+              <p className="eyebrow">Cette semaine</p>
+              <CardTitle className="mt-1 text-lg">
+                {formatDuration(weeklySummary.totalSeconds)}{" "}
+                <span className="text-sm font-normal text-zinc-500">/ {formatDuration(weeklySummary.objectiveSeconds)}</span>
+              </CardTitle>
+            </div>
+          </div>
+          <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">{weeklySummary.progressPercent}%</span>
+        </div>
+        <ProgressBar value={weeklySummary.progressPercent} className="mt-5" />
+        {weeklySummary.bySubject.length > 0 && (
+          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-zinc-500">
+            {weeklySummary.bySubject.map(({ subject, seconds }) => (
+              <span key={subject}>
+                {subject} : <span className="text-zinc-300">{formatDuration(seconds)}</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </Card>
 
       {/* PROGRESSION PAR MATIÈRE + PRÉPARATION */}
       {(bySubject.length > 0 || readiness.length > 0) && (
@@ -339,6 +467,30 @@ export function DashboardOverview() {
             </Card>
           )}
         </section>
+      )}
+
+      {/* PRIORITÉS DE LA SEMAINE */}
+      {subjectPriorities.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <Flag size={14} className="text-accent" />
+            <p className="eyebrow">Priorités de la semaine</p>
+          </div>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            {subjectPriorities.map(({ subject, level, reason }) => {
+              const meta = PRIORITY_META[level];
+              return (
+                <div key={subject} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] px-3.5 py-2.5 text-sm">
+                  <span className="flex items-center gap-2 font-medium text-zinc-100">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
+                    {subject}
+                  </span>
+                  <span className="text-right text-xs text-zinc-500">{reason}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
       )}
 
       {/* À CONSOLIDER */}

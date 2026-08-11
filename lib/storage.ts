@@ -11,9 +11,15 @@ const chaptersKey = "prepahub:chapters";
 const lastBackupKey = "prepahub:last-backup";
 const weekSnapshotsKey = "prepahub:week-snapshots";
 
-/** `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts. Absent d'une préférence enregistrée avant ce sprint : retombe sur `DEFAULT_ACCENT` via le merge avec `defaults` ci-dessous, comme tout autre champ ajouté après coup. */
-export type Preferences = { displayName: string; dailyGoalMinutes: number; contestDate: string; accent: string };
-const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, contestDate: "", accent: DEFAULT_ACCENT };
+/**
+ * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
+ * `weeklyGoalMinutes` (Sprint Plan de travail) : objectif hebdomadaire, indépendant de `dailyGoalMinutes`
+ * (voir lib/week.ts#computeWeeklySummary) — alimente le Dashboard ("Cette semaine") et les statistiques.
+ * Absents d'une préférence enregistrée avant leur sprint respectif : retombent sur `defaults` via le
+ * merge ci-dessous, comme tout champ ajouté après coup.
+ */
+export type Preferences = { displayName: string; dailyGoalMinutes: number; weeklyGoalMinutes: number; contestDate: string; accent: string };
+const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, weeklyGoalMinutes: 300, contestDate: "", accent: DEFAULT_ACCENT };
 
 /**
  * Chapitre/thème (Sprint 3D) — créé et géré par l'utilisateur, jamais

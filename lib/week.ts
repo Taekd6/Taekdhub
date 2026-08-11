@@ -128,11 +128,17 @@ export interface WeeklySummary {
  * Bilan complet — point d'entrée unique consommé par le Dashboard. `totalSeconds`
  * est dérivé de `bySubject` (une seule somme des sessions de la semaine, pas
  * un second passage séparé) : aucune double logique de calcul du temps hebdomadaire.
+ *
+ * `weeklyGoalMinutes` (Sprint Plan de travail) : préférence indépendante
+ * (voir `Preferences.weeklyGoalMinutes`, lib/storage.ts), plus jamais dérivée
+ * de `dailyGoalMinutes * 7` — un objectif hebdomadaire a rarement un sens
+ * comme simple multiple de l'objectif quotidien (rythme différent selon les
+ * jours de la semaine).
  */
-export function computeWeeklySummary(exercises: Exercise[], sessions: WorkSession[], dailyGoalMinutes: number, now: Date = new Date()): WeeklySummary {
+export function computeWeeklySummary(exercises: Exercise[], sessions: WorkSession[], weeklyGoalMinutes: number, now: Date = new Date()): WeeklySummary {
   const bySubject = weeklyTimeBySubject(sessions, now);
   const total = bySubject.reduce((sum, entry) => sum + entry.seconds, 0);
-  const objectiveSeconds = minutesToSeconds(dailyGoalMinutes * 7);
+  const objectiveSeconds = minutesToSeconds(weeklyGoalMinutes);
 
   return {
     totalSeconds: total,
