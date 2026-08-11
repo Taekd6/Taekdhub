@@ -16,7 +16,7 @@ export function ProgressBar({
 }) {
   const clamped = Math.min(100, Math.max(0, value));
   return (
-    <div className={cn("h-2 overflow-hidden rounded-full bg-white/[0.07]", className)}>
+    <div className={cn("h-2 overflow-hidden rounded-full bg-hairline/[0.07]", className)}>
       {animated ? (
         <motion.div
           initial={{ width: 0 }}
@@ -40,7 +40,7 @@ export function CircularProgress({ value, size = 80, strokeWidth = 7 }: { value:
   return (
     <div className="relative grid place-items-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgb(var(--hairline-rgb) / 0.08)" strokeWidth={strokeWidth} />
         <circle
           cx={size / 2}
           cy={size / 2}

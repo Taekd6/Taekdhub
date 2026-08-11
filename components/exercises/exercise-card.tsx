@@ -93,7 +93,7 @@ function ExerciseCardImpl({
       </div>
       <AnimatePresence>
         {selected && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-white/[0.07]">
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-hairline/[0.07]">
             <ExerciseDetail
               item={item}
               update={onUpdate}

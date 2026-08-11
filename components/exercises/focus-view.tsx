@@ -108,9 +108,14 @@ export function FocusView({
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (draftSession) {
-        // Écran de résultat : Échap = passer (pas de choix forcé), le reste
-        // (barre d'espace notamment) n'a plus de sens ici, timer déjà arrêté.
+        // Écran de résultat : Échap = passer (pas de choix forcé). 1/2/3 vont
+        // droit au résultat correspondant (même ordre que les boutons) — le
+        // résultat doit pouvoir se saisir sans quitter le clavier, juste
+        // après avoir reposé le crayon.
         if (event.key === "Escape") commitResult(null);
+        else if (event.key === "1") commitResult("réussi");
+        else if (event.key === "2") commitResult("partiel");
+        else if (event.key === "3") commitResult("échoué");
         return;
       }
       if (event.key === "Escape") endSession();
@@ -138,23 +143,32 @@ export function FocusView({
           <Button
             size="lg"
             onClick={() => commitResult("réussi")}
-            className="justify-start gap-3 border border-emerald-400/20 bg-emerald-400/[0.12] text-emerald-200 hover:bg-emerald-400/20"
+            className="justify-between gap-3 border border-emerald-400/20 bg-emerald-400/[0.12] text-emerald-200 hover:bg-emerald-400/20"
           >
-            <CheckCircle2 size={18} /> Réussi
+            <span className="flex items-center gap-3">
+              <CheckCircle2 size={18} /> Réussi
+            </span>
+            <kbd className="rounded border border-emerald-400/25 px-1.5 py-0.5 text-2xs">1</kbd>
           </Button>
           <Button
             size="lg"
             onClick={() => commitResult("partiel")}
-            className="justify-start gap-3 border border-amber-400/20 bg-amber-400/[0.12] text-amber-200 hover:bg-amber-400/20"
+            className="justify-between gap-3 border border-amber-400/20 bg-amber-400/[0.12] text-amber-200 hover:bg-amber-400/20"
           >
-            <MinusCircle size={18} /> Partiellement réussi
+            <span className="flex items-center gap-3">
+              <MinusCircle size={18} /> Partiellement réussi
+            </span>
+            <kbd className="rounded border border-amber-400/25 px-1.5 py-0.5 text-2xs">2</kbd>
           </Button>
           <Button
             size="lg"
             onClick={() => commitResult("échoué")}
-            className="justify-start gap-3 border border-rose-400/20 bg-rose-400/[0.12] text-rose-200 hover:bg-rose-400/20"
+            className="justify-between gap-3 border border-rose-400/20 bg-rose-400/[0.12] text-rose-200 hover:bg-rose-400/20"
           >
-            <XCircle size={18} /> Échoué
+            <span className="flex items-center gap-3">
+              <XCircle size={18} /> Échoué
+            </span>
+            <kbd className="rounded border border-rose-400/25 px-1.5 py-0.5 text-2xs">3</kbd>
           </Button>
         </div>
         <button
@@ -162,7 +176,7 @@ export function FocusView({
           onClick={() => commitResult(null)}
           className="focus-ring rounded-lg px-2 py-1 text-xs text-zinc-600 underline underline-offset-2 transition hover:text-zinc-400"
         >
-          Passer
+          Passer <span className="no-underline">(Échap)</span>
         </button>
       </motion.div>
     );
@@ -174,7 +188,7 @@ export function FocusView({
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-50 flex flex-col bg-canvas"
     >
-      <header className="flex items-center justify-between border-b border-white/[0.07] px-6 py-4">
+      <header className="flex items-center justify-between border-b border-hairline/[0.07] px-6 py-4">
         <div className="flex items-center gap-3">
           <SubjectAvatar subject={item.subject} />
           <div>
@@ -183,7 +197,10 @@ export function FocusView({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="tabular-nums text-sm text-zinc-400">{formatDuration(seconds)}</span>
+          <span className="flex items-center gap-2 tabular-nums text-lg font-semibold text-zinc-100">
+            {running && <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent" />}
+            {formatDuration(seconds)}
+          </span>
           <Button variant={running ? "secondary" : "primary"} size="sm" onClick={toggle}>
             {running ? "Pause" : "Timer"}
           </Button>
@@ -215,7 +232,7 @@ export function FocusView({
           <p className="mt-1 text-sm text-zinc-500">{item.subject} · {item.source}</p>
 
           {/* Énoncé — cœur de la séance : immédiatement visible, sans clic ni révélation, contrairement aux indices/correction. */}
-          <div className="mt-6 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-5 sm:p-6">
+          <div className="mt-6 rounded-2xl border border-hairline/[0.08] bg-hairline/[0.025] p-5 sm:p-6">
             {item.statement.trim() ? (
               <RichMath text={item.statement} className="text-base leading-8 text-zinc-100" />
             ) : (
@@ -248,7 +265,7 @@ export function FocusView({
                   {correctionVisible ? "Masquer la correction" : "Afficher la correction"}
                 </Button>
                 {correctionVisible && (
-                  <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.035] p-4 text-left text-sm leading-7 text-zinc-300">
+                  <div className="mt-4 rounded-xl border border-hairline/[0.08] bg-hairline/[0.035] p-4 text-left text-sm leading-7 text-zinc-300">
                     <RichMath text={item.correction} />
                   </div>
                 )}
@@ -284,7 +301,7 @@ export function FocusView({
         </div>
       </div>
 
-      <footer className="border-t border-white/[0.07] px-6 py-4 text-center text-xs text-zinc-600">
+      <footer className="border-t border-hairline/[0.07] px-6 py-4 text-center text-xs text-zinc-600">
         Échap pour quitter · Barre d&apos;espace pour le timer
       </footer>
     </motion.div>

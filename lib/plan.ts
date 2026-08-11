@@ -1,4 +1,5 @@
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { progressByChapter } from "@/lib/progress";
 import { weeklyTimeBySubject } from "@/lib/week";
 import { subjects } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
@@ -214,6 +215,8 @@ export type SubjectPriorityLevel = "critique" | "à surveiller" | "correct";
 
 export interface SubjectPriority {
   subject: Subject;
+  /** "Matière — Chapitre" si un chapitre plus faible ressort pour cette matière, sinon juste la matière — même convention que `PlanBlock.label`. */
+  label: string;
   level: SubjectPriorityLevel;
   reason: string;
 }
@@ -231,8 +234,16 @@ const MAX_SUBJECT_PRIORITIES = 7;
  * maîtrisée, affichée "correct" plutôt qu'absente (voir Phase 15 du sprint :
  * un état positif plutôt qu'un écran vide).
  */
-export function computeSubjectPriorities(exercises: Exercise[], sessions: WorkSession[], now: Date = new Date()): SubjectPriority[] {
+export function computeSubjectPriorities(exercises: Exercise[], sessions: WorkSession[], chapters: Chapter[], now: Date = new Date()): SubjectPriority[] {
   const signals = computeSubjectSignals(exercises, sessions, now).filter((signal) => signal.total > 0);
+  // Chapitre le plus faible par matière (lib/progress.ts), pour le libellé "Matière — Chapitre" — même source que lib/next-action.ts#computeUpcoming, jamais un second calcul de "chapitre le plus faible".
+  const weakestChapterBySubject = new Map<Subject, string>();
+  const chapterCandidates = progressByChapter(exercises, chapters)
+    .filter((c) => c.completionRate < 100)
+    .sort((a, b) => a.averageMastery - b.averageMastery);
+  for (const entry of chapterCandidates) {
+    if (!weakestChapterBySubject.has(entry.chapter.subject)) weakestChapterBySubject.set(entry.chapter.subject, entry.chapter.label);
+  }
 
   return signals
     .map((signal) => {
@@ -251,11 +262,18 @@ export function computeSubjectPriorities(exercises: Exercise[], sessions: WorkSe
       else if (reasons.length > 0) level = "à surveiller";
       else level = "correct";
 
-      return { subject: signal.subject, level, reason: reasons.length > 0 ? reasons.join(" + ") : "progression correcte", weight: subjectWeight(signal) };
+      const chapterLabel = weakestChapterBySubject.get(signal.subject);
+      return {
+        subject: signal.subject,
+        label: chapterLabel ? `${signal.subject} — ${chapterLabel}` : signal.subject,
+        level,
+        reason: reasons.length > 0 ? reasons.join(" + ") : "progression correcte",
+        weight: subjectWeight(signal),
+      };
     })
     .sort((a, b) => b.weight - a.weight)
     .slice(0, MAX_SUBJECT_PRIORITIES)
-    .map(({ subject, level, reason }) => ({ subject, level, reason }));
+    .map(({ subject, label, level, reason }) => ({ subject, label, level, reason }));
 }
 
 /** Clé sessionStorage pour le transfert Dashboard → /session (voir components/session/session-runner.tsx) — même famille de clés que FOCUS_TIMER_PREFIX (components/exercises/focus-view.tsx), un seul usage puis retirée. */

@@ -24,7 +24,10 @@ export function Heatmap({ workByDay, days = 84 }: { workByDay: Record<string, nu
             title={`${date.toLocaleDateString("fr-FR")} : ${formatDuration(seconds)}`}
             className="h-3.5 w-3.5 rounded-[4px] transition-colors"
             style={{
-              backgroundColor: ratio ? `rgba(212,243,107,${0.17 + ratio * 0.83})` : "rgba(255,255,255,.055)",
+              // `rgb(var(--x-rgb) / alpha)` reprend les variables CSS du thème (app/globals.css) — jamais une teinte
+              // figée : la case suit l'accent choisi par l'utilisateur (lib/theme.ts), et la case "vide" reste
+              // visible aussi bien en thème clair (hairline sombre) qu'en thème sombre (hairline clair).
+              backgroundColor: ratio ? `rgb(var(--accent-rgb) / ${0.17 + ratio * 0.83})` : "rgb(var(--hairline-rgb) / 0.08)",
             }}
           />
         );

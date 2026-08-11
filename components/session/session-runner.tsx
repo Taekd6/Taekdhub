@@ -13,6 +13,7 @@ import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { computeNextAction } from "@/lib/next-action";
 import { PLAN_STORAGE_KEY, type StoredPlan } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 import { subjects, todaySeconds } from "@/lib/study";
@@ -165,6 +166,18 @@ export function SessionRunner() {
     [previewSelection, sessions]
   );
 
+  // "Et maintenant ?" (écran de fin de séance) : recalculé sur les données
+  // fraîches (exercises/sessions incluent déjà les résultats qu'on vient
+  // d'enregistrer) — même fonction que le Hero du Dashboard
+  // (lib/next-action.ts), aucune deuxième règle de recommandation. C'est ce
+  // qui rend visible, tout de suite après une séance, que TaekdHub vient
+  // d'apprendre de ses résultats plutôt que de forcer un aller-retour par
+  // /dashboard pour le constater.
+  const upcomingNextAction = useMemo(
+    () => computeNextAction(exercises, sessions, preferences.dailyGoalMinutes),
+    [exercises, sessions, preferences.dailyGoalMinutes]
+  );
+
   // Même pattern que exercise-manager.tsx#update, sans l'optimisation par
   // ref : une seule fiche est affichée à la fois ici, pas une grille de
   // centaines de cartes memoïsées.
@@ -285,7 +298,7 @@ export function SessionRunner() {
                 </p>
               )}
 
-              <div className="mx-auto mt-5 inline-flex items-center gap-1 rounded-xl border border-white/[0.09] bg-black/20 p-1">
+              <div className="mx-auto mt-5 inline-flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-black/20 p-1">
                 <button
                   type="button"
                   onClick={() => setSizingMode("time")}
@@ -392,7 +405,7 @@ export function SessionRunner() {
         {previewSelection.length > 0 && (
           <div className="grid gap-2 sm:grid-cols-2">
             {previewSelection.map(({ exercise, reasons }) => (
-              <div key={exercise.id} className="flex items-start gap-3 rounded-xl border border-white/[0.06] p-3 text-sm">
+              <div key={exercise.id} className="flex items-start gap-3 rounded-xl border border-hairline/[0.06] p-3 text-sm">
                 <SubjectAvatar subject={exercise.subject} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
@@ -463,9 +476,31 @@ export function SessionRunner() {
             )}
           </div>
         )}
+
+        {upcomingNextAction.kind === "start-session" && (
+          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-hairline/[0.08] bg-hairline/[0.025] p-5 text-left">
+            <p className="eyebrow">Et maintenant ?</p>
+            <p className="mt-2 text-sm font-medium text-zinc-100">{upcomingNextAction.title}</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-500">{upcomingNextAction.description}</p>
+            <Button
+              size="sm"
+              className="mt-4 w-full"
+              // Navigation complète (pas de Link) : SessionRunner ne
+              // réinitialise sa sélection qu'au montage — un rechargement
+              // complet est le moyen le plus sûr de repartir sur cette
+              // nouvelle recommandation sans dupliquer sa logique de démarrage.
+              onClick={() => {
+                window.location.href = `/session?minutes=${upcomingNextAction.minutes}`;
+              }}
+            >
+              {upcomingNextAction.ctaLabel} <ArrowRight size={14} />
+            </Button>
+          </div>
+        )}
+
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link href="/dashboard">
-            <Button>Retour au tableau de bord</Button>
+            <Button variant={upcomingNextAction.kind === "start-session" ? "secondary" : "primary"}>Retour au tableau de bord</Button>
           </Link>
           <Link href="/exercises">
             <Button variant="secondary">Voir les exercices</Button>

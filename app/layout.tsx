@@ -5,13 +5,19 @@ import "katex/dist/katex.min.css";
 import "./globals.css";
 
 /**
- * Applique l'accent persisté AVANT l'hydratation React, pour éviter un flash
- * de l'accent par défaut chez un utilisateur qui en a choisi un autre
- * (Réglages → Apparence). Duplique volontairement le calcul de contraste de
- * lib/theme.ts#accentForeground (petit script inline, ne peut pas importer
- * de module) — `ThemeSync` prend le relais après hydratation.
+ * Applique l'accent ET le mode d'apparence persistés AVANT l'hydratation
+ * React, pour éviter un flash (accent par défaut, ou thème sombre par défaut
+ * chez qui a choisi "clair") — même principe pour les deux : petit script
+ * inline (ne peut pas importer de module, voir lib/theme.ts pour la version
+ * "propre"), `ThemeSync` prend le relais après hydratation.
+ *
+ * Mode : "light"/"dark" pose `data-theme` sur `<html>` ; "system" (ou
+ * préférence absente/invalide) ne pose rien — voir app/globals.css, qui
+ * laisse alors `prefers-color-scheme` décider. C'est la même règle que
+ * `applyThemeMode` (lib/theme.ts), dupliquée ici pour la même raison que
+ * l'accent ci-dessus.
  */
-const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('prepahub:preferences');if(!raw)return;var accent=JSON.parse(raw).accent;if(!/^#?[0-9a-fA-F]{6}$/.test(accent||''))return;var hex=accent.replace('#','');var r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);var lin=function(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);};var lum=0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b);var fg=lum>0.45?'0 0 0':'255 255 255';var root=document.documentElement.style;root.setProperty('--accent-rgb',r+' '+g+' '+b);root.setProperty('--accent-fg-rgb',fg);}catch(e){}})();`;
+const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('prepahub:preferences');if(!raw)return;var prefs=JSON.parse(raw);var accent=prefs.accent;if(/^#?[0-9a-fA-F]{6}$/.test(accent||'')){var hex=accent.replace('#','');var r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);var lin=function(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);};var lum=0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b);var fg=lum>0.45?'0 0 0':'255 255 255';var root=document.documentElement.style;root.setProperty('--accent-rgb',r+' '+g+' '+b);root.setProperty('--accent-fg-rgb',fg);}var mode=prefs.themeMode;if(mode==='light'||mode==='dark'){document.documentElement.setAttribute('data-theme',mode);}}catch(e){}})();`;
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,7 +36,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#09090b",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -116,7 +116,7 @@ describe("computeDailyPlan", () => {
 
 describe("computeSubjectPriorities", () => {
   it("aucune donnée : liste vide", () => {
-    expect(computeSubjectPriorities([], [], NOW)).toEqual([]);
+    expect(computeSubjectPriorities([], [], [], NOW)).toEqual([]);
   });
 
   it("plusieurs échecs récents → niveau critique", () => {
@@ -125,7 +125,7 @@ describe("computeSubjectPriorities", () => {
       makeSession(exercise.id, "Mathématiques", { started_at: "2026-08-10T10:00:00.000Z", result: "échoué" }),
       makeSession(exercise.id, "Mathématiques", { started_at: "2026-08-09T10:00:00.000Z", result: "échoué" }),
     ];
-    const priorities = computeSubjectPriorities([exercise], sessions, NOW);
+    const priorities = computeSubjectPriorities([exercise], sessions, [], NOW);
     const entry = priorities.find((item) => item.subject === "Mathématiques");
     expect(entry?.level).toBe("critique");
     expect(entry?.reason).toContain("plusieurs échecs");
@@ -134,7 +134,7 @@ describe("computeSubjectPriorities", () => {
   it("matière entièrement maîtrisée et récente → niveau correct", () => {
     const exercise = makeExercise({ subject: "Chimie", mastery: 100, status: "maîtrisé", attempts: 2, last_worked_at: "2026-08-11T09:00:00.000Z" });
     const sessions = [makeSession(exercise.id, "Chimie", { started_at: "2026-08-11T09:00:00.000Z", result: "réussi" })];
-    const priorities = computeSubjectPriorities([exercise], sessions, NOW);
+    const priorities = computeSubjectPriorities([exercise], sessions, [], NOW);
     const entry = priorities.find((item) => item.subject === "Chimie");
     expect(entry?.level).toBe("correct");
     expect(entry?.reason).toBe("progression correcte");
@@ -142,15 +142,27 @@ describe("computeSubjectPriorities", () => {
 
   it("une matière jamais engagée (aucune tentative, tout par défaut) n'est jamais \"critique\" — pas de fausse alarme sur une banque fraîche", () => {
     const untouched = Array.from({ length: 20 }, () => makeExercise({ subject: "Physique", mastery: 0, status: "à faire" }));
-    const priorities = computeSubjectPriorities(untouched, [], NOW);
+    const priorities = computeSubjectPriorities(untouched, [], [], NOW);
     const entry = priorities.find((item) => item.subject === "Physique");
     expect(entry?.level).not.toBe("critique");
     expect(entry?.reason).not.toContain("maîtrise faible");
   });
 
   it("une matière sans aucun exercice actif n'apparaît pas", () => {
-    const priorities = computeSubjectPriorities([], [], NOW);
+    const priorities = computeSubjectPriorities([], [], [], NOW);
     expect(priorities.find((item) => item.subject === "Physique")).toBeUndefined();
+  });
+
+  it("le libellé inclut le chapitre le plus faible de la matière, format \"Matière — Chapitre\"", () => {
+    const chapters: Chapter[] = [
+      { id: "chap-weak", subject: "Mathématiques", label: "Analyse" },
+      { id: "chap-strong", subject: "Mathématiques", label: "Algèbre" },
+    ];
+    const weak = makeExercise({ subject: "Mathématiques", chapter_id: "chap-weak", mastery: 0, status: "à revoir" });
+    const strong = makeExercise({ subject: "Mathématiques", chapter_id: "chap-strong", mastery: 100, status: "maîtrisé" });
+    const priorities = computeSubjectPriorities([weak, strong], [], chapters, NOW);
+    const entry = priorities.find((item) => item.subject === "Mathématiques");
+    expect(entry?.label).toBe("Mathématiques — Analyse");
   });
 });
 

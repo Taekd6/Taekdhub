@@ -1,19 +1,27 @@
 "use client";
 
-import { Check, RotateCcw } from "lucide-react";
+import { Check, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { ACCENT_PRESETS, DEFAULT_ACCENT, accentForegroundCss, applyAccent, hexToRgb } from "@/lib/theme";
+import { ACCENT_PRESETS, DEFAULT_ACCENT, accentForegroundCss, applyAccent, applyThemeMode, THEME_MODES, type ThemeMode, hexToRgb } from "@/lib/theme";
 import { cn } from "@/lib/cn";
 
 function sameHex(a: string, b: string) {
   return a.toLowerCase() === b.toLowerCase();
 }
 
+/** Icône + libellé par mode — ordre d'affichage volontaire (clair, sombre, système), voir lib/theme.ts#THEME_MODES. */
+const MODE_META: Record<ThemeMode, { label: string; icon: typeof Sun }> = {
+  light: { label: "Clair", icon: Sun },
+  dark: { label: "Sombre", icon: Moon },
+  system: { label: "Système", icon: Monitor },
+};
+
 export function ThemePicker() {
   const { preferences, savePreferences, ready } = usePrepahubData();
   const accent = ready && hexToRgb(preferences.accent) ? preferences.accent : DEFAULT_ACCENT;
   const isPreset = ACCENT_PRESETS.some((preset) => sameHex(preset.hex, accent));
+  const mode = ready ? preferences.themeMode : "system";
 
   function choose(hex: string) {
     // Applique la variable CSS directement ici (en plus de la persistance) :
@@ -25,28 +33,60 @@ export function ThemePicker() {
     savePreferences({ ...preferences, accent: hex });
   }
 
+  function chooseMode(next: ThemeMode) {
+    applyThemeMode(next);
+    savePreferences({ ...preferences, themeMode: next });
+  }
+
   return (
     <Card className="max-w-2xl p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="eyebrow">Apparence</p>
-          <h2 className="mt-2 text-lg font-semibold">Choisis ta couleur d&apos;accent.</h2>
-          <p className="mt-2 text-sm leading-6 text-zinc-500">
-            Le texte posé sur l&apos;accent reste toujours lisible — la teinte s&apos;applique instantanément, sur toute l&apos;interface.
-          </p>
+      <p className="eyebrow">Apparence</p>
+
+      <div className="mt-4">
+        <h2 className="text-sm font-semibold text-zinc-200">Mode</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {THEME_MODES.map((option) => {
+            const meta = MODE_META[option];
+            const Icon = meta.icon;
+            const active = mode === option;
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => chooseMode(option)}
+                aria-pressed={active}
+                className={cn(
+                  "focus-ring flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition",
+                  active ? "border-accent/40 bg-accent/10 text-accent" : "border-hairline/[0.09] text-zinc-400 hover:border-hairline/[0.14] hover:text-zinc-200"
+                )}
+              >
+                <Icon size={15} /> {meta.label}
+              </button>
+            );
+          })}
         </div>
-        {accent !== DEFAULT_ACCENT && (
-          <button
-            type="button"
-            onClick={() => choose(DEFAULT_ACCENT)}
-            className="focus-ring flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-zinc-500 hover:bg-white/[0.045] hover:text-zinc-300"
-          >
-            <RotateCcw size={13} /> Réinitialiser
-          </button>
-        )}
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-3">
+      <div className="mt-6 border-t border-hairline/[0.06] pt-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-semibold text-zinc-200">Couleur principale</h2>
+            <p className="mt-1.5 text-sm leading-6 text-zinc-500">
+              Le texte posé sur l&apos;accent reste toujours lisible — la teinte s&apos;applique instantanément, sur toute l&apos;interface.
+            </p>
+          </div>
+          {accent !== DEFAULT_ACCENT && (
+            <button
+              type="button"
+              onClick={() => choose(DEFAULT_ACCENT)}
+              className="focus-ring flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-zinc-500 hover:bg-hairline/[0.045] hover:text-zinc-300"
+            >
+              <RotateCcw size={13} /> Réinitialiser
+            </button>
+          )}
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-3">
         {ACCENT_PRESETS.map((preset) => {
           const active = sameHex(preset.hex, accent);
           return (
@@ -84,6 +124,7 @@ export function ThemePicker() {
           </span>
           <span className={cn("text-2xs", !isPreset ? "text-zinc-200" : "text-zinc-500")}>Personnalisé</span>
         </label>
+        </div>
       </div>
     </Card>
   );

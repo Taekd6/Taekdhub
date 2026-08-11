@@ -2,11 +2,187 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * Système de thème (Sprint personnalisation) — deux dimensions indépendantes :
+ *
+ * 1. COULEUR D'ACCENT (--accent-rgb / --accent-fg-rgb) : déjà en place avant
+ *    ce sprint (voir lib/theme.ts), inchangé ici.
+ * 2. MODE D'APPARENCE (clair/sombre/système) : nouveau. Un seul mécanisme —
+ *    `[data-theme="light"]` / `[data-theme="dark"]` posé sur `<html>` par
+ *    `applyThemeMode` (lib/theme.ts) pour un choix explicite ; l'ABSENCE de
+ *    `data-theme` (mode "système") laisse `prefers-color-scheme` décider via
+ *    la media query ci-dessous. Jamais un troisième bloc de valeurs dupliqué :
+ *    la media query réutilise exactement les mêmes variables que
+ *    `[data-theme="light"]`.
+ *
+ * Tous les composants existants utilisent déjà des classes Tailwind standard
+ * (`bg-canvas`, `text-zinc-400`, `border-white/[0.06]`, etc. — voir
+ * tailwind.config.ts) : aucun composant n'a besoin d'être réécrit pour
+ * devenir "theme-aware", seules ces variables changent de valeur.
+ *
+ * `--hairline-rgb` remplace la couleur `white` utilisée jusqu'ici pour les
+ * bordures/surbrillances discrètes (`border-white/[0.06]`, `divide-white/[0.06]`,
+ * etc.) : blanc-sur-blanc serait invisible en thème clair, il faut donc que
+ * cette teinte s'inverse avec le thème. `black/[opacity]` (fonds "en creux"
+ * des champs/boutons secondaires), lui, reste une couleur Tailwind normale et
+ * n'a PAS besoin de varier : du noir à faible opacité assombrit légèrement
+ * son fond quel que soit le thème (déjà correct en clair comme en sombre).
+ */
 @layer base {
   :root {
-    /** Accent personnalisable (Sprint identité visuelle, voir lib/theme.ts) — valeurs par défaut identiques à l'ancien accent fixe (#d4f36b / noir), donc aucun changement visuel tant que l'utilisateur ne choisit pas une autre teinte dans Réglages. */
     --accent-rgb: 212 243 107;
     --accent-fg-rgb: 0 0 0;
+
+    /* Thème sombre — valeurs par défaut, identiques à celles utilisées avant ce sprint : aucun changement visuel pour un utilisateur qui ne touche à rien. */
+    --canvas-rgb: 9 9 11;
+    --panel-rgb: 18 18 20;
+    --elevated-rgb: 24 24 27;
+    --line-rgb: 39 39 42;
+    --ink-rgb: 244 244 245;
+    --muted-rgb: 161 161 170;
+    --subtle-rgb: 113 113 122;
+    --hairline-rgb: 255 255 255;
+
+    /* Échelle "zinc" — reprend exactement la palette Tailwind par défaut en sombre (aucune classe text-zinc-N/bg-zinc-N existante ne change de valeur ici). */
+    --zinc-50-rgb: 250 250 250;
+    --zinc-100-rgb: 244 244 245;
+    --zinc-200-rgb: 228 228 231;
+    --zinc-300-rgb: 212 212 216;
+    --zinc-400-rgb: 161 161 170;
+    --zinc-500-rgb: 113 113 122;
+    --zinc-600-rgb: 82 82 91;
+    --zinc-700-rgb: 63 63 70;
+    --zinc-800-rgb: 39 39 42;
+    --zinc-900-rgb: 24 24 27;
+    --zinc-950-rgb: 9 9 11;
+
+    /*
+     * Texte "statut" (réussi/attention/échec) posé sur un fond teinté à
+     * faible opacité (ex. `bg-emerald-400/10 text-emerald-300` — Focus View,
+     * badges, "Prêt pour le DS ?"). Les teintes 400/500 (fonds/bordures,
+     * utilisées seulement en faible opacité) restent identiques entre les
+     * thèmes — un lavis translucide reste lisible quel que soit le fond.
+     * Seules 200/300 (TEXTE) doivent s'assombrir en clair : gardées ici
+     * telles quelles pour le sombre (valeurs Tailwind d'origine).
+     */
+    --emerald-200-rgb: 167 243 208;
+    --emerald-300-rgb: 110 231 183;
+    --emerald-400-rgb: 52 211 153;
+    --emerald-500-rgb: 16 185 129;
+    --amber-200-rgb: 253 230 138;
+    --amber-300-rgb: 252 211 77;
+    --amber-400-rgb: 251 191 36;
+    --amber-500-rgb: 245 158 11;
+    --rose-200-rgb: 254 205 211;
+    --rose-300-rgb: 253 164 175;
+    --rose-400-rgb: 251 113 133;
+    --rose-500-rgb: 244 63 94;
+
+    /* Identité de matière (lib/study.ts#subjectMeta — avatars "M"/"P"/"C"…, partout dans l'app) : même principe, seule la teinte 200 (texte) s'assombrit en clair. */
+    --violet-200-rgb: 221 214 254;
+    --violet-400-rgb: 167 139 250;
+    --sky-200-rgb: 186 230 253;
+    --sky-400-rgb: 56 189 248;
+    --teal-200-rgb: 153 246 228;
+    --teal-400-rgb: 45 212 191;
+    --orange-200-rgb: 254 215 170;
+    --orange-400-rgb: 251 146 60;
+  }
+
+  /* Thème clair explicite (Réglages → Apparence → Clair). */
+  :root[data-theme="light"] {
+    --canvas-rgb: 250 250 250;
+    --panel-rgb: 255 255 255;
+    --elevated-rgb: 255 255 255;
+    --line-rgb: 228 228 231;
+    --ink-rgb: 24 24 27;
+    --muted-rgb: 82 82 91;
+    --subtle-rgb: 113 113 122;
+    --hairline-rgb: 0 0 0;
+
+    /* Échelle "zinc" inversée : une classe conçue pour "texte clair sur fond sombre" (ex. text-zinc-100 = texte principal) doit rester le texte PRINCIPAL une fois le fond devenu clair — donc devenir sombre, pas rester claire. */
+    --zinc-50-rgb: 9 9 11;
+    --zinc-100-rgb: 24 24 27;
+    --zinc-200-rgb: 39 39 42;
+    --zinc-300-rgb: 63 63 70;
+    --zinc-400-rgb: 82 82 91;
+    --zinc-500-rgb: 82 82 91;
+    --zinc-600-rgb: 161 161 170;
+    --zinc-700-rgb: 212 212 216;
+    --zinc-800-rgb: 228 228 231;
+    --zinc-900-rgb: 244 244 245;
+    --zinc-950-rgb: 250 250 250;
+
+    /* Texte statut assombri pour rester lisible sur fond clair — 400/500 (fonds/bordures) inchangés, voir la note en thème sombre ci-dessus. */
+    --emerald-200-rgb: 4 120 87;
+    --emerald-300-rgb: 4 120 87;
+    --emerald-400-rgb: 52 211 153;
+    --emerald-500-rgb: 16 185 129;
+    --amber-200-rgb: 180 83 9;
+    --amber-300-rgb: 180 83 9;
+    --amber-400-rgb: 251 191 36;
+    --amber-500-rgb: 245 158 11;
+    --rose-200-rgb: 190 18 60;
+    --rose-300-rgb: 190 18 60;
+    --rose-400-rgb: 251 113 133;
+    --rose-500-rgb: 244 63 94;
+
+    --violet-200-rgb: 109 40 217;
+    --violet-400-rgb: 167 139 250;
+    --sky-200-rgb: 3 105 161;
+    --sky-400-rgb: 56 189 248;
+    --teal-200-rgb: 15 118 110;
+    --teal-400-rgb: 45 212 191;
+    --orange-200-rgb: 194 65 12;
+    --orange-400-rgb: 251 146 60;
+  }
+
+  /* Mode "système" (aucun `data-theme` posé) : mêmes valeurs que `[data-theme="light"]` ci-dessus, appliquées seulement si l'OS/navigateur préfère le clair. Un choix explicite ("light"/"dark") l'emporte toujours — voir le sélecteur `:not([data-theme="dark"])`. */
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --canvas-rgb: 250 250 250;
+      --panel-rgb: 255 255 255;
+      --elevated-rgb: 255 255 255;
+      --line-rgb: 228 228 231;
+      --ink-rgb: 24 24 27;
+      --muted-rgb: 82 82 91;
+      --subtle-rgb: 113 113 122;
+      --hairline-rgb: 0 0 0;
+
+      --zinc-50-rgb: 9 9 11;
+      --zinc-100-rgb: 24 24 27;
+      --zinc-200-rgb: 39 39 42;
+      --zinc-300-rgb: 63 63 70;
+      --zinc-400-rgb: 82 82 91;
+      --zinc-500-rgb: 82 82 91;
+      --zinc-600-rgb: 161 161 170;
+      --zinc-700-rgb: 212 212 216;
+      --zinc-800-rgb: 228 228 231;
+      --zinc-900-rgb: 244 244 245;
+      --zinc-950-rgb: 250 250 250;
+
+      --emerald-200-rgb: 4 120 87;
+      --emerald-300-rgb: 4 120 87;
+      --emerald-400-rgb: 52 211 153;
+      --emerald-500-rgb: 16 185 129;
+      --amber-200-rgb: 180 83 9;
+      --amber-300-rgb: 180 83 9;
+      --amber-400-rgb: 251 191 36;
+      --amber-500-rgb: 245 158 11;
+      --rose-200-rgb: 190 18 60;
+      --rose-300-rgb: 190 18 60;
+      --rose-400-rgb: 251 113 133;
+      --rose-500-rgb: 244 63 94;
+
+      --violet-200-rgb: 109 40 217;
+      --violet-400-rgb: 167 139 250;
+      --sky-200-rgb: 3 105 161;
+      --sky-400-rgb: 56 189 248;
+      --teal-200-rgb: 15 118 110;
+      --teal-400-rgb: 45 212 191;
+      --orange-200-rgb: 194 65 12;
+      --orange-400-rgb: 251 146 60;
+    }
   }
 
   * {
@@ -14,18 +190,19 @@
   }
 
   html {
-    background: #09090b;
+    background: rgb(var(--canvas-rgb));
     scroll-behavior: smooth;
   }
 
   body {
     margin: 0;
     min-height: 100vh;
-    background: #09090b;
-    color: #f4f4f5;
+    background: rgb(var(--canvas-rgb));
+    color: rgb(var(--ink-rgb));
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   body::before {
@@ -55,11 +232,11 @@
 
 @layer components {
   .surface {
-    @apply border border-white/[0.08] bg-elevated/70 shadow-surface backdrop-blur-xl;
+    @apply border border-hairline/[0.08] bg-elevated/70 shadow-surface backdrop-blur-xl;
   }
 
   .surface-hover {
-    @apply transition-all duration-200 hover:border-white/[0.12] hover:bg-elevated/90;
+    @apply transition-all duration-200 hover:border-hairline/[0.12] hover:bg-elevated/90;
   }
 
   .eyebrow {
@@ -71,7 +248,7 @@
   }
 
   .text-gradient {
-    @apply bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-ink to-zinc-400 bg-clip-text text-transparent;
   }
 
   .scrollbar-none::-webkit-scrollbar {
@@ -83,6 +260,6 @@
   }
 
   .glass-divider {
-    @apply h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent;
+    @apply h-px bg-gradient-to-r from-transparent via-hairline/[0.08] to-transparent;
   }
 }

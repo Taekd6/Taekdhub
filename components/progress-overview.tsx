@@ -56,17 +56,17 @@ function WeekEvolution({ exercises, sessions, weekSnapshots }: { exercises: Exer
       ) : (
         <div className="mt-5 space-y-4">
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-white/[0.06] p-3.5">
+            <div className="rounded-xl border border-hairline/[0.06] p-3.5">
               <p className="text-xs text-zinc-500">Temps travaillé</p>
               <p className="mt-1.5 text-xl font-semibold tracking-tight">{formatDuration(comparison.currentTotalSeconds)}</p>
               <p className="mt-0.5 text-xs text-zinc-500">{withSignMinutes(comparison.deltaTotalSeconds)} vs semaine précédente</p>
             </div>
-            <div className="rounded-xl border border-white/[0.06] p-3.5">
+            <div className="rounded-xl border border-hairline/[0.06] p-3.5">
               <p className="text-xs text-zinc-500">Exercices maîtrisés</p>
               <p className="mt-1.5 text-xl font-semibold tracking-tight">{comparison.currentMasteredCount}</p>
               <p className="mt-0.5 text-xs text-zinc-500">{withSign(comparison.deltaMasteredCount)} vs semaine précédente</p>
             </div>
-            <div className="rounded-xl border border-white/[0.06] p-3.5">
+            <div className="rounded-xl border border-hairline/[0.06] p-3.5">
               <p className="text-xs text-zinc-500">Progression globale</p>
               <p className="mt-1.5 text-xl font-semibold tracking-tight">{comparison.currentCompletionRate}%</p>
               <p className="mt-0.5 text-xs text-zinc-500">{withSign(comparison.deltaCompletionRate, " pt")} vs semaine précédente</p>
@@ -251,7 +251,7 @@ export function ProgressOverview() {
         {model.byChapter.length ? (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {model.byChapter.map(({ chapter, total, mastered, completionRate }) => (
-              <div key={chapter.id} className="rounded-xl border border-white/[0.07] p-3.5">
+              <div key={chapter.id} className="rounded-xl border border-hairline/[0.07] p-3.5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{chapter.label}</p>

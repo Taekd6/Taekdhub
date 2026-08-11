@@ -60,7 +60,10 @@ export function Timer() {
 
   const content = (
     <>
-      <p className="eyebrow">Séance en cours</p>
+      <p className="eyebrow flex items-center justify-center gap-2">
+        {running && <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent" />}
+        Séance en cours
+      </p>
       <Select
         value={context.subject}
         onChange={(e) => setContext({ subject: e.target.value as Subject })}

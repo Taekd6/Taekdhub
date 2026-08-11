@@ -102,7 +102,7 @@ export function DashboardOverview() {
       recentDays: recentDaySummaries(sessions, now, 5),
       readiness: computeReadinessBySubject(exercises, sessions, now),
       weeklySummary: computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now),
-      subjectPriorities: computeSubjectPriorities(exercises, sessions, now),
+      subjectPriorities: computeSubjectPriorities(exercises, sessions, chapters, now),
       streak: computeStreak(sessions),
       contestDays: preferences.contestDate
         ? Math.max(0, Math.ceil((new Date(preferences.contestDate).getTime() - now.getTime()) / 86400000))
@@ -191,7 +191,7 @@ export function DashboardOverview() {
                 <Link
                   key={exercise.id}
                   href={`/exercises?focus=${exercise.id}`}
-                  className="focus-ring flex min-w-0 items-center gap-3 rounded-xl border border-white/[0.06] p-3 text-sm transition hover:border-white/[0.14] hover:bg-white/[0.02]"
+                  className="focus-ring flex min-w-0 items-center gap-3 rounded-xl border border-hairline/[0.06] p-3 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
                 >
                   <SubjectAvatar subject={exercise.subject} size="sm" />
                   <div className="min-w-0 flex-1">
@@ -245,7 +245,7 @@ export function DashboardOverview() {
               <CardTitle className="mt-1 text-lg">Ce que tu devrais travailler aujourd&apos;hui</CardTitle>
             </div>
           </div>
-          <div className="inline-flex items-center gap-1 rounded-xl border border-white/[0.09] bg-black/20 p-1">
+          <div className="inline-flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-black/20 p-1">
             {PLAN_DURATION_PRESETS.map((preset) => (
               <button
                 key={preset}
@@ -271,7 +271,7 @@ export function DashboardOverview() {
           <>
             <ol className="mt-5 space-y-2.5">
               {dailyPlan.blocks.map((block, index) => (
-                <li key={block.subject} className="flex items-start gap-3 rounded-xl border border-white/[0.06] p-3.5 text-sm">
+                <li key={block.subject} className="flex items-start gap-3 rounded-xl border border-hairline/[0.06] p-3.5 text-sm">
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent">{index + 1}</span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
@@ -283,7 +283,7 @@ export function DashboardOverview() {
                 </li>
               ))}
             </ol>
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-5">
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.06] pt-5">
               <p className="text-sm text-zinc-400">
                 Total : <span className="font-semibold text-zinc-100">{formatMinutes(dailyPlan.totalMinutes)}</span> · {dailyPlan.totalExercises} exercice
                 {dailyPlan.totalExercises > 1 ? "s" : ""}
@@ -296,7 +296,74 @@ export function DashboardOverview() {
         )}
       </Card>
 
-      {/* OBJECTIF DU JOUR + TA PROGRESSION */}
+      {/* PRIORITÉS DE LA SEMAINE — "pourquoi" : juste après le plan, avant les chiffres d'état ("où j'en suis" ci-dessous), pour rester dans l'ordre de lecture quoi → pourquoi → où j'en suis → comment (voir la doc du composant). */}
+      {subjectPriorities.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <Flag size={14} className="text-accent" />
+            <p className="eyebrow">Priorités de la semaine</p>
+          </div>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            {subjectPriorities.map(({ subject, label, level, reason }) => {
+              const meta = PRIORITY_META[level];
+              return (
+                <div key={subject} className="flex items-center justify-between gap-3 rounded-xl border border-hairline/[0.06] px-3.5 py-2.5 text-sm">
+                  <span className="flex items-center gap-2 font-medium text-zinc-100">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
+                    {label}
+                  </span>
+                  <span className="text-right text-xs text-zinc-500">{reason}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* À CONSOLIDER — même logique "pourquoi", au niveau du chapitre. */}
+      {chapters.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={14} className="text-accent" />
+            <p className="eyebrow">À consolider</p>
+          </div>
+          <CardTitle className="mt-2">
+            {toConsolidate.length > 0 ? "Ces chapitres méritent ton attention" : "Rien à consolider pour l'instant"}
+          </CardTitle>
+
+          {toConsolidate.length === 0 ? (
+            <p className="mt-2 text-sm text-zinc-500">Tous les chapitres actifs sont sous contrôle. Continue comme ça.</p>
+          ) : (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {toConsolidate.map(({ chapter, averageMastery, reasons, href }) => (
+                <Link
+                  key={chapter.id}
+                  href={href}
+                  className="focus-ring flex flex-col gap-2.5 rounded-xl border border-hairline/[0.06] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="min-w-0 truncate font-medium text-zinc-100">{chapter.label}</p>
+                    <span className="whitespace-nowrap text-xs text-zinc-500">{averageMastery}%</span>
+                  </div>
+                  <p className="-mt-1.5 text-2xs text-zinc-500">{chapter.subject}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {reasons.map((reason) => (
+                      <Badge key={reason} variant="warning">
+                        {reason}
+                      </Badge>
+                    ))}
+                  </div>
+                  <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-accent">
+                    Travailler ce chapitre <ArrowRight size={11} />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* OBJECTIF DU JOUR + TA PROGRESSION — "où j'en suis" à partir d'ici. */}
       <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
         <Card className="rounded-3xl p-6 sm:p-7">
           <div className="flex items-start justify-between">
@@ -418,7 +485,7 @@ export function DashboardOverview() {
                   <Link
                     key={subject}
                     href={`/progress#subject-${subjectMeta[subject].short}`}
-                    className="focus-ring -mx-2 block rounded-lg px-2 py-1 transition hover:bg-white/[0.02]"
+                    className="focus-ring -mx-2 block rounded-lg px-2 py-1 transition hover:bg-hairline/[0.02]"
                   >
                     <div className="flex items-center justify-between text-sm">
                       <span className="flex items-center gap-2 font-medium text-zinc-200">
@@ -452,7 +519,7 @@ export function DashboardOverview() {
                     <Link
                       key={subject}
                       href="/progress"
-                      className="focus-ring flex items-center justify-between gap-2 rounded-xl border border-white/[0.06] px-3.5 py-2.5 text-sm transition hover:border-white/[0.14] hover:bg-white/[0.02]"
+                      className="focus-ring flex items-center justify-between gap-2 rounded-xl border border-hairline/[0.06] px-3.5 py-2.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
                     >
                       <span className="font-medium text-zinc-100">{subject}</span>
                       <span className="flex items-center gap-1.5 text-xs text-zinc-400">
@@ -469,73 +536,6 @@ export function DashboardOverview() {
         </section>
       )}
 
-      {/* PRIORITÉS DE LA SEMAINE */}
-      {subjectPriorities.length > 0 && (
-        <Card className="p-6">
-          <div className="flex items-center gap-2">
-            <Flag size={14} className="text-accent" />
-            <p className="eyebrow">Priorités de la semaine</p>
-          </div>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2">
-            {subjectPriorities.map(({ subject, level, reason }) => {
-              const meta = PRIORITY_META[level];
-              return (
-                <div key={subject} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] px-3.5 py-2.5 text-sm">
-                  <span className="flex items-center gap-2 font-medium text-zinc-100">
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
-                    {subject}
-                  </span>
-                  <span className="text-right text-xs text-zinc-500">{reason}</span>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
-
-      {/* À CONSOLIDER */}
-      {chapters.length > 0 && (
-        <Card className="p-6">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={14} className="text-accent" />
-            <p className="eyebrow">À consolider</p>
-          </div>
-          <CardTitle className="mt-2">
-            {toConsolidate.length > 0 ? "Ces chapitres méritent ton attention" : "Rien à consolider pour l'instant"}
-          </CardTitle>
-
-          {toConsolidate.length === 0 ? (
-            <p className="mt-2 text-sm text-zinc-500">Tous les chapitres actifs sont sous contrôle. Continue comme ça.</p>
-          ) : (
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {toConsolidate.map(({ chapter, averageMastery, reasons, href }) => (
-                <Link
-                  key={chapter.id}
-                  href={href}
-                  className="focus-ring flex flex-col gap-2.5 rounded-xl border border-white/[0.06] p-3.5 text-sm transition hover:border-white/[0.14] hover:bg-white/[0.02]"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="min-w-0 truncate font-medium text-zinc-100">{chapter.label}</p>
-                    <span className="whitespace-nowrap text-xs text-zinc-500">{averageMastery}%</span>
-                  </div>
-                  <p className="-mt-1.5 text-2xs text-zinc-500">{chapter.subject}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {reasons.map((reason) => (
-                      <Badge key={reason} variant="warning">
-                        {reason}
-                      </Badge>
-                    ))}
-                  </div>
-                  <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-accent">
-                    Travailler ce chapitre <ArrowRight size={11} />
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </Card>
-      )}
-
       {/* ACTIVITÉ RÉCENTE */}
       {recentDays.length > 0 && (
         <Card className="p-6">
@@ -543,7 +543,7 @@ export function DashboardOverview() {
             <HistoryIcon size={14} className="text-accent" />
             <p className="eyebrow">Activité récente</p>
           </div>
-          <div className="mt-4 divide-y divide-white/[0.06]">
+          <div className="mt-4 divide-y divide-hairline/[0.06]">
             {recentDays.map((day) => (
               <div key={day.dateKey} className="flex items-center justify-between py-2.5 text-sm first:pt-0 last:pb-0">
                 <span className="text-zinc-300">{day.label}</span>
@@ -571,7 +571,7 @@ export function DashboardOverview() {
                 <Link
                   key={item.key}
                   href={item.href}
-                  className="focus-ring flex min-w-0 flex-col gap-2 rounded-xl border border-white/[0.06] p-3.5 text-sm transition hover:border-white/[0.14] hover:bg-white/[0.02]"
+                  className="focus-ring flex min-w-0 flex-col gap-2 rounded-xl border border-hairline/[0.06] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
                 >
                   <span className="flex items-center gap-1.5 text-xs text-zinc-500">
                     <Icon size={12} /> {meta.label}

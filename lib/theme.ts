@@ -64,3 +64,25 @@ export function applyAccent(hex: string, root: HTMLElement = document.documentEl
   root.style.setProperty("--accent-rgb", rgb.join(" "));
   root.style.setProperty("--accent-fg-rgb", fg.join(" "));
 }
+
+/**
+ * Mode d'apparence (Sprint personnalisation) — indépendant de la couleur
+ * d'accent ci-dessus. "system" ne fixe AUCUN attribut : c'est l'absence de
+ * `data-theme` qui laisse `prefers-color-scheme` décider (voir
+ * app/globals.css) — un seul mécanisme, jamais un troisième état dupliqué
+ * en CSS.
+ */
+export type ThemeMode = "light" | "dark" | "system";
+export const THEME_MODES: ThemeMode[] = ["light", "dark", "system"];
+export const DEFAULT_THEME_MODE: ThemeMode = "system";
+
+/**
+ * Pose `data-theme` sur `root` — "light"/"dark" explicite, ou retire
+ * l'attribut pour "system" (voir la doc de `ThemeMode`). Seul point d'entrée,
+ * utilisé par `ThemeSync` (React) et le script anti-flash inline
+ * (app/layout.tsx), même principe que `applyAccent`.
+ */
+export function applyThemeMode(mode: ThemeMode, root: HTMLElement = document.documentElement): void {
+  if (mode === "system") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", mode);
+}

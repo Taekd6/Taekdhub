@@ -174,7 +174,7 @@ function Breadcrumb({
           <button
             type="button"
             onClick={onSubject}
-            className="focus-ring rounded-lg px-2 py-1 text-zinc-400 transition hover:bg-white/[0.045] hover:text-zinc-200"
+            className="focus-ring rounded-lg px-2 py-1 text-zinc-400 transition hover:bg-hairline/[0.045] hover:text-zinc-200"
           >
             {subject}
           </button>

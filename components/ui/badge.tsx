@@ -1,7 +1,7 @@
 import { cn } from "@/lib/cn";
 
 const variants = {
-  default: "bg-white/[0.045] text-zinc-300",
+  default: "bg-hairline/[0.045] text-zinc-300",
   accent: "bg-accent/10 text-accent",
   success: "bg-emerald-400/10 text-emerald-300",
   warning: "bg-amber-400/10 text-amber-300",

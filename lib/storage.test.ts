@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeSession, validateBackupPayload } from "@/lib/storage";
+import { normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -97,5 +97,41 @@ describe("export → JSON → import — round-trip complet (Phase 7)", () => {
 
     const restored = (roundTripped.sessions as unknown[]).map(normalizeSession);
     expect(restored.every((s) => s.result === null)).toBe(true);
+  });
+});
+
+/**
+ * Sprint personnalisation (Phase 11, "rétrocompatibilité" explicitement
+ * demandée) : une sauvegarde exportée avant `themeMode`/`weeklyGoalMinutes`
+ * doit rester utilisable telle quelle, sans jamais planter ni imposer une
+ * valeur incohérente à `applyThemeMode` (lib/theme.ts).
+ */
+describe("normalizePreferences — thème et rétrocompatibilité", () => {
+  it("une préférence vide retombe entièrement sur les défauts (dont themeMode: \"system\")", () => {
+    const prefs = normalizePreferences({});
+    expect(prefs.themeMode).toBe("system");
+    expect(prefs.weeklyGoalMinutes).toBe(300);
+    expect(prefs.accent).toMatch(/^#/);
+  });
+
+  it("conserve un themeMode valide", () => {
+    expect(normalizePreferences({ themeMode: "light" }).themeMode).toBe("light");
+    expect(normalizePreferences({ themeMode: "dark" }).themeMode).toBe("dark");
+  });
+
+  it("retombe sur \"system\" pour un themeMode invalide ou corrompu", () => {
+    expect(normalizePreferences({ themeMode: "bleu" }).themeMode).toBe("system");
+    expect(normalizePreferences({ themeMode: 42 }).themeMode).toBe("system");
+    expect(normalizePreferences({ themeMode: null }).themeMode).toBe("system");
+  });
+
+  it("une ancienne sauvegarde sans themeMode ni weeklyGoalMinutes reste valide et n'invente rien d'autre", () => {
+    const legacy = { displayName: "Ancien utilisateur", dailyGoalMinutes: 120, contestDate: "", accent: "#6366f1" };
+    const prefs = normalizePreferences(legacy);
+    expect(prefs.displayName).toBe("Ancien utilisateur");
+    expect(prefs.dailyGoalMinutes).toBe(120);
+    expect(prefs.accent).toBe("#6366f1");
+    expect(prefs.themeMode).toBe("system");
+    expect(prefs.weeklyGoalMinutes).toBe(300);
   });
 });

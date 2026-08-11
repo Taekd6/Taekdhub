@@ -1,5 +1,5 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
-import { DEFAULT_ACCENT } from "@/lib/theme";
+import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, THEME_MODES, type ThemeMode } from "@/lib/theme";
 import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, Priority, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
 
 const ATTEMPT_RESULTS: readonly AttemptResult[] = ["réussi", "partiel", "échoué"];
@@ -13,13 +13,14 @@ const weekSnapshotsKey = "prepahub:week-snapshots";
 
 /**
  * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
+ * `themeMode` (Sprint personnalisation) : clair/sombre/système — voir lib/theme.ts#ThemeMode, indépendant de `accent`.
  * `weeklyGoalMinutes` (Sprint Plan de travail) : objectif hebdomadaire, indépendant de `dailyGoalMinutes`
  * (voir lib/week.ts#computeWeeklySummary) — alimente le Dashboard ("Cette semaine") et les statistiques.
  * Absents d'une préférence enregistrée avant leur sprint respectif : retombent sur `defaults` via le
  * merge ci-dessous, comme tout champ ajouté après coup.
  */
-export type Preferences = { displayName: string; dailyGoalMinutes: number; weeklyGoalMinutes: number; contestDate: string; accent: string };
-const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, weeklyGoalMinutes: 300, contestDate: "", accent: DEFAULT_ACCENT };
+export type Preferences = { displayName: string; dailyGoalMinutes: number; weeklyGoalMinutes: number; contestDate: string; accent: string; themeMode: ThemeMode };
+const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, weeklyGoalMinutes: 300, contestDate: "", accent: DEFAULT_ACCENT, themeMode: DEFAULT_THEME_MODE };
 
 /**
  * Chapitre/thème (Sprint 3D) — créé et géré par l'utilisateur, jamais
@@ -262,6 +263,19 @@ function normalizeWeekSnapshot(raw: unknown): WeekSnapshot | null {
   };
 }
 
+/**
+ * Fusionne une préférence potentiellement partielle/corrompue (import, ancienne
+ * sauvegarde, édition manuelle du localStorage) avec `defaults` — même principe
+ * que `normalizeExercise`/`normalizeChapter` : un champ absent ou invalide
+ * retombe sur sa valeur par défaut plutôt que de propager une valeur incohérente
+ * (notamment `themeMode`, posé tel quel en attribut DOM par `applyThemeMode`).
+ */
+export function normalizePreferences(raw: unknown): Preferences {
+  const item = isRecord(raw) ? raw : {};
+  const merged = { ...defaults, ...item };
+  return { ...merged, themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE };
+}
+
 export const localData = {
   sessions: (): WorkSession[] =>
     typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(sessionsKey) || "[]") as unknown[]).map(normalizeSession),
@@ -274,7 +288,7 @@ export const localData = {
       ? []
       : (JSON.parse(localStorage.getItem(chaptersKey) || "[]") as unknown[]).map(normalizeChapter).filter((item): item is Chapter => item !== null),
   saveChapters: (items: Chapter[]) => localStorage.setItem(chaptersKey, JSON.stringify(items)),
-  preferences: (): Preferences => (typeof window === "undefined" ? defaults : { ...defaults, ...JSON.parse(localStorage.getItem(preferencesKey) || "{}") }),
+  preferences: (): Preferences => (typeof window === "undefined" ? defaults : normalizePreferences(JSON.parse(localStorage.getItem(preferencesKey) || "{}"))),
   savePreferences: (preferences: Preferences) => localStorage.setItem(preferencesKey, JSON.stringify(preferences)),
   /** Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`), ou `null` si aucune n'a jamais été faite. */
   lastBackupAt: (): string | null => (typeof window === "undefined" ? null : localStorage.getItem(lastBackupKey)),

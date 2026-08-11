@@ -44,7 +44,7 @@ export function PriorityBadge({ value }: { value: Priority }) {
 export function MasteryBar({ value }: { value: Mastery }) {
   return (
     <span className="inline-flex items-center gap-1.5" title={`Maîtrise ${value}%`}>
-      <ProgressBar value={value} animated={false} className="h-1.5 w-10 bg-white/[0.08]" barClassName="bg-sky-400/80" />
+      <ProgressBar value={value} animated={false} className="h-1.5 w-10 bg-hairline/[0.08]" barClassName="bg-sky-400/80" />
       <span className="text-2xs tabular-nums text-zinc-500">{value}%</span>
     </span>
   );
@@ -69,7 +69,7 @@ export function PriorityPicker({ value, onChange }: { value: Priority; onChange:
           aria-pressed={value === option}
           className={cn(
             "h-7 w-7 rounded-md text-xs font-semibold transition",
-            value === option ? "bg-rose-400/20 text-rose-200" : "bg-white/[0.04] text-zinc-500 hover:bg-white/[0.08] hover:text-zinc-300"
+            value === option ? "bg-rose-400/20 text-rose-200" : "bg-hairline/[0.04] text-zinc-500 hover:bg-hairline/[0.08] hover:text-zinc-300"
           )}
         >
           {option}
@@ -97,7 +97,7 @@ export function MasteryPicker({ value, onChange }: { value: Mastery; onChange: (
           aria-pressed={value === option}
           className={cn(
             "rounded-md px-2 py-1 text-2xs font-semibold tabular-nums transition",
-            value === option ? "bg-sky-400/20 text-sky-200" : "bg-white/[0.04] text-zinc-500 hover:bg-white/[0.08] hover:text-zinc-300"
+            value === option ? "bg-sky-400/20 text-sky-200" : "bg-hairline/[0.04] text-zinc-500 hover:bg-hairline/[0.08] hover:text-zinc-300"
           )}
         >
           {option}%

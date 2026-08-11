@@ -42,7 +42,7 @@ function NavItems({ compact = false }: { compact?: boolean }) {
             aria-current={active ? "page" : undefined}
             className={cn(
               "focus-ring group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
-              active ? "text-white" : "text-zinc-400 hover:text-zinc-100",
+              active ? "text-ink" : "text-zinc-400 hover:text-zinc-100",
               compact ? "justify-center px-2" : ""
             )}
             title={compact ? label : undefined}
@@ -50,7 +50,7 @@ function NavItems({ compact = false }: { compact?: boolean }) {
             {active && (
               <motion.span
                 layoutId="sidebar-active"
-                className="absolute inset-0 rounded-xl border border-white/[0.08] bg-white/[0.08] shadow-sm"
+                className="absolute inset-0 rounded-xl border border-hairline/[0.08] bg-hairline/[0.08] shadow-sm"
                 transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
               />
             )}
@@ -70,7 +70,7 @@ export function AppSidebar() {
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-white/[0.07] bg-zinc-950/80 p-3 backdrop-blur-xl lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-hairline/[0.07] bg-zinc-950/80 p-3 backdrop-blur-xl lg:flex">
         <Link
           href="/dashboard"
           className="focus-ring mb-6 mt-1 flex items-center gap-3 rounded-xl px-3 text-lg font-semibold tracking-tight"
@@ -87,7 +87,7 @@ export function AppSidebar() {
 
         <div className="mt-auto space-y-3">
           {ready && (
-            <div className="rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4">
+            <div className="rounded-2xl border border-hairline/[0.07] bg-hairline/[0.035] p-4">
               <div className="flex items-center gap-2">
                 <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15">
                   <Zap size={14} className="text-accent" />
@@ -99,7 +99,7 @@ export function AppSidebar() {
               </div>
             </div>
           )}
-          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4">
+          <div className="rounded-2xl border border-hairline/[0.07] bg-hairline/[0.035] p-4">
             <p className="text-xs font-semibold text-zinc-200">Règle du jour</p>
             <p className="mt-1 text-xs leading-5 text-zinc-500">
               Une séance sans distraction vaut plus qu&apos;une longue liste.
@@ -110,7 +110,7 @@ export function AppSidebar() {
 
       <nav
         aria-label="Navigation principale"
-        className="fixed inset-x-3 bottom-3 z-40 flex items-center justify-around gap-1 rounded-2xl border border-white/[0.1] bg-zinc-950/85 p-1.5 shadow-2xl shadow-black/30 backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-3 bottom-3 z-40 flex items-center justify-around gap-1 rounded-2xl border border-hairline/[0.1] bg-zinc-950/85 p-1.5 shadow-2xl shadow-black/30 backdrop-blur-xl lg:hidden"
       >
         <NavItems compact />
       </nav>
