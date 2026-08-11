@@ -75,10 +75,18 @@ export function SessionRunner() {
     if (!ready || initialized.current) return;
     initialized.current = true;
 
-    const subjectParam = new URLSearchParams(window.location.search).get("subject");
+    const params = new URLSearchParams(window.location.search);
+    const subjectParam = params.get("subject");
     const scopedSubject = subjectParam && (subjects as string[]).includes(subjectParam) ? (subjectParam as Subject) : null;
     setContextSubject(scopedSubject);
     const scoped = scopedSubject ? exercises.filter((item) => item.subject === scopedSubject) : exercises;
+
+    // `?minutes=<n>` (Sprint 7, lien "Tu as N min ?" du Dashboard) : préremplit
+    // le budget de temps avec la valeur choisie hors de cette page, à la
+    // place de l'objectif du jour restant — un choix explicite prime sur le
+    // calcul par défaut. Ignoré si absent/invalide : comportement inchangé.
+    const minutesParam = Number(params.get("minutes"));
+    const requestedMinutes = Number.isFinite(minutesParam) && minutesParam > 0 ? Math.round(minutesParam) : null;
 
     const pendingId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX);
     const pending = pendingId ? exercises.find((item) => item.id === pendingId && !item.archived) : undefined;
@@ -97,7 +105,7 @@ export function SessionRunner() {
     }
 
     const remainingToday = Math.max(0, preferences.dailyGoalMinutes - secondsToWholeMinutes(todaySeconds(sessions)));
-    setBudgetMinutes(remainingToday);
+    setBudgetMinutes(requestedMinutes ?? remainingToday);
     setPhase("preview");
   }, [ready, exercises, sessions, preferences.dailyGoalMinutes]);
 

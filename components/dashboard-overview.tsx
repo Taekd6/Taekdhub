@@ -1,120 +1,60 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import {
-  AlertCircle,
-  ArrowRight,
-  BookMarked,
-  Clock3,
-  Flame,
-  Sparkles,
-  Target,
-  Trophy,
-  TrendingUp,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, BookOpenCheck, CalendarClock, Clock3, Flame, ListChecks, Sparkles, Target, Trophy } from "lucide-react";
 import { useMemo } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MetricCard } from "@/components/ui/metric-card";
-import { CircularProgress, ProgressBar } from "@/components/ui/progress";
-import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
-import { Heatmap } from "@/components/heatmap";
-import { SessionRow } from "@/components/history/session-row";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardTitle } from "@/components/ui/card";
+import { ProgressBar } from "@/components/ui/progress";
+import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import {
-  computeStreak,
-  levelFromXp,
-  totalXp,
-  workByDayMap,
-  xpProgressInLevel,
-} from "@/lib/gamification";
-import { computeProgressBySubject, type SubjectProgress } from "@/lib/progress";
-import { completedExercises, subjectMeta, todaySeconds } from "@/lib/study";
-import { computeWeeklySummary, type SubjectWeekTime } from "@/lib/week";
+import { computeStreak } from "@/lib/gamification";
+import { computeCommandCenterProgress, computeDailyObjective, computeNextAction, computeUpcoming } from "@/lib/next-action";
 import { formatDuration } from "@/lib/utils";
+import type { UpcomingItem } from "@/lib/next-action";
+
+/** Préréglages de temps disponible pour le lien direct "Tu as N min ?" — mêmes valeurs que l'aperçu de séance (components/session/session-runner.tsx#BUDGET_PRESETS), pour rester cohérent entre les deux écrans. */
+const QUICK_SESSION_PRESETS = [15, 30, 45, 60];
+
+const UPCOMING_META: Record<UpcomingItem["key"], { label: string; icon: typeof BookOpenCheck }> = {
+  chapter: { label: "Chapitre à consolider", icon: BookOpenCheck },
+  subject: { label: "Matière délaissée", icon: CalendarClock },
+  review: { label: "Révision due", icon: ListChecks },
+};
 
 /**
- * Purement présentationnel — une seule liste par matière (Sprint 3G),
- * combinant la progression all-time (lib/progress.ts) et le temps investi
- * cette semaine (lib/week.ts) plutôt que deux listes séparées quasi
- * identiques visuellement : avant ce sprint, "Par matière" (complétion) et
- * "Cette semaine" (temps) étaient deux cartes voisines, faciles à confondre.
- * `progress` et `weeklyBySubject` viennent tous deux de `lib/study.ts#subjects`
- * dans le même ordre — associées par index, sans lookup.
+ * Centre de pilotage (Sprint 7) — remplace l'ancien tableau de bord "vitrine"
+ * (XP/niveau, heatmap, listes dupliquées avec /progress et /history) par
+ * quatre blocs à haute valeur, tous dérivés de lib/next-action.ts (qui
+ * lui-même ne fait que composer lib/recommendation.ts, lib/progress.ts,
+ * lib/week.ts et lib/history.ts — aucune nouvelle règle métier ici).
+ *
+ * Volontairement RETIRÉ par rapport à l'ancienne version : XP/niveau
+ * (gamification artificielle), heatmap de constance, détail par matière et
+ * activité récente (déjà couverts, en mieux, par /progress et /history —
+ * cette page y renvoie plutôt que de les dupliquer), favoris. Rien de tout
+ * cela n'est supprimé ailleurs : uniquement retiré d'ici pour ne garder que
+ * ce qui répond à "qu'est-ce que je fais maintenant".
  */
-function SubjectOverview({ progress, weeklyBySubject }: { progress: SubjectProgress[]; weeklyBySubject: SubjectWeekTime[] }) {
-  return (
-    <div className="space-y-4">
-      {progress.map(({ subject, total, mastered, completionRate }, index) => (
-        <div key={subject}>
-          <div className="mb-2 flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2">
-              <span className={`h-2 w-2 rounded-full ${subjectMeta[subject].className}`} />
-              {subject}
-            </span>
-            <span className="flex items-center gap-2 text-zinc-500">
-              <span className="text-2xs">{formatDuration(weeklyBySubject[index]?.seconds ?? 0)} cette sem.</span>
-              <span>
-                {mastered}/{total}
-              </span>
-            </span>
-          </div>
-          <ProgressBar value={completionRate} animated={false} barClassName="bg-accent/80" className="h-1.5" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export function DashboardOverview() {
-  const { sessions, exercises, preferences, ready } = usePrepahubData();
-  const router = useRouter();
+  const { sessions, exercises, chapters, preferences, ready } = usePrepahubData();
 
   const model = useMemo(() => {
     const now = new Date();
-
-    const todaySecondsValue = todaySeconds(sessions, now);
-    const weekly = computeWeeklySummary(exercises, sessions, preferences.dailyGoalMinutes, now);
-    const workByDay = workByDayMap(sessions);
-    const streak = computeStreak(sessions);
-    const active = exercises.filter((e) => !e.archived);
-    const done = completedExercises(active);
-    const subjectProgress = computeProgressBySubject(exercises);
-    const contest = preferences.contestDate
-      ? Math.max(0, Math.ceil((new Date(preferences.contestDate).getTime() - now.getTime()) / 86400000))
-      : null;
-    const xp = totalXp(exercises, sessions);
-    const level = levelFromXp(xp);
-    const xpProgress = xpProgressInLevel(xp);
-    const objective = Math.min(100, Math.round((todaySecondsValue / (preferences.dailyGoalMinutes * 60)) * 100));
-    const avgDifficulty = active.length
-      ? (active.reduce((sum, item) => sum + item.difficulty, 0) / active.length).toFixed(1)
-      : "—";
-    const recentSessions = [...sessions]
-      .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
-      .slice(0, 4);
-
     return {
-      todaySeconds: todaySecondsValue,
-      weekly,
-      workByDay,
-      streak,
-      active,
-      done,
-      subjectProgress,
-      contest,
-      xp,
-      level,
-      xpProgress,
-      objective,
-      avgDifficulty,
-      recentSessions,
+      nextAction: computeNextAction(exercises, sessions, preferences.dailyGoalMinutes, now),
+      objective: computeDailyObjective(sessions, preferences.dailyGoalMinutes, now),
+      upcoming: computeUpcoming(exercises, sessions, chapters, now),
+      progress: computeCommandCenterProgress(exercises, sessions, now),
+      streak: computeStreak(sessions),
+      contestDays: preferences.contestDate
+        ? Math.max(0, Math.ceil((new Date(preferences.contestDate).getTime() - now.getTime()) / 86400000))
+        : null,
     };
-  }, [sessions, exercises, preferences]);
+  }, [exercises, sessions, chapters, preferences]);
 
   if (!ready) {
     return (
@@ -126,11 +66,15 @@ export function DashboardOverview() {
     );
   }
 
+  const { nextAction, objective, upcoming, progress, streak, contestDays } = model;
+  const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
+  const secondaryPicks = nextAction.picks.slice(1);
+
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       <BackupReminder />
 
-      {/* Hero */}
+      {/* À FAIRE MAINTENANT */}
       <motion.section
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -138,208 +82,157 @@ export function DashboardOverview() {
         className="surface relative overflow-hidden rounded-3xl p-6 sm:p-8"
       >
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-accent/[0.06] blur-3xl" />
-        <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div>
-            <div className="flex items-center gap-2">
-              <Sparkles size={16} className="text-accent" />
-              <p className="eyebrow">Niveau {model.level}</p>
-            </div>
-            <motion.h2
-              key={model.objective >= 100 ? "done" : "progress"}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-              className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl"
-            >
-              {model.objective >= 100 ? "Objectif atteint." : "Continue sur ta lancée."}
-            </motion.h2>
-            <p className="mt-2 max-w-lg text-sm leading-6 text-zinc-400">
-              {formatDuration(model.todaySeconds)} travaillés aujourd&apos;hui
-              {model.streak > 0 && ` · ${model.streak} jour${model.streak > 1 ? "s" : ""} de suite`}
-            </p>
-            <div className="mt-5 max-w-md">
-              <div className="mb-2 flex justify-between text-xs text-zinc-500">
-                <span>{model.xpProgress.current} / {model.xpProgress.needed} XP</span>
-                <span className="flex items-center gap-1 text-accent">
-                  <Zap size={12} /> {model.xp.toLocaleString("fr-FR")} XP total
-                </span>
-              </div>
-              <ProgressBar value={model.xpProgress.percent} className="h-1.5" />
-            </div>
+        <div className="relative">
+          <div className="flex flex-wrap items-center gap-2">
+            <Sparkles size={16} className="text-accent" />
+            <p className="eyebrow">À faire maintenant</p>
+            {contestDays !== null && (
+              <Badge variant="accent" className="ml-auto flex items-center gap-1">
+                <Trophy size={11} /> {contestDays} j avant le concours
+              </Badge>
+            )}
           </div>
-          <div className="flex flex-wrap gap-3 lg:flex-col">
-            <Link href="/session">
+
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{nextAction.title}</h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">{nextAction.description}</p>
+
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Link href={sessionHref}>
               <Button size="lg">
-                Commencer ma séance <ArrowRight size={16} />
+                {nextAction.ctaLabel} <ArrowRight size={16} />
               </Button>
             </Link>
-            <Link href="/exercises">
-              <Button variant="secondary" size="lg">
-                Voir les exercices
-              </Button>
-            </Link>
+            {nextAction.kind !== "start-session" && (
+              <Link href="/session">
+                <Button variant="secondary" size="lg">
+                  Ouvrir une séance
+                </Button>
+              </Link>
+            )}
           </div>
+
+          {secondaryPicks.length > 0 && (
+            <div className="mt-6 grid gap-2 sm:grid-cols-2">
+              {secondaryPicks.map(({ exercise, reasons }) => (
+                <Link
+                  key={exercise.id}
+                  href={`/exercises?focus=${exercise.id}`}
+                  className="focus-ring flex min-w-0 items-center gap-3 rounded-xl border border-white/[0.06] p-3 text-sm transition hover:border-white/[0.14] hover:bg-white/[0.02]"
+                >
+                  <SubjectAvatar subject={exercise.subject} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {reasons.slice(0, 2).map((reason) => (
+                        <Badge key={reason} variant="warning">
+                          {reason}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </motion.section>
 
-      {/* Metrics */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Aujourd'hui" value={formatDuration(model.todaySeconds)} detail={`Objectif : ${formatDuration(preferences.dailyGoalMinutes * 60)}`} icon={Clock3} delay={0.05} />
-        <MetricCard label="Cette semaine" value={formatDuration(model.weekly.totalSeconds)} detail="Depuis lundi" icon={Target} delay={0.1} />
-        <MetricCard label="Série actuelle" value={`${model.streak} j`} detail="Jours consécutifs" icon={Flame} delay={0.15} />
-        <MetricCard label="Concours" value={model.contest === null ? "—" : `${model.contest} j`} detail={model.contest === null ? "Ajoute une échéance" : "Avant l'échéance"} icon={Trophy} delay={0.2} />
-      </section>
-
-      {/* Daily goal + Progress */}
-      <section className="grid gap-5 xl:grid-cols-[1.35fr_.85fr]">
+      {/* OBJECTIF DU JOUR + TA PROGRESSION */}
+      <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
         <Card className="rounded-3xl p-6 sm:p-7">
-          <CardHeader>
+          <div className="flex items-start justify-between">
             <div>
-              <p className="eyebrow">Rythme du jour</p>
-              <CardTitle className="mt-2 text-xl">Un bloc net. Puis le suivant.</CardTitle>
+              <p className="eyebrow">Objectif du jour</p>
+              <CardTitle className="mt-2 text-xl">
+                {formatDuration(objective.workedMinutes * 60)}{" "}
+                <span className="text-base font-normal text-zinc-500">/ {formatDuration(objective.goalMinutes * 60)}</span>
+              </CardTitle>
             </div>
-            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">{model.objective}%</span>
-          </CardHeader>
-          <CardContent className="mt-8">
-            <p className="text-4xl font-semibold tracking-tight sm:text-5xl">
-              {formatDuration(model.todaySeconds)}{" "}
-              <span className="text-base font-normal text-zinc-500">/ {formatDuration(preferences.dailyGoalMinutes * 60)}</span>
-            </p>
-            <ProgressBar value={model.objective} className="mt-5" />
-            <Link href="/timer" className="mt-8 inline-block">
-              <Button>Démarrer un focus <ArrowRight size={16} /></Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl p-6">
-          <p className="eyebrow">Progression</p>
-          <div className="mt-7 flex items-end justify-between">
-            <div>
-              <p className="text-4xl font-semibold tracking-tight">
-                {model.done.length}
-                <span className="text-base font-normal text-zinc-500">/{model.active.length}</span>
-              </p>
-              <p className="mt-1 text-sm text-zinc-500">Exercices terminés</p>
-            </div>
-            <CircularProgress value={model.active.length ? Math.round((model.done.length / model.active.length) * 100) : 0} />
+            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">{objective.percent}%</span>
           </div>
-          <div className="mt-6 flex items-center gap-2 text-sm text-zinc-400">
-            <BookMarked size={16} className="text-accent" /> Difficulté moyenne : {model.avgDifficulty}/5
-          </div>
-        </Card>
-      </section>
-
-      {/* Heatmap + Subjects (Sprint 3G : fusion de l'ancien bloc "Cette semaine" (3E) et
-          "Par matière" (3B) — deux cartes voisines quasi identiques visuellement,
-          l'une en complétion all-time, l'autre en temps hebdomadaire, souvent confondues. */}
-      <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
-        <Card className="p-6">
-          <CardHeader>
-            <div>
-              <p className="eyebrow">Constance</p>
-              <CardTitle className="mt-2">84 derniers jours</CardTitle>
-            </div>
-            <span className="text-xs text-zinc-500">plus intense →</span>
-          </CardHeader>
-          <CardContent className="mt-6">
-            <Heatmap workByDay={model.workByDay} />
-            <p className="mt-5 text-xs text-zinc-500">Chaque case représente une journée de travail enregistrée.</p>
-          </CardContent>
-        </Card>
-
-        <Card className="p-6">
-          <CardHeader>
-            <div>
-              <p className="eyebrow">Par matière</p>
-              <CardTitle className="mt-2">Progression</CardTitle>
-            </div>
-            <span className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent">{model.weekly.progressPercent}%</span>
-          </CardHeader>
+          <ProgressBar value={objective.percent} className="mt-5" />
           <p className="mt-3 text-xs text-zinc-500">
-            {formatDuration(model.weekly.totalSeconds)} / {formatDuration(model.weekly.objectiveSeconds)} cette semaine
-          </p>
-          <ProgressBar value={model.weekly.progressPercent} className="mt-2 h-1.5" />
-
-          {model.weekly.neglected.length > 0 && (
-            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3.5 text-sm">
-              <AlertCircle size={15} className="mt-0.5 shrink-0 text-amber-300" />
-              <p className="text-xs leading-5 text-zinc-300">
-                <span className="font-semibold text-amber-200">{model.weekly.neglected.map((n) => n.subject).join(", ")}</span>{" "}
-                {model.weekly.neglected.length > 1 ? "n'ont" : "n'a"} reçu aucun temps cette semaine, alors qu&apos;
-                {model.weekly.neglected.length > 1 ? "elles ont" : "elle a"} encore des exercices non maîtrisés en attente.
-              </p>
-            </div>
-          )}
-
-          <div className="mt-5">
-            <SubjectOverview progress={model.subjectProgress} weeklyBySubject={model.weekly.bySubject} />
-          </div>
-        </Card>
-      </section>
-
-      {/* Recommendations + Activity */}
-      <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
-        {/* Sprint 3A : remplace l'ancienne heuristique locale (favori + difficulté)
-            par le moteur centralisé (lib/recommendation.ts) — même composant
-            que sur la page Exercices, pour ne dupliquer aucune logique. Le
-            clic renvoie vers la fiche exacte via ?focus=<id>. */}
-        <ExerciseReviewPanel exercises={exercises} sessions={sessions} onSelect={(id) => router.push(`/exercises?focus=${id}`)} />
-
-        <Card className="p-6">
-          <div className="flex items-center gap-2">
-            <TrendingUp size={14} className="text-accent" />
-            <p className="eyebrow">Activité récente</p>
-          </div>
-          <CardTitle className="mt-2">Dernières séances</CardTitle>
-          <div className="mt-5 space-y-2">
-            {model.recentSessions.length ? (
-              // Sprint 5 : réutilise SessionRow (déjà utilisé par l'Historique et
-              // la fiche exercice) au lieu d'une mise en page maison — ce qui
-              // fait apparaître ici, sans code en plus, le résultat de chaque
-              // séance qualifiée (voir components/history/session-row.tsx).
-              model.recentSessions.map((session) => (
-                <SessionRow
-                  key={session.id}
-                  session={session}
-                  exerciseTitle={session.exercise_id ? exercises.find((e) => e.id === session.exercise_id)?.title : null}
-                />
-              ))
-            ) : (
-              <p className="py-7 text-sm text-zinc-500">Termine une séance focus pour voir ton activité ici.</p>
+            {objective.met
+              ? "Objectif atteint."
+              : `${objective.remainingMinutes} min restantes aujourd'hui`}
+            {streak > 0 && (
+              <span className="ml-1.5 inline-flex items-center gap-1 text-accent">
+                <Flame size={11} className="inline" /> {streak} j de suite
+              </span>
             )}
-          </div>
-        </Card>
-      </section>
+          </p>
 
-      {/* Favorites */}
-      <Card className="p-6">
-        <p className="eyebrow">Favoris</p>
-        {/* Sprint 3A : renommé (était "À revoir en priorité", qui prêtait à
-            confusion avec le nouveau panneau du même nom ci-dessus — cette
-            carte-ci ne montre que les favoris, pas une recommandation). */}
-        <CardTitle className="mt-2">Marqués comme favoris</CardTitle>
-        <div className="mt-5 grid gap-2 sm:grid-cols-3">
-          {model.active
-            .filter((e) => e.favorite)
-            .slice(0, 3)
-            .map((exercise) => (
-              <Link
-                key={exercise.id}
-                href="/exercises"
-                className="focus-ring block rounded-xl border border-white/[0.06] p-3 text-sm transition hover:border-white/[0.14]"
-              >
-                <p className="font-medium">{exercise.title}</p>
-                <p className="mt-1 text-xs text-zinc-500">{exercise.source}</p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {QUICK_SESSION_PRESETS.map((preset) => (
+              <Link key={preset} href={`/session?minutes=${preset}`}>
+                <Button variant="secondary" size="sm">
+                  {preset} min
+                </Button>
               </Link>
             ))}
-          {!model.active.some((e) => e.favorite) && (
-            <p className="py-4 text-sm text-zinc-500 sm:col-span-3">
-              Marque un exercice avec le cœur pour le retrouver ici.
-            </p>
-          )}
-        </div>
-      </Card>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="eyebrow">Ta progression</p>
+              <CardTitle className="mt-2">Vue d&apos;ensemble</CardTitle>
+            </div>
+            <Target size={16} className="text-accent" />
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-2xl font-semibold tracking-tight">{progress.averageMastery}%</p>
+              <p className="mt-0.5 text-xs text-zinc-500">Maîtrise globale</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold tracking-tight">{progress.results.successRate === null ? "—" : `${progress.results.successRate}%`}</p>
+              <p className="mt-0.5 text-xs text-zinc-500">Réussite</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold tracking-tight">{progress.sessionCount}</p>
+              <p className="mt-0.5 text-xs text-zinc-500">Séances</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold tracking-tight">{formatDuration(progress.totalSeconds)}</p>
+              <p className="mt-0.5 text-xs text-zinc-500">Temps travaillé</p>
+            </div>
+          </div>
+          <Link href="/progress" className="mt-5 inline-flex items-center gap-1.5 text-xs text-accent hover:underline">
+            Voir le détail <ArrowRight size={12} />
+          </Link>
+        </Card>
+      </section>
+
+      {/* PROCHAINEMENT */}
+      {upcoming.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <Clock3 size={14} className="text-accent" />
+            <p className="eyebrow">Prochainement</p>
+          </div>
+          <div className="mt-5 grid gap-2 sm:grid-cols-3">
+            {upcoming.map((item) => {
+              const meta = UPCOMING_META[item.key];
+              const Icon = meta.icon;
+              return (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  className="focus-ring flex min-w-0 flex-col gap-2 rounded-xl border border-white/[0.06] p-3.5 text-sm transition hover:border-white/[0.14] hover:bg-white/[0.02]"
+                >
+                  <span className="flex items-center gap-1.5 text-xs text-zinc-500">
+                    <Icon size={12} /> {meta.label}
+                  </span>
+                  <p className="truncate font-medium text-zinc-100">{item.label}</p>
+                  <p className="text-xs text-zinc-500">{item.detail}</p>
+                </Link>
+              );
+            })}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
