@@ -1,5 +1,5 @@
 import { resultCounts, type ResultCounts } from "@/lib/history";
-import { progressByChapter } from "@/lib/progress";
+import { progressByChapter, type ChapterProgress } from "@/lib/progress";
 import { computeExerciseBankStats, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import type { Chapter } from "@/lib/storage";
 import { todaySeconds } from "@/lib/study";
@@ -198,4 +198,125 @@ export function computeCommandCenterProgress(exercises: Exercise[], sessions: Wo
     sessionCount: sessions.length,
     totalSeconds: sessions.reduce((sum, session) => sum + session.duration_seconds, 0),
   };
+}
+
+export interface ChapterConsolidation {
+  chapter: ChapterProgress["chapter"];
+  averageMastery: number;
+  /** Toujours ≥ 1 — un chapitre sans raison n'apparaît jamais dans le résultat. */
+  reasons: string[];
+  /** Un exercice concret du chapitre (le premier non maîtrisé), pour ouvrir directement dessus — même convention que `computeUpcoming`. */
+  href: string;
+}
+
+/** Nombre maximum de chapitres montrés dans "À consolider" — voir Sprint Study OS. */
+const CHAPTERS_TO_CONSOLIDATE_LIMIT = 5;
+/** Seuil (jours) au-delà duquel un chapitre non retravaillé mérite d'être signalé — plus court que `MASTERY_STALE_DAYS` (qui concerne un exercice individuel déjà maîtrisé) : ici on regarde tout un chapitre encore incomplet, un oubli s'y voit plus vite. */
+const CHAPTER_STALE_DAYS = 7;
+/** Fenêtre d'analyse pour les échecs récents à l'échelle d'un chapitre — même principe que `RECENT_ATTEMPTS_WINDOW` dans lib/recommendation.ts, élargie car répartie sur plusieurs exercices. */
+const CHAPTER_RECENT_ATTEMPTS_WINDOW = 5;
+
+/**
+ * Un chapitre où au moins un exercice a déjà été engagé — tenté (`attempts > 0`),
+ * sorti de "à faire", ou déjà travaillé en focus (`last_worked_at`). "À
+ * consolider" signifie renforcer quelque chose déjà abordé, pas signaler un
+ * chapitre simplement pas encore commencé (ça, c'est le rôle de `computeNextAction`
+ * / de la recommandation générale) — sans cette condition, sur une grosse
+ * banque fraîchement amorcée où tout est à 0% par défaut, la quasi-totalité
+ * des chapitres qualifierait pour une raison aussi peu actionnable que
+ * "jamais travaillé", rendant la section inutile.
+ */
+function hasChapterEngagement(chapterExercises: Exercise[]): boolean {
+  return chapterExercises.some((exercise) => exercise.attempts > 0 || exercise.status !== "à faire" || exercise.last_worked_at !== null);
+}
+
+/**
+ * "À consolider" — jusqu'à 5 chapitres déjà engagés qui méritent le plus
+ * d'attention, chacun avec au moins une raison lisible ("Pourquoi ce
+ * chapitre ?"). Réutilise `progressByChapter` (lib/progress.ts) pour la
+ * maîtrise moyenne ; les échecs récents et l'ancienneté viennent des mêmes
+ * champs que lib/recommendation.ts (`WorkSession.result`,
+ * `Exercise.last_worked_at`), jamais d'un nouveau critère de maîtrise. Un
+ * chapitre déjà à 100% de complétion n'a rien à consolider et n'apparaît
+ * jamais ; un chapitre jamais engagé non plus (voir `hasChapterEngagement`).
+ */
+export function computeChaptersToConsolidate(
+  exercises: Exercise[],
+  sessions: WorkSession[],
+  chapters: Chapter[],
+  now: Date = new Date()
+): ChapterConsolidation[] {
+  const active = exercises.filter((exercise) => !exercise.archived);
+
+  return progressByChapter(exercises, chapters)
+    .filter((entry) => entry.completionRate < 100)
+    .map((entry) => {
+      const chapterExercises = active.filter((exercise) => exercise.chapter_id === entry.chapter.id);
+      if (!hasChapterEngagement(chapterExercises)) return null;
+
+      const reasons: string[] = [];
+      if (entry.averageMastery < 50) reasons.push("Maîtrise faible");
+
+      const exerciseIds = new Set(chapterExercises.map((exercise) => exercise.id));
+      const recentAttempts = sessions
+        .filter((session) => session.exercise_id && exerciseIds.has(session.exercise_id) && session.result)
+        .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
+        .slice(0, CHAPTER_RECENT_ATTEMPTS_WINDOW);
+      const failureCount = recentAttempts.filter((attempt) => attempt.result === "échoué").length;
+      if (failureCount >= 2) reasons.push(`${failureCount} échecs récents`);
+      else if (recentAttempts[0]?.result === "échoué") reasons.push("Échec récent");
+
+      const lastWorkedTimestamps = chapterExercises
+        .map((exercise) => exercise.last_worked_at)
+        .filter((value): value is string => value !== null)
+        .map((value) => new Date(value).getTime());
+      if (lastWorkedTimestamps.length > 0) {
+        const days = Math.floor((now.getTime() - Math.max(...lastWorkedTimestamps)) / 86400000);
+        if (days >= CHAPTER_STALE_DAYS) reasons.push(`Non travaillé depuis ${days} j`);
+      }
+
+      const candidate = chapterExercises.find((exercise) => exercise.status !== "maîtrisé") ?? chapterExercises[0];
+
+      return {
+        chapter: entry.chapter,
+        averageMastery: entry.averageMastery,
+        reasons,
+        href: candidate ? `/exercises?focus=${candidate.id}` : "/exercises",
+      };
+    })
+    .filter((entry): entry is ChapterConsolidation => entry !== null && entry.reasons.length > 0)
+    .sort((a, b) => {
+      const masteryDiff = a.averageMastery - b.averageMastery;
+      if (masteryDiff !== 0) return masteryDiff;
+      // À maîtrise égale (fréquent sur une grosse banque encore peu
+      // travaillée, où beaucoup de chapitres sont à 0%), un chapitre où
+      // l'élève échoue réellement doit passer avant un chapitre simplement
+      // pas encore commencé — un échec récent est un signal plus fort qu'une
+      // absence de donnée.
+      return Number(hasFailureSignal(b.reasons)) - Number(hasFailureSignal(a.reasons));
+    })
+    .slice(0, CHAPTERS_TO_CONSOLIDATE_LIMIT);
+}
+
+/** Un chapitre dont au moins une raison mentionne un échec récent — voir le tri de `computeChaptersToConsolidate`. */
+function hasFailureSignal(reasons: string[]): boolean {
+  return reasons.some((reason) => reason.includes("échec") || reason === "Échec récent");
+}
+
+/**
+ * Phrase d'état unique du Dashboard ("où j'en suis", en une phrase) — dérivée
+ * de `computeDailyObjective` et `computeNextAction`, jamais recalculée
+ * séparément. Ordre des cas volontaire : banque vide d'abord (rien d'autre
+ * n'a de sens tant qu'il n'y a aucun exercice), puis objectif atteint, puis
+ * les deux variantes "rien travaillé aujourd'hui".
+ */
+export function computeStatusLine(objective: DailyObjective, nextAction: NextAction): string {
+  if (nextAction.kind === "empty-bank") return "Ta banque est vide pour l'instant — ajoute tes premiers exercices.";
+  if (objective.met) return "Objectif du jour atteint. Belle séance.";
+  if (objective.workedMinutes === 0) {
+    return nextAction.kind === "up-to-date"
+      ? "Rien n'est signalé aujourd'hui — bon moment pour avancer librement."
+      : "Tu n'as encore rien travaillé aujourd'hui.";
+  }
+  return `${objective.workedMinutes} min travaillées aujourd'hui · encore ${objective.remainingMinutes} min pour ton objectif.`;
 }

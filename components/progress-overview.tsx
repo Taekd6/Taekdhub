@@ -13,7 +13,7 @@ import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
 import { computeGlobalProgress, computeProgressBySubject, masteryDistribution, progressByChapter, statusDistribution } from "@/lib/progress";
-import { computeReadinessBySubject, type ReadinessLevel } from "@/lib/readiness";
+import { computeReadinessBySubject, READINESS_META, type ReadinessLevel } from "@/lib/readiness";
 import type { WeekSnapshot } from "@/lib/storage";
 import { statusMeta, subjectMeta, totalSeconds } from "@/lib/study";
 import { compareToPreviousWeek, findPreviousWeekSnapshot } from "@/lib/week-snapshot";
@@ -97,10 +97,11 @@ function WeekEvolution({ exercises, sessions, weekSnapshots }: { exercises: Exer
   );
 }
 
-const READINESS_META: Record<ReadinessLevel, { label: string; badge: "success" | "warning" | "default"; border: string; bg: string }> = {
-  "prêt": { label: "Prêt", badge: "success", border: "border-emerald-500/20", bg: "bg-emerald-500/[0.06]" },
-  "à consolider": { label: "À consolider", badge: "warning", border: "border-amber-500/20", bg: "bg-amber-500/[0.06]" },
-  "pas prêt": { label: "Pas prêt", badge: "default", border: "border-rose-500/20", bg: "bg-rose-500/[0.06]" },
+/** Style fin (bordures/fonds) propre à cette page — le libellé et la variante de badge viennent de `READINESS_META` (lib/readiness.ts), partagé avec le Dashboard. */
+const READINESS_STYLE: Record<ReadinessLevel, { border: string; bg: string }> = {
+  "prêt": { border: "border-emerald-500/20", bg: "bg-emerald-500/[0.06]" },
+  "à consolider": { border: "border-amber-500/20", bg: "bg-amber-500/[0.06]" },
+  "pas prêt": { border: "border-rose-500/20", bg: "bg-rose-500/[0.06]" },
 };
 
 /**
@@ -126,8 +127,9 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
       <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {readiness.map(({ subject, completionRate, flaggedCount, estimatedMinutes, level }) => {
           const meta = READINESS_META[level];
+          const style = READINESS_STYLE[level];
           return (
-            <div key={subject} className={`rounded-xl border ${meta.border} ${meta.bg} p-3.5`}>
+            <div key={subject} className={`rounded-xl border ${style.border} ${style.bg} p-3.5`}>
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-medium text-zinc-100">{subject}</p>
                 <Badge variant={meta.badge}>{meta.label}</Badge>
@@ -208,7 +210,7 @@ export function ProgressOverview() {
           <CardTitle className="mt-2">Progression par matière</CardTitle>
           <div className="mt-6 space-y-5">
             {model.bySubject.map(({ subject, total, mastered, completionRate }) => (
-              <div key={subject}>
+              <div key={subject} id={`subject-${subjectMeta[subject].short}`} className="scroll-mt-24">
                 <div className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2">
                     <span className={`grid h-5 w-5 place-items-center rounded text-[9px] font-bold ${subjectMeta[subject].className}`}>

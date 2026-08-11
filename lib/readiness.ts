@@ -13,6 +13,18 @@ import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
 export type ReadinessLevel = "prêt" | "à consolider" | "pas prêt";
 
+/**
+ * Métadonnées d'affichage par niveau (libellé + variante de badge) — source
+ * unique pour toute UI qui montre un niveau de préparation (page Progression
+ * ET Dashboard), pour ne jamais laisser deux libellés diverger. Le style fin
+ * (bordures/fonds) reste propre à chaque écran, ce champ ne fixe que le sens.
+ */
+export const READINESS_META: Record<ReadinessLevel, { label: string; badge: "success" | "warning" | "default" }> = {
+  "prêt": { label: "Prêt", badge: "success" },
+  "à consolider": { label: "À consolider", badge: "warning" },
+  "pas prêt": { label: "Pas prêt", badge: "default" },
+};
+
 export interface SubjectReadiness {
   subject: Subject;
   /** Exercices actifs de la matière. */

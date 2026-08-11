@@ -1,5 +1,5 @@
 import { startOfWeek } from "@/lib/week";
-import { subjects, totalSeconds } from "@/lib/study";
+import { dayKey, subjects, totalSeconds } from "@/lib/study";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -97,6 +97,56 @@ export interface ResultCounts {
  * dans `unrecorded`, jamais dans `attempted` ni `successRate` : on ne devine
  * jamais un résultat manquant.
  */
+export interface RecentDaySummary {
+  /** Clé de jour (voir lib/study.ts#dayKey) — identifiant stable pour une `key` React. */
+  dateKey: string;
+  /** "Aujourd'hui" / "Hier" / nom du jour (< 7 j) / date courte (≥ 7 j). */
+  label: string;
+  seconds: number;
+  sessionCount: number;
+}
+
+const RECENT_DAYS_LIMIT = 5;
+const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("fr-FR", { weekday: "long" });
+const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/** Libellé lisible d'un jour, relatif à `now` — "Aujourd'hui"/"Hier" en premier, puis le nom du jour tant que c'est sans ambiguïté (< 7 j), sinon une date courte. */
+function dayLabel(key: string, now: Date): string {
+  const date = new Date(`${key}T00:00:00`);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((today.getTime() - date.getTime()) / 86400000);
+  if (diffDays === 0) return "Aujourd'hui";
+  if (diffDays === 1) return "Hier";
+  if (diffDays > 1 && diffDays < 7) return capitalize(WEEKDAY_FORMATTER.format(date));
+  return SHORT_DATE_FORMATTER.format(date);
+}
+
+/**
+ * "Activité récente" (Sprint Study OS) — regroupe les séances déjà
+ * enregistrées par jour calendaire (voir `dayKey`, lib/study.ts), les plus
+ * récents d'abord. Ne montre que les jours où du temps a réellement été
+ * investi : pas de calendrier à cases vides, juste les faits.
+ */
+export function recentDaySummaries(sessions: WorkSession[], now: Date = new Date(), limit = RECENT_DAYS_LIMIT): RecentDaySummary[] {
+  const byDay = new Map<string, { seconds: number; sessionCount: number }>();
+  for (const session of sessions) {
+    const key = dayKey(session.started_at);
+    const entry = byDay.get(key) ?? { seconds: 0, sessionCount: 0 };
+    entry.seconds += session.duration_seconds;
+    entry.sessionCount += 1;
+    byDay.set(key, entry);
+  }
+  return Array.from(byDay.entries())
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .slice(0, limit)
+    .map(([key, entry]) => ({ dateKey: key, label: dayLabel(key, now), seconds: entry.seconds, sessionCount: entry.sessionCount }));
+}
+
 export function resultCounts(sessions: WorkSession[]): ResultCounts {
   let success = 0;
   let partial = 0;

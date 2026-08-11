@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { computeCommandCenterProgress, computeDailyObjective, computeNextAction, computeUpcoming } from "@/lib/next-action";
+import {
+  computeChaptersToConsolidate,
+  computeCommandCenterProgress,
+  computeDailyObjective,
+  computeNextAction,
+  computeStatusLine,
+  computeUpcoming,
+} from "@/lib/next-action";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
 
@@ -179,6 +186,118 @@ describe("computeUpcoming", () => {
     ];
     const items = computeUpcoming(exercises, [], chapters, NOW);
     expect(items.length).toBeLessThanOrEqual(3);
+  });
+});
+
+describe("computeChaptersToConsolidate", () => {
+  it("aucune donnée : liste vide, pas d'erreur", () => {
+    expect(computeChaptersToConsolidate([], [], [], NOW)).toEqual([]);
+  });
+
+  it("signale un chapitre déjà engagé à faible maîtrise avec la raison correspondante", () => {
+    const chapters: Chapter[] = [{ id: "chap-1", subject: "Mathématiques", label: "Suites" }];
+    const exercise = makeExercise({ chapter_id: "chap-1", mastery: 0, status: "à revoir" });
+    const items = computeChaptersToConsolidate([exercise], [], chapters, NOW);
+    expect(items).toHaveLength(1);
+    expect(items[0].chapter.label).toBe("Suites");
+    expect(items[0].reasons).toContain("Maîtrise faible");
+    expect(items[0].href).toBe(`/exercises?focus=${exercise.id}`);
+  });
+
+  it("un chapitre jamais engagé (aucune tentative, jamais travaillé) n'apparaît pas : ce n'est pas encore un chapitre \"à consolider\"", () => {
+    const chapters: Chapter[] = [{ id: "chap-1", subject: "Mathématiques", label: "Vierge" }];
+    const exercise = makeExercise({ chapter_id: "chap-1", mastery: 0, status: "à faire", attempts: 0, last_worked_at: null });
+    const items = computeChaptersToConsolidate([exercise], [], chapters, NOW);
+    expect(items).toHaveLength(0);
+  });
+
+  it("ne signale jamais un chapitre déjà entièrement maîtrisé", () => {
+    const chapters: Chapter[] = [{ id: "chap-done", subject: "Mathématiques", label: "Terminé" }];
+    const exercise = makeExercise({ chapter_id: "chap-done", mastery: 100, status: "maîtrisé" });
+    const items = computeChaptersToConsolidate([exercise], [], chapters, NOW);
+    expect(items).toHaveLength(0);
+  });
+
+  it("détecte plusieurs échecs récents sur les exercices du chapitre", () => {
+    const chapters: Chapter[] = [{ id: "chap-1", subject: "Physique", label: "Mécanique" }];
+    const exercise = makeExercise({ chapter_id: "chap-1", mastery: 50, status: "en cours" });
+    const sessions = [
+      makeSession(exercise.id, { result: "échoué", started_at: "2026-08-09T10:00:00.000Z" }),
+      makeSession(exercise.id, { result: "échoué", started_at: "2026-08-08T10:00:00.000Z" }),
+    ];
+    const items = computeChaptersToConsolidate([exercise], sessions, chapters, NOW);
+    expect(items[0].reasons).toContain("2 échecs récents");
+  });
+
+  it("signale un chapitre non retravaillé depuis longtemps", () => {
+    const chapters: Chapter[] = [{ id: "chap-1", subject: "Chimie", label: "Oxydoréduction" }];
+    const exercise = makeExercise({
+      chapter_id: "chap-1",
+      mastery: 75,
+      status: "en cours",
+      last_worked_at: "2026-07-01T00:00:00.000Z",
+    });
+    const items = computeChaptersToConsolidate([exercise], [], chapters, NOW);
+    expect(items[0].reasons.some((reason) => reason.startsWith("Non travaillé depuis"))).toBe(true);
+  });
+
+  it("à maîtrise égale, un chapitre avec échecs récents passe avant un chapitre juste signalé en retard", () => {
+    const chapters: Chapter[] = [
+      { id: "chap-stale", subject: "Mathématiques", label: "En retard" },
+      { id: "chap-failing", subject: "Mathématiques", label: "En échec" },
+    ];
+    const stale = makeExercise({ chapter_id: "chap-stale", mastery: 0, status: "en cours", last_worked_at: "2026-07-01T00:00:00.000Z" });
+    const failing = makeExercise({ chapter_id: "chap-failing", mastery: 0, status: "en cours", last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const sessions = [
+      makeSession(failing.id, { result: "échoué", started_at: "2026-08-09T10:00:00.000Z" }),
+      makeSession(failing.id, { result: "échoué", started_at: "2026-08-08T10:00:00.000Z" }),
+    ];
+    const items = computeChaptersToConsolidate([stale, failing], sessions, chapters, NOW);
+    expect(items.map((item) => item.chapter.id)).toEqual(["chap-failing", "chap-stale"]);
+  });
+
+  it("jamais plus de 5 chapitres", () => {
+    const chapters: Chapter[] = Array.from({ length: 8 }, (_, i) => ({
+      id: `chap-${i}`,
+      subject: "Mathématiques" as const,
+      label: `Chapitre ${i}`,
+    }));
+    const exercises = chapters.map((chapter) => makeExercise({ chapter_id: chapter.id, mastery: 0, status: "en cours" }));
+    const items = computeChaptersToConsolidate(exercises, [], chapters, NOW);
+    expect(items.length).toBeLessThanOrEqual(5);
+  });
+});
+
+describe("computeStatusLine", () => {
+  it("banque vide : message d'amorçage", () => {
+    const objective = computeDailyObjective([], 45, NOW);
+    const action = computeNextAction([], [], 45, NOW);
+    expect(computeStatusLine(objective, action)).toMatch(/banque est vide/);
+  });
+
+  it("objectif atteint : message positif", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
+    const objective = computeDailyObjective(sessions, 45, NOW);
+    const action = computeNextAction([exercise], sessions, 45, NOW);
+    expect(computeStatusLine(objective, action)).toMatch(/atteint/);
+  });
+
+  it("rien travaillé aujourd'hui : message dédié", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const objective = computeDailyObjective([], 45, NOW);
+    const action = computeNextAction([exercise], [], 45, NOW);
+    expect(computeStatusLine(objective, action)).toBe("Tu n'as encore rien travaillé aujourd'hui.");
+  });
+
+  it("progression partielle : reprend le temps travaillé et restant", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 20 * 60 })];
+    const objective = computeDailyObjective(sessions, 45, NOW);
+    const action = computeNextAction([exercise], sessions, 45, NOW);
+    const line = computeStatusLine(objective, action);
+    expect(line).toContain("20 min");
+    expect(line).toContain("25 min");
   });
 });
 
