@@ -45,6 +45,7 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     favorite: false,
     archived: false,
     hints: [],
+    answer: null,
     correction: null,
     last_worked_at: null,
     ...overrides,

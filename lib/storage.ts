@@ -216,6 +216,7 @@ function normalizeExercise(raw: unknown): Exercise {
     favorite: Boolean(item.favorite),
     archived: Boolean(item.archived),
     hints: stringArray(item.hints),
+    answer: typeof item.answer === "string" ? item.answer : null,
     correction: typeof item.correction === "string" ? item.correction : null,
     last_worked_at: lastWorkedAt,
   };

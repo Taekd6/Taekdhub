@@ -4,9 +4,11 @@ Transcription texte du PDF *Cahier de calcul* (pratique et entraînement),
 coordonné par Colas Bardavid, fournie par l'utilisateur dans la conversation
 sous forme d'archive `cahier-de-calcul-source-complet.zip`.
 
-**Ce dossier contient uniquement la source brute.** Rien n'a encore été
-importé dans la banque d'exercices de TaekdHub (`datasets/`) — c'est un
-chantier séparé, volontairement pas commencé ici.
+**Ce dossier contient la source brute.** L'import structuré vit dans
+`datasets/cahier-de-calcul-professeur.json` (122 exercices, format import
+TaekdHub habituel — voir plus bas) ; il n'est PAS encore branché sur
+l'application (aucune interface, aucun amorçage automatique — voir
+`lib/seed.ts`, qui ne le référence pas). C'est un chantier séparé, à venir.
 
 ## Provenance
 
@@ -50,15 +52,39 @@ de ces informations.
   informatif — la définition exacte de "un exercice importable" (bloc entier
   vs sous-question individuelle) reste à trancher lors du chantier d'import.
 
-## Limite connue de l'extraction
+## Limites connues de l'extraction
+
+### Difficulté par horloge — non récupérable de ce texte
 
 Le cahier signale la difficulté de chaque calcul par des **pictogrammes
 d'horloge** (1 à 4 horloges). Ce sont des glyphes graphiques, pas du texte :
-`pdftotext` ne les capture pas. **Ils sont absents de cette transcription.**
+`pdftotext` ne les capture pas — vérifié explicitement (la ligne du "Mode
+d'emploi" qui les décrit contient des espaces vides à cet endroit, aucun
+caractère caché). **Elles sont absentes de cette transcription et du
+dataset importé** (`datasets/cahier-de-calcul-professeur.json`), où chaque
+exercice porte le tag `"difficulté non vérifiée"` plutôt qu'une valeur
+devinée. Toute future extraction nécessitera une inspection visuelle ciblée
+du PDF original (page par page, ou rendu en image) — pas une relecture de ce
+fichier texte.
 
-Toute future extraction de la difficulté par calcul nécessitera une
-inspection visuelle ciblée du PDF original (page par page), pas une
-relecture de ce fichier texte.
+### Réponses brutes — non décomposées par calcul individuel
+
+Le cahier présente les réponses brutes ("Réponses", une par calcul, avant
+les corrigés détaillés) dans une grille dense à deux colonnes où le texte
+d'une même réponse peut se répartir sur plusieurs lignes entrelacées avec
+la colonne voisine (vérifié sur plusieurs fiches, y compris les plus
+simples — pas un cas isolé). Reconstruire cette mise en page en texte
+linéaire de façon fiable, calcul par calcul, dépasse ce que `pdftotext
+-layout` seul permet de faire sans risquer d'attribuer la réponse d'un
+calcul à un autre — **exactement le risque que ce chantier doit éviter**.
+
+En conséquence, le champ `answer` (réponse brute) de `Exercise` reste
+`null` pour les 122 entrées importées : rien n'est deviné, rien n'est
+mélangé. Les **corrigés détaillés** ("Corrigés", en texte linéaire, séparés
+par calcul), eux, sont fiables à extraire et alimentent `correction` pour
+110 des 122 calculs (12 n'ont qu'une réponse brute dans le cahier, sans
+corrigé détaillé — situation conservée telle quelle, jamais un corrigé
+inventé). Voir le rapport de sprint pour le détail exact.
 
 ## Fichiers
 
@@ -72,10 +98,41 @@ concaténation (`diff` sans écart) — non conservé dans le dépôt pour évit
 une ambiguïté sur la source faisant foi : `cahier-de-calcul-professeur-source.md`
 est l'unique référence.
 
-## Utilisation prévue
+## Import structuré
 
-Ce fichier sert de **source de vérité** pour un futur chantier d'import
-structuré dans `datasets/` (au format `Exercise` de TaekdHub), avec
-`source: "Cahier de calcul"`. Toute ambiguïté mathématique lors de cet import
-doit être tranchée en revenant à cette transcription, et en cas de doute
-persistant, à la page correspondante du PDF original — jamais devinée.
+`datasets/cahier-de-calcul-professeur.json` contient les 122 calculs, au
+format d'import habituel de TaekdHub (même forme que
+`datasets/exercices-banque-complete.json`, consommé par
+`lib/exercise-import.ts#parseExerciseImportPayload`) :
+
+- `title` : `"Calcul N.M — <description ou fiche>"`.
+- `statement` : énoncé complet, texte nettoyé (bruit de mise en page de PDF
+  retiré — en-têtes/pieds de page, glyphes de délimiteurs multi-lignes —
+  mais **aucune valeur, signe, exposant ou borne modifié**).
+- `source` : toujours `"Cahier de calcul — professeur"`.
+- `subject` : toujours `"Mathématiques"`.
+- `chapter` : le titre de la fiche d'origine (ex. `"Trigonométrie"`,
+  `"Calcul matriciel"`) — crée un nouveau chapitre si aucun chapitre du même
+  nom n'existe déjà pour la matière, le réutilise sinon (comportement natif
+  de l'import, pas une règle spécifique à ce chantier).
+- `tags` : `"Cahier de calcul"`, `"difficulté non vérifiée"`, et la
+  sous-partie de la fiche si identifiée (ex. `"Formules d'addition"`).
+- `note` : provenance exacte (fiche, calcul, sous-partie, prérequis de la
+  fiche en prose — jamais forcés dans le champ `prerequisites`, qui attend
+  des étiquettes courtes, pas des phrases).
+- `correction` : corrigé détaillé, quand le cahier en fournit un (110/122).
+- `licenseStatus: "à vérifier"` : contenu externe identifié, droits de
+  redistribution non vérifiés — même traitement que les sujets de concours
+  existants dans l'architecture (jamais présumé "libre").
+- `externalId` : `"CDC-N.M"`, identifiant stable pour retrouver le calcul
+  source correspondant (traçabilité, vérification reproductible).
+
+**Vérification reproductible** : `pnpm run verify:cahier-calcul` (voir
+`scripts/verify-cahier-calcul.mjs`) recompte indépendamment les pages/fiches/
+calculs directement dans la source brute, puis vérifie que l'ensemble exact
+des `externalId` du dataset correspond à l'ensemble exact des `Calcul N.M`
+trouvés dans la source — pas seulement une égalité de nombres.
+
+Toute ambiguïté mathématique doit être tranchée en revenant à cette
+transcription, et en cas de doute persistant, à la page correspondante du
+PDF original — jamais devinée.

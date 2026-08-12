@@ -269,6 +269,17 @@ export interface Exercise {
   favorite: boolean;
   archived: boolean;
   hints: string[];
+  /**
+   * Réponse brute/finale (Sprint import Cahier de calcul) — distincte de
+   * `correction` (le corrigé RÉDIGÉ, avec le raisonnement) : certaines
+   * sources donnent l'une sans l'autre (ex. le Cahier de calcul fournit une
+   * réponse brute pour chaque calcul, mais un corrigé détaillé seulement
+   * pour une partie d'entre eux). `null` si non renseignée — jamais déduite
+   * de `correction`. Sert de première étape d'un révélation en deux temps
+   * ("Afficher la réponse" puis "Voir le corrigé détaillé"), pas encore
+   * câblée côté UI.
+   */
+  answer: string | null;
   correction: string | null;
   /** Fin de la dernière séance focus achevée (≥ 1 minute) sur cet exercice — voir "Tentatives et dernière activité" ci-dessus. Anciennement `last_opened_at` (mis à jour à l'ouverture de la fiche), renommé et resémantisé au Sprint 2.6. */
   last_worked_at: string | null;

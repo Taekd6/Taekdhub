@@ -83,6 +83,7 @@ export function createExerciseFromInput(input: NewExerciseInput): Exercise {
     updated_at: now,
     tags: input.tags,
     hints: input.hints,
+    answer: input.answer || null,
     correction: input.correction || null,
     favorite: false,
     archived: input.archived ?? false,
@@ -297,6 +298,8 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
     // ci-dessus, absent ou invalide vaut simplement "" (voir la doc du champ
     // dans lib/supabase/types.ts).
     const statement = typeof entry.statement === "string" ? entry.statement.trim() : "";
+    // Même principe que `statement` ci-dessus (peut être multi-lignes, jamais rejetée) — voir la doc du champ `answer` dans lib/supabase/types.ts.
+    const answer = typeof entry.answer === "string" ? entry.answer.trim() : "";
 
     const externalId = asTrimmedString(entry.externalId ?? entry.external_id);
     const sourceUrl = asTrimmedString(entry.sourceUrl ?? entry.source_url);
@@ -328,6 +331,7 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
         estimatedMinutes,
         note: asTrimmedString(entry.note) ?? "",
         hints: parseListField(entry.hints, "\n"),
+        answer,
         correction: asTrimmedString(entry.correction) ?? "",
         year,
         competition,
