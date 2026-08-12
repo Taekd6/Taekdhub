@@ -276,28 +276,60 @@ export function normalizePreferences(raw: unknown): Preferences {
   return { ...merged, themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE };
 }
 
+/**
+ * Nom de l'événement `window` diffusé par `hooks/use-prepahub-data.ts` dès
+ * qu'une écriture échoue — `usePrepahubData()` est un simple hook (pas un
+ * contexte React), donc chaque composant qui l'appelle a son PROPRE état
+ * local : sans ce signal, un échec détecté par ex. dans `ExerciseManager`
+ * n'atteindrait jamais `StorageErrorBanner` (monté séparément dans
+ * `AppShell`). Même principe que l'écoute déjà en place pour l'événement
+ * natif `storage` (qui, lui, ne couvre QUE les autres onglets — jamais le
+ * document courant, limite native du navigateur) : ce nom est défini ici
+ * pour rester à un seul endroit, importé par le hook des deux côtés
+ * (émission ET écoute).
+ */
+export const STORAGE_ERROR_EVENT = "prepahub:storage-error";
+
+/**
+ * Écrit dans `localStorage` sans jamais laisser une exception remonter non
+ * gérée (quota dépassé — `QuotaExceededError`, navigation privée sur Safari,
+ * stockage désactivé par l'utilisateur…). Renvoie `true`/`false` plutôt que
+ * de jeter : chaque appelant (`localData.saveX` ci-dessous) décide comment
+ * réagir, au lieu que l'échec d'une seule écriture ne fasse planter tout
+ * l'écran en cours (voir `hooks/use-prepahub-data.ts#storageError`, seul
+ * endroit qui traduit ce booléen en message pour l'utilisateur).
+ */
+function safeSetItem(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export const localData = {
   sessions: (): WorkSession[] =>
     typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(sessionsKey) || "[]") as unknown[]).map(normalizeSession),
-  saveSessions: (items: WorkSession[]) => localStorage.setItem(sessionsKey, JSON.stringify(items)),
+  saveSessions: (items: WorkSession[]): boolean => safeSetItem(sessionsKey, JSON.stringify(items)),
   exercises: (): Exercise[] =>
     typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(exercisesKey) || "[]") as unknown[]).map(normalizeExercise),
-  saveExercises: (items: Exercise[]) => localStorage.setItem(exercisesKey, JSON.stringify(items)),
+  saveExercises: (items: Exercise[]): boolean => safeSetItem(exercisesKey, JSON.stringify(items)),
   chapters: (): Chapter[] =>
     typeof window === "undefined"
       ? []
       : (JSON.parse(localStorage.getItem(chaptersKey) || "[]") as unknown[]).map(normalizeChapter).filter((item): item is Chapter => item !== null),
-  saveChapters: (items: Chapter[]) => localStorage.setItem(chaptersKey, JSON.stringify(items)),
+  saveChapters: (items: Chapter[]): boolean => safeSetItem(chaptersKey, JSON.stringify(items)),
   preferences: (): Preferences => (typeof window === "undefined" ? defaults : normalizePreferences(JSON.parse(localStorage.getItem(preferencesKey) || "{}"))),
-  savePreferences: (preferences: Preferences) => localStorage.setItem(preferencesKey, JSON.stringify(preferences)),
+  savePreferences: (preferences: Preferences): boolean => safeSetItem(preferencesKey, JSON.stringify(preferences)),
   /** Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`), ou `null` si aucune n'a jamais été faite. */
   lastBackupAt: (): string | null => (typeof window === "undefined" ? null : localStorage.getItem(lastBackupKey)),
-  saveLastBackupAt: (iso: string) => localStorage.setItem(lastBackupKey, iso),
+  saveLastBackupAt: (iso: string): boolean => safeSetItem(lastBackupKey, iso),
   weekSnapshots: (): WeekSnapshot[] =>
     typeof window === "undefined"
       ? []
       : (JSON.parse(localStorage.getItem(weekSnapshotsKey) || "[]") as unknown[]).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
-  saveWeekSnapshots: (items: WeekSnapshot[]) => localStorage.setItem(weekSnapshotsKey, JSON.stringify(items)),
+  saveWeekSnapshots: (items: WeekSnapshot[]): boolean => safeSetItem(weekSnapshotsKey, JSON.stringify(items)),
 };
 
 /** Rappel de sauvegarde (finalisation V1) : au-delà de ce nombre de jours sans export, la sauvegarde est considérée périmée. */

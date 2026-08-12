@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, Eye, EyeOff, Minimize2, MinusCircle, Sparkles, X, XCircle } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, MinusCircle, Sparkles, X, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -204,10 +204,7 @@ export function FocusView({
           <Button variant={running ? "secondary" : "primary"} size="sm" onClick={toggle}>
             {running ? "Pause" : "Timer"}
           </Button>
-          <Button variant="ghost" size="icon" onClick={endSession}>
-            <Minimize2 size={18} />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={endSession}>
+          <Button variant="ghost" size="icon" onClick={endSession} aria-label="Terminer le focus">
             <X size={18} />
           </Button>
         </div>

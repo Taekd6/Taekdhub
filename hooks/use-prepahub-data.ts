@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { localData, type Chapter, type Preferences, type WeekSnapshot } from "@/lib/storage";
+import { localData, STORAGE_ERROR_EVENT, type Chapter, type Preferences, type WeekSnapshot } from "@/lib/storage";
 import { loadSeedBank, SEED_FLAG_KEY } from "@/lib/seed";
 import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -90,6 +90,18 @@ export function usePrepahubData() {
     setData({ ...readAll(), ready: true });
   }, []);
 
+  /**
+   * `true` dès qu'une écriture `localStorage` échoue (quota dépassé,
+   * navigation privée, stockage désactivé…) — voir `lib/storage.ts#safeSetItem`.
+   * Consommé par `components/storage-error-banner.tsx` (monté une seule fois
+   * dans `AppShell`, donc visible quelle que soit la page où l'échec
+   * survient). État volontairement séparé de `data` ci-dessus : `refresh()`
+   * remplace `data` en bloc à chaque relecture (voir plus haut), ce qui
+   * effacerait silencieusement une erreur en cours si elle vivait dedans.
+   */
+  const [storageError, setStorageError] = useState(false);
+  const dismissStorageError = useCallback(() => setStorageError(false), []);
+
   useEffect(() => {
     let cancelled = false;
     // Amorçage éventuel AVANT le premier `refresh` : `ready` ne passe à vrai
@@ -102,32 +114,61 @@ export function usePrepahubData() {
     function onStorage(event: StorageEvent) {
       if (event.key?.startsWith("prepahub:")) refresh();
     }
+    // Reflète le résultat de CHAQUE tentative d'écriture, qu'elle vienne de
+    // cette instance du hook ou d'une autre (voir `broadcastWriteResult`
+    // ci-dessous et la doc de `STORAGE_ERROR_EVENT` dans lib/storage.ts) —
+    // un succès ailleurs efface aussi l'alerte ici : si les écritures
+    // fonctionnent de nouveau, le problème est résolu partout à la fois.
+    function onStorageResult(event: Event) {
+      setStorageError(!(event as CustomEvent<{ ok: boolean }>).detail.ok);
+    }
     window.addEventListener("storage", onStorage);
+    window.addEventListener(STORAGE_ERROR_EVENT, onStorageResult);
     return () => {
       cancelled = true;
       window.removeEventListener("storage", onStorage);
+      window.removeEventListener(STORAGE_ERROR_EVENT, onStorageResult);
     };
   }, [refresh]);
 
+  // Les 4 callbacks ci-dessous partagent le même principe : n'appliquer l'état
+  // optimiste à `data` QUE si l'écriture a réellement réussi — sinon `data`
+  // resterait en avance sur ce qui est vraiment persisté, et un rechargement
+  // (ou un autre onglet) ferait silencieusement disparaître le changement que
+  // l'utilisateur croyait avoir enregistré. Le résultat est aussi diffusé via
+  // `STORAGE_ERROR_EVENT` (voir l'écouteur ci-dessus) : `usePrepahubData()`
+  // n'est qu'un simple hook, pas un contexte React, donc chaque composant qui
+  // l'appelle a son propre état local — sans ce signal, un échec détecté
+  // dans, par exemple, `ExerciseManager` n'atteindrait jamais
+  // `StorageErrorBanner`, monté séparément dans `AppShell`.
+  const broadcastWriteResult = (ok: boolean) => {
+    setStorageError(!ok);
+    window.dispatchEvent(new CustomEvent(STORAGE_ERROR_EVENT, { detail: { ok } }));
+  };
+
   const saveSessions = useCallback((sessions: WorkSession[]) => {
-    localData.saveSessions(sessions);
-    setData((prev) => ({ ...prev, sessions }));
+    const ok = localData.saveSessions(sessions);
+    broadcastWriteResult(ok);
+    if (ok) setData((prev) => ({ ...prev, sessions }));
   }, []);
 
   const saveExercises = useCallback((exercises: Exercise[]) => {
-    localData.saveExercises(exercises);
-    setData((prev) => ({ ...prev, exercises }));
+    const ok = localData.saveExercises(exercises);
+    broadcastWriteResult(ok);
+    if (ok) setData((prev) => ({ ...prev, exercises }));
   }, []);
 
   const saveChapters = useCallback((chapters: Chapter[]) => {
-    localData.saveChapters(chapters);
-    setData((prev) => ({ ...prev, chapters }));
+    const ok = localData.saveChapters(chapters);
+    broadcastWriteResult(ok);
+    if (ok) setData((prev) => ({ ...prev, chapters }));
   }, []);
 
   const savePreferences = useCallback((preferences: Preferences) => {
-    localData.savePreferences(preferences);
-    setData((prev) => ({ ...prev, preferences }));
+    const ok = localData.savePreferences(preferences);
+    broadcastWriteResult(ok);
+    if (ok) setData((prev) => ({ ...prev, preferences }));
   }, []);
 
-  return { ...data, refresh, saveSessions, saveExercises, saveChapters, savePreferences };
+  return { ...data, refresh, saveSessions, saveExercises, saveChapters, savePreferences, storageError, dismissStorageError };
 }

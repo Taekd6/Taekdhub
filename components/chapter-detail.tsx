@@ -25,7 +25,14 @@ export function ChapterDetail({ detail, onClose }: { detail: ChapterDetailData; 
       if (event.key === "Escape") onClose();
     }
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    // Empêche la page en arrière-plan de défiler pendant que la fiche est
+    // ouverte (overlay plein écran) — restauré tel quel à la fermeture.
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
   }, [onClose]);
 
   const { chapter, total, mastered, averageMastery, attemptedCount, results, lastSessionAt, totalSeconds, recommendations } = detail;

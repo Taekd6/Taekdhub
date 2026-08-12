@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { localData, normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -133,5 +133,48 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     expect(prefs.accent).toBe("#6366f1");
     expect(prefs.themeMode).toBe("system");
     expect(prefs.weeklyGoalMinutes).toBe(300);
+  });
+});
+
+/**
+ * Robustesse stockage (audit produit) : une écriture `localStorage` qui
+ * échoue (quota dépassé, navigation privée…) ne doit jamais faire planter
+ * l'appelant — voir `lib/storage.ts#safeSetItem`, seul point d'écriture.
+ * `localStorage` est stubbé ici (absent de l'environnement de test Node,
+ * voir vitest.config.ts) pour simuler les deux issues possibles.
+ */
+describe("localData.save* — robustesse d'écriture", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("renvoie true et persiste quand l'écriture réussit", () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      setItem: (key: string, value: string) => store.set(key, value),
+      getItem: (key: string) => store.get(key) ?? null,
+    });
+    expect(localData.saveSessions([])).toBe(true);
+    expect(store.get("prepahub:sessions")).toBe("[]");
+  });
+
+  it("renvoie false sans jeter quand setItem échoue (quota dépassé)", () => {
+    vi.stubGlobal("localStorage", {
+      setItem: () => {
+        throw new DOMException("The quota has been exceeded.", "QuotaExceededError");
+      },
+      getItem: () => null,
+    });
+    expect(() => localData.saveExercises([])).not.toThrow();
+    expect(localData.saveExercises([])).toBe(false);
+  });
+
+  it("le même échec s'applique à chaque type de donnée (chapitres, préférences)", () => {
+    vi.stubGlobal("localStorage", {
+      setItem: () => {
+        throw new Error("stockage indisponible");
+      },
+      getItem: () => null,
+    });
+    expect(localData.saveChapters([])).toBe(false);
+    expect(localData.savePreferences(normalizePreferences({}))).toBe(false);
   });
 });
