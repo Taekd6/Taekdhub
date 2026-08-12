@@ -15,6 +15,7 @@ import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import { computeNextAction } from "@/lib/next-action";
 import { computeDailyPlan, PLAN_STORAGE_KEY, summarizePlanObjective, type StoredPlan } from "@/lib/plan";
+import { computeProgressBySubject, type SubjectProgress } from "@/lib/progress";
 import { cn } from "@/lib/cn";
 import { subjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
@@ -77,6 +78,24 @@ export function SessionRunner() {
   const [contextSubject, setContextSubject] = useState<Subject | null>(null);
   /** Sélection déposée par le Dashboard ("Commencer le plan", voir lib/plan.ts) — remplace `computedSelection` tel quel quand elle est présente, jamais recalculée ici. `null` : comportement normal, inchangé. */
   const [planSelection, setPlanSelection] = useState<ExerciseRecommendation[] | null>(null);
+  /**
+   * Tous les exercices réellement ouverts durant cette séance (résultat
+   * donné ou "Passer"), dans l'ordre — plus large que `runAttempts`
+   * (résultats qualifiés uniquement) : la maîtrise/le statut peuvent changer
+   * dans FocusView indépendamment du résultat choisi (voir MasteryPicker/
+   * PriorityPicker), donc "Impact de cette séance" doit couvrir tout ce qui a
+   * été ouvert, pas seulement ce qui a été qualifié.
+   */
+  const [workedExercises, setWorkedExercises] = useState<Exercise[]>([]);
+  /**
+   * Photo de `computeProgressBySubject` (lib/progress.ts) prise AVANT le
+   * premier exercice travaillé — comparée à la même fonction rappelée sur les
+   * données fraîches en fin de séance (voir `sessionImpact`) pour un delta
+   * réel, jamais estimé : aucun nouveau moteur de calcul, juste deux appels
+   * à une fonction déjà éprouvée sur deux instantanés différents. `null` :
+   * séance pas encore commencée.
+   */
+  const [beforeSubjectProgress, setBeforeSubjectProgress] = useState<SubjectProgress[] | null>(null);
   const initialized = useRef(false);
 
   // Décide une seule fois, au montage, entre reprendre un focus interrompu
@@ -106,6 +125,7 @@ export function SessionRunner() {
     if (pending) {
       const rest = recommendExercises(scoped, sessions).filter((item) => item.exercise.id !== pending.id);
       setRecommendations([{ exercise: pending, score: 0, reasons: ["Séance reprise"] }, ...rest]);
+      setBeforeSubjectProgress(computeProgressBySubject(exercises));
       setPhase("focus");
       return;
     }
@@ -224,6 +244,34 @@ export function SessionRunner() {
     return { label: strugglingChapter.label, href: `/exercises?focus=${candidate.id}` };
   }, [strugglingChapter, exercises, sessions]);
 
+  // "Impact de cette séance" : compare `computeProgressBySubject` AVANT
+  // (`beforeSubjectProgress`, figé au lancement) et APRÈS (recalculé ici sur
+  // `exercises` à jour) pour chaque matière réellement travaillée
+  // (`workedExercises`) — un delta réel, jamais estimé. Complète "TaekdHub a
+  // appris" (qualitatif, un seul chapitre) par une vue quantitative sur
+  // toutes les matières touchées, y compris en séance "Plan du jour"
+  // multi-matières. `[]` si la séance vient d'une reprise sans montage normal
+  // (`beforeSubjectProgress` alors `null`) ou si rien n'a encore été ouvert.
+  const sessionImpact = useMemo(() => {
+    if (!beforeSubjectProgress || workedExercises.length === 0) return [];
+    const touchedSubjects = [...new Set(workedExercises.map((exercise) => exercise.subject))];
+    const after = computeProgressBySubject(exercises);
+    return touchedSubjects
+      .map((subject) => {
+        const before = beforeSubjectProgress.find((entry) => entry.subject === subject);
+        const afterEntry = after.find((entry) => entry.subject === subject);
+        if (!before || !afterEntry) return null;
+        return {
+          subject,
+          beforeMastery: before.averageMastery,
+          afterMastery: afterEntry.averageMastery,
+          beforeCompletion: before.completionRate,
+          afterCompletion: afterEntry.completionRate,
+        };
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+  }, [beforeSubjectProgress, workedExercises, exercises]);
+
   // Même pattern que exercise-manager.tsx#update, sans l'optimisation par
   // ref : une seule fiche est affichée à la fois ici, pas une grille de
   // centaines de cartes memoïsées.
@@ -243,8 +291,9 @@ export function SessionRunner() {
   const startSession = useCallback(() => {
     setRecommendations(previewSelection);
     setCurrentIndex(0);
+    setBeforeSubjectProgress(computeProgressBySubject(exercises));
     setPhase("focus");
-  }, [previewSelection]);
+  }, [previewSelection, exercises]);
 
   // Consolidation après échec (Phase 4, sprint session adaptative) : un autre
   // exercice du MÊME chapitre, réutilise `recommendExercises` tel quel (pas
@@ -272,6 +321,7 @@ export function SessionRunner() {
     (result?: AttemptResult | null) => {
       setVisitedCount((count) => count + 1);
       const worked = recommendations[currentIndex]?.exercise;
+      if (worked) setWorkedExercises((list) => [...list, worked]);
       if (result && worked) setRunAttempts((attempts) => [...attempts, { exercise: worked, result }]);
       if (result === "échoué" && worked) {
         const candidate = findConsolidationCandidate(worked);
@@ -600,6 +650,45 @@ export function SessionRunner() {
               <Badge variant="danger">
                 {runFailureCount} échoué{runFailureCount > 1 ? "s" : ""}
               </Badge>
+            )}
+          </div>
+        )}
+
+        {/* "Impact de cette séance" : delta réel avant/après par matière touchée — voir `sessionImpact` ci-dessus. Rendu AVANT "TaekdHub a appris" : le fait quantitatif d'abord, l'interprétation qualitative ensuite. */}
+        {sessionImpact.length > 0 && (
+          <div className="mx-auto mt-5 max-w-sm rounded-2xl border border-hairline/[0.08] bg-hairline/[0.025] p-5 text-left">
+            <p className="eyebrow">Impact de cette séance</p>
+            <div className="mt-3 space-y-3">
+              {sessionImpact.map(({ subject, beforeMastery, afterMastery, beforeCompletion, afterCompletion }) => {
+                const deltaMastery = afterMastery - beforeMastery;
+                return (
+                  <div key={subject} className="flex items-center gap-3">
+                    <SubjectAvatar subject={subject} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-zinc-100">{subject}</p>
+                      <p className="mt-0.5 text-xs tabular-nums text-zinc-500">
+                        Maîtrise : {beforeMastery}% → {afterMastery}%
+                        {deltaMastery !== 0 && (
+                          <span className={cn("ml-1 font-medium", deltaMastery > 0 ? "text-emerald-300" : "text-zinc-400")}>
+                            ({deltaMastery > 0 ? "+" : ""}
+                            {deltaMastery} pt{Math.abs(deltaMastery) > 1 ? "s" : ""})
+                          </span>
+                        )}
+                      </p>
+                      {afterCompletion !== beforeCompletion && (
+                        <p className="mt-0.5 text-2xs tabular-nums text-zinc-600">
+                          Exercices maîtrisés : {beforeCompletion}% → {afterCompletion}%
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {sessionImpact.every(({ beforeMastery, afterMastery }) => beforeMastery === afterMastery) && (
+              <p className="mt-3 border-t border-hairline/[0.06] pt-3 text-xs leading-5 text-zinc-500">
+                Pas encore de changement visible — la maîtrise se met à jour quand tu l&apos;ajustes toi-même dans le focus.
+              </p>
             )}
           </div>
         )}
