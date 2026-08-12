@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ArrowRight, BarChart3, CheckCircle2, Clock3, Flame, GraduationCap, TrendingUp } from "lucide-react";
+import { ChapterDetail } from "@/components/chapter-detail";
 import { MetricCard } from "@/components/ui/metric-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { Heatmap } from "@/components/heatmap";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
+import { computeChapterDetail } from "@/lib/next-action";
 import { computeGlobalProgress, computeProgressBySubject, masteryDistribution, progressByChapter, statusDistribution } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META, type ReadinessLevel } from "@/lib/readiness";
 import type { WeekSnapshot } from "@/lib/storage";
@@ -46,7 +48,7 @@ function WeekEvolution({ exercises, sessions, weekSnapshots }: { exercises: Exer
   return (
     <Card className="p-6">
       <div className="flex items-center gap-2">
-        <TrendingUp size={14} className="text-accent" />
+        <TrendingUp size={14} className="text-accent-text" />
         <p className="eyebrow">Mémoire</p>
       </div>
       <CardTitle className="mt-2">Évolution</CardTitle>
@@ -118,7 +120,7 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
   return (
     <Card className="p-6">
       <div className="flex items-center gap-2">
-        <GraduationCap size={14} className="text-accent" />
+        <GraduationCap size={14} className="text-accent-text" />
         <p className="eyebrow">Échéances</p>
       </div>
       <CardTitle className="mt-2">Prêt pour le DS ?</CardTitle>
@@ -162,6 +164,13 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
  */
 export function ProgressOverview() {
   const { sessions, exercises, chapters, weekSnapshots, ready } = usePrepahubData();
+  /** Chapitre ouvert dans la fiche détail (Phase 6) — `null` : rien d'ouvert. Purement local à l'affichage. */
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+  const selectedChapter = selectedChapterId ? chapters.find((chapter) => chapter.id === selectedChapterId) : undefined;
+  const selectedChapterDetail = useMemo(
+    () => (selectedChapter ? computeChapterDetail(selectedChapter, exercises, sessions) : null),
+    [selectedChapter, exercises, sessions]
+  );
 
   const model = useMemo(() => {
     return {
@@ -251,7 +260,12 @@ export function ProgressOverview() {
         {model.byChapter.length ? (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {model.byChapter.map(({ chapter, total, mastered, completionRate }) => (
-              <div key={chapter.id} className="rounded-xl border border-hairline/[0.07] p-3.5">
+              <button
+                type="button"
+                key={chapter.id}
+                onClick={() => setSelectedChapterId(chapter.id)}
+                className="focus-ring w-full rounded-xl border border-hairline/[0.07] p-3.5 text-left transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{chapter.label}</p>
@@ -262,7 +276,7 @@ export function ProgressOverview() {
                   </span>
                 </div>
                 <ProgressBar value={completionRate} animated={false} barClassName="bg-accent/80" className="mt-3 h-1.5" />
-              </div>
+              </button>
             ))}
           </div>
         ) : (
@@ -302,6 +316,8 @@ export function ProgressOverview() {
         <h3 className="mb-4 mt-2 font-semibold tracking-tight">Ce qui mérite ton attention</h3>
         <ExerciseBankStats exercises={exercises} sessions={sessions} />
       </section>
+
+      {selectedChapterDetail && <ChapterDetail detail={selectedChapterDetail} onClose={() => setSelectedChapterId(null)} />}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, PlayCircle, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2, PlayCircle, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,13 +14,19 @@ import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import { computeNextAction } from "@/lib/next-action";
-import { PLAN_STORAGE_KEY, type StoredPlan } from "@/lib/plan";
+import { computeDailyPlan, PLAN_STORAGE_KEY, summarizePlanObjective, type StoredPlan } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 import { subjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
 import type { AttemptResult, Exercise, Subject } from "@/lib/supabase/types";
 
-type Phase = "loading" | "empty" | "preview" | "focus" | "between" | "summary";
+type Phase = "loading" | "empty" | "preview" | "focus" | "between" | "consolidate-prompt" | "summary";
+
+/** Un résultat de séance, lié à l'exercice concerné — pour dériver "TaekdHub a appris" en fin de séance (voir la phase "summary") sans jamais relire `WorkSession` (déjà sauvegardée par FocusView, ceci reste une vue locale à l'affichage). */
+interface RunAttempt {
+  exercise: Exercise;
+  result: AttemptResult;
+}
 
 /** Préréglages de temps disponible (Sprint 4) — un point de départ rapide, le champ à côté reste éditable pour toute autre valeur. */
 const BUDGET_PRESETS = [15, 30, 45, 60];
@@ -53,13 +59,15 @@ type SizingMode = "time" | "count";
  * `/session` sans paramètre garde exactement le comportement d'avant.
  */
 export function SessionRunner() {
-  const { exercises, sessions, preferences, saveSessions, saveExercises, ready } = usePrepahubData();
+  const { exercises, sessions, chapters, preferences, saveSessions, saveExercises, ready } = usePrepahubData();
   const [phase, setPhase] = useState<Phase>("loading");
   const [recommendations, setRecommendations] = useState<ExerciseRecommendation[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visitedCount, setVisitedCount] = useState(0);
-  /** Résultats saisis (Focus View) durant cette séance, un par exercice qualifié — pour le résumé de fin de séance. Ni sauvegarde ni source de vérité : purement l'affichage, `WorkSession.result` reste la seule donnée persistée. */
-  const [runResults, setRunResults] = useState<AttemptResult[]>([]);
+  /** Résultats saisis (Focus View) durant cette séance, un par exercice qualifié — pour le résumé de fin de séance ("TaekdHub a appris"). Ni sauvegarde ni source de vérité : purement l'affichage, `WorkSession.result` reste la seule donnée persistée. */
+  const [runAttempts, setRunAttempts] = useState<RunAttempt[]>([]);
+  /** Consolidation proposée après un échec (Phase 4) — l'utilisateur choisit, jamais automatique (voir `handleExerciseWorked`). `null` : pas de proposition en attente. */
+  const [consolidation, setConsolidation] = useState<{ candidate: ExerciseRecommendation; chapterLabel: string } | null>(null);
   /** Temps disponible pour la séance à venir, en minutes — initialisé à l'objectif du jour restant, ajustable via les préréglages ou le champ libre. */
   const [budgetMinutes, setBudgetMinutes] = useState(0);
   /** Façon de dimensionner la séance à venir — "time" (comportement historique) ou "count", un nombre d'exercices fixe sans notion de durée. */
@@ -146,19 +154,26 @@ export function SessionRunner() {
     [exercises, contextSubject]
   );
 
-  // Aperçu recalculé en direct à chaque changement de budget/mode — c'est la
-  // même fonction `recommendExercises` qui produira la sélection réelle au
-  // clic sur "Commencer ma séance" (voir startSession), donc l'aperçu ne
-  // ment jamais sur ce qui sera effectivement proposé. En mode "count", pas
-  // de `availableMinutes` : `limit` (le nombre choisi) suffit, exactement le
-  // même paramètre que le "top N" déjà utilisé partout ailleurs
-  // (ExerciseReviewPanel notamment) — aucune nouvelle fonction nécessaire.
+  // Mode "par temps" (Sprint session adaptative) : réutilise `computeDailyPlan`
+  // (lib/plan.ts, déjà utilisé par le Dashboard pour "Plan du jour") au lieu
+  // d'un simple `recommendExercises` borné par le temps — la séance montre
+  // ainsi la même répartition par matière et le même "pourquoi" que le plan,
+  // sans dupliquer aucune règle de sélection. `scopedExercises` porte déjà la
+  // restriction `?subject=` éventuelle : un seul bloc en ressort dans ce cas,
+  // comportement identique à avant.
+  const dailyPlan = useMemo(
+    () => (sizingMode === "time" ? computeDailyPlan(scopedExercises, sessions, chapters, budgetMinutes) : null),
+    [sizingMode, scopedExercises, sessions, chapters, budgetMinutes]
+  );
+
+  // Aperçu recalculé en direct à chaque changement de budget/mode — l'aperçu
+  // ne ment jamais sur ce qui sera effectivement proposé (voir startSession).
+  // Mode "count" : `recommendExercises` reste directement utilisé (une seule
+  // matière ne fait pas de sens à répartir en blocs), `limit` (le nombre
+  // choisi) suffit, même paramètre que le "top N" déjà utilisé ailleurs.
   const computedSelection = useMemo(
-    () =>
-      sizingMode === "count"
-        ? recommendExercises(scopedExercises, sessions, countTarget)
-        : recommendExercises(scopedExercises, sessions, 6, { availableMinutes: budgetMinutes }),
-    [scopedExercises, sessions, sizingMode, countTarget, budgetMinutes]
+    () => (sizingMode === "count" ? recommendExercises(scopedExercises, sessions, countTarget) : (dailyPlan?.blocks.flatMap((block) => block.picks) ?? [])),
+    [sizingMode, scopedExercises, sessions, countTarget, dailyPlan]
   );
   const previewSelection = planSelection ?? computedSelection;
   const previewMinutesUsed = useMemo(
@@ -177,6 +192,37 @@ export function SessionRunner() {
     () => computeNextAction(exercises, sessions, preferences.dailyGoalMinutes),
     [exercises, sessions, preferences.dailyGoalMinutes]
   );
+
+  // "TaekdHub a appris" (Phase 5) : le chapitre le plus fragile durant CETTE
+  // séance uniquement (runAttempts) — un échec pèse plus qu'un partiel, une
+  // réussite n'y contribue jamais. Signal frais et local à la séance,
+  // volontairement distinct de `computeSubjectPriorities` (lib/plan.ts, vue
+  // hebdomadaire) : aucune règle dupliquée, juste une fenêtre différente.
+  const strugglingChapter = useMemo(() => {
+    const scores = new Map<string, { label: string; score: number }>();
+    for (const { exercise, result } of runAttempts) {
+      if (!exercise.chapter_id || result === "réussi") continue;
+      const chapter = chapters.find((item) => item.id === exercise.chapter_id);
+      if (!chapter) continue;
+      const entry = scores.get(chapter.id) ?? { label: chapter.label, score: 0 };
+      entry.score += result === "échoué" ? 2 : 1;
+      scores.set(chapter.id, entry);
+    }
+    const [top] = [...scores.entries()].sort((a, b) => b[1].score - a[1].score);
+    return top ? { id: top[0], label: top[1].label } : null;
+  }, [runAttempts, chapters]);
+
+  // CTA "Prochaine action" priorisé sur le chapitre fragile de cette séance
+  // (le signal le plus frais) — sinon retombe sur `upcomingNextAction`
+  // (portée globale). Même convention `?focus=` que `computeUpcoming`
+  // (lib/next-action.ts) pour ouvrir directement un exercice concret.
+  const chapterFollowUp = useMemo(() => {
+    if (!strugglingChapter) return null;
+    const chapterExercises = exercises.filter((item) => item.chapter_id === strugglingChapter.id && !item.archived);
+    if (chapterExercises.length === 0) return null;
+    const candidate = recommendExercises(chapterExercises, sessions, 1)[0]?.exercise ?? chapterExercises[0];
+    return { label: strugglingChapter.label, href: `/exercises?focus=${candidate.id}` };
+  }, [strugglingChapter, exercises, sessions]);
 
   // Même pattern que exercise-manager.tsx#update, sans l'optimisation par
   // ref : une seule fiche est affichée à la fois ici, pas une grille de
@@ -200,17 +246,45 @@ export function SessionRunner() {
     setPhase("focus");
   }, [previewSelection]);
 
+  // Consolidation après échec (Phase 4, sprint session adaptative) : un autre
+  // exercice du MÊME chapitre, réutilise `recommendExercises` tel quel (pas
+  // de deuxième moteur) — juste une banque déjà restreinte au chapitre. `null`
+  // si le chapitre n'a aucun autre exercice actif à proposer : pas de
+  // proposition sans réelle alternative.
+  const findConsolidationCandidate = useCallback(
+    (failed: Exercise): ExerciseRecommendation | null => {
+      if (!failed.chapter_id) return null;
+      const chapterExercises = exercises.filter((item) => item.chapter_id === failed.chapter_id && item.id !== failed.id && !item.archived);
+      if (chapterExercises.length === 0) return null;
+      return recommendExercises(chapterExercises, sessions, 1)[0] ?? null;
+    },
+    [exercises, sessions]
+  );
+
   // Passé à FocusView en tant que `onClose` : FocusView a déjà proprement
   // arrêté le timer et sauvegardé la WorkSession avant d'appeler ceci (voir
   // focus-view.tsx#endSession) — on ne fait ici qu'avancer dans la séance,
-  // sans jamais toucher au statut ni à la maîtrise de l'exercice.
+  // sans jamais toucher au statut ni à la maîtrise de l'exercice. Un échec
+  // ouvre d'abord une proposition de consolidation (voir
+  // `findConsolidationCandidate`) plutôt que d'avancer directement — jamais
+  // automatique, l'utilisateur choisit (Phase 4).
   const handleExerciseWorked = useCallback(
     (result?: AttemptResult | null) => {
       setVisitedCount((count) => count + 1);
-      if (result) setRunResults((results) => [...results, result]);
+      const worked = recommendations[currentIndex]?.exercise;
+      if (result && worked) setRunAttempts((attempts) => [...attempts, { exercise: worked, result }]);
+      if (result === "échoué" && worked) {
+        const candidate = findConsolidationCandidate(worked);
+        if (candidate) {
+          const chapterLabel = chapters.find((chapter) => chapter.id === worked.chapter_id)?.label ?? worked.subject;
+          setConsolidation({ candidate, chapterLabel });
+          setPhase("consolidate-prompt");
+          return;
+        }
+      }
       setPhase(hasNext ? "between" : "summary");
     },
-    [hasNext]
+    [hasNext, recommendations, currentIndex, findConsolidationCandidate, chapters]
   );
 
   const continueToNext = useCallback(() => {
@@ -219,6 +293,25 @@ export function SessionRunner() {
   }, []);
 
   const endSessionEarly = useCallback(() => setPhase("summary"), []);
+
+  // Réponses à la proposition de consolidation (Phase 4) — dans les deux cas,
+  // on reprend le déroulé normal ensuite (`between`/`summary`), seule la file
+  // change si l'utilisateur accepte.
+  const declineConsolidation = useCallback(() => {
+    setConsolidation(null);
+    setPhase(hasNext ? "between" : "summary");
+  }, [hasNext]);
+
+  const acceptConsolidation = useCallback(() => {
+    if (!consolidation) return;
+    setRecommendations((prev) => {
+      const next = [...prev];
+      next.splice(currentIndex + 1, 0, consolidation.candidate);
+      return next;
+    });
+    setConsolidation(null);
+    setPhase("between");
+  }, [consolidation, currentIndex]);
 
   if (phase === "loading") {
     return (
@@ -245,7 +338,7 @@ export function SessionRunner() {
   if (phase === "empty") {
     content = (
       <Card className="p-10 text-center">
-        <Sparkles className="mx-auto text-accent" size={24} />
+        <Sparkles className="mx-auto text-accent-text" size={24} />
         <p className="mt-4 font-medium">
           {contextSubject ? `Rien à travailler en ${contextSubject} pour l'instant.` : "Rien à travailler pour l'instant."}
         </p>
@@ -270,7 +363,7 @@ export function SessionRunner() {
     content = (
       <div className="space-y-5">
         <Card className="p-8 text-center">
-          <PlayCircle className="mx-auto text-accent" size={28} />
+          <PlayCircle className="mx-auto text-accent-text" size={28} />
 
           {planSelection ? (
             <>
@@ -290,7 +383,7 @@ export function SessionRunner() {
                   : "Une sélection de ce nombre exact, classée par urgence et répartie sur plusieurs chapitres."}
               </p>
               {contextSubject && (
-                <p className="mt-2 text-xs text-accent">
+                <p className="mt-2 text-xs text-accent-text">
                   Ciblée sur {contextSubject} ·{" "}
                   <Link href="/session" className="underline underline-offset-2">
                     voir la séance complète
@@ -303,7 +396,7 @@ export function SessionRunner() {
                   type="button"
                   onClick={() => setSizingMode("time")}
                   aria-pressed={sizingMode === "time"}
-                  className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "time" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
+                  className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "time" ? "bg-accent/15 text-accent-text" : "text-zinc-500 hover:text-zinc-300")}
                 >
                   Par temps
                 </button>
@@ -311,7 +404,7 @@ export function SessionRunner() {
                   type="button"
                   onClick={() => setSizingMode("count")}
                   aria-pressed={sizingMode === "count"}
-                  className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "count" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
+                  className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "count" ? "bg-accent/15 text-accent-text" : "text-zinc-500 hover:text-zinc-300")}
                 >
                   Par nombre d&apos;exercices
                 </button>
@@ -367,6 +460,21 @@ export function SessionRunner() {
                       aria-label="Nombre d'exercices"
                     />
                     <span className="text-xs text-zinc-500">exercice{countTarget > 1 ? "s" : ""}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Répartition par matière (Sprint session adaptative) — même donnée que "Plan du jour" (lib/plan.ts), affichée ici tant que le mode "par temps" est actif et qu'un budget > 0 dégage au moins un bloc. */}
+              {dailyPlan && dailyPlan.blocks.length > 0 && (
+                <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-hairline/[0.08] bg-hairline/[0.025] p-4 text-left">
+                  <p className="text-sm font-medium text-zinc-100">{summarizePlanObjective(dailyPlan.blocks)}</p>
+                  <div className="mt-3 space-y-1.5">
+                    {dailyPlan.blocks.map((block) => (
+                      <div key={block.subject} className="flex items-center justify-between text-xs text-zinc-500">
+                        <span>{block.subject}</span>
+                        <span className="tabular-nums">{block.estimatedMinutes} min</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -429,7 +537,7 @@ export function SessionRunner() {
     const next = recommendations[currentIndex + 1]?.exercise;
     content = (
       <Card className="p-8 text-center">
-        <CheckCircle2 className="mx-auto text-accent" size={28} />
+        <CheckCircle2 className="mx-auto text-accent-text" size={28} />
         <h2 className="mt-4 text-xl font-semibold tracking-tight">Exercice travaillé</h2>
         {done && <p className="mt-2 text-sm text-zinc-400">{done.title}</p>}
         <p className="mt-1 text-xs text-zinc-500">
@@ -446,18 +554,37 @@ export function SessionRunner() {
         </div>
       </Card>
     );
+  } else if (phase === "consolidate-prompt" && consolidation) {
+    content = (
+      <Card className="p-8 text-center">
+        <AlertTriangle className="mx-auto text-amber-400" size={26} />
+        <h2 className="mt-4 text-lg font-semibold tracking-tight">Tu viens d&apos;échouer sur {consolidation.chapterLabel}.</h2>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-zinc-400">
+          Un exercice de consolidation est disponible : <span className="text-zinc-200">{consolidation.candidate.exercise.title}</span>.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Button variant="secondary" onClick={declineConsolidation}>
+            Continuer normalement
+          </Button>
+          <Button onClick={acceptConsolidation}>
+            Consolider <ArrowRight size={16} />
+          </Button>
+        </div>
+      </Card>
+    );
   } else {
     // phase === "summary"
-    const runSuccessCount = runResults.filter((result) => result === "réussi").length;
-    const runPartialCount = runResults.filter((result) => result === "partiel").length;
-    const runFailureCount = runResults.filter((result) => result === "échoué").length;
+    const runSuccessCount = runAttempts.filter(({ result }) => result === "réussi").length;
+    const runPartialCount = runAttempts.filter(({ result }) => result === "partiel").length;
+    const runFailureCount = runAttempts.filter(({ result }) => result === "échoué").length;
+    const hasFollowUp = Boolean(chapterFollowUp) || upcomingNextAction.kind === "start-session";
     content = (
       <Card className="p-10 text-center">
         <CardTitle className="text-xl">Séance terminée</CardTitle>
         <p className="mt-2 text-sm text-zinc-400">
           {visitedCount} exercice{visitedCount > 1 ? "s" : ""} travaillé{visitedCount > 1 ? "s" : ""} durant cette séance.
         </p>
-        {runResults.length > 0 && (
+        {runAttempts.length > 0 && (
           <div className="mx-auto mt-3 flex max-w-sm flex-wrap items-center justify-center gap-1.5">
             {runSuccessCount > 0 && (
               <Badge variant="success">
@@ -477,11 +604,21 @@ export function SessionRunner() {
           </div>
         )}
 
-        {upcomingNextAction.kind === "start-session" && (
-          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-hairline/[0.08] bg-hairline/[0.025] p-5 text-left">
-            <p className="eyebrow">Et maintenant ?</p>
-            <p className="mt-2 text-sm font-medium text-zinc-100">{upcomingNextAction.title}</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-500">{upcomingNextAction.description}</p>
+        {/* "TaekdHub a appris" (Phase 5) : uniquement issu de CETTE séance (runAttempts), signal frais — distinct de "Priorités de la semaine" (lib/plan.ts), qui reste une vue hebdomadaire. */}
+        {strugglingChapter && (
+          <div className="mx-auto mt-5 max-w-sm rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] p-5 text-left">
+            <p className="eyebrow text-amber-300">TaekdHub a appris</p>
+            <p className="mt-2 text-sm text-zinc-200">
+              Tu sembles avoir besoin de renforcer <span className="font-semibold">{strugglingChapter.label}</span>.
+            </p>
+          </div>
+        )}
+
+        {hasFollowUp && (
+          <div className="mx-auto mt-5 max-w-sm rounded-2xl border border-hairline/[0.08] bg-hairline/[0.025] p-5 text-left">
+            <p className="eyebrow">{chapterFollowUp ? "Prochaine action" : "Et maintenant ?"}</p>
+            <p className="mt-2 text-sm font-medium text-zinc-100">{chapterFollowUp ? `Revoir ${chapterFollowUp.label}` : upcomingNextAction.title}</p>
+            {!chapterFollowUp && <p className="mt-1 text-xs leading-5 text-zinc-500">{upcomingNextAction.description}</p>}
             <Button
               size="sm"
               className="mt-4 w-full"
@@ -490,17 +627,17 @@ export function SessionRunner() {
               // complet est le moyen le plus sûr de repartir sur cette
               // nouvelle recommandation sans dupliquer sa logique de démarrage.
               onClick={() => {
-                window.location.href = `/session?minutes=${upcomingNextAction.minutes}`;
+                window.location.href = chapterFollowUp ? chapterFollowUp.href : `/session?minutes=${upcomingNextAction.minutes}`;
               }}
             >
-              {upcomingNextAction.ctaLabel} <ArrowRight size={14} />
+              {chapterFollowUp ? "Commencer" : upcomingNextAction.ctaLabel} <ArrowRight size={14} />
             </Button>
           </div>
         )}
 
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link href="/dashboard">
-            <Button variant={upcomingNextAction.kind === "start-session" ? "secondary" : "primary"}>Retour au tableau de bord</Button>
+            <Button variant={hasFollowUp ? "secondary" : "primary"}>Retour au tableau de bord</Button>
           </Link>
           <Link href="/exercises">
             <Button variant="secondary">Voir les exercices</Button>

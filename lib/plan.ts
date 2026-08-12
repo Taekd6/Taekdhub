@@ -207,6 +207,25 @@ export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[],
   };
 }
 
+/**
+ * Phrase d'objectif d'un plan ("Consolider tes points faibles", etc.) —
+ * dérivée des raisons déjà produites par `recommendExercises`
+ * (lib/recommendation.ts), jamais une nouvelle catégorisation. Priorité aux
+ * signaux les plus actionnables : un échec récent l'emporte toujours sur une
+ * simple absence de travail, qui l'emporte elle-même sur du contenu jamais
+ * abordé — dans cet ordre, du plus urgent au plus neutre.
+ */
+export function summarizePlanObjective(blocks: PlanBlock[]): string {
+  const allReasons = blocks.flatMap((block) => block.picks.flatMap(({ reasons }) => reasons));
+  if (allReasons.some((reason) => reason.includes("échec") || reason === "Échec récent")) return "Consolider tes points faibles";
+  if (allReasons.some((reason) => reason.startsWith("Non retravaillé") || reason === "Maîtrisé, jamais retravaillé")) {
+    return "Retravailler ce qui commence à s'effacer";
+  }
+  if (allReasons.some((reason) => reason === "Maîtrise faible")) return "Renforcer tes points faibles";
+  if (allReasons.some((reason) => reason === "Jamais travaillé")) return "Avancer sur du nouveau contenu";
+  return "Progresser sur tes priorités du moment";
+}
+
 /** Durées proposées pour le plan du jour — mêmes valeurs que l'objectif du jour (Dashboard) et les raccourcis de séance. */
 export const PLAN_DURATION_PRESETS = [30, 45, 60] as const;
 export const DEFAULT_PLAN_MINUTES = 45;

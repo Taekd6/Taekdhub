@@ -50,7 +50,7 @@ export function SessionHistory() {
   if (!sessions.length) {
     return (
       <Card className="p-12 text-center">
-        <Clock3 className="mx-auto text-accent" />
+        <Clock3 className="mx-auto text-accent-text" />
         <p className="mt-4 font-medium">Ton historique est prêt.</p>
         <p className="mt-2 text-sm text-muted">Les séances terminées apparaîtront ici.</p>
       </Card>

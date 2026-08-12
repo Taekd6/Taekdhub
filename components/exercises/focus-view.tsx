@@ -291,7 +291,7 @@ export function FocusView({
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   exit={{ opacity: 0, scale: 0.7 }}
                   transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
-                  className="flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent"
+                  className="flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent-text"
                 >
                   <Sparkles size={13} /> Maîtrisé !
                 </motion.span>

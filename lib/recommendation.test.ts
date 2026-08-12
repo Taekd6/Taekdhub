@@ -232,6 +232,31 @@ describe("recommendExercises — signaux échec/réussite (Sprint 5)", () => {
     const [result] = recommendExercises([exercise], [], 10, { now: NOW });
     expect(result.reasons).toEqual(["Jamais travaillé"]);
   });
+
+  it("un exercice jamais travaillé, même à mastery 0 par défaut, n'affiche jamais 'Maîtrise faible' en plus de 'Jamais travaillé' (catégorie A ≠ B)", () => {
+    const exercise = makeExercise({ mastery: 0, priority: 3, status: "à faire" });
+    const [result] = recommendExercises([exercise], [], 10, { now: NOW });
+    expect(result.reasons).toContain("Jamais travaillé");
+    expect(result.reasons).not.toContain("Maîtrise faible");
+  });
+
+  it("un exercice déjà engagé (au moins une tentative) mais toujours à mastery faible affiche 'Maîtrise faible', sans 'Jamais travaillé' (catégorie B)", () => {
+    const exercise = makeExercise({ mastery: 0, attempts: 2, status: "en cours" });
+    const [result] = recommendExercises([exercise], [], 10, { now: NOW });
+    expect(result.reasons).toContain("Maîtrise faible");
+    expect(result.reasons).not.toContain("Jamais travaillé");
+  });
+
+  it("un échec récent suivi d'une réussite affiche 'Progrès récents' plutôt qu'un 'Réussi récemment' générique (catégorie D)", () => {
+    const exercise = makeExercise({ status: "à revoir", mastery: 25, priority: 3 });
+    const sessions = [
+      makeSession(exercise.id, { started_at: "2026-08-09T10:00:00.000Z", result: "réussi" }),
+      makeSession(exercise.id, { started_at: "2026-08-08T10:00:00.000Z", result: "échoué" }),
+    ];
+    const [result] = recommendExercises([exercise], sessions, 10, { now: NOW });
+    expect(result.reasons).toContain("Progrès récents");
+    expect(result.reasons).not.toContain("Réussi récemment");
+  });
 });
 
 describe("isNeverWorked / computeExerciseBankStats — smoke tests de non-régression", () => {

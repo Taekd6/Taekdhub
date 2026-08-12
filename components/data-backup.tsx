@@ -126,7 +126,7 @@ export function DataBackup() {
       </AnimatePresence>
 
       {message && (
-        <p role="status" className="mt-4 text-sm text-accent">
+        <p role="status" className="mt-4 text-sm text-accent-text">
           {message}
         </p>
       )}

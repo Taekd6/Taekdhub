@@ -2,8 +2,14 @@
  * Personnalisation de l'accent (Sprint identité visuelle) — une seule teinte
  * réglable, propagée par variable CSS (`--accent-rgb`) que `tailwind.config.ts`
  * réutilise pour TOUTES les classes `accent` déjà existantes (`bg-accent`,
- * `text-accent/60`, etc.) : aucun composant n'a besoin d'être modifié pour en
+ * `border-accent`, etc.) : aucun composant n'a besoin d'être modifié pour en
  * bénéficier.
+ *
+ * Exception : la couleur d'accent posée en TEXTE (`text-accent-text`, pas
+ * `text-accent`) utilise une variante assombrie en thème clair — les teintes
+ * pâles (lime, azur…) sont pensées pour un fond sombre et deviennent
+ * illisibles en texte sur fond clair sinon. Voir `darkenForContrast`
+ * ci-dessous et la note dans app/globals.css.
  *
  * Le texte posé sur l'accent (`text-accent-foreground`) est calculé — jamais
  * fixé à `black` — pour rester lisible quelle que soit la teinte choisie, y
@@ -56,13 +62,42 @@ export function accentForegroundCss(hex: string): string {
   return r === 0 ? "#000000" : "#ffffff";
 }
 
+function clampChannel(value: number): number {
+  return Math.min(255, Math.max(0, value));
+}
+
+/**
+ * Assombrit `rgb` par paliers jusqu'à atteindre `targetRatio` de contraste
+ * face à un fond blanc (WCAG). Les 6 teintes d'accent — et toute couleur
+ * personnalisée choisie via le sélecteur libre — sont pensées pour un fond
+ * sombre ; posées telles quelles en TEXTE sur fond clair (thème clair), elles
+ * peuvent devenir trop pâles pour être lisibles. Sert uniquement à calculer
+ * `--accent-text-rgb-light` (voir `applyAccent`) — les fonds/bordures/glows
+ * (`bg-accent`, `border-accent`, …) restent inchangés, ce n'est pas leur
+ * problème de lisibilité.
+ */
+function darkenForContrast(rgb: [number, number, number], targetRatio = 4.5): [number, number, number] {
+  let [r, g, b] = rgb;
+  for (let i = 0; i < 40; i++) {
+    const ratio = 1.05 / (relativeLuminance([r, g, b]) + 0.05);
+    if (ratio >= targetRatio) break;
+    r = clampChannel(r * 0.94);
+    g = clampChannel(g * 0.94);
+    b = clampChannel(b * 0.94);
+  }
+  return [Math.round(r), Math.round(g), Math.round(b)];
+}
+
 /** Écrit les variables CSS sur `root` — seul point d'entrée utilisé à la fois par `ThemeSync` (React) et par le script anti-flash inline (voir app/layout.tsx). */
 export function applyAccent(hex: string, root: HTMLElement = document.documentElement): void {
   const rgb = hexToRgb(hex);
   if (!rgb) return;
   const fg = accentForeground(hex);
+  const textOnLight = darkenForContrast(rgb);
   root.style.setProperty("--accent-rgb", rgb.join(" "));
   root.style.setProperty("--accent-fg-rgb", fg.join(" "));
+  root.style.setProperty("--accent-text-rgb-dark", rgb.join(" "));
+  root.style.setProperty("--accent-text-rgb-light", textOnLight.join(" "));
 }
 
 /**

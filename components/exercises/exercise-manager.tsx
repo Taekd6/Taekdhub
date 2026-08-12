@@ -389,7 +389,7 @@ export function ExerciseManager() {
                   onClick={() => setViewMode("cards")}
                   aria-label="Vue cartes"
                   aria-pressed={viewMode === "cards"}
-                  className={cn("rounded-lg p-1.5 transition", viewMode === "cards" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
+                  className={cn("rounded-lg p-1.5 transition", viewMode === "cards" ? "bg-accent/15 text-accent-text" : "text-zinc-500 hover:text-zinc-300")}
                 >
                   <LayoutGrid size={15} />
                 </button>
@@ -397,7 +397,7 @@ export function ExerciseManager() {
                   onClick={() => setViewMode("list")}
                   aria-label="Vue liste compacte"
                   aria-pressed={viewMode === "list"}
-                  className={cn("rounded-lg p-1.5 transition", viewMode === "list" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
+                  className={cn("rounded-lg p-1.5 transition", viewMode === "list" ? "bg-accent/15 text-accent-text" : "text-zinc-500 hover:text-zinc-300")}
                 >
                   <List size={15} />
                 </button>
@@ -445,7 +445,7 @@ export function ExerciseManager() {
             )}
             {sorted.length === 0 && (
               <Card className="px-6 py-16 text-center">
-                <BookOpenCheck className="mx-auto text-accent" />
+                <BookOpenCheck className="mx-auto text-accent-text" />
                 <p className="mt-4 font-semibold">Aucun exercice ne correspond.</p>
                 <p className="mt-1 text-sm text-zinc-500">Ajuste les filtres ou ajoute une nouvelle fiche.</p>
               </Card>

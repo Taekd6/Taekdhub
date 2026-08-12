@@ -132,12 +132,20 @@ function recentSuccessStreak(attempts: WorkSession[]): number {
  * séances sans résultat renseigné) n'obtient aucune raison ni bonus
  * supplémentaire de cette section : le comportement "jamais tenté" / "à
  * revoir" existant reste strictement inchangé.
+ *
+ * Sprint système de révision : différencie explicitement "jamais travaillé"
+ * (A) de "travaillé mais faible" (B) — une maîtrise basse par défaut sur un
+ * exercice jamais tenté n'est pas un signal de difficulté, juste l'absence
+ * de donnée (même principe que `hasChapterEngagement`/`hasEngagement`,
+ * lib/next-action.ts et lib/plan.ts, appliqué ici à l'échelle de l'exercice) —
+ * "Maîtrise faible" ne s'affiche donc que si l'exercice a déjà été engagé.
  */
 function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date): string[] {
   const reasons: string[] = [];
-  if (exercise.mastery <= 25) reasons.push("Maîtrise faible");
+  const neverWorked = isNeverWorked(exercise, minutesSpent);
+  if (exercise.mastery <= 25 && !neverWorked) reasons.push("Maîtrise faible");
   if (exercise.priority >= 4) reasons.push("Priorité élevée");
-  if (isNeverWorked(exercise, minutesSpent)) reasons.push("Jamais travaillé");
+  if (neverWorked) reasons.push("Jamais travaillé");
   if (exercise.status === "en cours") reasons.push("En cours");
   if (exercise.status === "à revoir") reasons.push("Marqué à revoir");
   if (isStaleMastery(exercise, now)) {
@@ -153,8 +161,14 @@ function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: Wo
   else if (attempts[0]?.result === "échoué") reasons.push("Échec récent");
   // Une réussite récente n'est jamais, à elle seule, un critère d'inclusion
   // (même logique que "Favori" ci-dessous) : elle ne fait que compléter les
-  // raisons d'un exercice déjà retenu par ailleurs.
-  if (reasons.length > 0 && attempts[0]?.result === "réussi") reasons.push("Réussi récemment");
+  // raisons d'un exercice déjà retenu par ailleurs. Distingue une vraie
+  // progression (catégorie D : échec récent puis réussite) d'une simple
+  // réussite isolée — signal plus informatif pour l'utilisateur qu'un
+  // "Réussi récemment" générique.
+  if (reasons.length > 0 && attempts[0]?.result === "réussi") {
+    const recovered = attempts.slice(1, RECENT_ATTEMPTS_WINDOW).some((attempt) => attempt.result === "échoué");
+    reasons.push(recovered ? "Progrès récents" : "Réussi récemment");
+  }
   // Le favori n'est jamais un critère d'inclusion à lui seul (un exercice
   // favori déjà maîtrisé et récent n'a aucune raison de revenir) : il ne
   // s'ajoute qu'aux raisons déjà réunies, pour un exercice retenu par

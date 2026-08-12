@@ -115,6 +115,35 @@ export function neglectedSubjects(exercises: Exercise[], sessions: WorkSession[]
     .map(({ subject, pendingCount }) => ({ subject, pendingCount }));
 }
 
+export type WeeklyPace = "en avance" | "dans le rythme" | "à travailler";
+
+/**
+ * État du rythme hebdomadaire — compare la progression réelle à ce qui est
+ * "normal" pour le jour de la semaine actuel (ex. mercredi soir = ~3/7 de la
+ * semaine écoulée, donc ~43% de l'objectif est un rythme normal, pas un
+ * retard). Seuil de ±15 points volontairement large : évite de signaler "à
+ * travailler" pour un simple décalage d'un jour, qui n'a rien d'anormal.
+ *
+ * `null` avant mercredi (< 2 jours écoulés depuis lundi) — même garde que
+ * `neglectedSubjects` ci-dessus : trop tôt dans la semaine pour qu'un écart
+ * signifie quoi que ce soit, plutôt que d'inventer un jugement prématuré.
+ *
+ * Volontairement pas de version "objectif du jour" équivalente (Dashboard) :
+ * une journée n'a pas de repère horaire fiable dans les données disponibles
+ * (on ne sait pas à quelle heure l'utilisateur compte travailler), donc tout
+ * seuil serait arbitraire et risquerait un message culpabilisant à tort
+ * (ex. "en retard" à 9h du matin). L'objectif du jour garde son message
+ * binaire existant (atteint / reste X min).
+ */
+function computeWeeklyPace(progressPercent: number, daysElapsed: number): WeeklyPace | null {
+  if (daysElapsed < 2) return null;
+  const expectedPercent = Math.min(100, Math.round((Math.min(daysElapsed, 7) / 7) * 100));
+  const delta = progressPercent - expectedPercent;
+  if (delta >= 15) return "en avance";
+  if (delta <= -15) return "à travailler";
+  return "dans le rythme";
+}
+
 export interface WeeklySummary {
   totalSeconds: number;
   objectiveSeconds: number;
@@ -122,6 +151,8 @@ export interface WeeklySummary {
   progressPercent: number;
   bySubject: SubjectWeekTime[];
   neglected: NeglectedSubject[];
+  /** `null` tant qu'il est trop tôt dans la semaine pour juger (voir `computeWeeklyPace`). */
+  pace: WeeklyPace | null;
 }
 
 /**
@@ -139,12 +170,15 @@ export function computeWeeklySummary(exercises: Exercise[], sessions: WorkSessio
   const bySubject = weeklyTimeBySubject(sessions, now);
   const total = bySubject.reduce((sum, entry) => sum + entry.seconds, 0);
   const objectiveSeconds = minutesToSeconds(weeklyGoalMinutes);
+  const progressPercent = objectiveSeconds ? Math.min(100, Math.round((total / objectiveSeconds) * 100)) : 0;
+  const daysElapsed = Math.floor((now.getTime() - startOfWeek(now).getTime()) / 86400000);
 
   return {
     totalSeconds: total,
     objectiveSeconds,
-    progressPercent: objectiveSeconds ? Math.min(100, Math.round((total / objectiveSeconds) * 100)) : 0,
+    progressPercent,
     bySubject,
     neglected: neglectedSubjects(exercises, sessions, now),
+    pace: computeWeeklyPace(progressPercent, daysElapsed),
   };
 }

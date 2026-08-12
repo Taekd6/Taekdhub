@@ -131,7 +131,7 @@ export function ExerciseFiltersBar({
           size="icon"
           onClick={() => onChange({ favoritesOnly: !filters.favoritesOnly })}
           aria-pressed={filters.favoritesOnly}
-          className={filters.favoritesOnly ? "shrink-0 border-accent/40 bg-accent/15 text-accent" : "shrink-0"}
+          className={filters.favoritesOnly ? "shrink-0 border-accent/40 bg-accent/15 text-accent-text" : "shrink-0"}
         >
           <Star size={17} />
         </Button>

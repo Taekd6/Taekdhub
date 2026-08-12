@@ -57,7 +57,7 @@ export function ThemePicker() {
                 aria-pressed={active}
                 className={cn(
                   "focus-ring flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition",
-                  active ? "border-accent/40 bg-accent/10 text-accent" : "border-hairline/[0.09] text-zinc-400 hover:border-hairline/[0.14] hover:text-zinc-200"
+                  active ? "border-accent/40 bg-accent/10 text-accent-text" : "border-hairline/[0.09] text-zinc-400 hover:border-hairline/[0.14] hover:text-zinc-200"
                 )}
               >
                 <Icon size={15} /> {meta.label}

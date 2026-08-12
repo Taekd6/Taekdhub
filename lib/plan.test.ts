@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeDailyPlan, computeSubjectPriorities, serializePlan } from "@/lib/plan";
+import { computeDailyPlan, computeSubjectPriorities, serializePlan, summarizePlanObjective } from "@/lib/plan";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
 
@@ -175,5 +175,24 @@ describe("serializePlan", () => {
     expect(stored.items).toHaveLength(1);
     expect(stored.items[0].exerciseId).toBe(exercise.id);
     expect(stored.items[0].reasons.length).toBeGreaterThan(0);
+  });
+});
+
+describe("summarizePlanObjective", () => {
+  it("aucun bloc : objectif neutre par défaut", () => {
+    expect(summarizePlanObjective([])).toBe("Progresser sur tes priorités du moment");
+  });
+
+  it("un échec récent l'emporte sur tout autre signal", () => {
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 50, status: "en cours" });
+    const sessions = [makeSession(exercise.id, "Mathématiques", { started_at: "2026-08-09T10:00:00.000Z", result: "échoué" })];
+    const plan = computeDailyPlan([exercise], sessions, [], 45, NOW);
+    expect(summarizePlanObjective(plan.blocks)).toBe("Consolider tes points faibles");
+  });
+
+  it("uniquement du contenu jamais travaillé → objectif \"avancer\", pas \"consolider\"", () => {
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0, status: "à faire" });
+    const plan = computeDailyPlan([exercise], [], [], 45, NOW);
+    expect(summarizePlanObjective(plan.blocks)).toBe("Avancer sur du nouveau contenu");
   });
 });

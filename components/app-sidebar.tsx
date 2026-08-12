@@ -90,7 +90,7 @@ export function AppSidebar() {
             <div className="rounded-2xl border border-hairline/[0.07] bg-hairline/[0.035] p-4">
               <div className="flex items-center gap-2">
                 <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15">
-                  <Zap size={14} className="text-accent" />
+                  <Zap size={14} className="text-accent-text" />
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-zinc-200">Niveau {level}</p>

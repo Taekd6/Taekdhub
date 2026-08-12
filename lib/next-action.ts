@@ -320,3 +320,56 @@ export function computeStatusLine(objective: DailyObjective, nextAction: NextAct
   }
   return `${objective.workedMinutes} min travaillées aujourd'hui · encore ${objective.remainingMinutes} min pour ton objectif.`;
 }
+
+export interface ChapterDetail {
+  chapter: Chapter;
+  total: number;
+  mastered: number;
+  averageMastery: number;
+  /** Exercices avec au moins une tentative (`attempts > 0`) — distinct de `mastered` : un exercice peut être travaillé sans être maîtrisé. */
+  attemptedCount: number;
+  results: ResultCounts;
+  /** ISO de la séance la plus récente liée à un exercice du chapitre, `null` si aucune. */
+  lastSessionAt: string | null;
+  totalSeconds: number;
+  /** Jusqu'à 3 exercices recommandés pour ce chapitre — même moteur que partout ailleurs (lib/recommendation.ts), jamais recalculé. */
+  recommendations: ExerciseRecommendation[];
+}
+
+/** Nombre de recommandations montrées dans le détail d'un chapitre — assez pour une "action principale" claire, sans noyer la fiche. */
+const CHAPTER_DETAIL_RECOMMENDATIONS = 3;
+
+/**
+ * Détail d'un chapitre ("Progression par chapitre", Phase 6) — agrège des
+ * données déjà éprouvées (résultats via lib/history.ts#resultCounts,
+ * recommandation via lib/recommendation.ts) à l'échelle d'un seul chapitre.
+ * Vit ici plutôt que dans lib/progress.ts, qui ne dépend volontairement
+ * jamais de `WorkSession` ni du moteur de recommandation (voir sa doc) — ce
+ * module compose déjà les deux pour `computeChaptersToConsolidate`.
+ */
+export function computeChapterDetail(chapter: Chapter, exercises: Exercise[], sessions: WorkSession[], now: Date = new Date()): ChapterDetail {
+  const chapterExercises = exercises.filter((exercise) => exercise.chapter_id === chapter.id && !exercise.archived);
+  const total = chapterExercises.length;
+  const mastered = chapterExercises.filter((exercise) => exercise.status === "maîtrisé").length;
+  const averageMastery = total ? Math.round(chapterExercises.reduce((sum, exercise) => sum + exercise.mastery, 0) / total) : 0;
+  const attemptedCount = chapterExercises.filter((exercise) => exercise.attempts > 0).length;
+
+  const exerciseIds = new Set(chapterExercises.map((exercise) => exercise.id));
+  const chapterSessions = sessions.filter((session) => session.exercise_id && exerciseIds.has(session.exercise_id));
+  const lastSessionAt = chapterSessions.reduce<string | null>(
+    (latest, session) => (!latest || session.started_at > latest ? session.started_at : latest),
+    null
+  );
+
+  return {
+    chapter,
+    total,
+    mastered,
+    averageMastery,
+    attemptedCount,
+    results: resultCounts(chapterSessions),
+    lastSessionAt,
+    totalSeconds: chapterSessions.reduce((sum, session) => sum + session.duration_seconds, 0),
+    recommendations: recommendExercises(chapterExercises, sessions, CHAPTER_DETAIL_RECOMMENDATIONS, { now }),
+  };
+}

@@ -52,7 +52,7 @@ import { computeProgressBySubject } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META } from "@/lib/readiness";
 import { subjectMeta } from "@/lib/study";
 import { formatDuration, formatMinutes } from "@/lib/utils";
-import { computeWeeklySummary } from "@/lib/week";
+import { computeWeeklySummary, type WeeklyPace } from "@/lib/week";
 import type { UpcomingItem } from "@/lib/next-action";
 
 const UPCOMING_META: Record<UpcomingItem["key"], { label: string; icon: typeof BookOpenCheck }> = {
@@ -73,6 +73,13 @@ const READINESS_DOT_CLASS: Record<"success" | "warning" | "default", string> = {
   success: "bg-emerald-400",
   warning: "bg-amber-400",
   default: "bg-zinc-400",
+};
+
+/** Badge "rythme" de l'objectif hebdomadaire (lib/week.ts#computeWeeklyPace) — "à travailler" reste en `warning` (ambre), jamais `danger` : un rythme en retard n'est pas une erreur, voir la note dans lib/week.ts. */
+const WEEKLY_PACE_BADGE: Record<WeeklyPace, "success" | "warning" | "accent"> = {
+  "en avance": "success",
+  "dans le rythme": "accent",
+  "à travailler": "warning",
 };
 
 /**
@@ -158,7 +165,7 @@ export function DashboardOverview() {
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-accent/[0.06] blur-3xl" />
         <div className="relative">
           <div className="flex flex-wrap items-center gap-2">
-            <Sparkles size={16} className="text-accent" />
+            <Sparkles size={16} className="text-accent-text" />
             <p className="eyebrow">À faire maintenant</p>
             {contestDays !== null && (
               <Badge variant="accent" className="ml-auto flex items-center gap-1">
@@ -239,7 +246,7 @@ export function DashboardOverview() {
       <Card className="p-6 sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <ListTodo size={14} className="text-accent" />
+            <ListTodo size={14} className="text-accent-text" />
             <div>
               <p className="eyebrow">Plan du jour</p>
               <CardTitle className="mt-1 text-lg">Ce que tu devrais travailler aujourd&apos;hui</CardTitle>
@@ -254,7 +261,7 @@ export function DashboardOverview() {
                 aria-pressed={planMinutes === preset}
                 className={cn(
                   "rounded-lg px-3 py-1.5 text-xs font-medium transition",
-                  planMinutes === preset ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300"
+                  planMinutes === preset ? "bg-accent text-accent-foreground" : "text-zinc-500 hover:text-zinc-300"
                 )}
               >
                 {preset} min
@@ -272,7 +279,7 @@ export function DashboardOverview() {
             <ol className="mt-5 space-y-2.5">
               {dailyPlan.blocks.map((block, index) => (
                 <li key={block.subject} className="flex items-start gap-3 rounded-xl border border-hairline/[0.06] p-3.5 text-sm">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent">{index + 1}</span>
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent-text">{index + 1}</span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                       <p className="truncate font-medium text-zinc-100">{block.label}</p>
@@ -300,7 +307,7 @@ export function DashboardOverview() {
       {subjectPriorities.length > 0 && (
         <Card className="p-6">
           <div className="flex items-center gap-2">
-            <Flag size={14} className="text-accent" />
+            <Flag size={14} className="text-accent-text" />
             <p className="eyebrow">Priorités de la semaine</p>
           </div>
           <div className="mt-5 grid gap-2 sm:grid-cols-2">
@@ -324,7 +331,7 @@ export function DashboardOverview() {
       {chapters.length > 0 && (
         <Card className="p-6">
           <div className="flex items-center gap-2">
-            <AlertTriangle size={14} className="text-accent" />
+            <AlertTriangle size={14} className="text-accent-text" />
             <p className="eyebrow">À consolider</p>
           </div>
           <CardTitle className="mt-2">
@@ -353,7 +360,7 @@ export function DashboardOverview() {
                       </Badge>
                     ))}
                   </div>
-                  <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-accent">
+                  <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-accent-text">
                     Travailler ce chapitre <ArrowRight size={11} />
                   </span>
                 </Link>
@@ -374,7 +381,7 @@ export function DashboardOverview() {
                 <span className="text-base font-normal text-zinc-500">/ {formatDuration(objective.goalMinutes * 60)}</span>
               </CardTitle>
             </div>
-            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">{objective.percent}%</span>
+            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent-text">{objective.percent}%</span>
           </div>
           <ProgressBar value={objective.percent} className="mt-5" />
           <p className="mt-3 text-xs text-zinc-500">
@@ -384,7 +391,7 @@ export function DashboardOverview() {
                 ? "Tu n'as encore rien travaillé aujourd'hui."
                 : `Encore ${objective.remainingMinutes} min`}
             {streak > 0 && (
-              <span className="ml-1.5 inline-flex items-center gap-1 text-accent">
+              <span className="ml-1.5 inline-flex items-center gap-1 text-accent-text">
                 <Flame size={11} className="inline" /> {streak} j de suite
               </span>
             )}
@@ -415,7 +422,7 @@ export function DashboardOverview() {
               <p className="eyebrow">Ta progression</p>
               <CardTitle className="mt-2">Vue d&apos;ensemble</CardTitle>
             </div>
-            <Target size={16} className="text-accent" />
+            <Target size={16} className="text-accent-text" />
           </div>
           <div className="mt-6 grid grid-cols-2 gap-4">
             <div>
@@ -435,7 +442,7 @@ export function DashboardOverview() {
               <p className="mt-0.5 text-xs text-zinc-500">Temps travaillé</p>
             </div>
           </div>
-          <Link href="/progress" className="mt-5 inline-flex items-center gap-1.5 text-xs text-accent hover:underline">
+          <Link href="/progress" className="mt-5 inline-flex items-center gap-1.5 text-xs text-accent-text hover:underline">
             Voir le détail <ArrowRight size={12} />
           </Link>
         </Card>
@@ -445,7 +452,7 @@ export function DashboardOverview() {
       <Card className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <CalendarRange size={14} className="text-accent" />
+            <CalendarRange size={14} className="text-accent-text" />
             <div>
               <p className="eyebrow">Cette semaine</p>
               <CardTitle className="mt-1 text-lg">
@@ -454,7 +461,10 @@ export function DashboardOverview() {
               </CardTitle>
             </div>
           </div>
-          <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">{weeklySummary.progressPercent}%</span>
+          <div className="flex items-center gap-2">
+            {weeklySummary.pace && <Badge variant={WEEKLY_PACE_BADGE[weeklySummary.pace]}>{weeklySummary.pace}</Badge>}
+            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent-text">{weeklySummary.progressPercent}%</span>
+          </div>
         </div>
         <ProgressBar value={weeklySummary.progressPercent} className="mt-5" />
         {weeklySummary.bySubject.length > 0 && (
@@ -478,7 +488,7 @@ export function DashboardOverview() {
                   <p className="eyebrow">Tes matières</p>
                   <CardTitle className="mt-2">Progression</CardTitle>
                 </div>
-                <BarChart3 size={16} className="text-accent" />
+                <BarChart3 size={16} className="text-accent-text" />
               </div>
               <div className="mt-6 space-y-4">
                 {bySubject.map(({ subject, completionRate }) => (
@@ -510,7 +520,7 @@ export function DashboardOverview() {
                   <p className="eyebrow">Échéances</p>
                   <CardTitle className="mt-2">Prêt pour le DS ?</CardTitle>
                 </div>
-                <GraduationCap size={16} className="text-accent" />
+                <GraduationCap size={16} className="text-accent-text" />
               </div>
               <div className="mt-6 space-y-2.5">
                 {readiness.map(({ subject, level }) => {
@@ -540,7 +550,7 @@ export function DashboardOverview() {
       {recentDays.length > 0 && (
         <Card className="p-6">
           <div className="flex items-center gap-2">
-            <HistoryIcon size={14} className="text-accent" />
+            <HistoryIcon size={14} className="text-accent-text" />
             <p className="eyebrow">Activité récente</p>
           </div>
           <div className="mt-4 divide-y divide-hairline/[0.06]">
@@ -560,7 +570,7 @@ export function DashboardOverview() {
       {otherSignals.length > 0 && (
         <Card className="p-6">
           <div className="flex items-center gap-2">
-            <Clock3 size={14} className="text-accent" />
+            <Clock3 size={14} className="text-accent-text" />
             <p className="eyebrow">Prochainement</p>
           </div>
           <div className="mt-5 grid gap-2 sm:grid-cols-2">

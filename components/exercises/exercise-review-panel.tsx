@@ -27,7 +27,7 @@ export function ExerciseReviewPanel({
   if (recommendations.length === 0) {
     return (
       <Card className="p-5 text-center">
-        <Sparkles className="mx-auto text-accent" size={20} />
+        <Sparkles className="mx-auto text-accent-text" size={20} />
         <p className="mt-3 text-sm text-zinc-400">Rien à revoir pour l&apos;instant — continue comme ça.</p>
       </Card>
     );
@@ -36,7 +36,7 @@ export function ExerciseReviewPanel({
   return (
     <Card className="p-5">
       <div className="flex items-center gap-2">
-        <ListChecks size={16} className="text-accent" />
+        <ListChecks size={16} className="text-accent-text" />
         <CardTitle className="text-base">À revoir en priorité</CardTitle>
       </div>
       <div className="mt-4 grid gap-2 sm:grid-cols-2">

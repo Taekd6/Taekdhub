@@ -193,7 +193,7 @@ export function ExerciseDetail({
           </div>
         ))}
         {hintCount < item.hints.length && (
-          <Button variant="ghost" onClick={() => setHintCount((count) => count + 1)} className="text-accent">
+          <Button variant="ghost" onClick={() => setHintCount((count) => count + 1)} className="text-accent-text">
             Afficher l&apos;indice {hintCount + 1}
           </Button>
         )}

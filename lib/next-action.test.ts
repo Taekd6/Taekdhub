@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  computeChapterDetail,
   computeChaptersToConsolidate,
   computeCommandCenterProgress,
   computeDailyObjective,
@@ -328,5 +329,48 @@ describe("computeCommandCenterProgress", () => {
     const archived = makeExercise({ mastery: 100, archived: true });
     const progress = computeCommandCenterProgress([active, archived], [], NOW);
     expect(progress.averageMastery).toBe(0);
+  });
+});
+
+describe("computeChapterDetail", () => {
+  const chapter: Chapter = { id: "chap-1", subject: "Mathématiques", label: "Suites numériques" };
+
+  it("chapitre sans exercice : agrégats à zéro, pas d'erreur", () => {
+    const detail = computeChapterDetail(chapter, [], [], NOW);
+    expect(detail.total).toBe(0);
+    expect(detail.mastered).toBe(0);
+    expect(detail.averageMastery).toBe(0);
+    expect(detail.attemptedCount).toBe(0);
+    expect(detail.lastSessionAt).toBeNull();
+    expect(detail.totalSeconds).toBe(0);
+    expect(detail.recommendations).toEqual([]);
+  });
+
+  it("agrège maîtrise, tentatives, résultats et temps à partir des exercices et séances du chapitre uniquement", () => {
+    const inChapter1 = makeExercise({ chapter_id: chapter.id, mastery: 50, attempts: 2, status: "en cours" });
+    const inChapter2 = makeExercise({ chapter_id: chapter.id, mastery: 100, status: "maîtrisé", attempts: 1 });
+    const outsideChapter = makeExercise({ chapter_id: "other-chapter", mastery: 0 });
+    const sessions = [
+      makeSession(inChapter1.id, { started_at: "2026-08-09T10:00:00.000Z", duration_seconds: 300, result: "échoué" }),
+      makeSession(inChapter2.id, { started_at: "2026-08-10T10:00:00.000Z", duration_seconds: 200, result: "réussi" }),
+      makeSession(outsideChapter.id, { started_at: "2026-08-11T10:00:00.000Z", duration_seconds: 999, result: "réussi" }),
+    ];
+    const detail = computeChapterDetail(chapter, [inChapter1, inChapter2, outsideChapter], sessions, NOW);
+    expect(detail.total).toBe(2);
+    expect(detail.mastered).toBe(1);
+    expect(detail.averageMastery).toBe(75);
+    expect(detail.attemptedCount).toBe(2);
+    expect(detail.results.success).toBe(1);
+    expect(detail.results.failure).toBe(1);
+    expect(detail.totalSeconds).toBe(500);
+    expect(detail.lastSessionAt).toBe("2026-08-10T10:00:00.000Z");
+  });
+
+  it("les recommandations viennent du même moteur que partout ailleurs, restreintes au chapitre", () => {
+    const inChapter = makeExercise({ chapter_id: chapter.id, mastery: 0, status: "à faire" });
+    const outsideChapter = makeExercise({ chapter_id: "other-chapter", mastery: 0, status: "à faire" });
+    const detail = computeChapterDetail(chapter, [inChapter, outsideChapter], [], NOW);
+    expect(detail.recommendations).toHaveLength(1);
+    expect(detail.recommendations[0].exercise.id).toBe(inChapter.id);
   });
 });
