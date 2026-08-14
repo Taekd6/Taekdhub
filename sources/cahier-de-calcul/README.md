@@ -52,39 +52,59 @@ de ces informations.
   informatif — la définition exacte de "un exercice importable" (bloc entier
   vs sous-question individuelle) reste à trancher lors du chantier d'import.
 
-## Limites connues de l'extraction
+## Difficulté (horloges) et réponses brutes — extraction visuelle (Phase 2)
 
-### Difficulté par horloge — non récupérable de ce texte
+Les pictogrammes d'horloge et la grille de réponses sont des éléments
+**graphiques**, absents de la transcription `pdftotext` (voir historique
+ci-dessous). Une deuxième source a été fournie par l'utilisateur pour
+combler ce manque : `cahier-de-calcul-pages-visuelles.zip`, les 119 pages
+du même cahier rendues en image (PNG, une par page), présentée comme fidèle
+au PDF original (`cahier_de_calcul(1).pdf`, même titres de fiche, même
+pagination, même contenu que la transcription texte — cohérence vérifiée
+par recoupement mais SHA-256 du zip non comparable à celui du PDF, formats
+différents). Ces images ne sont pas conservées dans le dépôt (utilisées en
+espace de travail temporaire uniquement) ; seul le résultat de leur lecture
+est intégré au dataset.
 
-Le cahier signale la difficulté de chaque calcul par des **pictogrammes
-d'horloge** (1 à 4 horloges). Ce sont des glyphes graphiques, pas du texte :
-`pdftotext` ne les capture pas — vérifié explicitement (la ligne du "Mode
-d'emploi" qui les décrit contient des espaces vides à cet endroit, aucun
-caractère caché). **Elles sont absentes de cette transcription et du
-dataset importé** (`datasets/cahier-de-calcul-professeur.json`), où chaque
-exercice porte le tag `"difficulté non vérifiée"` plutôt qu'une valeur
-devinée. Toute future extraction nécessitera une inspection visuelle ciblée
-du PDF original (page par page, ou rendu en image) — pas une relecture de ce
-fichier texte.
+**Méthode** : détection automatique des rangées de pictogrammes (bande de
+pixels sombres à droite de chaque en-tête "Calcul N.M"), puis lecture
+visuelle directe de chaque rangée (convention confirmée depuis la légende
+"Mode d'emploi" du cahier : rangée de 4 icônes remplie à partir de la
+DROITE — 1 horloge = ○○○●, 2 = ○○●●, 3 = ○●●●, 4 = ●●●●) et de chaque page
+de réponses ("Réponses", une page dense à deux colonnes par fiche, avant
+les corrigés). Aucune valeur n'est déduite du contenu mathématique de
+l'énoncé ni d'une source externe — uniquement ce qui est visuellement lisible
+sur la page correspondante. Un échantillon a été revérifié indépendamment
+(pages 9, 57, 87, 100, 117) et concorde exactement avec les valeurs
+retenues.
 
-### Réponses brutes — non décomposées par calcul individuel
+**Résultat** : les 122 entrées portent désormais un champ `difficulty`
+numérique (1 à 4, distribution 60/37/20/5), le tag `"difficulté non
+vérifiée"` a été retiré partout où la difficulté a pu être lue avec
+certitude (122/122 — aucune resté ambiguë). Le champ `answer` (réponse
+brute) est renseigné pour 121/122 entrées.
 
-Le cahier présente les réponses brutes ("Réponses", une par calcul, avant
-les corrigés détaillés) dans une grille dense à deux colonnes où le texte
-d'une même réponse peut se répartir sur plusieurs lignes entrelacées avec
-la colonne voisine (vérifié sur plusieurs fiches, y compris les plus
-simples — pas un cas isolé). Reconstruire cette mise en page en texte
-linéaire de façon fiable, calcul par calcul, dépasse ce que `pdftotext
--layout` seul permet de faire sans risquer d'attribuer la réponse d'un
-calcul à un autre — **exactement le risque que ce chantier doit éviter**.
+**Seule exception** : `CDC-3.10` (Fiche 3, "Dériver puis intégrer,
+intégrer puis dériver") — son énoncé indique explicitement "Reprendre
+l'exercice précédent [3.9] en commençant par intégrer... Les calculs seront
+évidemment les mêmes" ; la grille de réponses ne contient d'ailleurs aucune
+entrée "3.10" (elle passe directement de 3.9 r) à 3.11 a)). Copier les
+réponses de 3.9 aurait supposé une correspondance terme à terme non
+imprimée dans le cahier : `answer` reste donc `null` plutôt que déduit.
 
-En conséquence, le champ `answer` (réponse brute) de `Exercise` reste
-`null` pour les 122 entrées importées : rien n'est deviné, rien n'est
-mélangé. Les **corrigés détaillés** ("Corrigés", en texte linéaire, séparés
-par calcul), eux, sont fiables à extraire et alimentent `correction` pour
-110 des 122 calculs (12 n'ont qu'une réponse brute dans le cahier, sans
-corrigé détaillé — situation conservée telle quelle, jamais un corrigé
-inventé). Voir le rapport de sprint pour le détail exact.
+### Réponses brutes — grille à deux colonnes, risque de mélange
+
+Le cahier présente les réponses brutes dans une mise en page dense à deux
+colonnes où le texte d'une même réponse peut se répartir sur plusieurs
+lignes entrelacées avec la colonne voisine. C'est cette mise en page qui
+rendait l'extraction par texte linéaire (`pdftotext -layout`) non fiable
+(risque d'attribuer la réponse d'un calcul à un autre) — d'où le recours à
+la lecture visuelle directe (ci-dessus) plutôt qu'à un nouveau parsing du
+texte. Les **corrigés détaillés** ("Corrigés", texte linéaire, séparés par
+calcul), eux, restent extraits depuis la transcription texte (fiable,
+alimentent `correction` pour 110 des 122 calculs — 12 n'ont qu'une réponse
+brute dans le cahier, sans corrigé détaillé, situation conservée telle
+quelle).
 
 ## Fichiers
 
@@ -115,8 +135,16 @@ format d'import habituel de TaekdHub (même forme que
   `"Calcul matriciel"`) — crée un nouveau chapitre si aucun chapitre du même
   nom n'existe déjà pour la matière, le réutilise sinon (comportement natif
   de l'import, pas une règle spécifique à ce chantier).
-- `tags` : `"Cahier de calcul"`, `"difficulté non vérifiée"`, et la
-  sous-partie de la fiche si identifiée (ex. `"Formules d'addition"`).
+- `tags` : `"Cahier de calcul"`, la sous-partie de la fiche si identifiée
+  (ex. `"Formules d'addition"`), et `"difficulté non vérifiée"` UNIQUEMENT
+  pour une entrée dont la difficulté n'a pas pu être lue avec certitude sur
+  le pictogramme horloge (aucune actuellement — voir section précédente).
+- `difficulty` : 1 à 4, lu sur le pictogramme horloge de la page d'énoncé
+  (voir section précédente) — jamais déduit du contenu mathématique.
+- `answer` : réponse brute, lue sur la grille "Réponses" de la fiche ;
+  `null` quand le cahier n'en imprime pas une pour ce calcul précis (1/122
+  — voir section précédente), jamais une valeur devinée ou recopiée d'un
+  autre calcul.
 - `note` : provenance exacte (fiche, calcul, sous-partie, prérequis de la
   fiche en prose — jamais forcés dans le champ `prerequisites`, qui attend
   des étiquettes courtes, pas des phrases).
@@ -131,7 +159,10 @@ format d'import habituel de TaekdHub (même forme que
 `scripts/verify-cahier-calcul.mjs`) recompte indépendamment les pages/fiches/
 calculs directement dans la source brute, puis vérifie que l'ensemble exact
 des `externalId` du dataset correspond à l'ensemble exact des `Calcul N.M`
-trouvés dans la source — pas seulement une égalité de nombres.
+trouvés dans la source — pas seulement une égalité de nombres. Vérifie aussi
+que chaque entrée a soit une difficulté 1-4 résolue soit le tag `"difficulté
+non vérifiée"` (jamais les deux, jamais aucun des deux), et rapporte la
+distribution des difficultés et le nombre de réponses (`answer`) associées.
 
 Toute ambiguïté mathématique doit être tranchée en revenant à cette
 transcription, et en cas de doute persistant, à la page correspondante du

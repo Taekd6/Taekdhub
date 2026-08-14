@@ -68,7 +68,38 @@ check("Chaque entrée a title/statement/source/subject/chapter", missingFields.l
 const wrongSource = dataset.filter((e) => e.source !== "Cahier de calcul — professeur");
 check('Toutes les entrées portent source: "Cahier de calcul — professeur"', wrongSource.length === 0, wrongSource.length ? `${wrongSource.length} avec une autre source` : "");
 
-// --- 6. Statistiques (informatif, pas un critère pass/fail). ---
+// --- 6. Difficulté (pictogrammes horloge, extraits visuellement des pages du PDF) ---
+// Une entrée est soit résolue (difficulty 1-4 numérique, tag "difficulté non
+// vérifiée" absent), soit explicitement non résolue (tag présent). Les deux états
+// ne doivent jamais coexister ni être tous les deux absents (silence = donnée
+// invérifiable jamais signalée = interdit par la consigne de fidélité).
+const unresolvedTag = "difficulté non vérifiée";
+const difficultyInconsistent = dataset.filter((e) => {
+  const hasTag = (e.tags || []).includes(unresolvedTag);
+  const hasNumericDifficulty = typeof e.difficulty === "number" && e.difficulty >= 1 && e.difficulty <= 4;
+  return hasTag === hasNumericDifficulty; // les deux vrais ou les deux faux = incohérent
+});
+check(
+  "Chaque entrée a soit une difficulté 1-4 résolue, soit le tag \"difficulté non vérifiée\" (jamais les deux, jamais aucun)",
+  difficultyInconsistent.length === 0,
+  difficultyInconsistent.length ? `${difficultyInconsistent.length} entrée(s) incohérente(s) : ${difficultyInconsistent.map((e) => e.externalId).join(", ")}` : "",
+);
+
+const difficultyCounts = { 1: 0, 2: 0, 3: 0, 4: 0, unknown: 0 };
+for (const e of dataset) {
+  const hasTag = (e.tags || []).includes(unresolvedTag);
+  if (!hasTag && typeof e.difficulty === "number" && e.difficulty >= 1 && e.difficulty <= 4) {
+    difficultyCounts[e.difficulty] += 1;
+  } else {
+    difficultyCounts.unknown += 1;
+  }
+}
+
+// --- 7. Réponses brutes (grille "Réponses", extraite visuellement des pages du PDF) ---
+const withAnswer = dataset.filter((e) => typeof e.answer === "string" && e.answer.trim().length > 0).length;
+const withoutAnswer = dataset.length - withAnswer;
+
+// --- 8. Statistiques (informatif, pas un critère pass/fail). ---
 const withCorrection = dataset.filter((e) => e.correction).length;
 const withoutCorrection = dataset.length - withCorrection;
 const fichesCovered = new Set(dataset.map((e) => e.chapter));
@@ -77,7 +108,13 @@ console.log("=== Statistiques ===");
 console.log(`Fiches (chapitres) couvertes par le dataset : ${fichesCovered.size} / 16`);
 console.log(`Entrées avec corrigé détaillé : ${withCorrection} / ${dataset.length}`);
 console.log(`Entrées sans corrigé détaillé (réponse brute source non décomposée par item, voir sources/cahier-de-calcul/README.md) : ${withoutCorrection} / ${dataset.length}`);
-console.log(`Entrées avec difficulté marquée "difficulté non vérifiée" (horloges non extraites du texte, voir rapport) : ${dataset.filter((e) => (e.tags || []).includes("difficulté non vérifiée")).length} / ${dataset.length}`);
+console.log(`Difficulté 1 : ${difficultyCounts[1]} / ${dataset.length}`);
+console.log(`Difficulté 2 : ${difficultyCounts[2]} / ${dataset.length}`);
+console.log(`Difficulté 3 : ${difficultyCounts[3]} / ${dataset.length}`);
+console.log(`Difficulté 4 : ${difficultyCounts[4]} / ${dataset.length}`);
+console.log(`Difficulté unknown (tag "${unresolvedTag}") : ${difficultyCounts.unknown} / ${dataset.length}`);
+console.log(`Réponses brutes associées (answer non vide) : ${withAnswer} / ${dataset.length}`);
+console.log(`Réponses brutes null : ${withoutAnswer} / ${dataset.length}`);
 
 console.log("");
 console.log(ok ? "RÉSULTAT : toutes les vérifications passent." : "RÉSULTAT : ÉCHEC — voir les lignes [ÉCHEC] ci-dessus.");
