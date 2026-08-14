@@ -31,6 +31,7 @@ export function FocusView({
   onClose: (result?: AttemptResult | null) => void;
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
+  const [answerVisible, setAnswerVisible] = useState(false);
   const [hintCount, setHintCount] = useState(0);
   const { seconds, running, toggle, stop } = useWorkTimer<{ exerciseId: string }>(focusTimerKey(item.id), {
     exerciseId: item.id,
@@ -254,6 +255,19 @@ export function FocusView({
               <Button variant="secondary" onClick={() => setHintCount((c) => c + 1)} className="w-full">
                 Afficher l&apos;indice {hintCount + 1}
               </Button>
+            )}
+            {item.answer && (
+              <div>
+                <Button variant="ghost" onClick={() => setAnswerVisible((v) => !v)}>
+                  {answerVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {answerVisible ? "Masquer la réponse" : "Afficher la réponse"}
+                </Button>
+                {answerVisible && (
+                  <div className="mt-4 rounded-xl border border-hairline/[0.08] bg-hairline/[0.035] p-4 text-left text-sm leading-7 text-zinc-300">
+                    <RichMath text={item.answer} />
+                  </div>
+                )}
+              </div>
             )}
             {item.correction && (
               <div>

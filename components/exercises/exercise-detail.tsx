@@ -34,6 +34,7 @@ export function ExerciseDetail({
   onRemoveChapter: (id: string) => void;
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
+  const [answerVisible, setAnswerVisible] = useState(false);
   const [hintCount, setHintCount] = useState(0);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
@@ -196,6 +197,19 @@ export function ExerciseDetail({
           <Button variant="ghost" onClick={() => setHintCount((count) => count + 1)} className="text-accent-text">
             Afficher l&apos;indice {hintCount + 1}
           </Button>
+        )}
+        {item.answer && (
+          <div>
+            <Button variant="ghost" onClick={() => setAnswerVisible((value) => !value)}>
+              {answerVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+              {answerVisible ? "Masquer la réponse" : "Afficher la réponse"}
+            </Button>
+            {answerVisible && (
+              <div className="mt-3 rounded-xl border border-hairline/[0.08] bg-hairline/[0.035] p-3 text-sm leading-6 text-zinc-300">
+                <RichMath text={item.answer} />
+              </div>
+            )}
+          </div>
         )}
         {item.correction && (
           <div>
