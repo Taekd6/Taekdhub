@@ -5,9 +5,12 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { PLAN_DURATION_PRESETS } from "@/lib/plan";
+import { subjects } from "@/lib/study";
 import type { Preferences } from "@/lib/storage";
+import type { Subject } from "@/lib/supabase/types";
 
 /** Préréglages "objectif hebdomadaire" (Sprint Plan de travail), en minutes — 3h/5h/7h, plus une valeur libre déjà couverte par le champ nombre ci-dessous. */
 const WEEKLY_GOAL_PRESETS = [180, 300, 420];
@@ -31,6 +34,18 @@ export function PreferencesForm() {
     savePreferences(prefs);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  }
+
+  // Échéance par matière (Sprint planification hebdomadaire adaptative) —
+  // clé absente = pas d'échéance pour cette matière (voir
+  // lib/storage.ts#normalizeSubjectDeadlines) : une valeur vide RETIRE la clé
+  // plutôt que de la garder à `""`, pour ne jamais accumuler d'entrées
+  // vides dans la préférence sauvegardée.
+  function setSubjectDeadline(subject: Subject, value: string) {
+    const next = { ...prefs.subjectDeadlines };
+    if (value) next[subject] = value;
+    else delete next[subject];
+    setPrefs({ ...prefs, subjectDeadlines: next });
   }
 
   return (
@@ -104,6 +119,27 @@ export function PreferencesForm() {
             className="mt-2"
           />
         </label>
+        <div>
+          <p className="text-sm font-medium">Échéances par matière</p>
+          <p className="mt-1 text-xs text-muted">
+            DS, colle, DM… facultatif. Prioritaire sur la date des concours pour la matière concernée — les autres matières restent basées sur elle.
+          </p>
+          <div className="mt-3 space-y-2">
+            {subjects.map((subject) => (
+              <div key={subject} className="flex items-center gap-3">
+                <SubjectAvatar subject={subject} size="sm" />
+                <span className="w-36 shrink-0 truncate text-sm text-zinc-300">{subject}</span>
+                <Input
+                  type="date"
+                  value={prefs.subjectDeadlines[subject] ?? ""}
+                  onChange={(e) => setSubjectDeadline(subject, e.target.value)}
+                  className="flex-1"
+                  aria-label={`Échéance pour ${subject}`}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
         <Button type="submit">
           {saved ? (
             <>

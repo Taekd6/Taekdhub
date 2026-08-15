@@ -137,6 +137,61 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
 });
 
 /**
+ * Sprint planification hebdomadaire adaptative — `subjectDeadlines` doit
+ * suivre exactement les mêmes garanties de rétrocompatibilité que
+ * `weeklyGoalMinutes`/`themeMode` ci-dessus : absent → `{}`, jamais une
+ * exception, jamais une clé/valeur inventée à partir de rien.
+ */
+describe("normalizePreferences — subjectDeadlines (rétrocompatibilité)", () => {
+  it("absence de subjectDeadlines (préférence vide) → {}", () => {
+    expect(normalizePreferences({})).toMatchObject({ subjectDeadlines: {} });
+  });
+
+  it("objet vide → {}", () => {
+    expect(normalizePreferences({ subjectDeadlines: {} })).toMatchObject({ subjectDeadlines: {} });
+  });
+
+  it("une échéance valide pour une matière est conservée telle quelle", () => {
+    const prefs = normalizePreferences({ subjectDeadlines: { Physique: "2026-09-21" } });
+    expect(prefs.subjectDeadlines).toEqual({ Physique: "2026-09-21" });
+  });
+
+  it("plusieurs échéances, pour plusieurs matières, sont toutes conservées", () => {
+    const prefs = normalizePreferences({
+      subjectDeadlines: { Physique: "2026-09-21", Mathématiques: "2026-09-25", Chimie: "2026-09-18" },
+    });
+    expect(prefs.subjectDeadlines).toEqual({ Physique: "2026-09-21", Mathématiques: "2026-09-25", Chimie: "2026-09-18" });
+  });
+
+  it("une valeur invalide (pas une string, ou vide) est écartée silencieusement, sans planter", () => {
+    expect(normalizePreferences({ subjectDeadlines: { Physique: 42, Chimie: "", Mathématiques: null } }).subjectDeadlines).toEqual({});
+  });
+
+  it("une clé qui n'est pas une matière connue est ignorée (jamais injectée telle quelle)", () => {
+    const prefs = normalizePreferences({ subjectDeadlines: { "Matière Fantôme": "2026-09-21", Physique: "2026-09-21" } });
+    expect(prefs.subjectDeadlines).toEqual({ Physique: "2026-09-21" });
+  });
+
+  it("subjectDeadlines n'étant pas un objet (corrompu) retombe sur {} sans planter", () => {
+    expect(normalizePreferences({ subjectDeadlines: "pas un objet" }).subjectDeadlines).toEqual({});
+    expect(normalizePreferences({ subjectDeadlines: null }).subjectDeadlines).toEqual({});
+    expect(normalizePreferences({ subjectDeadlines: 42 }).subjectDeadlines).toEqual({});
+  });
+
+  it("migration d'une ancienne préférence sans subjectDeadlines : reste valide, {} par défaut, rien d'autre inventé", () => {
+    const legacy = { displayName: "Ancien utilisateur", dailyGoalMinutes: 120, weeklyGoalMinutes: 300, contestDate: "", accent: "#6366f1" };
+    const prefs = normalizePreferences(legacy);
+    expect(prefs.subjectDeadlines).toEqual({});
+    expect(prefs.displayName).toBe("Ancien utilisateur");
+  });
+
+  it("une date syntaxiquement invalide mais bien une string non vide est conservée telle quelle — même convention que contestDate : la validité de la date se vérifie à la lecture (lib/plan.ts#daysUntilContest), jamais ici", () => {
+    const prefs = normalizePreferences({ subjectDeadlines: { Physique: "pas une date" } });
+    expect(prefs.subjectDeadlines).toEqual({ Physique: "pas une date" });
+  });
+});
+
+/**
  * Robustesse stockage (audit produit) : une écriture `localStorage` qui
  * échoue (quota dépassé, navigation privée…) ne doit jamais faire planter
  * l'appelant — voir `lib/storage.ts#safeSetItem`, seul point d'écriture.

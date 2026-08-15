@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   computeDailyPlan,
   computeSubjectPriorities,
+  computeWeeklyProjection,
   contestUrgencyBonus,
   daysUntilContest,
   serializePlan,
+  subjectDeadlineDays,
   subjectWeight,
   summarizePlanObjective,
 } from "@/lib/plan";
@@ -350,5 +352,279 @@ describe("summarizePlanObjective", () => {
     const exercise = makeExercise({ subject: "Mathématiques", mastery: 0, status: "à faire" });
     const plan = computeDailyPlan([exercise], [], [], 45, NOW);
     expect(summarizePlanObjective(plan.blocks)).toBe("Avancer sur du nouveau contenu");
+  });
+});
+
+describe("subjectDeadlineDays — échéance par matière (Sprint planification hebdomadaire adaptative)", () => {
+  it("absente (ni spécifique, ni concours global) → null", () => {
+    expect(subjectDeadlineDays("Physique", {}, "", NOW)).toBeNull();
+  });
+
+  it("échéance spécifique valide → mêmes jours que daysUntilContest appliqué à cette date", () => {
+    const days = subjectDeadlineDays("Physique", { Physique: "2026-08-21T12:00:00.000Z" }, "", NOW);
+    expect(days).toBe(daysUntilContest("2026-08-21T12:00:00.000Z", NOW));
+    expect(days).toBe(10);
+  });
+
+  it("échéance spécifique invalide → repli sur le concours global", () => {
+    const days = subjectDeadlineDays("Physique", { Physique: "pas une date" }, "2026-08-21T12:00:00.000Z", NOW);
+    expect(days).toBe(10);
+  });
+
+  it("échéance spécifique invalide et aucun concours global → null", () => {
+    expect(subjectDeadlineDays("Physique", { Physique: "pas une date" }, "", NOW)).toBeNull();
+  });
+
+  it("une échéance spécifique à une AUTRE matière n'affecte pas celle-ci — repli sur le concours global", () => {
+    const days = subjectDeadlineDays("Chimie", { Physique: "2026-08-13T00:00:00.000Z" }, "2026-08-25T00:00:00.000Z", NOW);
+    expect(days).toBe(daysUntilContest("2026-08-25T00:00:00.000Z", NOW));
+  });
+
+  it("priorité : échéance spécifique à la matière > échéance globale pour cette matière", () => {
+    const days = subjectDeadlineDays("Physique", { Physique: "2026-08-13T00:00:00.000Z" }, "2026-08-25T00:00:00.000Z", NOW);
+    expect(days).toBe(daysUntilContest("2026-08-13T00:00:00.000Z", NOW));
+    expect(days).not.toBe(daysUntilContest("2026-08-25T00:00:00.000Z", NOW));
+  });
+
+  it("date passée → 0, jamais négatif — même convention que daysUntilContest/contestDate", () => {
+    expect(subjectDeadlineDays("Physique", { Physique: "2026-01-01T00:00:00.000Z" }, "", NOW)).toBe(0);
+  });
+});
+
+describe("computeSubjectPriorities — échéance par matière (libellé distinct, priorité sur le concours global)", () => {
+  it("échéance spécifique à la matière → raison 'échéance proche', jamais 'concours proche'", () => {
+    const exercise = makeExercise({ subject: "Physique", mastery: 25, status: "à revoir" });
+    const priorities = computeSubjectPriorities([exercise], [], [], NOW, "", { Physique: "2026-08-13T00:00:00.000Z" });
+    const entry = priorities.find((item) => item.subject === "Physique");
+    expect(entry?.reason).toContain("échéance proche");
+    expect(entry?.reason).not.toContain("concours proche");
+  });
+
+  it("sans échéance spécifique, le concours global continue de produire 'concours proche' comme avant ce sprint", () => {
+    const exercise = makeExercise({ subject: "Physique", mastery: 25, status: "à revoir" });
+    const priorities = computeSubjectPriorities([exercise], [], [], NOW, "2026-08-13T00:00:00.000Z");
+    const entry = priorities.find((item) => item.subject === "Physique");
+    expect(entry?.reason).toContain("concours proche");
+  });
+
+  it("une échéance spécifique à une matière ne fuit jamais vers une autre matière", () => {
+    const physique = makeExercise({ subject: "Physique", mastery: 25, status: "à revoir" });
+    const chimie = makeExercise({ subject: "Chimie", mastery: 25, status: "à revoir" });
+    const priorities = computeSubjectPriorities([physique, chimie], [], [], NOW, "", { Physique: "2026-08-13T00:00:00.000Z" });
+    const chimieEntry = priorities.find((item) => item.subject === "Chimie");
+    expect(chimieEntry?.reason).not.toContain("échéance proche");
+    expect(chimieEntry?.reason).not.toContain("concours proche");
+  });
+
+  it("une échéance spécifique proche s'ajoute aux signaux existants, ne les remplace jamais", () => {
+    const exercise = makeExercise({ subject: "Physique", mastery: 25, status: "à revoir" });
+    const sessions = [makeSession(exercise.id, "Physique", { started_at: "2026-08-10T10:00:00.000Z", result: "échoué" })];
+    const without = computeSubjectPriorities([exercise], sessions, [], NOW);
+    const withDeadline = computeSubjectPriorities([exercise], sessions, [], NOW, "", { Physique: "2026-08-13T00:00:00.000Z" });
+    const beforeEntry = without.find((item) => item.subject === "Physique")!;
+    const afterEntry = withDeadline.find((item) => item.subject === "Physique")!;
+    expect(beforeEntry.reason).toContain("échec récent");
+    expect(afterEntry.reason).toContain("échec récent");
+    expect(afterEntry.reason).toContain("échéance proche");
+  });
+});
+
+describe("computeDailyPlan — échéance par matière (Sprint planification hebdomadaire adaptative)", () => {
+  it("une échéance spécifique à une matière accentue sa part du plan par rapport à une échéance globale plus lointaine", () => {
+    const physique = makeExercise({ subject: "Physique", mastery: 0, estimated_minutes: 15 });
+    const chimie = makeExercise({ subject: "Chimie", mastery: 75, estimated_minutes: 15 });
+    const withoutDeadline = computeDailyPlan([physique, chimie], [], [], 60, NOW);
+    const withDeadline = computeDailyPlan([physique, chimie], [], [], 60, NOW, "", { Physique: "2026-08-13T00:00:00.000Z" });
+    const physiqueBefore = withoutDeadline.blocks.find((b) => b.subject === "Physique")?.minutes ?? 0;
+    const physiqueAfter = withDeadline.blocks.find((b) => b.subject === "Physique")?.minutes ?? 0;
+    expect(physiqueAfter).toBeGreaterThanOrEqual(physiqueBefore);
+  });
+
+  it("une matière sans aucune échéance reste correctement représentée aux côtés d'une matière avec échéance", () => {
+    const physique = makeExercise({ subject: "Physique", mastery: 0, estimated_minutes: 15 });
+    const chimie = makeExercise({ subject: "Chimie", mastery: 0, estimated_minutes: 15 });
+    const plan = computeDailyPlan([physique, chimie], [], [], 90, NOW, "", { Physique: "2026-08-13T00:00:00.000Z" });
+    const subjectsInPlan = plan.blocks.map((b) => b.subject);
+    expect(subjectsInPlan).toContain("Physique");
+    expect(subjectsInPlan).toContain("Chimie");
+  });
+
+  it("échéance spécifique passée : bornée, jamais d'exception", () => {
+    const physique = makeExercise({ subject: "Physique", mastery: 0, estimated_minutes: 15 });
+    expect(() => computeDailyPlan([physique], [], [], 45, NOW, "", { Physique: "2020-01-01T00:00:00.000Z" })).not.toThrow();
+    const plan = computeDailyPlan([physique], [], [], 45, NOW, "", { Physique: "2020-01-01T00:00:00.000Z" });
+    expect(plan.blocks[0].minutes).toBe(45);
+  });
+
+  it("sans subjectDeadlines (comportement par défaut) : strictement identique à avant ce sprint", () => {
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 20 });
+    const withoutArg = computeDailyPlan([exercise], [], [], 45, NOW, "");
+    const withEmptyDeadlines = computeDailyPlan([exercise], [], [], 45, NOW, "", {});
+    expect(withEmptyDeadlines).toEqual(withoutArg);
+  });
+});
+
+describe("computeWeeklyProjection — Sprint planification hebdomadaire adaptative", () => {
+  it("aucune minute travaillée cette semaine : minutes restantes = objectif hebdomadaire entier", () => {
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 20 });
+    const projection = computeWeeklyProjection([exercise], [], 420, NOW);
+    expect(projection.workedMinutes).toBe(0);
+    expect(projection.remainingMinutes).toBe(420);
+    expect(projection.met).toBe(false);
+  });
+
+  it("objectif partiellement consommé : minutes restantes = objectif - déjà travaillé cette semaine (toutes matières)", () => {
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 20 });
+    const sessions = [makeSession(exercise.id, "Mathématiques", { started_at: "2026-08-10T10:00:00.000Z", duration_seconds: 6000 })]; // 100 min, lundi
+    const projection = computeWeeklyProjection([exercise], sessions, 420, NOW);
+    expect(projection.workedMinutes).toBe(100);
+    expect(projection.remainingMinutes).toBe(320);
+    expect(projection.met).toBe(false);
+  });
+
+  it("objectif exactement atteint : minutes restantes à 0, objectif marqué atteint, rien à répartir", () => {
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 20 });
+    const sessions = [makeSession(exercise.id, "Mathématiques", { started_at: "2026-08-10T10:00:00.000Z", duration_seconds: 420 * 60 })];
+    const projection = computeWeeklyProjection([exercise], sessions, 420, NOW);
+    expect(projection.remainingMinutes).toBe(0);
+    expect(projection.met).toBe(true);
+    expect(projection.bySubject).toEqual([]);
+  });
+
+  it("objectif dépassé : minutes restantes reste à 0, jamais négatif — jamais '-60 min restantes'", () => {
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 20 });
+    const sessions = [makeSession(exercise.id, "Mathématiques", { started_at: "2026-08-10T10:00:00.000Z", duration_seconds: 480 * 60 })]; // 8h > 7h
+    const projection = computeWeeklyProjection([exercise], sessions, 420, NOW);
+    expect(projection.remainingMinutes).toBe(0);
+    expect(projection.met).toBe(true);
+    expect(projection.workedMinutes).toBe(480);
+  });
+
+  it("une seule matière éligible reçoit tout le budget restant, sans partage artificiel", () => {
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 20 });
+    const projection = computeWeeklyProjection([exercise], [], 300, NOW);
+    expect(projection.bySubject).toHaveLength(1);
+    expect(projection.bySubject[0]).toMatchObject({ subject: "Mathématiques", minutes: 300 });
+  });
+
+  it("plusieurs matières éligibles se répartissent le budget restant (pas systématiquement une seule)", () => {
+    const maths = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 15 });
+    const physique = makeExercise({ subject: "Physique", mastery: 0, estimated_minutes: 15 });
+    const projection = computeWeeklyProjection([maths, physique], [], 300, NOW);
+    const subjectsInProjection = projection.bySubject.map((s) => s.subject);
+    expect(subjectsInProjection).toContain("Mathématiques");
+    expect(subjectsInProjection).toContain("Physique");
+  });
+
+  it("une matière sans aucune échéance reste représentée aux côtés d'une matière avec échéance", () => {
+    const physique = makeExercise({ subject: "Physique", mastery: 0, estimated_minutes: 15 });
+    const chimie = makeExercise({ subject: "Chimie", mastery: 0, estimated_minutes: 15 });
+    const projection = computeWeeklyProjection([physique, chimie], [], 300, NOW, "", { Physique: "2026-08-13T00:00:00.000Z" });
+    const subjectsInProjection = projection.bySubject.map((s) => s.subject);
+    expect(subjectsInProjection).toContain("Physique");
+    expect(subjectsInProjection).toContain("Chimie");
+  });
+
+  it("échéance proche : la matière concernée reçoit une part plus grande qu'une matière comparable sans échéance", () => {
+    const physique = makeExercise({ subject: "Physique", mastery: 50, estimated_minutes: 15 });
+    const chimie = makeExercise({ subject: "Chimie", mastery: 50, estimated_minutes: 15 });
+    const projection = computeWeeklyProjection([physique, chimie], [], 300, NOW, "", { Physique: "2026-08-13T00:00:00.000Z" });
+    const physiqueMinutes = projection.bySubject.find((s) => s.subject === "Physique")?.minutes ?? 0;
+    const chimieMinutes = projection.bySubject.find((s) => s.subject === "Chimie")?.minutes ?? 0;
+    expect(physiqueMinutes).toBeGreaterThan(chimieMinutes);
+    expect(projection.bySubject.find((s) => s.subject === "Physique")?.deadlineDays).toBe(2);
+  });
+
+  it("échéance passée : bornée, jamais de crash, la matière reste représentée", () => {
+    const physique = makeExercise({ subject: "Physique", mastery: 0, estimated_minutes: 15 });
+    expect(() => computeWeeklyProjection([physique], [], 300, NOW, "", { Physique: "2020-01-01T00:00:00.000Z" })).not.toThrow();
+    const projection = computeWeeklyProjection([physique], [], 300, NOW, "", { Physique: "2020-01-01T00:00:00.000Z" });
+    expect(projection.bySubject[0].deadlineDays).toBe(0);
+    expect(projection.bySubject[0].minutes).toBe(300);
+  });
+});
+
+describe("computeWeeklyProjection — dynamique temporelle (lundi ≠ vendredi)", () => {
+  it("début de semaine (lundi) : la semaine entière reste à faire", () => {
+    const monday = new Date("2026-08-10T08:00:00.000Z");
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0 });
+    const projection = computeWeeklyProjection([exercise], [], 420, monday);
+    expect(projection.daysRemainingInWeek).toBe(7);
+  });
+
+  it("milieu de semaine (mercredi) : moins de jours restants qu'en début de semaine", () => {
+    const wednesday = new Date("2026-08-12T08:00:00.000Z");
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0 });
+    const projection = computeWeeklyProjection([exercise], [], 420, wednesday);
+    expect(projection.daysRemainingInWeek).toBe(5);
+  });
+
+  it("fin de semaine (vendredi) : encore moins de jours restants, mais les minutes restantes restent correctement calculées (pas de répartition quotidienne créée)", () => {
+    const friday = new Date("2026-08-14T18:00:00.000Z");
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0 });
+    const sessions = [makeSession(exercise.id, "Mathématiques", { started_at: "2026-08-10T08:00:00.000Z", duration_seconds: 1800 })]; // 30 min lundi
+    const projection = computeWeeklyProjection([exercise], sessions, 420, friday);
+    expect(projection.daysRemainingInWeek).toBe(3);
+    expect(projection.remainingMinutes).toBe(390);
+  });
+
+  it("jamais un jour restant à 0 ou négatif, même tout en fin de semaine", () => {
+    const sundayNight = new Date("2026-08-16T23:59:59.000Z");
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0 });
+    const projection = computeWeeklyProjection([exercise], [], 420, sundayNight);
+    expect(projection.daysRemainingInWeek).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("computeWeeklyProjection — invariants", () => {
+  it("jamais d'allocation négative, même avec une échéance très ancienne", () => {
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 15 });
+    const projection = computeWeeklyProjection([exercise], [], 300, NOW, "", { Mathématiques: "2020-01-01T00:00:00.000Z" });
+    expect(projection.bySubject.length).toBeGreaterThan(0);
+    for (const entry of projection.bySubject) {
+      expect(entry.minutes).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("la somme des allocations par matière ne dépasse jamais les minutes restantes", () => {
+    const maths = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 15 });
+    const physique = makeExercise({ subject: "Physique", mastery: 25, estimated_minutes: 15 });
+    const chimie = makeExercise({ subject: "Chimie", mastery: 50, estimated_minutes: 15 });
+    const projection = computeWeeklyProjection([maths, physique, chimie], [], 250, NOW, "", { Physique: "2026-08-13T00:00:00.000Z" });
+    const sum = projection.bySubject.reduce((total, entry) => total + entry.minutes, 0);
+    expect(sum).toBeLessThanOrEqual(projection.remainingMinutes);
+  });
+
+  it("jamais de NaN ni d'Infinity, y compris avec un objectif hebdomadaire à 0", () => {
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0 });
+    const projection = computeWeeklyProjection([exercise], [], 0, NOW);
+    expect(Number.isFinite(projection.remainingMinutes)).toBe(true);
+    expect(Number.isFinite(projection.workedMinutes)).toBe(true);
+    for (const entry of projection.bySubject) {
+      expect(Number.isFinite(entry.minutes)).toBe(true);
+    }
+  });
+
+  it("déterministe : mêmes entrées, même résultat à chaque appel", () => {
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 15 });
+    const sessions = [makeSession(exercise.id, "Mathématiques", { started_at: "2026-08-10T08:00:00.000Z", duration_seconds: 1200 })];
+    const first = computeWeeklyProjection([exercise], sessions, 300, NOW, "", { Mathématiques: "2026-08-13T00:00:00.000Z" });
+    const second = computeWeeklyProjection([exercise], sessions, 300, NOW, "", { Mathématiques: "2026-08-13T00:00:00.000Z" });
+    expect(second).toEqual(first);
+  });
+
+  it("aucune matière impossible (inconnue) n'apparaît jamais dans bySubject", () => {
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 15 });
+    const projection = computeWeeklyProjection([exercise], [], 300, NOW);
+    const knownSubjects: Subject[] = ["Mathématiques", "Physique", "Chimie", "Informatique TC", "Informatique Spé", "Français", "Anglais"];
+    for (const entry of projection.bySubject) {
+      expect(knownSubjects).toContain(entry.subject);
+    }
+  });
+
+  it("aucune exception sur une banque vide", () => {
+    expect(() => computeWeeklyProjection([], [], 300, NOW)).not.toThrow();
+    const projection = computeWeeklyProjection([], [], 300, NOW);
+    expect(projection.bySubject).toEqual([]);
   });
 });

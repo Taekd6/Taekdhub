@@ -42,6 +42,8 @@ import {
 import {
   computeDailyPlan,
   computeSubjectPriorities,
+  computeWeeklyProjection,
+  CONTEST_URGENCY_HORIZON_DAYS,
   daysUntilContest,
   DEFAULT_PLAN_MINUTES,
   PLAN_DURATION_PRESETS,
@@ -110,7 +112,13 @@ export function DashboardOverview() {
       recentDays: recentDaySummaries(sessions, now, 5),
       readiness: computeReadinessBySubject(exercises, sessions, now),
       weeklySummary: computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now),
-      subjectPriorities: computeSubjectPriorities(exercises, sessions, chapters, now, preferences.contestDate),
+      // Sprint planification hebdomadaire adaptative — "sur ce qu'il reste
+      // cette semaine, combien pour chaque matière ?". Réutilise le même
+      // allocateur que le Plan du jour (voir lib/plan.ts), jamais un second
+      // moteur : complémentaire de `weeklySummary` (qui regarde ce qui a été
+      // fait), celui-ci regarde ce qu'il reste à faire.
+      weeklyProjection: computeWeeklyProjection(exercises, sessions, preferences.weeklyGoalMinutes, now, preferences.contestDate, preferences.subjectDeadlines),
+      subjectPriorities: computeSubjectPriorities(exercises, sessions, chapters, now, preferences.contestDate, preferences.subjectDeadlines),
       streak: computeStreak(sessions),
       // Même calcul que `lib/plan.ts#daysUntilContest`, réutilisé tel quel
       // plutôt que redupliqué ici — voir Sprint priorisation + sync + XP,
@@ -123,8 +131,8 @@ export function DashboardOverview() {
   // Séparé de `model` : ne dépend que du choix de durée, pas besoin de
   // recalculer tout le reste du Dashboard à chaque clic sur 30/45/60 min.
   const dailyPlan = useMemo(
-    () => computeDailyPlan(exercises, sessions, chapters, planMinutes, new Date(), preferences.contestDate),
-    [exercises, sessions, chapters, planMinutes, preferences.contestDate]
+    () => computeDailyPlan(exercises, sessions, chapters, planMinutes, new Date(), preferences.contestDate, preferences.subjectDeadlines),
+    [exercises, sessions, chapters, planMinutes, preferences.contestDate, preferences.subjectDeadlines]
   );
 
   // Dépose le plan dans sessionStorage puis navigue vers /session, qui le lit
@@ -146,13 +154,22 @@ export function DashboardOverview() {
     );
   }
 
-  const { nextAction, objective, upcoming, progress, bySubject, toConsolidate, recentDays, readiness, weeklySummary, subjectPriorities, streak, contestDays } = model;
+  const { nextAction, objective, upcoming, progress, bySubject, toConsolidate, recentDays, readiness, weeklySummary, weeklyProjection, subjectPriorities, streak, contestDays } =
+    model;
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
   const secondaryPicks = nextAction.picks.slice(1);
   // "Revoir mes priorités" (Phase 8) : ouvre directement le premier exercice déjà signalé par le moteur de recommandation — même convention que computeUpcoming (lib/next-action.ts), aucune nouvelle route.
   const prioritiesHref = nextAction.picks[0] ? `/exercises?focus=${nextAction.picks[0].exercise.id}` : "/exercises";
   // "Prochainement" ne montre plus le chapitre le plus faible : la section "À consolider" ci-dessous couvre ce signal en mieux (plusieurs chapitres, raisons explicites) — computeUpcoming lui-même reste inchangé (voir lib/next-action.test.ts).
   const otherSignals = upcoming.filter((item) => item.key !== "chapter");
+  // "Cette semaine" (Sprint planification hebdomadaire adaptative) : la
+  // matière en tête de la projection (déjà triée par minutes décroissantes,
+  // voir computeWeeklyProjection) devient le CTA "Commencer" — jamais une
+  // nouvelle décision de recommandation, juste une navigation vers /session
+  // avec la matière déjà la plus prioritaire pour le reste de la semaine
+  // (même mécanisme que `computeUpcoming`/`neglectedSubjects` ailleurs sur
+  // cette page : `?subject=` pré-rempli, recommendExercises décide le reste).
+  const topWeeklySubject = weeklyProjection.bySubject[0];
 
   return (
     <div className="space-y-6">
@@ -470,14 +487,44 @@ export function DashboardOverview() {
           </div>
         </div>
         <ProgressBar value={weeklySummary.progressPercent} className="mt-5" />
-        {weeklySummary.bySubject.length > 0 && (
-          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-zinc-500">
-            {weeklySummary.bySubject.map(({ subject, seconds }) => (
-              <span key={subject}>
-                {subject} : <span className="text-zinc-300">{formatDuration(seconds)}</span>
-              </span>
-            ))}
-          </div>
+
+        {/* Reste de la semaine par matière (Sprint planification hebdomadaire
+            adaptative) — remplace l'ancien récapitulatif "déjà travaillé par
+            matière" (moins actionnable : le total/la barre ci-dessus le
+            couvrent déjà) par la projection tournée vers l'avant : combien
+            reste à consacrer à chaque matière, voir computeWeeklyProjection.
+            Objectif atteint : pas de répartition à afficher, juste un état
+            positif (jamais "0 min restantes" ni de ton culpabilisant). */}
+        {weeklyProjection.met ? (
+          <p className="mt-5 text-sm text-emerald-300">Objectif de la semaine atteint. Bien joué.</p>
+        ) : (
+          weeklyProjection.bySubject.length > 0 && (
+            <>
+              <div className="mt-5 space-y-2">
+                {weeklyProjection.bySubject.map(({ subject, minutes, deadlineDays }) => (
+                  <div key={subject} className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-300">{subject}</span>
+                    <span className="text-zinc-500">
+                      {formatMinutes(minutes)}
+                      {/* Même horizon que contestUrgencyBonus (voir CONTEST_URGENCY_HORIZON_DAYS) : une échéance trop lointaine pour influencer réellement le poids n'a rien d'actionnable à signaler ici non plus. */}
+                      {deadlineDays !== null && deadlineDays <= CONTEST_URGENCY_HORIZON_DAYS && (
+                        <span className="ml-2 text-2xs text-accent-text">
+                          ← {deadlineDays === 0 ? "aujourd'hui" : deadlineDays === 1 ? "demain" : `dans ${deadlineDays} j`}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {topWeeklySubject && (
+                <Link href={`/session?subject=${encodeURIComponent(topWeeklySubject.subject)}`} className="mt-5 inline-block">
+                  <Button size="sm">
+                    Commencer <ArrowRight size={13} />
+                  </Button>
+                </Link>
+              )}
+            </>
+          )
         )}
       </Card>
 

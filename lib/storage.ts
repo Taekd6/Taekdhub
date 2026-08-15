@@ -16,11 +16,34 @@ const weekSnapshotsKey = "prepahub:week-snapshots";
  * `themeMode` (Sprint personnalisation) : clair/sombre/système — voir lib/theme.ts#ThemeMode, indépendant de `accent`.
  * `weeklyGoalMinutes` (Sprint Plan de travail) : objectif hebdomadaire, indépendant de `dailyGoalMinutes`
  * (voir lib/week.ts#computeWeeklySummary) — alimente le Dashboard ("Cette semaine") et les statistiques.
+ * `subjectDeadlines` (Sprint planification hebdomadaire adaptative) : échéance optionnelle PAR MATIÈRE
+ * (DS, colle, DM…), distincte de `contestDate` (le concours, global, à horizon généralement plus long).
+ * Même forme qu'un simple champ date (ISO ou `""`), jamais un objet plus riche : pas de libellé, pas de
+ * type d'échéance (voir lib/plan.ts#subjectDeadlineDays, qui réutilise `daysUntilContest` tel quel, la
+ * même échéance générique paramétrée par matière au lieu d'être globale). Clé absente = pas d'échéance
+ * pour cette matière — jamais les 7 matières forcées à `""` (voir `normalizeSubjectDeadlines`).
  * Absents d'une préférence enregistrée avant leur sprint respectif : retombent sur `defaults` via le
  * merge ci-dessous, comme tout champ ajouté après coup.
  */
-export type Preferences = { displayName: string; dailyGoalMinutes: number; weeklyGoalMinutes: number; contestDate: string; accent: string; themeMode: ThemeMode };
-const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, weeklyGoalMinutes: 300, contestDate: "", accent: DEFAULT_ACCENT, themeMode: DEFAULT_THEME_MODE };
+export type Preferences = {
+  displayName: string;
+  dailyGoalMinutes: number;
+  weeklyGoalMinutes: number;
+  contestDate: string;
+  /** Échéance optionnelle par matière — voir la note ci-dessus. Clé absente = pas d'échéance pour cette matière. */
+  subjectDeadlines: Partial<Record<Subject, string>>;
+  accent: string;
+  themeMode: ThemeMode;
+};
+const defaults: Preferences = {
+  displayName: "",
+  dailyGoalMinutes: 240,
+  weeklyGoalMinutes: 300,
+  contestDate: "",
+  subjectDeadlines: {},
+  accent: DEFAULT_ACCENT,
+  themeMode: DEFAULT_THEME_MODE,
+};
 
 /**
  * Chapitre/thème (Sprint 3D) — créé et géré par l'utilisateur, jamais
@@ -265,16 +288,47 @@ function normalizeWeekSnapshot(raw: unknown): WeekSnapshot | null {
 }
 
 /**
+ * Ramène `subjectDeadlines` potentiellement corrompu (édition manuelle du
+ * localStorage, ancienne sauvegarde sans ce champ) vers une forme valide —
+ * même principe que `normalizeExercise`/`normalizeChapter` : un objet qui
+ * n'en est pas un retombe sur `{}`, et seules les clés correspondant à une
+ * vraie `Subject` avec une valeur `string` non vide sont conservées (jamais
+ * une clé arbitraire injectée depuis un fichier corrompu, jamais une valeur
+ * vide qui équivaudrait à "pas d'échéance" de toute façon — voir
+ * `daysUntilContest`, qui traite `""` comme absent). La VALIDITÉ de la date
+ * elle-même (parseable ou non) n'est PAS vérifiée ici : exactement comme
+ * `contestDate`, elle est simplement stockée telle quelle et validée à la
+ * lecture par `daysUntilContest` (lib/plan.ts) — un seul endroit qui décide
+ * "date valide ou non", jamais dupliqué.
+ */
+function normalizeSubjectDeadlines(raw: unknown): Partial<Record<Subject, string>> {
+  if (!isRecord(raw)) return {};
+  const result: Partial<Record<Subject, string>> = {};
+  for (const subject of subjects) {
+    const value = raw[subject];
+    if (typeof value === "string" && value.trim()) result[subject] = value;
+  }
+  return result;
+}
+
+/**
  * Fusionne une préférence potentiellement partielle/corrompue (import, ancienne
  * sauvegarde, édition manuelle du localStorage) avec `defaults` — même principe
  * que `normalizeExercise`/`normalizeChapter` : un champ absent ou invalide
  * retombe sur sa valeur par défaut plutôt que de propager une valeur incohérente
  * (notamment `themeMode`, posé tel quel en attribut DOM par `applyThemeMode`).
+ * `subjectDeadlines` a besoin de la même validation explicite que `themeMode` :
+ * le simple merge par spread ci-dessous ne suffit pas pour un objet imbriqué
+ * (il le remplacerait tel quel, sans filtrer un contenu corrompu).
  */
 export function normalizePreferences(raw: unknown): Preferences {
   const item = isRecord(raw) ? raw : {};
   const merged = { ...defaults, ...item };
-  return { ...merged, themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE };
+  return {
+    ...merged,
+    themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE,
+    subjectDeadlines: normalizeSubjectDeadlines(item.subjectDeadlines),
+  };
 }
 
 /**

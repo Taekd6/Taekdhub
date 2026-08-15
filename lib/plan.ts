@@ -1,6 +1,6 @@
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import { progressByChapter } from "@/lib/progress";
-import { weeklyTimeBySubject } from "@/lib/week";
+import { startOfWeek, weekBounds, weeklyTimeBySubject } from "@/lib/week";
 import { subjects } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
 import type { Chapter } from "@/lib/storage";
@@ -29,6 +29,28 @@ import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
  * même urgence (une fois sur "combien de temps pour cette matière", une
  * seconde fois sur "quel exercice dans cette matière") — voir
  * `contestUrgencyBonus` plus bas pour le détail du calcul.
+ *
+ * ## Échéance par matière (Sprint planification hebdomadaire adaptative)
+ * `preferences.subjectDeadlines` (DS, colle, DM…) généralise `contestDate` à
+ * l'échelle d'une matière — voir `subjectDeadlineDays`, qui réutilise
+ * `daysUntilContest`/`contestUrgencyBonus` tels quels (même formule,
+ * paramétrée par la date pertinente) : jamais une seconde échelle d'urgence.
+ * Priorité explicite : une échéance spécifique à la matière REMPLACE
+ * l'échéance globale POUR CETTE MATIÈRE (jamais les deux additionnées — ce
+ * serait compter deux fois le même phénomène) ; les autres matières
+ * continuent d'utiliser `contestDate`. Une matière sans aucune échéance
+ * (ni spécifique, ni concours global) reste pleinement représentée par les
+ * autres signaux (faiblesse, délaissement, échecs) — l'échéance n'est
+ * jamais qu'un signal parmi d'autres, jamais le seul.
+ *
+ * ## Projection hebdomadaire (Sprint planification hebdomadaire adaptative)
+ * `computeWeeklyProjection` répond à "sur les minutes qu'il me reste cette
+ * semaine, combien pour chaque matière ?" — en réutilisant EXACTEMENT le
+ * même allocateur que le Plan du jour (`allocateMinutesBySubject`), avec un
+ * budget différent (le reste de `weeklyGoalMinutes`, pas une seule session).
+ * Aucun deuxième moteur de pondération, aucun créneau horaire ni répartition
+ * par jour — seulement un total par matière pour ce qu'il reste de la
+ * semaine (voir sa doc pour le détail).
  */
 
 interface SubjectSignal {
@@ -118,7 +140,8 @@ const CONTEST_URGENCY_CAP = 30;
  * grandeur que `MASTERY_STALE_DAYS` (lib/recommendation.ts), qui définit déjà
  * "à partir de quand un délai devient concret" ailleurs dans le produit.
  */
-const CONTEST_URGENCY_HORIZON_DAYS = 21;
+/** Exporté (Sprint planification hebdomadaire adaptative) pour que le Dashboard puisse n'afficher une annotation d'échéance ("← DS dans 3 j") que dans la même fenêtre où elle contribue réellement au poids — jamais un second seuil dupliqué côté UI. */
+export const CONTEST_URGENCY_HORIZON_DAYS = 21;
 
 /**
  * Bonus d'urgence lié au concours — délibérément proportionnel à la FAIBLESSE
@@ -140,6 +163,37 @@ export function contestUrgencyBonus(averageMastery: number, contestDays: number 
   const urgencyFactor = Math.max(0, Math.min(1, 1 - contestDays / CONTEST_URGENCY_HORIZON_DAYS));
   const weaknessFraction = Math.max(0, 100 - averageMastery) / 100;
   return urgencyFactor * weaknessFraction * CONTEST_URGENCY_CAP;
+}
+
+/**
+ * Jours avant l'échéance PERTINENTE pour une matière donnée (Sprint
+ * planification hebdomadaire adaptative) — l'échéance spécifique à la
+ * matière (`subjectDeadlines`) si elle existe et est valide, sinon
+ * l'échéance globale du concours (`contestDate`). Jamais les deux à la fois :
+ * un seul nombre de jours résolu ICI, avant tout appel à
+ * `contestUrgencyBonus`/`subjectWeight` — c'est ce qui garantit qu'aucun
+ * double comptage n'est possible plus loin (il n'existe qu'un seul
+ * `contestDays` à additionner, jamais deux termes séparés).
+ *
+ * Une échéance spécifique invalide (date corrompue) est traitée comme
+ * absente pour CETTE matière — retombe alors sur `contestDate`, exactement
+ * comme une matière qui n'a jamais eu d'échéance spécifique. Réutilise
+ * `daysUntilContest` tel quel : même échelle, même gestion d'une date
+ * absente/invalide/passée, jamais une seconde fonction de parsing de date.
+ */
+export function subjectDeadlineDays(subject: Subject, subjectDeadlines: Partial<Record<Subject, string>>, contestDate: string, now: Date): number | null {
+  const specific = subjectDeadlines[subject];
+  if (specific) {
+    const specificDays = daysUntilContest(specific, now);
+    if (specificDays !== null) return specificDays;
+  }
+  return daysUntilContest(contestDate, now);
+}
+
+/** Vrai si l'échéance effective d'une matière vient de `subjectDeadlines` (et non d'un repli sur `contestDate`) — sert uniquement à choisir le libellé le plus précis dans `computeSubjectPriorities` ("échéance proche" vs "concours proche"), jamais à changer un calcul. */
+function hasSpecificSubjectDeadline(subject: Subject, subjectDeadlines: Partial<Record<Subject, string>>, now: Date): boolean {
+  const specific = subjectDeadlines[subject];
+  return Boolean(specific) && daysUntilContest(specific!, now) !== null;
 }
 
 /**
@@ -172,9 +226,27 @@ const MIN_BLOCK_MINUTES = 10;
  * une matière est clairement prioritaire). Les blocs sous `MIN_BLOCK_MINUTES`
  * sont retirés et leur part redistribuée une seule fois (pas de boucle
  * jusqu'à convergence : au plus 7 matières à départager).
+ *
+ * `contestDate`/`subjectDeadlines` (Sprint planification hebdomadaire
+ * adaptative) : chaque matière résout SA PROPRE échéance effective via
+ * `subjectDeadlineDays` avant d'appeler `subjectWeight` — jamais un seul
+ * `contestDays` global appliqué à toutes (voir la doc en tête de fichier).
+ * Réutilisée telle quelle par `computeDailyPlan` ET `computeWeeklyProjection`
+ * (même allocateur, budget différent) — aucun deuxième moteur de pondération.
  */
-function allocateMinutesBySubject(signals: SubjectSignal[], totalMinutes: number, contestDays: number | null): Map<Subject, number> {
-  const pool = signals.filter((signal) => signal.eligible).map((signal) => ({ subject: signal.subject, weight: Math.max(MIN_ELIGIBLE_WEIGHT, subjectWeight(signal, contestDays)) }));
+function allocateMinutesBySubject(
+  signals: SubjectSignal[],
+  totalMinutes: number,
+  contestDate: string,
+  subjectDeadlines: Partial<Record<Subject, string>>,
+  now: Date
+): Map<Subject, number> {
+  const pool = signals
+    .filter((signal) => signal.eligible)
+    .map((signal) => ({
+      subject: signal.subject,
+      weight: Math.max(MIN_ELIGIBLE_WEIGHT, subjectWeight(signal, subjectDeadlineDays(signal.subject, subjectDeadlines, contestDate, now))),
+    }));
   if (pool.length === 0 || totalMinutes <= 0) return new Map();
   if (pool.length === 1) return new Map([[pool[0].subject, totalMinutes]]);
 
@@ -238,6 +310,9 @@ const PICKS_PER_BLOCK_LIMIT = 6;
  * `contestDate` (optionnel, `""` par défaut — comportement strictement
  * inchangé sans échéance configurée) influence UNIQUEMENT la répartition du
  * temps entre matières via `subjectWeight` — voir la note en tête de fichier.
+ * `subjectDeadlines` (optionnel, `{}` par défaut — même garantie de
+ * comportement inchangé) : échéance par matière, prioritaire sur `contestDate`
+ * pour la matière concernée (voir `subjectDeadlineDays`).
  */
 export function computeDailyPlan(
   exercises: Exercise[],
@@ -245,11 +320,11 @@ export function computeDailyPlan(
   chapters: Chapter[],
   totalMinutes: number,
   now: Date = new Date(),
-  contestDate: string = ""
+  contestDate: string = "",
+  subjectDeadlines: Partial<Record<Subject, string>> = {}
 ): DailyPlan {
   const signals = computeSubjectSignals(exercises, sessions, now);
-  const contestDays = daysUntilContest(contestDate, now);
-  const allocation = allocateMinutesBySubject(signals, totalMinutes, contestDays);
+  const allocation = allocateMinutesBySubject(signals, totalMinutes, contestDate, subjectDeadlines, now);
   const chapterById = new Map(chapters.map((chapter) => [chapter.id, chapter]));
   const active = exercises.filter((exercise) => !exercise.archived);
 
@@ -333,9 +408,9 @@ export function computeSubjectPriorities(
   sessions: WorkSession[],
   chapters: Chapter[],
   now: Date = new Date(),
-  contestDate: string = ""
+  contestDate: string = "",
+  subjectDeadlines: Partial<Record<Subject, string>> = {}
 ): SubjectPriority[] {
-  const contestDays = daysUntilContest(contestDate, now);
   const signals = computeSubjectSignals(exercises, sessions, now).filter((signal) => signal.total > 0);
   // Chapitre le plus faible par matière (lib/progress.ts), pour le libellé "Matière — Chapitre" — même source que lib/next-action.ts#computeUpcoming, jamais un second calcul de "chapitre le plus faible".
   const weakestChapterBySubject = new Map<Subject, string>();
@@ -357,11 +432,18 @@ export function computeSubjectPriorities(
       // difficulté dessus — ce n'est pas la même chose.
       if (signal.hasEngagement && signal.averageMastery < 50) reasons.push("maîtrise faible");
       if (signal.recentMinutes === 0 && signal.hasPending) reasons.push("peu travaillé récemment");
-      // N'affiche "concours proche" que si l'échéance contribue RÉELLEMENT au
-      // poids de cette matière (voir `contestUrgencyBonus`) — jamais une
-      // mention générique déconnectée de ce qui a effectivement changé le
-      // classement, une matière déjà maîtrisée à 100% n'a rien à en tirer.
-      if (contestUrgencyBonus(signal.averageMastery, contestDays) > 0) reasons.push("concours proche");
+      // Échéance effective de CETTE matière (spécifique si elle existe et est
+      // valide, sinon le concours global) — voir `subjectDeadlineDays`.
+      // N'affiche une raison que si l'échéance contribue RÉELLEMENT au poids
+      // (voir `contestUrgencyBonus`) — jamais une mention générique
+      // déconnectée de ce qui a effectivement changé le classement, une
+      // matière déjà maîtrisée à 100% n'a rien à en tirer. Libellé distinct
+      // ("échéance proche" vs "concours proche") selon la source réelle, pour
+      // ne jamais laisser croire à un concours national quand c'est un DS.
+      const deadlineDays = subjectDeadlineDays(signal.subject, subjectDeadlines, contestDate, now);
+      if (contestUrgencyBonus(signal.averageMastery, deadlineDays) > 0) {
+        reasons.push(hasSpecificSubjectDeadline(signal.subject, subjectDeadlines, now) ? "échéance proche" : "concours proche");
+      }
 
       let level: SubjectPriorityLevel;
       if (signal.recentFailures >= 2 || (signal.hasEngagement && signal.averageMastery < 35)) level = "critique";
@@ -374,7 +456,7 @@ export function computeSubjectPriorities(
         label: chapterLabel ? `${signal.subject} — ${chapterLabel}` : signal.subject,
         level,
         reason: reasons.length > 0 ? reasons.join(" + ") : "progression correcte",
-        weight: subjectWeight(signal, contestDays),
+        weight: subjectWeight(signal, deadlineDays),
       };
     })
     .sort((a, b) => b.weight - a.weight)
@@ -401,4 +483,75 @@ export function serializePlan(plan: DailyPlan): StoredPlan {
     items: plan.blocks.flatMap((block) => block.picks.map(({ exercise, reasons }) => ({ exerciseId: exercise.id, reasons }))),
     requestedMinutes: plan.requestedMinutes,
   };
+}
+
+export interface WeeklyProjectionSubject {
+  subject: Subject;
+  /** Minutes allouées sur le reste de la semaine pour cette matière — même allocateur que le Plan du jour (`allocateMinutesBySubject`), jamais un second calcul. */
+  minutes: number;
+  /** Jours avant l'échéance ayant influencé ce poids (spécifique à la matière, sinon concours global) — voir `subjectDeadlineDays`. `null` si aucune échéance pertinente pour cette matière. */
+  deadlineDays: number | null;
+}
+
+export interface WeeklyProjection {
+  weeklyGoalMinutes: number;
+  /** Minutes déjà travaillées cette semaine, toutes matières — même calcul que lib/week.ts#computeWeeklySummary (jamais une seconde définition de "temps travaillé cette semaine"). */
+  workedMinutes: number;
+  /** Toujours ≥ 0 — jamais négatif même si l'objectif est dépassé (voir Étape 10 du sprint). */
+  remainingMinutes: number;
+  /** Vrai dès que `workedMinutes` atteint ou dépasse `weeklyGoalMinutes` — à distinguer de `remainingMinutes === 0` uniquement pour la lisibilité de l'appelant (les deux sont équivalents ici). */
+  met: boolean;
+  /**
+   * Jours restants dans la semaine, aujourd'hui inclus — PURE information de
+   * contexte ("lundi ≠ vendredi", voir Étape 11 du sprint), n'influence
+   * JAMAIS l'allocation elle-même : ce sprint ne construit pas de répartition
+   * quotidienne, seulement un total par matière sur ce qu'il reste de la
+   * semaine.
+   */
+  daysRemainingInWeek: number;
+  /** Uniquement les matières qui reçoivent effectivement une allocation — une matière sans rien à proposer n'apparaît pas (même convention que `DailyPlan.blocks`), triées par minutes décroissantes. */
+  bySubject: WeeklyProjectionSubject[];
+}
+
+/**
+ * Projection hebdomadaire (Sprint planification hebdomadaire adaptative) —
+ * répond à "sur les minutes qu'il me reste cette semaine, combien pour
+ * chaque matière ?". Formule : `weeklyGoalMinutes` moins ce qui a déjà été
+ * travaillé cette semaine (même calcul que `computeWeeklySummary`, pour ne
+ * jamais diverger de la carte "Cette semaine" déjà affichée) donne les
+ * minutes restantes, qui sont ensuite réparties par `allocateMinutesBySubject`
+ * — EXACTEMENT le même allocateur que `computeDailyPlan`, avec un budget
+ * différent. Aucun deuxième moteur de pondération : faiblesse, délaissement,
+ * échecs et échéances restent les mêmes signaux, au même endroit.
+ *
+ * Ne produit AUCUN créneau horaire ni répartition par jour — seulement un
+ * total par matière pour le reste de la semaine (voir `daysRemainingInWeek`,
+ * purement informatif, jamais utilisé pour subdiviser l'allocation).
+ */
+export function computeWeeklyProjection(
+  exercises: Exercise[],
+  sessions: WorkSession[],
+  weeklyGoalMinutes: number,
+  now: Date = new Date(),
+  contestDate: string = "",
+  subjectDeadlines: Partial<Record<Subject, string>> = {}
+): WeeklyProjection {
+  // Même calcul que lib/week.ts#computeWeeklySummary (toutes matières, somme
+  // en secondes avant conversion en minutes) — pour ne jamais diverger, même
+  // de quelques minutes par arrondi, de ce qu'affiche déjà "Cette semaine".
+  const workedSeconds = weeklyTimeBySubject(sessions, now).reduce((sum, entry) => sum + entry.seconds, 0);
+  const workedMinutes = secondsToWholeMinutes(workedSeconds);
+  const remainingMinutes = Math.max(0, weeklyGoalMinutes - workedMinutes);
+  const met = weeklyGoalMinutes > 0 && remainingMinutes === 0;
+
+  const signals = computeSubjectSignals(exercises, sessions, now);
+  const allocation = allocateMinutesBySubject(signals, remainingMinutes, contestDate, subjectDeadlines, now);
+  const bySubject = [...allocation.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([subject, minutes]) => ({ subject, minutes, deadlineDays: subjectDeadlineDays(subject, subjectDeadlines, contestDate, now) }));
+
+  const weekEnd = weekBounds(startOfWeek(now)).end;
+  const daysRemainingInWeek = Math.max(1, Math.ceil((weekEnd.getTime() - now.getTime()) / 86400000));
+
+  return { weeklyGoalMinutes, workedMinutes, remainingMinutes, met, daysRemainingInWeek, bySubject };
 }
