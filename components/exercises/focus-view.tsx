@@ -21,6 +21,17 @@ import type { AttemptResult, Exercise, ExerciseStatus, Mastery, Priority, WorkSe
 export const FOCUS_TIMER_PREFIX = "prepahub:timer:focus:";
 const focusTimerKey = (exerciseId: string) => `${FOCUS_TIMER_PREFIX}${exerciseId}`;
 
+/**
+ * Micro-sprint polish UX final — même vocabulaire de couleurs que l'écran
+ * "Comment s'est passé l'exercice ?" juste en dessous (emerald/amber/rose) :
+ * un seul système de couleurs pour le résultat dans tout ce composant.
+ */
+const RESULT_META: Record<AttemptResult, { label: string; icon: typeof CheckCircle2; className: string }> = {
+  "réussi": { label: "Réussi", icon: CheckCircle2, className: "text-emerald-300" },
+  "partiel": { label: "Partiellement réussi", icon: MinusCircle, className: "text-amber-300" },
+  "échoué": { label: "Échoué", icon: XCircle, className: "text-rose-300" },
+};
+
 export function FocusView({
   item,
   update,
@@ -160,6 +171,8 @@ export function FocusView({
     level: number;
     progress: { current: number; needed: number; percent: number };
     result: AttemptResult | null;
+    /** Micro-sprint polish UX final — `finalSession.duration_seconds`, la seule mesure de temps déjà fiable pour CETTE séance (voir `commitResult`). Jamais un nombre d'exercices : `FocusView` n'a aucune visibilité sur une éventuelle séance multi-exercices englobante. */
+    durationSeconds: number;
   } | null>(null);
 
   // Sauvegarde réellement la séance — avec le résultat choisi, ou `null` si
@@ -206,6 +219,7 @@ export function FocusView({
         level: levelFromXp(xpAfter),
         progress: xpProgressInLevel(xpAfter),
         result,
+        durationSeconds: finalSession.duration_seconds,
       });
       // `onClose` est appelé par l'effet ci-dessous (délai court, non
       // bloquant) — jamais ici : les deux ne doivent jamais se déclencher
@@ -314,6 +328,11 @@ export function FocusView({
   // jusqu'à la fermeture (différée, voir `closeFeedback`), qu'importe l'état
   // de `draftSession` (jamais vidé, volontairement — voir sa déclaration).
   if (xpFeedback) {
+    // Micro-sprint polish UX final — résultat qualitatif déjà connu de
+    // manière fiable (`xpFeedback.result`, choisi par l'utilisateur à
+    // l'écran précédent), affiché ici en plus de l'XP. Jamais de nombre
+    // d'exercices inventé : voir la doc de `xpFeedback` plus haut.
+    const resultMeta = xpFeedback.result ? RESULT_META[xpFeedback.result] : null;
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -321,6 +340,19 @@ export function FocusView({
         onClick={() => closeFeedback(xpFeedback.result)}
         className="fixed inset-0 z-50 flex cursor-pointer flex-col items-center justify-center gap-5 bg-canvas px-6 text-center"
       >
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center gap-1.5"
+        >
+          <p className="eyebrow">Séance terminée</p>
+          <p className="text-sm text-zinc-400">{formatDuration(xpFeedback.durationSeconds)} de travail</p>
+          {resultMeta && (
+            <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${resultMeta.className}`}>
+              <resultMeta.icon size={13} /> {resultMeta.label}
+            </span>
+          )}
+        </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 8, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}

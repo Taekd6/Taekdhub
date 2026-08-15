@@ -11,6 +11,7 @@ import {
   CalendarClock,
   CalendarRange,
   Clock3,
+  Compass,
   Flag,
   Flame,
   GraduationCap,
@@ -53,6 +54,7 @@ import {
   type SubjectPriorityLevel,
   type SubjectTrajectoryStatus,
 } from "@/lib/plan";
+import { computePilotagePhrase } from "@/lib/pilotage";
 import { computeProgressBySubject } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META } from "@/lib/readiness";
 import { subjectMeta } from "@/lib/study";
@@ -138,6 +140,11 @@ export function DashboardOverview() {
       preferences.contestDate,
       preferences.subjectDeadlines
     );
+    const weeklySummary = computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now);
+    // Sprint trajectoire par matière — explique CE QUE `weeklyProjection`
+    // a déjà décidé, ne recalcule aucun poids : consomme directement
+    // `weeklyProjection.bySubject` (voir lib/plan.ts#computeSubjectTrajectory).
+    const trajectoryBySubject = computeSubjectTrajectory(weeklyProjection.bySubject, now);
     return {
       nextAction: computeNextAction(exercises, sessions, preferences.dailyGoalMinutes, now),
       objective: computeDailyObjective(sessions, preferences.dailyGoalMinutes, now),
@@ -147,12 +154,18 @@ export function DashboardOverview() {
       toConsolidate: computeChaptersToConsolidate(exercises, sessions, chapters, now),
       recentDays: recentDaySummaries(sessions, now, 5),
       readiness: computeReadinessBySubject(exercises, sessions, now),
-      weeklySummary: computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now),
+      weeklySummary,
       weeklyProjection,
-      // Sprint trajectoire par matière — explique CE QUE `weeklyProjection`
-      // a déjà décidé, ne recalcule aucun poids : consomme directement
-      // `weeklyProjection.bySubject` (voir lib/plan.ts#computeSubjectTrajectory).
-      trajectoryBySubject: computeSubjectTrajectory(weeklyProjection.bySubject, now),
+      trajectoryBySubject,
+      // Micro-sprint polish UX final — phrase de pilotage du Dashboard :
+      // compose uniquement ces valeurs déjà calculées ci-dessus, voir
+      // lib/pilotage.ts. Aucun nouveau signal, aucune nouvelle décision.
+      pilotagePhrase: computePilotagePhrase({
+        weeklyGoalMet: weeklyProjection.met,
+        weeklyPace: weeklySummary.pace,
+        workedMinutes: weeklyProjection.workedMinutes,
+        trajectoryBySubject,
+      }),
       subjectPriorities: computeSubjectPriorities(exercises, sessions, chapters, now, preferences.contestDate, preferences.subjectDeadlines),
       streak: computeStreak(sessions),
       // Même calcul que `lib/plan.ts#daysUntilContest`, réutilisé tel quel
@@ -201,6 +214,7 @@ export function DashboardOverview() {
     weeklySummary,
     weeklyProjection,
     trajectoryBySubject,
+    pilotagePhrase,
     subjectPriorities,
     streak,
     contestDays,
@@ -245,6 +259,18 @@ export function DashboardOverview() {
 
           <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{nextAction.title}</h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">{nextAction.description}</p>
+
+          {/* Phrase de pilotage (Micro-sprint polish UX final) — contexte
+              hebdomadaire ("où j'en suis, pourquoi"), distinct du "quoi faire
+              maintenant" ci-dessus. `null` : rien d'assez significatif à dire
+              (voir lib/pilotage.ts), aucun bloc affiché plutôt qu'une phrase
+              creuse. */}
+          {pilotagePhrase && (
+            <p className="mt-3 flex max-w-xl items-start gap-2 rounded-xl border border-accent/15 bg-accent/[0.05] px-3.5 py-2.5 text-sm leading-6 text-zinc-300">
+              <Compass size={14} className="mt-0.5 shrink-0 text-accent-text" />
+              <span>{pilotagePhrase}</span>
+            </p>
+          )}
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link href={sessionHref}>
