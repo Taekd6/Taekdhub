@@ -18,6 +18,17 @@ import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
  * Ce fichier n'ajoute qu'une seule chose de nouveau : la RÉPARTITION du temps
  * disponible entre matières, pour qu'un plan de 45 min ne devienne jamais
  * "45 min de maths" par accident (voir `subjectWeight`).
+ *
+ * ## Échéance du concours (Sprint priorisation + sync + XP)
+ * `preferences.contestDate` influence désormais `subjectWeight` — UNIQUEMENT
+ * ici, jamais `lib/recommendation.ts#urgencyScore` (le score par exercice) :
+ * `subjectWeight` alimente à la fois `allocateMinutesBySubject` (Plan du
+ * jour) ET `computeSubjectPriorities` ("Priorités de la semaine"), donc un
+ * seul point de branchement suffit à faire refléter l'échéance sur les deux
+ * écrans. Ajouter le MÊME signal dans `urgencyScore` compterait deux fois la
+ * même urgence (une fois sur "combien de temps pour cette matière", une
+ * seconde fois sur "quel exercice dans cette matière") — voir
+ * `contestUrgencyBonus` plus bas pour le détail du calcul.
  */
 
 interface SubjectSignal {
@@ -85,18 +96,70 @@ const FAILURE_CAP = 30;
 const MIN_ELIGIBLE_WEIGHT = 5;
 
 /**
+ * Jours entiers avant `contestDate`, ou `null` si aucune date n'est
+ * configurée (`""`, valeur par défaut de `Preferences.contestDate`) ou
+ * invalide — dans les deux cas, comportement identique à "pas de concours".
+ * Une date déjà passée ou aujourd'hui vaut 0, JAMAIS négatif : voir
+ * `contestUrgencyBonus`, qui traite 0 comme l'urgence maximale plutôt que de
+ * laisser une différence négative produire un bonus qui grandirait sans fin.
+ */
+export function daysUntilContest(contestDate: string, now: Date = new Date()): number | null {
+  if (!contestDate) return null;
+  const target = new Date(contestDate);
+  if (Number.isNaN(target.getTime())) return null;
+  return Math.max(0, Math.ceil((target.getTime() - now.getTime()) / 86400000));
+}
+
+/** 0-30 : même ordre de grandeur que `NEGLECT_CAP`/`FAILURE_CAP` — l'échéance ne doit jamais, à elle seule, écraser les autres signaux. */
+const CONTEST_URGENCY_CAP = 30;
+/**
+ * Au-delà de cet horizon, l'échéance est trop lointaine pour changer quoi que
+ * ce soit d'actionnable aujourd'hui (impact quasi nul) — même ordre de
+ * grandeur que `MASTERY_STALE_DAYS` (lib/recommendation.ts), qui définit déjà
+ * "à partir de quand un délai devient concret" ailleurs dans le produit.
+ */
+const CONTEST_URGENCY_HORIZON_DAYS = 21;
+
+/**
+ * Bonus d'urgence lié au concours — délibérément proportionnel à la FAIBLESSE
+ * de la matière (`averageMastery`), jamais un simple ajout uniforme : un
+ * facteur uniforme appliqué à toutes les matières n'aurait aucun effet sur
+ * `allocateMinutesBySubject` (qui répartit au PRORATA des poids — un facteur
+ * commun s'annule dans le ratio). Ce n'est qu'en amplifiant davantage les
+ * matières déjà faibles, à mesure que l'échéance approche, que le plan change
+ * réellement de forme — cohérent avec l'intuition "moins de temps avant le
+ * concours = corriger les points faibles en priorité", pas "travailler plus
+ * partout à l'identique".
+ *
+ * Progressif (linéaire dans l'horizon, jamais un saut), borné (plafonné à
+ * `CONTEST_URGENCY_CAP`), nul sans date configurée ou hors horizon — voir
+ * `daysUntilContest` pour la gestion d'une date absente/invalide/passée.
+ */
+export function contestUrgencyBonus(averageMastery: number, contestDays: number | null): number {
+  if (contestDays === null) return 0;
+  const urgencyFactor = Math.max(0, Math.min(1, 1 - contestDays / CONTEST_URGENCY_HORIZON_DAYS));
+  const weaknessFraction = Math.max(0, 100 - averageMastery) / 100;
+  return urgencyFactor * weaknessFraction * CONTEST_URGENCY_CAP;
+}
+
+/**
  * Poids d'urgence d'une matière pour la répartition du temps — même esprit
  * que `urgencyScore` (lib/recommendation.ts) mais à l'échelle d'une matière :
  * des termes indépendants, chacun plafonné, additionnés. Sert à la fois à
  * `allocateMinutesBySubject` (répartition du plan du jour) et à
  * `computeSubjectPriorities` (tri de "Priorités de la semaine") — un seul
- * calcul, deux lectures.
+ * calcul, deux lectures. `contestDays` (voir `daysUntilContest`) est un
+ * paramètre séparé plutôt qu'un champ de `SubjectSignal` : ce n'est pas un
+ * signal PROPRE à la matière (contrairement à `recentFailures`/`recentMinutes`),
+ * juste un modulateur global appliqué à chaque matière selon sa propre
+ * faiblesse — voir `contestUrgencyBonus`.
  */
-function subjectWeight(signal: SubjectSignal): number {
+export function subjectWeight(signal: SubjectSignal, contestDays: number | null = null): number {
   const weakness = (100 - signal.averageMastery) * WEAKNESS_WEIGHT;
   const neglect = Math.max(0, NEGLECT_CAP - (signal.recentMinutes / NEGLECT_REFERENCE_MINUTES) * NEGLECT_CAP);
   const failure = Math.min(FAILURE_CAP, signal.recentFailures * FAILURE_PER_UNIT);
-  return weakness + neglect + failure;
+  const contestUrgency = contestUrgencyBonus(signal.averageMastery, contestDays);
+  return weakness + neglect + failure + contestUrgency;
 }
 
 /** En dessous de ce nombre de minutes, un bloc matière est trop court pour être utile — mieux vaut l'éliminer et redistribuer que de fragmenter le plan. */
@@ -110,8 +173,8 @@ const MIN_BLOCK_MINUTES = 10;
  * sont retirés et leur part redistribuée une seule fois (pas de boucle
  * jusqu'à convergence : au plus 7 matières à départager).
  */
-function allocateMinutesBySubject(signals: SubjectSignal[], totalMinutes: number): Map<Subject, number> {
-  const pool = signals.filter((signal) => signal.eligible).map((signal) => ({ subject: signal.subject, weight: Math.max(MIN_ELIGIBLE_WEIGHT, subjectWeight(signal)) }));
+function allocateMinutesBySubject(signals: SubjectSignal[], totalMinutes: number, contestDays: number | null): Map<Subject, number> {
+  const pool = signals.filter((signal) => signal.eligible).map((signal) => ({ subject: signal.subject, weight: Math.max(MIN_ELIGIBLE_WEIGHT, subjectWeight(signal, contestDays)) }));
   if (pool.length === 0 || totalMinutes <= 0) return new Map();
   if (pool.length === 1) return new Map([[pool[0].subject, totalMinutes]]);
 
@@ -171,10 +234,22 @@ const PICKS_PER_BLOCK_LIMIT = 6;
  * besoin (voir `allocateMinutesBySubject`), puis appelle `recommendExercises`
  * une fois par matière avec son budget alloué. Un bloc sans aucun exercice
  * retenu (budget trop serré) est simplement omis, pas affiché vide.
+ *
+ * `contestDate` (optionnel, `""` par défaut — comportement strictement
+ * inchangé sans échéance configurée) influence UNIQUEMENT la répartition du
+ * temps entre matières via `subjectWeight` — voir la note en tête de fichier.
  */
-export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[], chapters: Chapter[], totalMinutes: number, now: Date = new Date()): DailyPlan {
+export function computeDailyPlan(
+  exercises: Exercise[],
+  sessions: WorkSession[],
+  chapters: Chapter[],
+  totalMinutes: number,
+  now: Date = new Date(),
+  contestDate: string = ""
+): DailyPlan {
   const signals = computeSubjectSignals(exercises, sessions, now);
-  const allocation = allocateMinutesBySubject(signals, totalMinutes);
+  const contestDays = daysUntilContest(contestDate, now);
+  const allocation = allocateMinutesBySubject(signals, totalMinutes, contestDays);
   const chapterById = new Map(chapters.map((chapter) => [chapter.id, chapter]));
   const active = exercises.filter((exercise) => !exercise.archived);
 
@@ -253,7 +328,14 @@ const MAX_SUBJECT_PRIORITIES = 7;
  * maîtrisée, affichée "correct" plutôt qu'absente (voir Phase 15 du sprint :
  * un état positif plutôt qu'un écran vide).
  */
-export function computeSubjectPriorities(exercises: Exercise[], sessions: WorkSession[], chapters: Chapter[], now: Date = new Date()): SubjectPriority[] {
+export function computeSubjectPriorities(
+  exercises: Exercise[],
+  sessions: WorkSession[],
+  chapters: Chapter[],
+  now: Date = new Date(),
+  contestDate: string = ""
+): SubjectPriority[] {
+  const contestDays = daysUntilContest(contestDate, now);
   const signals = computeSubjectSignals(exercises, sessions, now).filter((signal) => signal.total > 0);
   // Chapitre le plus faible par matière (lib/progress.ts), pour le libellé "Matière — Chapitre" — même source que lib/next-action.ts#computeUpcoming, jamais un second calcul de "chapitre le plus faible".
   const weakestChapterBySubject = new Map<Subject, string>();
@@ -275,6 +357,11 @@ export function computeSubjectPriorities(exercises: Exercise[], sessions: WorkSe
       // difficulté dessus — ce n'est pas la même chose.
       if (signal.hasEngagement && signal.averageMastery < 50) reasons.push("maîtrise faible");
       if (signal.recentMinutes === 0 && signal.hasPending) reasons.push("peu travaillé récemment");
+      // N'affiche "concours proche" que si l'échéance contribue RÉELLEMENT au
+      // poids de cette matière (voir `contestUrgencyBonus`) — jamais une
+      // mention générique déconnectée de ce qui a effectivement changé le
+      // classement, une matière déjà maîtrisée à 100% n'a rien à en tirer.
+      if (contestUrgencyBonus(signal.averageMastery, contestDays) > 0) reasons.push("concours proche");
 
       let level: SubjectPriorityLevel;
       if (signal.recentFailures >= 2 || (signal.hasEngagement && signal.averageMastery < 35)) level = "critique";
@@ -287,7 +374,7 @@ export function computeSubjectPriorities(exercises: Exercise[], sessions: WorkSe
         label: chapterLabel ? `${signal.subject} — ${chapterLabel}` : signal.subject,
         level,
         reason: reasons.length > 0 ? reasons.join(" + ") : "progression correcte",
-        weight: subjectWeight(signal),
+        weight: subjectWeight(signal, contestDays),
       };
     })
     .sort((a, b) => b.weight - a.weight)

@@ -292,6 +292,21 @@ export function normalizePreferences(raw: unknown): Preferences {
 export const STORAGE_ERROR_EVENT = "prepahub:storage-error";
 
 /**
+ * Nom de l'événement `window` diffusé par `hooks/use-prepahub-data.ts` après
+ * CHAQUE écriture métier RÉUSSIE (exercices/séances/chapitres/préférences) —
+ * distinct de `STORAGE_ERROR_EVENT` ci-dessus (qui ne porte qu'un succès/échec,
+ * jamais "quoi relire"). Sert uniquement à prévenir les autres instances de
+ * `usePrepahubData()` vivant dans le MÊME onglet (ex. la sidebar, montée une
+ * seule fois dans AppShell, donc jamais remontée par une navigation) qu'une
+ * relecture est nécessaire — l'événement natif `storage` ne couvre que les
+ * AUTRES onglets, jamais le document courant (limite native du navigateur,
+ * déjà documentée sur `STORAGE_ERROR_EVENT`). Aucun `detail` : chaque
+ * écouteur relit tout via `refresh()`, jamais une clé précise — une seule
+ * source de vérité (localStorage), jamais un second état à tenir cohérent.
+ */
+export const DATA_WRITTEN_EVENT = "prepahub:data-written";
+
+/**
  * Écrit dans `localStorage` sans jamais laisser une exception remonter non
  * gérée (quota dépassé — `QuotaExceededError`, navigation privée sur Safari,
  * stockage désactivé par l'utilisateur…). Renvoie `true`/`false` plutôt que

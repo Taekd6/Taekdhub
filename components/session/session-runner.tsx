@@ -218,8 +218,8 @@ export function SessionRunner() {
   // restriction `?subject=` éventuelle : un seul bloc en ressort dans ce cas,
   // comportement identique à avant.
   const dailyPlan = useMemo(
-    () => (sizingMode === "time" ? computeDailyPlan(scopedExercises, sessions, chapters, budgetMinutes) : null),
-    [sizingMode, scopedExercises, sessions, chapters, budgetMinutes]
+    () => (sizingMode === "time" ? computeDailyPlan(scopedExercises, sessions, chapters, budgetMinutes, new Date(), preferences.contestDate) : null),
+    [sizingMode, scopedExercises, sessions, chapters, budgetMinutes, preferences.contestDate]
   );
 
   // Aperçu recalculé en direct à chaque changement de budget/mode — l'aperçu
@@ -420,6 +420,7 @@ export function SessionRunner() {
       <FocusView
         item={current}
         update={update}
+        exercises={exercises}
         sessions={sessions}
         saveSessions={saveSessions}
         onClose={handleExerciseWorked}

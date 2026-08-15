@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { localData, STORAGE_ERROR_EVENT, type Chapter, type Preferences, type WeekSnapshot } from "@/lib/storage";
+import { DATA_WRITTEN_EVENT, localData, STORAGE_ERROR_EVENT, type Chapter, type Preferences, type WeekSnapshot } from "@/lib/storage";
 import { CAHIER_CALCUL_SEED_FLAG_KEY, loadCahierCalculSeed, loadSeedBank, SEED_FLAG_KEY } from "@/lib/seed";
 import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -162,12 +162,22 @@ export function usePrepahubData() {
     function onStorageResult(event: Event) {
       setStorageError(!(event as CustomEvent<{ ok: boolean }>).detail.ok);
     }
+    // Synchronisation intra-onglet (voir `DATA_WRITTEN_EVENT`, lib/storage.ts) :
+    // une écriture réussie dans CETTE instance (ou une autre du même onglet)
+    // déclenche une simple relecture ici — jamais une écriture. `refresh()`
+    // ne fait que lire `localStorage`, donc aucune boucle possible : cet
+    // écouteur ne peut jamais lui-même redéclencher `DATA_WRITTEN_EVENT`.
+    function onDataWritten() {
+      refresh();
+    }
     window.addEventListener("storage", onStorage);
     window.addEventListener(STORAGE_ERROR_EVENT, onStorageResult);
+    window.addEventListener(DATA_WRITTEN_EVENT, onDataWritten);
     return () => {
       cancelled = true;
       window.removeEventListener("storage", onStorage);
       window.removeEventListener(STORAGE_ERROR_EVENT, onStorageResult);
+      window.removeEventListener(DATA_WRITTEN_EVENT, onDataWritten);
     };
   }, [refresh]);
 
@@ -186,28 +196,50 @@ export function usePrepahubData() {
     window.dispatchEvent(new CustomEvent(STORAGE_ERROR_EVENT, { detail: { ok } }));
   };
 
+  // Synchronisation intra-onglet (voir `DATA_WRITTEN_EVENT`, lib/storage.ts) :
+  // appelé uniquement après une écriture RÉUSSIE, jamais après un échec (rien
+  // à relire ailleurs si rien n'a changé). Diffusé APRÈS la mise à jour
+  // optimiste de cette instance : les autres instances du même onglet
+  // (ex. la sidebar) relisent alors `localStorage`, qui contient déjà la
+  // même donnée que celle que cette instance vient d'appliquer localement.
+  const broadcastDataWritten = () => {
+    window.dispatchEvent(new Event(DATA_WRITTEN_EVENT));
+  };
+
   const saveSessions = useCallback((sessions: WorkSession[]) => {
     const ok = localData.saveSessions(sessions);
     broadcastWriteResult(ok);
-    if (ok) setData((prev) => ({ ...prev, sessions }));
+    if (ok) {
+      setData((prev) => ({ ...prev, sessions }));
+      broadcastDataWritten();
+    }
   }, []);
 
   const saveExercises = useCallback((exercises: Exercise[]) => {
     const ok = localData.saveExercises(exercises);
     broadcastWriteResult(ok);
-    if (ok) setData((prev) => ({ ...prev, exercises }));
+    if (ok) {
+      setData((prev) => ({ ...prev, exercises }));
+      broadcastDataWritten();
+    }
   }, []);
 
   const saveChapters = useCallback((chapters: Chapter[]) => {
     const ok = localData.saveChapters(chapters);
     broadcastWriteResult(ok);
-    if (ok) setData((prev) => ({ ...prev, chapters }));
+    if (ok) {
+      setData((prev) => ({ ...prev, chapters }));
+      broadcastDataWritten();
+    }
   }, []);
 
   const savePreferences = useCallback((preferences: Preferences) => {
     const ok = localData.savePreferences(preferences);
     broadcastWriteResult(ok);
-    if (ok) setData((prev) => ({ ...prev, preferences }));
+    if (ok) {
+      setData((prev) => ({ ...prev, preferences }));
+      broadcastDataWritten();
+    }
   }, []);
 
   return { ...data, refresh, saveSessions, saveExercises, saveChapters, savePreferences, storageError, dismissStorageError };

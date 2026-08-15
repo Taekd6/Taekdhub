@@ -15,8 +15,9 @@ import {
   Zap,
 } from "lucide-react";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { levelFromXp, totalXp } from "@/lib/gamification";
+import { levelFromXp, totalXp, xpProgressInLevel } from "@/lib/gamification";
 import { cn } from "@/lib/cn";
+import { ProgressBar } from "@/components/ui/progress";
 
 /** Sprint 3G : "Profil" fusionné dans "Réglages" (deux pages à un seul champ chacune, jamais consultées séparément) — 7 entrées au lieu de 8, pour redonner de la marge tactile à la nav mobile compacte ci-dessous. */
 const items = [
@@ -67,6 +68,10 @@ export function AppSidebar() {
   const { sessions, exercises, ready } = usePrepahubData();
   const xp = ready ? totalXp(exercises, sessions) : 0;
   const level = levelFromXp(xp);
+  // Sprint priorisation + sync + XP : réutilise `xpProgressInLevel` tel quel
+  // (déjà écrit, jamais branché avant ce sprint) — aucune logique de niveau
+  // réimplémentée ici.
+  const progress = xpProgressInLevel(xp);
 
   return (
     <>
@@ -97,6 +102,13 @@ export function AppSidebar() {
                   <p className="text-2xs text-zinc-500">{xp.toLocaleString("fr-FR")} XP</p>
                 </div>
               </div>
+              {/* Reste volontairement minimal (pas de détail par matière/type
+                  d'XP ici) — le détail complet vit sur /progress, pas dans la
+                  sidebar (voir consigne du sprint : ne pas la surcharger). */}
+              <ProgressBar value={progress.percent} className="mt-3 h-1.5" />
+              <p className="mt-1 text-2xs text-zinc-600">
+                {progress.current} / {progress.needed} XP avant le niveau {level + 1}
+              </p>
             </div>
           )}
           <div className="rounded-2xl border border-hairline/[0.07] bg-hairline/[0.035] p-4">

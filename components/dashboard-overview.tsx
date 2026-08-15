@@ -42,6 +42,7 @@ import {
 import {
   computeDailyPlan,
   computeSubjectPriorities,
+  daysUntilContest,
   DEFAULT_PLAN_MINUTES,
   PLAN_DURATION_PRESETS,
   PLAN_STORAGE_KEY,
@@ -109,19 +110,21 @@ export function DashboardOverview() {
       recentDays: recentDaySummaries(sessions, now, 5),
       readiness: computeReadinessBySubject(exercises, sessions, now),
       weeklySummary: computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now),
-      subjectPriorities: computeSubjectPriorities(exercises, sessions, chapters, now),
+      subjectPriorities: computeSubjectPriorities(exercises, sessions, chapters, now, preferences.contestDate),
       streak: computeStreak(sessions),
-      contestDays: preferences.contestDate
-        ? Math.max(0, Math.ceil((new Date(preferences.contestDate).getTime() - now.getTime()) / 86400000))
-        : null,
+      // Même calcul que `lib/plan.ts#daysUntilContest`, réutilisé tel quel
+      // plutôt que redupliqué ici — voir Sprint priorisation + sync + XP,
+      // qui a introduit cette fonction précisément pour éviter deux formules
+      // légèrement différentes du même "jours avant le concours".
+      contestDays: daysUntilContest(preferences.contestDate, now),
     };
   }, [exercises, sessions, chapters, preferences]);
 
   // Séparé de `model` : ne dépend que du choix de durée, pas besoin de
   // recalculer tout le reste du Dashboard à chaque clic sur 30/45/60 min.
   const dailyPlan = useMemo(
-    () => computeDailyPlan(exercises, sessions, chapters, planMinutes, new Date()),
-    [exercises, sessions, chapters, planMinutes]
+    () => computeDailyPlan(exercises, sessions, chapters, planMinutes, new Date(), preferences.contestDate),
+    [exercises, sessions, chapters, planMinutes, preferences.contestDate]
   );
 
   // Dépose le plan dans sessionStorage puis navigue vers /session, qui le lit

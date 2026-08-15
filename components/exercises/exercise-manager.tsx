@@ -330,6 +330,7 @@ export function ExerciseManager() {
       <FocusView
         item={selected}
         update={update}
+        exercises={exercises}
         sessions={sessions}
         saveSessions={saveSessions}
         onClose={() => setFocusMode(false)}
