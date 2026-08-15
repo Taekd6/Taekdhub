@@ -426,6 +426,11 @@ export function SessionRunner() {
         onClose={handleExerciseWorked}
         initialDraft={currentIndex === 0 ? (pendingDraft ?? undefined) : undefined}
         recoveredSeed={currentIndex === 0 ? recoveredSeed : undefined}
+        // Micro-sprint « Ah ouais » — raisons déjà calculées par
+        // `recommendExercises` pour cet exercice précis, déjà présentes dans
+        // `recommendations` (voir plus haut) : jamais un second appel au
+        // moteur pour produire ce "pourquoi".
+        reasons={recommendations[currentIndex]?.reasons}
       />
     );
   }

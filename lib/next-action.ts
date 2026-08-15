@@ -309,14 +309,20 @@ function hasFailureSignal(reasons: string[]): boolean {
  * séparément. Ordre des cas volontaire : banque vide d'abord (rien d'autre
  * n'a de sens tant qu'il n'y a aucun exercice), puis objectif atteint, puis
  * les deux variantes "rien travaillé aujourd'hui".
+ *
+ * Micro-sprint « Ah ouais » : le cas "rien travaillé" indique désormais le
+ * temps restant (`objective.remainingMinutes`, déjà calculé) — transformer
+ * l'absence d'activité en invitation concrète plutôt qu'un simple constat.
+ * Aucun nouveau calcul : uniquement une reformulation des mêmes champs.
  */
 export function computeStatusLine(objective: DailyObjective, nextAction: NextAction): string {
   if (nextAction.kind === "empty-bank") return "Ta banque est vide pour l'instant — ajoute tes premiers exercices.";
-  if (objective.met) return "Objectif du jour atteint. Belle séance.";
+  if (objective.met) return "Objectif du jour atteint 🎯 Tu peux continuer ou t'arrêter ici.";
   if (objective.workedMinutes === 0) {
-    return nextAction.kind === "up-to-date"
-      ? "Rien n'est signalé aujourd'hui — bon moment pour avancer librement."
-      : "Tu n'as encore rien travaillé aujourd'hui.";
+    if (nextAction.kind === "up-to-date") return "Rien n'est signalé aujourd'hui — bon moment pour avancer librement.";
+    return objective.goalMinutes > 0
+      ? `Tu n'as pas encore travaillé aujourd'hui. Il te reste ${objective.remainingMinutes} min sur ton objectif.`
+      : "Tu n'as pas encore travaillé aujourd'hui.";
   }
   return `${objective.workedMinutes} min travaillées aujourd'hui · encore ${objective.remainingMinutes} min pour ton objectif.`;
 }

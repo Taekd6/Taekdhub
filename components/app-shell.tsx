@@ -1,9 +1,11 @@
 import { AppSidebar } from "@/components/app-sidebar";
+import { OnboardingFlow } from "@/components/onboarding-flow";
 import { StorageErrorBanner } from "@/components/storage-error-banner";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-canvas">
+      <OnboardingFlow />
       <AppSidebar />
       {/* `pb-24` (6rem) de base pour ne jamais passer sous la nav mobile fixe
           (voir app-sidebar.tsx), augmenté de la zone sûre iOS quand elle

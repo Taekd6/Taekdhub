@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { DashboardOverview } from "@/components/dashboard-overview";
 import { Button } from "@/components/ui/button";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { timeOfDayGreetingWord } from "@/lib/greeting";
 import { computeDailyObjective, computeNextAction, computeStatusLine } from "@/lib/next-action";
 
 const today = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
@@ -18,7 +19,11 @@ const today = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric"
 export default function DashboardPage() {
   const { sessions, exercises, preferences, ready } = usePrepahubData();
   const name = preferences.displayName?.trim();
-  const greeting = ready && name ? `Bonjour, ${name}.` : "Bonjour.";
+  // Micro-sprint « Ah ouais » — contexte temporel léger (optionnel) : seul le
+  // mot de salutation varie selon l'heure, la personnalisation par prénom
+  // reste strictement celle déjà en place.
+  const greetingWord = timeOfDayGreetingWord();
+  const greeting = ready && name ? `${greetingWord}, ${name}.` : `${greetingWord}.`;
 
   const description = useMemo(() => {
     if (!ready) return "Une séance claire, puis la suivante.";

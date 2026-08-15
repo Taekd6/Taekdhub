@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { WhyThisExercise } from "@/components/exercises/why-this-exercise";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { cn } from "@/lib/cn";
 import { computeStreak } from "@/lib/gamification";
@@ -381,6 +382,7 @@ export function DashboardOverview() {
                       <span className="shrink-0 text-xs text-zinc-500">{block.estimatedMinutes} min</span>
                     </div>
                     <p className="mt-1 text-xs text-zinc-500">{block.pickLabel}</p>
+                    <WhyThisExercise reasons={block.picks[0]?.reasons} className="mt-1.5" />
                   </div>
                 </li>
               ))}

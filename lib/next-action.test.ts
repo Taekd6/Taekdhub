@@ -277,7 +277,7 @@ describe("computeStatusLine", () => {
     expect(computeStatusLine(objective, action)).toMatch(/banque est vide/);
   });
 
-  it("objectif atteint : message positif", () => {
+  it("objectif atteint : message positif, jamais culpabilisant", () => {
     const exercise = makeExercise({ mastery: 0 });
     const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
     const objective = computeDailyObjective(sessions, 45, NOW);
@@ -285,11 +285,21 @@ describe("computeStatusLine", () => {
     expect(computeStatusLine(objective, action)).toMatch(/atteint/);
   });
 
-  it("rien travaillé aujourd'hui : message dédié", () => {
+  it("rien travaillé aujourd'hui : indique le temps restant réel (micro-sprint « Ah ouais »)", () => {
     const exercise = makeExercise({ mastery: 0 });
     const objective = computeDailyObjective([], 45, NOW);
     const action = computeNextAction([exercise], [], 45, NOW);
-    expect(computeStatusLine(objective, action)).toBe("Tu n'as encore rien travaillé aujourd'hui.");
+    const line = computeStatusLine(objective, action);
+    expect(line).toMatch(/pas encore travaillé/);
+    expect(line).toContain("45 min");
+  });
+
+  it("rien travaillé, banque à jour (aucun exercice signalé) : message dédié, sans temps restant inventé en trop", () => {
+    const exercise = makeExercise({ status: "maîtrisé", mastery: 100, priority: 1, attempts: 3, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const objective = computeDailyObjective([], 45, NOW);
+    const action = computeNextAction([exercise], [], 45, NOW);
+    expect(action.kind).toBe("up-to-date");
+    expect(computeStatusLine(objective, action)).toBe("Rien n'est signalé aujourd'hui — bon moment pour avancer librement.");
   });
 
   it("progression partielle : reprend le temps travaillé et restant", () => {

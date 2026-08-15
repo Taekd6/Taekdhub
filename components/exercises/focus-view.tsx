@@ -9,6 +9,7 @@ import { ProgressBar } from "@/components/ui/progress";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryPicker, PriorityPicker, SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { RichMath } from "@/components/rich-math";
+import { WhyThisExercise } from "@/components/exercises/why-this-exercise";
 import { useScrollLock } from "@/hooks/use-scroll-lock";
 import { type RecoveredTimerSeed, useWorkTimer } from "@/hooks/use-work-timer";
 import { clearFocusDraft, writeFocusDraft } from "@/lib/focus-draft";
@@ -43,6 +44,16 @@ export function FocusView({
   initialDraft,
   /** Séance récupérée depuis un checkpoint localStorage (voir hooks/use-work-timer.ts#findRecoverableCheckpoint) — absent dans le cas normal (reprise sessionStorage ou nouvelle séance). */
   recoveredSeed,
+  /**
+   * Micro-sprint « Ah ouais » — raisons DÉJÀ produites par
+   * `lib/recommendation.ts#recommendExercises` pour CET exercice précis,
+   * quand l'appelant les a sous la main (voir session-runner.tsx, qui
+   * conserve `ExerciseRecommendation.reasons` dans sa file). `undefined`
+   * quand Focus est ouvert depuis la simple navigation dans la banque
+   * (exercise-manager.tsx) : aucune recommandation n'a alors eu lieu, donc
+   * rien à afficher plutôt qu'un "pourquoi" inventé — voir `WhyThisExercise`.
+   */
+  reasons,
 }: {
   item: Exercise;
   update: (id: string, patch: Partial<Exercise>) => void;
@@ -60,6 +71,7 @@ export function FocusView({
   onClose: (result?: AttemptResult | null) => void;
   initialDraft?: WorkSession;
   recoveredSeed?: RecoveredTimerSeed;
+  reasons?: string[];
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
   const [answerVisible, setAnswerVisible] = useState(false);
@@ -550,6 +562,7 @@ export function FocusView({
           </div>
           <h1 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">{item.title}</h1>
           <p className="mt-1 text-sm text-zinc-500">{item.subject} · {item.source}</p>
+          <WhyThisExercise reasons={reasons} className="mt-3" />
 
           {/* Énoncé — cœur de la séance : immédiatement visible, sans clic ni révélation, contrairement aux indices/correction. */}
           <div className="mt-6 rounded-2xl border border-hairline/[0.08] bg-hairline/[0.025] p-5 sm:p-6">
