@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/input";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
+import { findPersistedSessionSuffix, findRecoverableCheckpoint, type RecoveredTimerSeed } from "@/hooks/use-work-timer";
 import { ArchivedExercises } from "@/components/exercises/archived-exercises";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { ExerciseBrowser } from "@/components/exercises/exercise-browser";
@@ -22,10 +22,11 @@ import { addChapter, removeChapter, renameChapter } from "@/lib/chapters";
 import { chapterOptionsForSubject, defaultExerciseFilters, distinctYears, filterExercises, type ExerciseFilters } from "@/lib/exercise-filters";
 import { defaultExerciseSort, exerciseSortOptions, sortExercises, type ExerciseSort } from "@/lib/exercise-sort";
 import { createExerciseFromInput } from "@/lib/exercise-import";
+import { findPersistedFocusDraft } from "@/lib/focus-draft";
 import type { Chapter } from "@/lib/storage";
 import { minutesByExerciseMap } from "@/lib/study";
 import { cn } from "@/lib/cn";
-import type { Exercise, Subject } from "@/lib/supabase/types";
+import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
 type ViewMode = "cards" | "list";
 
@@ -48,18 +49,48 @@ export function ExerciseManager() {
   const [focusMode, setFocusMode] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const resumeChecked = useRef(false);
+  // Draft post-"Terminer" retrouvé au montage (Task 5) — prioritaire sur tout
+  // le reste, voir l'effet ci-dessous. `null` : rien en attente.
+  const [pendingDraft, setPendingDraft] = useState<WorkSession | null>(null);
+  // Séance reconstruite depuis un checkpoint localStorage (Task 3, Case B/C)
+  // — seulement quand ni sessionStorage ni draft n'ont rien retrouvé.
+  const [recoveredSeed, setRecoveredSeed] = useState<RecoveredTimerSeed | undefined>(undefined);
 
   const updateFilters = useCallback((patch: Partial<ExerciseFilters>) => setFilters((prev) => ({ ...prev, ...patch })), []);
 
-  // Reprend automatiquement une séance focus interrompue par un rechargement
-  // de page (ex. F5 pendant un focus) : la clé sessionStorage laissée par
-  // useWorkTimer encode l'exercice concerné.
+  // Reprend automatiquement une séance focus interrompue, par ordre de
+  // priorité strict (Tasks 3-5) :
+  //   1. Draft post-"Terminer" en attente d'un résultat — le chrono est déjà
+  //      arrêté, une WorkSession est prête, rien d'autre à décider en premier.
+  //   2. sessionStorage encore présent — reprise normale inchangée (même
+  //      rechargement, même onglet) : ne JAMAIS consulter un checkpoint tant
+  //      que ce cas s'applique, pour ne jamais créer une seconde WorkSession.
+  //   3. Checkpoint localStorage récupérable — dernier recours après une
+  //      fermeture brutale (sessionStorage perdu) ; l'exercice doit encore
+  //      exister et ne pas être archivé, sinon le checkpoint est abandonné.
   useEffect(() => {
     if (!ready || resumeChecked.current) return;
     resumeChecked.current = true;
+
+    const draft = findPersistedFocusDraft();
+    if (draft?.exercise_id && exercises.some((item) => item.id === draft.exercise_id && !item.archived)) {
+      setPendingDraft(draft);
+      setSelectedId(draft.exercise_id);
+      setFocusMode(true);
+      return;
+    }
+
     const pendingExerciseId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX);
     if (pendingExerciseId && exercises.some((item) => item.id === pendingExerciseId && !item.archived)) {
       setSelectedId(pendingExerciseId);
+      setFocusMode(true);
+      return;
+    }
+
+    const recovered = findRecoverableCheckpoint(FOCUS_TIMER_PREFIX);
+    if (recovered && exercises.some((item) => item.id === recovered.suffix && !item.archived)) {
+      setRecoveredSeed({ startedAt: recovered.checkpoint.startedAt, seconds: recovered.checkpoint.seconds });
+      setSelectedId(recovered.suffix);
       setFocusMode(true);
     }
   }, [ready, exercises]);
@@ -302,6 +333,8 @@ export function ExerciseManager() {
         sessions={sessions}
         saveSessions={saveSessions}
         onClose={() => setFocusMode(false)}
+        initialDraft={pendingDraft ?? undefined}
+        recoveredSeed={recoveredSeed}
       />
     );
   }

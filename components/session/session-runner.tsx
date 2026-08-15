@@ -11,15 +11,16 @@ import { Input } from "@/components/ui/input";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
+import { findPersistedSessionSuffix, findRecoverableCheckpoint, type RecoveredTimerSeed } from "@/hooks/use-work-timer";
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { findPersistedFocusDraft } from "@/lib/focus-draft";
 import { computeNextAction } from "@/lib/next-action";
 import { computeDailyPlan, PLAN_STORAGE_KEY, summarizePlanObjective, type StoredPlan } from "@/lib/plan";
 import { computeProgressBySubject, type SubjectProgress } from "@/lib/progress";
 import { cn } from "@/lib/cn";
 import { subjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
-import type { AttemptResult, Exercise, Subject } from "@/lib/supabase/types";
+import type { AttemptResult, Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
 type Phase = "loading" | "empty" | "preview" | "focus" | "between" | "consolidate-prompt" | "summary";
 
@@ -97,6 +98,15 @@ export function SessionRunner() {
    */
   const [beforeSubjectProgress, setBeforeSubjectProgress] = useState<SubjectProgress[] | null>(null);
   const initialized = useRef(false);
+  // Draft post-"Terminer" retrouvé au montage (Task 5), et séance recomposée
+  // depuis un checkpoint localStorage (Task 3, Case B/C) — mêmes rôles que
+  // dans exercise-manager.tsx, seule la façon de replacer l'exercice concerné
+  // en tête de file diffère (voir l'effet ci-dessous). Toujours associés au
+  // tout premier exercice de la file (`currentIndex === 0`, voir le rendu
+  // plus bas) : `currentIndex` ne fait qu'augmenter une fois la séance
+  // lancée, jamais revenir à 0 pour un autre exercice.
+  const [pendingDraft, setPendingDraft] = useState<WorkSession | null>(null);
+  const [recoveredSeed, setRecoveredSeed] = useState<RecoveredTimerSeed | undefined>(undefined);
 
   // Décide une seule fois, au montage, entre reprendre un focus interrompu
   // (même mécanisme que exercise-manager.tsx) et proposer un nouvel aperçu de
@@ -119,12 +129,38 @@ export function SessionRunner() {
     const minutesParam = Number(params.get("minutes"));
     const requestedMinutes = Number.isFinite(minutesParam) && minutesParam > 0 ? Math.round(minutesParam) : null;
 
+    // Priorité stricte (Tasks 3-5), identique à exercise-manager.tsx :
+    // 1) draft post-"Terminer" en attente d'un résultat, 2) sessionStorage
+    // encore présent (reprise normale, inchangée), 3) checkpoint localStorage
+    // récupérable en dernier recours. Un seul de ces trois cas s'applique.
+    const draft = findPersistedFocusDraft();
+    const draftExercise = draft?.exercise_id ? exercises.find((item) => item.id === draft.exercise_id && !item.archived) : undefined;
+    if (draft && draftExercise) {
+      const rest = recommendExercises(scoped, sessions).filter((item) => item.exercise.id !== draftExercise.id);
+      setRecommendations([{ exercise: draftExercise, score: 0, reasons: ["Séance reprise"] }, ...rest]);
+      setPendingDraft(draft);
+      setBeforeSubjectProgress(computeProgressBySubject(exercises));
+      setPhase("focus");
+      return;
+    }
+
     const pendingId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX);
     const pending = pendingId ? exercises.find((item) => item.id === pendingId && !item.archived) : undefined;
 
     if (pending) {
       const rest = recommendExercises(scoped, sessions).filter((item) => item.exercise.id !== pending.id);
       setRecommendations([{ exercise: pending, score: 0, reasons: ["Séance reprise"] }, ...rest]);
+      setBeforeSubjectProgress(computeProgressBySubject(exercises));
+      setPhase("focus");
+      return;
+    }
+
+    const recovered = findRecoverableCheckpoint(FOCUS_TIMER_PREFIX);
+    const recoveredExercise = recovered ? exercises.find((item) => item.id === recovered.suffix && !item.archived) : undefined;
+    if (recovered && recoveredExercise) {
+      const rest = recommendExercises(scoped, sessions).filter((item) => item.exercise.id !== recoveredExercise.id);
+      setRecommendations([{ exercise: recoveredExercise, score: 0, reasons: ["Séance reprise"] }, ...rest]);
+      setRecoveredSeed({ startedAt: recovered.checkpoint.startedAt, seconds: recovered.checkpoint.seconds });
       setBeforeSubjectProgress(computeProgressBySubject(exercises));
       setPhase("focus");
       return;
@@ -376,7 +412,21 @@ export function SessionRunner() {
   if (phase === "focus") {
     const current = recommendations[currentIndex]?.exercise;
     if (!current) return null;
-    return <FocusView item={current} update={update} sessions={sessions} saveSessions={saveSessions} onClose={handleExerciseWorked} />;
+    // `pendingDraft`/`recoveredSeed` ne concernent que le tout premier
+    // exercice de la file (voir leur déclaration plus haut) — jamais transmis
+    // au-delà de `currentIndex === 0`, qui ne peut plus redescendre à 0 une
+    // fois la séance avancée.
+    return (
+      <FocusView
+        item={current}
+        update={update}
+        sessions={sessions}
+        saveSessions={saveSessions}
+        onClose={handleExerciseWorked}
+        initialDraft={currentIndex === 0 ? (pendingDraft ?? undefined) : undefined}
+        recoveredSeed={currentIndex === 0 ? recoveredSeed : undefined}
+      />
+    );
   }
 
   // Contenu par phase, calculé (pas retourné directement) pour que chaque

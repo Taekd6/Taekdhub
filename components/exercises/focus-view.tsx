@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryPicker, PriorityPicker, SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { RichMath } from "@/components/rich-math";
-import { useWorkTimer } from "@/hooks/use-work-timer";
+import { type RecoveredTimerSeed, useWorkTimer } from "@/hooks/use-work-timer";
+import { clearFocusDraft, writeFocusDraft } from "@/lib/focus-draft";
+import { shouldConfirmExit } from "@/lib/focus-exit";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
 import type { AttemptResult, Exercise, ExerciseStatus, Mastery, Priority, WorkSession } from "@/lib/supabase/types";
 
@@ -22,6 +24,10 @@ export function FocusView({
   sessions,
   saveSessions,
   onClose,
+  /** Draft post-"Terminer" retrouvé au démarrage (voir `findPersistedFocusDraft`) — rouvre directement l'écran de résultat plutôt que l'énoncé. */
+  initialDraft,
+  /** Séance récupérée depuis un checkpoint localStorage (voir hooks/use-work-timer.ts#findRecoverableCheckpoint) — absent dans le cas normal (reprise sessionStorage ou nouvelle séance). */
+  recoveredSeed,
 }: {
   item: Exercise;
   update: (id: string, patch: Partial<Exercise>) => void;
@@ -29,13 +35,17 @@ export function FocusView({
   saveSessions: (sessions: WorkSession[]) => void;
   /** Appelé à la fermeture du focus, avec le résultat choisi — `null`/`undefined` si aucune séance n'a été enregistrée (rien à qualifier) ou si l'utilisateur a passé l'étape. */
   onClose: (result?: AttemptResult | null) => void;
+  initialDraft?: WorkSession;
+  recoveredSeed?: RecoveredTimerSeed;
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
   const [answerVisible, setAnswerVisible] = useState(false);
   const [hintCount, setHintCount] = useState(0);
-  const { seconds, running, toggle, stop } = useWorkTimer<{ exerciseId: string }>(focusTimerKey(item.id), {
-    exerciseId: item.id,
-  });
+  const { seconds, running, toggle, stop, resumedSeconds, autoPaused } = useWorkTimer<{ exerciseId: string }>(
+    focusTimerKey(item.id),
+    { exerciseId: item.id },
+    recoveredSeed
+  );
 
   /** Micro-célébration au moment précis où l'exercice devient "maîtrisé" — jamais au montage sur un exercice déjà maîtrisé, ni sur les autres transitions de statut. */
   const [justMastered, setJustMastered] = useState(false);
@@ -52,16 +62,35 @@ export function FocusView({
   // Séance arrêtée (timer stoppé, WorkSession pas encore sauvegardée) en
   // attente d'un résultat — voir `endSession`/`commitResult` ci-dessous.
   // `null` : soit le focus est toujours en cours, soit aucune séance n'a
-  // jamais démarré (rien à qualifier).
-  const [draftSession, setDraftSession] = useState<WorkSession | null>(null);
+  // jamais démarré (rien à qualifier). Initialisé depuis `initialDraft`
+  // (Task 5) quand un rechargement/une réouverture retrouve un draft déjà
+  // persisté : on rouvre directement l'écran de résultat plutôt que de
+  // perdre la séance déjà arrêtée.
+  const [draftSession, setDraftSession] = useState<WorkSession | null>(initialDraft ?? null);
+
+  // Empêche un double appel dans le même tick (double Échap, double clic —
+  // voir Task 13) de construire deux drafts / d'arrêter le timer deux fois :
+  // une ref se lit/s'écrit de façon synchrone, contrairement à l'état React
+  // (batché), donc reste fiable même si les deux appels tombent avant le
+  // premier re-rendu.
+  const endingRef = useRef(false);
+  // Même garde pour `commitResult` (double clic sur un bouton de résultat,
+  // double "1"/"2"/"3") — sans elle, un second appel avant re-rendu verrait
+  // encore `draftSession` non vidé et sauvegarderait/avancerait la séance une
+  // seconde fois (voir Task 4 : jamais deux WorkSession pour une interruption).
+  const resultCommittedRef = useRef(false);
 
   // Arrête le timer et construit la WorkSession SANS la sauvegarder ni fermer
   // le focus — voir `commitResult`, seul endroit qui la sauvegarde vraiment,
   // une fois le résultat choisi (ou explicitement passé). `stop()` appelle
   // son callback de façon SYNCHRONE (hooks/use-work-timer.ts) : la variable
   // locale `captured` reflète donc fidèlement, dès la fin de cet appel, s'il
-  // y avait quelque chose à enregistrer.
+  // y avait quelque chose à enregistrer. Le draft est aussitôt persisté en
+  // localStorage (Task 5) : un rechargement entre "Terminer" et le choix du
+  // résultat ne perd plus rien.
   const endSession = useCallback(() => {
+    if (endingRef.current) return;
+    endingRef.current = true;
     let captured: { startedAt: string; seconds: number } | null = null;
     stop(({ startedAt, seconds: finalSeconds }) => {
       captured = { startedAt, seconds: finalSeconds };
@@ -73,7 +102,7 @@ export function FocusView({
       return;
     }
     const { startedAt, seconds: finalSeconds } = captured;
-    setDraftSession({
+    const draft: WorkSession = {
       id: crypto.randomUUID(),
       subject: item.subject,
       // Sprint 2.5 : lien réel vers l'exercice (avant, seul `note` le référençait en texte).
@@ -84,7 +113,9 @@ export function FocusView({
       note: `Exercice focus : ${item.title} (${item.source})`,
       created_at: new Date().toISOString(),
       result: null,
-    });
+    };
+    writeFocusDraft(item.id, draft);
+    setDraftSession(draft);
   }, [stop, item, onClose]);
 
   // Sauvegarde réellement la séance — avec le résultat choisi, ou `null` si
@@ -92,22 +123,48 @@ export function FocusView({
   // résultat, ou bouton "Passer") : dans les deux cas, exactement le même
   // comportement qu'avant l'introduction du résultat (temps enregistré,
   // `attempts`/`last_worked_at` mis à jour si ≥ 1 minute), rien n'est perdu.
+  // Le draft localStorage est nettoyé juste après la sauvegarde définitive
+  // (Task 4) : plus jamais retrouvé à une prochaine réouverture.
   const commitResult = useCallback(
     (result: AttemptResult | null) => {
+      if (resultCommittedRef.current) return;
+      resultCommittedRef.current = true;
       if (draftSession) {
         const finalSession: WorkSession = { ...draftSession, result };
         saveSessions([finalSession, ...sessions]);
         if (secondsToWholeMinutes(finalSession.duration_seconds) > 0) {
           update(item.id, { attempts: item.attempts + 1, last_worked_at: new Date().toISOString() });
         }
+        clearFocusDraft(item.id);
       }
       onClose(result);
     },
     [draftSession, sessions, saveSessions, item, update, onClose]
   );
 
+  // Confirmation de sortie (Task 6) : jamais `window.confirm()`, un état local
+  // qui bascule l'affichage vers un petit dialogue cohérent avec le reste du
+  // design (voir le rendu plus bas). `requestExit` est le SEUL point d'entrée
+  // pour quitter depuis l'écran de travail (bouton et Échap) — `endSession`
+  // reste appelable directement depuis le dialogue lui-même, une fois confirmé.
+  const [confirmingExit, setConfirmingExit] = useState(false);
+  const requestExit = useCallback(() => {
+    if (shouldConfirmExit(seconds, running)) {
+      setConfirmingExit(true);
+      return;
+    }
+    endSession();
+  }, [seconds, running, endSession]);
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      if (confirmingExit) {
+        // Échap referme le dialogue (équivalent de "Continuer") plutôt que de
+        // forcer un choix — cohérent avec le reste du clavier de Focus, qui
+        // ne bloque jamais l'utilisateur.
+        if (event.key === "Escape") setConfirmingExit(false);
+        return;
+      }
       if (draftSession) {
         // Écran de résultat : Échap = passer (pas de choix forcé). 1/2/3 vont
         // droit au résultat correspondant (même ordre que les boutons) — le
@@ -119,7 +176,7 @@ export function FocusView({
         else if (event.key === "3") commitResult("échoué");
         return;
       }
-      if (event.key === "Escape") endSession();
+      if (event.key === "Escape") requestExit();
       if (event.key === " ") {
         event.preventDefault();
         toggle();
@@ -127,7 +184,21 @@ export function FocusView({
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [draftSession, commitResult, endSession, toggle]);
+  }, [confirmingExit, draftSession, commitResult, requestExit, toggle]);
+
+  // Bandeau discret "Séance reprise" (Task 7) — s'affiche une fois quand
+  // `resumedSeconds` passe de `null` à une valeur (reprise sessionStorage ou
+  // checkpoint), puis s'efface tout seul. Ne dépend PAS de `[]` : au premier
+  // rendu, la restauration du hook n'a pas encore eu lieu (son propre effet
+  // de montage n'a pas encore tourné), donc `resumedSeconds` vaut encore
+  // `null` — seul un effet qui réagit à son changement peut le détecter.
+  const [showResumedNotice, setShowResumedNotice] = useState(false);
+  useEffect(() => {
+    if (resumedSeconds === null) return;
+    setShowResumedNotice(true);
+    const timeout = setTimeout(() => setShowResumedNotice(false), 5000);
+    return () => clearTimeout(timeout);
+  }, [resumedSeconds]);
 
   if (draftSession) {
     return (
@@ -205,11 +276,74 @@ export function FocusView({
           <Button variant={running ? "secondary" : "primary"} size="sm" onClick={toggle}>
             {running ? "Pause" : "Timer"}
           </Button>
-          <Button variant="ghost" size="icon" onClick={endSession} aria-label="Terminer le focus">
+          <Button variant="ghost" size="icon" onClick={requestExit} aria-label="Terminer le focus">
             <X size={18} />
           </Button>
         </div>
       </header>
+
+      {/* Bandeau discret "Séance reprise" / "mis en pause en arrière-plan"
+          (Tasks 7-8) — jamais les deux à la fois : l'auto-pause, tant qu'elle
+          n'est pas résolue, prime (c'est l'état actionnable), la reprise
+          n'est qu'informative et s'efface d'elle-même. */}
+      <AnimatePresence>
+        {(autoPaused || showResumedNotice) && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden border-b border-hairline/[0.07] bg-accent/[0.06]"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-2.5 text-xs text-zinc-400">
+              <span>
+                {autoPaused
+                  ? "Chrono mis en pause car TaekdHub est passé en arrière-plan."
+                  : `Séance reprise — ${formatDuration(resumedSeconds ?? 0)} déjà enregistrées.`}
+              </span>
+              {autoPaused && (
+                <Button size="sm" variant="secondary" onClick={toggle}>
+                  Reprendre
+                </Button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Confirmation de sortie (Task 6) — jamais window.confirm(), un
+          dialogue cohérent avec le reste du design, uniquement pour une
+          séance significative encore en cours (voir lib/focus-exit.ts). */}
+      <AnimatePresence>
+        {confirmingExit && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-6"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="surface w-full max-w-sm rounded-2xl p-6 text-center"
+            >
+              <p className="font-semibold text-zinc-100">Ta séance est en cours.</p>
+              <p className="mt-1.5 text-sm text-zinc-500">Tu veux vraiment quitter maintenant ?</p>
+              <div className="mt-5 flex flex-col gap-2">
+                <Button onClick={() => setConfirmingExit(false)}>Continuer</Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setConfirmingExit(false);
+                    endSession();
+                  }}
+                >
+                  Terminer la séance
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Contenu défilable : l'énoncé (contenu principal) prime sur le chrono, resté dans le bandeau supérieur, secondaire dans la hiérarchie visuelle. */}
       <div className="flex-1 overflow-y-auto px-6 py-8">
