@@ -104,7 +104,7 @@ export function DashboardOverview() {
       objective: computeDailyObjective(sessions, preferences.dailyGoalMinutes, now),
       upcoming: computeUpcoming(exercises, sessions, chapters, now),
       progress: computeCommandCenterProgress(exercises, sessions, now),
-      bySubject: computeProgressBySubject(exercises).filter((entry) => entry.total > 0),
+      bySubject: computeProgressBySubject(exercises),
       toConsolidate: computeChaptersToConsolidate(exercises, sessions, chapters, now),
       recentDays: recentDaySummaries(sessions, now, 5),
       readiness: computeReadinessBySubject(exercises, sessions, now),

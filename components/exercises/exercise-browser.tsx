@@ -96,7 +96,7 @@ export function ExerciseBrowser({
 }
 
 function SubjectGrid({ exercises, onSelect }: { exercises: Exercise[]; onSelect: (subject: Subject) => void }) {
-  const entries = computeProgressBySubject(exercises).filter((entry) => entry.total > 0);
+  const entries = computeProgressBySubject(exercises);
   if (entries.length === 0) return null;
 
   return (

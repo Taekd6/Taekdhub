@@ -167,8 +167,20 @@ export interface WeeklySummary {
  * jours de la semaine).
  */
 export function computeWeeklySummary(exercises: Exercise[], sessions: WorkSession[], weeklyGoalMinutes: number, now: Date = new Date()): WeeklySummary {
-  const bySubject = weeklyTimeBySubject(sessions, now);
-  const total = bySubject.reduce((sum, entry) => sum + entry.seconds, 0);
+  // Le temps total de la semaine reste calculé sur TOUTES les matières (y
+  // compris une matière sans exercice actif aujourd'hui mais qui aurait
+  // quand même une séance enregistrée — cas archive/suppression) : seul
+  // l'AFFICHAGE par matière (`bySubject` du résultat) doit être restreint
+  // aux matières qui ont réellement du contenu, pas le total.
+  const allBySubject = weeklyTimeBySubject(sessions, now);
+  const total = allBySubject.reduce((sum, entry) => sum + entry.seconds, 0);
+  // Filtre sur le CONTENU réel de la banque (`computeProgressBySubject`,
+  // déjà filtré), jamais sur `seconds > 0` : une matière avec des exercices
+  // mais 0 minute cette semaine doit rester visible (rien à signaler de
+  // spécial), seule une matière sans aucun exercice ne doit jamais
+  // apparaître ici.
+  const subjectsWithContent = new Set(computeProgressBySubject(exercises).map((entry) => entry.subject));
+  const bySubject = allBySubject.filter((entry) => subjectsWithContent.has(entry.subject));
   const objectiveSeconds = minutesToSeconds(weeklyGoalMinutes);
   const progressPercent = objectiveSeconds ? Math.min(100, Math.round((total / objectiveSeconds) * 100)) : 0;
   const daysElapsed = Math.floor((now.getTime() - startOfWeek(now).getTime()) / 86400000);
