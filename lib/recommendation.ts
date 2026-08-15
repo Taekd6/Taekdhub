@@ -18,12 +18,20 @@ import type { Exercise, ExerciseStatus, WorkSession } from "@/lib/supabase/types
  * ordre" rend chaque partie indépendamment lisible et modifiable : ajouter
  * un critère d'inclusion ne touche pas au calcul du score, et inversement.
  *
- * ## Sprint 4 : décroissance de maîtrise (voir `isStaleMastery`/`staleMasteryBonus`)
- * Un exercice "maîtrisé" non retravaillé depuis longtemps redevient éligible
- * (nouveau critère dans `evaluateExercise`) et son score augmente
- * progressivement avec le temps écoulé (nouveau terme, plafonné, dans
- * `urgencyScore`). Ni `status` ni `mastery` ne sont jamais modifiés par ce
- * mécanisme : seul le classement en est influencé.
+ * ## Sprint 4 → Sprint répétition espacée : urgence de révision adaptative
+ * (voir `revisionUrgencyFromAttempts`)
+ * Un exercice non retravaillé depuis longtemps redevient éligible (critère
+ * dans `evaluateExercise`) et son score augmente progressivement avec le
+ * temps écoulé (terme plafonné dans `urgencyScore`). À l'origine (Sprint 4),
+ * le seuil était fixe (`MASTERY_STALE_DAYS`, 21 jours) et ne s'appliquait
+ * qu'aux exercices marqués "maîtrisé" à la main. Il est maintenant adaptatif :
+ * l'intervalle avant révision dépend de la série de réussites consécutives
+ * réelle (`recentSuccessStreak`, inchangée) et de la difficulté de
+ * l'exercice — un Leitner léger, jamais persisté (voir `revisionIntervalDays`).
+ * Le seuil fixe reste utilisé comme repli (`legacyStaleBonus`) uniquement
+ * quand aucune tentative avec résultat n'existe : c'est tout ce qu'on peut
+ * savoir dans ce cas. Ni `status` ni `mastery` ne sont jamais modifiés par ce
+ * mécanisme : seul le classement (et l'inclusion) en sont influencés.
  *
  * ## Sprint 4 : sélection bornée par le temps (voir `selectWithinBudget`)
  * `recommendExercises` accepte un budget optionnel (`availableMinutes`). Sans
@@ -52,36 +60,25 @@ export function isNeverWorked(exercise: Exercise, minutesSpent: number): boolean
 }
 
 /**
- * Nombre de jours sans retravail au-delà duquel un exercice "maîtrisé"
- * redevient éligible à la recommandation (voir `isStaleMastery`). Trois
- * semaines : assez long pour ne pas rappeler un exercice tout juste maîtrisé,
- * assez court pour détecter un oubli avant qu'il ne devienne un trou le jour
- * d'un DS.
+ * Seuil fixe historique (Sprint 4) : nombre de jours sans retravail au-delà
+ * duquel un exercice "maîtrisé" redevient éligible. Sert maintenant de repli
+ * quand aucun intervalle adaptatif n'est calculable (voir `legacyStaleBonus`)
+ * et de plafond à l'intervalle adaptatif (`REVISION_MAX_INTERVAL_DAYS`).
+ * Trois semaines : assez long pour ne pas rappeler un exercice tout juste
+ * maîtrisé, assez court pour détecter un oubli avant qu'il ne devienne un
+ * trou le jour d'un DS.
  */
 export const MASTERY_STALE_DAYS = 21;
+
+/** Nombre de jours pleins écoulés entre une date ISO et `now` (toujours ≥ 0 en usage normal). */
+function daysBetween(isoDate: string, now: Date): number {
+  return Math.floor((now.getTime() - new Date(isoDate).getTime()) / 86400000);
+}
 
 /** `null` si l'exercice n'a jamais eu de séance focus achevée dessus (voir `Exercise.last_worked_at`). */
 function daysSinceLastWorked(exercise: Exercise, now: Date): number | null {
   if (!exercise.last_worked_at) return null;
-  return Math.floor((now.getTime() - new Date(exercise.last_worked_at).getTime()) / 86400000);
-}
-
-/**
- * Un exercice "maîtrisé" mais non retravaillé depuis longtemps ne doit jamais
- * rester invisible indéfiniment : sans ce critère, un oubli réel ne serait
- * détecté qu'au moment du DS. Ne modifie jamais `status` ni `mastery` — voir
- * la note Sprint 4 en tête de fichier.
- *
- * `last_worked_at` nul (jamais de séance focus achevée dessus, y compris pour
- * une fiche marquée "maîtrisé" à la main) est traité comme "tout juste au
- * seuil", pas comme "infiniment ancien" : on n'a aucune preuve de fraîcheur,
- * mais on n'invente pas non plus un signal fort à partir d'une donnée absente
- * (même logique que `lib/week.ts#neglectedSubjects`).
- */
-function isStaleMastery(exercise: Exercise, now: Date): boolean {
-  if (exercise.status !== "maîtrisé") return false;
-  const days = daysSinceLastWorked(exercise, now);
-  return days === null || days >= MASTERY_STALE_DAYS;
+  return daysBetween(exercise.last_worked_at, now);
 }
 
 /**
@@ -148,9 +145,18 @@ function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: Wo
   if (neverWorked) reasons.push("Jamais travaillé");
   if (exercise.status === "en cours") reasons.push("En cours");
   if (exercise.status === "à revoir") reasons.push("Marqué à revoir");
-  if (isStaleMastery(exercise, now)) {
-    const days = daysSinceLastWorked(exercise, now);
-    reasons.push(days === null ? "Maîtrisé, jamais retravaillé" : `Non retravaillé depuis ${days} j`);
+  // "Maîtrisé, jamais retravaillé" : cas particulier conservé tel quel
+  // (Sprint 4) — aucune tentative avec résultat, donc aucun intervalle
+  // adaptatif calculable ; seule la fiche manuelle "maîtrisé" donne un
+  // signal. Le reste du critère est adaptatif (voir
+  // `revisionUrgencyFromAttempts`) et ne dépend plus du statut manuel : un
+  // exercice "à revoir" ou "en cours" dont la série de réussites est due
+  // redevient éligible au même titre qu'un exercice "maîtrisé".
+  if (exercise.status === "maîtrisé" && daysSinceLastWorked(exercise, now) === null) {
+    reasons.push("Maîtrisé, jamais retravaillé");
+  } else if (revisionUrgencyFromAttempts(exercise, attempts, now) > 0) {
+    const days = daysSinceLastWorked(exercise, now) ?? daysBetween(attempts[0].started_at, now);
+    reasons.push(`Non retravaillé depuis ${days} j`);
   }
   // Échec récent : signal fort, exprimé comme un critère d'inclusion à part
   // entière (un échec suffit à justifier de revoir l'exercice, même si aucun
@@ -185,24 +191,103 @@ const STATUS_WEIGHT: Record<ExerciseStatus, number> = {
   maîtrisé: -30,
 };
 
-/** Plafond du bonus de décroissance (voir `staleMasteryBonus`) — comparable en amplitude à `momentumBonus`, jamais dominant. */
-const MASTERY_STALE_BONUS_CAP = 30;
-const MASTERY_STALE_BONUS_PER_DAY = 0.5;
+/** Plafond commun aux deux chemins de `revisionUrgencyFromAttempts` (adaptatif et repli) — comparable en amplitude à `momentumBonus`, jamais dominant. */
+const REVISION_URGENCY_CAP = 30;
+const REVISION_URGENCY_PER_DAY = 0.5;
 
 /**
- * Contribution continue de la décroissance au score — 0 avant le seuil de
- * `MASTERY_STALE_DAYS`, puis croît progressivement (jamais un saut) avec le
- * nombre de jours de retard, plafonnée pour ne jamais dominer les autres
- * termes (même logique que `momentumBonus`). `last_worked_at` nul est traité
- * comme "tout juste au seuil" (bonus nul) — voir `isStaleMastery`.
+ * Intervalle avant révision (jours), pas une valeur stockée : reconstruite à
+ * chaque appel à partir de la série de réussites consécutives la plus
+ * récente. Double à chaque réussite supplémentaire (Leitner léger : 1
+ * réussite → court, 2 → plus long, 3 → plus long encore), plafonné à partir
+ * de `REVISION_MAX_STREAK_FOR_INTERVAL` réussites pour ne jamais croître sans
+ * limite, et toujours borné par `REVISION_MAX_INTERVAL_DAYS`.
+ *
+ * `difficultyFactor` ajuste modérément (±20 %, jamais plus) autour de la
+ * difficulté 3 comme référence neutre — même convention que
+ * `estimatedDurationMinutes`. Un exercice difficile (5) resserre l'intervalle
+ * (0.8×) : une réussite n'y vaut pas la même confiance à long terme que sur
+ * un exercice facile (1, 1.2×) — sans pour autant lui donner un énorme bonus.
  */
-function staleMasteryBonus(exercise: Exercise, now: Date): number {
+const REVISION_BASE_INTERVAL_DAYS = 3;
+const REVISION_MAX_STREAK_FOR_INTERVAL = 4;
+const REVISION_MAX_INTERVAL_DAYS = MASTERY_STALE_DAYS;
+
+function revisionIntervalDays(streak: number, difficulty: Exercise["difficulty"]): number {
+  const effectiveStreak = Math.min(streak, REVISION_MAX_STREAK_FOR_INTERVAL);
+  const difficultyFactor = 1 - (difficulty - 3) * 0.1; // 0.8 (difficile) à 1.2 (facile)
+  const raw = REVISION_BASE_INTERVAL_DAYS * 2 ** (effectiveStreak - 1) * difficultyFactor;
+  return Math.min(REVISION_MAX_INTERVAL_DAYS, raw);
+}
+
+/**
+ * Urgence adaptative quand une série de réussites consécutives existe
+ * (`streak > 0`) : 0 tant que la dernière réussite est dans l'intervalle
+ * théorique (`revisionIntervalDays`), puis croît progressivement au-delà,
+ * plafonnée à `REVISION_URGENCY_CAP` — même forme que l'ancien
+ * `staleMasteryBonus`, mais avec un seuil désormais adaptatif au lieu de
+ * `MASTERY_STALE_DAYS` fixe.
+ */
+function adaptiveRevisionUrgency(attempts: WorkSession[], streak: number, difficulty: Exercise["difficulty"], now: Date): number {
+  const daysSince = daysBetween(attempts[0].started_at, now);
+  if (!Number.isFinite(daysSince)) return 0; // `started_at` corrompu : robustesse avant tout, jamais de crash
+  const overdueDays = daysSince - revisionIntervalDays(streak, difficulty);
+  if (overdueDays <= 0) return 0;
+  return Math.min(REVISION_URGENCY_CAP, overdueDays * REVISION_URGENCY_PER_DAY);
+}
+
+/**
+ * Repli quand aucune tentative avec résultat n'existe pour l'exercice : aucun
+ * intervalle adaptatif n'est calculable (Étape 2 — pas d'historique, pas de
+ * série). Reprend exactement l'ancien mécanisme fixe (Sprint 4) : seuil de
+ * `MASTERY_STALE_DAYS`, gardé par le statut manuel "maîtrisé". `last_worked_at`
+ * nul est traité comme "tout juste au seuil" (0), pas comme "infiniment
+ * ancien" — même logique que `lib/week.ts#neglectedSubjects`.
+ */
+function legacyStaleBonus(exercise: Exercise, now: Date): number {
   if (exercise.status !== "maîtrisé") return 0;
   const days = daysSinceLastWorked(exercise, now);
-  const effectiveDays = days ?? MASTERY_STALE_DAYS;
-  if (effectiveDays < MASTERY_STALE_DAYS) return 0;
-  const overdueDays = effectiveDays - MASTERY_STALE_DAYS;
-  return Math.min(MASTERY_STALE_BONUS_CAP, overdueDays * MASTERY_STALE_BONUS_PER_DAY);
+  if (days === null) return 0;
+  const overdueDays = days - MASTERY_STALE_DAYS;
+  if (overdueDays <= 0) return 0;
+  return Math.min(REVISION_URGENCY_CAP, overdueDays * REVISION_URGENCY_PER_DAY);
+}
+
+/**
+ * Urgence de révision (0 à `REVISION_URGENCY_CAP`) à partir de tentatives
+ * déjà filtrées/triées pour un exercice (voir `attemptsWithResult`) — cœur
+ * partagé par `computeRevisionUrgency` (export public) et par
+ * `evaluateExercise`/`urgencyScore` (qui ont déjà `attempts` sous la main,
+ * jamais filtré deux fois).
+ *
+ * Trois cas, mutuellement exclusifs (jamais de double comptage) :
+ * - Série de réussites en cours (`streak > 0`) → chemin adaptatif
+ *   (`adaptiveRevisionUrgency`), fondé sur l'historique réel.
+ * - Dernière tentative connue ratée/partielle (`streak === 0` mais
+ *   `attempts` non vide) → 0 ici : le signal est déjà porté par
+ *   `failureBonus`/les raisons "Échec récent" · "Plusieurs échecs" — un
+ *   échec récent réduit fortement la confiance sans la recalculer ici en
+ *   plus (voir la doc de `urgencyScore`).
+ * - Aucune tentative avec résultat → repli sur l'ancien signal fixe
+ *   (`legacyStaleBonus`), seule information disponible dans ce cas.
+ */
+function revisionUrgencyFromAttempts(exercise: Exercise, attempts: WorkSession[], now: Date): number {
+  const streak = recentSuccessStreak(attempts);
+  if (streak > 0) return adaptiveRevisionUrgency(attempts, streak, exercise.difficulty, now);
+  if (attempts.length > 0) return 0;
+  return legacyStaleBonus(exercise, now);
+}
+
+/**
+ * Urgence de révision adaptative pour un exercice, à partir de tout
+ * l'historique de séances — export public (Étape 2) pour un usage direct
+ * (debug, simulation, futurs consommateurs) sans dupliquer le filtrage déjà
+ * fait ici. Fonction pure et déterministe : ne dépend jamais de `new Date()`
+ * en interne, uniquement du paramètre `now` (même convention que
+ * `computeExerciseBankStats`).
+ */
+export function computeRevisionUrgency(exercise: Exercise, sessions: WorkSession[], now: Date = new Date()): number {
+  return revisionUrgencyFromAttempts(exercise, attemptsWithResult(sessions, exercise.id), now);
 }
 
 /**
@@ -224,7 +309,13 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
   // autres termes — un exercice presque fini mérite d'être terminé, mais pas
   // au point d'éclipser une priorité élevée ou une maîtrise très faible.
   const momentumBonus = Math.min(minutesSpent, 60) * 0.3; // 0 à 18
-  const staleBonus = staleMasteryBonus(exercise, now); // 0 à 30, voir staleMasteryBonus
+  // Généralise l'ancien staleBonus fixe (21 jours, uniquement "maîtrisé") :
+  // intervalle adaptatif fondé sur la série de réussites réelle (voir
+  // `revisionUrgencyFromAttempts`). Remplace `staleMasteryBonus` dans la
+  // somme plutôt que de s'y ajouter — les deux mesuraient le même
+  // phénomène (retard de révision), les additionner aurait compté ce
+  // phénomène deux fois.
+  const revisionBonus = revisionUrgencyFromAttempts(exercise, attempts, now); // 0 à 30
   // Léger coup de pouce, jamais déterminant seul (comparable à neverWorkedBonus) :
   // entre deux exercices par ailleurs comparables, celui marqué favori remonte
   // légèrement — mais un favori ne devient jamais éligible que par ce bonus
@@ -246,7 +337,7 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
     statusWeight +
     neverWorkedBonus +
     momentumBonus +
-    staleBonus +
+    revisionBonus +
     favoriteBonus +
     failureBonus -
     successPenalty

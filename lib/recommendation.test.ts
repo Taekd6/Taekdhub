@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { computeExerciseBankStats, isNeverWorked, recommendExercises } from "@/lib/recommendation";
-import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
+import { computeExerciseBankStats, computeRevisionUrgency, isNeverWorked, recommendExercises } from "@/lib/recommendation";
+import type { Difficulty, Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
 
 let counter = 0;
 function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
@@ -257,6 +257,209 @@ describe("recommendExercises — signaux échec/réussite (Sprint 5)", () => {
     const [result] = recommendExercises([exercise], sessions, 10, { now: NOW });
     expect(result.reasons).toContain("Progrès récents");
     expect(result.reasons).not.toContain("Réussi récemment");
+  });
+});
+
+/** Décale `NOW` de `n` jours dans le passé (n > 0) ou le futur (n < 0), en ISO — pour construire des historiques lisibles par nombre de jours plutôt que par date en dur. */
+function daysAgo(n: number): string {
+  return new Date(NOW.getTime() - n * 86400000).toISOString();
+}
+
+describe("computeRevisionUrgency — scénarios de référence (Étape 3)", () => {
+  it("A — jamais travaillé (pas d'historique) : urgence nulle, sans crash", () => {
+    const exercise = makeExercise();
+    expect(computeRevisionUrgency(exercise, [], NOW)).toBe(0);
+  });
+
+  it("B — réussi une fois hier : révision proche, encore dans l'intervalle théorique (urgence nulle)", () => {
+    const exercise = makeExercise();
+    const sessions = [makeSession(exercise.id, { started_at: daysAgo(1), result: "réussi" })];
+    expect(computeRevisionUrgency(exercise, sessions, NOW)).toBe(0);
+  });
+
+  it("C — réussi deux fois consécutives : l'intervalle toléré s'allonge par rapport à une seule réussite", () => {
+    const single = makeExercise();
+    const singleSessions = [makeSession(single.id, { started_at: daysAgo(4), result: "réussi" })];
+
+    const double = makeExercise();
+    const doubleSessions = [
+      makeSession(double.id, { started_at: daysAgo(4), result: "réussi" }),
+      makeSession(double.id, { started_at: daysAgo(10), result: "réussi" }),
+    ];
+
+    // 4 jours dépasse l'intervalle d'une seule réussite (3 j) mais pas celui
+    // de deux réussites consécutives (6 j) — la même absence de 4 jours est
+    // traitée différemment selon la série.
+    expect(computeRevisionUrgency(single, singleSessions, NOW)).toBeGreaterThan(0);
+    expect(computeRevisionUrgency(double, doubleSessions, NOW)).toBe(0);
+  });
+
+  it("D — réussi cinq fois : intervalle nettement plus long qu'à trois réussites, mais plafonné au-delà de 4", () => {
+    const buildStreak = (id: string, count: number) =>
+      Array.from({ length: count }, (_, i) => makeSession(id, { started_at: daysAgo(25 + i), result: "réussi" }));
+
+    const threeSuccesses = makeExercise();
+    const fourSuccesses = makeExercise();
+    const fiveSuccesses = makeExercise();
+
+    const urgency3 = computeRevisionUrgency(threeSuccesses, buildStreak(threeSuccesses.id, 3), NOW);
+    const urgency4 = computeRevisionUrgency(fourSuccesses, buildStreak(fourSuccesses.id, 4), NOW);
+    const urgency5 = computeRevisionUrgency(fiveSuccesses, buildStreak(fiveSuccesses.id, 5), NOW);
+
+    // Plus la série est longue, moins l'urgence est élevée pour le même délai
+    // (intervalle plus grand) — jusqu'au plafond, où 4 et 5 réussites se
+    // valent strictement (pas de croissance sans limite).
+    expect(urgency4).toBeLessThan(urgency3);
+    expect(urgency5).toBe(urgency4);
+  });
+
+  it("E — cinq réussites puis échec récent : l'urgence de révision adaptative redevient nulle (portée par le signal d'échec, pas ici — voir Sprint 5)", () => {
+    const exercise = makeExercise({ status: "à revoir", mastery: 25 });
+    const sessions = [
+      makeSession(exercise.id, { started_at: daysAgo(1), result: "échoué" }),
+      makeSession(exercise.id, { started_at: daysAgo(5), result: "réussi" }),
+      makeSession(exercise.id, { started_at: daysAgo(10), result: "réussi" }),
+      makeSession(exercise.id, { started_at: daysAgo(15), result: "réussi" }),
+      makeSession(exercise.id, { started_at: daysAgo(20), result: "réussi" }),
+    ];
+    expect(computeRevisionUrgency(exercise, sessions, NOW)).toBe(0);
+
+    // Le signal global reste fort — porté par "Échec récent" (Sprint 5), pas
+    // recompté ici : pas de double comptage entre les deux mécanismes.
+    const [result] = recommendExercises([exercise], sessions, 10, { now: NOW });
+    expect(result.reasons).toContain("Échec récent");
+  });
+
+  it("F — cinq réussites puis longue absence : l'urgence augmente progressivement avec le temps, sans dépasser le plafond", () => {
+    const exercise = makeExercise();
+    const buildSessions = (lastSuccessDaysAgo: number) =>
+      Array.from({ length: 5 }, (_, i) => makeSession(exercise.id, { started_at: daysAgo(lastSuccessDaysAgo + i * 3), result: "réussi" }));
+
+    const moderateAbsence = computeRevisionUrgency(exercise, buildSessions(40), NOW);
+    const longAbsence = computeRevisionUrgency(exercise, buildSessions(100), NOW);
+
+    expect(moderateAbsence).toBeGreaterThan(0);
+    expect(longAbsence).toBeGreaterThan(moderateAbsence);
+    expect(longAbsence).toBeLessThanOrEqual(30);
+  });
+
+  it("G — réussites espacées par un échec : seule la série la plus récente compte, pas le total historique", () => {
+    // Chronologiquement : réussite, réussite, échec, réussite (la plus
+    // ancienne en premier) — donc la série CONSÉCUTIVE la plus récente vaut
+    // 1, jamais 3.
+    const exercise = makeExercise();
+    const sessions = [
+      makeSession(exercise.id, { started_at: daysAgo(4), result: "réussi" }), // la plus récente
+      makeSession(exercise.id, { started_at: daysAgo(8), result: "échoué" }),
+      makeSession(exercise.id, { started_at: daysAgo(12), result: "réussi" }),
+      makeSession(exercise.id, { started_at: daysAgo(16), result: "réussi" }),
+    ];
+
+    const onlyOneSuccess = makeExercise();
+    const onlyOneSuccessSessions = [makeSession(onlyOneSuccess.id, { started_at: daysAgo(4), result: "réussi" })];
+
+    // Même délai (4 j), même urgence qu'avec une seule réussite isolée : le
+    // total historique (3 réussites) n'a aucune influence sur l'intervalle.
+    expect(computeRevisionUrgency(exercise, sessions, NOW)).toBe(computeRevisionUrgency(onlyOneSuccess, onlyOneSuccessSessions, NOW));
+  });
+
+  it("H — exercice difficile : l'intervalle se resserre par rapport à un exercice facile, sans énorme bonus", () => {
+    const easy = makeExercise({ difficulty: 1 as Difficulty });
+    const hard = makeExercise({ difficulty: 5 as Difficulty });
+    const sessionsFor = (id: string) => [makeSession(id, { started_at: daysAgo(3), result: "réussi" })];
+
+    const easyUrgency = computeRevisionUrgency(easy, sessionsFor(easy.id), NOW);
+    const hardUrgency = computeRevisionUrgency(hard, sessionsFor(hard.id), NOW);
+
+    // 3 jours dépasse l'intervalle resserré d'un exercice difficile (2.4 j)
+    // mais pas celui d'un exercice facile (3.6 j).
+    expect(hardUrgency).toBeGreaterThan(0);
+    expect(easyUrgency).toBe(0);
+    // Ajustement raisonnable, jamais démesuré : quelques points, pas le plafond entier.
+    expect(hardUrgency).toBeLessThan(5);
+  });
+
+  it("I — déterminisme : même historique et même date de référence (y compris future) → même résultat à chaque appel", () => {
+    const exercise = makeExercise();
+    const sessions = [makeSession(exercise.id, { started_at: daysAgo(10), result: "réussi" })];
+    const future = new Date(NOW.getTime() + 365 * 86400000);
+
+    expect(computeRevisionUrgency(exercise, sessions, future)).toBe(computeRevisionUrgency(exercise, sessions, future));
+    expect(computeRevisionUrgency(exercise, sessions, NOW)).toBe(computeRevisionUrgency(exercise, sessions, NOW));
+  });
+
+  it("J — historique invalide (date corrompue) : aucune exception, résultat toujours un nombre borné", () => {
+    const exercise = makeExercise();
+    const sessions = [makeSession(exercise.id, { started_at: "pas-une-date", result: "réussi" })];
+    const urgency = computeRevisionUrgency(exercise, sessions, NOW);
+    expect(Number.isFinite(urgency)).toBe(true);
+    expect(urgency).toBeGreaterThanOrEqual(0);
+    expect(urgency).toBeLessThanOrEqual(30);
+  });
+});
+
+describe("computeRevisionUrgency — propriétés (Étape 4)", () => {
+  it("monotonie : à historique identique, l'urgence ne diminue jamais quand le temps passe", () => {
+    const exercise = makeExercise();
+    const sessions = [makeSession(exercise.id, { started_at: daysAgo(30), result: "réussi" })];
+    let previous = -Infinity;
+    for (let daysLater = 0; daysLater <= 120; daysLater += 10) {
+      const now = new Date(NOW.getTime() + daysLater * 86400000);
+      const urgency = computeRevisionUrgency(exercise, sessions, now);
+      expect(urgency).toBeGreaterThanOrEqual(previous);
+      previous = urgency;
+    }
+  });
+
+  it("réussites : à délai identique, une série plus longue ne donne jamais une urgence plus élevée", () => {
+    const buildStreak = (id: string, count: number) =>
+      Array.from({ length: count }, (_, i) => makeSession(id, { started_at: daysAgo(15 + i), result: "réussi" }));
+    let previous = Infinity;
+    for (const streakLength of [1, 2, 3, 4, 5]) {
+      const exercise = makeExercise();
+      const urgency = computeRevisionUrgency(exercise, buildStreak(exercise.id, streakLength), NOW);
+      expect(urgency).toBeLessThanOrEqual(previous);
+      previous = urgency;
+    }
+  });
+
+  it("échec : à historique comparable, un échec récent redonne une urgence globale (score) plus élevée qu'une réussite récente", () => {
+    const withFailure = makeExercise({ status: "à revoir", mastery: 25 });
+    const withSuccess = makeExercise({ status: "à revoir", mastery: 25 });
+    const sessionsFailure = [makeSession(withFailure.id, { started_at: daysAgo(1), result: "échoué" })];
+    const sessionsSuccess = [makeSession(withSuccess.id, { started_at: daysAgo(1), result: "réussi" })];
+
+    const [failureResult] = recommendExercises([withFailure], sessionsFailure, 10, { now: NOW });
+    const [successResult] = recommendExercises([withSuccess], sessionsSuccess, 10, { now: NOW });
+
+    expect(failureResult.score).toBeGreaterThan(successResult.score);
+  });
+
+  it("cap : l'urgence reste toujours dans ses bornes, même pour un délai extrême", () => {
+    const exercise = makeExercise();
+    const sessions = [makeSession(exercise.id, { started_at: daysAgo(1), result: "réussi" })];
+    const farFuture = new Date(NOW.getTime() + 20 * 365 * 86400000);
+    const urgency = computeRevisionUrgency(exercise, sessions, farFuture);
+    expect(urgency).toBeGreaterThanOrEqual(0);
+    expect(urgency).toBeLessThanOrEqual(30);
+  });
+
+  it("déterminisme : même entrée et même date → toujours la même sortie", () => {
+    const exercise = makeExercise({ difficulty: 4 as Difficulty });
+    const sessions = [
+      makeSession(exercise.id, { started_at: daysAgo(2), result: "réussi" }),
+      makeSession(exercise.id, { started_at: daysAgo(6), result: "réussi" }),
+    ];
+    const results = Array.from({ length: 5 }, () => computeRevisionUrgency(exercise, sessions, NOW));
+    expect(new Set(results).size).toBe(1);
+  });
+
+  it("robustesse : historiques vides ou corrompus n'entraînent jamais d'exception", () => {
+    const exercise = makeExercise();
+    expect(() => computeRevisionUrgency(exercise, [], NOW)).not.toThrow();
+    expect(() => computeRevisionUrgency(exercise, [makeSession("autre-exercice-id", { result: "réussi" })], NOW)).not.toThrow();
+    expect(() => computeRevisionUrgency(exercise, [makeSession(exercise.id, { started_at: "", result: "réussi" })], NOW)).not.toThrow();
+    expect(() => computeRevisionUrgency(exercise, [makeSession(exercise.id, { result: null })], NOW)).not.toThrow();
   });
 });
 
