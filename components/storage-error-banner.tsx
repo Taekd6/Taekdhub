@@ -50,7 +50,7 @@ export function StorageErrorBanner() {
         <Button size="sm" variant="secondary" onClick={handleExport}>
           <Download size={14} /> Exporter ce qui est sauvegardé
         </Button>
-        <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Ignorer l'alerte" onClick={dismissStorageError}>
+        <Button size="icon" variant="ghost" aria-label="Ignorer l'alerte" onClick={dismissStorageError}>
           <X size={14} />
         </Button>
       </div>

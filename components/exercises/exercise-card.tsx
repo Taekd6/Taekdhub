@@ -77,15 +77,15 @@ function ExerciseCardImpl({
         </button>
         <div className="flex items-center justify-between gap-3 sm:justify-end">
           <StatusSelect value={item.status} onChange={(status: ExerciseStatus) => onUpdate(item.id, { status })} />
-          <Button variant="ghost" size="icon" onClick={() => onUpdate(item.id, { favorite: !item.favorite })} aria-label={item.favorite ? "Retirer des favoris" : "Ajouter aux favoris"} className={cn("h-9 w-9", item.favorite && "text-rose-300")}>
+          <Button variant="ghost" size="icon" onClick={() => onUpdate(item.id, { favorite: !item.favorite })} aria-label={item.favorite ? "Retirer des favoris" : "Ajouter aux favoris"} className={cn("h-10 w-10", item.favorite && "text-rose-300")}>
             <Heart size={18} fill={item.favorite ? "currentColor" : "none"} />
           </Button>
           {selected && (
-            <Button variant="ghost" size="icon" onClick={() => onFocus(item.id)} aria-label="Mode focus" className="h-9 w-9">
+            <Button variant="ghost" size="icon" onClick={() => onFocus(item.id)} aria-label="Mode focus" className="h-10 w-10">
               <Maximize2 size={17} />
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={() => onArchive(item.id)} aria-label="Archiver" className="h-9 w-9">
+          <Button variant="ghost" size="icon" onClick={() => onArchive(item.id)} aria-label="Archiver" className="h-10 w-10">
             <Archive size={17} />
           </Button>
           <ChevronDown size={16} className={cn("text-zinc-500 transition", selected && "rotate-180")} />

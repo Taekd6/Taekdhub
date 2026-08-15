@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { useScrollLock } from "@/hooks/use-scroll-lock";
 import type { ChapterDetail as ChapterDetailData } from "@/lib/next-action";
 import { formatDuration } from "@/lib/utils";
 
@@ -25,15 +26,12 @@ export function ChapterDetail({ detail, onClose }: { detail: ChapterDetailData; 
       if (event.key === "Escape") onClose();
     }
     window.addEventListener("keydown", onKeyDown);
-    // Empêche la page en arrière-plan de défiler pendant que la fiche est
-    // ouverte (overlay plein écran) — restauré tel quel à la fermeture.
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
+  // Empêche la page en arrière-plan de défiler pendant que la fiche est
+  // ouverte (overlay plein écran) — voir hooks/use-scroll-lock.ts (Sprint
+  // Mobile UX + PWA Foundation), même abstraction que focus-view.tsx/timer.tsx.
+  useScrollLock(true);
 
   const { chapter, total, mastered, averageMastery, attemptedCount, results, lastSessionAt, totalSeconds, recommendations } = detail;
   const mainAction = recommendations[0];
@@ -52,7 +50,12 @@ export function ChapterDetail({ detail, onClose }: { detail: ChapterDetailData; 
             <p className="eyebrow">{chapter.subject}</p>
             <h2 className="mt-1 truncate text-xl font-semibold tracking-tight">{chapter.label}</h2>
           </div>
-          <button type="button" onClick={onClose} className="focus-ring shrink-0 rounded-lg p-1.5 text-zinc-500 hover:bg-hairline/[0.045] hover:text-zinc-200" aria-label="Fermer">
+          <button
+            type="button"
+            onClick={onClose}
+            className="focus-ring grid min-h-11 min-w-11 shrink-0 place-items-center rounded-lg text-zinc-500 hover:bg-hairline/[0.045] hover:text-zinc-200"
+            aria-label="Fermer"
+          >
             <X size={18} />
           </button>
         </div>

@@ -44,7 +44,10 @@ function NavItems({ compact = false }: { compact?: boolean }) {
             className={cn(
               "focus-ring group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
               active ? "text-ink" : "text-zinc-400 hover:text-zinc-100",
-              compact ? "justify-center px-2" : ""
+              // `min-h-11 min-w-11` (44px, Étape 4) : la nav mobile est le
+              // contrôle le plus utilisé de l'app, chaque entrée doit rester
+              // confortable au doigt même si l'icône reste petite (18px).
+              compact ? "min-h-11 min-w-11 justify-center px-2" : ""
             )}
             title={compact ? label : undefined}
           >
@@ -122,7 +125,11 @@ export function AppSidebar() {
 
       <nav
         aria-label="Navigation principale"
-        className="fixed inset-x-3 bottom-3 z-40 flex items-center justify-around gap-1 rounded-2xl border border-hairline/[0.1] bg-zinc-950/85 p-1.5 shadow-2xl shadow-black/30 backdrop-blur-xl lg:hidden"
+        // `bottom-3` (12px) de base, augmenté de la zone sûre iOS quand elle
+        // existe (`env()` vaut 0 sans `viewport-fit: cover`, voir
+        // app/layout.tsx) — la nav reste au-dessus de l'indicateur d'accueil
+        // au lieu de s'y superposer, sans changer son apparence ailleurs.
+        className="fixed inset-x-3 z-40 flex items-center justify-around gap-1 rounded-2xl border border-hairline/[0.1] bg-zinc-950/85 p-1.5 shadow-2xl shadow-black/30 backdrop-blur-xl [bottom:calc(0.75rem+env(safe-area-inset-bottom))] lg:hidden"
       >
         <NavItems compact />
       </nav>

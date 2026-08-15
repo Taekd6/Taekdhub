@@ -40,6 +40,13 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: light)", color: "#fafafa" },
     { media: "(prefers-color-scheme: dark)", color: "#09090b" },
   ],
+  // Sprint Mobile UX + PWA Foundation : laisse le contenu s'étendre sous
+  // l'encoche/l'indicateur d'accueil des appareils iOS à zone sûre
+  // particulière, à condition de gérer soi-même les `env(safe-area-inset-*)`
+  // là où c'est pertinent (voir app-sidebar.tsx, app-shell.tsx, focus-view.tsx).
+  // Sans ce réglage, `env()` renvoie toujours 0 et le padding de secours
+  // n'aurait aucun effet.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

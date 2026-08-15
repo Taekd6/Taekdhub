@@ -68,11 +68,11 @@ function ExerciseListRowImpl({
         <div className="flex shrink-0 items-center gap-1.5">
           <StatusSelect value={item.status} onChange={(status: ExerciseStatus) => onUpdate(item.id, { status })} className="px-2 py-1.5 text-2xs" />
           {selected && (
-            <Button variant="ghost" size="icon" onClick={() => onFocus(item.id)} aria-label="Mode focus" className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={() => onFocus(item.id)} aria-label="Mode focus" className="h-9 w-9">
               <Maximize2 size={15} />
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={() => onArchive(item.id)} aria-label="Archiver" className="h-8 w-8">
+          <Button variant="ghost" size="icon" onClick={() => onArchive(item.id)} aria-label="Archiver" className="h-9 w-9">
             <Archive size={15} />
           </Button>
           <ChevronDown size={14} className={cn("text-zinc-500 transition", selected && "rotate-180")} />

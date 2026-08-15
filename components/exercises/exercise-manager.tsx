@@ -423,7 +423,10 @@ export function ExerciseManager() {
                   onClick={() => setViewMode("cards")}
                   aria-label="Vue cartes"
                   aria-pressed={viewMode === "cards"}
-                  className={cn("rounded-lg p-1.5 transition", viewMode === "cards" ? "bg-accent/15 text-accent-text" : "text-zinc-500 hover:text-zinc-300")}
+                  className={cn(
+                    "grid min-h-10 min-w-10 place-items-center rounded-lg transition",
+                    viewMode === "cards" ? "bg-accent/15 text-accent-text" : "text-zinc-500 hover:text-zinc-300"
+                  )}
                 >
                   <LayoutGrid size={15} />
                 </button>
@@ -431,7 +434,10 @@ export function ExerciseManager() {
                   onClick={() => setViewMode("list")}
                   aria-label="Vue liste compacte"
                   aria-pressed={viewMode === "list"}
-                  className={cn("rounded-lg p-1.5 transition", viewMode === "list" ? "bg-accent/15 text-accent-text" : "text-zinc-500 hover:text-zinc-300")}
+                  className={cn(
+                    "grid min-h-10 min-w-10 place-items-center rounded-lg transition",
+                    viewMode === "list" ? "bg-accent/15 text-accent-text" : "text-zinc-500 hover:text-zinc-300"
+                  )}
                 >
                   <List size={15} />
                 </button>

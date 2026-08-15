@@ -15,7 +15,10 @@ const buttonVariants = cva(
         sm: "px-3 py-2 text-xs",
         md: "px-4 py-2.5 text-sm",
         lg: "px-5 py-3 text-sm",
-        icon: "h-10 w-10 p-0",
+        // 44px (Sprint Mobile UX + PWA Foundation, Étape 4) — cible tactile
+        // confortable par défaut ; l'icône elle-même reste petite (16-18px
+        // selon l'usage), seule la zone cliquable grandit.
+        icon: "h-11 w-11 p-0",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },

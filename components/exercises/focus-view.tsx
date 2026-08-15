@@ -9,6 +9,7 @@ import { ProgressBar } from "@/components/ui/progress";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryPicker, PriorityPicker, SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { RichMath } from "@/components/rich-math";
+import { useScrollLock } from "@/hooks/use-scroll-lock";
 import { type RecoveredTimerSeed, useWorkTimer } from "@/hooks/use-work-timer";
 import { clearFocusDraft, writeFocusDraft } from "@/lib/focus-draft";
 import { shouldConfirmExit } from "@/lib/focus-exit";
@@ -57,6 +58,11 @@ export function FocusView({
     { exerciseId: item.id },
     recoveredSeed
   );
+  // Focus est un overlay plein écran tant qu'il est monté (quel que soit
+  // l'écran affiché ci-dessous) — jamais de scroll accidentel du contenu
+  // derrière lui (Sprint Mobile UX + PWA Foundation, voir
+  // hooks/use-scroll-lock.ts). Aucune interaction avec le chrono.
+  useScrollLock(true);
 
   /** Micro-célébration au moment précis où l'exercice devient "maîtrisé" — jamais au montage sur un exercice déjà maîtrisé, ni sur les autres transitions de statut. */
   const [justMastered, setJustMastered] = useState(false);
@@ -405,7 +411,10 @@ export function FocusView({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 z-50 flex flex-col bg-canvas"
+      // Seul écran de Focus avec un en-tête/pied de page collés aux bords
+      // (les deux autres écrans centrent leur contenu) — zone sûre iOS en
+      // haut (encoche) et en bas (indicateur d'accueil), voir app/layout.tsx.
+      className="fixed inset-0 z-50 flex flex-col bg-canvas pt-[env(safe-area-inset-top)]"
     >
       <header className="flex items-center justify-between border-b border-hairline/[0.07] px-6 py-4">
         <div className="flex items-center gap-3">
@@ -593,7 +602,7 @@ export function FocusView({
         </div>
       </div>
 
-      <footer className="border-t border-hairline/[0.07] px-6 py-4 text-center text-xs text-zinc-600">
+      <footer className="border-t border-hairline/[0.07] px-6 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-center text-xs text-zinc-600">
         Échap pour quitter · Barre d&apos;espace pour le timer
       </footer>
     </motion.div>
