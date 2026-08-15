@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { localData, STORAGE_ERROR_EVENT, type Chapter, type Preferences, type WeekSnapshot } from "@/lib/storage";
-import { loadSeedBank, SEED_FLAG_KEY } from "@/lib/seed";
+import { CAHIER_CALCUL_SEED_FLAG_KEY, loadCahierCalculSeed, loadSeedBank, SEED_FLAG_KEY } from "@/lib/seed";
 import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 
@@ -30,6 +30,41 @@ async function maybeSeedBank(): Promise<void> {
     localData.saveChapters(chapters);
     localData.saveExercises(exercises);
     localStorage.setItem(SEED_FLAG_KEY, new Date().toISOString());
+  } catch {
+    // Amorçage best-effort : en cas d'échec, réessai au prochain montage.
+  }
+}
+
+/**
+ * Ajoute le pack Cahier de calcul (122 calculs) une seule fois, à n'importe
+ * quel moment de la vie d'un utilisateur — contrairement à `maybeSeedBank`
+ * ci-dessus, ne dépend PAS d'un stockage vide : un utilisateur déjà actif
+ * (banque de base déjà amorcée, `SEED_FLAG_KEY` déjà posé) doit recevoir ce
+ * pack tout autant qu'un tout nouvel utilisateur, exactement une fois.
+ * Idempotent et non destructif, mêmes garanties que `maybeSeedBank` :
+ * - marqueur déjà posé → ne fait rien (même si l'utilisateur a supprimé ces
+ *   exercices depuis : sa décision est respectée) ;
+ * - pack déjà présent (import manuel antérieur du même fichier, détecté via
+ *   `external_id` préfixé "CDC-") → pose juste le marqueur, sans doublonner ;
+ * - sinon → charge le pack fusionné sur les chapitres actuels, l'ajoute aux
+ *   exercices existants, puis pose le marqueur.
+ *   En cas d'échec (réseau/chunk), le marqueur n'est PAS posé → nouvel essai
+ *   au prochain montage.
+ */
+async function maybeSeedCahierCalcul(): Promise<void> {
+  if (typeof window === "undefined") return;
+  if (localStorage.getItem(CAHIER_CALCUL_SEED_FLAG_KEY)) return;
+  const currentExercises = localData.exercises();
+  if (currentExercises.some((exercise) => exercise.external_id?.startsWith("CDC-"))) {
+    localStorage.setItem(CAHIER_CALCUL_SEED_FLAG_KEY, new Date().toISOString());
+    return;
+  }
+  try {
+    const { exercises, chapters } = await loadCahierCalculSeed(localData.chapters());
+    if (exercises.length === 0) return;
+    localData.saveChapters(chapters);
+    localData.saveExercises([...currentExercises, ...exercises]);
+    localStorage.setItem(CAHIER_CALCUL_SEED_FLAG_KEY, new Date().toISOString());
   } catch {
     // Amorçage best-effort : en cas d'échec, réessai au prochain montage.
   }
@@ -106,10 +141,15 @@ export function usePrepahubData() {
     let cancelled = false;
     // Amorçage éventuel AVANT le premier `refresh` : `ready` ne passe à vrai
     // qu'une fois la banque chargée, pour éviter un flash de page vide au
-    // tout premier lancement.
-    maybeSeedBank().finally(() => {
-      if (!cancelled) refresh();
-    });
+    // tout premier lancement. Séquentiel (pas Promise.all) : le pack Cahier
+    // de calcul doit voir les chapitres éventuellement créés par la banque de
+    // base sur ce même montage (utilisateur tout neuf) avant de fusionner
+    // les siens.
+    maybeSeedBank()
+      .then(() => maybeSeedCahierCalcul())
+      .finally(() => {
+        if (!cancelled) refresh();
+      });
 
     function onStorage(event: StorageEvent) {
       if (event.key?.startsWith("prepahub:")) refresh();

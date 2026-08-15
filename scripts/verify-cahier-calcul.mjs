@@ -68,6 +68,45 @@ check("Chaque entrée a title/statement/source/subject/chapter", missingFields.l
 const wrongSource = dataset.filter((e) => e.source !== "Cahier de calcul — professeur");
 check('Toutes les entrées portent source: "Cahier de calcul — professeur"', wrongSource.length === 0, wrongSource.length ? `${wrongSource.length} avec une autre source` : "");
 
+// --- 5bis. Sanité LaTeX (statement/correction/answer) — détecte un LaTeX
+// manifestement cassé (délimiteurs ou accolades non équilibrés) et les
+// artefacts connus de l'extraction pdftotext qui n'auraient pas dû survivre
+// à la reconstruction (glyphe de mapsto mal décodé, pointillés de case-
+// réponse recopiés, caractères de la zone privée Unicode utilisée par les
+// polices du PDF source). Ne vérifie pas la validité syntaxique complète de
+// chaque commande LaTeX (hors de portée sans faire tourner KaTeX) — seulement
+// des défauts structurels grossiers, qui suffisent à repérer une
+// reconstruction interrompue ou mal échappée.
+function findLatexIssues(text) {
+  if (typeof text !== "string" || !text) return [];
+  const issues = [];
+  const dollarCount = (text.match(/(?<!\\)\$/g) || []).length;
+  if (dollarCount % 2 !== 0) issues.push("délimiteurs $ non équilibrés");
+  let depth = 0;
+  for (const ch of text) {
+    if (ch === "{") depth++;
+    else if (ch === "}") depth--;
+  }
+  if (depth !== 0) issues.push(`accolades non équilibrées (delta ${depth})`);
+  if (/7−→|7-->/.test(text)) issues.push("artefact d'extraction (glyphe mapsto mal décodé)");
+  if (/\.\s\.\s\.\s\.\s\./.test(text)) issues.push("pointillés de case-réponse recopiés");
+  if (/[-]/.test(text)) issues.push("caractère de la zone privée Unicode (glyphe de police PDF)");
+  return issues;
+}
+
+const latexIssues = [];
+for (const e of dataset) {
+  for (const field of ["statement", "correction", "answer"]) {
+    const issues = findLatexIssues(e[field]);
+    if (issues.length) latexIssues.push(`${e.externalId}.${field} : ${issues.join(", ")}`);
+  }
+}
+check(
+  "Aucun LaTeX manifestement cassé (délimiteurs/accolades non équilibrés, artefact d'extraction résiduel) dans statement/correction/answer",
+  latexIssues.length === 0,
+  latexIssues.length ? `${latexIssues.length} problème(s) : ${latexIssues.slice(0, 10).join(" | ")}${latexIssues.length > 10 ? " …" : ""}` : "",
+);
+
 // --- 6. Difficulté (pictogrammes horloge, extraits visuellement des pages du PDF) ---
 // Une entrée est soit résolue (difficulty 1-4 numérique, tag "difficulté non
 // vérifiée" absent), soit explicitement non résolue (tag présent). Les deux états
