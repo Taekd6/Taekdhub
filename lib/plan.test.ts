@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   computeDailyPlan,
   computeSubjectPriorities,
+  computeSubjectTrajectory,
   computeWeeklyProjection,
   contestUrgencyBonus,
   daysUntilContest,
@@ -9,6 +10,7 @@ import {
   subjectDeadlineDays,
   subjectWeight,
   summarizePlanObjective,
+  type WeeklyProjectionSubject,
 } from "@/lib/plan";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
@@ -626,5 +628,250 @@ describe("computeWeeklyProjection — invariants", () => {
     expect(() => computeWeeklyProjection([], [], 300, NOW)).not.toThrow();
     const projection = computeWeeklyProjection([], [], 300, NOW);
     expect(projection.bySubject).toEqual([]);
+  });
+});
+
+describe("computeWeeklyProjection — workedMinutes par matière (Sprint trajectoire par matière)", () => {
+  it("reflète les minutes déjà travaillées POUR CETTE MATIÈRE cette semaine, pas le total toutes matières", () => {
+    const maths = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 15 });
+    const physique = makeExercise({ subject: "Physique", mastery: 0, estimated_minutes: 15 });
+    const sessions = [
+      makeSession(maths.id, "Mathématiques", { started_at: "2026-08-10T08:00:00.000Z", duration_seconds: 1200 }), // 20 min
+      makeSession(physique.id, "Physique", { started_at: "2026-08-10T08:00:00.000Z", duration_seconds: 300 }), // 5 min
+    ];
+    const projection = computeWeeklyProjection([maths, physique], sessions, 300, NOW);
+    expect(projection.bySubject.find((s) => s.subject === "Mathématiques")?.workedMinutes).toBe(20);
+    expect(projection.bySubject.find((s) => s.subject === "Physique")?.workedMinutes).toBe(5);
+  });
+
+  it("0 par défaut pour une matière jamais travaillée cette semaine", () => {
+    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0 });
+    const projection = computeWeeklyProjection([exercise], [], 300, NOW);
+    expect(projection.bySubject[0].workedMinutes).toBe(0);
+  });
+});
+
+/**
+ * `computeSubjectTrajectory` — Sprint trajectoire par matière. Jours de la
+ * semaine choisis pour connaître exactement `expectedPercent` (même formule
+ * que `computeWeeklyPace`) : mercredi (jour 2/7 → 29 %), vendredi (jour 4/7
+ * → 57 %), dimanche (jour 6/7 → 86 %) ; lundi (jour 0/7) reste sous la garde
+ * "trop tôt pour juger".
+ */
+const MONDAY = new Date("2026-08-10T12:00:00.000Z");
+const WEDNESDAY = new Date("2026-08-12T12:00:00.000Z");
+const FRIDAY = new Date("2026-08-14T12:00:00.000Z");
+const SUNDAY = new Date("2026-08-16T12:00:00.000Z");
+
+function makeProjectionSubject(overrides: Partial<WeeklyProjectionSubject> = {}): WeeklyProjectionSubject {
+  return { subject: "Mathématiques", minutes: 100, workedMinutes: 0, deadlineDays: null, ...overrides };
+}
+
+describe("computeSubjectTrajectory — trajectoire normale", () => {
+  it("matière correctement alimentée (réalisé ≈ part équitable attendue) → dans le rythme", () => {
+    // Mercredi, 29 % attendu : 29/100 réalisé = exactement au rythme.
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ workedMinutes: 29, minutes: 71 })], WEDNESDAY);
+    expect(entry.status).toBe("dans le rythme");
+  });
+
+  it("matière légèrement sous-alimentée (écart < seuil) → reste dans le rythme, pas de fausse alerte", () => {
+    // Mercredi, 29 % attendu : 20 % réalisé, écart de 9 points < 15.
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ workedMinutes: 20, minutes: 80 })], WEDNESDAY);
+    expect(entry.status).toBe("dans le rythme");
+  });
+
+  it("matière fortement sous-alimentée (écart > seuil) → à renforcer", () => {
+    // Mercredi, 29 % attendu : 5 % réalisé, écart de 24 points > 15.
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ workedMinutes: 5, minutes: 95 })], WEDNESDAY);
+    expect(entry.status).toBe("à renforcer");
+  });
+});
+
+describe("computeSubjectTrajectory — dynamique temporelle", () => {
+  it("lundi (< 2 jours écoulés) : trop tôt pour juger, tableau vide — même garde que computeWeeklyPace", () => {
+    const result = computeSubjectTrajectory([makeProjectionSubject({ workedMinutes: 0, minutes: 100 })], MONDAY);
+    expect(result).toEqual([]);
+  });
+
+  it("le même ratio réalisé/part équitable peut être \"dans le rythme\" en milieu de semaine et \"à renforcer\" plus tard — le jour de la semaine compte, pas seulement le pourcentage brut", () => {
+    // 40 % réalisé, fixe.
+    const subject = makeProjectionSubject({ workedMinutes: 40, minutes: 60 });
+    const onWednesday = computeSubjectTrajectory([subject], WEDNESDAY)[0]; // attendu 29 % → en avance
+    const onFriday = computeSubjectTrajectory([subject], FRIDAY)[0]; // attendu 57 % → écart de 17 > 15
+    expect(onWednesday.status).toBe("dans le rythme");
+    expect(onFriday.status).toBe("à renforcer");
+  });
+
+  it("dimanche : le calcul reste cohérent (jour 6/7, ~86 % attendu), jamais de crash en fin de semaine", () => {
+    const result = computeSubjectTrajectory([makeProjectionSubject({ workedMinutes: 10, minutes: 90 })], SUNDAY);
+    expect(result[0].status).toBe("à renforcer"); // 10 % réalisé très en dessous de 86 % attendu
+  });
+});
+
+describe("computeSubjectTrajectory — échéance (escalade à renforcer → prioritaire)", () => {
+  // Vendredi (57 % attendu), 5 % réalisé : très en retard dans tous les cas — isole l'effet de l'échéance seule.
+  const behind = { workedMinutes: 5, minutes: 95 };
+
+  it("aucune échéance → à renforcer, jamais prioritaire", () => {
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ ...behind, deadlineDays: null })], FRIDAY);
+    expect(entry.status).toBe("à renforcer");
+  });
+
+  it("échéance à > 21 jours → toujours à renforcer (trop loin pour escalader)", () => {
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ ...behind, deadlineDays: 25 })], FRIDAY);
+    expect(entry.status).toBe("à renforcer");
+  });
+
+  it("échéance à exactement 21 jours → à renforcer (au-delà du seuil d'escalade de 7 jours)", () => {
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ ...behind, deadlineDays: 21 })], FRIDAY);
+    expect(entry.status).toBe("à renforcer");
+  });
+
+  it("échéance à 8 jours (juste au-delà du seuil) → à renforcer, pas encore prioritaire", () => {
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ ...behind, deadlineDays: 8 })], FRIDAY);
+    expect(entry.status).toBe("à renforcer");
+  });
+
+  it("échéance à exactement 7 jours (seuil inclus) → prioritaire", () => {
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ ...behind, deadlineDays: 7 })], FRIDAY);
+    expect(entry.status).toBe("prioritaire");
+  });
+
+  it("échéance à 3 jours → prioritaire", () => {
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ ...behind, deadlineDays: 3 })], FRIDAY);
+    expect(entry.status).toBe("prioritaire");
+  });
+
+  it("échéance à 1 jour → prioritaire", () => {
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ ...behind, deadlineDays: 1 })], FRIDAY);
+    expect(entry.status).toBe("prioritaire");
+  });
+
+  it("échéance aujourd'hui (0 jour) → prioritaire", () => {
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ ...behind, deadlineDays: 0 })], FRIDAY);
+    expect(entry.status).toBe("prioritaire");
+  });
+
+  it("échéance passée : daysUntilContest la ramène déjà à 0 en amont — même traitement qu'aujourd'hui, jamais de cas spécial ici", () => {
+    // subjectDeadlineDays/daysUntilContest ne renvoient jamais de négatif : une échéance passée arrive ici avec deadlineDays: 0, exactement comme "aujourd'hui".
+    const passedTodayEquivalent = computeSubjectTrajectory([makeProjectionSubject({ ...behind, deadlineDays: 0 })], FRIDAY)[0];
+    expect(passedTodayEquivalent.status).toBe("prioritaire");
+  });
+});
+
+describe("computeSubjectTrajectory — allocation", () => {
+  it("une seule matière : classification correcte", () => {
+    const result = computeSubjectTrajectory([makeProjectionSubject({ subject: "Physique", workedMinutes: 5, minutes: 95 })], FRIDAY);
+    expect(result).toHaveLength(1);
+    expect(result[0].subject).toBe("Physique");
+    expect(result[0].status).toBe("à renforcer");
+  });
+
+  it("plusieurs matières : chacune classifiée indépendamment, dans le même ordre que l'entrée", () => {
+    const result = computeSubjectTrajectory(
+      [
+        makeProjectionSubject({ subject: "Mathématiques", workedMinutes: 60, minutes: 40 }), // largement dans le rythme
+        makeProjectionSubject({ subject: "Physique", workedMinutes: 5, minutes: 95 }), // très en retard
+        makeProjectionSubject({ subject: "Chimie", workedMinutes: 55, minutes: 45 }), // dans le rythme
+      ],
+      FRIDAY
+    );
+    expect(result.map((r) => r.subject)).toEqual(["Mathématiques", "Physique", "Chimie"]);
+    expect(result.find((r) => r.subject === "Mathématiques")?.status).toBe("dans le rythme");
+    expect(result.find((r) => r.subject === "Physique")?.status).toBe("à renforcer");
+    expect(result.find((r) => r.subject === "Chimie")?.status).toBe("dans le rythme");
+  });
+
+  it("matière \"dominante\" (grande part équitable) et matière \"faible\" (petite part équitable) au même ratio de retard reçoivent le même statut — jugement relatif, jamais absolu", () => {
+    const dominant = computeSubjectTrajectory([makeProjectionSubject({ workedMinutes: 20, minutes: 180 })], FRIDAY)[0]; // 10 % sur 200 min
+    const small = computeSubjectTrajectory([makeProjectionSubject({ workedMinutes: 2, minutes: 18 })], FRIDAY)[0]; // 10 % sur 20 min
+    expect(dominant.status).toBe(small.status);
+  });
+
+  it("allocation nulle (aucune matière restante, ex. objectif déjà atteint) : tableau vide, pas d'erreur", () => {
+    expect(computeSubjectTrajectory([], FRIDAY)).toEqual([]);
+  });
+});
+
+describe("computeSubjectTrajectory — interactions (scénarios de référence du sprint)", () => {
+  it("Cas D — très faible mais aucune échéance → à renforcer, jamais prioritaire sans échéance", () => {
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ workedMinutes: 2, minutes: 98, deadlineDays: null })], FRIDAY);
+    expect(entry.status).toBe("à renforcer");
+  });
+
+  it("Cas C — correctement travaillée ET échéance proche → dans le rythme, l'échéance n'escalade jamais un statut déjà correct", () => {
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ workedMinutes: 55, minutes: 45, deadlineDays: 3 })], FRIDAY);
+    expect(entry.status).toBe("dans le rythme");
+    // L'information reste disponible pour l'affichage, même si elle n'a pas fait basculer le statut.
+    expect(entry.deadlineDays).toBe(3);
+  });
+
+  it("Cas B — retard important ET échéance proche → prioritaire", () => {
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ workedMinutes: 5, minutes: 95, deadlineDays: 3 })], FRIDAY);
+    expect(entry.status).toBe("prioritaire");
+  });
+
+  it("Cas E — une matière en avance et une autre en retard dans le même appel : chacune reçoit son propre verdict, sans influence croisée", () => {
+    const result = computeSubjectTrajectory(
+      [
+        makeProjectionSubject({ subject: "Mathématiques", workedMinutes: 90, minutes: 10 }), // très en avance
+        makeProjectionSubject({ subject: "Physique", workedMinutes: 5, minutes: 95, deadlineDays: 3 }), // très en retard + échéance proche
+      ],
+      FRIDAY
+    );
+    expect(result.find((r) => r.subject === "Mathématiques")?.status).toBe("dans le rythme");
+    expect(result.find((r) => r.subject === "Physique")?.status).toBe("prioritaire");
+  });
+});
+
+describe("computeSubjectTrajectory — invariants", () => {
+  it("déterministe : mêmes entrées, même résultat à chaque appel", () => {
+    const input = [makeProjectionSubject({ workedMinutes: 12, minutes: 88, deadlineDays: 5 })];
+    expect(computeSubjectTrajectory(input, FRIDAY)).toEqual(computeSubjectTrajectory(input, FRIDAY));
+  });
+
+  it("le statut est toujours l'une des trois valeurs valides, jamais undefined/NaN", () => {
+    const VALID_STATUSES = ["dans le rythme", "à renforcer", "prioritaire"];
+    const inputs = [
+      makeProjectionSubject({ workedMinutes: 0, minutes: 0 }), // cas dégénéré : part équitable nulle
+      makeProjectionSubject({ workedMinutes: 1000, minutes: 1 }),
+      makeProjectionSubject({ workedMinutes: 0, minutes: 1000 }),
+    ];
+    for (const input of inputs) {
+      const [entry] = computeSubjectTrajectory([input], FRIDAY);
+      expect(VALID_STATUSES).toContain(entry.status);
+    }
+  });
+
+  it("part équitable nulle (workedMinutes: 0, minutes: 0) : pas de NaN, pas de crash — retombe sur un statut valide plutôt que de propager une division par zéro", () => {
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ workedMinutes: 0, minutes: 0 })], FRIDAY);
+    expect(["dans le rythme", "à renforcer", "prioritaire"]).toContain(entry.status);
+  });
+
+  it("ne mute jamais les données d'entrée", () => {
+    const input = [makeProjectionSubject({ workedMinutes: 5, minutes: 95, deadlineDays: 3 })];
+    const snapshot = JSON.parse(JSON.stringify(input));
+    computeSubjectTrajectory(input, FRIDAY);
+    expect(input).toEqual(snapshot);
+  });
+
+  it("deadlineDays est toujours repassé tel quel (jamais recalculé ni corrompu)", () => {
+    const [entry] = computeSubjectTrajectory([makeProjectionSubject({ workedMinutes: 5, minutes: 95, deadlineDays: 17 })], FRIDAY);
+    expect(entry.deadlineDays).toBe(17);
+  });
+});
+
+describe("computeDailyPlan — non-régression (Sprint trajectoire par matière : aucune modification attendue)", () => {
+  it("reste strictement identique à structure/données égales — ce sprint n'ajoute qu'une fonction indépendante, jamais un changement de allocateMinutesBySubject/subjectWeight", () => {
+    const maths = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 20 });
+    const physique = makeExercise({ subject: "Physique", mastery: 75, estimated_minutes: 15 });
+    const sessions = [makeSession(maths.id, "Mathématiques", { started_at: "2026-08-10T08:00:00.000Z", result: "échoué" })];
+    const chapters: Chapter[] = [{ id: "chap-1", subject: "Mathématiques", label: "Suites numériques" }];
+
+    const plan = computeDailyPlan([maths, physique], sessions, chapters, 45, NOW, "2026-08-20T00:00:00.000Z", { Physique: "2026-08-13T00:00:00.000Z" });
+
+    expect(plan.blocks.length).toBeGreaterThan(0);
+    expect(plan.requestedMinutes).toBe(45);
+    expect(plan.blocks.every((block) => block.minutes > 0)).toBe(true);
   });
 });

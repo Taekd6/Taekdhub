@@ -51,6 +51,22 @@ import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
  * Aucun deuxième moteur de pondération, aucun créneau horaire ni répartition
  * par jour — seulement un total par matière pour ce qu'il reste de la
  * semaine (voir sa doc pour le détail).
+ *
+ * ## Trajectoire par matière (Sprint trajectoire par matière)
+ * `computeSubjectTrajectory` n'AJOUTE aucune décision : `subjectWeight`
+ * décide déjà "combien de temps pour cette matière", ce nouveau signal se
+ * contente d'EXPLIQUER cette décision (voir `recommendation.decide` /
+ * `trajectory.explique` dans la doc du sprint). Généralise le principe déjà
+ * utilisé par `lib/week.ts#computeWeeklyPace` (réalisé vs attendu
+ * proportionnellement au temps écoulé dans la semaine) à l'échelle d'une
+ * matière — sauf que la référence n'est jamais `weeklyGoalMinutes / 7
+ * matières` (une division uniforme arbitraire), mais la "part équitable
+ * actuelle" de cette matière telle que `subjectWeight` la voit déjà :
+ * minutes déjà travaillées + minutes restantes allouées (voir
+ * `WeeklyProjectionSubject.workedMinutes`, ajouté pour ce sprint). Comme
+ * `computeWeeklyPace`, ce jugement est recalculé en entier à chaque appel à
+ * partir de l'état ACTUEL — jamais une dette figée depuis lundi (voir la
+ * doc de `computeSubjectTrajectory`).
  */
 
 interface SubjectSignal {
@@ -489,6 +505,8 @@ export interface WeeklyProjectionSubject {
   subject: Subject;
   /** Minutes allouées sur le reste de la semaine pour cette matière — même allocateur que le Plan du jour (`allocateMinutesBySubject`), jamais un second calcul. */
   minutes: number;
+  /** Minutes déjà travaillées cette semaine POUR CETTE MATIÈRE (voir `SubjectSignal.recentMinutes`) — ajouté (Sprint trajectoire par matière) pour que `computeSubjectTrajectory` puisse reconstituer la "part équitable actuelle" (`workedMinutes + minutes`) sans jamais relire `exercises`/`sessions` une seconde fois. */
+  workedMinutes: number;
   /** Jours avant l'échéance ayant influencé ce poids (spécifique à la matière, sinon concours global) — voir `subjectDeadlineDays`. `null` si aucune échéance pertinente pour cette matière. */
   deadlineDays: number | null;
 }
@@ -548,10 +566,88 @@ export function computeWeeklyProjection(
   const allocation = allocateMinutesBySubject(signals, remainingMinutes, contestDate, subjectDeadlines, now);
   const bySubject = [...allocation.entries()]
     .sort((a, b) => b[1] - a[1])
-    .map(([subject, minutes]) => ({ subject, minutes, deadlineDays: subjectDeadlineDays(subject, subjectDeadlines, contestDate, now) }));
+    .map(([subject, minutes]) => ({
+      subject,
+      minutes,
+      workedMinutes: signals.find((signal) => signal.subject === subject)?.recentMinutes ?? 0,
+      deadlineDays: subjectDeadlineDays(subject, subjectDeadlines, contestDate, now),
+    }));
 
   const weekEnd = weekBounds(startOfWeek(now)).end;
   const daysRemainingInWeek = Math.max(1, Math.ceil((weekEnd.getTime() - now.getTime()) / 86400000));
 
   return { weeklyGoalMinutes, workedMinutes, remainingMinutes, met, daysRemainingInWeek, bySubject };
+}
+
+export type SubjectTrajectoryStatus = "dans le rythme" | "à renforcer" | "prioritaire";
+
+export interface SubjectTrajectory {
+  subject: Subject;
+  status: SubjectTrajectoryStatus;
+  /** Jours avant l'échéance effective de cette matière (même valeur que `WeeklyProjectionSubject.deadlineDays`, jamais recalculée) — `null` si aucune échéance pertinente. Un composant d'affichage peut choisir de la montrer ou non ; ce champ ne décide jamais lui-même du statut au-delà du seuil d'escalade déjà appliqué ci-dessous. */
+  deadlineDays: number | null;
+}
+
+/** Même seuil que `computeWeeklyPace` (lib/week.ts) — ±15 points, volontairement large pour ne jamais signaler un simple décalage d'un jour comme un retard. Une seule définition de "retard significatif" dans tout le produit. */
+const TRAJECTORY_PACE_THRESHOLD = 15;
+/**
+ * Au-delà de ce nombre de jours, une échéance ne fait plus passer un retard
+ * de "à renforcer" à "prioritaire" — distinct de `CONTEST_URGENCY_HORIZON_DAYS`
+ * (qui détermine si une échéance contribue encore au POIDS d'une matière,
+ * jusqu'à 21 jours) : ici, on détermine seulement si elle est assez proche
+ * pour justifier le niveau d'alerte le plus fort. Une échéance à 15 jours
+ * peut légitimement augmenter le poids d'une matière (elle est dans
+ * l'horizon des 21 jours) sans pour autant justifier "prioritaire" — voir
+ * Cas A de la doc du sprint ("pas d'alarme forte").
+ */
+const TRAJECTORY_URGENT_DEADLINE_DAYS = 7;
+
+/**
+ * Trajectoire par matière (Sprint trajectoire par matière) — généralise
+ * `lib/week.ts#computeWeeklyPace` (réalisé vs attendu proportionnellement au
+ * temps écoulé dans la semaine) à l'échelle d'une matière. Consomme
+ * UNIQUEMENT `WeeklyProjection.bySubject` (déjà calculé par
+ * `computeWeeklyProjection`) : aucun second calcul de poids, aucune relecture
+ * de `exercises`/`sessions`.
+ *
+ * La référence n'est jamais une division uniforme de `weeklyGoalMinutes` —
+ * c'est la "part équitable actuelle" de la matière telle que `subjectWeight`
+ * la voit déjà : minutes déjà travaillées + minutes restantes allouées
+ * (`workedMinutes + minutes`). Comparer le pourcentage déjà réalisé de cette
+ * part au pourcentage attendu pour le jour de la semaine actuel (même
+ * formule que `computeWeeklyPace`) donne un jugement de trajectoire cohérent
+ * avec les priorités déjà calculées, jamais une formule arbitraire
+ * indépendante.
+ *
+ * Aucune dette historique : recalculé en entier à chaque appel à partir de
+ * l'état ACTUEL (comme `computeWeeklyPace`) — il n'existe et ne doit jamais
+ * exister de notion de "ce qui était prévu lundi". `[]` avant mercredi (< 2
+ * jours écoulés depuis lundi) — même garde que `computeWeeklyPace`, trop tôt
+ * dans la semaine pour qu'un écart signifie quoi que ce soit.
+ *
+ * Trois états, jamais un score visible : "dans le rythme" (y compris en
+ * avance — jamais signalé différemment, ce n'est jamais un problème),
+ * "à renforcer" (retard significatif), "prioritaire" (retard significatif
+ * ET échéance proche — voir `TRAJECTORY_URGENT_DEADLINE_DAYS`). Une échéance
+ * proche SANS retard ne fait jamais monter le statut : `deadlineDays` reste
+ * disponible pour l'affichage ("Dans le rythme · échéance dans 3 j"), mais
+ * n'escalade jamais un statut à lui seul (voir Cas C de la doc du sprint).
+ */
+export function computeSubjectTrajectory(bySubject: WeeklyProjectionSubject[], now: Date = new Date()): SubjectTrajectory[] {
+  const daysElapsed = Math.floor((now.getTime() - startOfWeek(now).getTime()) / 86400000);
+  if (daysElapsed < 2) return [];
+
+  const expectedPercent = Math.min(100, Math.round((Math.min(daysElapsed, 7) / 7) * 100));
+
+  return bySubject.map(({ subject, minutes, workedMinutes, deadlineDays }) => {
+    const fairShare = workedMinutes + minutes;
+    const subjectPercent = fairShare > 0 ? Math.min(100, Math.round((workedMinutes / fairShare) * 100)) : 100;
+    const delta = subjectPercent - expectedPercent;
+    const isBehind = delta <= -TRAJECTORY_PACE_THRESHOLD;
+    const isUrgentDeadline = deadlineDays !== null && deadlineDays <= TRAJECTORY_URGENT_DEADLINE_DAYS;
+
+    const status: SubjectTrajectoryStatus = isBehind ? (isUrgentDeadline ? "prioritaire" : "à renforcer") : "dans le rythme";
+
+    return { subject, status, deadlineDays };
+  });
 }

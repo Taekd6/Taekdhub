@@ -42,6 +42,7 @@ import {
 import {
   computeDailyPlan,
   computeSubjectPriorities,
+  computeSubjectTrajectory,
   computeWeeklyProjection,
   CONTEST_URGENCY_HORIZON_DAYS,
   daysUntilContest,
@@ -50,6 +51,7 @@ import {
   PLAN_STORAGE_KEY,
   serializePlan,
   type SubjectPriorityLevel,
+  type SubjectTrajectoryStatus,
 } from "@/lib/plan";
 import { computeProgressBySubject } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META } from "@/lib/readiness";
@@ -86,6 +88,27 @@ const WEEKLY_PACE_BADGE: Record<WeeklyPace, "success" | "warning" | "accent"> = 
 };
 
 /**
+ * Trajectoire par matière (Sprint trajectoire par matière) — même vocabulaire
+ * visuel (points colorés) que `PRIORITY_META` ci-dessus, mais des libellés
+ * distincts : c'est un signal différent ("suis-je dans les temps cette
+ * semaine sur cette matière", pas "quel est le niveau de priorité global").
+ * Explique la décision déjà prise par `subjectWeight`/`computeWeeklyProjection`
+ * — n'en recalcule jamais aucune.
+ */
+const TRAJECTORY_META: Record<SubjectTrajectoryStatus, { dot: string; label: string }> = {
+  "prioritaire": { dot: "bg-rose-400", label: "Prioritaire" },
+  "à renforcer": { dot: "bg-amber-400", label: "À renforcer" },
+  "dans le rythme": { dot: "bg-emerald-400", label: "Dans le rythme" },
+};
+
+/** Même formulation que l'ancienne annotation "← dans N j" (avant ce sprint) — désormais accolée au statut de trajectoire plutôt qu'aux minutes restantes, voir la carte "Cette semaine". */
+function deadlineLabel(deadlineDays: number): string {
+  if (deadlineDays === 0) return "aujourd'hui";
+  if (deadlineDays === 1) return "demain";
+  return `dans ${deadlineDays} j`;
+}
+
+/**
  * Centre de pilotage (Sprint Study OS) — le véritable point d'entrée de
  * TaekdHub : "où j'en suis, quoi faire maintenant, pourquoi, combien de
  * temps, ce que j'ai fait récemment, ce qui mérite attention". Chaque bloc
@@ -102,6 +125,19 @@ export function DashboardOverview() {
 
   const model = useMemo(() => {
     const now = new Date();
+    // Sprint planification hebdomadaire adaptative — "sur ce qu'il reste
+    // cette semaine, combien pour chaque matière ?". Réutilise le même
+    // allocateur que le Plan du jour (voir lib/plan.ts), jamais un second
+    // moteur : complémentaire de `weeklySummary` (qui regarde ce qui a été
+    // fait), celui-ci regarde ce qu'il reste à faire.
+    const weeklyProjection = computeWeeklyProjection(
+      exercises,
+      sessions,
+      preferences.weeklyGoalMinutes,
+      now,
+      preferences.contestDate,
+      preferences.subjectDeadlines
+    );
     return {
       nextAction: computeNextAction(exercises, sessions, preferences.dailyGoalMinutes, now),
       objective: computeDailyObjective(sessions, preferences.dailyGoalMinutes, now),
@@ -112,12 +148,11 @@ export function DashboardOverview() {
       recentDays: recentDaySummaries(sessions, now, 5),
       readiness: computeReadinessBySubject(exercises, sessions, now),
       weeklySummary: computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now),
-      // Sprint planification hebdomadaire adaptative — "sur ce qu'il reste
-      // cette semaine, combien pour chaque matière ?". Réutilise le même
-      // allocateur que le Plan du jour (voir lib/plan.ts), jamais un second
-      // moteur : complémentaire de `weeklySummary` (qui regarde ce qui a été
-      // fait), celui-ci regarde ce qu'il reste à faire.
-      weeklyProjection: computeWeeklyProjection(exercises, sessions, preferences.weeklyGoalMinutes, now, preferences.contestDate, preferences.subjectDeadlines),
+      weeklyProjection,
+      // Sprint trajectoire par matière — explique CE QUE `weeklyProjection`
+      // a déjà décidé, ne recalcule aucun poids : consomme directement
+      // `weeklyProjection.bySubject` (voir lib/plan.ts#computeSubjectTrajectory).
+      trajectoryBySubject: computeSubjectTrajectory(weeklyProjection.bySubject, now),
       subjectPriorities: computeSubjectPriorities(exercises, sessions, chapters, now, preferences.contestDate, preferences.subjectDeadlines),
       streak: computeStreak(sessions),
       // Même calcul que `lib/plan.ts#daysUntilContest`, réutilisé tel quel
@@ -154,8 +189,22 @@ export function DashboardOverview() {
     );
   }
 
-  const { nextAction, objective, upcoming, progress, bySubject, toConsolidate, recentDays, readiness, weeklySummary, weeklyProjection, subjectPriorities, streak, contestDays } =
-    model;
+  const {
+    nextAction,
+    objective,
+    upcoming,
+    progress,
+    bySubject,
+    toConsolidate,
+    recentDays,
+    readiness,
+    weeklySummary,
+    weeklyProjection,
+    trajectoryBySubject,
+    subjectPriorities,
+    streak,
+    contestDays,
+  } = model;
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
   const secondaryPicks = nextAction.picks.slice(1);
   // "Revoir mes priorités" (Phase 8) : ouvre directement le premier exercice déjà signalé par le moteur de recommandation — même convention que computeUpcoming (lib/next-action.ts), aucune nouvelle route.
@@ -489,32 +538,45 @@ export function DashboardOverview() {
         <ProgressBar value={weeklySummary.progressPercent} className="mt-5" />
 
         {/* Reste de la semaine par matière (Sprint planification hebdomadaire
-            adaptative) — remplace l'ancien récapitulatif "déjà travaillé par
-            matière" (moins actionnable : le total/la barre ci-dessus le
-            couvrent déjà) par la projection tournée vers l'avant : combien
-            reste à consacrer à chaque matière, voir computeWeeklyProjection.
-            Objectif atteint : pas de répartition à afficher, juste un état
-            positif (jamais "0 min restantes" ni de ton culpabilisant). */}
+            adaptative) — combien reste à consacrer à chaque matière, voir
+            computeWeeklyProjection. Objectif atteint : pas de répartition à
+            afficher, juste un état positif (jamais "0 min restantes" ni de
+            ton culpabilisant).
+            Sprint trajectoire par matière : chaque ligne reçoit en plus une
+            lecture explicite de sa trajectoire (`trajectoryBySubject`, voir
+            lib/plan.ts#computeSubjectTrajectory) — explique la décision déjà
+            prise par `subjectWeight`, n'en recalcule aucune. L'échéance
+            (auparavant "← dans N j" à côté des minutes) est désormais
+            rattachée à cette ligne d'explication plutôt qu'aux minutes, pour
+            que "quoi" (le temps restant) et "pourquoi" (le statut) restent
+            lisibles séparément. */}
         {weeklyProjection.met ? (
           <p className="mt-5 text-sm text-emerald-300">Objectif de la semaine atteint. Bien joué.</p>
         ) : (
           weeklyProjection.bySubject.length > 0 && (
             <>
-              <div className="mt-5 space-y-2">
-                {weeklyProjection.bySubject.map(({ subject, minutes, deadlineDays }) => (
-                  <div key={subject} className="flex items-center justify-between text-sm">
-                    <span className="text-zinc-300">{subject}</span>
-                    <span className="text-zinc-500">
-                      {formatMinutes(minutes)}
-                      {/* Même horizon que contestUrgencyBonus (voir CONTEST_URGENCY_HORIZON_DAYS) : une échéance trop lointaine pour influencer réellement le poids n'a rien d'actionnable à signaler ici non plus. */}
-                      {deadlineDays !== null && deadlineDays <= CONTEST_URGENCY_HORIZON_DAYS && (
-                        <span className="ml-2 text-2xs text-accent-text">
-                          ← {deadlineDays === 0 ? "aujourd'hui" : deadlineDays === 1 ? "demain" : `dans ${deadlineDays} j`}
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                ))}
+              <div className="mt-5 space-y-3">
+                {weeklyProjection.bySubject.map(({ subject, minutes, deadlineDays }) => {
+                  const trajectory = trajectoryBySubject.find((entry) => entry.subject === subject);
+                  const trajectoryMeta = trajectory ? TRAJECTORY_META[trajectory.status] : null;
+                  // Même horizon que contestUrgencyBonus (voir CONTEST_URGENCY_HORIZON_DAYS) : une échéance trop lointaine pour influencer réellement le poids n'a rien d'actionnable à signaler ici non plus.
+                  const showDeadline = deadlineDays !== null && deadlineDays <= CONTEST_URGENCY_HORIZON_DAYS;
+                  return (
+                    <div key={subject} className="flex items-center justify-between gap-3 text-sm">
+                      <div className="min-w-0">
+                        <p className="text-zinc-300">{subject}</p>
+                        {trajectoryMeta && (
+                          <p className="mt-0.5 flex items-center gap-1.5 text-2xs text-zinc-500">
+                            <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", trajectoryMeta.dot)} />
+                            {trajectoryMeta.label}
+                            {showDeadline && ` · échéance ${deadlineLabel(deadlineDays)}`}
+                          </p>
+                        )}
+                      </div>
+                      <span className="shrink-0 text-zinc-500">{formatMinutes(minutes)}</span>
+                    </div>
+                  );
+                })}
               </div>
               {topWeeklySubject && (
                 <Link href={`/session?subject=${encodeURIComponent(topWeeklySubject.subject)}`} className="mt-5 inline-block">
