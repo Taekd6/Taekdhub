@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   DATA_WRITTEN_EVENT,
+  defaultPreferences,
   localData,
   STORAGE_ERROR_EVENT,
   type Chapter,
@@ -133,7 +134,19 @@ export function usePrepahubData() {
     chapters: [],
     weekSnapshots: [],
     lastBackupAt: null,
-    preferences: localData.preferences(),
+    // `defaultPreferences`, jamais `localData.preferences()` ici (Sprint Study
+    // OS Phase 6) : contrairement aux autres champs (tous initialisés à un
+    // repli vide, remplis seulement via `refresh()` ci-dessous), ce champ
+    // lisait localStorage dès l'état initial — correct côté serveur (repli
+    // déjà utilisé par `localData.preferences()` faute de `window`), mais pas
+    // côté client, où `window` existe dès le tout premier rendu : pour un
+    // utilisateur ayant déjà changé une préférence numérique (ex. objectif
+    // quotidien), ce rendu voyait déjà la vraie valeur AVANT hydratation,
+    // produisant un mismatch d'hydratation React détecté en direct pendant
+    // l'audit go-live (bouton de préréglage actif différent entre serveur et
+    // client). Même repli que le rendu serveur : plus aucune divergence tant
+    // que `ready` n'est pas encore vrai.
+    preferences: defaultPreferences,
     workQueue: [],
     deadlines: [],
     weeklyPlan: [],

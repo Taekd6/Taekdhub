@@ -50,7 +50,8 @@ export type Preferences = {
   accent: string;
   themeMode: ThemeMode;
 };
-const defaults: Preferences = {
+/** Exporté (Sprint Study OS Phase 6) pour que le rendu initial côté client (hooks/use-prepahub-data.ts) parte de la même valeur que le rendu serveur, sans lire localStorage avant l'hydratation — voir `preferences()` juste en dessous, dont c'est déjà le repli côté serveur. */
+export const defaultPreferences: Preferences = {
   displayName: "",
   dailyGoalMinutes: 240,
   weeklyGoalMinutes: 300,
@@ -461,7 +462,7 @@ function normalizeDailyExerciseGoal(raw: unknown): number | null {
 
 /**
  * Fusionne une préférence potentiellement partielle/corrompue (import, ancienne
- * sauvegarde, édition manuelle du localStorage) avec `defaults` — même principe
+ * sauvegarde, édition manuelle du localStorage) avec `defaultPreferences` — même principe
  * que `normalizeExercise`/`normalizeChapter` : un champ absent ou invalide
  * retombe sur sa valeur par défaut plutôt que de propager une valeur incohérente
  * (notamment `themeMode`, posé tel quel en attribut DOM par `applyThemeMode`).
@@ -471,7 +472,7 @@ function normalizeDailyExerciseGoal(raw: unknown): number | null {
  */
 export function normalizePreferences(raw: unknown): Preferences {
   const item = isRecord(raw) ? raw : {};
-  const merged = { ...defaults, ...item };
+  const merged = { ...defaultPreferences, ...item };
   return {
     ...merged,
     themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE,
@@ -540,7 +541,7 @@ export const localData = {
       ? []
       : (JSON.parse(localStorage.getItem(chaptersKey) || "[]") as unknown[]).map(normalizeChapter).filter((item): item is Chapter => item !== null),
   saveChapters: (items: Chapter[]): boolean => safeSetItem(chaptersKey, JSON.stringify(items)),
-  preferences: (): Preferences => (typeof window === "undefined" ? defaults : normalizePreferences(JSON.parse(localStorage.getItem(preferencesKey) || "{}"))),
+  preferences: (): Preferences => (typeof window === "undefined" ? defaultPreferences : normalizePreferences(JSON.parse(localStorage.getItem(preferencesKey) || "{}"))),
   savePreferences: (preferences: Preferences): boolean => safeSetItem(preferencesKey, JSON.stringify(preferences)),
   /** Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`), ou `null` si aucune n'a jamais été faite. */
   lastBackupAt: (): string | null => (typeof window === "undefined" ? null : localStorage.getItem(lastBackupKey)),

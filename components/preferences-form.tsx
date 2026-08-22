@@ -36,6 +36,21 @@ export function PreferencesForm() {
     setTimeout(() => setSaved(false), 2000);
   }
 
+  /**
+   * Sauvegarde à chaque changement (Sprint Study OS Phase 6) — ce formulaire
+   * était le seul de la page Réglages à exiger un clic sur "Enregistrer"
+   * avant de persister quoi que ce soit (weekly-plan-editor.tsx et
+   * deadlines-manager.tsx sauvegardent déjà à chaque interaction) : quitter la
+   * page sans avoir remarqué/cliqué ce bouton effaçait silencieusement toute
+   * modification, détecté en direct en répétant exactement ce geste pendant
+   * l'audit go-live. `save`/"Enregistrer" restent inchangés (juste redondants
+   * avec ce qui est déjà persisté) pour ne rien retirer à l'existant.
+   */
+  function commit(next: Preferences) {
+    setPrefs(next);
+    savePreferences(next);
+  }
+
   // Échéance par matière (Sprint planification hebdomadaire adaptative) —
   // clé absente = pas d'échéance pour cette matière (voir
   // lib/storage.ts#normalizeSubjectDeadlines) : une valeur vide RETIRE la clé
@@ -45,7 +60,7 @@ export function PreferencesForm() {
     const next = { ...prefs.subjectDeadlines };
     if (value) next[subject] = value;
     else delete next[subject];
-    setPrefs({ ...prefs, subjectDeadlines: next });
+    commit({ ...prefs, subjectDeadlines: next });
   }
 
   // Objectif du jour par matière (Sprint Study OS — Aujourd'hui) — même
@@ -57,7 +72,7 @@ export function PreferencesForm() {
     const minutes = Number(value);
     if (value && minutes > 0) next[subject] = minutes;
     else delete next[subject];
-    setPrefs({ ...prefs, dailySubjectGoals: next });
+    commit({ ...prefs, dailySubjectGoals: next });
   }
 
   return (
@@ -67,7 +82,7 @@ export function PreferencesForm() {
           Prénom
           <Input
             value={prefs.displayName}
-            onChange={(e) => setPrefs({ ...prefs, displayName: e.target.value })}
+            onChange={(e) => commit({ ...prefs, displayName: e.target.value })}
             placeholder="Ton prénom"
             className="mt-2"
           />
@@ -81,7 +96,7 @@ export function PreferencesForm() {
                 type="button"
                 size="sm"
                 variant={prefs.dailyGoalMinutes === preset ? "primary" : "secondary"}
-                onClick={() => setPrefs({ ...prefs, dailyGoalMinutes: preset })}
+                onClick={() => commit({ ...prefs, dailyGoalMinutes: preset })}
               >
                 {preset} min
               </Button>
@@ -90,7 +105,7 @@ export function PreferencesForm() {
               type="number"
               value={prefs.dailyGoalMinutes}
               min={1}
-              onChange={(e) => setPrefs({ ...prefs, dailyGoalMinutes: Math.max(1, Number(e.target.value)) })}
+              onChange={(e) => commit({ ...prefs, dailyGoalMinutes: Math.max(1, Number(e.target.value)) })}
               className="w-24"
               aria-label="Objectif quotidien personnalisé, en minutes"
             />
@@ -103,7 +118,7 @@ export function PreferencesForm() {
             type="number"
             min={1}
             value={prefs.dailyExerciseGoal ?? ""}
-            onChange={(e) => setPrefs({ ...prefs, dailyExerciseGoal: e.target.value ? Math.max(1, Number(e.target.value)) : null })}
+            onChange={(e) => commit({ ...prefs, dailyExerciseGoal: e.target.value ? Math.max(1, Number(e.target.value)) : null })}
             placeholder="Facultatif"
             className="mt-2 w-24"
             aria-label="Objectif du jour, en nombre d'exercices"
@@ -141,7 +156,7 @@ export function PreferencesForm() {
                 type="button"
                 size="sm"
                 variant={prefs.weeklyGoalMinutes === preset ? "primary" : "secondary"}
-                onClick={() => setPrefs({ ...prefs, weeklyGoalMinutes: preset })}
+                onClick={() => commit({ ...prefs, weeklyGoalMinutes: preset })}
               >
                 {Math.round(preset / 60)} h
               </Button>
@@ -150,7 +165,7 @@ export function PreferencesForm() {
               type="number"
               value={prefs.weeklyGoalMinutes}
               min={1}
-              onChange={(e) => setPrefs({ ...prefs, weeklyGoalMinutes: Math.max(1, Number(e.target.value)) })}
+              onChange={(e) => commit({ ...prefs, weeklyGoalMinutes: Math.max(1, Number(e.target.value)) })}
               className="w-24"
               aria-label="Objectif hebdomadaire personnalisé, en minutes"
             />
@@ -162,7 +177,7 @@ export function PreferencesForm() {
           <Input
             type="date"
             value={prefs.contestDate}
-            onChange={(e) => setPrefs({ ...prefs, contestDate: e.target.value })}
+            onChange={(e) => commit({ ...prefs, contestDate: e.target.value })}
             className="mt-2"
           />
         </label>
