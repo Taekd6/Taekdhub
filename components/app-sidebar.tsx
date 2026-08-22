@@ -19,11 +19,23 @@ import { levelFromXp, totalXp, xpProgressInLevel } from "@/lib/gamification";
 import { cn } from "@/lib/cn";
 import { ProgressBar } from "@/components/ui/progress";
 
-/** Sprint 3G : "Profil" fusionné dans "Réglages" (deux pages à un seul champ chacune, jamais consultées séparément) — 7 entrées au lieu de 8, pour redonner de la marge tactile à la nav mobile compacte ci-dessous. */
+/**
+ * Sprint 3G : "Profil" fusionné dans "Réglages" (deux pages à un seul champ chacune, jamais consultées séparément) — 7 entrées au lieu de 8, pour redonner de la marge tactile à la nav mobile compacte ci-dessous.
+ *
+ * Audit fiabilité quotidienne : `/timer` était étiqueté "Focus" alors qu'il
+ * s'agit d'un chronomètre libre, sans exercice associé (voir
+ * components/timer.tsx) — un concept déjà nommé "séance libre" ailleurs dans
+ * l'app (lib/supabase/types.ts, lib/history.ts). Le VRAI mode Focus (écran
+ * plein exercice : énoncé, indices, correction, chrono associé) s'ouvre
+ * depuis une carte d'exercice, jamais depuis cette entrée de nav — les deux
+ * partageaient le même mot, donc le même concept en apparence, alors que ce
+ * sont deux écrans différents. Renommé pour refléter ce qu'il fait
+ * réellement, sans toucher au composant ni à sa route.
+ */
 const items = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/session", label: "Séance", icon: PlayCircle },
-  { href: "/timer", label: "Focus", icon: Clock3 },
+  { href: "/timer", label: "Chrono libre", icon: Clock3 },
   { href: "/exercises", label: "Exercices", icon: BookOpenCheck },
   { href: "/history", label: "Historique", icon: History },
   { href: "/progress", label: "Progression", icon: BarChart3 },
