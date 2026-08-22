@@ -68,7 +68,7 @@ import { subjectMeta } from "@/lib/study";
 import { formatDuration, formatMinutes } from "@/lib/utils";
 import { computeWeeklyDayBars, computeWeeklySummary, type WeeklyPace } from "@/lib/week";
 import { removeFromQueue, usableQueueEntries } from "@/lib/work-queue";
-import type { UpcomingItem } from "@/lib/next-action";
+import type { NextAction, UpcomingItem } from "@/lib/next-action";
 import type { StoredPlan } from "@/lib/plan";
 
 const UPCOMING_META: Record<UpcomingItem["key"], { label: string; icon: typeof BookOpenCheck }> = {
@@ -261,8 +261,31 @@ export function DashboardOverview() {
     streak,
     contestDays,
   } = model;
-  const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
-  const secondaryPicks = nextAction.picks.slice(1);
+
+  // "Ma prochaine action" (Sprint Study OS) — un travail explicitement
+  // planifié par l'utilisateur (la file de travail) prime sur la
+  // recommandation automatique de `computeNextAction` : la reprise d'une
+  // séance interrompue reste gérée séparément par ResumeBanner, affichée
+  // au-dessus de ce bloc — c'est donc bien ici le second échelon de la
+  // priorité demandée (interrompu > planifié > à revoir/prioritaire >
+  // recommandation, ces deux derniers déjà couverts par le tri de
+  // `recommendExercises` à l'intérieur de `computeNextAction`).
+  // Aucune nouvelle règle de sélection : reprend tels quels les exercices
+  // déjà choisis par l'utilisateur, juste mis en forme comme `NextAction`.
+  const effectiveNextAction: NextAction =
+    queueEntries.length > 0
+      ? {
+          kind: "start-session",
+          title: queueEntries[0].exercise.title,
+          description: `Ajouté à ta file de travail — 1 sur ${queueEntries.length}.`,
+          ctaLabel: queueEntries.length > 1 ? `Commencer ta file (${queueEntries.length} exercices)` : "Commencer",
+          href: "/session",
+          minutes: queueEntries.reduce((total, { exercise }) => total + estimatedDurationMinutes(exercise, sessions), 0),
+          picks: queueEntries.slice(0, 3).map(({ exercise }) => ({ exercise, score: 0, reasons: ["Ajouté à ta file de travail"] })),
+        }
+      : nextAction;
+  const sessionHref = effectiveNextAction.kind === "start-session" ? `/session?minutes=${effectiveNextAction.minutes}` : effectiveNextAction.href;
+  const secondaryPicks = effectiveNextAction.picks.slice(1);
   // "Revoir mes priorités" (Phase 8) : ouvre directement le premier exercice déjà signalé par le moteur de recommandation — même convention que computeUpcoming (lib/next-action.ts), aucune nouvelle route.
   const prioritiesHref = nextAction.picks[0] ? `/exercises?focus=${nextAction.picks[0].exercise.id}` : "/exercises";
   // "Prochainement" ne montre plus le chapitre le plus faible : la section "À consolider" ci-dessous couvre ce signal en mieux (plusieurs chapitres, raisons explicites) — computeUpcoming lui-même reste inchangé (voir lib/next-action.test.ts).
@@ -302,8 +325,8 @@ export function DashboardOverview() {
             )}
           </div>
 
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{nextAction.title}</h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">{nextAction.description}</p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{effectiveNextAction.title}</h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">{effectiveNextAction.description}</p>
 
           {/* Phrase de pilotage (Micro-sprint polish UX final) — contexte
               hebdomadaire ("où j'en suis, pourquoi"), distinct du "quoi faire
@@ -318,12 +341,18 @@ export function DashboardOverview() {
           )}
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Link href={sessionHref}>
-              <Button size="lg">
-                {nextAction.ctaLabel} <ArrowRight size={16} />
+            {queueEntries.length > 0 ? (
+              <Button size="lg" onClick={startQueue}>
+                {effectiveNextAction.ctaLabel} <ArrowRight size={16} />
               </Button>
-            </Link>
-            {nextAction.kind !== "start-session" && (
+            ) : (
+              <Link href={sessionHref}>
+                <Button size="lg">
+                  {effectiveNextAction.ctaLabel} <ArrowRight size={16} />
+                </Button>
+              </Link>
+            )}
+            {nextAction.kind !== "start-session" && queueEntries.length === 0 && (
               <Link href="/session">
                 <Button variant="secondary" size="lg">
                   Ouvrir une séance
