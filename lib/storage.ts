@@ -11,6 +11,8 @@ const chaptersKey = "prepahub:chapters";
 const lastBackupKey = "prepahub:last-backup";
 const weekSnapshotsKey = "prepahub:week-snapshots";
 const workQueueKey = "prepahub:work-queue";
+const deadlinesKey = "prepahub:deadlines";
+const weeklyPlanKey = "prepahub:weekly-plan";
 
 /**
  * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
@@ -78,6 +80,49 @@ export type Chapter = { id: string; subject: Subject; label: string };
  * lib/work-queue.ts#usableQueueEntries), jamais une entrée fantôme affichée.
  */
 export type WorkQueueItem = { exerciseId: string };
+
+/**
+ * Échéance (Sprint Study OS Phase 4 — "DS et khôlles") : DS/khôlle/autre,
+ * associée à une matière ET à une liste de chapitres précis — extension du
+ * concept déjà existant `Preferences.subjectDeadlines` (une simple date par
+ * matière), qui reste inchangé (utilisé tel quel par `lib/plan.ts` pour la
+ * répartition du temps par matière). Une `Deadline` est un concept plus riche
+ * et plus précis : liée au(x) chapitre(s) concerné(s), ce qui permet à
+ * `lib/deadlines.ts#chapterDeadlineSignals` de faire remonter les exercices
+ * de CES chapitres précis dans les recommandations, pas toute la matière.
+ * `chapterIds` référence des `Chapter.id` existants — jamais de libellé de
+ * chapitre dupliqué ici (voir `lib/chapters.ts`) : un chapitre supprimé
+ * depuis est simplement sans effet (voir la doc de `chapterDeadlineSignals`),
+ * jamais une entrée fantôme affichée.
+ */
+export type DeadlineType = "DS" | "khôlle" | "autre";
+export interface Deadline {
+  id: string;
+  type: DeadlineType;
+  subject: Subject;
+  /** Date ISO (yyyy-mm-dd) — même convention que `Preferences.subjectDeadlines`, validée à la lecture par `lib/deadlines.ts#daysUntilDeadline`, jamais ici. */
+  date: string;
+  title: string;
+  chapterIds: string[];
+}
+
+/**
+ * Plan de travail hebdomadaire (Sprint Study OS Phase 4 — "planification
+ * hebdomadaire") : une INTENTION de travail par jour de la semaine (0 = lundi
+ * … 6 = dimanche, même convention que `lib/week.ts`'s `WEEKDAY_LABELS`), pas
+ * une deuxième mesure du temps réellement travaillé — celle-ci reste
+ * entièrement portée par `WorkSession` (voir `lib/weekly-plan.ts`, qui
+ * compare les deux sans jamais les confondre). Toujours exactement 7 entrées
+ * (voir `normalizeWeeklyPlan`), un jour sans rien de prévu ayant simplement
+ * `subjectMinutes: {}` plutôt qu'être absent — un jour manquant serait
+ * ambigu avec "jour non encore normalisé".
+ */
+export interface WeeklyPlanDay {
+  /** 0 = lundi … 6 = dimanche. */
+  day: number;
+  subjectMinutes: Partial<Record<Subject, number>>;
+}
+export type WeeklyPlan = WeeklyPlanDay[];
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
 export interface WeekSnapshotSubjectTime {
@@ -286,6 +331,52 @@ function normalizeWorkQueueItem(raw: unknown): WorkQueueItem | null {
   return { exerciseId: item.exerciseId };
 }
 
+const DEADLINE_TYPES: readonly DeadlineType[] = ["DS", "khôlle", "autre"];
+
+/** Ramène une échéance potentiellement corrompue vers une forme valide, ou l'écarte — même principe que `normalizeChapter`. `chapterIds` invalides sont simplement filtrés, jamais toute l'échéance écartée pour ça. */
+export function normalizeDeadline(raw: unknown): Deadline | null {
+  const item = isRecord(raw) ? raw : {};
+  if (typeof item.id !== "string" || typeof item.date !== "string" || typeof item.title !== "string" || !item.title.trim()) return null;
+  return {
+    id: item.id,
+    type: (DEADLINE_TYPES as string[]).includes(item.type as string) ? (item.type as DeadlineType) : "autre",
+    subject: migrateSubject(item.subject),
+    date: item.date,
+    title: item.title,
+    chapterIds: stringArray(item.chapterIds),
+  };
+}
+
+/** Même principe que `normalizeDailySubjectGoals` : objet corrompu → `{}`, seules les valeurs numériques strictement positives sont conservées. */
+function normalizeWeeklyPlanSubjectMinutes(raw: unknown): Partial<Record<Subject, number>> {
+  if (!isRecord(raw)) return {};
+  const result: Partial<Record<Subject, number>> = {};
+  for (const subject of subjects) {
+    const value = raw[subject];
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) result[subject] = Math.round(value);
+  }
+  return result;
+}
+
+function normalizeWeeklyPlanDay(raw: unknown): WeeklyPlanDay | null {
+  const item = isRecord(raw) ? raw : {};
+  if (typeof item.day !== "number" || !Number.isFinite(item.day) || item.day < 0 || item.day > 6) return null;
+  return { day: Math.round(item.day), subjectMinutes: normalizeWeeklyPlanSubjectMinutes(item.subjectMinutes) };
+}
+
+/**
+ * Ramène un plan hebdomadaire potentiellement corrompu (jours manquants,
+ * dupliqués, dans le désordre) vers EXACTEMENT 7 jours (0-6) — un jour absent
+ * ou invalide dans les données brutes retombe sur `subjectMinutes: {}` pour
+ * ce jour plutôt que de propager un tableau de longueur inattendue vers
+ * `lib/weekly-plan.ts`, qui suppose toujours les 7 jours présents.
+ */
+export function normalizeWeeklyPlan(raw: unknown): WeeklyPlan {
+  const days = Array.isArray(raw) ? raw.map(normalizeWeeklyPlanDay).filter((day): day is WeeklyPlanDay => day !== null) : [];
+  const byDay = new Map(days.map((day) => [day.day, day]));
+  return Array.from({ length: 7 }, (_, day) => byDay.get(day) ?? { day, subjectMinutes: {} });
+}
+
 function isNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
@@ -464,6 +555,14 @@ export const localData = {
       ? []
       : (JSON.parse(localStorage.getItem(workQueueKey) || "[]") as unknown[]).map(normalizeWorkQueueItem).filter((item): item is WorkQueueItem => item !== null),
   saveWorkQueue: (items: WorkQueueItem[]): boolean => safeSetItem(workQueueKey, JSON.stringify(items)),
+  deadlines: (): Deadline[] =>
+    typeof window === "undefined"
+      ? []
+      : (JSON.parse(localStorage.getItem(deadlinesKey) || "[]") as unknown[]).map(normalizeDeadline).filter((item): item is Deadline => item !== null),
+  saveDeadlines: (items: Deadline[]): boolean => safeSetItem(deadlinesKey, JSON.stringify(items)),
+  weeklyPlan: (): WeeklyPlan =>
+    normalizeWeeklyPlan(typeof window === "undefined" ? [] : JSON.parse(localStorage.getItem(weeklyPlanKey) || "[]")),
+  saveWeeklyPlan: (plan: WeeklyPlan): boolean => safeSetItem(weeklyPlanKey, JSON.stringify(plan)),
 };
 
 /** Rappel de sauvegarde (finalisation V1) : au-delà de ce nombre de jours sans export, la sauvegarde est considérée périmée. */
@@ -495,6 +594,13 @@ export function exportBackup(): void {
       // fantômes (chapter_id pointant vers un catalogue vide).
       chapters: localData.chapters(),
       weekSnapshots: localData.weekSnapshots(),
+      // Échéances/plan hebdomadaire (Sprint Study OS Phase 4) : données
+      // durables saisies à la main par l'utilisateur (contrairement à la file
+      // de travail, éphémère et volontairement exclue de la sauvegarde) —
+      // perdre un DS déjà planifié en changeant d'appareil serait une vraie
+      // régression, pas un simple confort.
+      deadlines: localData.deadlines(),
+      weeklyPlan: localData.weeklyPlan(),
     },
     null,
     2
@@ -523,6 +629,10 @@ export interface BackupPayload {
   /** Optionnel : une sauvegarde exportée avant l'ajout des chapitres à l'export n'a pas ce champ ; restauré à `[]` dans ce cas (voir components/data-backup.tsx#confirmImport). */
   chapters?: Chapter[];
   weekSnapshots?: WeekSnapshot[];
+  /** Optionnel : absent d'une sauvegarde exportée avant le Sprint Study OS Phase 4 ; restauré à `[]` dans ce cas. */
+  deadlines?: Deadline[];
+  /** Optionnel : absent d'une sauvegarde exportée avant le Sprint Study OS Phase 4 ; restauré à un plan vide (7 jours sans rien de prévu) dans ce cas. */
+  weeklyPlan?: WeeklyPlan;
 }
 
 /**
@@ -573,5 +683,9 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   // Idem : absent d'une sauvegarde exportée avant l'ajout des chapitres à
   // l'export ; chaque entrée est revalidée par `normalizeChapter` à la lecture.
   if (data.chapters !== undefined && !Array.isArray(data.chapters)) return false;
+  // Idem (Sprint Study OS Phase 4) : absents d'une sauvegarde antérieure ;
+  // chaque entrée/jour est revalidé par `normalizeDeadline`/`normalizeWeeklyPlan` à la lecture.
+  if (data.deadlines !== undefined && !Array.isArray(data.deadlines)) return false;
+  if (data.weeklyPlan !== undefined && !Array.isArray(data.weeklyPlan)) return false;
   return true;
 }

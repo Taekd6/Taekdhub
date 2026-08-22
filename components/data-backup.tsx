@@ -51,6 +51,9 @@ export function DataBackup() {
     localData.saveChapters(pendingImport.chapters ?? []);
     // Sauvegarde d'avant le Sprint 2.1 : pas de weekSnapshots dans le fichier, restaurés à [] proprement.
     localData.saveWeekSnapshots(pendingImport.weekSnapshots ?? []);
+    // Sauvegarde d'avant le Sprint Study OS Phase 4 : pas d'échéances/plan hebdomadaire dans le fichier, restaurés proprement.
+    localData.saveDeadlines(pendingImport.deadlines ?? []);
+    localData.saveWeeklyPlan(pendingImport.weeklyPlan ?? []);
     setPendingImport(null);
     setMessage("Sauvegarde restaurée. Recharge la page.");
   }
@@ -109,7 +112,7 @@ export function DataBackup() {
                     </>
                   ) : null}
                   {pendingImport.exportedAt && ` (exporté le ${new Date(pendingImport.exportedAt).toLocaleDateString("fr-FR")})`}. Cette
-                  action remplacera définitivement tes exercices, chapitres, séances, préférences et historique de progression actuels sur cet appareil.
+                  action remplacera définitivement tes exercices, chapitres, séances, préférences, échéances, plan hebdomadaire et historique de progression actuels sur cet appareil.
                 </p>
               </div>
             </div>
