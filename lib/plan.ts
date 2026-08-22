@@ -544,6 +544,8 @@ export interface StoredPlanItem {
 export interface StoredPlan {
   items: StoredPlanItem[];
   requestedMinutes: number;
+  /** "queue" quand ce transfert vient de la file de travail manuelle (Dashboard#startQueue) plutôt que du plan du jour automatique — seul cas où /session doit vider la file source une fois le transfert effectivement consommé (voir session-runner.tsx). Absent pour un plan du jour classique, comportement inchangé. */
+  source?: "queue";
 }
 
 /** Sérialise un `DailyPlan` pour la traversée Dashboard → /session — voir `PLAN_STORAGE_KEY`. */

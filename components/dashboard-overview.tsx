@@ -271,18 +271,25 @@ export function DashboardOverview() {
   const removeFromWorkQueue = useCallback((id: string) => saveWorkQueue(removeFromQueue(workQueue, id)), [workQueue, saveWorkQueue]);
   // Même transport que `startPlan` (PLAN_STORAGE_KEY/StoredPlan) : /session ne
   // fait aucune différence entre un plan automatique et une file choisie à la
-  // main, le Focus reste l'unique moteur d'exécution. La file est vidée au
-  // moment du départ — son rôle s'arrête là, comme le Plan du jour, jamais un
-  // second état persistant à faire vivre en parallèle de la séance.
+  // main, le Focus reste l'unique moteur d'exécution.
+  //
+  // La file n'est PLUS vidée ici (Sprint Study OS Phase 6) : ce transfert vit
+  // en sessionStorage, qui disparaît si l'utilisateur ferme l'app entre
+  // l'aperçu ("Ton plan du jour") et le clic sur "Commencer ma séance" — la
+  // file, elle, vit en localStorage et serait alors perdue pour de bon, une
+  // vraie perte de données détectée en direct pendant l'audit go-live.
+  // `source: "queue"` marque l'origine du transfert pour que /session (seul
+  // endroit qui sait si la lecture a réellement eu lieu) vide la file
+  // lui-même une fois consommé, jamais avant (voir session-runner.tsx).
   const startQueue = useCallback(() => {
     const stored: StoredPlan = {
       items: queueEntries.map(({ exercise }) => ({ exerciseId: exercise.id, reasons: ["Ajouté à ta file de travail"] })),
       requestedMinutes: queueEntries.reduce((total, { exercise }) => total + estimatedDurationMinutes(exercise, sessions), 0),
+      source: "queue",
     };
     sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(stored));
-    saveWorkQueue([]);
     router.push("/session");
-  }, [queueEntries, sessions, saveWorkQueue, router]);
+  }, [queueEntries, sessions, router]);
 
   if (!ready) {
     return (

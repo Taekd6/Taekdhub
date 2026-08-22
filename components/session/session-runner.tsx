@@ -63,7 +63,7 @@ type SizingMode = "time" | "count";
  * `/session` sans paramètre garde exactement le comportement d'avant.
  */
 export function SessionRunner() {
-  const { exercises, sessions, chapters, preferences, deadlines, weeklyPlan, saveSessions, saveExercises, ready } = usePrepahubData();
+  const { exercises, sessions, chapters, preferences, deadlines, weeklyPlan, saveSessions, saveExercises, saveWorkQueue, ready } = usePrepahubData();
   // Mêmes signaux que le Hero du Dashboard (Sprint Study OS Phase 4) — pour
   // que la séance montre, dès l'aperçu initial, la même sélection que celle
   // déjà annoncée sur /dashboard (sans ce partage, /session recalculerait
@@ -194,6 +194,13 @@ export function SessionRunner() {
           })
           .filter((item): item is ExerciseRecommendation => item !== null);
         if (picks.length > 0) {
+          // Transfert effectivement consommé (Sprint Study OS Phase 6) : c'est
+          // ICI, jamais côté Dashboard, que la file de travail source doit
+          // être vidée — au clic sur "Commencer ta file", elle vivait encore
+          // en sessionStorage, un état qu'une fermeture de l'app aurait pu
+          // faire disparaître avant d'arriver jusqu'ici (voir la doc de
+          // `startQueue`, dashboard-overview.tsx).
+          if (stored.source === "queue") saveWorkQueue([]);
           setPlanSelection(picks);
           setBudgetMinutes(stored.requestedMinutes);
           setPhase("preview");
@@ -213,7 +220,7 @@ export function SessionRunner() {
     const remainingToday = Math.max(0, preferences.dailyGoalMinutes - secondsToWholeMinutes(todaySeconds(sessions)));
     setBudgetMinutes(requestedMinutes ?? remainingToday);
     setPhase("preview");
-  }, [ready, exercises, sessions, preferences.dailyGoalMinutes, prioritySignals]);
+  }, [ready, exercises, sessions, preferences.dailyGoalMinutes, prioritySignals, saveWorkQueue]);
 
   /** Même banque que celle évaluée au montage (voir l'effet ci-dessus), recalculée pour l'aperçu réactif au budget. */
   const scopedExercises = useMemo(
