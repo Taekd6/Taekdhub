@@ -210,6 +210,33 @@ export interface WeeklyDayBar {
 
 const WEEKDAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
+export interface WeekDayRef {
+  dayKey: string;
+  label: string;
+  /** 0 = lundi … 6 = dimanche — même convention que `lib/storage.ts#WeeklyPlanDay`. */
+  index: number;
+  isToday: boolean;
+  isFuture: boolean;
+}
+
+/**
+ * Les 7 jours (lundi → dimanche) de la semaine CIVILE contenant `now`, avec
+ * leur `dayKey`/libellé/statut temporel — brique commune à
+ * `computeWeeklyDayBars` ci-dessous ET à `lib/weekly-plan.ts#computeWeeklyPlanRows`
+ * (Sprint Study OS Phase 4), pour ne jamais dupliquer ce découpage en 7
+ * jours : un seul endroit décide "quel jour est aujourd'hui/futur".
+ */
+export function weekDayRefs(now: Date = new Date()): WeekDayRef[] {
+  const monday = startOfWeek(now);
+  const todayKey = dayKey(now);
+  return WEEKDAY_LABELS.map((label, index) => {
+    const date = new Date(monday);
+    date.setDate(date.getDate() + index);
+    const key = dayKey(date);
+    return { dayKey: key, label, index, isToday: key === todayKey, isFuture: key > todayKey };
+  });
+}
+
 /**
  * Vue "Lun → Dim" de la semaine en cours (Sprint Study OS — "Est-ce que je
  * travaille vraiment toutes mes matières ?" généralisé à "est-ce que je
@@ -223,20 +250,8 @@ const WEEKDAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
  * comptabilisé ailleurs.
  */
 export function computeWeeklyDayBars(sessions: WorkSession[], dailyGoalMinutes: number, now: Date = new Date()): WeeklyDayBar[] {
-  const monday = startOfWeek(now);
-  const todayKey = dayKey(now);
-  return WEEKDAY_LABELS.map((label, index) => {
-    const date = new Date(monday);
-    date.setDate(date.getDate() + index);
-    const key = dayKey(date);
-    const minutes = secondsToWholeMinutes(totalSeconds(sessions.filter((session) => dayKey(session.started_at) === key)));
-    return {
-      dayKey: key,
-      label,
-      minutes,
-      isToday: key === todayKey,
-      isFuture: key > todayKey,
-      met: dailyGoalMinutes > 0 && minutes >= dailyGoalMinutes,
-    };
+  return weekDayRefs(now).map((ref) => {
+    const minutes = secondsToWholeMinutes(totalSeconds(sessions.filter((session) => dayKey(session.started_at) === ref.dayKey)));
+    return { dayKey: ref.dayKey, label: ref.label, minutes, isToday: ref.isToday, isFuture: ref.isFuture, met: dailyGoalMinutes > 0 && minutes >= dailyGoalMinutes };
   });
 }
