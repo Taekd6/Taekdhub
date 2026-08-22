@@ -1,6 +1,6 @@
 import { computeProgressBySubject } from "@/lib/progress";
-import { subjects, totalSeconds } from "@/lib/study";
-import { minutesToSeconds } from "@/lib/utils";
+import { dayKey, subjects, totalSeconds } from "@/lib/study";
+import { minutesToSeconds, secondsToWholeMinutes } from "@/lib/utils";
 import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -193,4 +193,50 @@ export function computeWeeklySummary(exercises: Exercise[], sessions: WorkSessio
     neglected: neglectedSubjects(exercises, sessions, now),
     pace: computeWeeklyPace(progressPercent, daysElapsed),
   };
+}
+
+export interface WeeklyDayBar {
+  /** Jour civil local (lib/study.ts#dayKey) — même convention que le reste de l'app, pas un jour UTC. */
+  dayKey: string;
+  /** Libellé court à 3 lettres pour l'affichage compact — Lun/Mar/Mer/Jeu/Ven/Sam/Dim, dans cet ordre. */
+  label: string;
+  minutes: number;
+  isToday: boolean;
+  /** Jour pas encore atteint dans la semaine — jamais de jugement porté dessus (voir `met`). */
+  isFuture: boolean;
+  /** Objectif quotidien atteint ce jour-là — toujours faux pour un jour futur (0 minute travaillée n'y est pas un manquement). */
+  met: boolean;
+}
+
+const WEEKDAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+/**
+ * Vue "Lun → Dim" de la semaine en cours (Sprint Study OS — "Est-ce que je
+ * travaille vraiment toutes mes matières ?" généralisé à "est-ce que je
+ * travaille régulièrement ?"). Un seul passage sur `sessions` par jour,
+ * regroupées par `dayKey` — même découpage que `groupSessionsByDay`
+ * (lib/history.ts), mais sur les 7 jours de la semaine CIVILE (lundi →
+ * dimanche, voir `startOfWeek`) plutôt que les jours les plus récents.
+ *
+ * Volontairement indépendant de `computeWeeklySummary` ci-dessus : aucun
+ * nouveau total, seulement la RÉPARTITION jour par jour d'un temps déjà
+ * comptabilisé ailleurs.
+ */
+export function computeWeeklyDayBars(sessions: WorkSession[], dailyGoalMinutes: number, now: Date = new Date()): WeeklyDayBar[] {
+  const monday = startOfWeek(now);
+  const todayKey = dayKey(now);
+  return WEEKDAY_LABELS.map((label, index) => {
+    const date = new Date(monday);
+    date.setDate(date.getDate() + index);
+    const key = dayKey(date);
+    const minutes = secondsToWholeMinutes(totalSeconds(sessions.filter((session) => dayKey(session.started_at) === key)));
+    return {
+      dayKey: key,
+      label,
+      minutes,
+      isToday: key === todayKey,
+      isFuture: key > todayKey,
+      met: dailyGoalMinutes > 0 && minutes >= dailyGoalMinutes,
+    };
+  });
 }

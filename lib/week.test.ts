@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeWeeklySummary } from "@/lib/week";
+import { computeWeeklyDayBars, computeWeeklySummary } from "@/lib/week";
 import type { Exercise, Mastery, Priority, WorkSession } from "@/lib/supabase/types";
 
 let counter = 0;
@@ -135,5 +135,53 @@ describe("computeWeeklySummary — bySubject ne montre que les matières avec du
     const subjectsPresent = summary.bySubject.map((entry) => entry.subject);
     expect(subjectsPresent).toEqual(["Physique"]);
     expect(summary.totalSeconds).toBe(600);
+  });
+});
+
+describe("computeWeeklyDayBars", () => {
+  const WEDNESDAY = new Date("2026-01-07T18:00:00.000Z"); // 2026-01-05 est un lundi
+
+  it("retourne 7 jours, Lundi à Dimanche, avec les bonnes dates civiles", () => {
+    const bars = computeWeeklyDayBars([], 60, WEDNESDAY);
+    expect(bars.map((bar) => bar.label)).toEqual(["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]);
+    expect(bars.map((bar) => bar.dayKey)).toEqual(["2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-10", "2026-01-11"]);
+  });
+
+  it("marque le jour courant et les jours futurs de la semaine", () => {
+    const bars = computeWeeklyDayBars([], 60, WEDNESDAY);
+    expect(bars.filter((bar) => bar.isToday).map((bar) => bar.dayKey)).toEqual(["2026-01-07"]);
+    expect(bars.filter((bar) => bar.isFuture).map((bar) => bar.dayKey)).toEqual(["2026-01-08", "2026-01-09", "2026-01-10", "2026-01-11"]);
+  });
+
+  it("additionne le temps travaillé par jour, toutes matières confondues", () => {
+    const sessions = [
+      makeSession({ started_at: "2026-01-05T09:00:00.000Z", duration_seconds: 20 * 60 }),
+      makeSession({ subject: "Physique", started_at: "2026-01-05T14:00:00.000Z", duration_seconds: 10 * 60 }),
+      makeSession({ started_at: "2026-01-07T09:00:00.000Z", duration_seconds: 45 * 60 }),
+    ];
+    const bars = computeWeeklyDayBars(sessions, 60, WEDNESDAY);
+    expect(bars.find((bar) => bar.dayKey === "2026-01-05")?.minutes).toBe(30);
+    expect(bars.find((bar) => bar.dayKey === "2026-01-07")?.minutes).toBe(45);
+    expect(bars.find((bar) => bar.dayKey === "2026-01-06")?.minutes).toBe(0);
+  });
+
+  it("`met` reflète l'objectif quotidien atteint ou non ce jour-là", () => {
+    const sessions = [makeSession({ started_at: "2026-01-05T09:00:00.000Z", duration_seconds: 90 * 60 })];
+    const bars = computeWeeklyDayBars(sessions, 60, WEDNESDAY);
+    expect(bars.find((bar) => bar.dayKey === "2026-01-05")?.met).toBe(true);
+    expect(bars.find((bar) => bar.dayKey === "2026-01-07")?.met).toBe(false);
+  });
+
+  it("aucun objectif configuré (0 min) : jamais `met`, même avec du temps travaillé", () => {
+    const sessions = [makeSession({ started_at: "2026-01-05T09:00:00.000Z", duration_seconds: 90 * 60 })];
+    const bars = computeWeeklyDayBars(sessions, 0, WEDNESDAY);
+    expect(bars.every((bar) => !bar.met)).toBe(true);
+  });
+
+  it("un jour futur n'est jamais marqué atteint, même à 0 minute et objectif à 0", () => {
+    const bars = computeWeeklyDayBars([], 0, WEDNESDAY);
+    const future = bars.find((bar) => bar.dayKey === "2026-01-09");
+    expect(future?.isFuture).toBe(true);
+    expect(future?.met).toBe(false);
   });
 });

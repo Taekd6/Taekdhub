@@ -10,6 +10,7 @@ import {
   BookOpenCheck,
   CalendarClock,
   CalendarRange,
+  Check,
   Clock3,
   Compass,
   Flag,
@@ -65,7 +66,7 @@ import { computeReadinessBySubject, READINESS_META } from "@/lib/readiness";
 import { estimatedDurationMinutes } from "@/lib/recommendation";
 import { subjectMeta } from "@/lib/study";
 import { formatDuration, formatMinutes } from "@/lib/utils";
-import { computeWeeklySummary, type WeeklyPace } from "@/lib/week";
+import { computeWeeklyDayBars, computeWeeklySummary, type WeeklyPace } from "@/lib/week";
 import { removeFromQueue, usableQueueEntries } from "@/lib/work-queue";
 import type { UpcomingItem } from "@/lib/next-action";
 import type { StoredPlan } from "@/lib/plan";
@@ -170,6 +171,10 @@ export function DashboardOverview() {
       weeklySummary,
       weeklyProjection,
       trajectoryBySubject,
+      // Sprint Study OS — vue "Lun → Dim" : répartition JOUR PAR JOUR d'un
+      // temps déjà comptabilisé dans `weeklySummary` ci-dessus, aucun second
+      // total (voir lib/week.ts#computeWeeklyDayBars).
+      weeklyDayBars: computeWeeklyDayBars(sessions, preferences.dailyGoalMinutes, now),
       // Micro-sprint polish UX final — phrase de pilotage du Dashboard :
       // compose uniquement ces valeurs déjà calculées ci-dessus, voir
       // lib/pilotage.ts. Aucun nouveau signal, aucune nouvelle décision.
@@ -250,6 +255,7 @@ export function DashboardOverview() {
     weeklySummary,
     weeklyProjection,
     trajectoryBySubject,
+    weeklyDayBars,
     pilotagePhrase,
     subjectPriorities,
     streak,
@@ -664,6 +670,40 @@ export function DashboardOverview() {
           </div>
         </div>
         <ProgressBar value={weeklySummary.progressPercent} className="mt-5" />
+
+        {/* Vue "Lun → Dim" (Sprint Study OS) — répartition JOUR PAR JOUR d'un
+            temps déjà compté ci-dessus (voir lib/week.ts#computeWeeklyDayBars),
+            aucun second total. ✓ objectif quotidien atteint ce jour-là, ⚠
+            sinon — un jour futur ne reçoit jamais de jugement (rien à
+            afficher). Complémentaire de la répartition par matière ci-dessous
+            (celle-ci répond "sur quoi", celle-là répond "quand"). */}
+        <div className="mt-5 flex items-end justify-between gap-1.5 border-t border-hairline/[0.06] pt-5">
+          {weeklyDayBars.map((day) => {
+            const heightPercent =
+              preferences.dailyGoalMinutes > 0
+                ? Math.min(100, Math.round((day.minutes / preferences.dailyGoalMinutes) * 100))
+                : day.minutes > 0
+                  ? 100
+                  : 0;
+            return (
+              <div key={day.dayKey} className="flex flex-1 flex-col items-center gap-1.5">
+                <div className="flex h-14 w-full items-end justify-center">
+                  <div
+                    className={cn(
+                      "w-2.5 rounded-full transition-all",
+                      day.isFuture ? "bg-hairline/[0.12]" : day.met ? "bg-emerald-400" : day.minutes > 0 ? "bg-amber-400" : "bg-hairline/[0.15]"
+                    )}
+                    style={{ height: `${Math.max(heightPercent, 6)}%` }}
+                  />
+                </div>
+                <span className="grid h-[13px] place-items-center">
+                  {!day.isFuture && (day.met ? <Check size={11} className="text-emerald-400" /> : <AlertTriangle size={11} className="text-amber-400" />)}
+                </span>
+                <span className={cn("text-2xs", day.isToday ? "font-semibold text-zinc-200" : "text-zinc-500")}>{day.label}</span>
+              </div>
+            );
+          })}
+        </div>
 
         {/* Reste de la semaine par matière (Sprint planification hebdomadaire
             adaptative) — combien reste à consacrer à chaque matière, voir
