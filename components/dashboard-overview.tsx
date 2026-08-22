@@ -165,7 +165,8 @@ export function DashboardOverview() {
       now,
       preferences.contestDate,
       preferences.subjectDeadlines,
-      prioritySignals.subjectPlanGap
+      prioritySignals.subjectPlanGap,
+      prioritySignals.chapterDeadlines
     );
     const weeklySummary = computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now);
     // Sprint trajectoire par matière — explique CE QUE `weeklyProjection`
@@ -238,7 +239,8 @@ export function DashboardOverview() {
         new Date(),
         preferences.contestDate,
         preferences.subjectDeadlines,
-        prioritySignals.subjectPlanGap
+        prioritySignals.subjectPlanGap,
+        prioritySignals.chapterDeadlines
       ),
     [exercises, sessions, chapters, planMinutes, preferences.contestDate, preferences.subjectDeadlines, prioritySignals]
   );

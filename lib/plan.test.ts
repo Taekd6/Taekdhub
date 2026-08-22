@@ -947,3 +947,32 @@ describe("computeDailyPlan / computeSubjectPriorities / computeWeeklyProjection 
     expect(withEmptyGap).toEqual(withoutArg);
   });
 });
+
+/**
+ * Sprint Study OS Phase 4 — le Plan du jour doit proposer la MÊME sélection
+ * que "À faire maintenant" (lib/next-action.ts#computeNextAction) quand une
+ * échéance de chapitre est configurée : sans ce paramètre, /session (qui
+ * réutilise computeDailyPlan en mode "par temps") pourrait diverger du
+ * Dashboard — exactement le bug détecté en direct pendant ce sprint.
+ */
+describe("computeDailyPlan — échéance de chapitre (cohérence avec computeNextAction)", () => {
+  it("sans chapterDeadlines, comportement strictement inchangé", () => {
+    const exercise = makeExercise();
+    const withoutArg = computeDailyPlan([exercise], [], [], 45, NOW);
+    const withEmptyMap = computeDailyPlan([exercise], [], [], 45, NOW, "", {}, {}, new Map());
+    expect(withEmptyMap).toEqual(withoutArg);
+  });
+
+  it("un exercice autrement absent du plan y apparaît grâce à l'échéance de son chapitre", () => {
+    // "à faire", déjà travaillé récemment, priorité/maîtrise neutres :
+    // n'apparaîtrait dans aucun bloc sans le signal (même profil que le test
+    // équivalent de lib/recommendation.test.ts).
+    const exercise = makeExercise({ subject: "Physique", chapter_id: "c-continuite", status: "à faire", priority: 2, mastery: 50, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const withoutSignal = computeDailyPlan([exercise], [], [], 45, NOW);
+    expect(withoutSignal.blocks).toHaveLength(0);
+
+    const withSignal = computeDailyPlan([exercise], [], [], 45, NOW, "", {}, {}, new Map([["c-continuite", { days: 2, label: "ton DS de Physique dans 2 j" }]]));
+    expect(withSignal.blocks.length).toBeGreaterThan(0);
+    expect(withSignal.blocks[0].picks[0].exercise.id).toBe(exercise.id);
+  });
+});

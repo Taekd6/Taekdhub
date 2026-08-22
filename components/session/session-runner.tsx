@@ -13,6 +13,7 @@ import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix, findRecoverableCheckpoint, type RecoveredTimerSeed } from "@/hooks/use-work-timer";
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { chapterDeadlineSignals } from "@/lib/deadlines";
 import { findPersistedFocusDraft } from "@/lib/focus-draft";
 import { computeNextAction } from "@/lib/next-action";
 import { computeDailyPlan, PLAN_STORAGE_KEY, summarizePlanObjective, type StoredPlan } from "@/lib/plan";
@@ -20,6 +21,7 @@ import { computeProgressBySubject, type SubjectProgress } from "@/lib/progress";
 import { cn } from "@/lib/cn";
 import { subjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
+import { planGapMinutesBySubject } from "@/lib/weekly-plan";
 import type { AttemptResult, Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
 type Phase = "loading" | "empty" | "preview" | "focus" | "between" | "consolidate-prompt" | "summary";
@@ -61,7 +63,16 @@ type SizingMode = "time" | "count";
  * `/session` sans paramètre garde exactement le comportement d'avant.
  */
 export function SessionRunner() {
-  const { exercises, sessions, chapters, preferences, saveSessions, saveExercises, ready } = usePrepahubData();
+  const { exercises, sessions, chapters, preferences, deadlines, weeklyPlan, saveSessions, saveExercises, ready } = usePrepahubData();
+  // Mêmes signaux que le Hero du Dashboard (Sprint Study OS Phase 4) — pour
+  // que la séance montre, dès l'aperçu initial, la même sélection que celle
+  // déjà annoncée sur /dashboard (sans ce partage, /session recalculerait
+  // "à faire maintenant" sans connaître les échéances/le plan hebdomadaire,
+  // risquant de proposer un exercice différent de celui vu juste avant).
+  const prioritySignals = useMemo(
+    () => ({ chapterDeadlines: chapterDeadlineSignals(deadlines), subjectPlanGap: planGapMinutesBySubject(weeklyPlan, sessions) }),
+    [deadlines, weeklyPlan, sessions]
+  );
   const [phase, setPhase] = useState<Phase>("loading");
   const [recommendations, setRecommendations] = useState<ExerciseRecommendation[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -193,7 +204,7 @@ export function SessionRunner() {
       }
     }
 
-    const hasAnyEligible = computeExerciseBankStats(scoped, sessions).toReviewCount > 0;
+    const hasAnyEligible = computeExerciseBankStats(scoped, sessions, new Date(), prioritySignals).toReviewCount > 0;
     if (!hasAnyEligible) {
       setPhase("empty");
       return;
@@ -202,7 +213,7 @@ export function SessionRunner() {
     const remainingToday = Math.max(0, preferences.dailyGoalMinutes - secondsToWholeMinutes(todaySeconds(sessions)));
     setBudgetMinutes(requestedMinutes ?? remainingToday);
     setPhase("preview");
-  }, [ready, exercises, sessions, preferences.dailyGoalMinutes]);
+  }, [ready, exercises, sessions, preferences.dailyGoalMinutes, prioritySignals]);
 
   /** Même banque que celle évaluée au montage (voir l'effet ci-dessus), recalculée pour l'aperçu réactif au budget. */
   const scopedExercises = useMemo(
@@ -218,8 +229,21 @@ export function SessionRunner() {
   // restriction `?subject=` éventuelle : un seul bloc en ressort dans ce cas,
   // comportement identique à avant.
   const dailyPlan = useMemo(
-    () => (sizingMode === "time" ? computeDailyPlan(scopedExercises, sessions, chapters, budgetMinutes, new Date(), preferences.contestDate) : null),
-    [sizingMode, scopedExercises, sessions, chapters, budgetMinutes, preferences.contestDate]
+    () =>
+      sizingMode === "time"
+        ? computeDailyPlan(
+            scopedExercises,
+            sessions,
+            chapters,
+            budgetMinutes,
+            new Date(),
+            preferences.contestDate,
+            {},
+            prioritySignals.subjectPlanGap,
+            prioritySignals.chapterDeadlines
+          )
+        : null,
+    [sizingMode, scopedExercises, sessions, chapters, budgetMinutes, preferences.contestDate, prioritySignals]
   );
 
   // Aperçu recalculé en direct à chaque changement de budget/mode — l'aperçu
@@ -228,8 +252,11 @@ export function SessionRunner() {
   // matière ne fait pas de sens à répartir en blocs), `limit` (le nombre
   // choisi) suffit, même paramètre que le "top N" déjà utilisé ailleurs.
   const computedSelection = useMemo(
-    () => (sizingMode === "count" ? recommendExercises(scopedExercises, sessions, countTarget) : (dailyPlan?.blocks.flatMap((block) => block.picks) ?? [])),
-    [sizingMode, scopedExercises, sessions, countTarget, dailyPlan]
+    () =>
+      sizingMode === "count"
+        ? recommendExercises(scopedExercises, sessions, countTarget, prioritySignals)
+        : (dailyPlan?.blocks.flatMap((block) => block.picks) ?? []),
+    [sizingMode, scopedExercises, sessions, countTarget, dailyPlan, prioritySignals]
   );
   const previewSelection = planSelection ?? computedSelection;
   const previewMinutesUsed = useMemo(
@@ -245,8 +272,8 @@ export function SessionRunner() {
   // d'apprendre de ses résultats plutôt que de forcer un aller-retour par
   // /dashboard pour le constater.
   const upcomingNextAction = useMemo(
-    () => computeNextAction(exercises, sessions, preferences.dailyGoalMinutes),
-    [exercises, sessions, preferences.dailyGoalMinutes]
+    () => computeNextAction(exercises, sessions, preferences.dailyGoalMinutes, new Date(), prioritySignals),
+    [exercises, sessions, preferences.dailyGoalMinutes, prioritySignals]
   );
 
   // "TaekdHub a appris" (Phase 5) : le chapitre le plus fragile durant CETTE

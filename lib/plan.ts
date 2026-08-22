@@ -1,4 +1,5 @@
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import type { ChapterDeadlineSignal } from "@/lib/deadlines";
 import { progressByChapter } from "@/lib/progress";
 import { startOfWeek, weekBounds, weeklyTimeBySubject } from "@/lib/week";
 import { subjects } from "@/lib/study";
@@ -96,14 +97,28 @@ interface SubjectSignal {
 
 const FAILURE_WINDOW_DAYS = 14;
 
-function computeSubjectSignals(exercises: Exercise[], sessions: WorkSession[], now: Date): SubjectSignal[] {
+/**
+ * `chapterDeadlines` (Sprint Study OS Phase 4, optionnel, `Map` vide par
+ * défaut — comportement strictement inchangé sans lui) : une matière dont le
+ * SEUL exercice signalable dépend d'une échéance de chapitre doit devenir
+ * `eligible` elle aussi, sinon `allocateMinutesBySubject` ne lui accorderait
+ * jamais aucune minute et l'exercice n'apparaîtrait jamais dans aucun bloc,
+ * quel que soit ce qu'on passerait plus tard à `recommendExercises` (voir
+ * `computeDailyPlan`, qui a révélé ce cas en pratique).
+ */
+function computeSubjectSignals(
+  exercises: Exercise[],
+  sessions: WorkSession[],
+  now: Date,
+  chapterDeadlines: Map<string, ChapterDeadlineSignal> = new Map()
+): SubjectSignal[] {
   const active = exercises.filter((exercise) => !exercise.archived);
   const recentBySubject = weeklyTimeBySubject(sessions, now);
   const failureCutoff = now.getTime() - FAILURE_WINDOW_DAYS * 86400000;
 
   return subjects.map((subject) => {
     const subjectExercises = active.filter((exercise) => exercise.subject === subject);
-    const stats = computeExerciseBankStats(subjectExercises, sessions, now);
+    const stats = computeExerciseBankStats(subjectExercises, sessions, now, { chapterDeadlines });
     const recentMinutes = secondsToWholeMinutes(recentBySubject.find((entry) => entry.subject === subject)?.seconds ?? 0);
     const recentFailures = sessions.filter(
       (session) => session.subject === subject && session.result === "échoué" && new Date(session.started_at).getTime() >= failureCutoff
@@ -352,6 +367,12 @@ const PICKS_PER_BLOCK_LIMIT = 6;
  * même garantie de comportement inchangé) : retard par matière sur le plan
  * hebdomadaire (voir `lib/weekly-plan.ts#planGapMinutesBySubject`), un signal
  * de plus parmi ceux déjà combinés par `subjectWeight`, jamais dominant seul.
+ * `chapterDeadlines` (Sprint Study OS Phase 4, optionnel, `Map` vide par
+ * défaut) : transmis tel quel à `recommendExercises` pour CHAQUE bloc, pour
+ * que le Plan du jour propose la même sélection qu'un affichage de "À faire
+ * maintenant" avec les mêmes échéances configurées — sans ce paramètre,
+ * `/session` (qui réutilise `computeDailyPlan` en mode "par temps") pourrait
+ * proposer un exercice différent de celui déjà annoncé sur le Dashboard.
  */
 export function computeDailyPlan(
   exercises: Exercise[],
@@ -361,9 +382,10 @@ export function computeDailyPlan(
   now: Date = new Date(),
   contestDate: string = "",
   subjectDeadlines: Partial<Record<Subject, string>> = {},
-  subjectPlanGap: Partial<Record<Subject, number>> = {}
+  subjectPlanGap: Partial<Record<Subject, number>> = {},
+  chapterDeadlines: Map<string, ChapterDeadlineSignal> = new Map()
 ): DailyPlan {
-  const signals = computeSubjectSignals(exercises, sessions, now);
+  const signals = computeSubjectSignals(exercises, sessions, now, chapterDeadlines);
   const allocation = allocateMinutesBySubject(signals, totalMinutes, contestDate, subjectDeadlines, now, subjectPlanGap);
   const chapterById = new Map(chapters.map((chapter) => [chapter.id, chapter]));
   const active = exercises.filter((exercise) => !exercise.archived);
@@ -374,7 +396,7 @@ export function computeDailyPlan(
   for (const subject of orderedSubjects) {
     const minutes = allocation.get(subject)!;
     const subjectExercises = active.filter((exercise) => exercise.subject === subject);
-    const picks = recommendExercises(subjectExercises, sessions, PICKS_PER_BLOCK_LIMIT, { now, availableMinutes: minutes });
+    const picks = recommendExercises(subjectExercises, sessions, PICKS_PER_BLOCK_LIMIT, { now, availableMinutes: minutes, chapterDeadlines });
     if (picks.length === 0) continue;
 
     const estimatedMinutes = picks.reduce((sum, { exercise }) => sum + estimatedDurationMinutes(exercise, sessions), 0);
@@ -584,7 +606,8 @@ export function computeWeeklyProjection(
   now: Date = new Date(),
   contestDate: string = "",
   subjectDeadlines: Partial<Record<Subject, string>> = {},
-  subjectPlanGap: Partial<Record<Subject, number>> = {}
+  subjectPlanGap: Partial<Record<Subject, number>> = {},
+  chapterDeadlines: Map<string, ChapterDeadlineSignal> = new Map()
 ): WeeklyProjection {
   // Même calcul que lib/week.ts#computeWeeklySummary (toutes matières, somme
   // en secondes avant conversion en minutes) — pour ne jamais diverger, même
@@ -594,7 +617,7 @@ export function computeWeeklyProjection(
   const remainingMinutes = Math.max(0, weeklyGoalMinutes - workedMinutes);
   const met = weeklyGoalMinutes > 0 && remainingMinutes === 0;
 
-  const signals = computeSubjectSignals(exercises, sessions, now);
+  const signals = computeSubjectSignals(exercises, sessions, now, chapterDeadlines);
   const allocation = allocateMinutesBySubject(signals, remainingMinutes, contestDate, subjectDeadlines, now, subjectPlanGap);
   const bySubject = [...allocation.entries()]
     .sort((a, b) => b[1] - a[1])
