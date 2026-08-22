@@ -25,13 +25,14 @@ import { createExerciseFromInput } from "@/lib/exercise-import";
 import { findPersistedFocusDraft } from "@/lib/focus-draft";
 import type { Chapter } from "@/lib/storage";
 import { minutesByExerciseMap } from "@/lib/study";
+import { addToQueue, removeFromQueue } from "@/lib/work-queue";
 import { cn } from "@/lib/cn";
 import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
 type ViewMode = "cards" | "list";
 
 export function ExerciseManager() {
-  const { exercises, saveExercises, sessions, saveSessions, chapters, saveChapters, ready } = usePrepahubData();
+  const { exercises, saveExercises, sessions, saveSessions, chapters, saveChapters, workQueue, saveWorkQueue, ready } = usePrepahubData();
   const [filters, setFilters] = useState<ExerciseFilters>(defaultExerciseFilters);
   // Vrai tant que l'utilisateur parcourt la hiérarchie Matière → Chapitre
   // (ExerciseBrowser) sans avoir encore demandé de résultats précis : la
@@ -116,6 +117,24 @@ export function ExerciseManager() {
   useEffect(() => {
     chaptersRef.current = chapters;
   }, [chapters]);
+
+  // Même pattern pour `workQueue` (voir `exercisesRef` ci-dessus) — évite une
+  // dépendance directe à `workQueue` dans `toggleQueue`, ce qui garderait son
+  // identité stable pour React.memo (ExerciseCard/ExerciseListRow).
+  const workQueueRef = useRef(workQueue);
+  useEffect(() => {
+    workQueueRef.current = workQueue;
+  }, [workQueue]);
+  const queueIds = useMemo(() => new Set(workQueue.map((item) => item.exerciseId)), [workQueue]);
+  const toggleQueue = useCallback(
+    (id: string) => {
+      const alreadyQueued = workQueueRef.current.some((item) => item.exerciseId === id);
+      const next = alreadyQueued ? removeFromQueue(workQueueRef.current, id) : addToQueue(workQueueRef.current, id);
+      workQueueRef.current = next;
+      saveWorkQueue(next);
+    },
+    [saveWorkQueue]
+  );
 
   // `updated_at` est maintenu automatiquement ici, pour toute modification,
   // plutôt que d'être géré au cas par cas par chaque appelant.
@@ -457,10 +476,12 @@ export function ExerciseManager() {
                   minutesSpent={minutesMap.get(item.id) ?? 0}
                   chapters={chapters}
                   sessions={sessions}
+                  inQueue={queueIds.has(item.id)}
                   onToggle={toggleSelected}
                   onUpdate={update}
                   onFocus={enterFocus}
                   onArchive={archiveExercise}
+                  onToggleQueue={toggleQueue}
                   onCreateChapter={handleCreateChapter}
                   onRenameChapter={handleRenameChapter}
                   onRemoveChapter={handleRemoveChapter}
@@ -473,10 +494,12 @@ export function ExerciseManager() {
                   minutesSpent={minutesMap.get(item.id) ?? 0}
                   chapters={chapters}
                   sessions={sessions}
+                  inQueue={queueIds.has(item.id)}
                   onToggle={toggleSelected}
                   onUpdate={update}
                   onFocus={enterFocus}
                   onArchive={archiveExercise}
+                  onToggleQueue={toggleQueue}
                   onCreateChapter={handleCreateChapter}
                   onRenameChapter={handleRenameChapter}
                   onRemoveChapter={handleRemoveChapter}

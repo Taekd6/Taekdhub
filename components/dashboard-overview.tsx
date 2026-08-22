@@ -17,10 +17,12 @@ import {
   GraduationCap,
   History as HistoryIcon,
   ListChecks,
+  ListPlus,
   ListTodo,
   Sparkles,
   Target,
   Trophy,
+  X,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
@@ -60,10 +62,13 @@ import {
 import { computePilotagePhrase } from "@/lib/pilotage";
 import { computeProgressBySubject } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META } from "@/lib/readiness";
+import { estimatedDurationMinutes } from "@/lib/recommendation";
 import { subjectMeta } from "@/lib/study";
 import { formatDuration, formatMinutes } from "@/lib/utils";
 import { computeWeeklySummary, type WeeklyPace } from "@/lib/week";
+import { removeFromQueue, usableQueueEntries } from "@/lib/work-queue";
 import type { UpcomingItem } from "@/lib/next-action";
+import type { StoredPlan } from "@/lib/plan";
 
 const UPCOMING_META: Record<UpcomingItem["key"], { label: string; icon: typeof BookOpenCheck }> = {
   chapter: { label: "Chapitre à consolider", icon: BookOpenCheck },
@@ -123,7 +128,7 @@ function deadlineLabel(deadlineDays: number): string {
  * dans ce composant, uniquement de la présentation et de la navigation.
  */
 export function DashboardOverview() {
-  const { sessions, exercises, chapters, preferences, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, preferences, workQueue, saveWorkQueue, ready } = usePrepahubData();
   const router = useRouter();
   /** Durée choisie pour "Plan du jour" — état purement local à cette page, jamais persisté (voir Phase 3 du sprint : pas de système de calendrier). */
   const [planMinutes, setPlanMinutes] = useState<number>(DEFAULT_PLAN_MINUTES);
@@ -199,6 +204,28 @@ export function DashboardOverview() {
     sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(serializePlan(dailyPlan)));
     router.push("/session");
   }, [dailyPlan, router]);
+
+  // File de travail (Sprint Study OS — "Je choisis mon travail") : une
+  // sélection manuelle, distincte du Plan du jour ci-dessus (automatique).
+  // Résolue contre la banque actuelle à chaque rendu (voir
+  // lib/work-queue.ts#usableQueueEntries) pour ne jamais afficher un exercice
+  // supprimé ou archivé depuis son ajout.
+  const queueEntries = useMemo(() => usableQueueEntries(workQueue, exercises), [workQueue, exercises]);
+  const removeFromWorkQueue = useCallback((id: string) => saveWorkQueue(removeFromQueue(workQueue, id)), [workQueue, saveWorkQueue]);
+  // Même transport que `startPlan` (PLAN_STORAGE_KEY/StoredPlan) : /session ne
+  // fait aucune différence entre un plan automatique et une file choisie à la
+  // main, le Focus reste l'unique moteur d'exécution. La file est vidée au
+  // moment du départ — son rôle s'arrête là, comme le Plan du jour, jamais un
+  // second état persistant à faire vivre en parallèle de la séance.
+  const startQueue = useCallback(() => {
+    const stored: StoredPlan = {
+      items: queueEntries.map(({ exercise }) => ({ exerciseId: exercise.id, reasons: ["Ajouté à ta file de travail"] })),
+      requestedMinutes: queueEntries.reduce((total, { exercise }) => total + estimatedDurationMinutes(exercise, sessions), 0),
+    };
+    sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(stored));
+    saveWorkQueue([]);
+    router.push("/session");
+  }, [queueEntries, sessions, saveWorkQueue, router]);
 
   if (!ready) {
     return (
@@ -410,6 +437,41 @@ export function DashboardOverview() {
           </>
         )}
       </Card>
+
+      {/* FILE DE TRAVAIL — sélection manuelle (voir "Ajouter à la file de travail" sur chaque exercice), distincte du Plan du jour ci-dessus. Masquée quand vide : pas de carte à faire disparaître par défaut, rien à décider tant que rien n'a été choisi. */}
+      {queueEntries.length > 0 && (
+        <Card className="p-6 sm:p-7">
+          <div className="flex items-center gap-2">
+            <ListPlus size={14} className="text-accent-text" />
+            <div>
+              <p className="eyebrow">File de travail</p>
+              <CardTitle className="mt-1 text-lg">Ta sélection, dans l&apos;ordre</CardTitle>
+            </div>
+          </div>
+          <ol className="mt-5 space-y-2.5">
+            {queueEntries.map(({ exercise }, index) => (
+              <li key={exercise.id} className="flex items-center gap-3 rounded-xl border border-hairline/[0.06] p-3.5 text-sm">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent-text">{index + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
+                  <p className="mt-0.5 text-xs text-zinc-500">{exercise.subject}</p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => removeFromWorkQueue(exercise.id)} aria-label="Retirer de la file" className="h-8 w-8 shrink-0">
+                  <X size={15} />
+                </Button>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.06] pt-5">
+            <p className="text-sm text-zinc-400">
+              {queueEntries.length} exercice{queueEntries.length > 1 ? "s" : ""} choisi{queueEntries.length > 1 ? "s" : ""}
+            </p>
+            <Button onClick={startQueue}>
+              Commencer <ArrowRight size={16} />
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* PRIORITÉS DE LA SEMAINE — "pourquoi" : juste après le plan, avant les chiffres d'état ("où j'en suis" ci-dessous), pour rester dans l'ordre de lecture quoi → pourquoi → où j'en suis → comment (voir la doc du composant). */}
       {subjectPriorities.length > 0 && (

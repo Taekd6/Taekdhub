@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { memo } from "react";
-import { Archive, ChevronDown, Heart, Maximize2 } from "lucide-react";
+import { Archive, ChevronDown, Heart, ListPlus, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
@@ -21,11 +21,14 @@ interface ExerciseCardProps {
   chapters: Chapter[];
   /** Pour la section "Séances" de ExerciseDetail (Sprint 3F) — non utilisé ici directement, simple passage. */
   sessions: WorkSession[];
+  /** Déjà présent dans la file de travail (Sprint Study OS) — voir lib/work-queue.ts. */
+  inQueue: boolean;
   /** Callbacks stables (identité constante) fournis par le manager — condition pour que React.memo évite les re-renders inutiles sur une banque de centaines d'exercices. */
   onToggle: (id: string) => void;
   onUpdate: (id: string, patch: Partial<Exercise>) => void;
   onFocus: (id: string) => void;
   onArchive: (id: string) => void;
+  onToggleQueue: (id: string) => void;
   onCreateChapter: (subject: Subject, label: string) => Chapter;
   onRenameChapter: (id: string, label: string) => void;
   onRemoveChapter: (id: string) => void;
@@ -38,10 +41,12 @@ function ExerciseCardImpl({
   minutesSpent,
   chapters,
   sessions,
+  inQueue,
   onToggle,
   onUpdate,
   onFocus,
   onArchive,
+  onToggleQueue,
   onCreateChapter,
   onRenameChapter,
   onRemoveChapter,
@@ -79,6 +84,16 @@ function ExerciseCardImpl({
           <StatusSelect value={item.status} onChange={(status: ExerciseStatus) => onUpdate(item.id, { status })} />
           <Button variant="ghost" size="icon" onClick={() => onUpdate(item.id, { favorite: !item.favorite })} aria-label={item.favorite ? "Retirer des favoris" : "Ajouter aux favoris"} className={cn("h-10 w-10", item.favorite && "text-rose-300")}>
             <Heart size={18} fill={item.favorite ? "currentColor" : "none"} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onToggleQueue(item.id)}
+            aria-label={inQueue ? "Retirer de la file de travail" : "Ajouter à la file de travail"}
+            aria-pressed={inQueue}
+            className={cn("h-10 w-10", inQueue && "text-accent-text")}
+          >
+            <ListPlus size={18} />
           </Button>
           {selected && (
             <Button variant="ghost" size="icon" onClick={() => onFocus(item.id)} aria-label="Mode focus" className="h-10 w-10">
