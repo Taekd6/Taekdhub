@@ -51,7 +51,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr" className={inter.variable}>
+    // `suppressHydrationWarning` : `THEME_INIT_SCRIPT` ci-dessus mute
+    // délibérément `style`/`data-theme` sur CET élément avant l'hydratation
+    // React (pour éviter un flash de thème/accent par défaut) — React ne doit
+    // jamais tenter de "corriger" cette divergence ni la signaler en erreur
+    // console, c'est le même principe que les bibliothèques de thème
+    // (ex. next-themes) recommandent pour ce cas précis. Ne s'applique qu'à
+    // CET élément, jamais à ses enfants.
+    <html lang="fr" className={inter.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
