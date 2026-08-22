@@ -875,3 +875,75 @@ describe("computeDailyPlan — non-régression (Sprint trajectoire par matière 
     expect(plan.blocks.every((block) => block.minutes > 0)).toBe(true);
   });
 });
+
+/**
+ * Sprint Study OS Phase 4 — retard sur le plan hebdomadaire, 3e paramètre de
+ * `subjectWeight`. Mêmes garanties que la section échéance ci-dessus : sans
+ * `planGapBonus`, comportement strictement inchangé (paramètre par défaut à 0).
+ */
+describe("subjectWeight — retard sur le plan hebdomadaire (conservation des autres signaux)", () => {
+  function makeSignal(overrides: Partial<Parameters<typeof subjectWeight>[0]> = {}) {
+    return {
+      subject: "Mathématiques" as Subject,
+      total: 10,
+      eligible: true,
+      averageMastery: 50,
+      recentMinutes: 0,
+      recentFailures: 0,
+      hasPending: true,
+      hasEngagement: true,
+      ...overrides,
+    };
+  }
+
+  it("sans 3e argument, le poids est identique à avant ce sprint", () => {
+    const signal = makeSignal({ recentFailures: 2 });
+    expect(subjectWeight(signal, 3)).toBe(subjectWeight(signal, 3, 0));
+  });
+
+  it("un retard AJOUTE au poids sans jamais faire disparaître les signaux existants", () => {
+    const signal = makeSignal({ recentFailures: 2 });
+    const withoutGap = subjectWeight(signal, null, 0);
+    const withGap = subjectWeight(signal, null, 15);
+    expect(withGap).toBe(withoutGap + 15);
+  });
+
+  it("un retard négatif ou nul n'est jamais passé (c'est à l'appelant de ne fournir que des bonus ≥ 0, déjà garantis par planGapMinutesBySubject) — 0 n'ajoute rien", () => {
+    const signal = makeSignal();
+    expect(subjectWeight(signal, null, 0)).toBe(subjectWeight(signal, null));
+  });
+});
+
+describe("computeDailyPlan / computeSubjectPriorities / computeWeeklyProjection — retard sur le plan hebdomadaire", () => {
+  it("computeDailyPlan : sans subjectPlanGap, comportement strictement inchangé", () => {
+    const exercise = makeExercise();
+    const withoutArg = computeDailyPlan([exercise], [], [], 45, NOW);
+    const withEmptyGap = computeDailyPlan([exercise], [], [], 45, NOW, "", {}, {});
+    expect(withEmptyGap).toEqual(withoutArg);
+  });
+
+  it("computeDailyPlan : une matière en retard sur son plan reçoit davantage de temps qu'une matière équivalente sans retard", () => {
+    const physique = makeExercise({ subject: "Physique", mastery: 50, estimated_minutes: 15 });
+    const chimie = makeExercise({ subject: "Chimie", mastery: 50, estimated_minutes: 15 });
+    const withoutGap = computeDailyPlan([physique, chimie], [], [], 60, NOW);
+    const withGap = computeDailyPlan([physique, chimie], [], [], 60, NOW, "", {}, { Physique: 90 });
+    const physiqueBefore = withoutGap.blocks.find((b) => b.subject === "Physique")?.minutes ?? 0;
+    const physiqueAfter = withGap.blocks.find((b) => b.subject === "Physique")?.minutes ?? 0;
+    expect(physiqueAfter).toBeGreaterThan(physiqueBefore);
+  });
+
+  it("computeSubjectPriorities : une raison \"en retard sur ton plan\" apparaît uniquement quand le retard contribue réellement au poids", () => {
+    const exercise = makeExercise({ subject: "Physique", mastery: 50 });
+    const without = computeSubjectPriorities([exercise], [], [], NOW);
+    const withGap = computeSubjectPriorities([exercise], [], [], NOW, "", {}, { Physique: 90 });
+    expect(without.find((p) => p.subject === "Physique")?.reason).not.toContain("en retard sur ton plan");
+    expect(withGap.find((p) => p.subject === "Physique")?.reason).toContain("en retard sur ton plan");
+  });
+
+  it("computeWeeklyProjection : sans subjectPlanGap, comportement strictement inchangé", () => {
+    const exercise = makeExercise();
+    const withoutArg = computeWeeklyProjection([exercise], [], 300, NOW);
+    const withEmptyGap = computeWeeklyProjection([exercise], [], 300, NOW, "", {}, {});
+    expect(withEmptyGap).toEqual(withoutArg);
+  });
+});

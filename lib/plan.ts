@@ -224,12 +224,27 @@ function hasSpecificSubjectDeadline(subject: Subject, subjectDeadlines: Partial<
  * juste un modulateur global appliqué à chaque matière selon sa propre
  * faiblesse — voir `contestUrgencyBonus`.
  */
-export function subjectWeight(signal: SubjectSignal, contestDays: number | null = null): number {
+export function subjectWeight(signal: SubjectSignal, contestDays: number | null = null, planGapBonus: number = 0): number {
   const weakness = (100 - signal.averageMastery) * WEAKNESS_WEIGHT;
   const neglect = Math.max(0, NEGLECT_CAP - (signal.recentMinutes / NEGLECT_REFERENCE_MINUTES) * NEGLECT_CAP);
   const failure = Math.min(FAILURE_CAP, signal.recentFailures * FAILURE_PER_UNIT);
   const contestUrgency = contestUrgencyBonus(signal.averageMastery, contestDays);
-  return weakness + neglect + failure + contestUrgency;
+  return weakness + neglect + failure + contestUrgency + planGapBonus;
+}
+
+/**
+ * 0-25 : plus le retard (minutes) sur le plan hebdomadaire est grand, plus le
+ * poids grimpe — même ordre de grandeur que `NEGLECT_CAP`/`FAILURE_CAP`
+ * (Sprint Study OS Phase 4). Nul sans plan configuré pour cette matière (voir
+ * `lib/weekly-plan.ts#planGapMinutesBySubject`, qui n'émet un retard que si un
+ * plan existe) — comportement strictement inchangé pour tout appelant qui ne
+ * fournit pas ce paramètre.
+ */
+const PLAN_GAP_WEIGHT_CAP = 25;
+const PLAN_GAP_WEIGHT_PER_MINUTE = 0.5;
+function planAdherenceBonus(gapMinutes: number): number {
+  if (gapMinutes <= 0) return 0;
+  return Math.min(PLAN_GAP_WEIGHT_CAP, gapMinutes * PLAN_GAP_WEIGHT_PER_MINUTE);
 }
 
 /** En dessous de ce nombre de minutes, un bloc matière est trop court pour être utile — mieux vaut l'éliminer et redistribuer que de fragmenter le plan. */
@@ -255,13 +270,17 @@ function allocateMinutesBySubject(
   totalMinutes: number,
   contestDate: string,
   subjectDeadlines: Partial<Record<Subject, string>>,
-  now: Date
+  now: Date,
+  subjectPlanGap: Partial<Record<Subject, number>> = {}
 ): Map<Subject, number> {
   const pool = signals
     .filter((signal) => signal.eligible)
     .map((signal) => ({
       subject: signal.subject,
-      weight: Math.max(MIN_ELIGIBLE_WEIGHT, subjectWeight(signal, subjectDeadlineDays(signal.subject, subjectDeadlines, contestDate, now))),
+      weight: Math.max(
+        MIN_ELIGIBLE_WEIGHT,
+        subjectWeight(signal, subjectDeadlineDays(signal.subject, subjectDeadlines, contestDate, now), planAdherenceBonus(subjectPlanGap[signal.subject] ?? 0))
+      ),
     }));
   if (pool.length === 0 || totalMinutes <= 0) return new Map();
   if (pool.length === 1) return new Map([[pool[0].subject, totalMinutes]]);
@@ -329,6 +348,10 @@ const PICKS_PER_BLOCK_LIMIT = 6;
  * `subjectDeadlines` (optionnel, `{}` par défaut — même garantie de
  * comportement inchangé) : échéance par matière, prioritaire sur `contestDate`
  * pour la matière concernée (voir `subjectDeadlineDays`).
+ * `subjectPlanGap` (Sprint Study OS Phase 4, optionnel, `{}` par défaut —
+ * même garantie de comportement inchangé) : retard par matière sur le plan
+ * hebdomadaire (voir `lib/weekly-plan.ts#planGapMinutesBySubject`), un signal
+ * de plus parmi ceux déjà combinés par `subjectWeight`, jamais dominant seul.
  */
 export function computeDailyPlan(
   exercises: Exercise[],
@@ -337,10 +360,11 @@ export function computeDailyPlan(
   totalMinutes: number,
   now: Date = new Date(),
   contestDate: string = "",
-  subjectDeadlines: Partial<Record<Subject, string>> = {}
+  subjectDeadlines: Partial<Record<Subject, string>> = {},
+  subjectPlanGap: Partial<Record<Subject, number>> = {}
 ): DailyPlan {
   const signals = computeSubjectSignals(exercises, sessions, now);
-  const allocation = allocateMinutesBySubject(signals, totalMinutes, contestDate, subjectDeadlines, now);
+  const allocation = allocateMinutesBySubject(signals, totalMinutes, contestDate, subjectDeadlines, now, subjectPlanGap);
   const chapterById = new Map(chapters.map((chapter) => [chapter.id, chapter]));
   const active = exercises.filter((exercise) => !exercise.archived);
 
@@ -425,7 +449,8 @@ export function computeSubjectPriorities(
   chapters: Chapter[],
   now: Date = new Date(),
   contestDate: string = "",
-  subjectDeadlines: Partial<Record<Subject, string>> = {}
+  subjectDeadlines: Partial<Record<Subject, string>> = {},
+  subjectPlanGap: Partial<Record<Subject, number>> = {}
 ): SubjectPriority[] {
   const signals = computeSubjectSignals(exercises, sessions, now).filter((signal) => signal.total > 0);
   // Chapitre le plus faible par matière (lib/progress.ts), pour le libellé "Matière — Chapitre" — même source que lib/next-action.ts#computeUpcoming, jamais un second calcul de "chapitre le plus faible".
@@ -460,6 +485,12 @@ export function computeSubjectPriorities(
       if (contestUrgencyBonus(signal.averageMastery, deadlineDays) > 0) {
         reasons.push(hasSpecificSubjectDeadline(signal.subject, subjectDeadlines, now) ? "échéance proche" : "concours proche");
       }
+      // Retard sur le plan hebdomadaire (Sprint Study OS Phase 4) : même
+      // garde que ci-dessus — n'affiche la raison que si elle contribue
+      // réellement au poids (voir `planAdherenceBonus`), jamais une mention
+      // déconnectée du classement effectif.
+      const planGap = subjectPlanGap[signal.subject] ?? 0;
+      if (planAdherenceBonus(planGap) > 0) reasons.push("en retard sur ton plan");
 
       let level: SubjectPriorityLevel;
       if (signal.recentFailures >= 2 || (signal.hasEngagement && signal.averageMastery < 35)) level = "critique";
@@ -472,7 +503,7 @@ export function computeSubjectPriorities(
         label: chapterLabel ? `${signal.subject} — ${chapterLabel}` : signal.subject,
         level,
         reason: reasons.length > 0 ? reasons.join(" + ") : "progression correcte",
-        weight: subjectWeight(signal, deadlineDays),
+        weight: subjectWeight(signal, deadlineDays, planAdherenceBonus(planGap)),
       };
     })
     .sort((a, b) => b.weight - a.weight)
@@ -552,7 +583,8 @@ export function computeWeeklyProjection(
   weeklyGoalMinutes: number,
   now: Date = new Date(),
   contestDate: string = "",
-  subjectDeadlines: Partial<Record<Subject, string>> = {}
+  subjectDeadlines: Partial<Record<Subject, string>> = {},
+  subjectPlanGap: Partial<Record<Subject, number>> = {}
 ): WeeklyProjection {
   // Même calcul que lib/week.ts#computeWeeklySummary (toutes matières, somme
   // en secondes avant conversion en minutes) — pour ne jamais diverger, même
@@ -563,7 +595,7 @@ export function computeWeeklyProjection(
   const met = weeklyGoalMinutes > 0 && remainingMinutes === 0;
 
   const signals = computeSubjectSignals(exercises, sessions, now);
-  const allocation = allocateMinutesBySubject(signals, remainingMinutes, contestDate, subjectDeadlines, now);
+  const allocation = allocateMinutesBySubject(signals, remainingMinutes, contestDate, subjectDeadlines, now, subjectPlanGap);
   const bySubject = [...allocation.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([subject, minutes]) => ({
