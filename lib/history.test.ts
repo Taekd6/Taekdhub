@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { recentDaySummaries } from "@/lib/history";
+import { groupSessionsByDay, recentDaySummaries } from "@/lib/history";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 function makeSession(overrides: Partial<WorkSession> = {}): WorkSession {
@@ -46,5 +46,49 @@ describe("recentDaySummaries", () => {
     );
     const days = recentDaySummaries(sessions, NOW, 3);
     expect(days).toHaveLength(3);
+  });
+});
+
+/**
+ * Sprint poste de pilotage — répond directement à "sur quoi ai-je travaillé
+ * mardi ?" en regroupant l'historique par jour civil, plutôt qu'une liste
+ * chronologique plate à parcourir séance par séance.
+ */
+describe("groupSessionsByDay", () => {
+  it("aucune séance : aucun groupe", () => {
+    expect(groupSessionsByDay([], NOW)).toEqual([]);
+  });
+
+  it("regroupe les séances du même jour civil ensemble, dans l'ordre d'apparition", () => {
+    const sessions = [
+      makeSession({ id: "s1", started_at: "2026-08-10T08:00:00.000Z" }),
+      makeSession({ id: "s2", started_at: "2026-08-10T14:00:00.000Z" }),
+      makeSession({ id: "s3", started_at: "2026-08-09T08:00:00.000Z" }),
+    ];
+    const groups = groupSessionsByDay(sessions, NOW);
+    expect(groups).toHaveLength(2);
+    expect(groups[0].label).toBe("Aujourd'hui");
+    expect(groups[0].sessions.map((s) => s.id)).toEqual(["s1", "s2"]);
+    expect(groups[1].label).toBe("Hier");
+    expect(groups[1].sessions.map((s) => s.id)).toEqual(["s3"]);
+  });
+
+  it("libellé du jour de la semaine pour une séance de moins de 7 jours (ex. mardi)", () => {
+    // 2026-08-10 est un lundi ; 2026-08-04 (6 jours avant) est donc un mardi.
+    const sessions = [makeSession({ started_at: "2026-08-04T08:00:00.000Z" })];
+    const groups = groupSessionsByDay(sessions, NOW);
+    expect(groups[0].label).toBe("Mardi");
+  });
+
+  it("ne perd et n'invente aucune séance : le total réparti égale l'entrée", () => {
+    const sessions = [
+      makeSession({ id: "a", started_at: "2026-08-10T08:00:00.000Z" }),
+      makeSession({ id: "b", started_at: "2026-08-09T08:00:00.000Z" }),
+      makeSession({ id: "c", started_at: "2026-08-08T08:00:00.000Z" }),
+    ];
+    const groups = groupSessionsByDay(sessions, NOW);
+    const flattened = groups.flatMap((group) => group.sessions);
+    expect(flattened).toHaveLength(3);
+    expect(new Set(flattened.map((s) => s.id))).toEqual(new Set(["a", "b", "c"]));
   });
 });

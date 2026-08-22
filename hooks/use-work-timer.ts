@@ -64,7 +64,8 @@ export interface WorkTimerResult<TContext> {
   autoPaused: boolean;
 }
 
-function readSnapshot<TContext>(storageKey: string): WorkTimerSnapshot<TContext> | null {
+/** Exportée (Sprint poste de pilotage) pour que le Dashboard puisse lire l'avancement d'une séance active sans dupliquer ce parsing — voir hooks/use-resumable-focus.ts. */
+export function readSnapshot<TContext>(storageKey: string): WorkTimerSnapshot<TContext> | null {
   if (typeof window === "undefined") return null;
   const raw = sessionStorage.getItem(storageKey);
   if (!raw) return null;

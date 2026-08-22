@@ -7,7 +7,14 @@ import { HistoryFilters } from "@/components/history/history-filters";
 import { HistorySummary } from "@/components/history/history-summary";
 import { SessionRow } from "@/components/history/session-row";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { defaultHistoryFilters, filterSessions, resultCounts, summarizeSessions, type HistoryFilters as HistoryFiltersState } from "@/lib/history";
+import {
+  defaultHistoryFilters,
+  filterSessions,
+  groupSessionsByDay,
+  resultCounts,
+  summarizeSessions,
+  type HistoryFilters as HistoryFiltersState,
+} from "@/lib/history";
 
 /**
  * Page Historique (Sprint 3F) — orchestration uniquement : filtrage et
@@ -29,6 +36,11 @@ export function SessionHistory() {
     () => [...filtered].sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()),
     [filtered]
   );
+  // Sprint poste de pilotage — répond à "sur quoi ai-je travaillé mardi ?",
+  // qu'une liste chronologique plate ne permettait pas de voir d'un coup
+  // d'œil (voir lib/history.ts#groupSessionsByDay, même libellé que
+  // "Activité récente" du Dashboard). `sorted` est déjà trié : aucun second tri.
+  const dayGroups = useMemo(() => groupSessionsByDay(sorted), [sorted]);
 
   const updateFilters = (patch: Partial<HistoryFiltersState>) => setFilters((prev) => ({ ...prev, ...patch }));
 
@@ -61,13 +73,18 @@ export function SessionHistory() {
     <div className="space-y-5">
       <HistoryFilters filters={filters} onChange={updateFilters} />
       <HistorySummary summary={summary} results={results} />
-      <div className="space-y-3">
-        {sorted.length ? (
-          sorted.map((session) => {
-            const exercise = session.exercise_id ? exerciseById.get(session.exercise_id) : undefined;
-            const chapter = exercise?.chapter_id ? chapterById.get(exercise.chapter_id) : undefined;
-            return <SessionRow key={session.id} session={session} exerciseTitle={exercise?.title} chapterLabel={chapter?.label} />;
-          })
+      <div className="space-y-5">
+        {dayGroups.length ? (
+          dayGroups.map((group) => (
+            <div key={group.dateKey} className="space-y-3">
+              <p className="eyebrow px-1">{group.label}</p>
+              {group.sessions.map((session) => {
+                const exercise = session.exercise_id ? exerciseById.get(session.exercise_id) : undefined;
+                const chapter = exercise?.chapter_id ? chapterById.get(exercise.chapter_id) : undefined;
+                return <SessionRow key={session.id} session={session} exerciseTitle={exercise?.title} chapterLabel={chapter?.label} />;
+              })}
+            </div>
+          ))
         ) : (
           <Card className="p-10 text-center">
             <p className="text-sm text-zinc-500">Aucune séance ne correspond à ces filtres.</p>

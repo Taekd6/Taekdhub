@@ -41,9 +41,18 @@ export function ExerciseFiltersBar({
             id="exercise-search"
             value={filters.query}
             onChange={(event) => onChange({ query: event.target.value })}
-            className="pl-10"
+            className="pl-10 pr-14"
             placeholder="Rechercher un titre, une source, un tag, une année, un type…"
           />
+          {/* Rappel discret du raccourci déjà existant (exercise-manager.tsx —
+              Cmd/Ctrl+K place le focus ici depuis n'importe où sur la page) —
+              jamais montré, donc jamais découvert sans cette indication. */}
+          <kbd
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3.5 top-1/2 hidden -translate-y-1/2 rounded border border-hairline/[0.12] px-1.5 py-0.5 text-2xs text-zinc-600 sm:block"
+          >
+            ⌘K
+          </kbd>
         </div>
         <Button variant="secondary" onClick={onImportClick} className="shrink-0">
           <Upload size={17} /> Importer

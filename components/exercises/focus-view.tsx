@@ -14,12 +14,14 @@ import { useScrollLock } from "@/hooks/use-scroll-lock";
 import { type RecoveredTimerSeed, useWorkTimer } from "@/hooks/use-work-timer";
 import { clearFocusDraft, writeFocusDraft } from "@/lib/focus-draft";
 import { shouldConfirmExit } from "@/lib/focus-exit";
+import { FOCUS_TIMER_PREFIX } from "@/lib/focus-timer-key";
 import { levelFromXp, totalXp, xpFromExercise, xpFromSession, xpProgressInLevel } from "@/lib/gamification";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
 import type { AttemptResult, Exercise, ExerciseStatus, Mastery, Priority, WorkSession } from "@/lib/supabase/types";
 
+/** Réexportée pour ne rien changer aux imports existants (exercise-manager.tsx, session-runner.tsx) — définition réelle dans lib/focus-timer-key.ts, voir sa doc. */
+export { FOCUS_TIMER_PREFIX };
 /** Une seule séance focus à la fois : la clé encode l'exercice concerné, ce qui permet de retrouver après un rechargement lequel reprendre automatiquement. */
-export const FOCUS_TIMER_PREFIX = "prepahub:timer:focus:";
 const focusTimerKey = (exerciseId: string) => `${FOCUS_TIMER_PREFIX}${exerciseId}`;
 
 /**

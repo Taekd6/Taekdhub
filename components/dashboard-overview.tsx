@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
+import { ResumeBanner } from "@/components/resume-banner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -237,6 +238,9 @@ export function DashboardOverview() {
 
   return (
     <div className="space-y-6">
+      {/* Priorité absolue (Sprint poste de pilotage) : reprendre un travail
+          déjà commencé passe avant toute nouvelle recommandation ou rappel. */}
+      <ResumeBanner />
       <BackupReminder />
 
       {/* À FAIRE MAINTENANT */}
