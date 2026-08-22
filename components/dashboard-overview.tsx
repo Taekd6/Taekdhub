@@ -858,7 +858,7 @@ export function DashboardOverview() {
               <p className="eyebrow">Ma semaine</p>
               <CardTitle className="mt-2">Prévu vs réalisé</CardTitle>
             </div>
-            <Link href="/settings" className="text-xs text-accent-text hover:underline">
+            <Link href="/settings#planification" className="text-xs text-accent-text hover:underline">
               Modifier le plan
             </Link>
           </div>

@@ -169,7 +169,7 @@ export function PreferencesForm() {
         <div>
           <p className="text-sm font-medium">Échéances par matière</p>
           <p className="mt-1 text-xs text-muted">
-            DS, colle, DM… facultatif. Prioritaire sur la date des concours pour la matière concernée — les autres matières restent basées sur elle.
+            Date de repli, facultative, si tu n&apos;as pas encore créé de DS ou khôlle précis pour cette matière — prioritaire sur la date des concours, les autres matières restent basées sur elle. Pour associer des chapitres précis à un DS ou une khôlle, utilise plutôt « DS, khôlles et leurs chapitres » plus bas.
           </p>
           <div className="mt-3 space-y-2">
             {subjects.map((subject) => (

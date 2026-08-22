@@ -36,7 +36,7 @@ export function WeeklyPlanEditor() {
   const dayEntry = weeklyPlan.find((entry) => entry.day === activeDay);
 
   return (
-    <Card className="max-w-2xl p-6">
+    <Card id="planification" className="max-w-2xl scroll-mt-6 p-6">
       <p className="eyebrow">Planification</p>
       <h2 className="mt-2 text-lg font-semibold">Ma semaine de travail</h2>
       <p className="mt-1 text-sm leading-6 text-zinc-500">
