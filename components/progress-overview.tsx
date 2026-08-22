@@ -11,16 +11,19 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress";
 import { Heatmap } from "@/components/heatmap";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
+import { chapterDeadlineSignals } from "@/lib/deadlines";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
 import { computeChapterDetail } from "@/lib/next-action";
 import { computeGlobalProgress, computeProgressBySubject, masteryDistribution, progressByChapter, statusDistribution } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META, type ReadinessLevel } from "@/lib/readiness";
+import type { ChapterDeadlineSignal } from "@/lib/deadlines";
 import type { WeekSnapshot } from "@/lib/storage";
 import { statusMeta, subjectMeta, totalSeconds } from "@/lib/study";
 import { compareToPreviousWeek, findPreviousWeekSnapshot } from "@/lib/week-snapshot";
+import { planGapMinutesBySubject } from "@/lib/weekly-plan";
 import { formatDuration } from "@/lib/utils";
-import type { Exercise, WorkSession } from "@/lib/supabase/types";
+import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
 /** `+8`, `-3` ou `±0` — convention unique de signe pour toutes les variations affichées dans "Évolution" (temps, exercices maîtrisés, points de progression). */
 function withSign(value: number, unit = ""): string {
@@ -112,8 +115,21 @@ const READINESS_STYLE: Record<ReadinessLevel, { border: string; bg: string }> = 
  * lui-même qu'un regroupement par matière de `recommendExercises`
  * (lib/recommendation.ts, seule source de vérité pour "quoi travailler").
  */
-function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions: WorkSession[] }) {
-  const readiness = useMemo(() => computeReadinessBySubject(exercises, sessions), [exercises, sessions]);
+function DsReadiness({
+  exercises,
+  sessions,
+  chapterDeadlines,
+  subjectPlanGap,
+}: {
+  exercises: Exercise[];
+  sessions: WorkSession[];
+  chapterDeadlines: Map<string, ChapterDeadlineSignal>;
+  subjectPlanGap: Partial<Record<Subject, number>>;
+}) {
+  const readiness = useMemo(
+    () => computeReadinessBySubject(exercises, sessions, new Date(), { chapterDeadlines, subjectPlanGap }),
+    [exercises, sessions, chapterDeadlines, subjectPlanGap]
+  );
 
   if (readiness.length === 0) return null;
 
@@ -163,7 +179,15 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
  * afficher, aucun calcul métier ici.
  */
 export function ProgressOverview() {
-  const { sessions, exercises, chapters, weekSnapshots, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, weekSnapshots, deadlines, weeklyPlan, ready } = usePrepahubData();
+  // Mêmes signaux que le Dashboard (Sprint Study OS Phase 5) — sans eux,
+  // "Prêt pour le DS ?" pouvait afficher "Prêt" pour une matière que le
+  // Dashboard signale au même moment comme prioritaire pour un DS imminent :
+  // une contradiction détectée en direct pendant l'audit de cette phase.
+  const prioritySignals = useMemo(
+    () => ({ chapterDeadlines: chapterDeadlineSignals(deadlines), subjectPlanGap: planGapMinutesBySubject(weeklyPlan, sessions) }),
+    [deadlines, weeklyPlan, sessions]
+  );
   /** Chapitre ouvert dans la fiche détail (Phase 6) — `null` : rien d'ouvert. Purement local à l'affichage. */
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const selectedChapter = selectedChapterId ? chapters.find((chapter) => chapter.id === selectedChapterId) : undefined;
@@ -211,7 +235,7 @@ export function ProgressOverview() {
       </section>
 
       <WeekEvolution exercises={exercises} sessions={sessions} weekSnapshots={weekSnapshots} />
-      <DsReadiness exercises={exercises} sessions={sessions} />
+      <DsReadiness exercises={exercises} sessions={sessions} chapterDeadlines={prioritySignals.chapterDeadlines} subjectPlanGap={prioritySignals.subjectPlanGap} />
 
       <section className="grid gap-5 xl:grid-cols-2">
         <Card className="p-6">

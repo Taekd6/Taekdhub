@@ -186,7 +186,7 @@ export function DashboardOverview() {
       bySubject: computeProgressBySubject(exercises),
       toConsolidate: computeChaptersToConsolidate(exercises, sessions, chapters, now),
       recentDays: recentDaySummaries(sessions, now, 5),
-      readiness: computeReadinessBySubject(exercises, sessions, now),
+      readiness: computeReadinessBySubject(exercises, sessions, now, prioritySignals),
       weeklySummary,
       weeklyProjection,
       trajectoryBySubject,
