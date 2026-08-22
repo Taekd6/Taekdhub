@@ -37,6 +37,7 @@ import { WhyThisExercise } from "@/components/exercises/why-this-exercise";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { cn } from "@/lib/cn";
 import { computeDailyObjectiveBreakdown } from "@/lib/daily-goals";
+import { chapterDeadlineSignals, nearestDeadlineForSubject } from "@/lib/deadlines";
 import { computeStreak } from "@/lib/gamification";
 import { recentDaySummaries } from "@/lib/history";
 import {
@@ -67,6 +68,7 @@ import { estimatedDurationMinutes } from "@/lib/recommendation";
 import { subjectMeta } from "@/lib/study";
 import { formatDuration, formatMinutes } from "@/lib/utils";
 import { computeWeeklyDayBars, computeWeeklySummary, type WeeklyPace } from "@/lib/week";
+import { computeWeeklyPlanRows, hasAnyPlannedMinutes, planGapMinutesBySubject } from "@/lib/weekly-plan";
 import { removeFromQueue, usableQueueEntries } from "@/lib/work-queue";
 import type { NextAction, UpcomingItem } from "@/lib/next-action";
 import type { StoredPlan } from "@/lib/plan";
@@ -129,10 +131,25 @@ function deadlineLabel(deadlineDays: number): string {
  * dans ce composant, uniquement de la présentation et de la navigation.
  */
 export function DashboardOverview() {
-  const { sessions, exercises, chapters, preferences, workQueue, saveWorkQueue, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, preferences, workQueue, saveWorkQueue, deadlines, weeklyPlan, ready } = usePrepahubData();
   const router = useRouter();
   /** Durée choisie pour "Plan du jour" — état purement local à cette page, jamais persisté (voir Phase 3 du sprint : pas de système de calendrier). */
   const [planMinutes, setPlanMinutes] = useState<number>(DEFAULT_PLAN_MINUTES);
+
+  // Signaux de priorité Sprint Study OS Phase 4 — calculés une seule fois,
+  // partagés par `model` ET `dailyPlan` ci-dessous (deux useMemo séparés,
+  // voir leur doc respective) : jamais recalculés deux fois pour la même
+  // donnée. `chapterDeadlines` (lib/deadlines.ts) et `subjectPlanGap`
+  // (lib/weekly-plan.ts) restent chacun à `{}`/Map vide tant que
+  // l'utilisateur n'a configuré ni échéance ni plan — comportement
+  // strictement inchangé pour qui n'utilise pas ces fonctionnalités.
+  const prioritySignals = useMemo(() => {
+    const now = new Date();
+    return {
+      chapterDeadlines: chapterDeadlineSignals(deadlines, now),
+      subjectPlanGap: planGapMinutesBySubject(weeklyPlan, sessions, now),
+    };
+  }, [deadlines, weeklyPlan, sessions]);
 
   const model = useMemo(() => {
     const now = new Date();
@@ -147,7 +164,8 @@ export function DashboardOverview() {
       preferences.weeklyGoalMinutes,
       now,
       preferences.contestDate,
-      preferences.subjectDeadlines
+      preferences.subjectDeadlines,
+      prioritySignals.subjectPlanGap
     );
     const weeklySummary = computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now);
     // Sprint trajectoire par matière — explique CE QUE `weeklyProjection`
@@ -155,7 +173,7 @@ export function DashboardOverview() {
     // `weeklyProjection.bySubject` (voir lib/plan.ts#computeSubjectTrajectory).
     const trajectoryBySubject = computeSubjectTrajectory(weeklyProjection.bySubject, now);
     return {
-      nextAction: computeNextAction(exercises, sessions, preferences.dailyGoalMinutes, now),
+      nextAction: computeNextAction(exercises, sessions, preferences.dailyGoalMinutes, now, prioritySignals),
       objective: computeDailyObjective(sessions, preferences.dailyGoalMinutes, now),
       // Sprint Study OS — "Aujourd'hui" : décompose l'objectif du jour par
       // matière et en nombre d'exercices, quand configuré (voir
@@ -175,6 +193,12 @@ export function DashboardOverview() {
       // temps déjà comptabilisé dans `weeklySummary` ci-dessus, aucun second
       // total (voir lib/week.ts#computeWeeklyDayBars).
       weeklyDayBars: computeWeeklyDayBars(sessions, preferences.dailyGoalMinutes, now),
+      // Sprint Study OS Phase 4 — "Ma semaine" : prévu vs réalisé jour par
+      // jour, à partir du plan hebdomadaire (voir lib/weekly-plan.ts). Vide
+      // tant que rien n'est configuré (voir `hasWeeklyPlan` ci-dessous,
+      // condition d'affichage de la carte).
+      weeklyPlanRows: computeWeeklyPlanRows(weeklyPlan, sessions, now),
+      hasWeeklyPlan: hasAnyPlannedMinutes(weeklyPlan),
       // Micro-sprint polish UX final — phrase de pilotage du Dashboard :
       // compose uniquement ces valeurs déjà calculées ci-dessus, voir
       // lib/pilotage.ts. Aucun nouveau signal, aucune nouvelle décision.
@@ -184,7 +208,15 @@ export function DashboardOverview() {
         workedMinutes: weeklyProjection.workedMinutes,
         trajectoryBySubject,
       }),
-      subjectPriorities: computeSubjectPriorities(exercises, sessions, chapters, now, preferences.contestDate, preferences.subjectDeadlines),
+      subjectPriorities: computeSubjectPriorities(
+        exercises,
+        sessions,
+        chapters,
+        now,
+        preferences.contestDate,
+        preferences.subjectDeadlines,
+        prioritySignals.subjectPlanGap
+      ),
       streak: computeStreak(sessions),
       // Même calcul que `lib/plan.ts#daysUntilContest`, réutilisé tel quel
       // plutôt que redupliqué ici — voir Sprint priorisation + sync + XP,
@@ -192,13 +224,23 @@ export function DashboardOverview() {
       // légèrement différentes du même "jours avant le concours".
       contestDays: daysUntilContest(preferences.contestDate, now),
     };
-  }, [exercises, sessions, chapters, preferences]);
+  }, [exercises, sessions, chapters, preferences, weeklyPlan, prioritySignals]);
 
   // Séparé de `model` : ne dépend que du choix de durée, pas besoin de
   // recalculer tout le reste du Dashboard à chaque clic sur 30/45/60 min.
   const dailyPlan = useMemo(
-    () => computeDailyPlan(exercises, sessions, chapters, planMinutes, new Date(), preferences.contestDate, preferences.subjectDeadlines),
-    [exercises, sessions, chapters, planMinutes, preferences.contestDate, preferences.subjectDeadlines]
+    () =>
+      computeDailyPlan(
+        exercises,
+        sessions,
+        chapters,
+        planMinutes,
+        new Date(),
+        preferences.contestDate,
+        preferences.subjectDeadlines,
+        prioritySignals.subjectPlanGap
+      ),
+    [exercises, sessions, chapters, planMinutes, preferences.contestDate, preferences.subjectDeadlines, prioritySignals]
   );
 
   // Dépose le plan dans sessionStorage puis navigue vers /session, qui le lit
@@ -256,6 +298,8 @@ export function DashboardOverview() {
     weeklyProjection,
     trajectoryBySubject,
     weeklyDayBars,
+    weeklyPlanRows,
+    hasWeeklyPlan,
     pilotagePhrase,
     subjectPriorities,
     streak,
@@ -787,6 +831,46 @@ export function DashboardOverview() {
         )}
       </Card>
 
+      {/* MA SEMAINE — Sprint Study OS Phase 4 : prévu vs réalisé, jour par
+          jour, à partir du plan hebdomadaire (Réglages). Entièrement
+          facultative : masquée tant que rien n'est planifié (voir
+          hasAnyPlannedMinutes), pour ne jamais imposer cette carte à un
+          utilisateur qui n'utilise pas la planification. Jamais de jugement
+          négatif sur un jour futur (voir lib/weekly-plan.ts#computeWeeklyPlanRows). */}
+      {hasWeeklyPlan && (
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="eyebrow">Ma semaine</p>
+              <CardTitle className="mt-2">Prévu vs réalisé</CardTitle>
+            </div>
+            <Link href="/settings" className="text-xs text-accent-text hover:underline">
+              Modifier le plan
+            </Link>
+          </div>
+          <div className="mt-5 space-y-1.5">
+            {weeklyPlanRows.map((row) => (
+              <div
+                key={row.dayKey}
+                className={cn(
+                  "flex items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-sm",
+                  row.isToday ? "bg-accent/[0.06]" : "border border-hairline/[0.06]"
+                )}
+              >
+                <span className={cn("w-20 shrink-0", row.isToday ? "font-semibold text-zinc-100" : "text-zinc-300")}>{row.label}</span>
+                <span className="flex-1 text-right text-xs text-zinc-500">
+                  {row.plannedMinutes > 0 ? `${formatMinutes(row.workedMinutes)} / ${formatMinutes(row.plannedMinutes)}` : row.isFuture ? "—" : "sans plan"}
+                </span>
+                <span className="w-6 shrink-0 text-right">
+                  {row.state === "atteint" && <Check size={14} className="ml-auto text-emerald-400" />}
+                  {row.state === "en cours" && <AlertTriangle size={14} className="ml-auto text-amber-400" />}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* PROGRESSION PAR MATIÈRE + PRÉPARATION */}
       {(bySubject.length > 0 || readiness.length > 0) && (
         <section className="grid gap-5 xl:grid-cols-2">
@@ -834,14 +918,27 @@ export function DashboardOverview() {
               <div className="mt-6 space-y-2.5">
                 {readiness.map(({ subject, level }) => {
                   const meta = READINESS_META[level];
+                  // Sprint Study OS Phase 4 : prochaine échéance concrète pour
+                  // cette matière, si une a été renseignée dans Réglages —
+                  // n'affecte jamais `level` (toujours dérivé uniquement du
+                  // moteur de recommandation, voir lib/readiness.ts), une
+                  // simple annotation supplémentaire.
+                  const nearest = nearestDeadlineForSubject(deadlines, subject);
                   return (
                     <Link
                       key={subject}
                       href="/progress"
                       className="focus-ring flex items-center justify-between gap-2 rounded-xl border border-hairline/[0.06] px-3.5 py-2.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
                     >
-                      <span className="font-medium text-zinc-100">{subject}</span>
-                      <span className="flex items-center gap-1.5 text-xs text-zinc-400">
+                      <div className="min-w-0">
+                        <span className="font-medium text-zinc-100">{subject}</span>
+                        {nearest && (
+                          <p className="mt-0.5 truncate text-2xs text-zinc-500">
+                            {nearest.deadline.type} {nearest.days === 0 ? "aujourd'hui" : nearest.days === 1 ? "demain" : `dans ${nearest.days} j`}
+                          </p>
+                        )}
+                      </div>
+                      <span className="flex shrink-0 items-center gap-1.5 text-xs text-zinc-400">
                         <span className={`h-1.5 w-1.5 rounded-full ${READINESS_DOT_CLASS[meta.badge]}`} />
                         {meta.label}
                       </span>
