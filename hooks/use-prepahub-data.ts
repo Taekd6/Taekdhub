@@ -1,7 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { DATA_WRITTEN_EVENT, localData, STORAGE_ERROR_EVENT, type Chapter, type Preferences, type WeekSnapshot, type WorkQueueItem } from "@/lib/storage";
+import {
+  DATA_WRITTEN_EVENT,
+  localData,
+  STORAGE_ERROR_EVENT,
+  type Chapter,
+  type Deadline,
+  type Preferences,
+  type WeekSnapshot,
+  type WeeklyPlan,
+  type WorkQueueItem,
+} from "@/lib/storage";
 import { CAHIER_CALCUL_SEED_FLAG_KEY, loadCahierCalculSeed, loadSeedBank, SEED_FLAG_KEY } from "@/lib/seed";
 import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -78,6 +88,8 @@ type DataState = {
   lastBackupAt: string | null;
   preferences: Preferences;
   workQueue: WorkQueueItem[];
+  deadlines: Deadline[];
+  weeklyPlan: WeeklyPlan;
   ready: boolean;
 };
 
@@ -109,6 +121,8 @@ function readAll(): Omit<DataState, "ready"> {
     lastBackupAt: localData.lastBackupAt(),
     preferences: localData.preferences(),
     workQueue: localData.workQueue(),
+    deadlines: localData.deadlines(),
+    weeklyPlan: localData.weeklyPlan(),
   };
 }
 
@@ -121,6 +135,8 @@ export function usePrepahubData() {
     lastBackupAt: null,
     preferences: localData.preferences(),
     workQueue: [],
+    deadlines: [],
+    weeklyPlan: [],
     ready: false,
   });
 
@@ -254,5 +270,35 @@ export function usePrepahubData() {
     }
   }, []);
 
-  return { ...data, refresh, saveSessions, saveExercises, saveChapters, savePreferences, saveWorkQueue, storageError, dismissStorageError };
+  const saveDeadlines = useCallback((deadlines: Deadline[]) => {
+    const ok = localData.saveDeadlines(deadlines);
+    broadcastWriteResult(ok);
+    if (ok) {
+      setData((prev) => ({ ...prev, deadlines }));
+      broadcastDataWritten();
+    }
+  }, []);
+
+  const saveWeeklyPlan = useCallback((weeklyPlan: WeeklyPlan) => {
+    const ok = localData.saveWeeklyPlan(weeklyPlan);
+    broadcastWriteResult(ok);
+    if (ok) {
+      setData((prev) => ({ ...prev, weeklyPlan }));
+      broadcastDataWritten();
+    }
+  }, []);
+
+  return {
+    ...data,
+    refresh,
+    saveSessions,
+    saveExercises,
+    saveChapters,
+    savePreferences,
+    saveWorkQueue,
+    saveDeadlines,
+    saveWeeklyPlan,
+    storageError,
+    dismissStorageError,
+  };
 }
