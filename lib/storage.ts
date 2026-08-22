@@ -10,6 +10,7 @@ const preferencesKey = "prepahub:preferences";
 const chaptersKey = "prepahub:chapters";
 const lastBackupKey = "prepahub:last-backup";
 const weekSnapshotsKey = "prepahub:week-snapshots";
+const workQueueKey = "prepahub:work-queue";
 
 /**
  * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
@@ -65,6 +66,18 @@ const defaults: Preferences = {
  * `Preferences`, ce concept n'existe qu'en local pour l'instant.
  */
 export type Chapter = { id: string; subject: Subject; label: string };
+
+/**
+ * File de travail (Sprint Study OS — "Je choisis mon travail") : une petite
+ * liste d'exercices choisis explicitement par l'utilisateur, dans l'ordre où
+ * il veut les traiter — jamais recalculée par un moteur de recommandation
+ * (voir lib/work-queue.ts). Persistée séparément des exercices eux-mêmes :
+ * seule une référence par `exerciseId`, jamais une copie de l'exercice
+ * (source unique de vérité inchangée). Un exercice supprimé ou archivé après
+ * son ajout est simplement filtré à la lecture (voir
+ * lib/work-queue.ts#usableQueueEntries), jamais une entrée fantôme affichée.
+ */
+export type WorkQueueItem = { exerciseId: string };
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
 export interface WeekSnapshotSubjectTime {
@@ -266,6 +279,13 @@ function normalizeChapter(raw: unknown): Chapter | null {
   return { id: item.id, subject: migrateSubject(item.subject), label: item.label };
 }
 
+/** Ramène une entrée de file de travail potentiellement corrompue vers une forme valide, ou l'écarte — même principe que `normalizeChapter`. */
+function normalizeWorkQueueItem(raw: unknown): WorkQueueItem | null {
+  const item = isRecord(raw) ? raw : {};
+  if (typeof item.exerciseId !== "string" || !item.exerciseId) return null;
+  return { exerciseId: item.exerciseId };
+}
+
 function isNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
@@ -439,6 +459,11 @@ export const localData = {
       ? []
       : (JSON.parse(localStorage.getItem(weekSnapshotsKey) || "[]") as unknown[]).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
   saveWeekSnapshots: (items: WeekSnapshot[]): boolean => safeSetItem(weekSnapshotsKey, JSON.stringify(items)),
+  workQueue: (): WorkQueueItem[] =>
+    typeof window === "undefined"
+      ? []
+      : (JSON.parse(localStorage.getItem(workQueueKey) || "[]") as unknown[]).map(normalizeWorkQueueItem).filter((item): item is WorkQueueItem => item !== null),
+  saveWorkQueue: (items: WorkQueueItem[]): boolean => safeSetItem(workQueueKey, JSON.stringify(items)),
 };
 
 /** Rappel de sauvegarde (finalisation V1) : au-delà de ce nombre de jours sans export, la sauvegarde est considérée périmée. */

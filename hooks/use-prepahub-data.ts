@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { DATA_WRITTEN_EVENT, localData, STORAGE_ERROR_EVENT, type Chapter, type Preferences, type WeekSnapshot } from "@/lib/storage";
+import { DATA_WRITTEN_EVENT, localData, STORAGE_ERROR_EVENT, type Chapter, type Preferences, type WeekSnapshot, type WorkQueueItem } from "@/lib/storage";
 import { CAHIER_CALCUL_SEED_FLAG_KEY, loadCahierCalculSeed, loadSeedBank, SEED_FLAG_KEY } from "@/lib/seed";
 import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -77,6 +77,7 @@ type DataState = {
   weekSnapshots: WeekSnapshot[];
   lastBackupAt: string | null;
   preferences: Preferences;
+  workQueue: WorkQueueItem[];
   ready: boolean;
 };
 
@@ -107,6 +108,7 @@ function readAll(): Omit<DataState, "ready"> {
     weekSnapshots,
     lastBackupAt: localData.lastBackupAt(),
     preferences: localData.preferences(),
+    workQueue: localData.workQueue(),
   };
 }
 
@@ -118,6 +120,7 @@ export function usePrepahubData() {
     weekSnapshots: [],
     lastBackupAt: null,
     preferences: localData.preferences(),
+    workQueue: [],
     ready: false,
   });
 
@@ -242,5 +245,14 @@ export function usePrepahubData() {
     }
   }, []);
 
-  return { ...data, refresh, saveSessions, saveExercises, saveChapters, savePreferences, storageError, dismissStorageError };
+  const saveWorkQueue = useCallback((workQueue: WorkQueueItem[]) => {
+    const ok = localData.saveWorkQueue(workQueue);
+    broadcastWriteResult(ok);
+    if (ok) {
+      setData((prev) => ({ ...prev, workQueue }));
+      broadcastDataWritten();
+    }
+  }, []);
+
+  return { ...data, refresh, saveSessions, saveExercises, saveChapters, savePreferences, saveWorkQueue, storageError, dismissStorageError };
 }
