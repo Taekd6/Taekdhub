@@ -48,6 +48,18 @@ export function PreferencesForm() {
     setPrefs({ ...prefs, subjectDeadlines: next });
   }
 
+  // Objectif du jour par matière (Sprint Study OS — Aujourd'hui) — même
+  // convention que `setSubjectDeadline` ci-dessus : une valeur vide ou ≤ 0
+  // RETIRE la clé plutôt que de la garder à 0 (voir
+  // lib/storage.ts#normalizeDailySubjectGoals).
+  function setDailySubjectGoal(subject: Subject, value: string) {
+    const next = { ...prefs.dailySubjectGoals };
+    const minutes = Number(value);
+    if (value && minutes > 0) next[subject] = minutes;
+    else delete next[subject];
+    setPrefs({ ...prefs, dailySubjectGoals: next });
+  }
+
   return (
     <Card className="max-w-2xl p-6">
       <form onSubmit={save} className="space-y-5">
@@ -85,6 +97,41 @@ export function PreferencesForm() {
           </div>
           <span className="mt-2 block text-xs text-muted">Durée visée chaque jour, en minutes — alimente le Dashboard et le plan du jour.</span>
         </label>
+        <label className="block text-sm font-medium">
+          Objectif du jour — nombre d&apos;exercices
+          <Input
+            type="number"
+            min={1}
+            value={prefs.dailyExerciseGoal ?? ""}
+            onChange={(e) => setPrefs({ ...prefs, dailyExerciseGoal: e.target.value ? Math.max(1, Number(e.target.value)) : null })}
+            placeholder="Facultatif"
+            className="mt-2 w-24"
+            aria-label="Objectif du jour, en nombre d'exercices"
+          />
+          <span className="mt-2 block text-xs text-muted">Facultatif, indépendant du temps — laisse vide pour ne suivre que la durée.</span>
+        </label>
+        <div>
+          <p className="text-sm font-medium">Objectif du jour par matière</p>
+          <p className="mt-1 text-xs text-muted">Facultatif — répartis ton objectif quotidien si tu veux garantir un minimum par matière. Laisse à 0 pour ne pas en fixer.</p>
+          <div className="mt-3 space-y-2">
+            {subjects.map((subject) => (
+              <div key={subject} className="flex items-center gap-3">
+                <SubjectAvatar subject={subject} size="sm" />
+                <span className="w-36 shrink-0 truncate text-sm text-zinc-300">{subject}</span>
+                <Input
+                  type="number"
+                  min={0}
+                  value={prefs.dailySubjectGoals[subject] ?? ""}
+                  onChange={(e) => setDailySubjectGoal(subject, e.target.value)}
+                  placeholder="0"
+                  className="w-24"
+                  aria-label={`Objectif du jour pour ${subject}, en minutes`}
+                />
+                <span className="text-xs text-muted">min</span>
+              </div>
+            ))}
+          </div>
+        </div>
         <label className="block text-sm font-medium">
           Objectif hebdomadaire
           <div className="mt-2 flex flex-wrap items-center gap-2">

@@ -33,6 +33,7 @@ import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { WhyThisExercise } from "@/components/exercises/why-this-exercise";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { cn } from "@/lib/cn";
+import { computeDailyObjectiveBreakdown } from "@/lib/daily-goals";
 import { computeStreak } from "@/lib/gamification";
 import { recentDaySummaries } from "@/lib/history";
 import {
@@ -150,6 +151,11 @@ export function DashboardOverview() {
     return {
       nextAction: computeNextAction(exercises, sessions, preferences.dailyGoalMinutes, now),
       objective: computeDailyObjective(sessions, preferences.dailyGoalMinutes, now),
+      // Sprint Study OS — "Aujourd'hui" : décompose l'objectif du jour par
+      // matière et en nombre d'exercices, quand configuré (voir
+      // lib/daily-goals.ts). N'affecte jamais `objective` ci-dessus, qui
+      // reste l'unique source du total global.
+      dailyObjectiveBreakdown: computeDailyObjectiveBreakdown(sessions, preferences.dailySubjectGoals, preferences.dailyExerciseGoal, now),
       upcoming: computeUpcoming(exercises, sessions, chapters, now),
       progress: computeCommandCenterProgress(exercises, sessions, now),
       bySubject: computeProgressBySubject(exercises),
@@ -207,6 +213,7 @@ export function DashboardOverview() {
   const {
     nextAction,
     objective,
+    dailyObjectiveBreakdown,
     upcoming,
     progress,
     bySubject,
@@ -497,6 +504,33 @@ export function DashboardOverview() {
               </span>
             )}
           </p>
+
+          {/* Détail de l'objectif du jour (Sprint Study OS — Aujourd'hui) —
+              rien n'apparaît tant que rien n'est configuré dans Réglages
+              (voir lib/daily-goals.ts) : ni exercices, ni matière forcée à
+              l'affichage. */}
+          {(dailyObjectiveBreakdown.exercises || dailyObjectiveBreakdown.bySubject.length > 0) && (
+            <div className="mt-4 space-y-2 border-t border-hairline/[0.07] pt-4">
+              {dailyObjectiveBreakdown.exercises && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-zinc-400">Exercices</span>
+                  <span className={cn("font-medium", dailyObjectiveBreakdown.exercises.met ? "text-emerald-300" : "text-zinc-300")}>
+                    {dailyObjectiveBreakdown.exercises.worked} / {dailyObjectiveBreakdown.exercises.goal}
+                  </span>
+                </div>
+              )}
+              {dailyObjectiveBreakdown.bySubject.map((entry) => (
+                <div key={entry.subject} className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-zinc-400">
+                    <SubjectAvatar subject={entry.subject} size="sm" /> {entry.subject}
+                  </span>
+                  <span className={cn("font-medium", entry.met ? "text-emerald-300" : "text-zinc-300")}>
+                    {entry.workedMinutes} / {entry.goalMinutes} min
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="mt-5 flex flex-wrap gap-2">
             {objective.workedMinutes === 0 && !objective.met ? (
