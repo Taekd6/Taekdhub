@@ -475,3 +475,84 @@ describe("isNeverWorked / computeExerciseBankStats — smoke tests de non-régre
     expect(stats).toEqual({ toReviewCount: 0, averageMastery: 0, averagePriority: 0, neverWorkedCount: 0 });
   });
 });
+
+/**
+ * Sprint Study OS Phase 4 — signal d'échéance par chapitre (DS/khôlle). Sans
+ * `options.chapterDeadlines`, comportement strictement inchangé (déjà
+ * couvert par tous les tests ci-dessus, qui n'en fournissent jamais).
+ */
+describe("recommendExercises — signal d'échéance par chapitre", () => {
+  it("un exercice autrement non signalé remonte grâce à l'échéance de son chapitre — et l'explique", () => {
+    // "à faire" mais déjà travaillé récemment (donc pas "jamais travaillé"),
+    // priorité/maîtrise neutres : aucune raison de l'inclure sans le signal.
+    const exercise = makeExercise({ chapter_id: "c-continuite", status: "à faire", priority: 2, mastery: 50, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const withoutSignal = recommendExercises([exercise], [], 6, { now: NOW });
+    expect(withoutSignal).toEqual([]);
+
+    const withSignal = recommendExercises([exercise], [], 6, {
+      now: NOW,
+      chapterDeadlines: new Map([["c-continuite", { days: 3, label: "ton DS de Mathématiques dans 3 j" }]]),
+    });
+    expect(withSignal.some((r) => r.exercise.id === exercise.id)).toBe(true);
+    expect(withSignal[0].reasons).toContain("Prioritaire : ton DS de Mathématiques dans 3 j");
+  });
+
+  it("un exercice déjà maîtrisé n'est jamais remonté par la seule échéance", () => {
+    const exercise = makeExercise({ chapter_id: "c-continuite", status: "maîtrisé", mastery: 100, priority: 2, attempts: 3, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const result = recommendExercises([exercise], [], 6, {
+      now: NOW,
+      chapterDeadlines: new Map([["c-continuite", { days: 3, label: "ton DS de Mathématiques dans 3 j" }]]),
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("un exercice d'un AUTRE chapitre n'est jamais affecté par l'échéance", () => {
+    const exercise = makeExercise({ chapter_id: "c-autre", status: "à faire", priority: 2, mastery: 50, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const result = recommendExercises([exercise], [], 6, {
+      now: NOW,
+      chapterDeadlines: new Map([["c-continuite", { days: 3, label: "ton DS de Mathématiques dans 3 j" }]]),
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("un exercice à revoir reste prioritaire même sans échéance — la hiérarchie existante n'est jamais écrasée", () => {
+    const toReview = makeExercise({ id: "ex-revoir", status: "à revoir", chapter_id: "c-autre" });
+    const withDeadline = makeExercise({ id: "ex-deadline", chapter_id: "c-continuite", status: "à faire", priority: 2, mastery: 50, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const result = recommendExercises([toReview, withDeadline], [], 6, {
+      now: NOW,
+      chapterDeadlines: new Map([["c-continuite", { days: 1, label: "ton DS dans 1 j" }]]), // échéance très proche, presque plein bonus
+    });
+    expect(result[0].exercise.id).toBe("ex-revoir");
+  });
+});
+
+/**
+ * Sprint Study OS Phase 4 — signal de retard sur le plan hebdomadaire. Sans
+ * `options.subjectPlanGap`, comportement strictement inchangé.
+ */
+describe("recommendExercises — signal de retard sur le plan hebdomadaire", () => {
+  it("n'ajoute JAMAIS de raison à lui seul (jamais un critère d'inclusion) — un exercice sans autre raison reste absent", () => {
+    const exercise = makeExercise({ status: "maîtrisé", mastery: 100, priority: 2, attempts: 3, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const result = recommendExercises([exercise], [], 6, { now: NOW, subjectPlanGap: { Mathématiques: 90 } });
+    expect(result).toEqual([]);
+  });
+
+  it("explique un exercice déjà retenu par ailleurs, quand sa matière est en retard sur le plan", () => {
+    const exercise = makeExercise({ status: "à revoir", subject: "Physique" });
+    const result = recommendExercises([exercise], [], 6, { now: NOW, subjectPlanGap: { Physique: 60 } });
+    expect(result[0].reasons).toContain("En retard sur ton plan de la semaine");
+  });
+
+  it("n'affecte pas un exercice d'une autre matière", () => {
+    const exercise = makeExercise({ status: "à revoir", subject: "Chimie" });
+    const result = recommendExercises([exercise], [], 6, { now: NOW, subjectPlanGap: { Physique: 60 } });
+    expect(result[0].reasons).not.toContain("En retard sur ton plan de la semaine");
+  });
+
+  it("fait remonter en priorité une matière en retard entre deux exercices par ailleurs équivalents", () => {
+    const behindSubject = makeExercise({ id: "ex-behind", subject: "Physique", status: "à revoir" });
+    const onTrackSubject = makeExercise({ id: "ex-ontrack", subject: "Chimie", status: "à revoir" });
+    const result = recommendExercises([onTrackSubject, behindSubject], [], 6, { now: NOW, subjectPlanGap: { Physique: 90 } });
+    expect(result[0].exercise.id).toBe("ex-behind");
+  });
+});

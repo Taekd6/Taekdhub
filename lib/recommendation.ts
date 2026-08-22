@@ -1,6 +1,7 @@
+import { DEADLINE_RELEVANCE_HORIZON_DAYS, type ChapterDeadlineSignal } from "@/lib/deadlines";
 import { minutesByExerciseMap, totalSeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
-import type { Exercise, ExerciseStatus, WorkSession } from "@/lib/supabase/types";
+import type { Exercise, ExerciseStatus, Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
  * Moteur de révision — Sprint 3A, étendu au Sprint 4 (décroissance de
@@ -137,7 +138,14 @@ function recentSuccessStreak(attempts: WorkSession[]): number {
  * lib/next-action.ts et lib/plan.ts, appliqué ici à l'échelle de l'exercice) —
  * "Maîtrise faible" ne s'affiche donc que si l'exercice a déjà été engagé.
  */
-function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date): string[] {
+function evaluateExercise(
+  exercise: Exercise,
+  minutesSpent: number,
+  attempts: WorkSession[],
+  now: Date,
+  deadlineSignal?: ChapterDeadlineSignal,
+  planGapMinutes?: number
+): string[] {
   const reasons: string[] = [];
   const neverWorked = isNeverWorked(exercise, minutesSpent);
   if (exercise.mastery <= 25 && !neverWorked) reasons.push("Maîtrise faible");
@@ -145,6 +153,15 @@ function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: Wo
   if (neverWorked) reasons.push("Jamais travaillé");
   if (exercise.status === "en cours") reasons.push("En cours");
   if (exercise.status === "à revoir") reasons.push("Marqué à revoir");
+  // Échéance (Sprint Study OS Phase 4 — DS/khôlle) : un chapitre associé à
+  // une échéance proche (voir lib/deadlines.ts#chapterDeadlineSignals) suffit
+  // à proposer cet exercice, même si aucun autre critère ne le retenait —
+  // c'est un critère d'inclusion À PART ENTIÈRE, pas un simple bonus de tri
+  // (voir `urgencyScore` pour l'effet sur le score). Exclu pour un exercice
+  // déjà "maîtrisé" : rien à regagner d'une simple échéance sur un exercice
+  // déjà acquis (le mécanisme de révision adaptative existant couvre déjà
+  // "maîtrisé mais pas retravaillé depuis longtemps", plus bas).
+  if (deadlineSignal && exercise.status !== "maîtrisé") reasons.push(`Prioritaire : ${deadlineSignal.label}`);
   // "Maîtrisé, jamais retravaillé" : cas particulier conservé tel quel
   // (Sprint 4) — aucune tentative avec résultat, donc aucun intervalle
   // adaptatif calculable ; seule la fiche manuelle "maîtrisé" donne un
@@ -180,6 +197,12 @@ function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: Wo
   // s'ajoute qu'aux raisons déjà réunies, pour un exercice retenu par
   // ailleurs — voir `urgencyScore` pour son (léger) effet sur le tri.
   if (reasons.length > 0 && exercise.favorite) reasons.push("Favori");
+  // Retard sur le plan hebdomadaire (Sprint Study OS Phase 4) : même
+  // principe que "Favori" ci-dessus — jamais un critère d'inclusion à lui
+  // seul (une matière en retard n'invente pas un exercice à proposer), sert
+  // uniquement à expliquer pourquoi CET exercice, déjà retenu par ailleurs,
+  // est spécialement pertinent maintenant (voir lib/weekly-plan.ts#planGapMinutesBySubject).
+  if (reasons.length > 0 && planGapMinutes && planGapMinutes > 0) reasons.push("En retard sur ton plan de la semaine");
   return reasons;
 }
 
@@ -300,7 +323,30 @@ export function computeRevisionUrgency(exercise: Exercise, sessions: WorkSession
  * avec résultat, `failureBonus` et `successPenalty` valent 0 et le score est
  * strictement identique à avant ce sprint.
  */
-function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date): number {
+/** 0-25 : plus l'échéance associée au chapitre est proche, plus le bonus grimpe — même ordre de grandeur que `failureBonus`, jamais dominant à lui seul. Nul sans échéance pertinente. */
+const DEADLINE_BONUS_CAP = 25;
+function chapterDeadlineBonus(signal: ChapterDeadlineSignal | undefined): number {
+  if (!signal) return 0;
+  const urgencyFactor = Math.max(0, Math.min(1, 1 - signal.days / DEADLINE_RELEVANCE_HORIZON_DAYS));
+  return urgencyFactor * DEADLINE_BONUS_CAP;
+}
+
+/** 0-20 : proportionnel au retard (minutes) sur le plan hebdomadaire pour la matière de l'exercice — plafonné pour ne jamais dominer un signal plus direct (échec récent, échéance). Nul sans plan configuré pour cette matière (voir `lib/weekly-plan.ts#planGapMinutesBySubject`, qui n'émet un retard que si un plan existe). */
+const PLAN_GAP_BONUS_CAP = 20;
+const PLAN_GAP_BONUS_PER_MINUTE = 0.4;
+function planGapBonus(minutesBehind: number | undefined): number {
+  if (!minutesBehind || minutesBehind <= 0) return 0;
+  return Math.min(PLAN_GAP_BONUS_CAP, minutesBehind * PLAN_GAP_BONUS_PER_MINUTE);
+}
+
+function urgencyScore(
+  exercise: Exercise,
+  minutesSpent: number,
+  attempts: WorkSession[],
+  now: Date,
+  deadlineSignal?: ChapterDeadlineSignal,
+  planGapMinutes?: number
+): number {
   const masteryGap = (100 - exercise.mastery) * 0.6; // 0 (maîtrisé à 100%) à 60 (maîtrisé à 0%)
   const priorityWeight = exercise.priority * 8; // 8 à 40
   const statusWeight = STATUS_WEIGHT[exercise.status]; // -30 à 40
@@ -331,6 +377,11 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
   // critère d'exclusion, seulement un effet sur le tri), et d'une amplitude
   // comparable à favoriteBonus/momentumBonus, pas dominante.
   const successPenalty = Math.min(24, recentSuccessStreak(attempts) * 8); // 0 à 24
+  // Sprint Study OS Phase 4 : deux signaux additifs de plus, chacun plafonné
+  // indépendamment et nul par défaut (voir `chapterDeadlineBonus`/`planGapBonus`) —
+  // comportement strictement inchangé pour tout appelant qui ne les fournit pas.
+  const deadlineBonus = chapterDeadlineBonus(deadlineSignal); // 0 à 25
+  const planBonus = planGapBonus(planGapMinutes); // 0 à 20
   return (
     masteryGap +
     priorityWeight +
@@ -340,7 +391,9 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
     revisionBonus +
     favoriteBonus +
     failureBonus -
-    successPenalty
+    successPenalty +
+    deadlineBonus +
+    planBonus
   );
 }
 
@@ -419,6 +472,19 @@ export interface RecommendationOptions {
    * (panneau "À revoir" du Dashboard notamment).
    */
   availableMinutes?: number;
+  /**
+   * Échéances (DS/khôlle) proches, résolues par chapitre — voir
+   * lib/deadlines.ts#chapterDeadlineSignals. Omis : comportement strictement
+   * inchangé (aucun chapitre n'est jamais bonifié), pour ne rien casser chez
+   * les appelants existants qui n'ont pas connaissance des échéances.
+   */
+  chapterDeadlines?: Map<string, ChapterDeadlineSignal>;
+  /**
+   * Retard (minutes) sur le plan hebdomadaire, par matière — voir
+   * lib/weekly-plan.ts#planGapMinutesBySubject. Omis : comportement
+   * strictement inchangé.
+   */
+  subjectPlanGap?: Partial<Record<Subject, number>>;
 }
 
 /**
@@ -485,9 +551,11 @@ export function recommendExercises(
     if (exercise.archived) continue;
     const minutesSpent = minutesByExercise.get(exercise.id) ?? 0;
     const attempts = attemptsWithResult(sessions, exercise.id);
-    const reasons = evaluateExercise(exercise, minutesSpent, attempts, now);
+    const deadlineSignal = exercise.chapter_id ? options.chapterDeadlines?.get(exercise.chapter_id) : undefined;
+    const planGapMinutes = options.subjectPlanGap?.[exercise.subject];
+    const reasons = evaluateExercise(exercise, minutesSpent, attempts, now, deadlineSignal, planGapMinutes);
     if (reasons.length === 0) continue;
-    candidates.push({ exercise, score: urgencyScore(exercise, minutesSpent, attempts, now), reasons });
+    candidates.push({ exercise, score: urgencyScore(exercise, minutesSpent, attempts, now, deadlineSignal, planGapMinutes), reasons });
   }
   candidates.sort((a, b) => b.score - a.score);
   const diversified = diversifyByChapter(candidates);
