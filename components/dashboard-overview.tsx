@@ -35,6 +35,7 @@ import { ProgressBar } from "@/components/ui/progress";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { WhyThisExercise } from "@/components/exercises/why-this-exercise";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { useResumableFocus } from "@/hooks/use-resumable-focus";
 import { cn } from "@/lib/cn";
 import { computeDailyObjectiveBreakdown } from "@/lib/daily-goals";
 import { chapterDeadlineSignals, nearestDeadlineForSubject } from "@/lib/deadlines";
@@ -135,6 +136,13 @@ export function DashboardOverview() {
   const router = useRouter();
   /** Durée choisie pour "Plan du jour" — état purement local à cette page, jamais persisté (voir Phase 3 du sprint : pas de système de calendrier). */
   const [planMinutes, setPlanMinutes] = useState<number>(DEFAULT_PLAN_MINUTES);
+  // Sprint Study OS Phase 5 (production readiness) — même signal que
+  // `ResumeBanner` ci-dessous : sans lui, "À faire maintenant" affichait une
+  // recommandation concurrente à côté du bouton "Reprendre" (deux CTA
+  // contradictoires visibles en même temps, détecté en direct pendant
+  // l'audit). Une séance interrompue reste l'action la plus prioritaire de
+  // toutes ; tant qu'elle existe, le Hero ne doit jamais proposer autre chose.
+  const resumable = useResumableFocus(exercises, ready);
 
   // Signaux de priorité Sprint Study OS Phase 4 — calculés une seule fois,
   // partagés par `model` ET `dailyPlan` ci-dessous (deux useMemo séparés,
@@ -352,7 +360,10 @@ export function DashboardOverview() {
       <ResumeBanner />
       <BackupReminder />
 
-      {/* À FAIRE MAINTENANT */}
+      {/* À FAIRE MAINTENANT — masqué tant qu'une séance interrompue existe
+          (voir `resumable` ci-dessus) : ResumeBanner porte alors seul la
+          décision "quoi faire maintenant", jamais deux CTA concurrents. */}
+      {!resumable && (
       <motion.section
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -432,6 +443,7 @@ export function DashboardOverview() {
           )}
         </div>
       </motion.section>
+      )}
 
       {/* RACCOURCIS D'ACTION */}
       <section className="flex flex-wrap gap-2.5">
