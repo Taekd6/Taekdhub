@@ -241,6 +241,17 @@ describe("recommendExercises — signaux échec/réussite (Sprint 5)", () => {
     expect(result.reasons).not.toContain("Maîtrise faible");
   });
 
+  it("une séance échouée de moins d'une minute (attempts/minutesSpent pas encore incrémentés) n'affiche jamais 'Jamais travaillé' à côté de 'Échec récent' (Sprint Study OS Phase 6 — contradiction détectée en direct)", () => {
+    // `exercise.attempts` reste à 0 et `minutesSpent` à 0 pour une séance de
+    // quelques secondes (voir commitResult/secondsToWholeMinutes) — seule la
+    // présence d'une WorkSession avec résultat doit empêcher "Jamais travaillé".
+    const exercise = makeExercise({ attempts: 0 });
+    const sessions = [makeSession(exercise.id, { duration_seconds: 6, result: "échoué" })];
+    const [result] = recommendExercises([exercise], sessions, 10, { now: NOW });
+    expect(result.reasons).toContain("Échec récent");
+    expect(result.reasons).not.toContain("Jamais travaillé");
+  });
+
   it("un exercice déjà engagé (au moins une tentative) mais toujours à mastery faible affiche 'Maîtrise faible', sans 'Jamais travaillé' (catégorie B)", () => {
     const exercise = makeExercise({ mastery: 0, attempts: 2, status: "en cours" });
     const [result] = recommendExercises([exercise], [], 10, { now: NOW });

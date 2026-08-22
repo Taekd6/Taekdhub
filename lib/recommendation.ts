@@ -151,7 +151,16 @@ function evaluateExercise(
   const neverWorked = isNeverWorked(exercise, minutesSpent);
   if (exercise.mastery <= 25 && !neverWorked) reasons.push("Maîtrise faible");
   if (exercise.priority >= 4) reasons.push("Priorité élevée");
-  if (neverWorked) reasons.push("Jamais travaillé");
+  // `attempts.length === 0` en plus de `neverWorked` (Sprint Study OS Phase 6) :
+  // une séance de moins d'une minute ne fait pas passer `exercise.attempts`/
+  // `minutesSpent` au-dessus de 0 (voir `commitResult`, lib/session.ts), donc
+  // `neverWorked` restait vrai juste après un tel échec — "Jamais travaillé"
+  // s'affichait alors CÔTE À CÔTE avec "Échec récent" pour le même exercice,
+  // une contradiction visible détectée en direct pendant l'audit de cette
+  // phase. `attempts` (séances avec résultat, voir plus bas) est déjà la
+  // source de vérité pour "Échec récent" : s'il en existe une, l'exercice a
+  // été travaillé, quelle que soit sa durée.
+  if (neverWorked && attempts.length === 0) reasons.push("Jamais travaillé");
   if (exercise.status === "en cours") reasons.push("En cours");
   if (exercise.status === "à revoir") reasons.push("Marqué à revoir");
   // Échéance (Sprint Study OS Phase 4 — DS/khôlle) : un chapitre associé à
