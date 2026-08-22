@@ -32,6 +32,18 @@ export type Preferences = {
   contestDate: string;
   /** Échéance optionnelle par matière — voir la note ci-dessus. Clé absente = pas d'échéance pour cette matière. */
   subjectDeadlines: Partial<Record<Subject, string>>;
+  /**
+   * Objectif du jour PAR MATIÈRE, en minutes (Sprint Study OS — Aujourd'hui) —
+   * optionnel, indépendant de `dailyGoalMinutes` (qui reste le seul total
+   * global, jamais recalculé comme une somme de ces valeurs : rien n'oblige
+   * les deux à s'accorder, exactement comme `weeklyGoalMinutes` vis-à-vis de
+   * `dailyGoalMinutes`). Même convention que `subjectDeadlines` : clé absente
+   * = pas d'objectif pour cette matière, jamais les 7 matières forcées à 0
+   * (voir `normalizeDailySubjectGoals`).
+   */
+  dailySubjectGoals: Partial<Record<Subject, number>>;
+  /** Objectif du jour en nombre d'exercices — `null` : pas d'objectif configuré (voir lib/daily-goals.ts). */
+  dailyExerciseGoal: number | null;
   accent: string;
   themeMode: ThemeMode;
 };
@@ -41,6 +53,8 @@ const defaults: Preferences = {
   weeklyGoalMinutes: 300,
   contestDate: "",
   subjectDeadlines: {},
+  dailySubjectGoals: {},
+  dailyExerciseGoal: null,
   accent: DEFAULT_ACCENT,
   themeMode: DEFAULT_THEME_MODE,
 };
@@ -312,6 +326,29 @@ function normalizeSubjectDeadlines(raw: unknown): Partial<Record<Subject, string
 }
 
 /**
+ * Même principe que `normalizeSubjectDeadlines` ci-dessus, appliqué à
+ * `dailySubjectGoals` (Sprint Study OS — Aujourd'hui) : un objet qui n'en est
+ * pas retombe sur `{}`, seules les valeurs numériques strictement positives
+ * sont conservées (un objectif à 0 ou négatif n'a pas de sens et équivaudrait
+ * de toute façon à "pas d'objectif" — jamais stocké comme tel pour ne pas
+ * laisser deux représentations différentes du même "rien configuré").
+ */
+function normalizeDailySubjectGoals(raw: unknown): Partial<Record<Subject, number>> {
+  if (!isRecord(raw)) return {};
+  const result: Partial<Record<Subject, number>> = {};
+  for (const subject of subjects) {
+    const value = raw[subject];
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) result[subject] = Math.round(value);
+  }
+  return result;
+}
+
+/** `null` : pas d'objectif configuré — jamais 0, qui serait ambigu avec "objectif atteint d'office". */
+function normalizeDailyExerciseGoal(raw: unknown): number | null {
+  return typeof raw === "number" && Number.isFinite(raw) && raw > 0 ? Math.round(raw) : null;
+}
+
+/**
  * Fusionne une préférence potentiellement partielle/corrompue (import, ancienne
  * sauvegarde, édition manuelle du localStorage) avec `defaults` — même principe
  * que `normalizeExercise`/`normalizeChapter` : un champ absent ou invalide
@@ -328,6 +365,8 @@ export function normalizePreferences(raw: unknown): Preferences {
     ...merged,
     themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE,
     subjectDeadlines: normalizeSubjectDeadlines(item.subjectDeadlines),
+    dailySubjectGoals: normalizeDailySubjectGoals(item.dailySubjectGoals),
+    dailyExerciseGoal: normalizeDailyExerciseGoal(item.dailyExerciseGoal),
   };
 }
 

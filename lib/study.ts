@@ -30,10 +30,15 @@ export function dayKey(value: string | Date) { return new Date(value).toLocaleDa
 export function completedExercises(exercises: Exercise[]) { return exercises.filter((exercise) => exercise.status === "maîtrisé" && !exercise.archived); }
 export function totalSeconds(sessions: WorkSession[]) { return sessions.reduce((total, session) => total + session.duration_seconds, 0); }
 
+/** Séances d'aujourd'hui (toutes matières confondues) — extrait de `todaySeconds` (Sprint Study OS) pour que `lib/daily-goals.ts` puisse dériver un décompte par matière/par exercice sans redéfinir "aujourd'hui" une seconde fois. */
+export function todaySessions(sessions: WorkSession[], now: Date = new Date()): WorkSession[] {
+  const today = dayKey(now);
+  return sessions.filter((session) => dayKey(session.started_at) === today);
+}
+
 /** Temps déjà investi aujourd'hui (toutes matières confondues), en secondes — source unique, réutilisée par le Dashboard et par la séance bornée par le temps (lib/recommendation.ts côté appelant). */
 export function todaySeconds(sessions: WorkSession[], now: Date = new Date()): number {
-  const today = dayKey(now);
-  return totalSeconds(sessions.filter((session) => dayKey(session.started_at) === today));
+  return totalSeconds(todaySessions(sessions, now));
 }
 
 /**

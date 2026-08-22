@@ -192,6 +192,58 @@ describe("normalizePreferences — subjectDeadlines (rétrocompatibilité)", () 
 });
 
 /**
+ * Sprint Study OS (Aujourd'hui) — `dailySubjectGoals`/`dailyExerciseGoal`
+ * suivent exactement les mêmes garanties de rétrocompatibilité que
+ * `subjectDeadlines` ci-dessus : absent → valeur par défaut, jamais une
+ * exception, jamais une valeur inventée à partir de rien.
+ */
+describe("normalizePreferences — dailySubjectGoals / dailyExerciseGoal", () => {
+  it("absence des deux champs (préférence vide) → {} / null", () => {
+    const prefs = normalizePreferences({});
+    expect(prefs.dailySubjectGoals).toEqual({});
+    expect(prefs.dailyExerciseGoal).toBeNull();
+  });
+
+  it("un objectif par matière valide (nombre positif) est conservé", () => {
+    const prefs = normalizePreferences({ dailySubjectGoals: { Mathématiques: 90, Physique: 60 } });
+    expect(prefs.dailySubjectGoals).toEqual({ Mathématiques: 90, Physique: 60 });
+  });
+
+  it("une valeur non numérique, nulle, ou ≤ 0 est écartée silencieusement, sans planter", () => {
+    expect(normalizePreferences({ dailySubjectGoals: { Physique: "90", Chimie: 0, Mathématiques: -5, Anglais: null } }).dailySubjectGoals).toEqual({});
+  });
+
+  it("une clé qui n'est pas une matière connue est ignorée", () => {
+    const prefs = normalizePreferences({ dailySubjectGoals: { "Matière Fantôme": 60, Physique: 60 } });
+    expect(prefs.dailySubjectGoals).toEqual({ Physique: 60 });
+  });
+
+  it("dailySubjectGoals corrompu (pas un objet) retombe sur {} sans planter", () => {
+    expect(normalizePreferences({ dailySubjectGoals: "pas un objet" }).dailySubjectGoals).toEqual({});
+    expect(normalizePreferences({ dailySubjectGoals: null }).dailySubjectGoals).toEqual({});
+  });
+
+  it("dailyExerciseGoal valide (nombre positif) est conservé, arrondi", () => {
+    expect(normalizePreferences({ dailyExerciseGoal: 5 }).dailyExerciseGoal).toBe(5);
+    expect(normalizePreferences({ dailyExerciseGoal: 5.6 }).dailyExerciseGoal).toBe(6);
+  });
+
+  it("dailyExerciseGoal invalide (0, négatif, non numérique) retombe sur null — jamais 0 (ambigu avec \"objectif atteint d'office\")", () => {
+    expect(normalizePreferences({ dailyExerciseGoal: 0 }).dailyExerciseGoal).toBeNull();
+    expect(normalizePreferences({ dailyExerciseGoal: -3 }).dailyExerciseGoal).toBeNull();
+    expect(normalizePreferences({ dailyExerciseGoal: "5" }).dailyExerciseGoal).toBeNull();
+  });
+
+  it("migration d'une ancienne préférence sans ces champs : reste valide, défauts appliqués, rien d'autre inventé", () => {
+    const legacy = { displayName: "Ancien utilisateur", dailyGoalMinutes: 120, weeklyGoalMinutes: 300, contestDate: "", accent: "#6366f1" };
+    const prefs = normalizePreferences(legacy);
+    expect(prefs.dailySubjectGoals).toEqual({});
+    expect(prefs.dailyExerciseGoal).toBeNull();
+    expect(prefs.displayName).toBe("Ancien utilisateur");
+  });
+});
+
+/**
  * Robustesse stockage (audit produit) : une écriture `localStorage` qui
  * échoue (quota dépassé, navigation privée…) ne doit jamais faire planter
  * l'appelant — voir `lib/storage.ts#safeSetItem`, seul point d'écriture.
