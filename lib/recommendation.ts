@@ -1,4 +1,5 @@
-import { DEADLINE_RELEVANCE_HORIZON_DAYS, type ChapterDeadlineSignal } from "@/lib/deadlines";
+import { DEADLINE_RELEVANCE_HORIZON_DAYS } from "@/lib/deadline-horizon";
+import type { ChapterDeadlineSignal } from "@/lib/deadlines";
 import { minutesByExerciseMap, totalSeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
 import type { Exercise, ExerciseStatus, Subject, WorkSession } from "@/lib/supabase/types";
@@ -574,8 +575,20 @@ export interface ExerciseBankStats {
   neverWorkedCount: number;
 }
 
-/** Tableau de bord de la banque d'exercices — agrégats simples, tous dérivés des mêmes règles que `recommendExercises` (voir `evaluateExercise`). */
-export function computeExerciseBankStats(exercises: Exercise[], sessions: WorkSession[], now: Date = new Date()): ExerciseBankStats {
+/**
+ * Tableau de bord de la banque d'exercices — agrégats simples, tous dérivés
+ * des mêmes règles que `recommendExercises` (voir `evaluateExercise`).
+ * `options` (Sprint Study OS Phase 4, optionnel, `{}` par défaut — comportement
+ * strictement inchangé sans lui) : mêmes signaux échéance/plan hebdomadaire
+ * que `recommendExercises`, pour que `toReviewCount` ne dise jamais "rien à
+ * signaler" alors qu'un DS proche rendrait un exercice éligible.
+ */
+export function computeExerciseBankStats(
+  exercises: Exercise[],
+  sessions: WorkSession[],
+  now: Date = new Date(),
+  options: Pick<RecommendationOptions, "chapterDeadlines" | "subjectPlanGap"> = {}
+): ExerciseBankStats {
   const minutesByExercise = minutesByExerciseMap(sessions);
   const active = exercises.filter((exercise) => !exercise.archived);
 
@@ -587,7 +600,9 @@ export function computeExerciseBankStats(exercises: Exercise[], sessions: WorkSe
   for (const exercise of active) {
     const minutesSpent = minutesByExercise.get(exercise.id) ?? 0;
     const attempts = attemptsWithResult(sessions, exercise.id);
-    if (evaluateExercise(exercise, minutesSpent, attempts, now).length > 0) toReviewCount++;
+    const deadlineSignal = exercise.chapter_id ? options.chapterDeadlines?.get(exercise.chapter_id) : undefined;
+    const planGapMinutes = options.subjectPlanGap?.[exercise.subject];
+    if (evaluateExercise(exercise, minutesSpent, attempts, now, deadlineSignal, planGapMinutes).length > 0) toReviewCount++;
     if (isNeverWorked(exercise, minutesSpent)) neverWorkedCount++;
     masterySum += exercise.mastery;
     prioritySum += exercise.priority;

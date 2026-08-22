@@ -1,6 +1,10 @@
+import { DEADLINE_RELEVANCE_HORIZON_DAYS } from "@/lib/deadline-horizon";
 import type { Deadline, DeadlineType } from "@/lib/storage";
 import type { Chapter } from "@/lib/storage";
 import type { Subject } from "@/lib/supabase/types";
+
+/** Réexportée pour ne rien changer aux imports existants — définition réelle dans lib/deadline-horizon.ts, voir sa doc. */
+export { DEADLINE_RELEVANCE_HORIZON_DAYS };
 
 /**
  * Échéances (Sprint Study OS Phase 4 — "DS et khôlles") — module purement
@@ -67,15 +71,6 @@ export function deadlineLabel(deadline: Deadline, days: number): string {
   const when = days === 0 ? "aujourd'hui" : days === 1 ? "demain" : `dans ${days} j`;
   return `${TYPE_LABEL[deadline.type]} de ${deadline.subject} ${when}`;
 }
-
-/**
- * Au-delà de cet horizon, une échéance est trop lointaine pour changer quoi
- * que ce soit d'actionnable aujourd'hui — plus court que
- * `CONTEST_URGENCY_HORIZON_DAYS` (lib/plan.ts, 21 j, à l'échelle d'une
- * matière entière) : ce signal est plus précis (à l'échelle d'un chapitre),
- * il n'a de sens que pour une échéance déjà concrètement proche.
- */
-export const DEADLINE_RELEVANCE_HORIZON_DAYS = 14;
 
 export interface ChapterDeadlineSignal {
   /** Jours restants avant l'échéance la plus proche concernant ce chapitre — toujours 0-`DEADLINE_RELEVANCE_HORIZON_DAYS`. */

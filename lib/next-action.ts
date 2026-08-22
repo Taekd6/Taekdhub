@@ -1,3 +1,4 @@
+import type { ChapterDeadlineSignal } from "@/lib/deadlines";
 import { resultCounts, type ResultCounts } from "@/lib/history";
 import { progressByChapter, type ChapterProgress } from "@/lib/progress";
 import { computeExerciseBankStats, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
@@ -5,7 +6,7 @@ import type { Chapter } from "@/lib/storage";
 import { todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
 import { neglectedSubjects } from "@/lib/week";
-import type { Exercise, WorkSession } from "@/lib/supabase/types";
+import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
  * Centre de pilotage (Sprint 7) — "quoi faire maintenant", à partir des
@@ -70,7 +71,25 @@ const NEXT_ACTION_PICKS = 3;
  * - `start-session` : au moins un exercice signalé — `picks` en donne un aperçu concret,
  *   dimensionné sur le temps restant de l'objectif du jour (ou un bloc par défaut si l'objectif est déjà atteint).
  */
-export function computeNextAction(exercises: Exercise[], sessions: WorkSession[], dailyGoalMinutes: number, now: Date = new Date()): NextAction {
+/**
+ * Signaux de priorité additionnels (Sprint Study OS Phase 4), tous deux
+ * optionnels et sans effet par défaut : mêmes objets que ceux consommés par
+ * `recommendExercises`/`computeExerciseBankStats` (lib/recommendation.ts),
+ * simplement transmis tels quels — `computeNextAction` ne recalcule rien de
+ * ces signaux, il ne fait que les faire suivre jusqu'au moteur.
+ */
+export interface NextActionSignals {
+  chapterDeadlines?: Map<string, ChapterDeadlineSignal>;
+  subjectPlanGap?: Partial<Record<Subject, number>>;
+}
+
+export function computeNextAction(
+  exercises: Exercise[],
+  sessions: WorkSession[],
+  dailyGoalMinutes: number,
+  now: Date = new Date(),
+  signals: NextActionSignals = {}
+): NextAction {
   const active = exercises.filter((exercise) => !exercise.archived);
 
   if (active.length === 0) {
@@ -85,7 +104,7 @@ export function computeNextAction(exercises: Exercise[], sessions: WorkSession[]
     };
   }
 
-  const stats = computeExerciseBankStats(active, sessions, now);
+  const stats = computeExerciseBankStats(active, sessions, now, signals);
   if (stats.toReviewCount === 0) {
     return {
       kind: "up-to-date",
@@ -100,12 +119,12 @@ export function computeNextAction(exercises: Exercise[], sessions: WorkSession[]
 
   const objective = computeDailyObjective(sessions, dailyGoalMinutes, now);
   const minutes = objective.remainingMinutes > 0 ? objective.remainingMinutes : CONTINUE_SESSION_MINUTES;
-  const bounded = recommendExercises(active, sessions, NEXT_ACTION_PICKS, { now, availableMinutes: minutes });
+  const bounded = recommendExercises(active, sessions, NEXT_ACTION_PICKS, { now, availableMinutes: minutes, ...signals });
   // Un budget serré peut ne rien retenir (voir `selectWithinBudget`) sans que
   // ça signifie "rien à proposer" — dans ce cas, on montre quand même
   // l'aperçu non borné : la contrainte de temps réelle reste appliquée par
   // `/session` lui-même au moment de démarrer.
-  const picks = bounded.length > 0 ? bounded : recommendExercises(active, sessions, NEXT_ACTION_PICKS, { now });
+  const picks = bounded.length > 0 ? bounded : recommendExercises(active, sessions, NEXT_ACTION_PICKS, { now, ...signals });
   const top = picks[0];
 
   return {

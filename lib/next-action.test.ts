@@ -148,6 +148,36 @@ describe("computeNextAction", () => {
   });
 });
 
+/**
+ * Sprint Study OS Phase 4 — signaux échéance/plan hebdomadaire transmis tels
+ * quels au moteur de recommandation. Sans 5e argument, comportement
+ * strictement inchangé (déjà couvert par tous les tests ci-dessus).
+ */
+describe("computeNextAction — signaux échéance/plan (Sprint Study OS Phase 4)", () => {
+  it("un exercice sans aucune autre raison, autrement up-to-date, devient start-session grâce à une échéance de chapitre", () => {
+    const exercise = makeExercise({ chapter_id: "c-continuite", status: "à faire", mastery: 50, priority: 2, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const withoutSignal = computeNextAction([exercise], [], 45, NOW);
+    expect(withoutSignal.kind).toBe("up-to-date");
+
+    const withSignal = computeNextAction([exercise], [], 45, NOW, {
+      chapterDeadlines: new Map([["c-continuite", { days: 2, label: "ton DS de Mathématiques dans 2 j" }]]),
+    });
+    expect(withSignal.kind).toBe("start-session");
+    expect(withSignal.picks[0].exercise.id).toBe(exercise.id);
+    expect(withSignal.description).toContain("Prioritaire : ton DS de Mathématiques dans 2 j");
+  });
+
+  it("une séance interrompue (gérée ailleurs par ResumeBanner) n'est pas concernée par ce mécanisme — computeNextAction reste indépendant de la reprise", () => {
+    // Ce test documente la frontière : computeNextAction ne connaît jamais
+    // les séances interrompues, uniquement la banque/l'historique — la
+    // priorité "reprise > tout le reste" est assurée en amont, côté Dashboard
+    // (voir components/resume-banner.tsx), jamais ici.
+    const exercise = makeExercise({ mastery: 0 });
+    const action = computeNextAction([exercise], [], 45, NOW, { chapterDeadlines: new Map() });
+    expect(action.kind).toBe("start-session");
+  });
+});
+
 describe("computeUpcoming", () => {
   it("aucune donnée : liste vide, pas d'erreur", () => {
     expect(computeUpcoming([], [], [], NOW)).toEqual([]);
