@@ -246,3 +246,84 @@ describe("isNeverWorked / computeExerciseBankStats — smoke tests de non-régre
     expect(stats).toEqual({ toReviewCount: 0, averageMastery: 0, averagePriority: 0, neverWorkedCount: 0 });
   });
 });
+
+/**
+ * Audit bout-en-bout /exercises ↔ recommandations ↔ Plan du jour ↔
+ * SessionRunner : `recommendExercises` est une fonction pure (aucun effet de
+ * bord, aucune source d'aléa) — son déterminisme découle normalement de sa
+ * seule transparence référentielle, mais ce sont justement les bornes de
+ * `limit` (0, 1, taille exacte, au-delà de la taille réelle) qui n'avaient
+ * jamais été testées explicitement alors que `selectWithinBudget` et
+ * `diversifyByChapter` bouclent tous les deux sur ces valeurs.
+ */
+describe("recommendExercises — déterminisme", () => {
+  it("deux appels avec exactement les mêmes entrées renvoient la même sélection, dans le même ordre", () => {
+    const exercises = [
+      makeExercise({ priority: 5, mastery: 25 }),
+      makeExercise({ priority: 2, mastery: 50, status: "à revoir" }),
+      makeExercise({ priority: 4, mastery: 0, favorite: true }),
+    ];
+    const first = recommendExercises(exercises, [], 10, { now: NOW });
+    const second = recommendExercises(exercises, [], 10, { now: NOW });
+    expect(second.map((r) => r.exercise.id)).toEqual(first.map((r) => r.exercise.id));
+    expect(second.map((r) => r.score)).toEqual(first.map((r) => r.score));
+  });
+
+  it("changer uniquement le budget de temps ne change que ce qui tient dedans, jamais l'ordre des candidats retenus", () => {
+    const exercises = [
+      makeExercise({ priority: 5, mastery: 0, estimated_minutes: 10 }),
+      makeExercise({ priority: 4, mastery: 0, estimated_minutes: 10 }),
+      makeExercise({ priority: 3, mastery: 0, estimated_minutes: 10 }),
+    ];
+    const wide = recommendExercises(exercises, [], 10, { now: NOW, availableMinutes: 30 });
+    const narrow = recommendExercises(exercises, [], 10, { now: NOW, availableMinutes: 10 });
+    expect(narrow.map((r) => r.exercise.id)).toEqual(wide.slice(0, narrow.length).map((r) => r.exercise.id));
+  });
+});
+
+describe("recommendExercises — bornes de limit", () => {
+  it("limit = 0 renvoie un tableau vide, jamais une exception", () => {
+    const exercises = [makeExercise({ priority: 5, mastery: 0 })];
+    expect(recommendExercises(exercises, [], 0, { now: NOW })).toEqual([]);
+    expect(recommendExercises(exercises, [], 0, { now: NOW, availableMinutes: 60 })).toEqual([]);
+  });
+
+  it("limit = 1 renvoie exactement le meilleur candidat", () => {
+    const weak = makeExercise({ priority: 5, mastery: 0 });
+    const mild = makeExercise({ priority: 2, mastery: 50, status: "à revoir" });
+    const [result] = recommendExercises([mild, weak], [], 1, { now: NOW });
+    expect(recommendExercises([mild, weak], [], 1, { now: NOW })).toHaveLength(1);
+    expect(result.exercise.id).toBe(weak.id);
+  });
+
+  it("limit égale au nombre d'éligibles : tous renvoyés, aucun doublon", () => {
+    const exercises = Array.from({ length: 5 }, () => makeExercise({ priority: 5, mastery: 0 }));
+    const result = recommendExercises(exercises, [], exercises.length, { now: NOW });
+    expect(result).toHaveLength(5);
+    expect(new Set(result.map((r) => r.exercise.id)).size).toBe(5);
+  });
+
+  it("limit supérieure au nombre d'éligibles : renvoie tous les éligibles, sans jamais fabriquer une entrée vide", () => {
+    const exercises = Array.from({ length: 3 }, () => makeExercise({ priority: 5, mastery: 0 }));
+    const result = recommendExercises(exercises, [], 999, { now: NOW });
+    expect(result).toHaveLength(3);
+    expect(result.every((r) => r.exercise !== undefined)).toBe(true);
+  });
+
+  it("aucun exercice éligible : tableau vide, pas d'exception, quelle que soit la limite", () => {
+    // `attempts > 0` : sans ça, `isNeverWorked` resterait vrai malgré status/mastery
+    // (voir evaluateExercise, lib/recommendation.ts) — "Jamais travaillé" est un
+    // critère d'inclusion indépendant du statut, intentionnellement.
+    const mastered = makeExercise({ status: "maîtrisé", mastery: 100, priority: 1, attempts: 3, last_worked_at: NOW.toISOString() });
+    expect(recommendExercises([mastered], [], 10, { now: NOW })).toEqual([]);
+    expect(recommendExercises([], [], 10, { now: NOW })).toEqual([]);
+  });
+
+  it("un exercice archivé n'est jamais compté dans une limite large, même s'il serait par ailleurs éligible", () => {
+    const archived = makeExercise({ priority: 5, mastery: 0, archived: true });
+    const eligible = makeExercise({ priority: 5, mastery: 0 });
+    const result = recommendExercises([archived, eligible], [], 10, { now: NOW });
+    expect(result).toHaveLength(1);
+    expect(result[0].exercise.id).toBe(eligible.id);
+  });
+});
