@@ -397,7 +397,7 @@
       "Échelonne le système ligne par ligne en éliminant une inconnue à la fois, en commençant par la première colonne.",
       "Une fois le système triangulaire, résous par remontée (de la dernière équation vers la première)."
     ],
-    "correction": "Après échelonnement par opérations élémentaires sur les lignes, le système triangulaire se résout par substitution en remontant depuis la dernière équation.",
+    "correction": "Après échelonnement par opérations élémentaires sur les lignes, le système triangulaire se résout par substitution en remontant depuis la dernière équation. Après échelonnement (L2←L2-2L1, L3←L3-L1, puis remontée), on obtient x=1, y=2, z=3.",
     "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
     "year": null,
     "competition": null,
@@ -1169,7 +1169,7 @@
       "Repère la forme a²-b², (a±b)² avant de développer quoi que ce soit.",
       "Une fois factorisé, vérifie en redéveloppant mentalement."
     ],
-    "correction": "La reconnaissance directe des trois identités usuelles (a+b)², (a-b)², a²-b² évite tout calcul long — la factorisation est immédiate une fois la forme repérée.",
+    "correction": "La reconnaissance directe des trois identités usuelles (a+b)², (a-b)², a²-b² évite tout calcul long — la factorisation est immédiate une fois la forme repérée. Numériquement : x²-9 = (x-3)(x+3) ; 4x²+12x+9 = (2x+3)² ; (2x+1)²-(x-3)² = (x+4)(3x-2).",
     "note": "Exercice original TaekdHub.",
     "year": null,
     "competition": null,
@@ -1846,7 +1846,7 @@
       "Détermine le module r = |z| et un argument θ, puis écris z = r(cos θ + i sin θ).",
       "zⁿ = rⁿ(cos(nθ) + i sin(nθ)) par la formule de Moivre — bien plus rapide qu'un développement direct de (a+ib)ⁿ."
     ],
-    "correction": "En forme trigonométrique z = r·e^(iθ), on a zⁿ = rⁿ·e^(inθ) (formule de Moivre) : calculer une puissance élevée devient trivial, alors qu'un développement direct en forme algébrique serait très long.",
+    "correction": "En forme trigonométrique z = r·e^(iθ), on a zⁿ = rⁿ·e^(inθ) (formule de Moivre) : calculer une puissance élevée devient trivial, alors qu'un développement direct en forme algébrique serait très long. Ici r = 6, θ = π/3 (soit z = 6e^(iπ/3)), donc z⁶ = 6⁶·e^(i2π) = 46656 (réel).",
     "note": "Exercice original TaekdHub.",
     "year": null,
     "competition": null,
@@ -4288,7 +4288,7 @@
       "En série (même courant), les résistances s'additionnent directement : Req=R1+R2+...",
       "En parallèle (même tension), ce sont les inverses qui s'additionnent : 1/Req=1/R1+1/R2+..."
     ],
-    "correction": "Série : Req=ΣRi (même courant traverse toutes les résistances). Parallèle : 1/Req=Σ(1/Ri) (même tension aux bornes de chacune) — reconnaître la topologie du circuit (courant commun ou tension commune) donne directement la bonne formule.",
+    "correction": "Série : Req=ΣRi (même courant traverse toutes les résistances). Parallèle : 1/Req=Σ(1/Ri) (même tension aux bornes de chacune) — reconnaître la topologie du circuit (courant commun ou tension commune) donne directement la bonne formule. Numériquement, avec R₁=100 Ω et R₂=300 Ω : en série, Req = 400 Ω ; en parallèle, Req = 75 Ω.",
     "note": "Exercice original TaekdHub.",
     "level": 1,
     "year": null,
@@ -4736,7 +4736,7 @@
       "Applique les règles dans l'ordre : élément seul = 0, ion monoatomique = sa charge, O = -II (sauf exceptions), H = +I (sauf hydrures).",
       "La somme des nombres d'oxydation dans une espèce neutre vaut 0 ; dans un ion, elle vaut la charge de l'ion — utilise cette somme pour déduire le nombre d'oxydation inconnu d'un élément."
     ],
-    "correction": "En appliquant les règles usuelles (O=-II sauf peroxydes, H=+I sauf hydrures métalliques, somme=charge totale de l'espèce), le nombre d'oxydation de l'élément recherché se déduit par différence — technique systématique, sans exception à mémoriser au cas par cas au-delà des règles de base.",
+    "correction": "En appliquant les règles usuelles (O=-II sauf peroxydes, H=+I sauf hydrures métalliques, somme=charge totale de l'espèce), le nombre d'oxydation de l'élément recherché se déduit par différence — technique systématique, sans exception à mémoriser au cas par cas au-delà des règles de base. Numériquement : n.o.(S) = +6 dans H₂SO₄, +6 dans SO₄²⁻, et +2 (moyenne) dans S₂O₃²⁻.",
     "note": "Exercice original TaekdHub.",
     "level": 1,
     "year": null,

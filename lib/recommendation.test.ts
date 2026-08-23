@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { computeExerciseBankStats, isNeverWorked, recommendExercises } from "@/lib/recommendation";
-import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
+import { computeExerciseBankStats, isNeverWorked, recentGlobalPerformance, recommendExercises } from "@/lib/recommendation";
+import type { Difficulty, Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
 
 let counter = 0;
 function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
@@ -325,5 +325,127 @@ describe("recommendExercises — bornes de limit", () => {
     const result = recommendExercises([archived, eligible], [], 10, { now: NOW });
     expect(result).toHaveLength(1);
     expect(result[0].exercise.id).toBe(eligible.id);
+  });
+});
+
+/**
+ * Sprint "Reprise MP" — `recentGlobalPerformance` : fonction pure, calculée
+ * une seule fois par appel à `recommendExercises` (voir sa doc), jamais par
+ * exercice. Testée isolément avant `difficultyFitBonus` pour ne pas mélanger
+ * les deux dans un même test.
+ */
+describe("recentGlobalPerformance", () => {
+  it("aucune séance avec résultat : count=0, rate=0", () => {
+    expect(recentGlobalPerformance([])).toEqual({ rate: 0, count: 0 });
+    const onlyNullResult = [makeSession("ex-1", { result: null })];
+    expect(recentGlobalPerformance(onlyNullResult)).toEqual({ rate: 0, count: 0 });
+  });
+
+  it("ignore les séances sans résultat, ne compte que celles avec un résultat renseigné", () => {
+    const sessions = [
+      makeSession("ex-1", { started_at: "2026-08-09T00:00:00.000Z", result: "réussi" }),
+      makeSession("ex-2", { started_at: "2026-08-08T00:00:00.000Z", result: null }),
+      makeSession("ex-3", { started_at: "2026-08-07T00:00:00.000Z", result: "échoué" }),
+    ];
+    expect(recentGlobalPerformance(sessions)).toEqual({ rate: 0.5, count: 2 });
+  });
+
+  it("se limite aux 8 séances avec résultat les plus récentes, toutes matières confondues", () => {
+    // 10 échecs anciens, puis 8 réussites récentes : seules les 8 réussites
+    // doivent compter, quel que soit l'ordre de la liste passée en entrée.
+    const old = Array.from({ length: 10 }, (_, i) =>
+      makeSession(`old-${i}`, { started_at: `2026-01-${String(i + 1).padStart(2, "0")}T00:00:00.000Z`, result: "échoué" })
+    );
+    const recent = Array.from({ length: 8 }, (_, i) =>
+      makeSession(`recent-${i}`, { started_at: `2026-08-${String(i + 1).padStart(2, "0")}T00:00:00.000Z`, result: "réussi" })
+    );
+    expect(recentGlobalPerformance([...old, ...recent])).toEqual({ rate: 1, count: 8 });
+  });
+});
+
+/**
+ * Sprint "Reprise MP" — `difficultyFitBonus` (interne à urgencyScore, testé
+ * via son effet observable sur l'ordre/le score renvoyé par
+ * `recommendExercises`, jamais importé directement — même convention que le
+ * reste de ce fichier, qui teste toujours le comportement public).
+ *
+ * Terme volontairement borné (±12, comparable à favoriteBonus) : il ne
+ * décide jamais seul de l'inclusion (voir `evaluateExercise`, inchangé),
+ * seulement de l'ORDRE parmi des candidats déjà retenus.
+ */
+describe("recommendExercises — ajustement de difficulté (Sprint Reprise MP)", () => {
+  function makeExerciseWithDifficulty(difficulty: Difficulty, overrides: Partial<Exercise> = {}) {
+    return makeExercise({ status: "à revoir", mastery: 25, priority: 3, difficulty, ...overrides });
+  }
+
+  it("reprise (aucun historique) : à urgence égale par ailleurs, une difficulté 1-2 devance une difficulté 4-5", () => {
+    const easy = makeExerciseWithDifficulty(1);
+    const hard = makeExerciseWithDifficulty(5);
+    const result = recommendExercises([easy, hard], [], 10, { now: NOW });
+    const easyResult = result.find((r) => r.exercise.id === easy.id)!;
+    const hardResult = result.find((r) => r.exercise.id === hard.id)!;
+    expect(easyResult.score).toBeGreaterThan(hardResult.score);
+    expect(result.findIndex((r) => r.exercise.id === easy.id)).toBeLessThan(result.findIndex((r) => r.exercise.id === hard.id));
+  });
+
+  it("reprise : une difficulté 3 (zone neutre) n'est ni avantagée ni pénalisée par rapport au comportement historique", () => {
+    // `attempts: 1` désactive neverWorkedBonus pour isoler exactement les
+    // termes déjà couverts par les tests existants — avec `sessions = []`, le
+    // terme de difficulté doit valoir 0 pour une difficulté 3 : le score doit
+    // donc être IDENTIQUE à celui calculé avant ce sprint (aucune régression
+    // numérique sur le cas par défaut, qui utilise partout difficulty: 3).
+    const neutral = makeExerciseWithDifficulty(3, { attempts: 1 });
+    const [result] = recommendExercises([neutral], [], 10, { now: NOW });
+    // masteryGap(25)=45 + priorityWeight(3)=24 + statusWeight("à revoir")=40 = 109, aucun autre terme actif.
+    expect(result.score).toBe(109);
+  });
+
+  it("bon élève (historique confirmé, réussite ≥ 80%) : une difficulté 4-5 est favorisée par rapport à une difficulté 1", () => {
+    const goodStreak: WorkSession[] = Array.from({ length: 5 }, (_, i) =>
+      makeSession(`other-${i}`, { started_at: `2026-08-0${i + 1}T00:00:00.000Z`, result: "réussi" })
+    );
+    const hard = makeExerciseWithDifficulty(5);
+    const easy = makeExerciseWithDifficulty(1);
+    const result = recommendExercises([hard, easy], goodStreak, 10, { now: NOW });
+    const hardResult = result.find((r) => r.exercise.id === hard.id)!;
+    const easyResult = result.find((r) => r.exercise.id === easy.id)!;
+    expect(hardResult.score).toBeGreaterThan(easyResult.score);
+  });
+
+  it("élève en difficulté (historique confirmé, réussite ≤ 40%) : une difficulté 4-5 n'est jamais poussée davantage", () => {
+    const strugglingHistory: WorkSession[] = [
+      makeSession("other-1", { started_at: "2026-08-01T00:00:00.000Z", result: "échoué" }),
+      makeSession("other-2", { started_at: "2026-08-02T00:00:00.000Z", result: "échoué" }),
+      makeSession("other-3", { started_at: "2026-08-03T00:00:00.000Z", result: "échoué" }),
+      makeSession("other-4", { started_at: "2026-08-04T00:00:00.000Z", result: "réussi" }),
+      makeSession("other-5", { started_at: "2026-08-05T00:00:00.000Z", result: "échoué" }),
+    ];
+    const hard = makeExerciseWithDifficulty(5);
+    const medium = makeExerciseWithDifficulty(3);
+    const result = recommendExercises([hard, medium], strugglingHistory, 10, { now: NOW });
+    const hardResult = result.find((r) => r.exercise.id === hard.id)!;
+    const mediumResult = result.find((r) => r.exercise.id === medium.id)!;
+    // La difficulté 5 ne doit jamais être avantagée face à une difficulté 3 ici (au mieux égale, jamais supérieure).
+    expect(hardResult.score).toBeLessThanOrEqual(mediumResult.score);
+  });
+
+  it("zone neutre (historique confirmé, réussite entre 40% et 80%) : aucun effet du terme de difficulté", () => {
+    const mixedHistory: WorkSession[] = [
+      makeSession("other-1", { started_at: "2026-08-01T00:00:00.000Z", result: "réussi" }),
+      makeSession("other-2", { started_at: "2026-08-02T00:00:00.000Z", result: "échoué" }),
+      makeSession("other-3", { started_at: "2026-08-03T00:00:00.000Z", result: "réussi" }),
+      makeSession("other-4", { started_at: "2026-08-04T00:00:00.000Z", result: "échoué" }),
+      makeSession("other-5", { started_at: "2026-08-05T00:00:00.000Z", result: "réussi" }),
+    ]; // 3/5 = 60%, dans la zone neutre (40%-80% exclus)
+    const hard = makeExerciseWithDifficulty(5, { attempts: 1 });
+    const [result] = recommendExercises([hard], mixedHistory, 10, { now: NOW });
+    // masteryGap(25)=45 + priorityWeight(3)=24 + statusWeight("à revoir")=40 = 109, comme le test "zone neutre" ci-dessus.
+    expect(result.score).toBe(109);
+  });
+
+  it("le terme de difficulté ne change jamais l'inclusion — un exercice non retenu par ailleurs reste exclu quelle que soit sa difficulté", () => {
+    const masteredHard = makeExerciseWithDifficulty(5, { status: "maîtrisé", mastery: 100, priority: 1, attempts: 3, last_worked_at: NOW.toISOString() });
+    const result = recommendExercises([masteredHard], [], 10, { now: NOW });
+    expect(result).toHaveLength(0);
   });
 });
