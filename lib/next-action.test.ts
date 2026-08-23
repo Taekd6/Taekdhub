@@ -178,6 +178,37 @@ describe("computeNextAction — signaux échéance/plan (Sprint Study OS Phase 4
   });
 });
 
+describe("computeNextAction — objectif atteint + échéance proche (Daily Copilot, État G)", () => {
+  it("objectif du jour atteint ET une échéance proche existe : le titre annonce l'objectif atteint et pointe vers l'échéance, plutôt que de continuer à recommander comme si de rien n'était", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
+    const action = computeNextAction([exercise], sessions, 45, NOW, {
+      nearestDeadline: { label: "ton DS de Mathématiques dans 2 j", days: 2 },
+    });
+    expect(action.kind).toBe("start-session");
+    expect(action.title).toBe("Tu as rempli ton objectif quotidien.");
+    expect(action.description).toBe("Il reste cependant ton DS de Mathématiques dans 2 j.");
+    expect(action.ctaLabel).toBe("Préparer cette échéance");
+    // Les exercices concrets proposés restent ceux réellement calculés (pas une liste vide inventée) — /session propose exactement ce qui est annoncé ici.
+    expect(action.picks.length).toBeGreaterThan(0);
+  });
+
+  it("objectif du jour PAS encore atteint : aucune bascule même avec une échéance proche — le pivot ne s'applique qu'une fois l'objectif rempli", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const action = computeNextAction([exercise], [], 45, NOW, {
+      nearestDeadline: { label: "ton DS de Mathématiques dans 2 j", days: 2 },
+    });
+    expect(action.title).not.toBe("Tu as rempli ton objectif quotidien.");
+  });
+
+  it("objectif atteint mais aucune échéance proche : comportement inchangé (pas de bascule)", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
+    const action = computeNextAction([exercise], sessions, 45, NOW);
+    expect(action.title).not.toBe("Tu as rempli ton objectif quotidien.");
+  });
+});
+
 describe("computeUpcoming", () => {
   it("aucune donnée : liste vide, pas d'erreur", () => {
     expect(computeUpcoming([], [], [], NOW)).toEqual([]);
@@ -313,6 +344,15 @@ describe("computeStatusLine", () => {
     const objective = computeDailyObjective(sessions, 45, NOW);
     const action = computeNextAction([exercise], sessions, 45, NOW);
     expect(computeStatusLine(objective, action)).toMatch(/atteint/);
+  });
+
+  it("objectif atteint ET une échéance proche existe (Daily Copilot) : la ligne d'état nomme l'échéance plutôt qu'un générique \"tu peux t'arrêter ici\"", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
+    const objective = computeDailyObjective(sessions, 45, NOW);
+    const action = computeNextAction([exercise], sessions, 45, NOW);
+    const nearestDeadline = { label: "ton DS de Mathématiques dans 2 j", days: 2 };
+    expect(computeStatusLine(objective, action, nearestDeadline)).toBe("Objectif du jour atteint 🎯 Il reste ton DS de Mathématiques dans 2 j.");
   });
 
   it("rien travaillé aujourd'hui : indique le temps restant réel (micro-sprint « Ah ouais »)", () => {

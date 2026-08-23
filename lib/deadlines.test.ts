@@ -6,6 +6,7 @@ import {
   deadlineChapterLabels,
   deadlineLabel,
   nearestDeadlineForSubject,
+  nearestUpcomingDeadline,
   removeDeadline,
   updateDeadline,
   upcomingDeadlines,
@@ -97,6 +98,25 @@ describe("nearestDeadlineForSubject", () => {
 
   it("null si aucune échéance à venir pour cette matière", () => {
     expect(nearestDeadlineForSubject([makeDeadline({ subject: "Mathématiques" })], "Chimie", MONDAY)).toBeNull();
+  });
+});
+
+describe("nearestUpcomingDeadline (Daily Copilot)", () => {
+  it("échéance la plus proche toutes matières confondues, avec son libellé prêt à l'affichage", () => {
+    const deadlines = [
+      makeDeadline({ id: "d-maths", subject: "Mathématiques", type: "DS", date: "2026-08-28" }),
+      makeDeadline({ id: "d-physique", subject: "Physique", type: "khôlle", date: "2026-08-26" }),
+    ];
+    expect(nearestUpcomingDeadline(deadlines, MONDAY)).toEqual({ label: "ta khôlle de Physique dans 2 j", days: 2 });
+  });
+
+  it("null si rien n'est à venir", () => {
+    expect(nearestUpcomingDeadline([], MONDAY)).toBeNull();
+  });
+
+  it("null au-delà de l'horizon de pertinence — même seuil que chapterDeadlineSignals, jamais une deuxième échelle", () => {
+    const deadlines = [makeDeadline({ date: "2026-09-30" })];
+    expect(nearestUpcomingDeadline(deadlines, MONDAY)).toBeNull();
   });
 });
 

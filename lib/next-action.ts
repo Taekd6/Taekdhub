@@ -81,6 +81,14 @@ const NEXT_ACTION_PICKS = 3;
 export interface NextActionSignals {
   chapterDeadlines?: Map<string, ChapterDeadlineSignal>;
   subjectPlanGap?: Partial<Record<Subject, number>>;
+  /**
+   * Échéance la plus proche, tous types/matières confondus (Daily Copilot) —
+   * même projection que `upcomingDeadlines(deadlines, now)[0]` (lib/deadlines.ts),
+   * simplement transmise : `computeNextAction` ne lit jamais `Deadline[]`
+   * lui-même, pour rester découplé du stockage des échéances. `null`/absent :
+   * comportement strictement inchangé.
+   */
+  nearestDeadline?: { label: string; days: number } | null;
 }
 
 export function computeNextAction(
@@ -126,6 +134,25 @@ export function computeNextAction(
   // `/session` lui-même au moment de démarrer.
   const picks = bounded.length > 0 ? bounded : recommendExercises(active, sessions, NEXT_ACTION_PICKS, { now, ...signals });
   const top = picks[0];
+
+  // Objectif du jour déjà atteint + échéance proche (Daily Copilot, État G) :
+  // dire explicitement que l'objectif est rempli plutôt que de continuer à
+  // recommander comme si de rien n'était — sans quoi la journée peut donner
+  // une impression de retard alors qu'elle est terminée. `picks`/`minutes`
+  // restent ceux déjà calculés ci-dessus (déjà pondérés par `chapterDeadlines`
+  // via `signals`, donc déjà tournés vers cette échéance) : seul le message
+  // change, `/session` propose exactement ce qui est annoncé ici.
+  if (objective.met && signals.nearestDeadline) {
+    return {
+      kind: "start-session",
+      title: "Tu as rempli ton objectif quotidien.",
+      description: `Il reste cependant ${signals.nearestDeadline.label}.`,
+      ctaLabel: "Préparer cette échéance",
+      href: "/session",
+      minutes,
+      picks,
+    };
+  }
 
   return {
     kind: "start-session",
@@ -334,9 +361,20 @@ function hasFailureSignal(reasons: string[]): boolean {
  * l'absence d'activité en invitation concrète plutôt qu'un simple constat.
  * Aucun nouveau calcul : uniquement une reformulation des mêmes champs.
  */
-export function computeStatusLine(objective: DailyObjective, nextAction: NextAction): string {
+export function computeStatusLine(
+  objective: DailyObjective,
+  nextAction: NextAction,
+  nearestDeadline?: { label: string; days: number } | null
+): string {
   if (nextAction.kind === "empty-bank") return "Ta banque est vide pour l'instant — ajoute tes premiers exercices.";
-  if (objective.met) return "Objectif du jour atteint 🎯 Tu peux continuer ou t'arrêter ici.";
+  if (objective.met) {
+    // Daily Copilot (État G) : dire QUOI reste important plutôt qu'un
+    // générique "tu peux t'arrêter ici" — même signal que le Hero
+    // (`computeNextAction`), jamais recalculé séparément.
+    return nearestDeadline
+      ? `Objectif du jour atteint 🎯 Il reste ${nearestDeadline.label}.`
+      : "Objectif du jour atteint 🎯 Tu peux continuer ou t'arrêter ici.";
+  }
   if (objective.workedMinutes === 0) {
     if (nextAction.kind === "up-to-date") return "Rien n'est signalé aujourd'hui — bon moment pour avancer librement.";
     return objective.goalMinutes > 0

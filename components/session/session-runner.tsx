@@ -13,7 +13,7 @@ import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix, findRecoverableCheckpoint, type RecoveredTimerSeed } from "@/hooks/use-work-timer";
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
-import { chapterDeadlineSignals } from "@/lib/deadlines";
+import { chapterDeadlineSignals, nearestUpcomingDeadline } from "@/lib/deadlines";
 import { findPersistedFocusDraft } from "@/lib/focus-draft";
 import { computeNextAction } from "@/lib/next-action";
 import { computeDailyPlan, PLAN_STORAGE_KEY, summarizePlanObjective, type StoredPlan } from "@/lib/plan";
@@ -70,7 +70,11 @@ export function SessionRunner() {
   // "à faire maintenant" sans connaître les échéances/le plan hebdomadaire,
   // risquant de proposer un exercice différent de celui vu juste avant).
   const prioritySignals = useMemo(
-    () => ({ chapterDeadlines: chapterDeadlineSignals(deadlines), subjectPlanGap: planGapMinutesBySubject(weeklyPlan, sessions) }),
+    () => ({
+      chapterDeadlines: chapterDeadlineSignals(deadlines),
+      subjectPlanGap: planGapMinutesBySubject(weeklyPlan, sessions),
+      nearestDeadline: nearestUpcomingDeadline(deadlines),
+    }),
     [deadlines, weeklyPlan, sessions]
   );
   const [phase, setPhase] = useState<Phase>("loading");

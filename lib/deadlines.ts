@@ -72,6 +72,19 @@ export function deadlineLabel(deadline: Deadline, days: number): string {
   return `${TYPE_LABEL[deadline.type]} de ${deadline.subject} ${when}`;
 }
 
+/**
+ * Échéance la plus proche, toutes matières confondues, prête pour
+ * `lib/next-action.ts#NextActionSignals.nearestDeadline` (Daily Copilot) —
+ * mêmes fonctions que `chapterDeadlineSignals` (`upcomingDeadlines` +
+ * `deadlineLabel`), même horizon de pertinence, jamais un second calcul.
+ * `null` : rien d'assez proche pour justifier d'en parler.
+ */
+export function nearestUpcomingDeadline(deadlines: Deadline[], now: Date = new Date()): { label: string; days: number } | null {
+  const [nearest] = upcomingDeadlines(deadlines, now);
+  if (!nearest || nearest.days > DEADLINE_RELEVANCE_HORIZON_DAYS) return null;
+  return { label: deadlineLabel(nearest.deadline, nearest.days), days: nearest.days };
+}
+
 export interface ChapterDeadlineSignal {
   /** Jours restants avant l'échéance la plus proche concernant ce chapitre — toujours 0-`DEADLINE_RELEVANCE_HORIZON_DAYS`. */
   days: number;

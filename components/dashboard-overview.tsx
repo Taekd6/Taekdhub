@@ -38,7 +38,7 @@ import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { useResumableFocus } from "@/hooks/use-resumable-focus";
 import { cn } from "@/lib/cn";
 import { computeDailyObjectiveBreakdown } from "@/lib/daily-goals";
-import { chapterDeadlineSignals, nearestDeadlineForSubject } from "@/lib/deadlines";
+import { chapterDeadlineSignals, nearestDeadlineForSubject, nearestUpcomingDeadline } from "@/lib/deadlines";
 import { computeStreak } from "@/lib/gamification";
 import { recentDaySummaries } from "@/lib/history";
 import {
@@ -156,6 +156,7 @@ export function DashboardOverview() {
     return {
       chapterDeadlines: chapterDeadlineSignals(deadlines, now),
       subjectPlanGap: planGapMinutesBySubject(weeklyPlan, sessions, now),
+      nearestDeadline: nearestUpcomingDeadline(deadlines, now),
     };
   }, [deadlines, weeklyPlan, sessions]);
 
@@ -476,171 +477,10 @@ export function DashboardOverview() {
         </Link>
       </section>
 
-      {/* PLAN DU JOUR */}
-      <Card className="p-6 sm:p-7">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <ListTodo size={14} className="text-accent-text" />
-            <div>
-              <p className="eyebrow">Plan du jour</p>
-              <CardTitle className="mt-1 text-lg">Ce que tu devrais travailler aujourd&apos;hui</CardTitle>
-            </div>
-          </div>
-          <div className="inline-flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-black/20 p-1">
-            {PLAN_DURATION_PRESETS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => setPlanMinutes(preset)}
-                aria-pressed={planMinutes === preset}
-                className={cn(
-                  "rounded-lg px-3 py-1.5 text-xs font-medium transition",
-                  planMinutes === preset ? "bg-accent text-accent-foreground" : "text-zinc-500 hover:text-zinc-300"
-                )}
-              >
-                {preset} min
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {dailyPlan.blocks.length === 0 ? (
-          <p className="mt-5 text-sm text-zinc-500">
-            {nextAction.kind === "empty-bank" ? "Ajoute des exercices pour que TaekdHub puisse te construire un plan." : "Rien à planifier pour l'instant — ta banque est à jour."}
-          </p>
-        ) : (
-          <>
-            <ol className="mt-5 space-y-2.5">
-              {dailyPlan.blocks.map((block, index) => (
-                <li key={block.subject} className="flex items-start gap-3 rounded-xl border border-hairline/[0.06] p-3.5 text-sm">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent-text">{index + 1}</span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                      <p className="truncate font-medium text-zinc-100">{block.label}</p>
-                      <span className="shrink-0 text-xs text-zinc-500">{block.estimatedMinutes} min</span>
-                    </div>
-                    <p className="mt-1 text-xs text-zinc-500">{block.pickLabel}</p>
-                    <WhyThisExercise reasons={block.picks[0]?.reasons} className="mt-1.5" />
-                  </div>
-                </li>
-              ))}
-            </ol>
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.06] pt-5">
-              <p className="text-sm text-zinc-400">
-                Total : <span className="font-semibold text-zinc-100">{formatMinutes(dailyPlan.totalMinutes)}</span> · {dailyPlan.totalExercises} exercice
-                {dailyPlan.totalExercises > 1 ? "s" : ""}
-              </p>
-              <Button onClick={startPlan}>
-                Commencer le plan <ArrowRight size={16} />
-              </Button>
-            </div>
-          </>
-        )}
-      </Card>
-
-      {/* FILE DE TRAVAIL — sélection manuelle (voir "Ajouter à la file de travail" sur chaque exercice), distincte du Plan du jour ci-dessus. Masquée quand vide : pas de carte à faire disparaître par défaut, rien à décider tant que rien n'a été choisi. */}
-      {queueEntries.length > 0 && (
-        <Card className="p-6 sm:p-7">
-          <div className="flex items-center gap-2">
-            <ListPlus size={14} className="text-accent-text" />
-            <div>
-              <p className="eyebrow">File de travail</p>
-              <CardTitle className="mt-1 text-lg">Ta sélection, dans l&apos;ordre</CardTitle>
-            </div>
-          </div>
-          <ol className="mt-5 space-y-2.5">
-            {queueEntries.map(({ exercise }, index) => (
-              <li key={exercise.id} className="flex items-center gap-3 rounded-xl border border-hairline/[0.06] p-3.5 text-sm">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent-text">{index + 1}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
-                  <p className="mt-0.5 text-xs text-zinc-500">{exercise.subject}</p>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => removeFromWorkQueue(exercise.id)} aria-label="Retirer de la file" className="h-8 w-8 shrink-0">
-                  <X size={15} />
-                </Button>
-              </li>
-            ))}
-          </ol>
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.06] pt-5">
-            <p className="text-sm text-zinc-400">
-              {queueEntries.length} exercice{queueEntries.length > 1 ? "s" : ""} choisi{queueEntries.length > 1 ? "s" : ""}
-            </p>
-            <Button onClick={startQueue}>
-              Commencer <ArrowRight size={16} />
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* PRIORITÉS DE LA SEMAINE — "pourquoi" : juste après le plan, avant les chiffres d'état ("où j'en suis" ci-dessous), pour rester dans l'ordre de lecture quoi → pourquoi → où j'en suis → comment (voir la doc du composant). */}
-      {subjectPriorities.length > 0 && (
-        <Card className="p-6">
-          <div className="flex items-center gap-2">
-            <Flag size={14} className="text-accent-text" />
-            <p className="eyebrow">Priorités de la semaine</p>
-          </div>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2">
-            {subjectPriorities.map(({ subject, label, level, reason }) => {
-              const meta = PRIORITY_META[level];
-              return (
-                <div key={subject} className="flex items-center justify-between gap-3 rounded-xl border border-hairline/[0.06] px-3.5 py-2.5 text-sm">
-                  <span className="flex items-center gap-2 font-medium text-zinc-100">
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
-                    {label}
-                  </span>
-                  <span className="text-right text-xs text-zinc-500">{reason}</span>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
-
-      {/* À CONSOLIDER — même logique "pourquoi", au niveau du chapitre. */}
-      {chapters.length > 0 && (
-        <Card className="p-6">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={14} className="text-accent-text" />
-            <p className="eyebrow">À consolider</p>
-          </div>
-          <CardTitle className="mt-2">
-            {toConsolidate.length > 0 ? "Ces chapitres méritent ton attention" : "Rien à consolider pour l'instant"}
-          </CardTitle>
-
-          {toConsolidate.length === 0 ? (
-            <p className="mt-2 text-sm text-zinc-500">Tous les chapitres actifs sont sous contrôle. Continue comme ça.</p>
-          ) : (
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {toConsolidate.map(({ chapter, averageMastery, reasons, href }) => (
-                <Link
-                  key={chapter.id}
-                  href={href}
-                  className="focus-ring flex flex-col gap-2.5 rounded-xl border border-hairline/[0.06] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="min-w-0 truncate font-medium text-zinc-100">{chapter.label}</p>
-                    <span className="whitespace-nowrap text-xs text-zinc-500">{averageMastery}%</span>
-                  </div>
-                  <p className="-mt-1.5 text-2xs text-zinc-500">{chapter.subject}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {reasons.map((reason) => (
-                      <Badge key={reason} variant="warning">
-                        {reason}
-                      </Badge>
-                    ))}
-                  </div>
-                  <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-accent-text">
-                    Travailler ce chapitre <ArrowRight size={11} />
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </Card>
-      )}
-
-      {/* OBJECTIF DU JOUR + TA PROGRESSION — "où j'en suis" à partir d'ici. */}
+      {/* OBJECTIF DU JOUR + TA PROGRESSION — hiérarchie Daily Copilot : Hero
+          ("quoi faire maintenant") puis, immédiatement après, "où j'en suis"
+          (objectif du jour + vue d'ensemble), avant le détail du jour
+          (Plan du jour/File de travail/semaine) et les échéances. */}
       <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
         <Card className="rounded-3xl p-6 sm:p-7">
           <div className="flex items-start justify-between">
@@ -744,6 +584,103 @@ export function DashboardOverview() {
           </Link>
         </Card>
       </section>
+
+      {/* PLAN DU JOUR */}
+      <Card className="p-6 sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <ListTodo size={14} className="text-accent-text" />
+            <div>
+              <p className="eyebrow">Plan du jour</p>
+              <CardTitle className="mt-1 text-lg">Ce que tu devrais travailler aujourd&apos;hui</CardTitle>
+            </div>
+          </div>
+          <div className="inline-flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-black/20 p-1">
+            {PLAN_DURATION_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setPlanMinutes(preset)}
+                aria-pressed={planMinutes === preset}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                  planMinutes === preset ? "bg-accent text-accent-foreground" : "text-zinc-500 hover:text-zinc-300"
+                )}
+              >
+                {preset} min
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {dailyPlan.blocks.length === 0 ? (
+          <p className="mt-5 text-sm text-zinc-500">
+            {nextAction.kind === "empty-bank" ? "Ajoute des exercices pour que TaekdHub puisse te construire un plan." : "Rien à planifier pour l'instant — ta banque est à jour."}
+          </p>
+        ) : (
+          <>
+            <ol className="mt-5 space-y-2.5">
+              {dailyPlan.blocks.map((block, index) => (
+                <li key={block.subject} className="flex items-start gap-3 rounded-xl border border-hairline/[0.06] p-3.5 text-sm">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent-text">{index + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <p className="truncate font-medium text-zinc-100">{block.label}</p>
+                      <span className="shrink-0 text-xs text-zinc-500">{block.estimatedMinutes} min</span>
+                    </div>
+                    <p className="mt-1 text-xs text-zinc-500">{block.pickLabel}</p>
+                    <WhyThisExercise reasons={block.picks[0]?.reasons} className="mt-1.5" />
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.06] pt-5">
+              <p className="text-sm text-zinc-400">
+                Total : <span className="font-semibold text-zinc-100">{formatMinutes(dailyPlan.totalMinutes)}</span> · {dailyPlan.totalExercises} exercice
+                {dailyPlan.totalExercises > 1 ? "s" : ""}
+              </p>
+              <Button onClick={startPlan}>
+                Commencer le plan <ArrowRight size={16} />
+              </Button>
+            </div>
+          </>
+        )}
+      </Card>
+
+      {/* FILE DE TRAVAIL — sélection manuelle (voir "Ajouter à la file de travail" sur chaque exercice), distincte du Plan du jour ci-dessus. Masquée quand vide : pas de carte à faire disparaître par défaut, rien à décider tant que rien n'a été choisi. */}
+      {queueEntries.length > 0 && (
+        <Card className="p-6 sm:p-7">
+          <div className="flex items-center gap-2">
+            <ListPlus size={14} className="text-accent-text" />
+            <div>
+              <p className="eyebrow">File de travail</p>
+              <CardTitle className="mt-1 text-lg">Ta sélection, dans l&apos;ordre</CardTitle>
+            </div>
+          </div>
+          <ol className="mt-5 space-y-2.5">
+            {queueEntries.map(({ exercise }, index) => (
+              <li key={exercise.id} className="flex items-center gap-3 rounded-xl border border-hairline/[0.06] p-3.5 text-sm">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent-text">{index + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
+                  <p className="mt-0.5 text-xs text-zinc-500">{exercise.subject}</p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => removeFromWorkQueue(exercise.id)} aria-label="Retirer de la file" className="h-8 w-8 shrink-0">
+                  <X size={15} />
+                </Button>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.06] pt-5">
+            <p className="text-sm text-zinc-400">
+              {queueEntries.length} exercice{queueEntries.length > 1 ? "s" : ""} choisi{queueEntries.length > 1 ? "s" : ""}
+            </p>
+            <Button onClick={startQueue}>
+              Commencer <ArrowRight size={16} />
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* CETTE SEMAINE */}
       <Card className="p-6">
@@ -971,6 +908,76 @@ export function DashboardOverview() {
             </Card>
           )}
         </section>
+      )}
+
+      {/* PRIORITÉS DE LA SEMAINE — "pourquoi", en complément de ce qui précède
+          (Daily Copilot) : une fois le Hero, "où j'en suis" et les échéances
+          déjà lus, ce détail hebdomadaire par matière reste secondaire, jamais
+          concurrent de la seule action principale du Hero. */}
+      {subjectPriorities.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <Flag size={14} className="text-accent-text" />
+            <p className="eyebrow">Priorités de la semaine</p>
+          </div>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            {subjectPriorities.map(({ subject, label, level, reason }) => {
+              const meta = PRIORITY_META[level];
+              return (
+                <div key={subject} className="flex items-center justify-between gap-3 rounded-xl border border-hairline/[0.06] px-3.5 py-2.5 text-sm">
+                  <span className="flex items-center gap-2 font-medium text-zinc-100">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
+                    {label}
+                  </span>
+                  <span className="text-right text-xs text-zinc-500">{reason}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* À CONSOLIDER — même logique "pourquoi", au niveau du chapitre. */}
+      {chapters.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={14} className="text-accent-text" />
+            <p className="eyebrow">À consolider</p>
+          </div>
+          <CardTitle className="mt-2">
+            {toConsolidate.length > 0 ? "Ces chapitres méritent ton attention" : "Rien à consolider pour l'instant"}
+          </CardTitle>
+
+          {toConsolidate.length === 0 ? (
+            <p className="mt-2 text-sm text-zinc-500">Tous les chapitres actifs sont sous contrôle. Continue comme ça.</p>
+          ) : (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {toConsolidate.map(({ chapter, averageMastery, reasons, href }) => (
+                <Link
+                  key={chapter.id}
+                  href={href}
+                  className="focus-ring flex flex-col gap-2.5 rounded-xl border border-hairline/[0.06] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="min-w-0 truncate font-medium text-zinc-100">{chapter.label}</p>
+                    <span className="whitespace-nowrap text-xs text-zinc-500">{averageMastery}%</span>
+                  </div>
+                  <p className="-mt-1.5 text-2xs text-zinc-500">{chapter.subject}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {reasons.map((reason) => (
+                      <Badge key={reason} variant="warning">
+                        {reason}
+                      </Badge>
+                    ))}
+                  </div>
+                  <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-accent-text">
+                    Travailler ce chapitre <ArrowRight size={11} />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Card>
       )}
 
       {/* ACTIVITÉ RÉCENTE */}
