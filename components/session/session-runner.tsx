@@ -101,6 +101,11 @@ export function SessionRunner() {
       setPhase("focus");
       return;
     }
+    // `pendingId` présent mais introuvable/archivé : même nettoyage que
+    // components/exercises/exercise-manager.tsx — sans ça, cette clé orpheline
+    // resterait indéfiniment en sessionStorage, revérifiée à chaque montage
+    // sans jamais pouvoir être reprise.
+    if (pendingId) sessionStorage.removeItem(FOCUS_TIMER_PREFIX + pendingId);
 
     // Plan du jour (Sprint Plan de travail) : un plan déposé par le Dashboard
     // ("Commencer le plan") prime sur le calcul habituel ci-dessous — mêmes

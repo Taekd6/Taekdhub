@@ -57,9 +57,17 @@ export function ExerciseManager() {
     if (!ready || resumeChecked.current) return;
     resumeChecked.current = true;
     const pendingExerciseId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX);
-    if (pendingExerciseId && exercises.some((item) => item.id === pendingExerciseId && !item.archived)) {
+    if (!pendingExerciseId) return;
+    if (exercises.some((item) => item.id === pendingExerciseId && !item.archived)) {
       setSelectedId(pendingExerciseId);
       setFocusMode(true);
+    } else {
+      // Exercice archivé ou introuvable (ex. sauvegarde restaurée entre-temps,
+      // voir data-backup.tsx) : la séance chronométrée qu'il référençait ne
+      // peut plus être reprise nulle part — retire la clé orpheline plutôt
+      // que de la laisser traîner indéfiniment en sessionStorage sans jamais
+      // être consommée (même nettoyage côté /session, voir session-runner.tsx).
+      sessionStorage.removeItem(FOCUS_TIMER_PREFIX + pendingExerciseId);
     }
   }, [ready, exercises]);
 
@@ -192,6 +200,14 @@ export function ExerciseManager() {
     [exercises, jumpToExercise]
   );
 
+  // `jumpToExercise` (au lieu d'un simple `setSelectedId`) : sans ça, créer un
+  // exercice pendant qu'on est encore en mode navigation Matière → Chapitre
+  // (l'état par défaut à l'ouverture de la page) ou avec un filtre actif qui
+  // l'exclurait laissait l'utilisateur sur le même écran, sans la moindre
+  // preuve visuelle que la création a fonctionné — la liste plate n'est même
+  // pas montée tant que `browseMode` reste actif. `jumpToExercise` sort du
+  // mode navigation, réinitialise les filtres et amène la fiche à l'écran —
+  // même garantie que pour un saut depuis "À revoir".
   const create = useCallback(
     (input: NewExerciseInput) => {
       const exercise = createExerciseFromInput(input);
@@ -199,14 +215,17 @@ export function ExerciseManager() {
       exercisesRef.current = next;
       saveExercises(next);
       setFormOpen(false);
-      setSelectedId(exercise.id);
+      jumpToExercise(exercise.id);
     },
-    [saveExercises]
+    [saveExercises, jumpToExercise]
   );
 
   // Import en masse (Sprint infrastructure banque) — mêmes exercices que
   // `create` (même constructeur `createExerciseFromInput`), en une seule
-  // écriture pour toute la sélection plutôt qu'un appel par exercice.
+  // écriture pour toute la sélection plutôt qu'un appel par exercice. Même
+  // raison qu'au-dessus de sortir du mode navigation et de réinitialiser les
+  // filtres : un import réalisé depuis l'écran d'accueil Matière → Chapitre
+  // ne montrerait sinon rien du tout une fois la boîte de dialogue fermée.
   const importExercises = useCallback(
     (inputs: NewExerciseInput[]) => {
       const created = inputs.map(createExerciseFromInput);
@@ -214,6 +233,8 @@ export function ExerciseManager() {
       exercisesRef.current = next;
       saveExercises(next);
       setImportOpen(false);
+      setFilters(defaultExerciseFilters);
+      setBrowseMode(false);
     },
     [saveExercises]
   );
@@ -280,12 +301,27 @@ export function ExerciseManager() {
         else if (formOpen) setFormOpen(false);
         else if (selectedId) setSelectedId(null);
         else if (showArchived) setShowArchived(false);
+        return;
       }
+      // Pendant une séance Focus, FocusView gère déjà son propre clavier
+      // (indices, résultat, timer) plein écran : ces raccourcis de la liste
+      // ne doivent jamais interférer. Sans cette garde, "n" tapé pendant une
+      // séance armait silencieusement `formOpen` (le composant `ExerciseForm`
+      // n'étant pas monté tant que `focusMode` est actif) — le formulaire
+      // "Nouvel exercice" surgissait alors sans explication juste après avoir
+      // quitté la séance.
+      if (focusMode) return;
       if ((event.metaKey || event.ctrlKey) && event.key === "k") {
         event.preventDefault();
         document.getElementById("exercise-search")?.focus();
       }
-      if (event.key === "n" && !event.metaKey && !event.ctrlKey && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+      // Exclut aussi SELECT (comme le fait déjà components/timer.tsx pour son
+      // raccourci espace) : sans ça, taper "n" alors qu'un des menus de la
+      // barre de filtres (matière, statut, tri…) a le focus ouvrait le
+      // formulaire "Nouvel exercice" au lieu de laisser le sélecteur natif
+      // gérer la frappe.
+      const activeTag = document.activeElement?.tagName;
+      if (event.key === "n" && !event.metaKey && !event.ctrlKey && activeTag !== "INPUT" && activeTag !== "TEXTAREA" && activeTag !== "SELECT") {
         setFormOpen(true);
       }
     }

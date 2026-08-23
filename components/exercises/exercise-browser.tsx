@@ -97,7 +97,19 @@ export function ExerciseBrowser({
 
 function SubjectGrid({ exercises, onSelect }: { exercises: Exercise[]; onSelect: (subject: Subject) => void }) {
   const entries = computeProgressBySubject(exercises).filter((entry) => entry.total > 0);
-  if (entries.length === 0) return null;
+  // Banque totalement vide (aucune matière active) : un vrai état vide plutôt
+  // que de ne rien afficher — sans ce cas, l'écran d'accueil de la page
+  // Exercices restait silencieusement blanc (voir mission "Scénario D —
+  // banque vide"), sans jamais dire à l'utilisateur qu'il doit ajouter ou
+  // importer des exercices (boutons juste en dessous, ExerciseFiltersBar).
+  if (entries.length === 0) {
+    return (
+      <div className="surface rounded-2xl px-6 py-8 text-center">
+        <p className="font-semibold">Ta banque d&apos;exercices est vide.</p>
+        <p className="mt-1 text-sm text-zinc-500">Ajoute ta première fiche ou importe un fichier depuis les boutons ci-dessous.</p>
+      </div>
+    );
+  }
 
   return (
     <div>
