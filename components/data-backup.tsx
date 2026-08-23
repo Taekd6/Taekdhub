@@ -13,6 +13,8 @@ export function DataBackup() {
   const input = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
   const [pendingImport, setPendingImport] = useState<BackupPayload | null>(null);
+  /** `true` une fois l'import confirmé et écrit — voir la note dans `confirmImport` sur pourquoi un rechargement complet est nécessaire. */
+  const [importDone, setImportDone] = useState(false);
 
   function exportData() {
     exportBackup();
@@ -31,6 +33,7 @@ export function DataBackup() {
         if (!validateBackupPayload(data)) throw new Error();
         // Rien n'est écrit ici : on attend la confirmation explicite de l'utilisateur.
         setMessage("");
+        setImportDone(false);
         setPendingImport(data);
       } catch {
         setPendingImport(null);
@@ -52,7 +55,15 @@ export function DataBackup() {
     // Sauvegarde d'avant le Sprint 2.1 : pas de weekSnapshots dans le fichier, restaurés à [] proprement.
     localData.saveWeekSnapshots(pendingImport.weekSnapshots ?? []);
     setPendingImport(null);
-    setMessage("Sauvegarde restaurée. Recharge la page.");
+    // `usePrepahubData` n'est pas un store partagé : chaque composant monté
+    // (Dashboard, barre latérale…) a sa PROPRE instance du hook, et l'événement
+    // navigateur `storage` ne se déclenche jamais dans l'onglet qui a lui-même
+    // écrit (seulement dans les AUTRES onglets) — `refresh()` ici ne mettrait
+    // à jour que ce composant, laissant le reste de l'app silencieusement
+    // périmé. Un rechargement complet est donc le seul moyen honnête de
+    // garantir que toute l'app reflète l'import — proposé en un clic plutôt
+    // que laissé à la charge de l'utilisateur.
+    setImportDone(true);
   }
 
   function cancelImport() {
@@ -124,6 +135,15 @@ export function DataBackup() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {importDone && (
+        <div role="status" className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4">
+          <p className="text-sm text-zinc-200">Sauvegarde restaurée — recharge la page pour que tout l&apos;affichage en tienne compte.</p>
+          <Button size="sm" onClick={() => window.location.reload()}>
+            Recharger maintenant
+          </Button>
+        </div>
+      )}
 
       {message && (
         <p role="status" className="mt-4 text-sm text-accent">

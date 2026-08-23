@@ -166,7 +166,12 @@ export function ProgressOverview() {
   const model = useMemo(() => {
     return {
       global: computeGlobalProgress(exercises),
-      bySubject: computeProgressBySubject(exercises),
+      // Filtré aux matières avec au moins un exercice actif — même convention
+      // que le Dashboard (components/dashboard-overview.tsx#model.bySubject) :
+      // une matière totalement vide (ex. Français/Anglais tant qu'aucun
+      // exercice n'y a été ajouté) n'a rien à montrer, pas une ligne "0/0" et
+      // une barre vide qui donne une impression de produit incomplet.
+      bySubject: computeProgressBySubject(exercises).filter((entry) => entry.total > 0),
       byChapter: progressByChapter(exercises, chapters),
       mastery: masteryDistribution(exercises),
       status: statusDistribution(exercises),
@@ -208,6 +213,9 @@ export function ProgressOverview() {
         <Card className="p-6">
           <p className="eyebrow">Répartition</p>
           <CardTitle className="mt-2">Progression par matière</CardTitle>
+          {model.bySubject.length === 0 ? (
+            <p className="mt-6 text-sm text-zinc-500">Ajoute des exercices pour voir ta progression par matière ici.</p>
+          ) : (
           <div className="mt-6 space-y-5">
             {model.bySubject.map(({ subject, total, mastered, completionRate }) => (
               <div key={subject} id={`subject-${subjectMeta[subject].short}`} className="scroll-mt-24">
@@ -226,6 +234,7 @@ export function ProgressOverview() {
               </div>
             ))}
           </div>
+          )}
         </Card>
 
         <Card className="p-6">
