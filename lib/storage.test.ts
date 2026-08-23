@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
+import { normalizePreferences, normalizeSession, patchPreferences, validateBackupPayload } from "@/lib/storage";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -133,5 +133,39 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     expect(prefs.accent).toBe("#6366f1");
     expect(prefs.themeMode).toBe("system");
     expect(prefs.weeklyGoalMinutes).toBe(300);
+  });
+});
+
+/**
+ * `patchPreferences` corrige un bug réel : PreferencesForm et ThemePicker
+ * (Réglages) montent chacun leur propre instance de `usePrepahubData`, sans
+ * store partagé — enregistrer l'un avec un instantané complet de
+ * `preferences` écrasait silencieusement tout champ que l'AUTRE venait de
+ * changer (ex. choisir une couleur d'accent puis enregistrer son prénom
+ * faisait revenir l'ancienne couleur). `patchPreferences` relit toujours
+ * `localData.preferences()` au moment de l'appel plutôt que de partir d'un
+ * instantané React figé — cette garantie de fusion est ce que ces tests
+ * vérifient (la persistance réelle inter-appels n'est pas simulable ici, en
+ * l'absence de `window`/`localStorage` — voir vitest.config.ts).
+ */
+describe("patchPreferences — fusion avec la dernière valeur stockée, jamais un instantané périmé", () => {
+  it("n'applique que les champs du patch ; les champs non mentionnés restent inchangés", () => {
+    const patched = patchPreferences({ accent: "#123456" });
+    expect(patched.accent).toBe("#123456");
+    expect(patched.displayName).toBe("");
+    expect(patched.dailyGoalMinutes).toBe(240);
+    expect(patched.themeMode).toBe("system");
+  });
+
+  it("plusieurs champs du patch sont tous appliqués en un seul appel", () => {
+    const patched = patchPreferences({ displayName: "Alice", dailyGoalMinutes: 90 });
+    expect(patched.displayName).toBe("Alice");
+    expect(patched.dailyGoalMinutes).toBe(90);
+    // Champs non mentionnés dans CE patch : toujours ceux actuellement stockés.
+    expect(patched.accent).toMatch(/^#/);
+  });
+
+  it("un patch vide renvoie exactement les préférences actuellement stockées", () => {
+    expect(patchPreferences({})).toEqual(normalizePreferences({}));
   });
 });

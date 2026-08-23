@@ -4,6 +4,7 @@ import { Check, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { ACCENT_PRESETS, DEFAULT_ACCENT, accentForegroundCss, applyAccent, applyThemeMode, THEME_MODES, type ThemeMode, hexToRgb } from "@/lib/theme";
+import { patchPreferences } from "@/lib/storage";
 import { cn } from "@/lib/cn";
 
 function sameHex(a: string, b: string) {
@@ -23,6 +24,13 @@ export function ThemePicker() {
   const isPreset = ACCENT_PRESETS.some((preset) => sameHex(preset.hex, accent));
   const mode = ready ? preferences.themeMode : "system";
 
+  // `patchPreferences` (lib/storage.ts) plutôt que `{ ...preferences, accent }` :
+  // `preferences` ici vient de la PROPRE instance de `usePrepahubData` de ce
+  // composant, indépendante de celle de PreferencesForm rendu juste au-dessus
+  // sur cette même page — enregistrer un prénom ou un objectif là-bas puis
+  // choisir une couleur ici écraserait silencieusement ce changement avec
+  // l'instantané périmé de ce composant. `patchPreferences` relit toujours la
+  // dernière valeur réellement stockée avant d'appliquer ce seul champ.
   function choose(hex: string) {
     // Applique la variable CSS directement ici (en plus de la persistance) :
     // `usePrepahubData` n'est pas un contexte partagé, chaque composant monté
@@ -30,12 +38,12 @@ export function ThemePicker() {
     // ce changement avant un rechargement — `applyAccent` agit sur le DOM,
     // donc immédiatement visible partout, sans dépendre d'un re-rendu React.
     applyAccent(hex);
-    savePreferences({ ...preferences, accent: hex });
+    savePreferences(patchPreferences({ accent: hex }));
   }
 
   function chooseMode(next: ThemeMode) {
     applyThemeMode(next);
-    savePreferences({ ...preferences, themeMode: next });
+    savePreferences(patchPreferences({ themeMode: next }));
   }
 
   return (

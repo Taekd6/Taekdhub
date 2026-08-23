@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { PLAN_DURATION_PRESETS } from "@/lib/plan";
-import type { Preferences } from "@/lib/storage";
+import { patchPreferences, type Preferences } from "@/lib/storage";
 
 /** Préréglages "objectif hebdomadaire" (Sprint Plan de travail), en minutes — 3h/5h/7h, plus une valeur libre déjà couverte par le champ nombre ci-dessous. */
 const WEEKLY_GOAL_PRESETS = [180, 300, 420];
@@ -26,9 +26,23 @@ export function PreferencesForm() {
     setPrefs(preferences);
   }, [preferences]);
 
+  // `patchPreferences` (voir lib/storage.ts) plutôt que `savePreferences(prefs)`
+  // tel quel : ce formulaire n'est monté qu'avec SA PROPRE instance de
+  // `usePrepahubData`, indépendante de celle de ThemePicker (juste en dessous
+  // sur cette même page) — enregistrer l'instantané complet `prefs` écraserait
+  // silencieusement une couleur d'accent ou un mode d'apparence changé entre-
+  // temps ailleurs sur la page. Seuls les champs réellement possédés par CE
+  // formulaire sont appliqués, par-dessus les préférences les plus fraîches.
   function save(event: React.FormEvent) {
     event.preventDefault();
-    savePreferences(prefs);
+    savePreferences(
+      patchPreferences({
+        displayName: prefs.displayName,
+        dailyGoalMinutes: prefs.dailyGoalMinutes,
+        weeklyGoalMinutes: prefs.weeklyGoalMinutes,
+        contestDate: prefs.contestDate,
+      })
+    );
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }

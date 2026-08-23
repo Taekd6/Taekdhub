@@ -276,6 +276,26 @@ export function normalizePreferences(raw: unknown): Preferences {
   return { ...merged, themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE };
 }
 
+/**
+ * Fusionne `patch` avec les préférences RÉELLEMENT stockées à l'instant de
+ * l'appel — jamais avec un instantané React potentiellement périmé.
+ *
+ * `usePrepahubData` n'est pas un store partagé : `components/preferences-form.tsx`
+ * et `components/theme-picker.tsx` (Réglages) montent chacun leur PROPRE
+ * instance du hook, chacune figée sur les préférences telles qu'elles
+ * étaient à SON dernier montage/écriture. Sans cette fonction, l'un des deux
+ * formulaires enregistrant `{ ...preferences, <son propre champ>: valeur }`
+ * avec sa version périmée de `preferences` écrase silencieusement tout champ
+ * que l'AUTRE formulaire vient de modifier entre-temps (ex. changer la
+ * couleur d'accent puis enregistrer son prénom revenait à l'ancienne couleur).
+ * `patchPreferences` relit `localData.preferences()` à chaque appel — la
+ * seule source qui ne peut jamais être en retard sur elle-même — et n'y
+ * applique que les champs explicitement fournis dans `patch`.
+ */
+export function patchPreferences(patch: Partial<Preferences>): Preferences {
+  return { ...localData.preferences(), ...patch };
+}
+
 export const localData = {
   sessions: (): WorkSession[] =>
     typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(sessionsKey) || "[]") as unknown[]).map(normalizeSession),
