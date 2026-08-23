@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { ChapterPicker } from "@/components/exercises/chapter-picker";
@@ -74,14 +74,40 @@ export function ExerciseForm({
   onSubmit,
   onCancel,
   onCreateChapter,
+  initialSubject,
+  initialChapterId,
 }: {
   open: boolean;
   chapters: Chapter[];
   onSubmit: (input: NewExerciseInput) => void;
   onCancel: () => void;
   onCreateChapter: (subject: Subject, label: string) => Chapter;
+  /** Matière/chapitre actuellement parcourus (Matière → Chapitre) — pré-remplissent le formulaire à l'ouverture plutôt que de toujours retomber sur "Mathématiques" sans chapitre. `undefined`/`null` : pas de contexte particulier (ex. "Toutes" matières), comportement par défaut inchangé. */
+  initialSubject?: Subject;
+  initialChapterId?: string | null;
 }) {
   const [form, setForm] = useState(emptyForm);
+  // Toujours à jour sans redéclencher l'effet ci-dessous à chaque changement
+  // de filtre — seule la TRANSITION fermé → ouvert doit réinitialiser le
+  // formulaire (même pattern que exercisesRef/chaptersRef, exercise-manager.tsx).
+  const initialsRef = useRef({ initialSubject, initialChapterId });
+  useEffect(() => {
+    initialsRef.current = { initialSubject, initialChapterId };
+  });
+
+  // Pré-remplit avec le contexte de navigation actuel (Matière → Chapitre) à
+  // chaque OUVERTURE du formulaire — sans ça, créer un exercice depuis un
+  // chapitre précis retombait toujours sur "Mathématiques" sans chapitre,
+  // sans lien avec l'endroit où l'utilisateur venait de cliquer "+ Ajouter"
+  // (voir le scénario "Matière A → Chapitre A1 → créer → l'exercice doit
+  // apparaître là où on l'attend"). Réinitialise aussi tout brouillon
+  // abandonné par un "Annuler" précédent (voir onCancel) : rouvrir le
+  // formulaire ne doit jamais montrer une saisie oubliée.
+  useEffect(() => {
+    if (!open) return;
+    const { initialSubject: subject, initialChapterId: chapterId } = initialsRef.current;
+    setForm({ ...emptyForm, subject: subject ?? emptyForm.subject, chapterId: chapterId ?? null });
+  }, [open]);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();

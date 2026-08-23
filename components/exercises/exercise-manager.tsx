@@ -389,7 +389,18 @@ export function ExerciseManager() {
         onImportClick={() => setImportOpen((value) => !value)}
       />
 
-      <ExerciseForm open={formOpen} chapters={chapters} onSubmit={create} onCancel={() => setFormOpen(false)} onCreateChapter={handleCreateChapter} />
+      <ExerciseForm
+        open={formOpen}
+        chapters={chapters}
+        onSubmit={create}
+        onCancel={() => setFormOpen(false)}
+        onCreateChapter={handleCreateChapter}
+        // Pré-remplit avec la matière/le chapitre actuellement parcourus
+        // (Matière → Chapitre, voir ExerciseBrowser) — "Toutes"/"Tous" ne sont
+        // pas des contextes réels, comportement par défaut inchangé dans ce cas.
+        initialSubject={filters.subject !== "Toutes" ? filters.subject : undefined}
+        initialChapterId={filters.chapter !== "Tous" ? filters.chapter : null}
+      />
 
       <ExerciseImport
         open={importOpen}

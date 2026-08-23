@@ -148,11 +148,33 @@ export function ExerciseDetail({
                 autoFocus
                 value={renameValue}
                 onChange={(event) => setRenameValue(event.target.value)}
+                // Mêmes raccourcis que la création inline (ChapterPicker#confirmCreate) —
+                // Entrée valide, Échap annule ; l'input est autoFocus, l'utilisateur
+                // s'attend naturellement à pouvoir valider au clavier sans lâcher la souris.
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    if (renameValue.trim()) {
+                      onRenameChapter(currentChapter.id, renameValue);
+                      setRenaming(false);
+                    }
+                  }
+                  // `stopPropagation` : sans elle, l'Échap remonte jusqu'au
+                  // raccourci global d'ExerciseManager, qui referme AUSSI toute
+                  // la carte exercice (même risque que ChapterPicker#confirmCreate,
+                  // voir sa propre note) — un appui pour annuler juste le
+                  // renommage ne doit pas en plus faire disparaître la fiche.
+                  if (event.key === "Escape") {
+                    event.stopPropagation();
+                    setRenaming(false);
+                  }
+                }}
                 className="h-9 max-w-[200px]"
               />
               <Button
                 type="button"
                 size="sm"
+                disabled={!renameValue.trim()}
                 onClick={() => {
                   onRenameChapter(currentChapter.id, renameValue);
                   setRenaming(false);
