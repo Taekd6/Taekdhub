@@ -62,6 +62,16 @@ function computeElapsedSeconds(snapshot: WorkTimerSnapshot<unknown> | null): num
 }
 
 /**
+ * Une seule séance focus à la fois : la clé encode l'exercice concerné, ce
+ * qui permet de retrouver après un rechargement lequel reprendre
+ * automatiquement. Définie ici (plutôt que dans focus-view.tsx, son unique
+ * consommateur historique) pour que dashboard-overview.tsx puisse détecter
+ * une séance focus interrompue sans importer tout le composant `FocusView`
+ * (RichMath, pickers…) juste pour cette constante.
+ */
+export const FOCUS_TIMER_PREFIX = "prepahub:timer:focus:";
+
+/**
  * Cherche, sans s'abonner, une clé sessionStorage commençant par `prefix` et
  * renvoie la partie qui suit (ex. l'identifiant encodé dans la clé). Utile
  * pour détecter — avant même de monter le composant concerné — qu'une séance

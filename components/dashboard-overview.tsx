@@ -29,6 +29,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { FOCUS_TIMER_PREFIX, findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { cn } from "@/lib/cn";
 import { computeStreak } from "@/lib/gamification";
 import { recentDaySummaries } from "@/lib/history";
@@ -55,6 +56,7 @@ import { subjectMeta } from "@/lib/study";
 import { formatDuration, formatMinutes } from "@/lib/utils";
 import { computeWeeklySummary } from "@/lib/week";
 import type { UpcomingItem } from "@/lib/next-action";
+import type { Exercise } from "@/lib/supabase/types";
 
 const UPCOMING_META: Record<UpcomingItem["key"], { label: string; icon: typeof BookOpenCheck }> = {
   chapter: { label: "Chapitre à consolider", icon: BookOpenCheck },
@@ -98,24 +100,82 @@ export function DashboardOverview() {
    * une source réactive, un `focus`/`visibilitychange` suffit à la
    * réévaluer si besoin, mais un simple retour sur le Dashboard suffit déjà
    * dans l'usage réel (navigation complète depuis /session).
+   *
+   * Le nombre affiché est filtré contre `exercises` (même filtre que
+   * SessionRunner au moment de la reprise : id existant et non archivé) —
+   * sans ça, un exercice supprimé/archivé depuis /exercises (ou un autre
+   * onglet) entre le dépôt du plan et ce retour sur le Dashboard laissait ce
+   * bandeau annoncer un nombre d'exercices restants supérieur à ce que
+   * "Reprendre" relance réellement (SessionRunner filtre déjà ces mêmes
+   * exercices disparus, silencieusement, à l'ouverture de /session). On
+   * attend `ready` avant de filtrer : tant que `exercises` n'est pas encore
+   * chargé (valeur initiale `[]`), le filtrer donnerait à tort zéro exercice
+   * valide et effacerait un plan pourtant légitime.
    */
   const [interruptedPlan, setInterruptedPlan] = useState<StoredPlan | null>(null);
   useEffect(() => {
+    if (!ready) return;
     const raw = sessionStorage.getItem(PLAN_STORAGE_KEY);
     if (!raw) return;
     try {
       const stored = JSON.parse(raw) as StoredPlan;
-      if (stored.items.length > 0) setInterruptedPlan(stored);
+      const validItems = stored.items.filter((item) => exercises.some((exercise) => exercise.id === item.exerciseId && !exercise.archived));
+      if (validItems.length > 0) setInterruptedPlan({ ...stored, items: validItems });
       else sessionStorage.removeItem(PLAN_STORAGE_KEY);
     } catch {
       sessionStorage.removeItem(PLAN_STORAGE_KEY);
     }
-  }, []);
+  }, [ready, exercises]);
 
   const discardInterruptedPlan = useCallback(() => {
     sessionStorage.removeItem(PLAN_STORAGE_KEY);
     setInterruptedPlan(null);
   }, []);
+
+  /**
+   * Séance focus interrompue HORS plan (bug réel trouvé à l'audit) : quand
+   * l'utilisateur quitte un focus en cours autrement que par Échap/le bouton
+   * fermer (fermeture d'onglet, navigation directe…), `useWorkTimer` laisse
+   * la clé `prepahub:timer:focus:<id>` en sessionStorage — et
+   * SessionRunner la reprend TOUJOURS en priorité au montage suivant de
+   * /session, quel que soit le lien cliqué pour y arriver (voir son effet de
+   * montage). Sans détection ici, le Dashboard n'en dit rien : le Hero
+   * continue de promettre "Commencer une séance de N min" sur un tout autre
+   * exercice (le mieux classé du moment), alors que cliquer ce CTA rouvre en
+   * réalité silencieusement l'exercice abandonné — un lien qui ne démarre
+   * pas ce qu'il annonce. N'est évalué que si aucun plan interrompu n'est
+   * déjà affiché ci-dessus (même mécanisme sous-jacent : si l'interruption
+   * a eu lieu PENDANT un exercice du plan, ce dernier référence déjà cet
+   * exercice, et son propre "Reprendre" mène déjà correctement au bon
+   * endroit) — remis à `null` explicitement dans ce cas (pas un simple
+   * `return` anticipé) : les deux effets de ce composant lisent le même
+   * `interruptedPlan` figé au moment du rendu qui les a déclenchés, donc au
+   * tout premier passage après `ready` (le cas le plus fréquent : une
+   * interruption EN PLEIN exercice du plan laisse les deux clés en même
+   * temps), celui-ci peut encore valoir `null` ici alors qu'il vient
+   * justement d'être posé par l'autre effet — sans ce reset explicite, les
+   * deux bandeaux s'affichaient ensemble jusqu'à la prochaine navigation.
+   */
+  const [interruptedFocus, setInterruptedFocus] = useState<Exercise | null>(null);
+  useEffect(() => {
+    if (!ready) return;
+    if (interruptedPlan) {
+      setInterruptedFocus(null);
+      return;
+    }
+    const pendingId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX);
+    if (!pendingId) {
+      setInterruptedFocus(null);
+      return;
+    }
+    const exercise = exercises.find((item) => item.id === pendingId && !item.archived);
+    setInterruptedFocus(exercise ?? null);
+  }, [ready, exercises, interruptedPlan]);
+
+  const discardInterruptedFocus = useCallback(() => {
+    if (interruptedFocus) sessionStorage.removeItem(FOCUS_TIMER_PREFIX + interruptedFocus.id);
+    setInterruptedFocus(null);
+  }, [interruptedFocus]);
 
   const model = useMemo(() => {
     const now = new Date();
@@ -198,6 +258,31 @@ export function DashboardOverview() {
             </Link>
             <Button size="sm" variant="secondary" onClick={discardInterruptedPlan}>
               Recommencer à zéro
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* FOCUS INTERROMPU — hors plan (bug d'audit corrigé) : sans ce bandeau, le Hero ci-dessous continue de promettre un tout autre exercice alors que son propre CTA rouvrirait en réalité celui-ci (SessionRunner reprend toujours un focus persisté en priorité). */}
+      {interruptedFocus && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-accent/20 p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent/10 text-accent">
+              <Clock3 size={16} />
+            </span>
+            <div>
+              <p className="text-sm font-medium text-zinc-100">Séance focus interrompue — {interruptedFocus.title}</p>
+              <p className="text-xs text-zinc-500">Ton chrono tourne encore sur cet exercice — reprends-le, ou repars sur autre chose.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/session">
+              <Button size="sm">
+                Reprendre <ArrowRight size={13} />
+              </Button>
+            </Link>
+            <Button size="sm" variant="secondary" onClick={discardInterruptedFocus}>
+              Abandonner cette séance
             </Button>
           </div>
         </Card>

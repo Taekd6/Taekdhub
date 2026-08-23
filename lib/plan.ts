@@ -276,7 +276,7 @@ export function computeSubjectPriorities(exercises: Exercise[], sessions: WorkSe
     .map(({ subject, label, level, reason }) => ({ subject, label, level, reason }));
 }
 
-/** Clé sessionStorage pour le transfert Dashboard → /session (voir components/session/session-runner.tsx) — même famille de clés que FOCUS_TIMER_PREFIX (components/exercises/focus-view.tsx), un seul usage puis retirée. */
+/** Clé sessionStorage pour le transfert Dashboard → /session (voir components/session/session-runner.tsx) — même famille de clés que FOCUS_TIMER_PREFIX (hooks/use-work-timer.ts), un seul usage puis retirée. */
 export const PLAN_STORAGE_KEY = "prepahub:plan:pending";
 
 export interface StoredPlanItem {
