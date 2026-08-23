@@ -296,3 +296,17 @@ export function serializePlan(plan: DailyPlan): StoredPlan {
     requestedMinutes: plan.requestedMinutes,
   };
 }
+
+/**
+ * Reprise de plan interrompu (Sprint Adaptive Day) — un plan déposé par le
+ * Dashboard n'est plus retiré de `sessionStorage` dès sa lecture : /session
+ * le réécrit après chaque exercice travaillé, sans celui qui vient d'être
+ * fait (voir components/session/session-runner.tsx). Si l'onglet est fermé
+ * ou l'utilisateur quitte avant la fin, la clé garde exactement ce qu'il
+ * reste — /session la retrouve telle quelle à la prochaine ouverture, sans
+ * recalculer un nouveau plan ni perdre les exercices déjà traités. Fonction
+ * pure, testée indépendamment de sessionStorage (voir lib/plan.test.ts).
+ */
+export function withPlanItemRemoved(plan: StoredPlan, exerciseId: string): StoredPlan {
+  return { ...plan, items: plan.items.filter((item) => item.exerciseId !== exerciseId) };
+}

@@ -1,4 +1,4 @@
-import { completedExercises, dayKey, totalSeconds } from "@/lib/study";
+import { completedExercises, dayKey } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 

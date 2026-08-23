@@ -52,10 +52,6 @@ export function sessionsInWeek(sessions: WorkSession[], weekStart: Date): WorkSe
   });
 }
 
-function sessionsThisWeek(sessions: WorkSession[], now: Date): WorkSession[] {
-  return sessionsInWeek(sessions, startOfWeek(now));
-}
-
 export interface SubjectWeekTime {
   subject: Subject;
   seconds: number;

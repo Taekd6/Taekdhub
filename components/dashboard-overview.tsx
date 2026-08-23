@@ -21,7 +21,7 @@ import {
   Target,
   Trophy,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +46,7 @@ import {
   PLAN_DURATION_PRESETS,
   PLAN_STORAGE_KEY,
   serializePlan,
+  type StoredPlan,
   type SubjectPriorityLevel,
 } from "@/lib/plan";
 import { computeProgressBySubject } from "@/lib/progress";
@@ -89,6 +90,32 @@ export function DashboardOverview() {
   const router = useRouter();
   /** Durée choisie pour "Plan du jour" — état purement local à cette page, jamais persisté (voir Phase 3 du sprint : pas de système de calendrier). */
   const [planMinutes, setPlanMinutes] = useState<number>(DEFAULT_PLAN_MINUTES);
+  /**
+   * Plan interrompu (Sprint Adaptive Day) — présent si une séance de plan a
+   * été quittée avant la fin (voir components/session/session-runner.tsx,
+   * qui réécrit `PLAN_STORAGE_KEY` sans les exercices déjà travaillés à
+   * chaque étape). Lu une seule fois au montage : sessionStorage n'est pas
+   * une source réactive, un `focus`/`visibilitychange` suffit à la
+   * réévaluer si besoin, mais un simple retour sur le Dashboard suffit déjà
+   * dans l'usage réel (navigation complète depuis /session).
+   */
+  const [interruptedPlan, setInterruptedPlan] = useState<StoredPlan | null>(null);
+  useEffect(() => {
+    const raw = sessionStorage.getItem(PLAN_STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const stored = JSON.parse(raw) as StoredPlan;
+      if (stored.items.length > 0) setInterruptedPlan(stored);
+      else sessionStorage.removeItem(PLAN_STORAGE_KEY);
+    } catch {
+      sessionStorage.removeItem(PLAN_STORAGE_KEY);
+    }
+  }, []);
+
+  const discardInterruptedPlan = useCallback(() => {
+    sessionStorage.removeItem(PLAN_STORAGE_KEY);
+    setInterruptedPlan(null);
+  }, []);
 
   const model = useMemo(() => {
     const now = new Date();
@@ -147,6 +174,34 @@ export function DashboardOverview() {
   return (
     <div className="space-y-6">
       <BackupReminder />
+
+      {/* PLAN INTERROMPU — Adaptive Day : reprise avant tout le reste, "où j'en étais" prime sur "quoi de neuf". */}
+      {interruptedPlan && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-accent/20 p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent/10 text-accent">
+              <CalendarClock size={16} />
+            </span>
+            <div>
+              <p className="text-sm font-medium text-zinc-100">
+                Plan interrompu — {interruptedPlan.items.length} exercice{interruptedPlan.items.length > 1 ? "s" : ""} restant
+                {interruptedPlan.items.length > 1 ? "s" : ""}
+              </p>
+              <p className="text-xs text-zinc-500">Reprends exactement là où tu t&apos;es arrêté, ou repars sur un plan frais.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/session">
+              <Button size="sm">
+                Reprendre <ArrowRight size={13} />
+              </Button>
+            </Link>
+            <Button size="sm" variant="secondary" onClick={discardInterruptedPlan}>
+              Recommencer à zéro
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* À FAIRE MAINTENANT */}
       <motion.section

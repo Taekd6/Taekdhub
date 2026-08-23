@@ -166,7 +166,7 @@ export function ExerciseForm({
             <Button type="button" variant="ghost" onClick={onCancel}>
               Annuler
             </Button>
-            <Button type="submit">Créer l'exercice</Button>
+            <Button type="submit">Créer l&apos;exercice</Button>
           </div>
         </motion.form>
       )}

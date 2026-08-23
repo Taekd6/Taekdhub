@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeDailyPlan, computeSubjectPriorities, serializePlan } from "@/lib/plan";
+import { computeDailyPlan, computeSubjectPriorities, serializePlan, withPlanItemRemoved } from "@/lib/plan";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
 
@@ -175,5 +175,25 @@ describe("serializePlan", () => {
     expect(stored.items).toHaveLength(1);
     expect(stored.items[0].exerciseId).toBe(exercise.id);
     expect(stored.items[0].reasons.length).toBeGreaterThan(0);
+  });
+});
+
+describe("withPlanItemRemoved", () => {
+  it("retire l'exercice travaillé, garde le reste dans l'ordre", () => {
+    const plan = { items: [{ exerciseId: "a", reasons: ["r1"] }, { exerciseId: "b", reasons: ["r2"] }, { exerciseId: "c", reasons: ["r3"] }], requestedMinutes: 45 };
+    const next = withPlanItemRemoved(plan, "b");
+    expect(next.items.map((item) => item.exerciseId)).toEqual(["a", "c"]);
+    expect(next.requestedMinutes).toBe(45);
+  });
+
+  it("retirer le dernier exercice restant vide la liste sans erreur", () => {
+    const plan = { items: [{ exerciseId: "a", reasons: [] }], requestedMinutes: 30 };
+    expect(withPlanItemRemoved(plan, "a").items).toEqual([]);
+  });
+
+  it("retirer un identifiant absent est un no-op", () => {
+    const plan = { items: [{ exerciseId: "a", reasons: [] }], requestedMinutes: 30 };
+    const next = withPlanItemRemoved(plan, "inconnu");
+    expect(next.items).toEqual(plan.items);
   });
 });

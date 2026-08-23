@@ -122,8 +122,8 @@ describe("recommendExercises — diversité de chapitre", () => {
     // travaillé), 2 exercices dans le chapitre B avec un score légèrement
     // inférieur (mastery non nulle) — sans diversification, les 4 du
     // chapitre A occuperaient tout le top 4 avant même de voir B.
-    const chapterA = Array.from({ length: 4 }, (_, i) => makeExercise({ chapter_id: "chap-A", mastery: 0, priority: 5 }));
-    const chapterB = Array.from({ length: 2 }, (_, i) => makeExercise({ chapter_id: "chap-B", mastery: 25, priority: 4 }));
+    const chapterA = Array.from({ length: 4 }, () => makeExercise({ chapter_id: "chap-A", mastery: 0, priority: 5 }));
+    const chapterB = Array.from({ length: 2 }, () => makeExercise({ chapter_id: "chap-B", mastery: 25, priority: 4 }));
 
     const result = recommendExercises([...chapterA, ...chapterB], [], 4, { now: NOW });
 

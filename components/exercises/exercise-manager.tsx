@@ -22,7 +22,6 @@ import { addChapter, removeChapter, renameChapter } from "@/lib/chapters";
 import { chapterOptionsForSubject, defaultExerciseFilters, distinctYears, filterExercises, type ExerciseFilters } from "@/lib/exercise-filters";
 import { defaultExerciseSort, exerciseSortOptions, sortExercises, type ExerciseSort } from "@/lib/exercise-sort";
 import { createExerciseFromInput } from "@/lib/exercise-import";
-import type { Chapter } from "@/lib/storage";
 import { minutesByExerciseMap } from "@/lib/study";
 import { cn } from "@/lib/cn";
 import type { Exercise, Subject } from "@/lib/supabase/types";
