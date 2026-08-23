@@ -372,6 +372,23 @@ describe("computeChaptersToConsolidate", () => {
     const items = computeChaptersToConsolidate(exercises, [], chapters, NOW);
     expect(items.length).toBeLessThanOrEqual(5);
   });
+
+  // Sprint « Mastery Engine » — champ additif, jamais utilisé pour le tri ni
+  // le filtrage ci-dessus (voir la doc de `ChapterConsolidation.knowledgeState`) :
+  // fournit un signal supplémentaire à la consolidation existante, sans la remplacer.
+  it("expose l'état du Mastery Engine (knowledgeState/knowledgeReason) sans changer le comportement existant", () => {
+    const chapters: Chapter[] = [{ id: "chap-1", subject: "Physique", label: "Mécanique" }];
+    const exercise = makeExercise({ chapter_id: "chap-1", mastery: 50, status: "en cours" });
+    const sessions = [
+      makeSession(exercise.id, { result: "échoué", started_at: "2026-08-09T10:00:00.000Z" }),
+      makeSession(exercise.id, { result: "échoué", started_at: "2026-08-08T10:00:00.000Z" }),
+    ];
+    const items = computeChaptersToConsolidate([exercise], sessions, chapters, NOW);
+    expect(items[0].knowledgeState).toBe("fragile");
+    expect(items[0].knowledgeReason.length).toBeGreaterThan(0);
+    // Le champ existant reste inchangé en parallèle : aucune régression.
+    expect(items[0].reasons).toContain("2 échecs récents");
+  });
 });
 
 describe("computeStatusLine", () => {

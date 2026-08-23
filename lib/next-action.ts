@@ -1,5 +1,6 @@
 import type { ChapterDeadlineSignal } from "@/lib/deadlines";
 import { resultCounts, type ResultCounts } from "@/lib/history";
+import { computeKnowledgeState, type KnowledgeState } from "@/lib/mastery";
 import type { MpReadinessBonusInfo } from "@/lib/mp-readiness";
 import { progressByChapter, type ChapterProgress } from "@/lib/progress";
 import { computeExerciseBankStats, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
@@ -296,6 +297,16 @@ export interface ChapterConsolidation {
   reasons: string[];
   /** Un exercice concret du chapitre (le premier non maîtrisé), pour ouvrir directement dessus — même convention que `computeUpcoming`. */
   href: string;
+  /**
+   * État académique du Mastery Engine (lib/mastery.ts, Sprint « Mastery
+   * Engine ») — champ ADDITIF, jamais utilisé pour le tri ni le filtrage
+   * ci-dessous (comportement de "À consolider" strictement inchangé, voir
+   * les tests déjà en place). Un consommateur futur peut afficher `reason`
+   * (sans jargon, jamais un score) en complément des `reasons` existantes,
+   * sans dupliquer la logique de consolidation elle-même.
+   */
+  knowledgeState: KnowledgeState;
+  knowledgeReason: string;
 }
 
 /** Nombre maximum de chapitres montrés dans "À consolider" — voir Sprint Study OS. */
@@ -365,12 +376,15 @@ export function computeChaptersToConsolidate(
       }
 
       const candidate = chapterExercises.find((exercise) => exercise.status !== "maîtrisé") ?? chapterExercises[0];
+      const knowledge = computeKnowledgeState(chapterExercises, sessions);
 
       return {
         chapter: entry.chapter,
         averageMastery: entry.averageMastery,
         reasons,
         href: candidate ? `/exercises?focus=${candidate.id}` : "/exercises",
+        knowledgeState: knowledge.state,
+        knowledgeReason: knowledge.reason,
       };
     })
     .filter((entry): entry is ChapterConsolidation => entry !== null && entry.reasons.length > 0)

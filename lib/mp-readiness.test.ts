@@ -129,14 +129,35 @@ describe("assessMpReadinessNotion — États A à D du brief", () => {
   });
 
   // État B : notion de rentrée maîtrisée — ne doit pas être proposée inutilement.
-  it("État B — exercices correspondants bien maîtrisés et déjà travaillés : état 'maitriser'", () => {
+  // Le Mastery Engine (Sprint suivant) exige une PREUVE réelle (sessions
+  // avec résultat, sur plusieurs exercices ET plusieurs jours) — un simple
+  // champ `Exercise.mastery` renseigné sans historique ne suffit plus (voir
+  // lib/mastery.ts, Cas I du brief : jamais une preuve fabriquée).
+  it("État B — plusieurs exercices réussis, sur plusieurs jours : état 'maitriser'", () => {
     const exercises = [
-      makeExercise({ title: "Groupe symétrique", mastery: 90 as Mastery, attempts: 3, last_worked_at: "2026-01-01T00:00:00.000Z" }),
-      makeExercise({ title: "Sous-groupes distingués", mastery: 100 as Mastery, attempts: 2, last_worked_at: "2026-01-01T00:00:00.000Z" }),
+      makeExercise({ id: "e1", title: "Groupe symétrique" }),
+      makeExercise({ id: "e2", title: "Sous-groupes distingués" }),
+      makeExercise({ id: "e3", title: "Morphisme de groupe et image" }),
     ];
-    const sessions = [makeSession(exercises[0].id, { result: "réussi" })];
+    const sessions = [
+      makeSession("e1", { started_at: "2026-01-01T09:00:00.000Z", result: "réussi" }),
+      makeSession("e2", { started_at: "2026-01-02T09:00:00.000Z", result: "réussi" }),
+      makeSession("e3", { started_at: "2026-01-03T09:00:00.000Z", result: "réussi" }),
+      makeSession("e1", { started_at: "2026-01-04T09:00:00.000Z", result: "réussi" }),
+    ];
     const assessment = assessMpReadinessNotion(groupesNotion, [], exercises, sessions);
     expect(assessment.state).toBe("maitriser");
+    expect(assessment.knowledgeState).toBe("maitrise");
+  });
+
+  it("un seul exercice réussi une fois (même avec un champ mastery élevé) ne vaut jamais 'maitriser' — il faut une vraie preuve, pas un champ renseigné à la main", () => {
+    const exercises = [
+      makeExercise({ id: "e1", title: "Groupe symétrique", mastery: 90 as Mastery }),
+      makeExercise({ id: "e2", title: "Sous-groupes distingués", mastery: 100 as Mastery }),
+    ];
+    const sessions = [makeSession("e1", { result: "réussi" })];
+    const assessment = assessMpReadinessNotion(groupesNotion, [], exercises, sessions);
+    expect(assessment.state).toBe("renforcer");
   });
 
   it("une moyenne élevée sur des exercices JAMAIS travaillés ne vaut pas 'maitriser' (mastery à 0 par défaut faussement haute impossible, mais attempts=0 doit quand même retomber sur 'renforcer')", () => {
@@ -153,12 +174,21 @@ describe("assessMpReadinessNotion — États A à D du brief", () => {
     expect(assessment.state).toBe("renforcer");
   });
 
-  it("État C — maîtrise haute mais échec récent : état 'renforcer' malgré tout (l'échec prime)", () => {
+  it("État C — un seul échec sur un seul exercice : reste 'renforcer' (pas assez de preuve pour conclure autrement)", () => {
     const exercise = makeExercise({ title: "Groupe cyclique", mastery: 90 as Mastery, attempts: 3, last_worked_at: "2026-01-01T00:00:00.000Z" });
     const sessions = [makeSession(exercise.id, { result: "échoué" })];
     const assessment = assessMpReadinessNotion(groupesNotion, [], [exercise], sessions);
     expect(assessment.state).toBe("renforcer");
-    expect(assessment.hasRecentFailure).toBe(true);
+    expect(assessment.knowledgeState).not.toBe("maitrise");
+    expect(assessment.knowledgeState).not.toBe("solide");
+  });
+
+  it("État C — plusieurs échecs récents sur des exercices différents : 'renforcer', Mastery Engine détecte la fragilité", () => {
+    const exercises = [makeExercise({ title: "Groupe cyclique" }), makeExercise({ title: "Sous-groupe distingué" })];
+    const sessions = [makeSession(exercises[0].id, { result: "échoué" }), makeSession(exercises[1].id, { result: "échoué" })];
+    const assessment = assessMpReadinessNotion(groupesNotion, [], exercises, sessions);
+    expect(assessment.state).toBe("renforcer");
+    expect(assessment.knowledgeState).toBe("fragile");
   });
 
   // État D : notion jamais étudiée mais nouvelle — toujours "à découvrir".
@@ -180,15 +210,25 @@ describe("computeMpReadinessAssessments", () => {
     expect(assessments).toHaveLength(MP_READINESS_NOTIONS.length);
   });
 
-  it("reproduit l'exemple maths du brief (logique/ensembles solides, applications moyen, groupes faible, idéaux jamais étudiés)", () => {
-    const now = "2026-01-01T00:00:00.000Z";
+  it("reproduit l'exemple maths du brief (logique/ensembles solides — avec une vraie diversité de preuves —, applications moyen, groupes faible, idéaux jamais étudiés)", () => {
+    // Logique et Ensembles : deux exercices distincts, réussis sur deux jours
+    // différents chacun — une vraie preuve de maîtrise (Mastery Engine, Cas
+    // C/I : un seul exercice, même réussi plusieurs fois, ne suffirait pas).
     const exercises = [
-      makeExercise({ id: "e-logique", title: "Récurrence forte", mastery: 90 as Mastery, attempts: 2, last_worked_at: now }),
-      makeExercise({ id: "e-ensembles", title: "Ensembles et parties", mastery: 85 as Mastery, attempts: 2, last_worked_at: now }),
-      makeExercise({ id: "e-applications", title: "Bijection réciproque", mastery: 50 as Mastery, attempts: 2, last_worked_at: now }),
-      makeExercise({ id: "e-groupes", title: "Groupe cyclique", mastery: 20 as Mastery, attempts: 2, last_worked_at: now }),
+      makeExercise({ id: "e-logique-1", title: "Récurrence forte" }),
+      makeExercise({ id: "e-logique-2", title: "Raisonnement par l'absurde" }),
+      makeExercise({ id: "e-ensembles-1", title: "Ensembles et parties" }),
+      makeExercise({ id: "e-ensembles-2", title: "Ensemble quotient" }),
+      makeExercise({ id: "e-applications", title: "Bijection réciproque", mastery: 50 as Mastery, attempts: 2 }),
+      makeExercise({ id: "e-groupes", title: "Groupe cyclique", mastery: 20 as Mastery, attempts: 2 }),
     ];
-    const byId = (id: MpReadinessNotion["id"]) => computeMpReadinessAssessments([], exercises, []).find((a) => a.notion.id === id)!;
+    const sessions = [
+      makeSession("e-logique-1", { started_at: "2026-01-01T09:00:00.000Z", result: "réussi" }),
+      makeSession("e-logique-2", { started_at: "2026-01-02T09:00:00.000Z", result: "réussi" }),
+      makeSession("e-ensembles-1", { started_at: "2026-01-01T09:00:00.000Z", result: "réussi" }),
+      makeSession("e-ensembles-2", { started_at: "2026-01-02T09:00:00.000Z", result: "réussi" }),
+    ];
+    const byId = (id: MpReadinessNotion["id"]) => computeMpReadinessAssessments([], exercises, sessions).find((a) => a.notion.id === id)!;
     expect(byId("maths-logique").state).toBe("maitriser");
     expect(byId("maths-ensembles").state).toBe("maitriser");
     expect(byId("maths-applications").state).toBe("renforcer");
@@ -200,11 +240,17 @@ describe("computeMpReadinessAssessments", () => {
 describe("computeMpReadinessBonus", () => {
   it("ne retient que les notions 'rentree' en état 'renforcer'", () => {
     const fragileExercise = makeExercise({ title: "Groupe cyclique", mastery: 10 as Mastery });
-    const masteredExercise = makeExercise({ title: "Récurrence forte", mastery: 95 as Mastery, attempts: 2, last_worked_at: "2026-01-01T00:00:00.000Z" });
-    const assessments = computeMpReadinessAssessments([], [fragileExercise, masteredExercise], []);
+    const masteredExercise1 = makeExercise({ id: "m1", title: "Récurrence forte" });
+    const masteredExercise2 = makeExercise({ id: "m2", title: "Raisonnement par l'absurde" });
+    const sessions = [
+      makeSession("m1", { started_at: "2026-01-01T09:00:00.000Z", result: "réussi" }),
+      makeSession("m2", { started_at: "2026-01-02T09:00:00.000Z", result: "réussi" }),
+    ];
+    const assessments = computeMpReadinessAssessments([], [fragileExercise, masteredExercise1, masteredExercise2], sessions);
     const bonus = computeMpReadinessBonus(assessments);
     expect(bonus.has(fragileExercise.id)).toBe(true);
-    expect(bonus.has(masteredExercise.id)).toBe(false);
+    expect(bonus.has(masteredExercise1.id)).toBe(false);
+    expect(bonus.has(masteredExercise2.id)).toBe(false);
   });
 
   it("ne propose jamais un exercice pour une notion 'à découvrir' (les idéaux ne doivent jamais être poussés comme une lacune)", () => {

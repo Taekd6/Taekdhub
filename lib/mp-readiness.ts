@@ -1,6 +1,5 @@
-import { attemptsWithResult, isNeverWorked, recentFailureCount } from "@/lib/recommendation";
+import { computeKnowledgeState, type KnowledgeState } from "@/lib/mastery";
 import type { Chapter } from "@/lib/storage";
-import { minutesByExerciseMap } from "@/lib/study";
 import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -323,29 +322,50 @@ export interface MpReadinessAssessment {
   notion: MpReadinessNotion;
   state: MpReadinessState;
   matchedExercises: Exercise[];
-  /** Maîtrise moyenne (0-100) sur les exercices correspondants — `null` si aucune correspondance (voir la doc de `assessMpReadinessNotion`). */
-  averageMastery: number | null;
-  hasRecentFailure: boolean;
+  /**
+   * État académique brut, produit par le Mastery Engine (lib/mastery.ts) —
+   * `null` uniquement pour une notion `isNewAtRentree` (les idéaux ne
+   * passent jamais par le moteur : « à découvrir » est une donnée externe,
+   * pas un état dérivé des preuves, voir la doc de `assessMpReadinessNotion`).
+   */
+  knowledgeState: KnowledgeState | null;
+  /** Explication courte, sans jargon ni chiffre — directement issue du Mastery Engine (ou du cas "à découvrir", géré ici). */
+  reason: string;
 }
 
-/** Seuil de maîtrise moyenne au-delà duquel une notion est considérée acquise — même seuil que "Maîtrise faible" ailleurs dans l'app (lib/recommendation.ts), pour rester cohérent avec le vocabulaire déjà utilisé. */
-const MASTERED_AVERAGE_THRESHOLD = 75;
+/**
+ * Traduit l'état académique brut (Mastery Engine, 5 valeurs) vers le
+ * vocabulaire MP Readiness (4 valeurs, voir la doc de `MpReadinessState`) —
+ * "inconnu"/"en_acquisition"/"fragile" partagent tous le même besoin
+ * d'attention ("renforcer" : rien à distinguer côté bonus de recommandation,
+ * voir `computeMpReadinessBonus`, qui lit lui `knowledgeState` pour affiner
+ * le libellé). "solide"/"maitrise" se distinguent uniquement par le tier
+ * ("approfondir" réservé à "complement", jamais utilisé aujourd'hui — voir
+ * la doc de `MpReadinessTier`).
+ */
+function mpStateFromKnowledge(knowledge: KnowledgeState, tier: MpReadinessTier): MpReadinessState {
+  if (knowledge === "solide" || knowledge === "maitrise") {
+    return tier === "complement" ? "approfondir" : "maitriser";
+  }
+  return "renforcer";
+}
 
 /**
- * État d'une notion pour CET élève, à partir des données déjà existantes
- * (chapitres, exercices, sessions) — jamais un nouveau calcul de maîtrise :
- * `Exercise.mastery` et `recentFailureCount` (lib/recommendation.ts) sont
- * repris tels quels.
+ * État d'une notion pour CET élève, à partir des données déjà existantes —
+ * délègue entièrement au Mastery Engine (lib/mastery.ts#computeKnowledgeState),
+ * qui ignore volontairement la raison du regroupement : ce module ne fait
+ * que lui passer `matchedExercises` et interpréter son résultat avec le
+ * vocabulaire de rentrée.
  *
  * Distinction centrale du brief : une notion `isNewAtRentree` (idéaux) est
- * TOUJOURS "à découvrir", quelles que soient les données trouvées (il ne
- * peut structurellement pas y avoir de lacune sur un contenu pas encore
- * enseigné). Pour les autres notions, l'ABSENCE de toute correspondance dans
- * la banque retombe sur "à renforcer" — pas "à découvrir" : le document
- * précise que ce sont des rappels de MPSI, donc supposés déjà vus en classe,
- * même si l'élève n'a encore rien enregistré dessus dans TaekdHub (État A du
- * brief : "aucun travail" doit quand même pouvoir faire remonter une
- * priorité de rentrée).
+ * TOUJOURS "à découvrir", quelles que soient les données trouvées — jamais
+ * évaluée par le Mastery Engine (il ne peut structurellement pas y avoir de
+ * lacune sur un contenu pas encore enseigné, voir MP Readiness). Pour les
+ * autres notions, un état "inconnu"/"en_acquisition"/"fragile" retombe sur
+ * "à renforcer" — pas "à découvrir" : le document précise que ce sont des
+ * rappels de MPSI, donc supposés déjà vus en classe, même si l'élève n'a
+ * encore rien enregistré dessus dans TaekdHub (État A du brief : "aucun
+ * travail" doit quand même pouvoir faire remonter une priorité de rentrée).
  */
 export function assessMpReadinessNotion(
   notion: MpReadinessNotion,
@@ -356,33 +376,17 @@ export function assessMpReadinessNotion(
   const matchedExercises = matchedExercisesForNotion(notion, chapters, exercises);
 
   if (notion.isNewAtRentree) {
-    return { notion, state: "decouvrir", matchedExercises, averageMastery: null, hasRecentFailure: false };
+    return {
+      notion,
+      state: "decouvrir",
+      matchedExercises,
+      knowledgeState: null,
+      reason: "Cette notion est annoncée pour le début de la MP.",
+    };
   }
 
-  if (matchedExercises.length === 0) {
-    return { notion, state: "renforcer", matchedExercises, averageMastery: null, hasRecentFailure: false };
-  }
-
-  const minutesByExercise = minutesByExerciseMap(sessions);
-  const hasRecentFailure = matchedExercises.some(
-    (exercise) => recentFailureCount(attemptsWithResult(sessions, exercise.id)) > 0
-  );
-  const everWorked = matchedExercises.some((exercise) => !isNeverWorked(exercise, minutesByExercise.get(exercise.id) ?? 0));
-  const averageMastery = Math.round(matchedExercises.reduce((sum, exercise) => sum + exercise.mastery, 0) / matchedExercises.length);
-
-  // Une moyenne haute sur des exercices JAMAIS travaillés n'est qu'un défaut
-  // de champ (mastery à 0 par défaut, jamais un score de "solide") — sans
-  // aucune tentative réelle, impossible d'affirmer une maîtrise : retombe sur
-  // "à renforcer", jamais "à maîtriser" par erreur (même garde que
-  // `evaluateExercise`/`neverWorked` dans lib/recommendation.ts).
-  const state: MpReadinessState =
-    everWorked && averageMastery >= MASTERED_AVERAGE_THRESHOLD && !hasRecentFailure
-      ? notion.tier === "complement"
-        ? "approfondir"
-        : "maitriser"
-      : "renforcer";
-
-  return { notion, state, matchedExercises, averageMastery, hasRecentFailure };
+  const { state: knowledgeState, reason } = computeKnowledgeState(matchedExercises, sessions);
+  return { notion, state: mpStateFromKnowledge(knowledgeState, notion.tier), matchedExercises, knowledgeState, reason };
 }
 
 /** État de toutes les notions du catalogue pour cet élève — base commune de l'aperçu ("Rentrée MP") et du bonus de recommandation. */
@@ -408,14 +412,20 @@ export interface MpReadinessBonusInfo {
  * mais un exercice de "Polynômes" pourrait aussi taguer "racine" partagé
  * avec une autre entrée) : simple stabilité, jamais un choix arbitraire côté
  * urgence (le score, lui, reste inchangé quelle que soit la notion retenue).
+ *
+ * Libellé (Sprint Mastery Engine) : distingue « fragile » (échecs récents —
+ * signal fort, brief : « Priorité de rentrée + notion à renforcer ») du
+ * simple manque de preuves (jamais travaillé/en cours d'acquisition) — sans
+ * changer QUELS exercices reçoivent le bonus, seul le texte affiché varie.
  */
 export function computeMpReadinessBonus(assessments: MpReadinessAssessment[]): Map<string, MpReadinessBonusInfo> {
   const bonus = new Map<string, MpReadinessBonusInfo>();
   for (const assessment of assessments) {
     if (assessment.notion.tier !== "rentree" || assessment.state !== "renforcer") continue;
+    const reason = assessment.knowledgeState === "fragile" ? "Priorité de rentrée + notion à renforcer" : "Priorité de rentrée";
     for (const exercise of assessment.matchedExercises) {
       if (!bonus.has(exercise.id)) {
-        bonus.set(exercise.id, { notion: assessment.notion, reason: "Priorité de rentrée" });
+        bonus.set(exercise.id, { notion: assessment.notion, reason });
       }
     }
   }

@@ -360,16 +360,25 @@ function planGapBonus(minutesBehind: number | undefined): number {
 }
 
 /**
- * Poids du bonus de rentrée MP dans `urgencyScore` (Sprint « rentrée MP ») —
- * exporté pour que lib/mp-readiness.ts (qui décide QUELS exercices méritent
- * ce bonus) n'ait pas à redéfinir cette valeur séparément. Volontairement
- * sous `DEADLINE_BONUS_CAP` (25, au maximum) : une échéance réelle doit
- * rester prioritaire sur une simple priorité de rentrée (brief, État E). Au
- * même ordre de grandeur que `neverWorkedBonus` (15) et sous
- * `PLAN_GAP_BONUS_CAP` (20) : un vrai retard de plan garde l'avantage sur une
- * notion de rentrée déjà un peu travaillée.
+ * Poids du bonus de rentrée MP dans `urgencyScore` (Sprint « rentrée MP »,
+ * recalibré Sprint « Mastery Engine ») — exporté pour que
+ * lib/mp-readiness.ts (qui décide QUELS exercices méritent ce bonus) n'ait
+ * pas à redéfinir cette valeur séparément.
+ *
+ * Volontairement modeste, sous `DEADLINE_BONUS_CAP` (25) ET assez bas pour
+ * ne jamais faire basculer un cas limite : un exercice de rentrée fragile
+ * (`failureBonus`, jusqu'à 45, déjà établi ailleurs) peut légitimement
+ * rivaliser avec une échéance proche même SANS ce bonus — un audit E2E réel
+ * (échéance à J+1 face à une notion de rentrée avec un seul échec récent) a
+ * montré qu'un poids de 16 suffisait, dans ce cas précis, à faire basculer
+ * le classement en faveur de la notion de rentrée (133 contre 132,2),
+ * contredisant le brief (« échéance urgente + fragilité → priorité
+ * existante respectée »). Ramené à 8 : la marge redevient nette dans ce
+ * même scénario, sans pour autant priver `computeMpReadinessBonus` de son
+ * rôle (faire remonter une priorité de rentrée quand RIEN d'autre n'est
+ * urgent, brief État A).
  */
-export const MP_READINESS_BONUS = 16;
+export const MP_READINESS_BONUS = 8;
 
 function urgencyScore(
   exercise: Exercise,

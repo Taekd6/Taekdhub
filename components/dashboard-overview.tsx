@@ -1088,6 +1088,7 @@ export function DashboardOverview() {
                         <span className="whitespace-nowrap text-2xs text-zinc-500">{assessment.notion.subject}</span>
                       </div>
                       <Badge variant="accent">Notion nouvelle à découvrir</Badge>
+                      <p className="text-2xs text-zinc-600">{assessment.reason}</p>
                     </>
                   );
                   return target ? (
@@ -1114,13 +1115,23 @@ export function DashboardOverview() {
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 {mpReadinessOverview.toReinforce.map((assessment) => {
                   const target = assessment.matchedExercises[0];
+                  // Sprint « Mastery Engine » : "Fragile" (échecs récents, signal
+                  // fort — brief : « Priorité de rentrée + notion à renforcer »)
+                  // se distingue visuellement d'un simple manque de preuves
+                  // (jamais évalué / en cours d'acquisition), sans jamais changer
+                  // QUELS exercices sont mis en avant (voir computeMpReadinessBonus).
+                  const isFragile = assessment.knowledgeState === "fragile";
                   const content = (
                     <>
                       <div className="flex items-start justify-between gap-2">
                         <p className="min-w-0 truncate font-medium text-zinc-100">{assessment.notion.label}</p>
                         <span className="whitespace-nowrap text-2xs text-zinc-500">{assessment.notion.subject}</span>
                       </div>
-                      <Badge variant="warning">Priorité de rentrée</Badge>
+                      <div className="flex flex-wrap gap-1.5">
+                        <Badge variant="warning">Priorité de rentrée</Badge>
+                        {isFragile && <Badge variant="danger">Fragile</Badge>}
+                      </div>
+                      {assessment.knowledgeState !== "inconnu" && <p className="text-2xs text-zinc-600">{assessment.reason}</p>}
                     </>
                   );
                   return target ? (
