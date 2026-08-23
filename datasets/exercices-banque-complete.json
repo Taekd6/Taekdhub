@@ -49,7 +49,7 @@
       "Une similitude directe s'écrit z ↦ az + b avec a ∈ ℂ*. Identifie le rapport |a| et l'angle arg(a).",
       "Le point fixe (s'il existe, a ≠ 1) vérifie z₀ = az₀ + b, donc z₀ = b/(1-a)."
     ],
-    "correction": "Pour f(z) = az + b avec a ≠ 1, le centre est z₀ = b/(1-a), le rapport |a| et l'angle de rotation arg(a). Si a = 1, f est une translation de vecteur b (pas de point fixe sauf b = 0).",
+    "correction": "Pour f(z) = az + b avec a ≠ 1, le centre est z₀ = b/(1-a), le rapport |a| et l'angle de rotation arg(a). Si a = 1, f est une translation de vecteur b (pas de point fixe sauf b = 0). Ici a=1+i et b=-2i, d'où z₀ = -2i/(1-(1+i)) = -2i/(-i) = 2, rapport |a| = √2 et angle arg(a) = π/4.",
     "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
     "year": null,
     "competition": null,
@@ -270,7 +270,7 @@
       "Repère une fonction et sa dérivée dans l'intégrande : c'est souvent le signal d'un changement de variable u = ...",
       "N'oublie pas de changer les bornes d'intégration en fonction de la nouvelle variable."
     ],
-    "correction": "Après le changement de variable adapté (bornes recalculées), l'intégrale se ramène à une primitive usuelle directement calculable.",
+    "correction": "Après le changement de variable adapté (bornes recalculées), l'intégrale se ramène à une primitive usuelle directement calculable. Avec u = x² (du = 2x dx), les bornes deviennent 0 et 1 : l'intégrale vaut (1/2)∫₀¹ eᵘdu = (e-1)/2.",
     "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
     "year": null,
     "competition": null,
@@ -365,7 +365,7 @@
       "Pour le noyau, résous f(x) = 0 en écrivant x dans la base de départ — c'est un système linéaire homogène.",
       "Utilise le théorème du rang : dim(Ker f) + dim(Im f) = dim(espace de départ), pour vérifier ta réponse sur l'image."
     ],
-    "correction": "Le noyau s'obtient en résolvant f(x) = 0, ce qui donne une base de Ker f et sa dimension. Le théorème du rang donne alors dim(Im f) = dim(E) - dim(Ker f), ce qui permet de vérifier la dimension de l'image trouvée en étudiant les images des vecteurs de base.",
+    "correction": "Le noyau s'obtient en résolvant f(x) = 0, ce qui donne une base de Ker f et sa dimension. Le théorème du rang donne alors dim(Im f) = dim(E) - dim(Ker f), ce qui permet de vérifier la dimension de l'image trouvée en étudiant les images des vecteurs de base. Ici les trois lignes de f sont proportionnelles à (1,2,-1) : rg(f)=1, donc dim(Im f)=1 (base : (1,2,-1)) et dim(Ker f)=2 (base : (1,0,1) et (0,1,2), qui vérifient bien x+2y-z=0).",
     "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
     "year": null,
     "competition": null,
@@ -460,7 +460,7 @@
       "Vérifie que les répétitions sont indépendantes et de même probabilité de succès p : c'est le cadre binomial B(n,p).",
       "L'espérance d'une loi B(n,p) vaut np, la variance np(1-p) — pas besoin de recalculer la formule à chaque fois."
     ],
-    "correction": "P(X=k) = C(n,k)·p^k·(1-p)^(n-k). L'espérance vaut E(X) = np directement par la formule du cours de la loi binomiale.",
+    "correction": "P(X=k) = C(n,k)·p^k·(1-p)^(n-k). L'espérance vaut E(X) = np directement par la formule du cours de la loi binomiale. Numériquement : P(X=3) = C(8,3)×0,3³×0,7⁵ ≈ 0,254, et E(X) = np = 2,4.",
     "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
     "year": null,
     "competition": null,
@@ -2022,7 +2022,7 @@
       "Identifie clairement u et v avant de dériver, puis applique la formule du produit ou du quotient terme à terme.",
       "Pour le quotient, le signe moins et l'ordre (u'v-uv', pas uv'-u'v) sont les deux pièges les plus fréquents."
     ],
-    "correction": "(uv)' = u'v + uv' et (u/v)' = (u'v - uv')/v² (v≠0) : l'application directe et méthodique de ces deux formules, en identifiant clairement u et v au préalable, évite les erreurs de signe ou d'ordre les plus courantes.",
+    "correction": "(uv)' = u'v + uv' et (u/v)' = (u'v - uv')/v² (v≠0) : l'application directe et méthodique de ces deux formules, en identifiant clairement u et v au préalable, évite les erreurs de signe ou d'ordre les plus courantes. Ici f'(x) = 2x·ln(x) + x, et g'(x) = (-x²-2x+1)/(x²+1)².",
     "note": "Exercice original TaekdHub.",
     "year": null,
     "competition": null,
@@ -2052,7 +2052,7 @@
       "Repère la fonction \"extérieure\" g et la fonction \"intérieure\" f avant de dériver.",
       "N'oublie jamais de multiplier par la dérivée de la fonction intérieure (f') — l'erreur la plus fréquente est de l'omettre."
     ],
-    "correction": "(g∘f)'(x) = f'(x)·g'(f(x)) : on dérive la fonction extérieure au point f(x), puis on multiplie par la dérivée de la fonction intérieure. Oublier ce dernier facteur est l'erreur numéro un sur les fonctions composées.",
+    "correction": "(g∘f)'(x) = f'(x)·g'(f(x)) : on dérive la fonction extérieure au point f(x), puis on multiplie par la dérivée de la fonction intérieure. Oublier ce dernier facteur est l'erreur numéro un sur les fonctions composées. Ici f(x) = x³+1 et g = cos, donc h'(x) = -3x²·sin(x³+1).",
     "note": "Exercice original TaekdHub.",
     "year": null,
     "competition": null,
@@ -2114,7 +2114,7 @@
       "Vérifie les trois hypothèses de Rolle : continuité sur [a,b], dérivabilité sur ]a,b[, et f(a)=f(b).",
       "Si f(a)≠f(b), c'est l'égalité des accroissements finis qu'il faut utiliser : il existe c tel que f'(c) = (f(b)-f(a))/(b-a)."
     ],
-    "correction": "Rolle : si f est continue sur [a,b], dérivable sur ]a,b[ et f(a)=f(b), alors il existe c ∈ ]a,b[ avec f'(c)=0. Égalité des accroissements finis (cas général f(a)≠f(b)) : il existe c tel que f'(c) = (f(b)-f(a))/(b-a) — l'existence est garantie sans que c soit calculable explicitement en général.",
+    "correction": "Rolle : si f est continue sur [a,b], dérivable sur ]a,b[ et f(a)=f(b), alors il existe c ∈ ]a,b[ avec f'(c)=0. Égalité des accroissements finis (cas général f(a)≠f(b)) : il existe c tel que f'(c) = (f(b)-f(a))/(b-a) — l'existence est garantie sans que c soit calculable explicitement en général. Pour f(x)=x³-x sur [-1,1] (question 1), f'(c)=3c²-1=0 donne explicitement c = ±1/√3 (les deux valeurs conviennent, dans ]-1,1[).",
     "note": "Exercice original TaekdHub.",
     "year": null,
     "competition": null,
@@ -2144,7 +2144,7 @@
       "Pose g = ln|f| : le produit ou quotient devient une somme ou différence de logarithmes, bien plus simple à dériver.",
       "Une fois g' calculée, retrouve f' par la relation f' = f · g' (puisque g' = f'/f)."
     ],
-    "correction": "En posant g = ln|f| (f produit/quotient de plusieurs facteurs), g devient une somme de ln des facteurs, dérivable terme à terme simplement. On récupère ensuite f' = f·g', ce qui évite d'appliquer directement et laborieusement la règle du produit à plusieurs facteurs.",
+    "correction": "En posant g = ln|f| (f produit/quotient de plusieurs facteurs), g devient une somme de ln des facteurs, dérivable terme à terme simplement. On récupère ensuite f' = f·g', ce qui évite d'appliquer directement et laborieusement la règle du produit à plusieurs facteurs. Ici g'(x) = 2/(x-1) + 1/(x+3) - x/(x²+1), d'où f'(x) = f(x)·g'(x).",
     "note": "Exercice original TaekdHub.",
     "year": null,
     "competition": null,
@@ -2202,7 +2202,7 @@
       "Choisis u = polynôme (qui se simplifie en dérivant) et v' = exponentielle (qui reste une exponentielle en s'intégrant).",
       "Si le polynôme est de degré n, il faudra répéter l'IPP n fois pour le faire disparaître complètement."
     ],
-    "correction": "Avec u = P(x) (polynôme) et v' = e^(ax), l'IPP ∫u·v' = [uv] - ∫u'·v fait baisser le degré du polynôme à chaque application ; répétée autant de fois que le degré du polynôme, elle aboutit à une primitive explicite.",
+    "correction": "Avec u = P(x) (polynôme) et v' = e^(ax), l'IPP ∫u·v' = [uv] - ∫u'·v fait baisser le degré du polynôme à chaque application ; répétée autant de fois que le degré du polynôme, elle aboutit à une primitive explicite. Deux IPP successives donnent la primitive eˣ(x²-2x+1) = eˣ(x-1)², d'où ∫₀¹(x²-1)eˣdx = [eˣ(x-1)²]₀¹ = 0 - 1 = -1.",
     "note": "Exercice original TaekdHub.",
     "year": null,
     "competition": null,
@@ -2231,7 +2231,7 @@
       "Décompose la fraction sous la forme a/(x-r1) + b/(x-r2) en identifiant a et b (par exemple en multipliant par chaque facteur puis en évaluant au pôle correspondant).",
       "Chaque terme a/(x-r) s'intègre directement en a·ln|x-r|."
     ],
-    "correction": "Après décomposition en éléments simples (coefficients obtenus en évaluant au pôle après multiplication par le facteur correspondant), chaque terme a/(x-r) a pour primitive a·ln|x-r| — l'intégration terme à terme est alors immédiate.",
+    "correction": "Après décomposition en éléments simples (coefficients obtenus en évaluant au pôle après multiplication par le facteur correspondant), chaque terme a/(x-r) a pour primitive a·ln|x-r| — l'intégration terme à terme est alors immédiate. On obtient a = 4/3 et b = 5/3, d'où l'intégrale vaut (4/3)ln|x-1| + (5/3)ln|x+2| + C.",
     "note": "Exercice original TaekdHub.",
     "year": null,
     "competition": null,
@@ -2289,7 +2289,7 @@
       "Trouve d'abord les abscisses des points d'intersection en résolvant f(x)=g(x) : ce sont tes bornes d'intégration.",
       "Vérifie quelle courbe est au-dessus de l'autre sur l'intervalle (teste une valeur), pour intégrer (f-g) et non l'inverse."
     ],
-    "correction": "Les bornes s'obtiennent en résolvant f(x)=g(x). L'aire entre les deux courbes vaut ∫(fonction du dessus - fonction du dessous)dx sur cet intervalle — déterminer laquelle est au-dessus (par un test de valeur) évite une aire négative absurde.",
+    "correction": "Les bornes s'obtiennent en résolvant f(x)=g(x). L'aire entre les deux courbes vaut ∫(fonction du dessus - fonction du dessous)dx sur cet intervalle — déterminer laquelle est au-dessus (par un test de valeur) évite une aire négative absurde. f(x)=g(x) donne x=-1 et x=2 ; sur cet intervalle f≥g, donc l'aire vaut ∫₋₁²(f-g)dx = 9.",
     "note": "Exercice original TaekdHub.",
     "year": null,
     "competition": null,
@@ -2435,7 +2435,7 @@
       "Vérifie toujours la compatibilité des dimensions avant de multiplier : le nombre de colonnes de la première doit égaler le nombre de lignes de la seconde.",
       "Calcule AB et BA séparément et complètement — ne suppose jamais qu'ils sont égaux sans vérification."
     ],
-    "correction": "Le produit matriciel n'est pas commutatif en général (AB ≠ BA), contrairement au produit de nombres réels — un contre-exemple numérique simple (deux matrices 2×2) suffit à s'en convaincre définitivement.",
+    "correction": "Le produit matriciel n'est pas commutatif en général (AB ≠ BA), contrairement au produit de nombres réels — un contre-exemple numérique simple (deux matrices 2×2) suffit à s'en convaincre définitivement. Numériquement, AB = [[2,1],[1,1]] et BA = [[1,1],[1,2]] : ces deux matrices diffèrent, ce qui confirme AB≠BA.",
     "note": "Exercice original TaekdHub.",
     "year": null,
     "competition": null,
@@ -2612,7 +2612,7 @@
       "Vérifie d'abord que l'univers est bien équiprobable avant d'utiliser card(A)/card(Ω).",
       "Dénombre card(Ω) et card(A) séparément et avec la même méthode (ordre ou non, répétition ou non) pour rester cohérent."
     ],
-    "correction": "Dans un univers fini équiprobable, P(A) = card(A)/card(Ω). L'essentiel du travail est le dénombrement rigoureux (avec ou sans ordre, avec ou sans répétition) des deux cardinaux — une erreur de modélisation du dénombrement (pas de la formule elle-même) est la source d'erreur la plus fréquente.",
+    "correction": "Dans un univers fini équiprobable, P(A) = card(A)/card(Ω). L'essentiel du travail est le dénombrement rigoureux (avec ou sans ordre, avec ou sans répétition) des deux cardinaux — une erreur de modélisation du dénombrement (pas de la formule elle-même) est la source d'erreur la plus fréquente. Numériquement, P(A) = C(4,3)/C(32,3) = 4/4960 = 1/1240 ≈ 0,08 %.",
     "note": "Exercice original TaekdHub.",
     "year": null,
     "competition": null,
@@ -2701,7 +2701,7 @@
       "Écris toujours explicitement ce que représente la barre \"sachant\" : P(A|B) se lit \"probabilité de A sachant que B est déjà réalisé\".",
       "Si tu connais P(A|B) mais qu'on te demande P(B|A), utilise la formule de Bayes plutôt que de supposer qu'ils sont égaux."
     ],
-    "correction": "P(A|B) = P(A∩B)/P(B) alors que P(B|A) = P(A∩B)/P(A) : ces deux quantités partagent le même numérateur mais ont des dénominateurs différents, donc sont égales seulement si P(A)=P(B). La formule de Bayes P(B|A) = P(A|B)·P(B)/P(A) permet de passer rigoureusement de l'une à l'autre.",
+    "correction": "P(A|B) = P(A∩B)/P(B) alors que P(B|A) = P(A∩B)/P(A) : ces deux quantités partagent le même numérateur mais ont des dénominateurs différents, donc sont égales seulement si P(A)=P(B). La formule de Bayes P(B|A) = P(A|B)·P(B)/P(A) permet de passer rigoureusement de l'une à l'autre. Numériquement : P(T) = 0,95×0,01 + 0,02×0,99 = 0,0293, d'où P(M|T) = 0,0095/0,0293 ≈ 32 % — bien loin des 95 % de P(T|M), la surprise attendue.",
     "note": "Exercice original TaekdHub.",
     "year": null,
     "competition": null,
@@ -3472,7 +3472,7 @@
   },
   {
     "title": "Étude d'une suite définie par une intégrale à paramètre (type Wallis généralisé)",
-    "statement": "Pour $n \\in \\mathbb{N}$, on pose\n$$I_n = \\int_0^{\\pi/2} \\sin^n(t)\\, dt.$$\n1. À l'aide d'une intégration par parties, établir une relation de récurrence entre $I_n$ et $I_{n-1}$ (pour $n \\geq 1$).\n2. Montrer que la suite $(I_n)$ est positive et décroissante, puis qu'elle converge vers une limite que l'on déterminera.\n3. En étudiant le produit $n \\cdot I_n \\cdot I_{n-1}$, montrer qu'il existe une constante $C > 0$ telle que $I_n \\sim \\dfrac{C}{\\sqrt{n}}$ quand $n \\to +\\infty$, et déterminer $C$.",
+    "statement": "Pour $n \\in \\mathbb{N}$, on pose\n$$I_n = \\int_0^{\\pi/2} \\sin^n(t)\\, dt.$$\n1. À l'aide d'une intégration par parties, établir une relation de récurrence entre $I_n$ et $I_{n-2}$ (pour $n \\geq 2$).\n2. Montrer que la suite $(I_n)$ est positive et décroissante, puis qu'elle converge vers une limite que l'on déterminera.\n3. En étudiant le produit $n \\cdot I_n \\cdot I_{n-1}$, montrer qu'il existe une constante $C > 0$ telle que $I_n \\sim \\dfrac{C}{\\sqrt{n}}$ quand $n \\to +\\infty$, et déterminer $C$.",
     "source": "TaekdHub — exercice original, style concours (Sup)",
     "subject": "Mathématiques",
     "type": "DM",
@@ -3495,7 +3495,7 @@
       "Pour la relation de récurrence, intègre par parties en dérivant la puissance et en intégrant l'autre facteur — comme pour les intégrales de Wallis.",
       "Pour l'équivalent final, encadre le terme général entre deux expressions dont le quotient tend vers 1, plutôt que de chercher une formule exacte."
     ],
-    "correction": "Question 1 (récurrence) : IPP standard donnant une relation entre I(n) et I(n-1). Question 2 (monotonie/limite) : la suite est positive et décroissante (comparaison directe des intégrandes), donc converge, et l'encadrement obtenu montre que la limite est 0. Question 3 (équivalent) : en combinant la relation de récurrence avec n·I(n)·I(n-1) constant (produit télescopique), on obtient I(n) ~ C/√n pour une constante C explicite.",
+    "correction": "Question 1 (récurrence) : IPP standard (même méthode que pour les intégrales de Wallis) donnant n·I(n) = (n-1)·I(n-2). Question 2 (monotonie/limite) : la suite est positive et décroissante (comparaison directe des intégrandes), donc converge, et l'encadrement obtenu montre que la limite est 0. Question 3 (équivalent) : en combinant la relation de récurrence avec n·I(n)·I(n-1) constant (produit télescopique), on obtient I(n) ~ C/√n pour une constante C explicite (C = √(π/2)).",
     "note": "Exercice original TaekdHub, non attribué à un concours réel — inspiré de la structure classique \"suite d'intégrales de Wallis\", mais rédigé intégralement par TaekdHub. Entièrement soluble avec le programme de Sup.",
     "year": null,
     "competition": null,
@@ -4468,7 +4468,7 @@
       "Le travail échangé au cours d'une transformation correspond (au signe près) à l'aire sous la courbe dans le diagramme (P,V).",
       "Pour un cycle fermé, l'aire ENCLOSE par le cycle donne le travail total échangé sur le cycle complet."
     ],
-    "correction": "L'aire sous la courbe P(V) entre les deux états représente |W| (travail des forces de pression) — une lecture graphique directe, sans calcul d'intégrale si la courbe est simple (segments de droite). Pour un cycle, l'aire intérieure au contour fermé donne le travail net du cycle.",
+    "correction": "L'aire sous la courbe P(V) entre les deux états représente |W| (travail des forces de pression) — une lecture graphique directe, sans calcul d'intégrale si la courbe est simple (segments de droite). Pour un cycle, l'aire intérieure au contour fermé donne le travail net du cycle. Ici, l'aire du trapèze vaut ((P_A+P_B)/2)×(V_B-V_A) = 2 bar × 2 L = 4 bar·L, soit |W| = 400 J (1 bar·L = 100 J).",
     "note": "Exercice original TaekdHub.",
     "level": 3,
     "year": null,
@@ -4796,7 +4796,7 @@
       "Le nombre d'oxydation suppose que TOUTE liaison est ionique (l'atome le plus électronégatif \"prend\" tous les électrons de la liaison).",
       "La charge formelle répartit les électrons de liaison ÉQUITABLEMENT entre les deux atomes — les deux calculs partent d'hypothèses différentes, il ne faut jamais les confondre ni les additionner."
     ],
-    "correction": "Le nombre d'oxydation attribue conventionnellement tous les électrons de liaison à l'atome le plus électronégatif (hypothèse ionique) ; la charge formelle les répartit également entre les deux atomes liés (hypothèse covalente pure). Ces deux conventions différentes donnent généralement des valeurs numériques différentes pour le même atome — les confondre est une erreur fréquente en début d'apprentissage.",
+    "correction": "Le nombre d'oxydation attribue conventionnellement tous les électrons de liaison à l'atome le plus électronégatif (hypothèse ionique) ; la charge formelle les répartit également entre les deux atomes liés (hypothèse covalente pure). Ces deux conventions différentes donnent généralement des valeurs numériques différentes pour le même atome — les confondre est une erreur fréquente en début d'apprentissage. Numériquement : n.o.(O) = -2 et n.o.(C) = +2 (à comparer aux charges formelles -1 et +1 données dans l'énoncé).",
     "note": "Exercice original TaekdHub.",
     "level": 2,
     "year": null,
@@ -4826,7 +4826,7 @@
       "n=m/M (masse molaire) pour passer de la masse à la quantité de matière, puis c=n/V pour la concentration.",
       "Vérifie systématiquement les unités (g, mol, L) : une incohérence d'unité est la source d'erreur la plus fréquente sur ce type de calcul."
     ],
-    "correction": "n=m/M puis c=n/V (avec V en litres) : deux relations simples mais à enchaîner sans erreur d'unité — la vérification systématique des unités (g pour la masse, g/mol pour M, L pour V, mol/L pour c) élimine la quasi-totalité des erreurs sur ce type de calcul.",
+    "correction": "n=m/M puis c=n/V (avec V en litres) : deux relations simples mais à enchaîner sans erreur d'unité — la vérification systématique des unités (g pour la masse, g/mol pour M, L pour V, mol/L pour c) élimine la quasi-totalité des erreurs sur ce type de calcul. Numériquement : n = 5,85/58,5 = 0,1 mol, puis c = 0,1/0,25 = 0,4 mol/L.",
     "note": "Exercice original TaekdHub.",
     "level": 1,
     "year": null,
@@ -5154,7 +5154,7 @@
       "Une série géométrique de raison q converge si et seulement si |q|<1 — mémorise cette condition, elle revient dans presque tous les critères de comparaison de séries.",
       "Si elle converge, sa somme vaut a/(1-q) où a est le premier terme — formule à connaître par cœur, pas à redémontrer à chaque exercice."
     ],
-    "correction": "Σaqⁿ (n≥0) converge si et seulement si |q|<1, et vaut alors a/(1-q) — condition et formule à connaître par cœur, base de comparaison pour la convergence de nombreuses autres séries (comparaison à une série géométrique de référence).",
+    "correction": "Σaqⁿ (n≥0) converge si et seulement si |q|<1, et vaut alors a/(1-q) — condition et formule à connaître par cœur, base de comparaison pour la convergence de nombreuses autres séries (comparaison à une série géométrique de référence). Ici a=3 et q=1/2, donc la somme vaut 3/(1-1/2) = 6.",
     "note": "Exercice original TaekdHub.",
     "level": 1,
     "year": null,
