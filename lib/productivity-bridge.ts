@@ -29,14 +29,28 @@ export function buildStudyProductivityTasks(
 ): ProductivityTask[] {
   const plan = computeDailyPlan(exercises, sessions, chapters, dailyGoalMinutes, now);
 
-  return plan.blocks.map((block, index) => ({
+  const tasks = plan.blocks.map((block, index) => ({
     id: `study-plan:${block.subject}:${index}`,
     title: block.label,
     estimatedMinutes: Math.max(15, block.estimatedMinutes || block.minutes),
     priority: index === 0 ? "high" : "normal",
     status: "todo",
     area: "study",
+    source: "taekdhub",
+    subject: block.subject,
   }));
+
+  if (tasks.length > 0 || exercises.every((exercise) => exercise.archived)) return tasks;
+  const fallback = computeNextAction(exercises, sessions, dailyGoalMinutes, now);
+  return [{
+    id: "study-plan:fallback",
+    title: fallback.kind === "start-session" ? fallback.title : "Révision TaekdHub",
+    estimatedMinutes: Math.max(15, fallback.minutes || dailyGoalMinutes),
+    priority: "high",
+    status: "todo",
+    area: "study",
+    source: "taekdhub",
+  }];
 }
 
 /**
@@ -87,6 +101,7 @@ export function buildDailyCopilotPlan(options: {
       priority: "high",
       status: "todo",
       area: "study",
+      source: "taekdhub",
     });
   }
 

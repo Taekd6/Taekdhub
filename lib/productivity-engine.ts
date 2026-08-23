@@ -1,224 +1,74 @@
-export interface CalendarEvent {
-  id: string;
-  title: string;
-  startsAt: string;
-  endsAt: string;
-  allDay?: boolean;
-}
-
-export type ProductivityTaskStatus = "todo" | "done";
+export type ProductivityArea = "study" | "taekdhub" | "admin" | "personal" | "sport" | "other";
+export type ProductivitySource = "apple-calendar" | "apple-reminders" | "taekdhub" | "manual" | "other";
+export type ProductivityTaskStatus = "todo" | "in-progress" | "done" | "skipped" | "deferred";
 export type ProductivityTaskPriority = "low" | "normal" | "high" | "urgent";
+export type PlannedBlockStatus = "planned" | "started" | "completed" | "skipped" | "delayed";
 
+export interface CalendarEvent { id: string; title: string; startsAt: string; endsAt: string; allDay: boolean; source: ProductivitySource; calendar?: string; category?: string; }
 export interface ProductivityTask {
-  id: string;
-  title: string;
-  dueAt?: string | null;
-  estimatedMinutes: number;
-  priority?: ProductivityTaskPriority;
-  status?: ProductivityTaskStatus;
-  /** Optional category used later to distinguish study / admin / TaekdHub / personal work. */
-  area?: string;
+  id: string; title: string; status: ProductivityTaskStatus; priority: ProductivityTaskPriority; dueAt?: string | null; estimatedMinutes: number; area: ProductivityArea; source: ProductivitySource;
+  createdAt?: string; subject?: string; chapterId?: string; exerciseId?: string; metadata?: Record<string, unknown>;
 }
-
-export interface PlanningWindow {
-  startsAt: string;
-  endsAt: string;
-  minutes: number;
-}
-
+export interface PlanningWindow { startsAt: string; endsAt: string; minutes: number; }
+export interface PlanningDecision { taskId: string; score: number; factors: string[]; reason: string; generatedAt: string; }
 export interface PlannedTaskBlock {
-  taskId: string;
-  title: string;
-  startsAt: string;
-  endsAt: string;
-  minutes: number;
-  reason: "urgent" | "due-soon" | "priority" | "fits-window";
+  id: string; taskId: string; task: ProductivityTask; title: string; startsAt: string; endsAt: string; minutes: number; duration: number; reason: string; source: ProductivitySource; status: PlannedBlockStatus;
 }
-
+export interface ProductivitySettings { minimumBlockMinutes: number; minimumBreakMinutes: number; maximumSessionMinutes: number; maximumDailyMinutes: number; reserveMinutes: number; allowAllDayWork: boolean; }
+export const DEFAULT_PRODUCTIVITY_SETTINGS: ProductivitySettings = { minimumBlockMinutes: 25, minimumBreakMinutes: 10, maximumSessionMinutes: 90, maximumDailyMinutes: 240, reserveMinutes: 60, allowAllDayWork: false };
 export interface DailyProductivityPlan {
-  date: string;
-  availableMinutes: number;
-  scheduledMinutes: number;
-  unscheduledTaskIds: string[];
-  freeWindows: PlanningWindow[];
-  blocks: PlannedTaskBlock[];
+  date: string; generatedAt: string; timezone?: string; availableMinutes: number; scheduledMinutes: number; unscheduledTaskIds: string[]; partiallyScheduledTaskIds: string[]; freeWindows: PlanningWindow[]; blocks: PlannedTaskBlock[]; decisions: PlanningDecision[];
+}
+export interface BuildPlanOptions {
+  date: string; dayStart: string; dayEnd: string; events: CalendarEvent[]; tasks: ProductivityTask[]; now?: string; timezone?: string; settings?: Partial<ProductivitySettings>; minimumBlockMinutes?: number;
 }
 
-const MIN_BLOCK_MINUTES = 15;
-const MAX_EVENT_GAP_MINUTES = 24 * 60;
+const MINUTES = 60_000;
+function parseDate(value: string): number { const timestamp = new Date(value).getTime(); if (!Number.isFinite(timestamp)) throw new Error(`Invalid date: ${value}`); return timestamp; }
+function minutesBetween(start: number, end: number): number { return Math.max(0, Math.floor((end - start) / MINUTES)); }
+function iso(timestamp: number): string { return new Date(timestamp).toISOString(); }
 
-function parseDate(value: string): number {
-  const timestamp = new Date(value).getTime();
-  if (!Number.isFinite(timestamp)) throw new Error(`Invalid date: ${value}`);
-  return timestamp;
+function mergedBusyIntervals(dayStart: number, dayEnd: number, events: CalendarEvent[], allDayBlocksDay: boolean) {
+  if (allDayBlocksDay && events.some((event) => event.allDay)) return [{ start: dayStart, end: dayEnd }];
+  const intervals = events.filter((event) => !event.allDay).map((event) => ({ start: Math.max(dayStart, parseDate(event.startsAt)), end: Math.min(dayEnd, parseDate(event.endsAt)) })).filter((event) => event.end > event.start).sort((a, b) => a.start - b.start || a.end - b.end);
+  return intervals.reduce<Array<{ start: number; end: number }>>((merged, interval) => { const previous = merged.at(-1); if (!previous || interval.start > previous.end) merged.push({ ...interval }); else previous.end = Math.max(previous.end, interval.end); return merged; }, []);
 }
 
-function minutesBetween(startMs: number, endMs: number): number {
-  return Math.max(0, Math.floor((endMs - startMs) / 60000));
+export function computeFreeWindows(dayStart: string, dayEnd: string, events: CalendarEvent[], minimumMinutes = DEFAULT_PRODUCTIVITY_SETTINGS.minimumBlockMinutes, allDayBlocksDay = true): PlanningWindow[] {
+  const start = parseDate(dayStart); const end = parseDate(dayEnd); if (end <= start) return [];
+  const windows: PlanningWindow[] = []; let cursor = start;
+  for (const busy of mergedBusyIntervals(start, end, events, allDayBlocksDay)) { const minutes = minutesBetween(cursor, busy.start); if (minutes >= minimumMinutes) windows.push({ startsAt: iso(cursor), endsAt: iso(busy.start), minutes }); cursor = Math.max(cursor, busy.end); }
+  const minutes = minutesBetween(cursor, end); if (minutes >= minimumMinutes) windows.push({ startsAt: iso(cursor), endsAt: iso(end), minutes }); return windows;
 }
 
-function clampEnd(startMs: number, endMs: number): number {
-  return Math.max(startMs, endMs);
+function scoreTask(task: ProductivityTask, now: number): { score: number; factors: string[]; reason: string } {
+  const factors: string[] = []; let score = { low: 20, normal: 45, high: 75, urgent: 120 }[task.priority]; factors.push(`priorité ${task.priority}`);
+  if (task.dueAt) { const hours = (parseDate(task.dueAt) - now) / 3_600_000; if (hours <= 0) { score += 160; factors.push("échéance dépassée"); } else if (hours <= 24) { score += 140; factors.push("échéance dans les 24 h"); } else if (hours <= 72) { score += 30; factors.push("échéance proche"); } else if (hours <= 168) { score += 15; factors.push("échéance cette semaine"); } }
+  if (task.createdAt) { const ageDays = Math.max(0, (now - parseDate(task.createdAt)) / 86_400_000); if (ageDays >= 7) { score += Math.min(30, Math.floor(ageDays)); factors.push("tâche ancienne"); } }
+  if (task.area === "study") { score += 4; factors.push("besoin académique"); } if (task.estimatedMinutes <= 45) score += 5;
+  return { score, factors, reason: factors.find((factor) => factor.includes("échéance")) ?? factors[0] };
 }
 
-export function computeFreeWindows(
-  dayStart: string,
-  dayEnd: string,
-  events: CalendarEvent[],
-  minimumMinutes = MIN_BLOCK_MINUTES,
-): PlanningWindow[] {
-  const startMs = parseDate(dayStart);
-  const endMs = parseDate(dayEnd);
-  if (endMs <= startMs) return [];
-
-  const busy = events
-    .filter((event) => !event.allDay)
-    .map((event) => ({
-      start: Math.max(startMs, parseDate(event.startsAt)),
-      end: Math.min(endMs, parseDate(event.endsAt)),
-    }))
-    .filter((event) => event.end > event.start)
-    .sort((a, b) => a.start - b.start);
-
-  const merged: Array<{ start: number; end: number }> = [];
-  for (const event of busy) {
-    const previous = merged.at(-1);
-    if (!previous || event.start > previous.end) {
-      merged.push(event);
-    } else {
-      previous.end = Math.max(previous.end, event.end);
+/** Deterministic scheduler: external systems are normalized before entering here. */
+export function buildDailyProductivityPlan(options: BuildPlanOptions): DailyProductivityPlan {
+  const settings = { ...DEFAULT_PRODUCTIVITY_SETTINGS, ...options.settings, minimumBlockMinutes: options.minimumBlockMinutes ?? options.settings?.minimumBlockMinutes ?? DEFAULT_PRODUCTIVITY_SETTINGS.minimumBlockMinutes };
+  const now = parseDate(options.now ?? options.dayStart);
+  const freeWindows = computeFreeWindows(options.dayStart, options.dayEnd, options.events, settings.minimumBlockMinutes, !settings.allowAllDayWork);
+  const ranked = options.tasks.filter((task) => task.status !== "done" && task.status !== "skipped").map((task) => ({ task, ...scoreTask(task, now) })).sort((a, b) => b.score - a.score || a.task.id.localeCompare(b.task.id));
+  const remaining = new Map(ranked.map(({ task }) => [task.id, Math.max(settings.minimumBlockMinutes, Math.round(task.estimatedMinutes))])); const blocks: PlannedTaskBlock[] = []; const decisions: PlanningDecision[] = []; let scheduledMinutes = 0;
+  const preserveReserve = freeWindows.reduce((sum, window) => sum + window.minutes, 0) > settings.maximumDailyMinutes;
+  for (const [windowIndex, window] of freeWindows.entries()) {
+    let cursor = parseDate(window.startsAt); const isFinalWindow = windowIndex === freeWindows.length - 1;
+    const usableEnd = Math.max(cursor, parseDate(window.endsAt) - (preserveReserve && isFinalWindow ? settings.reserveMinutes * MINUTES : 0));
+    while (cursor + settings.minimumBlockMinutes * MINUTES <= usableEnd && scheduledMinutes < settings.maximumDailyMinutes) {
+      const candidate = ranked.find(({ task }) => (remaining.get(task.id) ?? 0) >= settings.minimumBlockMinutes); if (!candidate) break;
+      const allowed = Math.min(settings.maximumSessionMinutes, settings.maximumDailyMinutes - scheduledMinutes, minutesBetween(cursor, usableEnd)); const duration = Math.min(remaining.get(candidate.task.id)!, allowed); if (duration < settings.minimumBlockMinutes) break;
+      const end = cursor + duration * MINUTES;
+      blocks.push({ id: `${candidate.task.id}:${cursor}`, taskId: candidate.task.id, task: candidate.task, title: candidate.task.title, startsAt: iso(cursor), endsAt: iso(end), minutes: duration, duration, reason: candidate.reason, source: candidate.task.source, status: "planned" });
+      decisions.push({ taskId: candidate.task.id, score: candidate.score, factors: candidate.factors, reason: `${candidate.reason}; créneau de ${duration} min disponible`, generatedAt: iso(now) }); remaining.set(candidate.task.id, remaining.get(candidate.task.id)! - duration); scheduledMinutes += duration; cursor = end + settings.minimumBreakMinutes * MINUTES;
     }
   }
-
-  const windows: PlanningWindow[] = [];
-  let cursor = startMs;
-  for (const event of merged) {
-    if (event.start > cursor) {
-      const minutes = minutesBetween(cursor, event.start);
-      if (minutes >= minimumMinutes) {
-        windows.push({
-          startsAt: new Date(cursor).toISOString(),
-          endsAt: new Date(event.start).toISOString(),
-          minutes,
-        });
-      }
-    }
-    cursor = Math.max(cursor, event.end);
-  }
-
-  if (cursor < endMs) {
-    const minutes = minutesBetween(cursor, endMs);
-    if (minutes >= minimumMinutes) {
-      windows.push({
-        startsAt: new Date(cursor).toISOString(),
-        endsAt: new Date(endMs).toISOString(),
-        minutes,
-      });
-    }
-  }
-
-  return windows.filter((window) => window.minutes <= MAX_EVENT_GAP_MINUTES);
-}
-
-function priorityWeight(priority: ProductivityTaskPriority | undefined): number {
-  switch (priority) {
-    case "urgent": return 400;
-    case "high": return 300;
-    case "normal": return 200;
-    case "low": return 100;
-    default: return 200;
-  }
-}
-
-function taskScore(task: ProductivityTask, nowMs: number): number {
-  if (task.status === "done") return Number.NEGATIVE_INFINITY;
-
-  let score = priorityWeight(task.priority);
-  if (task.dueAt) {
-    const dueMs = parseDate(task.dueAt);
-    const hoursUntilDue = (dueMs - nowMs) / 3600000;
-    if (hoursUntilDue <= 24) score += 350;
-    else if (hoursUntilDue <= 72) score += 220;
-    else if (hoursUntilDue <= 168) score += 80;
-  }
-
-  score += Math.max(0, 60 - Math.min(task.estimatedMinutes, 60));
-  return score;
-}
-
-function chooseReason(task: ProductivityTask, nowMs: number): PlannedTaskBlock["reason"] {
-  if (task.priority === "urgent") return "urgent";
-  if (task.dueAt) {
-    const hoursUntilDue = (parseDate(task.dueAt) - nowMs) / 3600000;
-    if (hoursUntilDue <= 72) return "due-soon";
-  }
-  if (task.priority === "high") return "priority";
-  return "fits-window";
-}
-
-/**
- * Deterministic first-pass scheduler. It deliberately knows nothing about
- * Apple Calendar or Reminders: adapters can feed it normalized events/tasks.
- * This keeps external integrations replaceable and makes the planner easy to test.
- */
-export function buildDailyProductivityPlan(options: {
-  date: string;
-  dayStart: string;
-  dayEnd: string;
-  events: CalendarEvent[];
-  tasks: ProductivityTask[];
-  now?: string;
-  minimumBlockMinutes?: number;
-}): DailyProductivityPlan {
-  const nowMs = parseDate(options.now ?? options.dayStart);
-  const freeWindows = computeFreeWindows(
-    options.dayStart,
-    options.dayEnd,
-    options.events,
-    options.minimumBlockMinutes ?? MIN_BLOCK_MINUTES,
-  );
-
-  const pending = options.tasks
-    .filter((task) => task.status !== "done")
-    .map((task) => ({ task, score: taskScore(task, nowMs) }))
-    .filter(({ score }) => Number.isFinite(score))
-    .sort((a, b) => b.score - a.score);
-
-  const blocks: PlannedTaskBlock[] = [];
-  const scheduled = new Set<string>();
-
-  for (const window of freeWindows) {
-    let cursor = parseDate(window.startsAt);
-    const windowEnd = parseDate(window.endsAt);
-
-    while (cursor + MIN_BLOCK_MINUTES * 60000 <= windowEnd) {
-      const candidate = pending.find(({ task }) => !scheduled.has(task.id));
-      if (!candidate) break;
-
-      const remainingMinutes = minutesBetween(cursor, windowEnd);
-      const requested = Math.min(candidate.task.estimatedMinutes, remainingMinutes);
-      if (requested < MIN_BLOCK_MINUTES) break;
-
-      const blockEnd = clampEnd(cursor, cursor + requested * 60000);
-      blocks.push({
-        taskId: candidate.task.id,
-        title: candidate.task.title,
-        startsAt: new Date(cursor).toISOString(),
-        endsAt: new Date(blockEnd).toISOString(),
-        minutes: minutesBetween(cursor, blockEnd),
-        reason: chooseReason(candidate.task, nowMs),
-      });
-      scheduled.add(candidate.task.id);
-      cursor = blockEnd;
-    }
-  }
-
-  return {
-    date: options.date,
-    availableMinutes: freeWindows.reduce((sum, window) => sum + window.minutes, 0),
-    scheduledMinutes: blocks.reduce((sum, block) => sum + block.minutes, 0),
-    unscheduledTaskIds: pending.filter(({ task }) => !scheduled.has(task.id)).map(({ task }) => task.id),
-    freeWindows,
-    blocks,
-  };
+  const scheduledTaskIds = new Set(blocks.map((block) => block.taskId));
+  const partialTaskIds = ranked.filter(({ task }) => scheduledTaskIds.has(task.id) && (remaining.get(task.id) ?? 0) > 0).map(({ task }) => task.id);
+  return { date: options.date, generatedAt: iso(now), timezone: options.timezone, availableMinutes: freeWindows.reduce((sum, window) => sum + window.minutes, 0), scheduledMinutes, unscheduledTaskIds: ranked.filter(({ task }) => !scheduledTaskIds.has(task.id)).map(({ task }) => task.id), partiallyScheduledTaskIds: partialTaskIds, freeWindows, blocks, decisions };
 }

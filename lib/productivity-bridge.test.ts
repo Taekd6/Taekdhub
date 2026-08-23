@@ -69,6 +69,8 @@ describe("productivity bridge", () => {
           title: "Cours",
           startsAt: "2026-08-23T09:00:00.000Z",
           endsAt: "2026-08-23T10:30:00.000Z",
+          allDay: false,
+          source: "apple-calendar",
         },
       ],
       now: "2026-08-23T08:00:00.000Z",

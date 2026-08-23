@@ -57,7 +57,8 @@ export function normalizeAppleProductivityPayload(payload: AppleProductivityPayl
         startsAt,
         endsAt,
         allDay: Boolean(event.isAllDay),
-      } satisfies CalendarEvent;
+        source: "apple-calendar",
+      } as CalendarEvent;
     })
     .filter((event): event is CalendarEvent => event !== null);
 
@@ -72,8 +73,9 @@ export function normalizeAppleProductivityPayload(payload: AppleProductivityPayl
         estimatedMinutes: Math.max(15, typeof reminder.estimatedMinutes === "number" ? reminder.estimatedMinutes : 20),
         priority: mapReminderPriority(reminder.priority),
         status: reminder.isCompleted ? "done" : "todo",
-        area: "apple-reminder",
-      } satisfies ProductivityTask;
+        area: "personal",
+        source: "apple-reminders",
+      } as ProductivityTask;
     })
     .filter((task): task is ProductivityTask => task !== null);
 
