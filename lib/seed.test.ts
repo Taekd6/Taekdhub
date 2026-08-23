@@ -52,4 +52,50 @@ describe("datasets/exercices-banque-complete.json — validation automatique", (
     }
     expect(collisions).toEqual([]);
   });
+
+  it("une correction non vide se termine sur un résultat concret, pas sur la seule annonce d'un calcul (garde contre les corrections tronquées — Sprint expansion)", () => {
+    // Ne détecte pas TOUTES les corrections tronquées (heuristique volontairement
+    // ciblée, voir l'audit pédagogique) : uniquement le cas le plus flagrant où la
+    // toute dernière phrase de la correction ANNONCE un résultat sans jamais le
+    // donner, immédiatement suivie de la fin du texte — jamais un faux positif sur
+    // une correction purement conceptuelle (qui n'annonce rien de chiffré).
+    const dangling = /\b(on obtient donc|d'où|soit)\s*:?\s*$/i;
+    const offenders: string[] = [];
+    for (const entry of bank as Array<{ title: string; correction?: string }>) {
+      const correction = entry.correction?.trim();
+      if (!correction) continue;
+      if (dangling.test(correction)) offenders.push(entry.title);
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
+/**
+ * Sprint "Phase 6 — Expansion pédagogique" : validation ciblée de la vague
+ * ajoutée à la banque (voir le rapport de mission), pour que la couverture
+ * gagnée ne puisse pas régresser silencieusement dans une réécriture future
+ * du fichier — sans dupliquer les vérifications déjà génériques ci-dessus.
+ */
+describe("datasets/exercices-banque-complete.json — vague d'expansion (Phase 6)", () => {
+  it("la banque contient au moins 230 exercices (195 + la vague d'expansion)", () => {
+    expect((bank as unknown[]).length).toBeGreaterThanOrEqual(230);
+  });
+
+  it("les chapitres explicitement ciblés par l'expansion existent avec plusieurs exercices actifs", () => {
+    const active = (bank as Array<{ subject: string; chapter?: string; archived?: boolean }>).filter((e) => !e.archived);
+    const countFor = (subject: string, chapter: string) => active.filter((e) => e.subject === subject && e.chapter === chapter).length;
+
+    expect(countFor("Mathématiques", "Arithmétique dans Z")).toBeGreaterThanOrEqual(4);
+    expect(countFor("Mathématiques", "Développements limités")).toBeGreaterThanOrEqual(5);
+    expect(countFor("Mathématiques", "Algèbre linéaire")).toBeGreaterThanOrEqual(8);
+    expect(countFor("Chimie", "Cinétique chimique")).toBeGreaterThanOrEqual(3);
+    expect(countFor("Chimie", "Structure de la matière")).toBeGreaterThanOrEqual(3);
+    expect(countFor("Informatique TC", "Les entiers")).toBeGreaterThanOrEqual(2);
+  });
+
+  it("le sommet de la pyramide de difficulté (4 et 5) a été renforcé au-delà de l'état pré-expansion (13 exercices actifs)", () => {
+    const active = (bank as Array<{ difficulty: number; archived?: boolean }>).filter((e) => !e.archived);
+    const topTier = active.filter((e) => e.difficulty >= 4).length;
+    expect(topTier).toBeGreaterThan(13);
+  });
 });

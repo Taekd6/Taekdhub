@@ -5818,5 +5818,1135 @@
       "syntaxe de base Python"
     ],
     "pedagogicalGoal": "automatisme fondamental : choisir une structure de données Python (tuple/liste/dictionnaire) en fonction de l'usage réel qu'on va en faire, pas seulement de la syntaxe la plus familière."
+  },
+  {
+    "title": "Développement limité de ln(1+x) et calcul de limite",
+    "statement": "Soit $f(x) = \\ln(1+x)$.\n1. Donner le développement limité de $f$ à l'ordre 3 en 0.\n2. En déduire $\\displaystyle\\lim_{x \\to 0} \\frac{\\ln(1+x) - x}{x^2}$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Développements limités",
+    "estimatedMinutes": 15,
+    "tags": [
+      "développements limités",
+      "limites",
+      "logarithme"
+    ],
+    "hints": [
+      "Le DL usuel de ln(1+x) en 0 est à connaître par cœur jusqu'à l'ordre 3 : ln(1+x) = x - x²/2 + x³/3 + o(x³).",
+      "Une fois le DL substitué au numérateur, simplifie par x² avant de passer à la limite."
+    ],
+    "correction": "ln(1+x) = x - x²/2 + x³/3 + o(x³), donc ln(1+x) - x = -x²/2 + x³/3 + o(x³). En divisant par x², on obtient -1/2 + x/3 + o(x), qui tend vers -1/2 quand x→0. La limite cherchée vaut donc -1/2.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "développement limité",
+      "logarithme"
+    ],
+    "pedagogicalGoal": "réactiver le DL usuel de ln(1+x) et son usage direct pour lever une forme indéterminée 0/0."
+  },
+  {
+    "title": "Développements limités pour lever une forme indéterminée 0/0",
+    "statement": "Calculer, à l'aide de développements limités à l'ordre adapté, $\\displaystyle\\lim_{x \\to 0} \\frac{e^x - 1 - x}{1 - \\cos x}$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Développements limités",
+    "estimatedMinutes": 20,
+    "tags": [
+      "développements limités",
+      "limites",
+      "exponentielle",
+      "trigonométrie"
+    ],
+    "hints": [
+      "Le numérateur et le dénominateur s'annulent tous les deux à l'ordre 1 en 0 : il faut pousser le DL à l'ordre 2 des deux côtés.",
+      "e^x - 1 - x ~ x²/2 et 1 - cos x ~ x²/2 : le quotient des équivalents donne directement la limite."
+    ],
+    "correction": "e^x = 1 + x + x²/2 + o(x²), donc e^x - 1 - x = x²/2 + o(x²). cos x = 1 - x²/2 + o(x²), donc 1 - cos x = x²/2 + o(x²). Le quotient vaut donc (x²/2 + o(x²))/(x²/2 + o(x²)) → 1 quand x→0. La limite cherchée vaut 1.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "développement limité",
+      "forme indéterminée"
+    ],
+    "pedagogicalGoal": "savoir pousser un DL à l'ordre suffisant (ici 2, pas 1) quand les deux premiers termes s'annulent — piège classique."
+  },
+  {
+    "title": "Développement limité, tangente et position par rapport à la courbe",
+    "statement": "Soit $f(x) = \\sqrt{1+x}$ définie sur $]-1, +\\infty[$.\n1. Déterminer le développement limité de $f$ à l'ordre 2 en 0.\n2. En déduire l'équation de la tangente $T$ à la courbe de $f$ au point d'abscisse 0.\n3. Étudier la position de la courbe de $f$ par rapport à $T$ au voisinage de 0.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Développements limités",
+    "estimatedMinutes": 30,
+    "tags": [
+      "développements limités",
+      "tangente",
+      "position relative",
+      "racine carrée"
+    ],
+    "hints": [
+      "Le DL à l'ordre 1 donne l'équation de la tangente ; le terme d'ordre 2 donne le signe de f(x) - (tangente), donc la position de la courbe.",
+      "Le signe du coefficient du terme de degré 2 (ici négatif) indique si la courbe est au-dessus ou en-dessous de sa tangente."
+    ],
+    "correction": "√(1+x) = 1 + x/2 - x²/8 + o(x²). La tangente en 0 s'obtient avec les deux premiers termes : T : y = 1 + x/2. Au voisinage de 0, f(x) - y_T = -x²/8 + o(x²), qui est du signe de -x²/8, donc négatif pour x ≠ 0 proche de 0 : la courbe de f est donc située EN DESSOUS de sa tangente T au voisinage de 0 (cohérent avec la concavité de la racine carrée).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "développement limité",
+      "tangente",
+      "position relative"
+    ],
+    "pedagogicalGoal": "relier le DL à l'ordre 2 à une interprétation géométrique concrète (tangente et position de la courbe), au-delà du seul calcul de limite."
+  },
+  {
+    "title": "Déterminant et caractère de base d'une famille de vecteurs",
+    "statement": "Dans $\\mathbb{R}^3$, on considère les vecteurs $v_1=(1,1,0)$, $v_2=(0,1,1)$, $v_3=(1,0,1)$.\n1. Calculer le déterminant de la famille $(v_1,v_2,v_3)$ dans la base canonique.\n2. En déduire si $(v_1,v_2,v_3)$ est une base de $\\mathbb{R}^3$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Algèbre linéaire",
+    "estimatedMinutes": 15,
+    "tags": [
+      "algèbre linéaire",
+      "déterminant",
+      "base"
+    ],
+    "hints": [
+      "Développe le déterminant 3×3 par rapport à une ligne ou une colonne (règle de Sarrus possible aussi).",
+      "Une famille de n vecteurs dans un espace de dimension n est une base si et seulement si son déterminant est non nul."
+    ],
+    "correction": "det(v1,v2,v3) = 1×(1×1 - 1×0) - 1×(0×1 - 1×1) + 0×(0×0 - 1×1) = 1×1 - 1×(-1) + 0 = 1 + 1 = 2. Le déterminant vaut 2, non nul, donc (v1,v2,v3) est une famille libre de 3 vecteurs dans un espace de dimension 3 : c'est bien une base de R³.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "algèbre linéaire",
+      "déterminant",
+      "base"
+    ],
+    "pedagogicalGoal": "relier concrètement le calcul d'un déterminant au caractère de base d'une famille — lien souvent su en théorie mais peu pratiqué en calcul direct."
+  },
+  {
+    "title": "Liberté d'une famille de fonctions dans un espace vectoriel abstrait",
+    "statement": "On munit l'ensemble des fonctions de $\\mathbb{R}$ dans $\\mathbb{R}$ de sa structure usuelle d'espace vectoriel.\nMontrer que la famille $(1, \\cos, \\sin)$ (fonction constante égale à 1, fonction cosinus, fonction sinus) est libre.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Algèbre linéaire",
+    "estimatedMinutes": 20,
+    "tags": [
+      "algèbre linéaire",
+      "espace vectoriel",
+      "liberté",
+      "fonctions"
+    ],
+    "hints": [
+      "Suppose a·1 + b·cos + c·sin = 0 (fonction nulle sur R), c'est-à-dire a + b·cos(x) + c·sin(x) = 0 pour TOUT x réel.",
+      "Évalue cette égalité en des points bien choisis (par exemple x=0, x=π/2, x=π) pour obtenir un système linéaire en (a,b,c)."
+    ],
+    "correction": "Supposons a·1 + b·cos + c·sin = 0, c'est-à-dire a + b·cos(x) + c·sin(x) = 0 pour tout x ∈ R. En x=0 : a + b = 0. En x=π/2 : a + c = 0. En x=π : a - b = 0. Des deux dernières (a+b=0 et a-b=0) on tire a=0 et b=0, puis a+c=0 donne c=0. Donc a=b=c=0 : la famille (1, cos, sin) est libre dans l'espace vectoriel des fonctions de R dans R.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "algèbre linéaire",
+      "espace vectoriel abstrait",
+      "fonctions"
+    ],
+    "pedagogicalGoal": "pratiquer la notion de liberté dans un espace vectoriel ABSTRAIT (fonctions), pas seulement dans R^n — étape importante pour généraliser l'intuition acquise sur des vecteurs de coordonnées."
+  },
+  {
+    "title": "Intersection de deux sous-espaces : la formule de Grassmann",
+    "statement": "Soit $E$ un espace vectoriel de dimension finie $n$, et $F$, $G$ deux sous-espaces vectoriels de $E$ tels que $\\dim F + \\dim G > n$.\nMontrer que $F \\cap G \\neq \\{0\\}$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 5,
+    "chapter": "Algèbre linéaire",
+    "estimatedMinutes": 25,
+    "tags": [
+      "algèbre linéaire",
+      "sous-espaces vectoriels",
+      "dimension",
+      "formule de Grassmann"
+    ],
+    "hints": [
+      "Utilise la formule de Grassmann : dim(F+G) = dim F + dim G - dim(F∩G).",
+      "F+G est un sous-espace de E, donc sa dimension est majorée par dim E = n."
+    ],
+    "correction": "D'après la formule de Grassmann, dim(F∩G) = dim F + dim G - dim(F+G). Comme F+G est un sous-espace vectoriel de E, dim(F+G) ≤ dim E = n. On en déduit dim(F∩G) ≥ dim F + dim G - n. Or dim F + dim G > n par hypothèse, donc dim(F∩G) > 0 : F∩G contient un vecteur non nul, c'est-à-dire F∩G ≠ {0}.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "algèbre linéaire",
+      "formule de Grassmann",
+      "sous-espaces"
+    ],
+    "pedagogicalGoal": "manier un argument purement abstrait (aucun calcul numérique) combinant la formule de Grassmann et une majoration de dimension — type de raisonnement caractéristique de l'algèbre linéaire en Spé."
+  },
+  {
+    "title": "PGCD par l'algorithme d'Euclide",
+    "statement": "Calculer, à l'aide de l'algorithme d'Euclide, le PGCD de 252 et 198 (détaille les divisions euclidiennes successives).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Arithmétique dans Z",
+    "estimatedMinutes": 10,
+    "tags": [
+      "arithmétique",
+      "PGCD",
+      "algorithme d'Euclide"
+    ],
+    "hints": [
+      "Effectue la division euclidienne de 252 par 198, puis recommence avec le diviseur et le reste obtenus, jusqu'à un reste nul.",
+      "Le PGCD est le dernier reste non nul de la suite des divisions."
+    ],
+    "correction": "252 = 1×198 + 54. 198 = 3×54 + 36. 54 = 1×36 + 18. 36 = 2×18 + 0. Le dernier reste non nul est 18 : PGCD(252, 198) = 18.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "arithmétique",
+      "PGCD",
+      "algorithme d'Euclide"
+    ],
+    "pedagogicalGoal": "réactiver l'algorithme d'Euclide, technique systématique de calcul de PGCD, prérequis de toute l'arithmétique de Sup/Spé."
+  },
+  {
+    "title": "Identité de Bézout par remontée de l'algorithme d'Euclide",
+    "statement": "En reprenant les divisions euclidiennes de l'exercice précédent (PGCD de 252 et 198), déterminer un couple d'entiers $(u,v) \\in \\mathbb{Z}^2$ tel que $252u + 198v = 18$ (identité de Bézout), par remontée de l'algorithme d'Euclide.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Arithmétique dans Z",
+    "estimatedMinutes": 15,
+    "tags": [
+      "arithmétique",
+      "identité de Bézout",
+      "algorithme d'Euclide étendu"
+    ],
+    "hints": [
+      "Repars de l'avant-dernière division (54 = 1×36 + 18) pour exprimer 18 en fonction de 54 et 36, puis remonte étape par étape.",
+      "À chaque remontée, remplace le reste de l'étape précédente par son expression en fonction des deux nombres de départ (252 et 198)."
+    ],
+    "correction": "18 = 54 - 1×36. Or 36 = 198 - 3×54, donc 18 = 54 - (198 - 3×54) = 4×54 - 198. Or 54 = 252 - 198, donc 18 = 4×(252 - 198) - 198 = 4×252 - 5×198. On obtient donc (u,v) = (4, -5) : vérification, 252×4 + 198×(-5) = 1008 - 990 = 18. ✓",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "arithmétique",
+      "identité de Bézout",
+      "algorithme d'Euclide étendu"
+    ],
+    "pedagogicalGoal": "pratiquer la remontée de l'algorithme d'Euclide (algorithme d'Euclide étendu), technique moins réflexe que le calcul du seul PGCD mais tout aussi essentielle."
+  },
+  {
+    "title": "Résolution d'une équation diophantienne",
+    "statement": "Résoudre dans $\\mathbb{Z}^2$ l'équation $252x + 198y = 36$ (on pourra utiliser le PGCD et l'identité de Bézout des deux exercices précédents).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Arithmétique dans Z",
+    "estimatedMinutes": 20,
+    "tags": [
+      "arithmétique",
+      "équation diophantienne",
+      "identité de Bézout"
+    ],
+    "hints": [
+      "36 est-il un multiple du PGCD(252,198) = 18 ? Si oui, l'équation admet des solutions ; sinon, aucune.",
+      "Multiplie l'identité de Bézout 252×4 + 198×(-5) = 18 par le bon facteur pour obtenir une solution particulière, puis ajoute la solution générale de l'équation homogène associée."
+    ],
+    "correction": "36 = 2×18 est bien un multiple du PGCD 18 : l'équation admet des solutions. En multipliant par 2 l'identité de Bézout 252×4 + 198×(-5) = 18, on obtient la solution particulière (x0,y0) = (8,-10) (vérification : 252×8 + 198×(-10) = 2016 - 1980 = 36 ✓). La solution générale s'obtient en ajoutant les solutions de l'équation homogène 252x + 198y = 0, soit x = 8 + 11k, y = -10 - 14k pour k ∈ Z (en simplifiant 252/18 = 14 et 198/18 = 11).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "arithmétique",
+      "équation diophantienne"
+    ],
+    "pedagogicalGoal": "boucler la séquence PGCD → Bézout → équation diophantienne, l'une des progressions les plus classiques de l'arithmétique de Sup."
+  },
+  {
+    "title": "Divisibilité de n^5 - n par 30",
+    "statement": "Montrer que pour tout entier $n \\in \\mathbb{Z}$, $n^5 - n$ est divisible par 30.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 4,
+    "chapter": "Arithmétique dans Z",
+    "estimatedMinutes": 25,
+    "tags": [
+      "arithmétique",
+      "divisibilité",
+      "petit théorème de Fermat"
+    ],
+    "hints": [
+      "Factorise n^5 - n = n(n-1)(n+1)(n²+1) : le produit n(n-1)(n+1) de trois entiers consécutifs est toujours divisible par 6.",
+      "Pour la divisibilité par 5, utilise le petit théorème de Fermat : comme 5 est premier, n^5 ≡ n (mod 5) pour tout entier n."
+    ],
+    "correction": "n^5 - n = n(n^4-1) = n(n²-1)(n²+1) = n(n-1)(n+1)(n²+1). Le produit (n-1)n(n+1) de trois entiers consécutifs est divisible par 2 et par 3 (parmi trois consécutifs, il y en a toujours un multiple de 2 et un multiple de 3), donc par 6. Par ailleurs, 5 étant premier, le petit théorème de Fermat donne n^5 ≡ n (mod 5) pour tout n, donc 5 | n^5 - n. Ainsi n^5 - n est divisible à la fois par 6 et par 5, deux nombres premiers entre eux, donc par 6×5 = 30.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "arithmétique",
+      "divisibilité",
+      "petit théorème de Fermat"
+    ],
+    "pedagogicalGoal": "combiner un argument de factorisation élémentaire (produits d'entiers consécutifs) avec le petit théorème de Fermat — synthèse typique d'un exercice de colle d'arithmétique."
+  },
+  {
+    "title": "Loi géométrique : nombre de lancers jusqu'au premier 6",
+    "statement": "On lance un dé équilibré à 6 faces jusqu'à l'obtention d'un 6. Soit $X$ le nombre de lancers nécessaires.\n1. Reconnaître la loi de $X$ et préciser son paramètre.\n2. Calculer $P(X>3)$.\n3. Calculer $E(X)$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Probabilités",
+    "estimatedMinutes": 15,
+    "tags": [
+      "probabilités",
+      "loi géométrique",
+      "espérance"
+    ],
+    "hints": [
+      "X compte le nombre d'essais indépendants jusqu'au premier succès (obtenir un 6), avec une probabilité de succès p=1/6 à chaque lancer : c'est la définition de la loi géométrique.",
+      "P(X>3) correspond à \"les 3 premiers lancers sont des échecs\" : c'est (1-p)³. E(X) = 1/p pour une loi géométrique."
+    ],
+    "correction": "X suit la loi géométrique de paramètre p=1/6 (nombre d'essais indépendants et identiques jusqu'au premier succès). P(X>3) = P(les 3 premiers lancers ne donnent pas 6) = (5/6)³ = 125/216 ≈ 0,579. E(X) = 1/p = 6 : il faut en moyenne 6 lancers pour obtenir un premier 6.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "probabilités",
+      "loi géométrique"
+    ],
+    "pedagogicalGoal": "installer la loi géométrique (premier succès), notion absente de la banque jusqu'ici alors que c'est l'une des lois discrètes fondamentales du programme de Sup."
+  },
+  {
+    "title": "Tirage sans remise et loi hypergéométrique",
+    "statement": "Une urne contient 5 boules blanches et 3 boules noires. On tire successivement 2 boules SANS remise. Soit $X$ le nombre de boules blanches obtenues.\n1. Calculer $P(X=0)$, $P(X=1)$ et $P(X=2)$.\n2. Calculer $E(X)$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Probabilités",
+    "estimatedMinutes": 25,
+    "tags": [
+      "probabilités",
+      "loi hypergéométrique",
+      "tirage sans remise",
+      "espérance"
+    ],
+    "hints": [
+      "Utilise le dénombrement par combinaisons : P(X=k) = C(5,k)×C(3,2-k) / C(8,2), en comptant les tirages de 2 boules parmi les 8 de l'urne.",
+      "Pour E(X), calcule directement la somme Σk·P(X=k), ou compare au résultat E(X)=n×(K/N) valable pour une loi hypergéométrique (n tirages, K boules blanches, N boules totales)."
+    ],
+    "correction": "Il y a C(8,2)=28 tirages possibles. P(X=0) = C(3,2)/28 = 3/28 (les 2 boules sont noires). P(X=2) = C(5,2)/28 = 10/28 = 5/14 (les 2 boules sont blanches). P(X=1) = 1 - 3/28 - 10/28 = 15/28 (une de chaque couleur). E(X) = 0×3/28 + 1×15/28 + 2×10/28 = 35/28 = 5/4 = 1,25 — cohérent avec la formule de l'espérance hypergéométrique E(X) = n×K/N = 2×5/8 = 5/4.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "probabilités",
+      "loi hypergéométrique",
+      "tirage sans remise"
+    ],
+    "pedagogicalGoal": "introduire le tirage SANS remise (loi hypergéométrique), à distinguer explicitement du tirage avec remise (loi binomiale) déjà présent dans la banque — piège de modélisation classique."
+  },
+  {
+    "title": "Équation de plan et distance d'un point à un plan",
+    "statement": "Dans l'espace muni d'un repère orthonormé, on considère les points $A(1,0,0)$, $B(0,1,0)$, $C(0,0,1)$ et $D(1,1,1)$.\n1. Déterminer une équation cartésienne du plan $(ABC)$.\n2. Calculer la distance du point $D$ au plan $(ABC)$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 4,
+    "chapter": "Géométrie",
+    "estimatedMinutes": 25,
+    "tags": [
+      "géométrie",
+      "produit vectoriel",
+      "équation de plan",
+      "distance point-plan"
+    ],
+    "hints": [
+      "Un vecteur normal au plan (ABC) s'obtient par le produit vectoriel de deux vecteurs directeurs du plan, par exemple AB et AC.",
+      "La distance d'un point M0 au plan d'équation ax+by+cz+d=0 vaut |a·x0+b·y0+c·z0+d| / √(a²+b²+c²)."
+    ],
+    "correction": "AB=(-1,1,0), AC=(-1,0,1). Un vecteur normal est n = AB∧AC = (1,1,1) (calcul du produit vectoriel). Le plan (ABC) passe par A(1,0,0) avec ce vecteur normal : équation x+y+z-1=0 (on vérifie que B et C la satisfont bien). La distance de D(1,1,1) à ce plan vaut |1+1+1-1|/√(1²+1²+1²) = 2/√3 = 2√3/3.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "géométrie dans l'espace",
+      "produit vectoriel",
+      "distance point-plan"
+    ],
+    "pedagogicalGoal": "combiner produit vectoriel, équation cartésienne d'un plan et formule de distance point-plan — un exercice de géométrie dans l'espace à plusieurs étapes, plus exigeant que les exercices de géométrie plane déjà présents."
+  },
+  {
+    "title": "Analyse dimensionnelle de la période d'un pendule simple",
+    "statement": "On cherche une formule pour la période $T$ des petites oscillations d'un pendule simple, dépendant a priori de la longueur $L$ du fil, de la masse $m$ de la masse ponctuelle, et de l'intensité de la pesanteur $g$, sous la forme $T = k \\cdot L^a \\cdot m^b \\cdot g^c$ ($k$ une constante sans dimension).\n1. Rappeler les dimensions de $L$, $m$ et $g$.\n2. Montrer par analyse dimensionnelle que la masse $m$ ne peut PAS intervenir ($b=0$), et déterminer les exposants $a$ et $c$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Outils physiques",
+    "estimatedMinutes": 15,
+    "tags": [
+      "outils physiques",
+      "analyse dimensionnelle"
+    ],
+    "hints": [
+      "Écris la dimension de chaque membre de l'égalité T = k·L^a·m^b·g^c, avec [T]=s (temps), [L]=m, [m]=kg, [g]=m·s⁻².",
+      "Identifie séparément les exposants de m (masse), de m (longueur, attention à la notation !) et de s (temps) de chaque côté de l'égalité."
+    ],
+    "correction": "[T]=s. [L^a·m^b·g^c] = (m)^a·(kg)^b·(m·s⁻²)^c = m^(a+c)·kg^b·s^(-2c). En identifiant avec [T]=s : pas de kg à droite, donc b=0 (la masse n'intervient pas) ; pas de m à droite, donc a+c=0 ; s^(-2c)=s^1, donc c=-1/2, d'où a=1/2. On retrouve ainsi T = k·√(L/g) (avec k=2π en réalité), et la masse n'apparaît effectivement pas dans la formule.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "outils physiques",
+      "analyse dimensionnelle"
+    ],
+    "pedagogicalGoal": "pratiquer l'analyse dimensionnelle pour RETROUVER la structure d'une formule physique connue (période du pendule) à partir des seules dimensions, plutôt que pour la seule vérification d'une formule déjà donnée."
+  },
+  {
+    "title": "Ordre de grandeur : nombre de molécules dans une salle de classe",
+    "statement": "Estimer, à l'aide d'ordres de grandeur raisonnables et du modèle du gaz parfait, le nombre de molécules de diazote $N_2$ présentes dans une salle de classe de dimensions $8\\ \\text{m} \\times 6\\ \\text{m} \\times 3\\ \\text{m}$, à température et pression ambiantes ($T \\approx 300\\ \\text{K}$, $P \\approx 10^5\\ \\text{Pa}$, l'air étant composé à environ 80% de $N_2$).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Outils physiques",
+    "estimatedMinutes": 20,
+    "tags": [
+      "outils physiques",
+      "ordre de grandeur",
+      "gaz parfait"
+    ],
+    "hints": [
+      "Calcule d'abord le volume de la salle, puis utilise PV=nRT pour estimer la quantité de matière totale de gaz (R ≈ 8,314 J·mol⁻¹·K⁻¹).",
+      "N = n×Na (nombre d'Avogadro Na ≈ 6,02×10²³ mol⁻¹) donne le nombre de molécules ; ne garde que 80% de ce nombre pour N2 seul."
+    ],
+    "correction": "Volume : V = 8×6×3 = 144 m³. Quantité de matière totale (air) : n = PV/(RT) = (10⁵×144)/(8,314×300) ≈ 1,44×10⁷/2494 ≈ 5,8×10³ mol. Nombre total de molécules : N = n×Na ≈ 5,8×10³×6,02×10²³ ≈ 3,5×10²⁷ molécules. En ne gardant que 80% de diazote : N(N2) ≈ 0,8×3,5×10²⁷ ≈ 2,8×10²⁷ molécules — un ordre de grandeur de 10²⁷, à retenir comme repère pour \"un volume de la vie courante\".",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "outils physiques",
+      "ordre de grandeur",
+      "gaz parfait",
+      "estimation de Fermi"
+    ],
+    "pedagogicalGoal": "pratiquer une estimation de type \"problème de Fermi\" en physique, en chaînant plusieurs ordres de grandeur jusqu'à un résultat final cohérent — compétence différente du calcul exact déjà couvert ailleurs dans la banque."
+  },
+  {
+    "title": "Tir oblique : portée et angle optimal",
+    "statement": "Un point matériel est lancé depuis le sol avec une vitesse initiale de norme $v_0$, faisant un angle $\\alpha$ avec l'horizontale ($0 < \\alpha < \\pi/2$), sans frottement.\n1. Établir les équations horaires $x(t)$ et $y(t)$ du mouvement.\n2. Déterminer la durée du vol (temps auquel le point retombe au sol).\n3. En déduire la portée $D$ (distance horizontale parcourue), en fonction de $v_0$, $g$ et $\\alpha$.\n4. Pour quel angle $\\alpha$ la portée $D$ est-elle maximale ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Mécanique du point",
+    "estimatedMinutes": 30,
+    "tags": [
+      "mécanique",
+      "tir oblique",
+      "projectile",
+      "optimisation"
+    ],
+    "hints": [
+      "Décompose le mouvement selon les deux axes : accélération horizontale nulle, accélération verticale -g. Intègre deux fois chaque équation avec les conditions initiales (v0·cosα, v0·sinα) et (0,0).",
+      "La portée D(α) est proportionnelle à sin(2α) — la valeur maximale de sin(2α) est atteinte pour un angle remarquable."
+    ],
+    "correction": "x(t) = v0·cos(α)·t, y(t) = -½g·t² + v0·sin(α)·t. Le point retombe au sol (y=0, t>0) à l'instant t_f = 2v0·sin(α)/g. La portée vaut D = x(t_f) = v0·cos(α)×(2v0·sin(α)/g) = (v0²/g)×2·sin(α)cos(α) = (v0²/g)·sin(2α). D est maximale quand sin(2α)=1, soit 2α=π/2, donc α=π/4 (45°) : c'est l'angle de portée maximale, résultat classique indépendant de v0.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "mécanique du point",
+      "tir oblique",
+      "projectile"
+    ],
+    "pedagogicalGoal": "installer le mouvement de projectile à deux dimensions (tir oblique), absent de la banque jusqu'ici alors que c'est l'un des cas d'école les plus classiques de la cinématique du point."
+  },
+  {
+    "title": "Plan incliné avec frottement : distance parcourue et condition de redescente",
+    "statement": "Un solide ponctuel de masse $m$ est lancé avec une vitesse initiale $v_0$ vers le haut d'un plan incliné faisant un angle $\\alpha$ avec l'horizontale. Le contact solide-plan a un coefficient de frottement $f$ (le solide frotte pendant toute la montée).\n1. En appliquant le principe fondamental de la dynamique, montrer que la décélération du solide pendant la montée vaut $a = g(\\sin\\alpha + f\\cos\\alpha)$.\n2. En déduire la distance $d$ parcourue par le solide le long du plan avant de s'arrêter.\n3. Une fois arrêté, à quelle condition sur $f$ et $\\alpha$ le solide redescend-il ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "Colle",
+    "difficulty": 5,
+    "chapter": "Mécanique du point",
+    "estimatedMinutes": 30,
+    "tags": [
+      "mécanique",
+      "plan incliné",
+      "frottement",
+      "PFD"
+    ],
+    "hints": [
+      "Projette le PFD sur l'axe du plan incliné (montée) : le poids et la force de frottement s'opposent tous les deux au mouvement montant.",
+      "Une fois arrêté, compare la composante du poids le long du plan (qui tend à faire redescendre) à la force de frottement STATIQUE maximale (qui tend à retenir le solide)."
+    ],
+    "correction": "Pendant la montée, deux forces s'opposent au mouvement le long du plan : la composante du poids mg·sinα et la force de frottement f·N = f·mg·cosα (avec N=mg·cosα, la réaction normale). Le PFD projeté sur l'axe du plan donne : ma = -mg·sinα - f·mg·cosα, soit une décélération a = g(sinα + f·cosα). En utilisant v² = v0² - 2ad avec v=0 à l'arrêt : d = v0² / (2a) = v0² / [2g(sinα + f·cosα)]. Une fois arrêté, le solide redescend si la composante du poids le long du plan (mg·sinα, vers le bas) dépasse la force de frottement statique maximale (f·mg·cosα) : condition tan(α) > f. Si tan(α) ≤ f, le solide reste immobile.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "mécanique du point",
+      "plan incliné",
+      "frottement",
+      "PFD"
+    ],
+    "pedagogicalGoal": "traiter un problème classique et exigeant de mécanique avec frottement solide, combinant PFD, cinématique et une VRAIE décision physique finale (redescend ou pas) — format représentatif d'un exercice de colle de fin de Sup."
+  },
+  {
+    "title": "Établissement du courant dans un circuit RL série",
+    "statement": "On considère un circuit série comportant un générateur idéal de force électromotrice $E$, une résistance $R$ et une bobine idéale d'inductance $L$, initialement non parcouru par aucun courant. À $t=0$, on ferme l'interrupteur.\n1. Établir l'équation différentielle vérifiée par l'intensité $i(t)$ dans le circuit.\n2. Résoudre cette équation et donner l'expression de $i(t)$ pour $t \\geq 0$. Identifier la constante de temps $\\tau$ du circuit.\n3. Donner la valeur du courant en régime permanent ($t \\to +\\infty$).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 4,
+    "chapter": "Électrocinétique",
+    "estimatedMinutes": 25,
+    "tags": [
+      "électrocinétique",
+      "régime transitoire",
+      "circuit RL",
+      "équation différentielle"
+    ],
+    "hints": [
+      "La loi des mailles donne E = R·i + L·di/dt : c'est une équation différentielle linéaire du premier ordre à coefficients constants, avec second membre constant.",
+      "La solution est la somme d'une solution particulière constante (E/R, le régime permanent) et d'une solution homogène en exponentielle décroissante, fixée par la condition initiale i(0)=0."
+    ],
+    "correction": "La loi des mailles donne E = Ri + L·di/dt, soit di/dt + (R/L)i = E/L. La solution générale est i(t) = E/R + A·e^(-t/τ) avec τ=L/R (constante de temps). La condition initiale i(0)=0 donne A = -E/R. Donc i(t) = (E/R)(1 - e^(-Rt/L)) pour t≥0. En régime permanent (t→+∞), l'exponentielle s'annule : i(∞) = E/R (la bobine se comporte alors comme un simple fil, sans effet sur le courant).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "électrocinétique",
+      "régime transitoire",
+      "circuit RL"
+    ],
+    "pedagogicalGoal": "compléter la famille des régimes transitoires du premier ordre (déjà présente pour le RC) avec le circuit RL, structurellement analogue mais avec une bobine — comparaison utile entre les deux dipôles réactifs de base."
+  },
+  {
+    "title": "Bilan énergétique de la charge d'un condensateur à travers une résistance",
+    "statement": "On considère un circuit RC série alimenté par un générateur idéal de tension constante $E$, initialement déchargé. À $t=0$, on ferme l'interrupteur.\n1. Rappeler l'expression du courant $i(t)$ dans le circuit pour $t \\geq 0$ (charge du condensateur).\n2. Calculer l'énergie totale $W_{gen}$ fournie par le générateur entre $t=0$ et $t \\to +\\infty$.\n3. Calculer l'énergie $W_C$ finalement stockée dans le condensateur, et l'énergie $W_R$ dissipée par effet Joule dans la résistance. Vérifier le bilan $W_{gen} = W_C + W_R$, et commenter le rendement de cette charge.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "Colle",
+    "difficulty": 5,
+    "chapter": "Électrocinétique",
+    "estimatedMinutes": 30,
+    "tags": [
+      "électrocinétique",
+      "circuit RC",
+      "bilan énergétique",
+      "rendement"
+    ],
+    "hints": [
+      "i(t) = (E/R)·e^(-t/RC) : reprends la solution classique de la charge du RC. L'énergie fournie par le générateur vaut ∫E·i(t)dt sur [0,+∞[.",
+      "L'énergie dissipée dans R vaut ∫R·i(t)²dt ; l'énergie stockée dans le condensateur à pleine charge est ½CE² (formule connue du cours)."
+    ],
+    "correction": "i(t) = (E/R)e^(-t/RC). Énergie fournie par le générateur : W_gen = ∫₀^∞ E·i(t)dt = (E²/R)∫₀^∞ e^(-t/RC)dt = (E²/R)×RC = CE². Énergie dissipée par effet Joule : W_R = ∫₀^∞ R·i(t)²dt = R×(E²/R²)×∫₀^∞ e^(-2t/RC)dt = (E²/R)×(RC/2) = CE²/2. Énergie finalement stockée dans le condensateur : W_C = ½CE². On vérifie bien W_C + W_R = ½CE² + ½CE² = CE² = W_gen : le bilan énergétique est cohérent. Fait remarquable : quelle que soit la valeur de R, exactement la MOITIÉ de l'énergie fournie par le générateur est dissipée par effet Joule lors de la charge — le rendement de cette charge est toujours de 50%, résultat contre-intuitif souvent testé en colle.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "électrocinétique",
+      "bilan énergétique",
+      "circuit RC"
+    ],
+    "pedagogicalGoal": "faire un vrai bilan énergétique (intégration sur tout le régime transitoire) plutôt qu'un calcul instantané — et mettre en évidence le résultat classique et contre-intuitif du rendement de 50% de la charge d'un condensateur, indépendant de R."
+  },
+  {
+    "title": "Chauffage isobare d'un gaz parfait diatomique : travail, énergie interne et chaleur",
+    "statement": "$n$ moles d'un gaz parfait diatomique (on prendra $C_v = \\frac{5}{2}R$) subissent un échauffement isobare, sous pression constante $P$, d'une température $T_1$ à une température $T_2 > T_1$.\n1. Exprimer le travail $W$ reçu par le gaz au cours de cette transformation.\n2. Exprimer la variation d'énergie interne $\\Delta U$.\n3. En déduire, à l'aide du premier principe, la chaleur $Q$ reçue par le gaz, et vérifier que $Q = nC_p(T_2-T_1)$ avec $C_p = C_v + R$ (relation de Mayer).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Thermodynamique",
+    "estimatedMinutes": 20,
+    "tags": [
+      "thermodynamique",
+      "premier principe",
+      "transformation isobare",
+      "relation de Mayer"
+    ],
+    "hints": [
+      "Pour une transformation isobare, le travail reçu par le gaz s'écrit W = -PΔV ; utilise la loi des gaz parfaits PV=nRT pour exprimer PΔV en fonction de nRΔT.",
+      "ΔU = nCvΔT pour un gaz parfait (première loi de Joule), quelle que soit la transformation. Le premier principe donne Q = ΔU - W."
+    ],
+    "correction": "Travail reçu : W = -PΔV = -P(V2-V1) = -nR(T2-T1) (car PV=nRT à P constant donne PΔV=nRΔT). Énergie interne : ΔU = nCv(T2-T1) = (5/2)nR(T2-T1) (gaz parfait diatomique). Premier principe : Q = ΔU - W = (5/2)nR(T2-T1) - (-nR(T2-T1)) = (5/2+1)nR(T2-T1) = (7/2)nR(T2-T1). Comme Cp = Cv + R = (5/2)R + R = (7/2)R (relation de Mayer), on retrouve bien Q = nCp(T2-T1). ✓",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "thermodynamique",
+      "premier principe",
+      "relation de Mayer"
+    ],
+    "pedagogicalGoal": "pratiquer le premier principe sur une transformation ISOBARE (chauffage) et retrouver explicitement la relation de Mayer Cp=Cv+R — complète la transformation isotherme déjà présente dans la banque."
+  },
+  {
+    "title": "Variation d'entropie lors d'une détente isotherme réversible",
+    "statement": "$n$ moles d'un gaz parfait subissent une détente isotherme réversible à la température $T$, d'un volume $V_1$ à un volume $V_2 > V_1$.\n1. Justifier que $\\Delta U = 0$ pour cette transformation, et en déduire la chaleur $Q$ reçue par le gaz.\n2. La transformation étant réversible, calculer la variation d'entropie $\\Delta S$ du gaz à l'aide de $\\Delta S = Q_{reçue}/T$. Vérifier que $\\Delta S > 0$ et commenter.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 4,
+    "chapter": "Thermodynamique",
+    "estimatedMinutes": 20,
+    "tags": [
+      "thermodynamique",
+      "entropie",
+      "second principe",
+      "transformation isotherme"
+    ],
+    "hints": [
+      "Pour un gaz parfait, U ne dépend que de T (première loi de Joule) : une transformation isotherme laisse donc U inchangée.",
+      "Le travail reçu au cours d'une détente isotherme réversible vaut W = -nRT·ln(V2/V1) ; utilise le premier principe pour en déduire Q, puis la formule de l'entropie donnée dans l'énoncé."
+    ],
+    "correction": "U d'un gaz parfait ne dépend que de T (première loi de Joule), donc pour une transformation isotherme, ΔU=0. Le travail reçu au cours de la détente réversible vaut W = -nRT·ln(V2/V1) (négatif puisque V2>V1, le gaz fournit du travail). Le premier principe donne Q = ΔU - W = 0 - (-nRT·ln(V2/V1)) = nRT·ln(V2/V1) : le gaz reçoit effectivement de la chaleur (Q>0), cohérent avec une détente à température constante. La variation d'entropie vaut ΔS = Q/T = nR·ln(V2/V1), qui est bien positive puisque V2 > V1 : l'entropie du gaz augmente lors d'une détente, traduisant l'augmentation du désordre (le gaz occupe un volume plus grand).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "thermodynamique",
+      "entropie",
+      "second principe"
+    ],
+    "pedagogicalGoal": "introduire la notion d'entropie et le second principe (via la formule réversible ΔS=Q/T), absente de la banque jusqu'ici bien que centrale dans le programme de thermodynamique de Sup."
+  },
+  {
+    "title": "Configuration électronique et ion stable : magnésium et chlore",
+    "statement": "On donne $Z(Mg)=12$ et $Z(Cl)=17$.\n1. Donner la configuration électronique de l'atome de magnésium et de l'atome de chlore à l'état fondamental.\n2. En déduire, pour chacun, l'ion monoatomique stable qu'il forme préférentiellement, en justifiant par la structure électronique en couche externe (règle de l'octet).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Structure de la matière",
+    "estimatedMinutes": 15,
+    "tags": [
+      "chimie",
+      "configuration électronique",
+      "règle de l'octet",
+      "ions"
+    ],
+    "hints": [
+      "Remplis les couches et sous-couches électroniques dans l'ordre (1s, 2s, 2p, 3s, 3p...) jusqu'à atteindre Z électrons au total.",
+      "Un atome forme préférentiellement l'ion qui lui permet d'atteindre la configuration électronique du gaz noble le plus proche (règle de l'octet/du duet)."
+    ],
+    "correction": "Mg (Z=12) : 1s² 2s² 2p⁶ 3s². Cl (Z=17) : 1s² 2s² 2p⁶ 3s² 3p⁵. Le magnésium, avec 2 électrons sur sa couche externe, perd facilement ces 2 électrons pour retrouver la configuration du néon (Z=10) : il forme préférentiellement l'ion Mg²⁺. Le chlore, avec 7 électrons sur sa couche externe (3s²3p⁵), gagne facilement 1 électron pour atteindre la configuration de l'argon (Z=18) : il forme préférentiellement l'ion Cl⁻.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "configuration électronique",
+      "règle de l'octet"
+    ],
+    "pedagogicalGoal": "réactiver le remplissage électronique et la règle de l'octet pour PRÉDIRE l'ion stable formé, compétence de base réutilisée dans toute la chimie des solutions et de l'oxydoréduction."
+  },
+  {
+    "title": "Comparaison de rayons ioniques d'espèces isoélectroniques",
+    "statement": "On considère les espèces suivantes, toutes isoélectroniques du néon (10 électrons) : $F^-$ ($Z=9$), $Na^+$ ($Z=11$), $Mg^{2+}$ ($Z=12$).\nClasser ces trois espèces par rayon ionique croissant, en justifiant à partir de la charge nucléaire ressentie par les électrons.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Structure de la matière",
+    "estimatedMinutes": 15,
+    "tags": [
+      "chimie",
+      "rayon ionique",
+      "isoélectronique",
+      "classification périodique"
+    ],
+    "hints": [
+      "Ces trois espèces ont EXACTEMENT le même nombre d'électrons (10) mais des noyaux de charges différentes.",
+      "Plus la charge du noyau (nombre de protons) est grande pour un même nombre d'électrons, plus les électrons sont attirés fortement, donc plus le rayon est petit."
+    ],
+    "correction": "Les trois espèces ont le même nombre d'électrons (10, configuration du néon), mais des charges nucléaires différentes : Z=9 pour F⁻, Z=11 pour Na⁺, Z=12 pour Mg²⁺. Plus la charge nucléaire est élevée, plus elle attire fortement le même nuage électronique, ce qui contracte le rayon. Le classement par rayon CROISSANT est donc : Mg²⁺ (Z=12, le plus petit) < Na⁺ (Z=11) < F⁻ (Z=9, le plus grand).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "rayon ionique",
+      "espèces isoélectroniques"
+    ],
+    "pedagogicalGoal": "pratiquer le raisonnement sur les rayons d'espèces isoélectroniques (même nombre d'électrons, charge nucléaire différente), cas classique et fréquemment source d'erreur si l'on raisonne seulement par période."
+  },
+  {
+    "title": "Position dans le tableau périodique et ion stable à partir du numéro atomique",
+    "statement": "Un élément $X$ a pour numéro atomique $Z=16$.\n1. Donner sa configuration électronique et déterminer la période et la colonne (famille) auxquelles il appartient dans le tableau périodique.\n2. En déduire le nombre d'électrons de valence, et proposer la formule de l'ion monoatomique stable qu'il forme.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Classification périodique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "chimie",
+      "classification périodique",
+      "configuration électronique",
+      "ions"
+    ],
+    "hints": [
+      "Le numéro de la période correspond au numéro de la couche externe (n le plus grand occupé) ; le numéro de colonne se lit sur le nombre d'électrons de valence (couche externe).",
+      "Un élément de la colonne des chalcogènes (comme l'oxygène) forme typiquement un ion de charge -2."
+    ],
+    "correction": "Z=16 : configuration 1s² 2s² 2p⁶ 3s² 3p⁴. La couche externe occupée est n=3 : l'élément est en période 3. Il a 6 électrons de valence (3s²3p⁴) : il appartient à la colonne 16 (famille des chalcogènes, comme l'oxygène). Avec 6 électrons de valence, il lui en manque 2 pour atteindre l'octet : il forme préférentiellement l'ion X²⁻ (il s'agit en réalité du soufre, formant S²⁻).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "classification périodique",
+      "configuration électronique"
+    ],
+    "pedagogicalGoal": "pratiquer la lecture directe du tableau périodique (période, colonne, valence) à partir du seul numéro atomique — compétence de base pour situer rapidement un élément inconnu."
+  },
+  {
+    "title": "Enthalpie standard de combustion du méthane par la loi de Hess",
+    "statement": "On considère la réaction de combustion du méthane : $CH_4(g) + 2\\,O_2(g) \\rightarrow CO_2(g) + 2\\,H_2O(l)$.\nDonnées (enthalpies standard de formation, en kJ/mol) : $\\Delta_fH°(CH_4) = -75$ ; $\\Delta_fH°(CO_2) = -394$ ; $\\Delta_fH°(H_2O, l) = -286$ ; $\\Delta_fH°(O_2) = 0$.\nCalculer l'enthalpie standard de réaction $\\Delta_rH°$ de cette combustion.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Thermochimie",
+    "estimatedMinutes": 15,
+    "tags": [
+      "chimie",
+      "thermochimie",
+      "loi de Hess",
+      "enthalpie de réaction"
+    ],
+    "hints": [
+      "La loi de Hess donne ΔrH° = Σ(coefficients stœchiométriques × ΔfH° des produits) - Σ(coefficients stœchiométriques × ΔfH° des réactifs).",
+      "N'oublie pas les coefficients stœchiométriques de l'équation (2 devant O2 et devant H2O) dans la somme."
+    ],
+    "correction": "ΔrH° = [ΔfH°(CO2) + 2×ΔfH°(H2O)] - [ΔfH°(CH4) + 2×ΔfH°(O2)] = [-394 + 2×(-286)] - [-75 + 2×0] = [-394 - 572] - (-75) = -966 + 75 = -891 kJ/mol. La combustion du méthane est fortement exothermique, ce qui est cohérent avec son usage comme combustible.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "thermochimie",
+      "loi de Hess"
+    ],
+    "pedagogicalGoal": "réactiver le calcul direct d'une enthalpie de réaction par la loi de Hess à partir d'enthalpies de formation tabulées — technique systématique de base en thermochimie."
+  },
+  {
+    "title": "Chaleur libérée par la combustion d'une masse donnée de méthane",
+    "statement": "Sachant que la combustion complète d'une mole de méthane libère 891 kJ (voir l'exercice précédent), calculer la quantité de chaleur libérée par la combustion complète de 8,0 g de méthane ($M(CH_4) = 16\\ \\text{g/mol}$).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Thermochimie",
+    "estimatedMinutes": 15,
+    "tags": [
+      "chimie",
+      "thermochimie",
+      "quantité de matière",
+      "loi de Hess"
+    ],
+    "hints": [
+      "Calcule d'abord la quantité de matière n de méthane correspondant à 8,0 g, à l'aide de la masse molaire.",
+      "La chaleur totale libérée est proportionnelle à la quantité de matière : Q = n × (chaleur libérée par mole)."
+    ],
+    "correction": "n(CH4) = m/M = 8,0/16 = 0,50 mol. La combustion complète de 0,50 mol de méthane libère Q = 0,50 × 891 = 445,5 kJ.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "thermochimie",
+      "quantité de matière"
+    ],
+    "pedagogicalGoal": "enchaîner un calcul de quantité de matière avec le résultat thermochimique de l'exercice précédent — forme une petite séquence à deux exercices sur la même réaction."
+  },
+  {
+    "title": "Temps de demi-réaction d'une cinétique d'ordre 1",
+    "statement": "On étudie une réaction d'ordre 1 par rapport au réactif $A$, de constante de vitesse $k$.\n1. Rappeler l'expression de la concentration $[A](t)$ en fonction de $[A]_0$, $k$ et $t$.\n2. Montrer que le temps de demi-réaction $t_{1/2}$ (temps au bout duquel $[A]$ a été divisée par 2) vaut $t_{1/2} = \\dfrac{\\ln 2}{k}$, et vérifier qu'il ne dépend pas de la concentration initiale $[A]_0$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Cinétique chimique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "chimie",
+      "cinétique chimique",
+      "ordre 1",
+      "temps de demi-réaction"
+    ],
+    "hints": [
+      "Pour une réaction d'ordre 1, [A](t) suit une décroissance exponentielle : [A](t) = [A]₀·e^(-kt).",
+      "Pose [A](t1/2) = [A]₀/2 dans l'expression de [A](t), puis résous l'équation en t1/2 en passant au logarithme."
+    ],
+    "correction": "[A](t) = [A]₀·e^(-kt) (solution de l'équation cinétique d'ordre 1, d[A]/dt = -k[A]). Au temps de demi-réaction, [A](t1/2) = [A]₀/2, soit [A]₀·e^(-k·t1/2) = [A]₀/2, donc e^(-k·t1/2) = 1/2, soit -k·t1/2 = -ln 2, d'où t1/2 = ln(2)/k. Le facteur [A]₀ se simplifie dans l'équation : t1/2 ne dépend effectivement PAS de la concentration initiale, propriété caractéristique d'une cinétique d'ordre 1.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "cinétique chimique",
+      "ordre 1",
+      "temps de demi-réaction"
+    ],
+    "pedagogicalGoal": "installer la notion de temps de demi-réaction et sa propriété d'indépendance vis-à-vis de la concentration initiale (spécifique à l'ordre 1) — notion de base absente jusqu'ici du seul exercice existant de cinétique."
+  },
+  {
+    "title": "Application numérique : temps pour atteindre 10% de la concentration initiale",
+    "statement": "Une réaction d'ordre 1 a une constante de vitesse $k = 2{,}0 \\times 10^{-3}\\ \\text{s}^{-1}$ à une température donnée.\n1. Calculer le temps de demi-réaction $t_{1/2}$ (voir la relation établie dans l'exercice précédent).\n2. Au bout de combien de temps la concentration du réactif $A$ est-elle réduite à 10% de sa valeur initiale ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Cinétique chimique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "chimie",
+      "cinétique chimique",
+      "ordre 1",
+      "application numérique"
+    ],
+    "hints": [
+      "Utilise t1/2 = ln(2)/k avec la valeur numérique de k donnée.",
+      "\"Réduite à 10%\" signifie [A](t)/[A]₀ = 0,10 = e^(-kt) : résous cette équation en t en passant au logarithme népérien."
+    ],
+    "correction": "t1/2 = ln(2)/k = 0,693/(2,0×10⁻³) ≈ 347 s (environ 5 min 47 s). Pour [A](t)/[A]₀ = 0,10, on résout 0,10 = e^(-kt), soit -kt = ln(0,10), donc t = ln(10)/k = 2,303/(2,0×10⁻³) ≈ 1151 s, soit environ 19 min 12 s.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "cinétique chimique",
+      "ordre 1"
+    ],
+    "pedagogicalGoal": "faire l'application numérique directe des formules de l'exercice précédent — vérifier que le calcul avec une valeur de k réaliste donne des temps caractéristiques cohérents (quelques minutes)."
+  },
+  {
+    "title": "Composition à l'équilibre d'une dissociation gazeuse",
+    "statement": "On introduit initialement 1,0 mol de $N_2O_4(g)$ dans un récipient de volume $V=10\\ \\text{L}$, à une température $T$ où la constante d'équilibre vaut $K_c = 0{,}20\\ \\text{mol/L}$ pour l'équilibre $N_2O_4(g) \\rightleftharpoons 2\\,NO_2(g)$.\nCalculer les concentrations de $N_2O_4$ et de $NO_2$ à l'équilibre.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Équilibres chimiques",
+    "estimatedMinutes": 25,
+    "tags": [
+      "chimie",
+      "équilibre chimique",
+      "constante d'équilibre",
+      "tableau d'avancement"
+    ],
+    "hints": [
+      "Construis un tableau d'avancement en concentration : [N2O4] = 0,10 - x et [NO2] = 2x, où x est la concentration de N2O4 dissociée à l'équilibre (concentration initiale [N2O4]₀ = 1,0/10 = 0,10 mol/L).",
+      "Remplace dans l'expression de Kc = [NO2]²/[N2O4] pour obtenir une équation du second degré en x, puis ne garde que la solution physiquement acceptable (x doit être positif et inférieur à 0,10)."
+    ],
+    "correction": "[N2O4]₀ = 1,0/10 = 0,10 mol/L. En notant x la concentration de N2O4 dissociée à l'équilibre : [N2O4]éq = 0,10 - x, [NO2]éq = 2x. L'expression de Kc donne (2x)²/(0,10-x) = 0,20, soit 4x² = 0,20×(0,10-x) = 0,02 - 0,2x, soit 4x² + 0,2x - 0,02 = 0. Les solutions de cette équation du second degré sont x = 0,05 et x = -0,10 ; seule x = 0,05 mol/L est physiquement acceptable (concentration positive et inférieure à 0,10). On obtient donc [N2O4]éq = 0,10 - 0,05 = 0,05 mol/L et [NO2]éq = 2×0,05 = 0,10 mol/L. Vérification : Kc = (0,10)²/0,05 = 0,20 ✓.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "équilibre chimique",
+      "tableau d'avancement",
+      "constante d'équilibre"
+    ],
+    "pedagogicalGoal": "pratiquer un calcul de composition à l'équilibre nécessitant de résoudre une équation du second degré (pas seulement de vérifier une valeur donnée) — étape au-dessus des deux exercices déjà présents sur les équilibres."
+  },
+  {
+    "title": "Bornes de représentation d'un entier signé en complément à deux",
+    "statement": "On représente les entiers signés sur $n$ bits selon la convention du complément à deux.\n1. Rappeler pourquoi, sur $n$ bits, on peut représenter $2^n$ valeurs entières distinctes.\n2. Écrire une fonction Python `bornes(n)` qui renvoie le couple (valeur minimale, valeur maximale) représentable sur $n$ bits en complément à deux.\n3. Donner les bornes pour $n=8$, $n=16$ et $n=32$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Les entiers",
+    "estimatedMinutes": 15,
+    "tags": [
+      "informatique",
+      "représentation binaire",
+      "complément à deux"
+    ],
+    "hints": [
+      "Sur n bits, il y a 2^n configurations binaires possibles ; en complément à deux, la moitié représente des valeurs négatives (de -2^(n-1) à -1) et l'autre moitié des valeurs positives ou nulles (de 0 à 2^(n-1)-1).",
+      "La borne minimale vaut donc -2^(n-1) et la borne maximale 2^(n-1)-1 (et non 2^(n-1), à cause du zéro qui \"consomme\" une valeur positive)."
+    ],
+    "correction": "Sur n bits, il y a 2ⁿ configurations binaires possibles, donc 2ⁿ entiers représentables. En complément à deux, ces valeurs vont de -2^(n-1) à 2^(n-1)-1 (bornes asymétriques à cause du zéro).\n```python\ndef bornes(n):\n    return -(2**(n-1)), 2**(n-1) - 1\n```\nPour n=8 : (-128, 127). Pour n=16 : (-32768, 32767). Pour n=32 : (-2147483648, 2147483647).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "représentation binaire",
+      "complément à deux"
+    ],
+    "pedagogicalGoal": "compléter la représentation binaire des entiers (déjà abordée pour les flottants) avec les bornes exactes du complément à deux — savoir explique pourquoi un compteur \"déborde\" à une valeur précise, source classique de bug."
+  },
+  {
+    "title": "Comparaison de flottants avec tolérance",
+    "statement": "On sait que le test `0.1 + 0.2 == 0.3` renvoie `False` en Python à cause des arrondis de la représentation flottante.\n1. Expliquer en une phrase pourquoi ce test échoue.\n2. Écrire une fonction Python `presque_egaux(a, b, eps=1e-9)` qui renvoie `True` si et seulement si $|a-b| < \\varepsilon$, et tester qu'elle renvoie `True` pour `presque_egaux(0.1+0.2, 0.3)`.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Les flottants",
+    "estimatedMinutes": 10,
+    "tags": [
+      "informatique",
+      "flottants",
+      "IEEE 754",
+      "bonnes pratiques"
+    ],
+    "hints": [
+      "0.1 et 0.2 n'ont pas de représentation binaire exacte en flottant (comme 1/3 n'a pas de développement décimal fini) : leur somme accumule une erreur d'arrondi microscopique mais non nulle.",
+      "La comparaison \"à une tolérance près\" (epsilon) est la méthode standard pour comparer des flottants en pratique, plutôt que l'égalité stricte."
+    ],
+    "correction": "0.1 et 0.2 ne sont pas représentables exactement en base 2 (comme 1/3 en base 10) : leur somme accumule une infime erreur d'arrondi, si bien que 0.1+0.2 vaut en réalité 0.30000000000000004 en flottant, différent de 0.3 au sens strict.\n```python\ndef presque_egaux(a, b, eps=1e-9):\n    return abs(a - b) < eps\n```\n`presque_egaux(0.1+0.2, 0.3)` renvoie bien `True`, car l'écart (≈4×10⁻¹⁷) est très inférieur à eps=1e-9.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "flottants",
+      "IEEE 754",
+      "comparaison"
+    ],
+    "pedagogicalGoal": "transformer le constat théorique déjà présent dans la banque (0.1+0.2≠0.3) en réflexe pratique : savoir écrire une comparaison flottante robuste, utile dans n'importe quel programme numérique."
+  },
+  {
+    "title": "Tri par sélection",
+    "statement": "Écrire une fonction Python `tri_selection(t)` qui trie une liste d'entiers `t` par ordre croissant à l'aide de l'algorithme du tri par sélection (à chaque étape, on cherche le minimum du reste de la liste et on l'échange avec la première case non triée), sans utiliser de fonction de tri déjà existante.\nDonner la complexité de cet algorithme dans le pire des cas.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Algorithmes de tri",
+    "estimatedMinutes": 20,
+    "tags": [
+      "informatique",
+      "algorithmique",
+      "tri",
+      "complexité"
+    ],
+    "hints": [
+      "À chaque itération i, cherche l'indice du minimum parmi t[i:], puis échange t[i] avec ce minimum.",
+      "Le tri par sélection effectue toujours le même nombre de comparaisons quel que soit l'état initial de la liste : compte le nombre total de comparaisons effectuées pour en déduire la complexité."
+    ],
+    "correction": "```python\ndef tri_selection(t):\n    t = t[:]\n    n = len(t)\n    for i in range(n):\n        i_min = i\n        for j in range(i + 1, n):\n            if t[j] < t[i_min]:\n                i_min = j\n        t[i], t[i_min] = t[i_min], t[i]\n    return t\n```\nExemple : `tri_selection([5,3,8,1,9,2])` renvoie `[1,2,3,5,8,9]`. Complexité : pour chaque indice i de 0 à n-1, on parcourt environ n-i éléments pour trouver le minimum, soit un total de l'ordre de n²/2 comparaisons : la complexité est O(n²) dans tous les cas (le nombre de comparaisons ne dépend pas de l'ordre initial de la liste, contrairement au tri à bulles optimisé).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "algorithmique",
+      "tri",
+      "complexité"
+    ],
+    "pedagogicalGoal": "ajouter un second algorithme de tri (tri par sélection) distinct du premier déjà présent dans la banque, pour comparer les stratégies et retrouver la complexité quadratique commune aux tris élémentaires."
+  },
+  {
+    "title": "Trace d'exécution d'un programme (prédiction de sortie)",
+    "statement": "On considère le programme Python suivant :\n```python\ndef mystere(n):\n    resultat = 0\n    for i in range(1, n + 1):\n        if i % 2 == 0:\n            resultat += i\n        else:\n            resultat -= i\n    return resultat\n```\n1. Sans exécuter le programme, déterminer la valeur renvoyée par `mystere(6)`, en détaillant l'évolution de la variable `resultat` à chaque itération.\n2. Donner une expression générale (en fonction de $n$, pour $n$ pair) du résultat renvoyé par `mystere(n)`.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Analyse d'un programme",
+    "estimatedMinutes": 15,
+    "tags": [
+      "informatique",
+      "trace d'exécution",
+      "algorithmique"
+    ],
+    "hints": [
+      "Déroule la boucle pas à pas : pour i=1 (impair) on soustrait i, pour i=2 (pair) on ajoute i, et ainsi de suite.",
+      "Regroupe les termes deux par deux : (-1+2), (-3+4), (-5+6)... chaque paire vaut +1."
+    ],
+    "correction": "Déroulé pas à pas pour n=6 : i=1 (impair) → resultat=-1 ; i=2 (pair) → resultat=-1+2=1 ; i=3 → resultat=1-3=-2 ; i=4 → resultat=-2+4=2 ; i=5 → resultat=2-5=-3 ; i=6 → resultat=-3+6=3. `mystere(6)` renvoie donc 3. Pour n pair en général, en regroupant les termes deux par deux : (-1+2)+(-3+4)+...+(-(n-1)+n) = 1+1+...+1 (n/2 fois) = n/2. On retrouve bien n/2=3 pour n=6.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "trace d'exécution",
+      "algorithmique"
+    ],
+    "pedagogicalGoal": "pratiquer la LECTURE et la prédiction du comportement d'un programme donné (compétence différente de l'écriture de code), déjà identifiée comme sous-représentée dans la banque."
+  },
+  {
+    "title": "Connexité d'un graphe par parcours en profondeur",
+    "statement": "On représente un graphe non orienté par un dictionnaire d'adjacence (`adj[sommet]` = liste des voisins de `sommet`).\nÉcrire une fonction Python `est_connexe(adj)` qui renvoie `True` si le graphe est connexe (tous les sommets sont reliés entre eux par un chemin), `False` sinon, à l'aide d'un parcours en profondeur (DFS) depuis un sommet quelconque.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Vocabulaire et représentations des graphes",
+    "estimatedMinutes": 20,
+    "tags": [
+      "informatique",
+      "graphes",
+      "parcours en profondeur",
+      "connexité"
+    ],
+    "hints": [
+      "Lance un parcours en profondeur (DFS, à l'aide d'une pile ou de la récursivité) depuis un sommet de départ quelconque, en marquant chaque sommet visité.",
+      "Le graphe est connexe si et seulement si le nombre de sommets visités par le parcours est égal au nombre total de sommets du graphe."
+    ],
+    "correction": "```python\ndef est_connexe(adj):\n    n = len(adj)\n    visited = set()\n    pile = [next(iter(adj))]\n    while pile:\n        u = pile.pop()\n        if u in visited:\n            continue\n        visited.add(u)\n        for v in adj[u]:\n            if v not in visited:\n                pile.append(v)\n    return len(visited) == n\n```\nLe graphe est connexe si et seulement si le parcours en profondeur depuis un sommet quelconque atteint tous les sommets. Exemple : pour `{0:[1,2], 1:[0,3], 2:[0], 3:[1]}` (connexe), la fonction renvoie `True` ; pour `{0:[1], 1:[0], 2:[3], 3:[2]}` (deux composantes séparées {0,1} et {2,3}), elle renvoie `False`.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "graphes",
+      "parcours en profondeur",
+      "connexité"
+    ],
+    "pedagogicalGoal": "faire pratiquer un vrai algorithme de parcours de graphe (DFS) appliqué à une propriété structurelle (connexité), au-delà de la simple représentation par matrice/liste d'adjacence déjà présente dans la banque."
+  },
+  {
+    "title": "Réécriture de boucles à l'aide de compréhensions de liste",
+    "statement": "On considère le code suivant :\n```python\ncarres = []\nfor x in range(10):\n    if x % 2 == 0:\n        carres.append(x**2)\n```\n1. Réécrire ce code à l'aide d'une compréhension de liste en une seule ligne.\n2. Écrire, également à l'aide d'une compréhension de liste, une expression qui construit la liste des carrés des nombres IMPAIRS entre 1 et 20 (inclus).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Langage Python",
+    "estimatedMinutes": 10,
+    "tags": [
+      "informatique",
+      "python",
+      "compréhension de liste"
+    ],
+    "hints": [
+      "La syntaxe générale d'une compréhension de liste est `[expression for variable in iterable if condition]`.",
+      "\"Nombres impairs\" se traduit par la condition `x % 2 != 0` (ou `x % 2 == 1`), appliquée à `range(1, 21)` pour inclure 20."
+    ],
+    "correction": "1. `carres = [x**2 for x in range(10) if x % 2 == 0]` — donne `[0, 4, 16, 36, 64]`, identique au résultat de la boucle explicite.\n2. `[x**2 for x in range(1, 21) if x % 2 != 0]` — donne la liste des carrés des nombres impairs de 1 à 19 (1, 9, 25, 49, ..., 361).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "python",
+      "compréhension de liste"
+    ],
+    "pedagogicalGoal": "consolider la maîtrise des compréhensions de liste (syntaxe idiomatique et très utilisée en Python), en complément du vocabulaire de base (tuples/listes/dictionnaires) déjà couvert par le seul exercice existant sur le langage."
   }
 ]
