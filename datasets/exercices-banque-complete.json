@@ -6948,5 +6948,492 @@
       "compréhension de liste"
     ],
     "pedagogicalGoal": "consolider la maîtrise des compréhensions de liste (syntaxe idiomatique et très utilisée en Python), en complément du vocabulaire de base (tuples/listes/dictionnaires) déjà couvert par le seul exercice existant sur le langage."
+  },
+  {
+    "title": "Suite implicite : existence, unicité et limite",
+    "statement": "Pour tout entier $n \\geq 2$, on considère la fonction $f_n(x) = x^n - x - 1$ sur $[1,2]$.\n1. Montrer que l'équation $f_n(x)=0$ admet une unique solution $u_n \\in ]1,2[$.\n2. En calculant $f_{n+1}(u_n)$ en fonction de $u_n$, montrer que la suite $(u_n)$ est décroissante.\n3. En déduire que $(u_n)$ converge, et déterminer sa limite.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 25,
+    "tags": [
+      "suites",
+      "TVI",
+      "monotonie",
+      "suite implicite"
+    ],
+    "hints": [
+      "f_n est continue et strictement croissante sur [1,2] (dérivée n·x^(n-1)-1 > 0) avec f_n(1)<0<f_n(2) : le TVI strictement monotone donne existence et unicité.",
+      "Utilise u_n^n = u_n+1 (car f_n(u_n)=0) pour réexprimer f_{n+1}(u_n) uniquement en fonction de u_n, puis compare son signe à 0."
+    ],
+    "correction": "f_n est continue, strictement croissante sur [1,2] (f_n'(x)=n·x^(n-1)-1>0 pour x≥1, n≥2), avec f_n(1)=-1<0 et f_n(2)=2^n-3>0 : par TVI strictement monotone, u_n existe et est unique dans ]1,2[. Comme u_n^n=u_n+1, on calcule f_{n+1}(u_n)=u_n^{n+1}-u_n-1=u_n·u_n^n-u_n-1=u_n(u_n+1)-u_n-1=u_n²-1>0 (car u_n>1). Or f_{n+1}(u_{n+1})=0 et f_{n+1} est croissante, donc f_{n+1}(u_n)>f_{n+1}(u_{n+1}) implique u_n>u_{n+1} : la suite est décroissante. Décroissante et minorée par 1, elle converge vers une limite L≥1. Si L>1, alors u_n^n→+∞ (car u_n reste ≥(L+1)/2>1), incompatible avec u_n^n=u_n+1→L+1 (fini) : contradiction. Donc L=1 : (u_n) converge vers 1.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "suites numériques",
+      "TVI",
+      "suite implicite"
+    ],
+    "pedagogicalGoal": "installer, à un niveau plus accessible (existence, unicité, monotonie, limite — sans le développement asymptotique), la même famille de techniques que l'exercice de difficulté 5 déjà présent sur les suites implicites, pour permettre une vraie progression avant d'aborder ce dernier."
+  },
+  {
+    "title": "Suites adjacentes : encadrement d'une somme de carrés inverses",
+    "statement": "On considère les suites $(u_n)$ et $(v_n)$ définies pour $n \\geq 1$ par $u_n = \\displaystyle\\sum_{k=1}^{n} \\frac{1}{k^2}$ et $v_n = u_n + \\dfrac{1}{n}$.\n1. Montrer que $(u_n)$ est croissante et $(v_n)$ décroissante.\n2. Montrer que $(u_n)$ et $(v_n)$ sont adjacentes.\n3. Que peut-on en conclure sur la convergence de $(u_n)$, sans chercher à calculer sa limite ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 20,
+    "tags": [
+      "suites adjacentes",
+      "encadrement",
+      "convergence"
+    ],
+    "hints": [
+      "u_{n+1}-u_n = 1/(n+1)² > 0 est immédiat ; pour v, calcule v_{n+1}-v_n en regroupant les termes en 1/(n+1)² et 1/(n+1)-1/n.",
+      "Deux suites adjacentes (l'une croissante, l'autre décroissante, leur différence tendant vers 0) convergent TOUJOURS vers une même limite — c'est le théorème des suites adjacentes, qui ne nécessite pas de connaître explicitement cette limite."
+    ],
+    "correction": "u_{n+1}-u_n = 1/(n+1)² > 0 : (u_n) est croissante. v_{n+1}-v_n = 1/(n+1)² + [1/(n+1) - 1/n] = 1/(n+1)² - 1/(n(n+1)) = [n-(n+1)]/[n(n+1)²] = -1/[n(n+1)²] < 0 : (v_n) est décroissante. De plus v_n - u_n = 1/n → 0 quand n→+∞. Les trois conditions du théorème des suites adjacentes sont réunies : (u_n) et (v_n) sont adjacentes, donc convergent vers une même limite commune L. On en déduit que (u_n) converge, sans qu'il soit nécessaire d'en calculer la valeur (qui vaut en réalité π²/6, résultat hors-programme de Sup).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "suites adjacentes",
+      "convergence"
+    ],
+    "pedagogicalGoal": "pratiquer la technique des suites adjacentes sur un exemple différent de celui déjà présent dans la banque (série de l'exponentielle) — ici sans avoir besoin de prouver une irrationalité, pour isoler la seule technique de convergence, en amont de l'exercice plus exigeant déjà présent."
+  },
+  {
+    "title": "Encadrement d'une somme de n termes par le théorème des gendarmes",
+    "statement": "Pour $n \\geq 1$, on pose $u_n = \\displaystyle\\sum_{k=1}^{n} \\frac{1}{\\sqrt{n^2+k}}$.\n1. Montrer que, pour tout $k \\in \\{1,\\dots,n\\}$, $\\dfrac{1}{\\sqrt{n^2+n}} \\leq \\dfrac{1}{\\sqrt{n^2+k}} \\leq \\dfrac{1}{\\sqrt{n^2+1}}$.\n2. En sommant ces inégalités, encadrer $u_n$, puis déterminer $\\displaystyle\\lim_{n \\to +\\infty} u_n$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 20,
+    "tags": [
+      "suites",
+      "encadrement",
+      "théorème des gendarmes",
+      "somme"
+    ],
+    "hints": [
+      "Pour k entre 1 et n, n²+1 ≤ n²+k ≤ n²+n : la fonction racine carrée étant croissante puis l'inverse décroissante, encadre 1/√(n²+k) en conséquence.",
+      "Il y a EXACTEMENT n termes dans la somme définissant u_n : sommer une inégalité constante n fois revient à la multiplier par n."
+    ],
+    "correction": "Pour k∈{1,...,n}, n²+1 ≤ n²+k ≤ n²+n, donc (racine croissante) √(n²+1) ≤ √(n²+k) ≤ √(n²+n), donc (inverse décroissante) 1/√(n²+n) ≤ 1/√(n²+k) ≤ 1/√(n²+1). En sommant cette inégalité pour k=1 à n (soit n termes), on obtient n/√(n²+n) ≤ u_n ≤ n/√(n²+1), soit 1/√(1+1/n) ≤ u_n ≤ 1/√(1+1/n²). Quand n→+∞, les deux bornes tendent vers 1 : par le théorème des gendarmes, u_n → 1.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "suites numériques",
+      "théorème des gendarmes"
+    ],
+    "pedagogicalGoal": "appliquer le théorème des gendarmes à une somme dont le NOMBRE de termes dépend lui-même de n — piège classique (chaque terme tend vers 0 individuellement, mais la somme ne tend pas vers 0) que l'exercice de gendarmes déjà présent, plus simple, ne couvre pas."
+  },
+  {
+    "title": "Vitesse de convergence d'une suite récurrente par point fixe contractant",
+    "statement": "Soit $f(x) = \\dfrac{x^2+2}{3}$ définie sur $[0,1]$, et $(u_n)$ la suite définie par $u_0=0$ et $u_{n+1}=f(u_n)$.\n1. Montrer que $f([0,1]) \\subset [0,1]$.\n2. Montrer que $|f'(x)| \\leq \\dfrac{2}{3}$ sur $[0,1]$, et en déduire que $f$ est $\\dfrac{2}{3}$-contractante sur $[0,1]$.\n3. Montrer que $\\ell=1$ est l'unique point fixe de $f$ dans $[0,1]$, puis établir, à l'aide de l'inégalité des accroissements finis, que $|u_n - 1| \\leq \\left(\\dfrac{2}{3}\\right)^n$ pour tout $n$. Conclure sur la convergence de $(u_n)$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Suites numériques",
+    "estimatedMinutes": 30,
+    "tags": [
+      "suites",
+      "point fixe",
+      "fonction contractante",
+      "vitesse de convergence"
+    ],
+    "hints": [
+      "f(x)=1 se résout en x²-3x+2=0, soit (x-1)(x-2)=0 : sur [0,1], seule x=1 convient.",
+      "L'inégalité des accroissements finis donne |f(x)-f(1)| ≤ (2/3)|x-1| pour x∈[0,1] ; applique-la avec x=u_n et répète (récurrence) pour obtenir la majoration géométrique de |u_n-1|."
+    ],
+    "correction": "Sur [0,1], f(0)=2/3 et f(1)=1, et f est croissante (f'(x)=2x/3≥0) : donc f([0,1])=[2/3,1]⊂[0,1]. f'(x)=2x/3, donc |f'(x)|≤2/3 sur [0,1] : f est 2/3-contractante (inégalité des accroissements finis). L'équation f(x)=x s'écrit x²-3x+2=0, de racines 1 et 2 ; seule x=1 appartient à [0,1] : c'est l'unique point fixe. Par l'inégalité des accroissements finis, |u_{n+1}-1|=|f(u_n)-f(1)|≤(2/3)|u_n-1|, donc par récurrence immédiate |u_n-1|≤(2/3)ⁿ|u_0-1|=(2/3)ⁿ (car u_0=0). Comme (2/3)ⁿ→0, on conclut que u_n→1, avec une vitesse de convergence géométrique explicite.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "suites numériques",
+      "point fixe",
+      "fonction contractante"
+    ],
+    "pedagogicalGoal": "prolonger l'exercice de difficulté 3 déjà présent sur les suites récurrentes par point fixe, en y ajoutant l'estimation QUANTITATIVE de la vitesse de convergence (contractance + IAF) — étape naturelle au-dessus de la seule preuve de convergence qualitative."
+  },
+  {
+    "title": "Convergence d'une série alternée et semi-convergence",
+    "statement": "On considère la série de terme général $u_n = \\dfrac{(-1)^n}{n}$ pour $n \\geq 1$.\n1. Montrer, à l'aide du critère spécial des séries alternées, que la série $\\sum u_n$ converge.\n2. Étudier la série $\\sum |u_n|$. Que peut-on en conclure sur la nature de la convergence de $\\sum u_n$ ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 4,
+    "chapter": "Séries numériques",
+    "estimatedMinutes": 20,
+    "tags": [
+      "séries",
+      "série alternée",
+      "semi-convergence",
+      "critère spécial"
+    ],
+    "hints": [
+      "Le critère spécial des séries alternées s'applique si le terme général est de signe alterné et si (|u_n|) décroît vers 0 : vérifie ces deux conditions pour 1/n.",
+      "Σ|u_n| = Σ1/n est la série harmonique, dont la divergence est un résultat de cours à connaître par cœur."
+    ],
+    "correction": "1. u_n=(-1)ⁿ/n est de signe alterné, et la suite (1/n) est positive, décroissante et tend vers 0 : le critère spécial des séries alternées s'applique, donc Σu_n converge.\n2. Σ|u_n| = Σ1/n est la série harmonique, connue pour diverger (résultat de cours, par exemple via comparaison série-intégrale). La série Σu_n converge donc, mais Σ|u_n| diverge : Σu_n est SEMI-CONVERGENTE (convergente mais pas absolument convergente) — un régime de convergence plus subtil que la seule convergence absolue déjà rencontrée dans les exercices sur les séries à termes positifs.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "séries numériques",
+      "critère spécial des séries alternées",
+      "semi-convergence"
+    ],
+    "pedagogicalGoal": "introduire le critère spécial des séries alternées et la distinction convergence absolue / semi-convergence, notion absente de la banque bien que centrale au programme de séries de Sup — comble le saut de difficulté 3 à 5 déjà identifié sur ce chapitre."
+  },
+  {
+    "title": "Résolution d'une équation trigonométrique par changement d'inconnue",
+    "statement": "Résoudre dans $[0, 2\\pi[$ l'équation $\\cos(2x) + \\cos(x) = 0$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Trigonométrie",
+    "estimatedMinutes": 20,
+    "tags": [
+      "trigonométrie",
+      "équation trigonométrique",
+      "changement d'inconnue"
+    ],
+    "hints": [
+      "Exprime cos(2x) en fonction de cos(x) seul (formule cos(2x)=2cos²x-1), pour ramener l'équation à un polynôme du second degré en c=cos(x).",
+      "Résous d'abord l'équation du second degré en c, puis résous séparément chaque équation cos(x)=c₀ obtenue sur [0,2π[."
+    ],
+    "correction": "cos(2x)=2cos²(x)-1, donc l'équation devient 2cos²(x)-1+cos(x)=0. En posant c=cos(x), on résout 2c²+c-1=0 : discriminant Δ=1+8=9, racines c=(-1+3)/4=1/2 et c=(-1-3)/4=-1. Cas c=1/2 : cos(x)=1/2 donne x=π/3 ou x=2π-π/3=5π/3 sur [0,2π[. Cas c=-1 : cos(x)=-1 donne x=π. L'ensemble des solutions est donc {π/3, π, 5π/3}.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "trigonométrie",
+      "équation trigonométrique"
+    ],
+    "pedagogicalGoal": "combiner une identité trigonométrique (duplication) avec la résolution d'une équation du second degré — premier exercice de trigonométrie au-delà de la difficulté 2, comblant le plafond bas de ce chapitre pourtant très transversal (physique, complexes)."
+  },
+  {
+    "title": "Équation différentielle linéaire d'ordre 2 en régime de résonance",
+    "statement": "Résoudre sur $\\mathbb{R}$ l'équation différentielle $y'' + y = \\cos(x)$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Équations différentielles",
+    "estimatedMinutes": 30,
+    "tags": [
+      "équations différentielles",
+      "second ordre",
+      "résonance",
+      "second membre"
+    ],
+    "hints": [
+      "Le second membre cos(x) est lui-même solution de l'équation homogène y''+y=0 : c'est un cas de RÉSONANCE, où la solution particulière usuelle (a·cos x + b·sin x) ne fonctionne pas — il faut chercher une solution particulière sous la forme x·(a·cos x + b·sin x).",
+      "Essaie précisément y_p(x) = (x/2)·sin(x), et vérifie directement qu'elle est solution en calculant y_p''+y_p."
+    ],
+    "correction": "L'équation homogène associée est y''+y=0, de solutions A·cos(x)+B·sin(x). Comme le second membre cos(x) est déjà solution de l'équation homogène (cas de résonance), la solution particulière usuelle ne convient pas : on cherche y_p(x)=x(a·cos x+b·sin x). Avec y_p(x)=(x/2)sin(x) : y_p'(x)=(1/2)sin(x)+(x/2)cos(x), y_p''(x)=(1/2)cos(x)+(1/2)cos(x)-(x/2)sin(x)=cos(x)-(x/2)sin(x). Donc y_p''+y_p = cos(x)-(x/2)sin(x)+(x/2)sin(x) = cos(x) : y_p=(x/2)sin(x) est bien une solution particulière. La solution générale est donc y(x) = A·cos(x) + B·sin(x) + (x/2)·sin(x), avec A, B ∈ R. On remarque que le terme (x/2)sin(x) a une amplitude qui croît indéfiniment avec x : c'est la signature mathématique du phénomène de résonance, directement analogue à la résonance étudiée en physique (circuit RLC, oscillateur forcé).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "équations différentielles",
+      "résonance",
+      "second membre"
+    ],
+    "pedagogicalGoal": "installer le cas de RÉSONANCE (second membre solution de l'équation homogène), absent des équations différentielles déjà présentes dans la banque bien qu'il soit le pont mathématique direct vers les phénomènes de résonance étudiés en physique (oscillateurs, RLC)."
+  },
+  {
+    "title": "Le problème des anniversaires : une probabilité contre-intuitive",
+    "statement": "Dans un groupe de $n$ personnes prises au hasard (on néglige les années bissextiles, 365 jours possibles, dates équiprobables et indépendantes), on cherche la probabilité $p_n$ qu'au moins deux personnes du groupe aient la même date d'anniversaire.\n1. Exprimer, à l'aide d'un produit, la probabilité $q_n = 1-p_n$ qu'aucune des $n$ personnes ne partage sa date d'anniversaire avec une autre.\n2. Calculer numériquement $p_{23}$, et commenter le résultat obtenu.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Probabilités",
+    "estimatedMinutes": 25,
+    "tags": [
+      "probabilités",
+      "dénombrement",
+      "événement complémentaire"
+    ],
+    "hints": [
+      "Il est plus simple de calculer d'abord la probabilité de l'événement CONTRAIRE (aucun partage), puis d'utiliser P(partage) = 1 - P(pas de partage).",
+      "En attribuant les dates une personne après l'autre, la 1ère a 365 choix libres, la 2e doit éviter 1 date (364 choix), la 3e doit éviter 2 dates (363 choix), etc. : q_n est un produit de n fractions."
+    ],
+    "correction": "En attribuant les anniversaires personne par personne, la probabilité qu'aucune ne partage sa date avec une précédente est q_n = (365/365)×(364/365)×(363/365)×...×((365-n+1)/365) = ∏_{k=0}^{n-1}(1 - k/365). Donc p_n = 1 - q_n. Numériquement pour n=23 : q_23 ≈ 0,4927, donc p_23 ≈ 0,5073, soit environ 50,7%. Résultat contre-intuitif : dans un groupe de seulement 23 personnes, il y a déjà plus d'une chance sur deux que deux d'entre elles partagent leur date d'anniversaire — alors que l'intuition suggère souvent un groupe beaucoup plus grand, car on confond à tort \"une date précise partagée avec MOI\" (probabilité faible) et \"deux personnes QUELCONQUES du groupe partagent une date\" (nombre de paires bien plus grand, C(23,2)=253).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "probabilités",
+      "événement complémentaire",
+      "dénombrement"
+    ],
+    "pedagogicalGoal": "installer la technique de l'événement complémentaire sur un exemple classique et contre-intuitif, en complément de la loi hypergéométrique déjà présente au même niveau de difficulté — offre une SECONDE voie de remédiation en cas d'échec sur un exercice de probabilités difficile, avec une technique différente."
+  },
+  {
+    "title": "Distance d'un point à une droite dans l'espace",
+    "statement": "Dans l'espace muni d'un repère orthonormé, on considère les points $A(1,2,0)$, $B(3,0,1)$ et $C(0,0,0)$.\n1. Déterminer un vecteur directeur de la droite $(AB)$ et une représentation paramétrique de cette droite.\n2. Calculer la distance du point $C$ à la droite $(AB)$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Géométrie",
+    "estimatedMinutes": 20,
+    "tags": [
+      "géométrie dans l'espace",
+      "distance point-droite",
+      "produit vectoriel"
+    ],
+    "hints": [
+      "Un vecteur directeur de (AB) est simplement AB = B - A.",
+      "La distance d'un point M à une droite passant par A de vecteur directeur u vaut ||AM ∧ u|| / ||u|| (norme du produit vectoriel divisée par la norme du vecteur directeur)."
+    ],
+    "correction": "Vecteur directeur : AB = B-A = (2,-2,1). Représentation paramétrique de (AB) : (x,y,z) = (1+2t, 2-2t, t), t∈R. Pour la distance de C à (AB) : AC = C-A = (-1,-2,0). Le produit vectoriel AC∧AB = (-2, 1, 6) (calcul direct des trois composantes). Sa norme vaut √(4+1+36)=√41. La norme de AB vaut √(4+4+1)=3. La distance cherchée vaut donc d = √41/3 ≈ 2,13.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "géométrie dans l'espace",
+      "distance point-droite"
+    ],
+    "pedagogicalGoal": "étendre à l'espace la technique de distance point-droite déjà maîtrisée en géométrie plane (existante à difficulté 2), en comblant l'écart de difficulté 2→4 identifié sur ce chapitre par une étape intermédiaire cohérente."
+  },
+  {
+    "title": "Titrage d'oxydoréduction : dosage des ions fer(II) par le permanganate",
+    "statement": "On titre un volume $V_0 = 20{,}0\\ \\text{mL}$ d'une solution de sulfate de fer(II) (Fe$^{2+}$) de concentration inconnue $c_0$ par une solution de permanganate de potassium (MnO$_4^-$) de concentration $c = 0{,}020\\ \\text{mol/L}$. La réaction support du titrage, totale et rapide, est :\n$$MnO_4^- + 5\\,Fe^{2+} + 8\\,H^+ \\rightarrow Mn^{2+} + 5\\,Fe^{3+} + 4\\,H_2O.$$\nL'équivalence est repérée pour un volume versé $V_{eq} = 8{,}0\\ \\text{mL}$.\nDéterminer la concentration $c_0$ de la solution de fer(II).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Oxydoréduction",
+    "estimatedMinutes": 20,
+    "tags": [
+      "chimie",
+      "oxydoréduction",
+      "titrage",
+      "équivalence"
+    ],
+    "hints": [
+      "À l'équivalence, les réactifs ont été introduits dans les proportions stœchiométriques de l'équation de la réaction support du titrage.",
+      "Calcule d'abord la quantité de matière de MnO4⁻ versée à l'équivalence (n=c×Veq), puis utilise le coefficient stœchiométrique 5 pour en déduire la quantité de Fe²⁺ initialement présente."
+    ],
+    "correction": "À l'équivalence, n(MnO4⁻) versé = c×Veq = 0,020×0,0080 = 1,6×10⁻⁴ mol. D'après la stœchiométrie de la réaction (1 MnO4⁻ pour 5 Fe²⁺), la quantité de Fe²⁺ initialement présente vaut n(Fe²⁺) = 5×n(MnO4⁻) = 5×1,6×10⁻⁴ = 8,0×10⁻⁴ mol. La concentration cherchée est c0 = n(Fe²⁺)/V0 = 8,0×10⁻⁴/0,0200 = 4,0×10⁻² mol/L.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "oxydoréduction",
+      "titrage",
+      "stœchiométrie"
+    ],
+    "pedagogicalGoal": "installer un titrage d'OXYDORÉDUCTION, en parallèle du titrage acide-base déjà présent dans la banque — même méthode générale (repérage de l'équivalence, exploitation de la stœchiométrie), appliquée à un contexte réactionnel différent, pour combler le plafond bas (diff. 2) du chapitre oxydoréduction."
+  },
+  {
+    "title": "Réactif limitant et rendement combinés",
+    "statement": "On fait réagir $m_1 = 5{,}0\\ \\text{g}$ de fer ($Fe$, $M=56\\ \\text{g/mol}$) avec $m_2 = 5{,}0\\ \\text{g}$ de soufre ($S$, $M=32\\ \\text{g/mol}$) selon la réaction $Fe + S \\rightarrow FeS$ ($M(FeS)=88\\ \\text{g/mol}$). On obtient expérimentalement $m_{obtenue} = 6{,}5\\ \\text{g}$ de sulfure de fer.\n1. Déterminer le réactif limitant.\n2. Calculer la masse théorique maximale de FeS que l'on pourrait obtenir.\n3. En déduire le rendement de cette réaction.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Réactions chimiques",
+    "estimatedMinutes": 20,
+    "tags": [
+      "chimie",
+      "réactif limitant",
+      "rendement",
+      "quantité de matière"
+    ],
+    "hints": [
+      "Calcule séparément la quantité de matière initiale de chaque réactif ; le réactif limitant est celui dont la quantité de matière est la plus faible (la réaction étant 1 pour 1 ici).",
+      "La masse théorique se calcule à partir de la quantité de matière du réactif limitant ; le rendement est le rapport (masse réellement obtenue)/(masse théorique)."
+    ],
+    "correction": "n(Fe) = 5,0/56 ≈ 0,0893 mol. n(S) = 5,0/32 ≈ 0,1563 mol. La réaction étant 1:1, et n(Fe) < n(S), le fer est le réactif limitant. La masse théorique maximale de FeS vaut m_théo = n(Fe)×M(FeS) = 0,0893×88 ≈ 7,86 g. Le rendement vaut η = m_obtenue/m_théo = 6,5/7,86 ≈ 0,827, soit environ 82,7%.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "réactif limitant",
+      "rendement",
+      "stœchiométrie"
+    ],
+    "pedagogicalGoal": "combiner en UN SEUL exercice à plusieurs étapes les deux compétences (réactif limitant, rendement) déjà présentes séparément à difficulté 2 dans la banque — un exercice de \"raisonnement\" combinant deux idées, plutôt qu'un simple renumérotage d'un des deux exercices existants."
+  },
+  {
+    "title": "Oscillateur mécanique forcé : amplitude et résonance",
+    "statement": "Un oscillateur mécanique (masse $m$, ressort de raideur $k$, frottement fluide de coefficient $h$) est soumis à une force excitatrice sinusoïdale $F(t) = F_0\\cos(\\omega t)$.\n1. Établir l'équation différentielle du mouvement vérifiée par l'élongation $x(t)$.\n2. En notation complexe, montrer que l'amplitude $X(\\omega)$ du déplacement en régime sinusoïdal forcé s'écrit $X(\\omega) = \\dfrac{F_0}{\\sqrt{(k-m\\omega^2)^2 + (h\\omega)^2}}$.\n3. Montrer que, pour un amortissement suffisamment faible, cette amplitude est maximale au voisinage de $\\omega_0 = \\sqrt{k/m}$ (résonance), et donner l'amplitude à la résonance dans ce cas.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Oscillateurs",
+    "estimatedMinutes": 30,
+    "tags": [
+      "oscillateurs",
+      "résonance",
+      "régime forcé",
+      "amortissement"
+    ],
+    "hints": [
+      "Le principe fondamental de la dynamique projeté sur l'axe du mouvement donne mx'' + hx' + kx = F0cos(ωt) ; passe en notation complexe (x=X_c·e^(iωt)) pour transformer l'équation différentielle en équation algébrique.",
+      "L'amplitude |X(ω)| est maximale quand le dénominateur (k-mω²)²+(hω)² est minimal : dérive cette expression par rapport à ω et annule la dérivée."
+    ],
+    "correction": "Le PFD donne mx''+hx'+kx=F0cos(ωt). En notation complexe (x=X_c e^{iωt}), on obtient (-mω²+ihω+k)X_c=F0, donc X_c=F0/(k-mω²+ihω), d'où l'amplitude |X(ω)|=F0/√((k-mω²)²+(hω)²). En dérivant le dénominateur D(ω)=(k-mω²)²+(hω)² par rapport à ω et en annulant la dérivée, on trouve que D est minimal (donc l'amplitude maximale) pour ω²=k/m - h²/(2m²). Pour un amortissement faible (h petit), cette pulsation de résonance est très proche de ω0=√(k/m). À cette pulsation, k-mω0²=0, donc l'amplitude à la résonance vaut |X(ω0)| ≈ F0/(hω0) : elle diverge quand h→0 (résonance non amortie). Ce résultat est l'exact analogue mécanique de la résonance en courant déjà étudiée sur le circuit RLC (correspondance m↔L, h↔R, k↔1/C).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "oscillateurs",
+      "résonance",
+      "régime forcé"
+    ],
+    "pedagogicalGoal": "compléter le trio non amorti / amorti (qualitatif) déjà présent sur les oscillateurs avec le cas FORCÉ quantitatif — établit explicitement l'analogie électromécanique avec le circuit RLC forcé déjà présent en électrocinétique, un pont conceptuel entre les deux chapitres."
+  },
+  {
+    "title": "Cycle thermodynamique rectangulaire : travail net échangé",
+    "statement": "Un gaz parfait décrit, dans le diagramme $(P,V)$, un cycle rectangulaire ABCD constitué de deux isochores et deux isobares : $A(P_1,V_1) \\to B(P_2,V_1)$ (isochore) $\\to C(P_2,V_2) \\to D(P_1,V_2)$ (isochore) $\\to A$ (isobares pour B→C et D→A). On donne $P_1 = 1{,}0$ bar, $P_2 = 3{,}0$ bar, $V_1 = 2{,}0$ L, $V_2 = 5{,}0$ L.\n1. Représenter l'allure du cycle dans le diagramme $(P,V)$ et préciser s'il est moteur ou récepteur.\n2. Calculer le travail total $W$ reçu par le gaz au cours d'un cycle complet.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Thermodynamique",
+    "estimatedMinutes": 30,
+    "tags": [
+      "thermodynamique",
+      "cycle",
+      "diagramme de Clapeyron",
+      "travail"
+    ],
+    "hints": [
+      "Sur une portion isochore, le volume ne varie pas : le travail échangé y est nul. Le travail ne s'échange que sur les deux portions isobares.",
+      "Le travail total sur un cycle correspond, au signe près, à l'aire enfermée par le cycle dans le diagramme (P,V) ; le sens de parcours (horaire ou antihoraire) donne le signe."
+    ],
+    "correction": "Le cycle A(1,2)→B(3,2)→C(3,5)→D(1,5)→A, parcouru dans cet ordre, décrit un rectangle parcouru dans le sens horaire (P monte à V constant, V monte à P constant, P descend, V descend) : c'est un cycle MOTEUR (le gaz fournit du travail net à l'extérieur). Travail : sur A→B (isochore), W=0. Sur B→C (isobare, P=3 bar), W=-P(V_C-V_B)=-3×(5-2)=-9 bar·L. Sur C→D (isochore), W=0. Sur D→A (isobare, P=1 bar), W=-P(V_A-V_D)=-1×(2-5)=+3 bar·L. Le travail total reçu par le gaz vaut W = -9+3 = -6 bar·L = -600 J (avec 1 bar·L = 100 J). Ce résultat coïncide bien avec l'aire du rectangle (ΔP×ΔV = 2×3 = 6 bar·L), prise négative car le cycle est moteur (le gaz reçoit un travail net négatif, donc fournit du travail à l'extérieur).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "thermodynamique",
+      "cycle",
+      "bilan de travail"
+    ],
+    "pedagogicalGoal": "prolonger l'exercice de difficulté 3 déjà présent sur un cycle simple avec un VRAI calcul quantitatif de travail net sur un cycle à 4 étapes — comble l'absence de difficulté 4-5 sur la compétence \"cycle thermodynamique\" spécifiquement (distincte de l'entropie, déjà couverte à difficulté 4 par ailleurs)."
+  },
+  {
+    "title": "Le problème des tours de Hanoï : récursivité et dénombrement des déplacements",
+    "statement": "On considère le problème des tours de Hanoï à $n$ disques : déplacer une pile de $n$ disques de taille décroissante d'une tige de départ vers une tige d'arrivée, à l'aide d'une tige intermédiaire, en respectant les règles (un seul disque déplacé à la fois, jamais un disque posé sur un disque plus petit).\n1. Écrire une fonction récursive Python `hanoi(n, depart, intermediaire, arrivee)` qui affiche la séquence de déplacements résolvant le problème à $n$ disques.\n2. En notant $T(n)$ le nombre de déplacements effectués, établir la relation de récurrence vérifiée par $T(n)$, et en déduire que $T(n) = 2^n - 1$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Fonctions récursives",
+    "estimatedMinutes": 20,
+    "tags": [
+      "informatique",
+      "récursivité",
+      "tours de Hanoï",
+      "dénombrement"
+    ],
+    "hints": [
+      "Pour déplacer n disques de la tige de départ vers l'arrivée : déplace d'abord les n-1 disques du dessus vers la tige intermédiaire, déplace le grand disque restant vers l'arrivée, puis déplace les n-1 disques de l'intermédiaire vers l'arrivée.",
+      "T(n) = 2T(n-1) + 1 avec T(0)=0 : pose S(n)=T(n)+1 pour faire apparaître une suite géométrique de raison 2."
+    ],
+    "correction": "```python\ndef hanoi(n, depart, intermediaire, arrivee):\n    if n == 0:\n        return\n    hanoi(n - 1, depart, arrivee, intermediaire)\n    print(f\"Déplacer le disque {n} de {depart} vers {arrivee}\")\n    hanoi(n - 1, intermediaire, depart, arrivee)\n```\nEn appelant hanoi une fois pour n-1 disques (départ→intermédiaire), un déplacement du grand disque, puis hanoi pour n-1 disques (intermédiaire→arrivée), on obtient T(n) = 2T(n-1) + 1, avec T(0)=0 (aucun déplacement pour 0 disque). En posant S(n)=T(n)+1, la relation devient S(n)=2S(n-1), donc S(n) est géométrique de raison 2 : S(n)=2ⁿ·S(0)=2ⁿ×1=2ⁿ. D'où T(n)=S(n)-1=2ⁿ-1. Vérification pour n=3 : T(3)=2³-1=7 déplacements.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "récursivité",
+      "relation de récurrence",
+      "dénombrement"
+    ],
+    "pedagogicalGoal": "installer le problème des tours de Hanoï, l'exemple le plus classique de récursivité couplée à l'établissement d'une relation de récurrence pour dénombrer le coût d'un algorithme — absent de la banque bien qu'incontournable, comble l'écart entre les deux exercices déjà présents (tous deux à difficulté 2, sans approfondissement)."
+  },
+  {
+    "title": "Recherche de triplets pythagoriciens par triple boucle bornée",
+    "statement": "On appelle triplet pythagoricien un triplet d'entiers strictement positifs $(a,b,c)$ avec $a \\leq b \\leq c$ tels que $a^2+b^2=c^2$.\n1. Écrire une fonction Python `triplets(n)` qui renvoie la liste de tous les triplets pythagoriciens $(a,b,c)$ avec $1 \\leq a \\leq b \\leq c \\leq n$, à l'aide de trois boucles imbriquées.\n2. Donner la complexité de cet algorithme en fonction de $n$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Boucles imbriquées",
+    "estimatedMinutes": 20,
+    "tags": [
+      "informatique",
+      "boucles imbriquées",
+      "arithmétique",
+      "complexité"
+    ],
+    "hints": [
+      "Utilise trois boucles imbriquées sur a, b (à partir de a) et c (à partir de b), et teste la condition a²+b²=c² à chaque triplet.",
+      "Le nombre total de triplets (a,b,c) testés est de l'ordre de n³/6 (nombre de façons de choisir 3 valeurs croissantes parmi n) : c'est l'ordre de grandeur de la complexité."
+    ],
+    "correction": "```python\ndef triplets(n):\n    resultats = []\n    for a in range(1, n + 1):\n        for b in range(a, n + 1):\n            for c in range(b, n + 1):\n                if a**2 + b**2 == c**2:\n                    resultats.append((a, b, c))\n    return resultats\n```\nPour n=20, on obtient par exemple (3,4,5), (5,12,13), (6,8,10), (8,15,17), (9,12,15) et (12,16,20). La complexité est en O(n³) : les trois boucles imbriquées parcourent chacune de l'ordre de n valeurs, et le test à l'intérieur se fait en temps constant.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "boucles imbriquées",
+      "complexité",
+      "arithmétique"
+    ],
+    "pedagogicalGoal": "faire pratiquer une TRIPLE boucle imbriquée (les deux exercices déjà présents n'en utilisent que deux), avec l'analyse de complexité cubique associée — première rencontre d'une complexité au-delà de O(n²) dans la banque."
   }
 ]
