@@ -5279,5 +5279,544 @@
     "competition": null,
     "programmeLevel": "sup",
     "licenseStatus": "libre"
+  },
+  {
+    "title": "Somme et maximum en un seul parcours",
+    "statement": "On dispose d'une liste `notes` de flottants non vide représentant des notes sur 20.\n\n1. Écrire une fonction `somme_et_max(notes)` qui renvoie le couple (somme des notes, note maximale) en parcourant la liste UNE SEULE FOIS (pas deux boucles séparées, pas d'appel à `sum` et `max`).\n2. Justifier pourquoi un seul parcours suffit, et donner la complexité en fonction de $n$, la longueur de la liste.\n3. Modifier la fonction pour qu'elle renvoie aussi l'indice de la première occurrence du maximum.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Parcours d'une structure séquentielle",
+    "estimatedMinutes": 15,
+    "tags": [
+      "parcours",
+      "listes",
+      "complexité"
+    ],
+    "hints": [
+      "Initialise `s` à 0 et `m` au premier élément AVANT la boucle, puis mets à jour les deux à chaque tour.",
+      "Pour l'indice du maximum, garde une variable `i_max` mise à jour uniquement quand tu trouves un nouveau maximum strict."
+    ],
+    "correction": "def somme_et_max(notes):\n    s = notes[0]\n    m = notes[0]\n    i_max = 0\n    for i in range(1, len(notes)):\n        s += notes[i]\n        if notes[i] > m:\n            m = notes[i]\n            i_max = i\n    return s, m, i_max\n\nUn seul parcours suffit car la somme et le maximum se mettent à jour indépendamment à chaque élément lu : il n'y a aucune dépendance qui obligerait à connaître tous les éléments avant de commencer. Complexité en O(n) (une seule boucle de n-1 itérations), au lieu de deux parcours O(n) qui resteraient en O(n) mais avec une constante multiplicative plus grande.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "boucle for",
+      "listes Python"
+    ],
+    "pedagogicalGoal": "automatisme : reconnaître qu'un seul parcours suffit dès que les quantités à calculer sont indépendantes, plutôt que d'empiler des appels à sum()/max() qui masquent la notion de parcours."
+  },
+  {
+    "title": "Recherche séquentielle avec arrêt anticipé",
+    "statement": "Écrire une fonction `premier_multiple(liste, k)` qui renvoie l'indice du premier élément de `liste` qui est un multiple de `k`, ou `-1` si aucun n'existe.\n\nLa fonction doit s'arrêter dès que l'élément est trouvé, sans parcourir le reste de la liste. Donner la complexité dans le meilleur cas et dans le pire cas.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Parcours d'une structure séquentielle",
+    "estimatedMinutes": 10,
+    "tags": [
+      "parcours",
+      "arrêt anticipé"
+    ],
+    "hints": [
+      "Utilise `return` dès que la condition est vérifiée : il n'est pas nécessaire d'utiliser `break` puis de renvoyer une valeur après la boucle."
+    ],
+    "correction": "def premier_multiple(liste, k):\n    for i in range(len(liste)):\n        if liste[i] % k == 0:\n            return i\n    return -1\n\nMeilleur cas : le premier élément convient, O(1). Pire cas : aucun élément ne convient (ou seulement le dernier), il faut parcourir toute la liste, O(n).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "boucle for",
+      "listes Python"
+    ],
+    "pedagogicalGoal": "distinguer le comportement moyen/meilleur cas du pire cas dès les premiers parcours, et utiliser `return` pour sortir immédiatement d'une boucle plutôt qu'un drapeau booléen inutile."
+  },
+  {
+    "title": "Table de Pythagore et comptage de carrés",
+    "statement": "1. Écrire, avec deux boucles `for` imbriquées, une fonction `table(n)` qui affiche la table de multiplication de 1 à $n$ (une ligne par valeur de $i$, les produits $i \\times j$ séparés par des espaces).\n2. Écrire une fonction `compte_carres(n)` qui, avec deux boucles imbriquées sur $i$ et $j$ allant de 1 à $n$, compte le nombre de couples $(i, j)$ tels que $i \\times j$ soit un carré parfait.\n3. Donner la complexité de `compte_carres` en fonction de $n$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Boucles imbriquées",
+    "estimatedMinutes": 20,
+    "tags": [
+      "boucles imbriquées",
+      "complexité"
+    ],
+    "hints": [
+      "Un entier positif `p` est un carré parfait si `int(p ** 0.5) ** 2 == p`.",
+      "La boucle extérieure a n itérations, chacune contenant une boucle intérieure de n itérations : le nombre total de couples testés est n²."
+    ],
+    "correction": "def table(n):\n    for i in range(1, n + 1):\n        ligne = \"\"\n        for j in range(1, n + 1):\n            ligne += str(i * j) + \" \"\n        print(ligne)\n\ndef compte_carres(n):\n    compteur = 0\n    for i in range(1, n + 1):\n        for j in range(1, n + 1):\n            p = i * j\n            if int(p ** 0.5) ** 2 == p:\n                compteur += 1\n    return compteur\n\nComplexité : deux boucles imbriquées de taille n chacune, donc O(n²) tests, chacun en temps constant — complexité totale O(n²).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "boucles for",
+      "opérateurs arithmétiques"
+    ],
+    "pedagogicalGoal": "classique : manier deux boucles imbriquées et relier immédiatement leur structure à une complexité en O(n²), sans avoir besoin de la redémontrer à chaque fois."
+  },
+  {
+    "title": "Test de primalité par boucle bornée",
+    "statement": "1. Écrire une fonction `est_premier(n)` qui teste si un entier $n \\geq 2$ est premier, en testant la divisibilité par tous les entiers de 2 à $n - 1$.\n2. Améliorer la fonction pour qu'elle ne teste que les diviseurs de 2 à $\\lfloor\\sqrt{n}\\rfloor$, en justifiant que cela suffit.\n3. Comparer, sans les exécuter, le nombre d'itérations effectuées par les deux versions pour $n = 10^6 + 3$ (nombre premier).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Boucles imbriquées",
+    "estimatedMinutes": 20,
+    "tags": [
+      "boucles",
+      "nombres premiers",
+      "complexité"
+    ],
+    "hints": [
+      "Si n = a × b avec a ≤ b, alors nécessairement a ≤ √n : inutile de tester des diviseurs au-delà de √n.",
+      "Utilise `int(n ** 0.5) + 1` comme borne pour ne pas rater le cas où √n est entier."
+    ],
+    "correction": "def est_premier(n):\n    for d in range(2, n):\n        if n % d == 0:\n            return False\n    return True\n\ndef est_premier_optimise(n):\n    for d in range(2, int(n ** 0.5) + 1):\n        if n % d == 0:\n            return False\n    return True\n\nSi n = a × b (a, b ≥ 2) avec a ≤ b, alors a² ≤ a × b = n donc a ≤ √n : un diviseur autre que 1 et n, s'il existe, admet toujours un représentant inférieur ou égal à √n — inutile de chercher plus loin.\n\nPour n ≈ 10^6 : la version naïve effectue environ 10^6 itérations, la version optimisée environ 1000 (√n) — un facteur ≈ 1000 sur cet exemple.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "boucles for",
+      "racine carrée"
+    ],
+    "pedagogicalGoal": "transfert : appliquer un argument mathématique simple (borne √n) pour réduire drastiquement la complexité d'une boucle, méthode réutilisée dans de nombreux algorithmes de la banque."
+  },
+  {
+    "title": "Estimer π par la méthode de Monte-Carlo",
+    "statement": "On souhaite estimer $\\pi$ en tirant aléatoirement des points dans le carré $[-1, 1]^2$ et en comptant la proportion tombant dans le disque unité.\n\n1. En utilisant les modules `random` et `math`, écrire une fonction `estime_pi(n)` qui tire $n$ points aléatoires $(x, y)$ avec `random.uniform(-1, 1)`, compte combien vérifient $x^2 + y^2 \\leq 1$, et renvoie l'estimation de $\\pi$ correspondante.\n2. Expliquer, à l'aide de l'aire du disque et du carré, pourquoi cette méthode fonctionne.\n3. Pourquoi le résultat change-t-il à chaque exécution ? Comment le rendre reproductible ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Modules et bibliothèques",
+    "estimatedMinutes": 20,
+    "tags": [
+      "modules",
+      "random",
+      "simulation"
+    ],
+    "hints": [
+      "Aire du disque unité = π, aire du carré [-1,1]² = 4 : le rapport des aires vaut donc π/4.",
+      "`random.seed(valeur)` fixe la graine du générateur pseudo-aléatoire pour obtenir toujours la même séquence de tirages."
+    ],
+    "correction": "import random\n\ndef estime_pi(n):\n    compteur = 0\n    for _ in range(n):\n        x = random.uniform(-1, 1)\n        y = random.uniform(-1, 1)\n        if x ** 2 + y ** 2 <= 1:\n            compteur += 1\n    return 4 * compteur / n\n\nLe rapport (points dans le disque) / (points dans le carré) tend, quand n devient grand, vers (aire du disque) / (aire du carré) = π / 4 — d'où l'estimation 4 × (proportion).\n\nLe résultat varie car `random.uniform` s'appuie sur un générateur pseudo-aléatoire dont l'état change à chaque appel. `random.seed(valeur)` avant les tirages fixe cet état initial et rend l'exécution reproductible.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "module random",
+      "boucles for"
+    ],
+    "pedagogicalGoal": "découvrir une méthode de Monte-Carlo simple et relier un calcul de probabilité géométrique à une estimation numérique — première rencontre avec le module random au-delà d'un simple tirage isolé."
+  },
+  {
+    "title": "Recherche dichotomique dans une liste triée",
+    "statement": "1. Écrire une fonction `dichotomie(liste, x)` qui renvoie l'indice de `x` dans `liste` (supposée triée par ordre croissant) s'il y est présent, ou `-1` sinon, par recherche dichotomique itérative.\n2. Donner un invariant de boucle qui prouve la correction de l'algorithme.\n3. Donner la complexité dans le pire cas en fonction de la longueur $n$ de la liste, et la comparer à celle d'une recherche séquentielle.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Algorithmes dichotomiques",
+    "estimatedMinutes": 25,
+    "tags": [
+      "dichotomie",
+      "recherche",
+      "invariant",
+      "complexité"
+    ],
+    "hints": [
+      "Maintiens deux bornes `g` (gauche) et `d` (droite) telles que si x est dans la liste, il est dans liste[g:d+1].",
+      "À chaque itération, compare x à l'élément du milieu et réduis l'intervalle de moitié en conséquence."
+    ],
+    "correction": "def dichotomie(liste, x):\n    g, d = 0, len(liste) - 1\n    while g <= d:\n        m = (g + d) // 2\n        if liste[m] == x:\n            return m\n        elif liste[m] < x:\n            g = m + 1\n        else:\n            d = m - 1\n    return -1\n\nInvariant : à chaque entrée dans la boucle, \"si x est présent dans liste, alors x est dans liste[g:d+1]\" est vrai. Initialement g=0, d=n-1 : l'invariant est trivialement vrai. À chaque itération, on élimine la moitié qui ne peut pas contenir x (car liste est triée), l'invariant reste donc vrai. Quand g > d, l'intervalle est vide : x n'est pas dans liste.\n\nÀ chaque itération, la taille de l'intervalle [g, d] est divisée par (environ) 2 : il faut O(log₂ n) itérations dans le pire cas, contre O(n) pour une recherche séquentielle — un gain considérable dès que n est grand, mais qui suppose la liste déjà triée.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "listes triées",
+      "boucle while"
+    ],
+    "pedagogicalGoal": "classique absolu de la dichotomie : écrire l'algorithme, savoir justifier sa correction par un invariant, et retenir la complexité logarithmique."
+  },
+  {
+    "title": "Résolution approchée d'une équation par dichotomie",
+    "statement": "Soit $f$ une fonction continue sur $[a, b]$ telle que $f(a)$ et $f(b)$ soient de signes opposés.\n\n1. Écrire une fonction `resout(f, a, b, epsilon)` qui renvoie une valeur approchée à `epsilon` près d'une solution de $f(x) = 0$ sur $[a, b]$, par dichotomie.\n2. Appliquer cette fonction à $f(x) = x^2 - 2$ sur $[0, 2]$ pour approcher $\\sqrt{2}$ à $10^{-6}$ près.\n3. Combien d'itérations, au maximum, faut-il pour atteindre une précision `epsilon` sur un intervalle de longueur initiale $L$ ? Justifier.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Algorithmes dichotomiques",
+    "estimatedMinutes": 25,
+    "tags": [
+      "dichotomie",
+      "analyse numérique"
+    ],
+    "hints": [
+      "Le théorème des valeurs intermédiaires garantit l'existence d'une solution ; on ne cherche ici qu'une valeur approchée, pas la solution exacte.",
+      "À chaque étape, remplace la borne (a ou b) qui a le même signe que f(milieu)."
+    ],
+    "correction": "def resout(f, a, b, epsilon):\n    while b - a > epsilon:\n        m = (a + b) / 2\n        if f(a) * f(m) <= 0:\n            b = m\n        else:\n            a = m\n    return (a + b) / 2\n\nsqrt2_approx = resout(lambda x: x ** 2 - 2, 0, 2, 1e-6)\n\nÀ chaque itération, la longueur de l'intervalle est divisée par 2 : après k itérations, elle vaut L / 2^k. On s'arrête dès que L / 2^k ≤ epsilon, soit k ≥ log₂(L / epsilon). Le nombre d'itérations nécessaire est donc de l'ordre de log₂(L / epsilon), indépendant de f elle-même (tant qu'elle vérifie les hypothèses).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "dichotomie",
+      "théorème des valeurs intermédiaires"
+    ],
+    "pedagogicalGoal": "transfert : appliquer la dichotomie (déjà vue en recherche dans une liste) à la résolution approchée d'équation, un cas d'usage central en informatique pour la physique/maths."
+  },
+  {
+    "title": "PGCD récursif par l'algorithme d'Euclide",
+    "statement": "1. Rappeler le principe de l'algorithme d'Euclide pour calculer le PGCD de deux entiers.\n2. Écrire une fonction récursive `pgcd(a, b)` implémentant cet algorithme.\n3. Dérouler `pgcd(252, 105)` pas à pas (donner la suite des appels).\n4. Cette fonction termine-t-elle toujours ? Justifier brièvement.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Fonctions récursives",
+    "estimatedMinutes": 15,
+    "tags": [
+      "récursivité",
+      "arithmétique"
+    ],
+    "hints": [
+      "pgcd(a, b) = pgcd(b, a % b), avec pgcd(a, 0) = a comme cas de base."
+    ],
+    "correction": "def pgcd(a, b):\n    if b == 0:\n        return a\n    return pgcd(b, a % b)\n\npgcd(252, 105) -> pgcd(105, 252 % 105) = pgcd(105, 42)\n             -> pgcd(42, 105 % 42) = pgcd(42, 21)\n             -> pgcd(21, 42 % 21) = pgcd(21, 0)\n             -> 21\n\nLa fonction termine toujours car le second argument est strictement décroissant à chaque appel (a % b < b) tout en restant un entier positif ou nul : il atteint nécessairement 0 en un nombre fini d'étapes, ce qui déclenche le cas de base.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "divisibilité",
+      "récursivité de base"
+    ],
+    "pedagogicalGoal": "automatisme : écrire une récursion simple à un seul appel récursif, identifier le cas de base, et savoir justifier la terminaison par la décroissance d'une quantité entière positive."
+  },
+  {
+    "title": "Comptage récursif des chiffres d'un entier",
+    "statement": "1. Écrire une fonction récursive `nb_chiffres(n)` qui renvoie le nombre de chiffres de l'entier positif `n` en base 10 (sans utiliser `str(n)`).\n2. Écrire une fonction récursive `somme_chiffres(n)` qui renvoie la somme des chiffres de `n`.\n3. Donner la profondeur maximale de récursion de `nb_chiffres(n)` en fonction de `n`.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Fonctions récursives",
+    "estimatedMinutes": 15,
+    "tags": [
+      "récursivité",
+      "entiers"
+    ],
+    "hints": [
+      "n // 10 retire le dernier chiffre de n ; n % 10 donne ce dernier chiffre.",
+      "Le cas de base est n < 10 (un seul chiffre)."
+    ],
+    "correction": "def nb_chiffres(n):\n    if n < 10:\n        return 1\n    return 1 + nb_chiffres(n // 10)\n\ndef somme_chiffres(n):\n    if n < 10:\n        return n\n    return n % 10 + somme_chiffres(n // 10)\n\nÀ chaque appel, n est remplacé par n // 10 (division entière), qui divise n par (au moins) 10 : la profondeur de récursion est donc de l'ordre de log₁₀(n), c'est-à-dire précisément le nombre de chiffres de n.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "division entière",
+      "récursivité de base"
+    ],
+    "pedagogicalGoal": "manipuler la division entière et le modulo dans un contexte récursif, et relier la vitesse de décroissance de l'argument à la profondeur de récursion."
+  },
+  {
+    "title": "Rendu de monnaie par algorithme glouton",
+    "statement": "On dispose de pièces de valeurs $\\{1, 2, 5, 10, 20, 50\\}$ (centimes), en quantité illimitée.\n\n1. Écrire une fonction `rendu_glouton(somme)` qui rend la `somme` demandée en utilisant, à chaque étape, la plus grande pièce possible ne dépassant pas le reste à rendre. La fonction renvoie la liste des pièces utilisées.\n2. Vérifier que l'algorithme glouton donne bien un rendu optimal (nombre minimal de pièces) pour ce système de pièces, sur l'exemple `somme = 88`.\n3. Expliquer, sans démonstration complète, pourquoi un système de pièces glouton-optimal n'est pas garanti en général (donner un système de valeurs où le glouton échoue).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Algorithmes gloutons",
+    "estimatedMinutes": 20,
+    "tags": [
+      "glouton",
+      "monnaie"
+    ],
+    "hints": [
+      "Trie les valeurs de pièces par ordre décroissant, puis pour chacune, utilise-la tant qu'elle ne dépasse pas le reste.",
+      "Pour l'exemple du système non glouton-optimal, essaie des valeurs comme {1, 3, 4} avec une somme de 6."
+    ],
+    "correction": "def rendu_glouton(somme):\n    valeurs = [50, 20, 10, 5, 2, 1]\n    rendu = []\n    reste = somme\n    for v in valeurs:\n        while reste >= v:\n            rendu.append(v)\n            reste -= v\n    return rendu\n\nrendu_glouton(88) -> [50, 20, 10, 5, 2, 1] (6 pièces), effectivement optimal pour ce système.\n\nContre-exemple classique : avec les valeurs {1, 3, 4}, pour rendre 6, le glouton prend 4 puis 1 puis 1 (3 pièces : 4+1+1), alors que 3+3 (2 pièces) est meilleur. Le caractère optimal du glouton dépend donc du système de valeurs — ce n'est PAS un résultat général, seulement vrai pour des systèmes bien choisis (comme les pièces euro).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "boucles while",
+      "listes"
+    ],
+    "pedagogicalGoal": "découvrir le principe d'un algorithme glouton (choix localement optimal) et sa limite : l'optimalité globale n'est pas automatique, elle dépend des données du problème."
+  },
+  {
+    "title": "Image en niveaux de gris : inversion et seuillage",
+    "statement": "Une image en niveaux de gris est représentée par une liste de listes `image` de dimensions `hauteur × largeur`, chaque valeur étant un entier entre 0 (noir) et 255 (blanc).\n\n1. Écrire une fonction `inverser(image)` qui renvoie une NOUVELLE image où chaque pixel `p` est remplacé par `255 - p` (négatif de l'image), sans modifier `image`.\n2. Écrire une fonction `seuiller(image, seuil)` qui renvoie une nouvelle image binaire (0 ou 255) : chaque pixel devient 255 si sa valeur est $\\geq$ `seuil`, 0 sinon.\n3. Écrire une fonction `moyenne(image)` qui renvoie la valeur moyenne de tous les pixels de l'image.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Manipulation d'une image",
+    "estimatedMinutes": 20,
+    "tags": [
+      "images",
+      "listes de listes",
+      "traitement d'image"
+    ],
+    "hints": [
+      "Une image étant une liste de listes, il faut deux boucles imbriquées (une par ligne, une par colonne).",
+      "\"Sans modifier image\" signifie construire une liste de listes entièrement nouvelle, pas modifier les valeurs en place."
+    ],
+    "correction": "def inverser(image):\n    return [[255 - p for p in ligne] for ligne in image]\n\ndef seuiller(image, seuil):\n    return [[255 if p >= seuil else 0 for p in ligne] for ligne in image]\n\ndef moyenne(image):\n    total = 0\n    n = 0\n    for ligne in image:\n        for p in ligne:\n            total += p\n            n += 1\n    return total / n",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "listes de listes",
+      "compréhensions de liste"
+    ],
+    "pedagogicalGoal": "manipuler une structure 2D (liste de listes) comme modèle d'image, distinguer une transformation en place d'une transformation qui construit une nouvelle structure — distinction cruciale en info comme en physique numérique."
+  },
+  {
+    "title": "Tri par insertion : implémentation et complexité",
+    "statement": "1. Rappeler le principe du tri par insertion.\n2. Implémenter une fonction `tri_insertion(liste)` qui trie `liste` EN PLACE par ordre croissant.\n3. Donner la complexité dans le meilleur cas (liste déjà triée) et dans le pire cas (liste triée en ordre décroissant), et expliquer pourquoi ces deux cas diffèrent.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Algorithmes de tri",
+    "estimatedMinutes": 25,
+    "tags": [
+      "tri",
+      "complexité",
+      "en place"
+    ],
+    "hints": [
+      "À chaque étape i, l'élément liste[i] est \"inséré\" à sa place parmi les éléments déjà triés liste[0:i].",
+      "Utilise une boucle while qui décale les éléments plus grands vers la droite tant qu'on n'a pas trouvé la bonne place."
+    ],
+    "correction": "def tri_insertion(liste):\n    for i in range(1, len(liste)):\n        cle = liste[i]\n        j = i - 1\n        while j >= 0 and liste[j] > cle:\n            liste[j + 1] = liste[j]\n            j -= 1\n        liste[j + 1] = cle\n\nPrincipe : on construit progressivement une portion triée liste[0:i], en insérant à chaque étape l'élément suivant à sa bonne place par décalages successifs.\n\nMeilleur cas (liste déjà triée) : la condition `liste[j] > cle` est fausse dès le premier test, aucun décalage n'a lieu — O(n) au total (une seule comparaison par élément).\n\nPire cas (liste triée en ordre décroissant) : chaque nouvel élément doit être décalé jusqu'au début de la portion triée — O(1 + 2 + ... + (n-1)) = O(n²).\n\nCes deux cas diffèrent car le nombre de décalages dépend directement du nombre d'éléments déjà triés qui sont plus grands que l'élément courant : ce nombre est nul si la liste est déjà croissante, maximal si elle est décroissante.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "boucles imbriquées",
+      "listes mutables"
+    ],
+    "pedagogicalGoal": "classique : savoir écrire le tri par insertion de mémoire et justifier ses complexités best/worst case, un algorithme de référence pour tout raisonnement de complexité ultérieur."
+  },
+  {
+    "title": "Écrire une fonction de validation de mot de passe",
+    "statement": "On souhaite écrire une fonction `mot_de_passe_valide(mdp)` qui renvoie `True` si et seulement si la chaîne `mdp` vérifie TOUTES les conditions suivantes :\n- longueur au moins égale à 8 ;\n- contient au moins un chiffre ;\n- contient au moins une lettre majuscule ;\n- contient au moins une lettre minuscule.\n\n1. Écrire cette fonction, sans utiliser d'expression régulière (module `re`), uniquement avec des boucles et les méthodes de chaînes `.isdigit()`, `.isupper()`, `.islower()`.\n2. Écrire au moins trois cas de test (un valide, deux invalides pour des raisons différentes) et donner le résultat attendu pour chacun.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Écriture d'un programme",
+    "estimatedMinutes": 20,
+    "tags": [
+      "cahier des charges",
+      "chaînes de caractères",
+      "tests"
+    ],
+    "hints": [
+      "Utilise des variables booléennes (a_chiffre, a_majuscule, a_minuscule) mises à jour en parcourant la chaîne caractère par caractère.",
+      "N'oublie pas de vérifier la longueur en plus des trois booléens."
+    ],
+    "correction": "def mot_de_passe_valide(mdp):\n    if len(mdp) < 8:\n        return False\n    a_chiffre = False\n    a_majuscule = False\n    a_minuscule = False\n    for c in mdp:\n        if c.isdigit():\n            a_chiffre = True\n        elif c.isupper():\n            a_majuscule = True\n        elif c.islower():\n            a_minuscule = True\n    return a_chiffre and a_majuscule and a_minuscule\n\nTests :\n- mot_de_passe_valide(\"Abcdef12\") -> True (longueur 8, chiffre, majuscule, minuscule présents)\n- mot_de_passe_valide(\"abc123\") -> False (longueur 6 < 8, et pas de majuscule)\n- mot_de_passe_valide(\"ABCDEFGH\") -> False (pas de chiffre, pas de minuscule)",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "chaînes de caractères",
+      "booléens"
+    ],
+    "pedagogicalGoal": "traduire un cahier des charges en conditions logiques précises et écrire ses propres cas de test — compétence \"écriture de programme\" distincte de la seule maîtrise algorithmique."
+  },
+  {
+    "title": "Analyse de complexité d'un programme donné",
+    "statement": "On considère le programme Python suivant :\n\n```\ndef mystere(n):\n    resultat = []\n    for i in range(n):\n        for j in range(i, n):\n            if (i + j) % 2 == 0:\n                resultat.append((i, j))\n    return resultat\n```\n\n1. Décrire précisément ce que calcule `mystere(n)` (ensemble de couples renvoyés).\n2. Combien de couples $(i, j)$ sont testés au total, en fonction de $n$ (avant même le test de parité) ?\n3. En déduire la complexité de `mystere` en fonction de $n$, en O(...).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Analyse d'un programme",
+    "estimatedMinutes": 20,
+    "tags": [
+      "complexité",
+      "lecture de code"
+    ],
+    "hints": [
+      "La boucle intérieure commence à j = i (pas 0) : pour i fixé, elle a n - i itérations.",
+      "Le nombre total de couples testés est la somme, pour i de 0 à n-1, de (n - i)."
+    ],
+    "correction": "`mystere(n)` renvoie la liste de tous les couples (i, j) avec 0 ≤ i ≤ j < n tels que i + j soit pair.\n\nPour i fixé, la boucle interne parcourt j de i à n-1, soit (n - i) valeurs. Le nombre total de couples testés est :\nsum_{i=0}^{n-1} (n - i) = n + (n-1) + ... + 1 = n(n+1)/2.\n\nCette somme est un polynôme du second degré en n, donc la complexité de `mystere` est en O(n²) — chaque test (calcul de parité, éventuel append) se faisant en temps constant.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "boucles imbriquées",
+      "sommes usuelles"
+    ],
+    "pedagogicalGoal": "compétence \"analyse de programme\" distincte de l'écriture : lire du code déjà écrit, en déduire ce qu'il calcule et sa complexité, y compris quand les bornes des boucles imbriquées ne sont pas symétriques."
+  },
+  {
+    "title": "Complément à deux sur 8 bits",
+    "statement": "On travaille sur des entiers signés codés en complément à deux sur 8 bits (valeurs de $-128$ à $127$).\n\n1. Rappeler le principe du codage en complément à deux.\n2. Donner la représentation binaire sur 8 bits de $-1$, puis de $-42$.\n3. Écrire une fonction `decoder(bits)` qui prend une chaîne de 8 caractères '0'/'1' (représentation en complément à deux) et renvoie l'entier signé correspondant, SANS utiliser `int(bits, 2)` directement suivi d'une correction ad hoc — construire le calcul explicitement à partir du bit de poids fort.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Les entiers",
+    "estimatedMinutes": 20,
+    "tags": [
+      "représentation binaire",
+      "complément à deux"
+    ],
+    "hints": [
+      "En complément à deux sur k bits, le bit de poids fort a un poids négatif : valeur = -b_{k-1}·2^{k-1} + somme des autres bits pondérés positivement.",
+      "-1 s'écrit avec tous les bits à 1 : 11111111."
+    ],
+    "correction": "Principe : sur k bits, le bit de poids fort (le plus à gauche) porte un poids NÉGATIF (-2^(k-1)), les autres bits portent leur poids binaire usuel positif. Cela permet de représenter aussi bien les entiers positifs que négatifs avec les mêmes règles d'addition binaire.\n\n-1 en 8 bits : 11111111 (car -128 + 64+32+16+8+4+2+1 = -128+127 = -1).\n-42 en 8 bits : 214 en non signé (256-42=214) soit 11010110.\n\ndef decoder(bits):\n    valeur = -int(bits[0]) * 2 ** (len(bits) - 1)\n    for k in range(1, len(bits)):\n        valeur += int(bits[k]) * 2 ** (len(bits) - 1 - k)\n    return valeur\n\ndecoder(\"11111111\") -> -1\ndecoder(\"11010110\") -> -42",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "représentation binaire des entiers naturels"
+    ],
+    "pedagogicalGoal": "comprendre pourquoi le complément à deux est le codage standard des entiers signés (une seule règle d'addition, un seul zéro), au-delà du simple bit de signe."
+  },
+  {
+    "title": "Flottants IEEE 754 : pourquoi 0.1 + 0.2 ≠ 0.3",
+    "statement": "1. Rappeler la structure d'un flottant simple précision IEEE 754 (32 bits) : signe, exposant, mantisse.\n2. Expliquer pourquoi $0.1$ n'admet pas de représentation binaire EXACTE en virgule flottante (comme $1/3$ n'a pas d'écriture décimale finie).\n3. En Python, `0.1 + 0.2 == 0.3` renvoie `False`. Expliquer ce résultat et proposer une manière correcte de comparer deux flottants en pratique (fonction ou méthode).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Les flottants",
+    "estimatedMinutes": 15,
+    "tags": [
+      "flottants",
+      "IEEE 754",
+      "erreurs d'arrondi"
+    ],
+    "hints": [
+      "En base 2, seules les fractions dont le dénominateur est une puissance de 2 ont une écriture finie — comme en base 10 avec les puissances de 10.",
+      "`math.isclose(a, b)` (module math) compare deux flottants à une tolérance relative/absolue près plutôt que par égalité stricte."
+    ],
+    "correction": "Un flottant IEEE 754 simple précision est codé sur 32 bits : 1 bit de signe, 8 bits d'exposant, 23 bits de mantisse (partie fractionnaire), représentant approximativement signe × 1.mantisse × 2^(exposant - biais).\n\n0.1 en base 10 vaut 1/10. En base 2, 1/10 = 1/(2×5) : le facteur 5 au dénominateur empêche toute écriture binaire finie (seules les puissances de 2 au dénominateur donnent une écriture finie en base 2), exactement comme 1/3 n'a pas d'écriture décimale finie en base 10. 0.1 est donc stocké sous une valeur APPROCHÉE, tout comme 0.2 et 0.3 — et les erreurs d'arrondi de 0.1 et 0.2 ne s'annulent pas exactement avec celle de 0.3, d'où `0.1 + 0.2 == 0.3` qui renvoie False.\n\nEn pratique, on compare deux flottants avec `math.isclose(a, b)` (tolérance relative par défaut) plutôt qu'avec `==`, précisément pour absorber ce type d'erreur d'arrondi.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "écriture en base b",
+      "notion de flottant"
+    ],
+    "pedagogicalGoal": "comprendre la cause structurelle des erreurs d'arrondi en flottant (pas un \"bug\" de Python) et acquérir le réflexe math.isclose plutôt que == sur des flottants, utile aussi en physique numérique."
+  },
+  {
+    "title": "Matrice d'adjacence et liste d'adjacence d'un graphe",
+    "statement": "On considère le graphe non orienté à 5 sommets $\\{A, B, C, D, E\\}$ avec les arêtes suivantes : $A$–$B$, $A$–$C$, $B$–$C$, $C$–$D$, $D$–$E$.\n\n1. Représenter ce graphe par sa matrice d'adjacence (sommets dans l'ordre $A, B, C, D, E$).\n2. Représenter le même graphe par un dictionnaire de listes d'adjacence en Python.\n3. Pour un graphe à $n$ sommets et $m$ arêtes, comparer (en espace mémoire) la matrice d'adjacence et la liste d'adjacence lorsque le graphe est \"creux\" ($m \\ll n^2$).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Vocabulaire et représentations des graphes",
+    "estimatedMinutes": 20,
+    "tags": [
+      "graphes",
+      "matrice d'adjacence",
+      "liste d'adjacence"
+    ],
+    "hints": [
+      "Le graphe est non orienté : la matrice d'adjacence est symétrique, et chaque arête apparaît dans les deux listes d'adjacence (sens A→B et B→A)."
+    ],
+    "correction": "Matrice d'adjacence (ordre A,B,C,D,E), 1 si arête, 0 sinon :\n      A B C D E\n  A [ 0 1 1 0 0 ]\n  B [ 1 0 1 0 0 ]\n  C [ 1 1 0 1 0 ]\n  D [ 0 0 1 0 1 ]\n  E [ 0 0 0 1 0 ]\n\nListe d'adjacence :\ngraphe = {\n    \"A\": [\"B\", \"C\"],\n    \"B\": [\"A\", \"C\"],\n    \"C\": [\"A\", \"B\", \"D\"],\n    \"D\": [\"C\", \"E\"],\n    \"E\": [\"D\"],\n}\n\nLa matrice d'adjacence occupe toujours O(n²) cases, quel que soit le nombre d'arêtes. La liste d'adjacence occupe O(n + m) cases (une entrée par sommet plus une par extrémité d'arête). Pour un graphe creux (m ≪ n²), la liste d'adjacence est donc nettement plus économe en mémoire ; la matrice d'adjacence reste avantageuse quand on doit tester très souvent si deux sommets précis sont reliés (accès en O(1)).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "vocabulaire de base des graphes"
+    ],
+    "pedagogicalGoal": "automatisme : passer d'un graphe dessiné à ses deux représentations usuelles, et savoir justifier le choix de l'une ou l'autre selon la densité du graphe."
+  },
+  {
+    "title": "Parcours en largeur (BFS) sur un graphe non orienté",
+    "statement": "On reprend le graphe de l'exercice précédent : sommets $\\{A, B, C, D, E\\}$, arêtes $A$–$B$, $A$–$C$, $B$–$C$, $C$–$D$, $D$–$E$, donné sous forme de liste d'adjacence.\n\n1. Dérouler à la main un parcours en largeur (BFS) à partir de $A$ : donner l'ordre de visite des sommets et le contenu de la file à chaque étape.\n2. Implémenter une fonction `bfs(graphe, depart)` qui renvoie la liste des sommets dans l'ordre de leur visite par parcours en largeur, en utilisant une file (`collections.deque` ou une liste avec `pop(0)`).\n3. Donner la complexité du BFS en fonction du nombre de sommets $n$ et d'arêtes $m$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Algorithmes sur les graphes",
+    "estimatedMinutes": 25,
+    "tags": [
+      "graphes",
+      "BFS",
+      "parcours en largeur"
+    ],
+    "hints": [
+      "Maintiens un ensemble `visites` pour ne jamais remettre un sommet dans la file une seconde fois.",
+      "On ajoute un sommet à `visites` dès qu'on l'enfile, pas seulement quand on le défile — sinon un même sommet peut être enfilé plusieurs fois."
+    ],
+    "correction": "Déroulé à la main à partir de A :\n- File = [A], visités = {A}\n- On défile A, on enfile ses voisins non visités B, C -> File = [B, C], visités = {A,B,C}\n- On défile B, ses voisins A et C sont déjà visités -> File = [C]\n- On défile C, on enfile son voisin non visité D -> File = [D], visités = {A,B,C,D}\n- On défile D, on enfile son voisin non visité E -> File = [E], visités = {A,B,C,D,E}\n- On défile E, plus rien à enfiler -> File = []\nOrdre de visite : A, B, C, D, E.\n\nfrom collections import deque\n\ndef bfs(graphe, depart):\n    visites = {depart}\n    file = deque([depart])\n    ordre = []\n    while file:\n        sommet = file.popleft()\n        ordre.append(sommet)\n        for voisin in graphe[sommet]:\n            if voisin not in visites:\n                visites.add(voisin)\n                file.append(voisin)\n    return ordre\n\nComplexité : chaque sommet est enfilé/défilé au plus une fois (O(n)), et chaque arête est examinée au plus deux fois, une depuis chaque extrémité (O(m)) — complexité totale O(n + m).",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "listes d'adjacence",
+      "structure de file"
+    ],
+    "pedagogicalGoal": "premier algorithme de parcours de graphe : comprendre le rôle de la file et de l'ensemble des sommets visités, et retenir la complexité O(n+m), gabarit de nombreux algorithmes de graphes ultérieurs."
+  },
+  {
+    "title": "Python : tuples, listes et dictionnaires — bien choisir sa structure",
+    "statement": "On dispose des résultats d'un TP sous la forme d'une liste de tuples `(nom_etudiant, note)`.\n\n1. Écrire une fonction `meilleure_note(resultats)` qui renvoie le tuple (nom, note) correspondant à la meilleure note (on suppose la liste non vide, sans égalité de note à départager).\n2. Écrire une fonction `vers_dictionnaire(resultats)` qui transforme la liste de tuples en dictionnaire `{nom: note}`.\n3. Pourquoi utiliser un tuple `(nom, note)` plutôt qu'une liste `[nom, note]` est-il un choix pertinent ici ? Et pourquoi le dictionnaire devient-il pertinent une fois qu'on veut retrouver rapidement la note d'un étudiant donné par son nom ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Langage Python",
+    "estimatedMinutes": 15,
+    "tags": [
+      "tuples",
+      "listes",
+      "dictionnaires",
+      "structures de données"
+    ],
+    "hints": [
+      "Un tuple est immuable : il signale qu'un couple (nom, note) ne doit pas être modifié une fois créé, ce qu'une liste ne garantit pas.",
+      "Un dictionnaire donne un accès en moyenne O(1) par clé, contre O(n) pour chercher un nom dans une liste de tuples."
+    ],
+    "correction": "def meilleure_note(resultats):\n    meilleur = resultats[0]\n    for couple in resultats[1:]:\n        if couple[1] > meilleur[1]:\n            meilleur = couple\n    return meilleur\n\ndef vers_dictionnaire(resultats):\n    return {nom: note for nom, note in resultats}\n\nUn tuple convient bien ici car un couple (nom, note) représente une donnée figée, qu'on ne va pas modifier composant par composant — l'immuabilité du tuple rend cette intention explicite (et empêche une modification accidentelle). Le dictionnaire devient pertinent dès qu'on veut chercher la note d'un étudiant PAR SON NOM : une liste de tuples impose de la parcourir entièrement (O(n)) pour trouver le bon nom, alors qu'un dictionnaire donne un accès direct en moyenne O(1) via `resultats_dict[nom]`.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours ni d'un manuel.",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "syntaxe de base Python"
+    ],
+    "pedagogicalGoal": "automatisme fondamental : choisir une structure de données Python (tuple/liste/dictionnaire) en fonction de l'usage réel qu'on va en faire, pas seulement de la syntaxe la plus familière."
   }
 ]
