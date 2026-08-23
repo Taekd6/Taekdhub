@@ -296,19 +296,43 @@ export function patchPreferences(patch: Partial<Preferences>): Preferences {
   return { ...localData.preferences(), ...patch };
 }
 
+/**
+ * Parse JSON tolérant à la corruption — une valeur illisible (JSON invalide,
+ * ex. écriture localStorage interrompue par un crash navigateur, extension
+ * défaillante, ou édition manuelle malformée) ne doit jamais faire planter
+ * TOUTE l'application au premier `readAll()` : elle retombe sur `fallback`,
+ * exactement comme un champ individuel manquant retombe déjà sur sa valeur
+ * par défaut dans normalizeExercise/normalizeSession/normalizePreferences.
+ * La donnée corrompue reste réellement perdue (rien à récupérer d'un JSON
+ * invalide, aucune tentative de "deviner") — seule la PANNE TOTALE est
+ * évitée, pour que l'utilisateur puisse au moins voir l'app tourner et
+ * restaurer une sauvegarde si besoin, plutôt qu'un écran blanc sans issue.
+ */
+function safeParse<T>(raw: string | null, fallback: T): T {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export const localData = {
   sessions: (): WorkSession[] =>
-    typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(sessionsKey) || "[]") as unknown[]).map(normalizeSession),
+    typeof window === "undefined" ? [] : safeParse<unknown[]>(localStorage.getItem(sessionsKey), []).map(normalizeSession),
   saveSessions: (items: WorkSession[]) => localStorage.setItem(sessionsKey, JSON.stringify(items)),
   exercises: (): Exercise[] =>
-    typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(exercisesKey) || "[]") as unknown[]).map(normalizeExercise),
+    typeof window === "undefined" ? [] : safeParse<unknown[]>(localStorage.getItem(exercisesKey), []).map(normalizeExercise),
   saveExercises: (items: Exercise[]) => localStorage.setItem(exercisesKey, JSON.stringify(items)),
   chapters: (): Chapter[] =>
     typeof window === "undefined"
       ? []
-      : (JSON.parse(localStorage.getItem(chaptersKey) || "[]") as unknown[]).map(normalizeChapter).filter((item): item is Chapter => item !== null),
+      : safeParse<unknown[]>(localStorage.getItem(chaptersKey), [])
+          .map(normalizeChapter)
+          .filter((item): item is Chapter => item !== null),
   saveChapters: (items: Chapter[]) => localStorage.setItem(chaptersKey, JSON.stringify(items)),
-  preferences: (): Preferences => (typeof window === "undefined" ? defaults : normalizePreferences(JSON.parse(localStorage.getItem(preferencesKey) || "{}"))),
+  preferences: (): Preferences =>
+    typeof window === "undefined" ? defaults : normalizePreferences(safeParse<unknown>(localStorage.getItem(preferencesKey), {})),
   savePreferences: (preferences: Preferences) => localStorage.setItem(preferencesKey, JSON.stringify(preferences)),
   /** Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`), ou `null` si aucune n'a jamais été faite. */
   lastBackupAt: (): string | null => (typeof window === "undefined" ? null : localStorage.getItem(lastBackupKey)),
@@ -316,7 +340,9 @@ export const localData = {
   weekSnapshots: (): WeekSnapshot[] =>
     typeof window === "undefined"
       ? []
-      : (JSON.parse(localStorage.getItem(weekSnapshotsKey) || "[]") as unknown[]).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
+      : safeParse<unknown[]>(localStorage.getItem(weekSnapshotsKey), [])
+          .map(normalizeWeekSnapshot)
+          .filter((item): item is WeekSnapshot => item !== null),
   saveWeekSnapshots: (items: WeekSnapshot[]) => localStorage.setItem(weekSnapshotsKey, JSON.stringify(items)),
 };
 

@@ -1,6 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { normalizePreferences, normalizeSession, patchPreferences, validateBackupPayload } from "@/lib/storage";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
+
+class MemoryStorage {
+  private store = new Map<string, string>();
+  getItem(key: string): string | null {
+    return this.store.has(key) ? this.store.get(key)! : null;
+  }
+  setItem(key: string, value: string): void {
+    this.store.set(key, value);
+  }
+}
 
 /**
  * Sprint 5 (Phase 7, explicitement marquée "TRÈS IMPORTANT" par l'énoncé) :
@@ -167,5 +177,54 @@ describe("patchPreferences — fusion avec la dernière valeur stockée, jamais 
 
   it("un patch vide renvoie exactement les préférences actuellement stockées", () => {
     expect(patchPreferences({})).toEqual(normalizePreferences({}));
+  });
+});
+
+/**
+ * Audit du hook central de données : aucun `JSON.parse` de `localData`
+ * n'était protégé — une seule clé localStorage corrompue (écriture
+ * interrompue par un crash navigateur, extension défaillante) faisait
+ * planter `readAll()` (hooks/use-prepahub-data.ts) tout entier, donc
+ * l'application entière, sans aucun chemin de récupération. `safeParse`
+ * retombe désormais sur une valeur sûre par clé, jamais une invention de
+ * données — seule la panne totale est évitée.
+ */
+describe("localData — résilience face à une valeur localStorage corrompue", () => {
+  beforeEach(() => {
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("localStorage", new MemoryStorage());
+  });
+
+  it("exercises() : JSON invalide retombe sur [] plutôt que de lever une exception", async () => {
+    localStorage.setItem("prepahub:exercises", "{ceci n'est pas du JSON valide");
+    const { localData } = await import("@/lib/storage");
+    expect(() => localData.exercises()).not.toThrow();
+    expect(localData.exercises()).toEqual([]);
+  });
+
+  it("preferences() : JSON invalide retombe sur les défauts plutôt que de lever une exception", async () => {
+    localStorage.setItem("prepahub:preferences", "not json at all");
+    const { localData } = await import("@/lib/storage");
+    expect(() => localData.preferences()).not.toThrow();
+    expect(localData.preferences().themeMode).toBe("system");
+  });
+
+  it("sessions()/chapters()/weekSnapshots() : même garantie, jamais d'exception propagée", async () => {
+    localStorage.setItem("prepahub:sessions", "]][[corrompu");
+    localStorage.setItem("prepahub:chapters", "undefined");
+    localStorage.setItem("prepahub:week-snapshots", "{");
+    const { localData } = await import("@/lib/storage");
+    expect(() => localData.sessions()).not.toThrow();
+    expect(() => localData.chapters()).not.toThrow();
+    expect(() => localData.weekSnapshots()).not.toThrow();
+    expect(localData.sessions()).toEqual([]);
+    expect(localData.chapters()).toEqual([]);
+    expect(localData.weekSnapshots()).toEqual([]);
+  });
+
+  it("une clé absente (jamais écrite) se comporte comme avant : tableau/objet vide, pas une erreur", async () => {
+    const { localData } = await import("@/lib/storage");
+    expect(localData.exercises()).toEqual([]);
+    expect(localData.preferences().displayName).toBe("");
   });
 });
