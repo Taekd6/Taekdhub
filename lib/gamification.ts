@@ -34,14 +34,22 @@ export function xpProgressInLevel(xp: number): { current: number; needed: number
   return { current, needed, percent: Math.min(100, Math.round((current / needed) * 100)) };
 }
 
-export function computeStreak(sessions: WorkSession[]): number {
-  const workByDay = sessions.reduce<Record<string, number>>((result, session) => {
-    const key = dayKey(session.started_at);
-    return { ...result, [key]: (result[key] || 0) + session.duration_seconds };
-  }, {});
+/**
+ * Série de jours consécutifs travaillés, en comptant jusqu'à AUJOURD'HUI si
+ * une séance y a déjà eu lieu, sinon jusqu'à HIER — la journée en cours
+ * n'étant pas terminée, l'absence de séance aujourd'hui ne doit jamais, à
+ * elle seule, remettre la série à 0 : un utilisateur qui a travaillé 14
+ * jours d'affilée et ouvre le Dashboard le matin, avant sa séance du jour,
+ * doit voir "14 j de suite" (série toujours active), pas "0" (série rompue
+ * à tort). La série n'est réellement rompue que si ni aujourd'hui NI hier
+ * n'ont de séance.
+ */
+export function computeStreak(sessions: WorkSession[], now: Date = new Date()): number {
+  const workByDay = workByDayMap(sessions);
+  const cursor = new Date(now);
+  if (!workByDay[dayKey(cursor)]) cursor.setDate(cursor.getDate() - 1);
 
   let streak = 0;
-  const cursor = new Date();
   while (workByDay[dayKey(cursor)]) {
     streak++;
     cursor.setDate(cursor.getDate() - 1);
