@@ -6,6 +6,7 @@ import { ChangeEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { reconcileExerciseChapters } from "@/lib/chapters";
 import { exportBackup, localData, validateBackupPayload, type BackupPayload } from "@/lib/storage";
 
 export function DataBackup() {
@@ -45,13 +46,21 @@ export function DataBackup() {
 
   function confirmImport() {
     if (!pendingImport) return;
-    localData.saveExercises(pendingImport.exercises);
+    const chapters = pendingImport.chapters ?? [];
+    // `reconcileExerciseChapters` (lib/chapters.ts) : un fichier de sauvegarde
+    // vient de l'EXTÉRIEUR de l'app (édité à la main, tronqué, ou simplement
+    // incohérent) — un exercice peut référencer un `chapter_id` absent de ce
+    // même fichier, ou appartenant à une autre matière. Sans ce nettoyage, la
+    // fiche restaurée pointerait vers un chapitre fantôme : son sélecteur de
+    // chapitre l'afficherait comme "Sans chapitre" (aucune option ne
+    // correspond) alors que la donnée réelle dirait le contraire.
+    localData.saveExercises(reconcileExerciseChapters(pendingImport.exercises, chapters));
     localData.saveSessions(pendingImport.sessions);
     localData.savePreferences(pendingImport.preferences);
     // Chapitres : indispensables pour que les `chapter_id` des exercices
     // pointent vers un catalogue réel. Absents d'une sauvegarde ancienne
     // (exportée avant l'ajout des chapitres à l'export) → restaurés à [].
-    localData.saveChapters(pendingImport.chapters ?? []);
+    localData.saveChapters(chapters);
     // Sauvegarde d'avant le Sprint 2.1 : pas de weekSnapshots dans le fichier, restaurés à [] proprement.
     localData.saveWeekSnapshots(pendingImport.weekSnapshots ?? []);
     setPendingImport(null);
