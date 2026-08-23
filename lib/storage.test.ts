@@ -191,6 +191,29 @@ describe("normalizePreferences — robustesse face à des types incorrects (impo
     expect(normalizePreferences({ contestDate: null }).contestDate).toBe("");
   });
 
+  /**
+   * Audit hardening final : `contestDate` était vérifié en TYPE (string) mais
+   * jamais en FORMAT — une chaîne non convertible en date réelle (édition
+   * manuelle du localStorage, import corrompu) traversait `normalizePreferences`
+   * intacte, puis se propageait jusqu'au Dashboard qui affichait littéralement
+   * "NaN j avant le concours" (dashboard-overview.tsx#contestDays,
+   * `new Date(contestDate).getTime()` → NaN → `Math.max(0, NaN)` → NaN,
+   * jamais `null`, donc le badge restait affiché) — reproduit réellement en
+   * navigateur, corrigé ici.
+   */
+  it("contestDate une chaîne non convertible en date réelle retombe sur le défaut (jamais un Date invalide propagé)", () => {
+    expect(normalizePreferences({ contestDate: "ceci-nest-pas-une-date" }).contestDate).toBe("");
+    expect(normalizePreferences({ contestDate: "n'importe quoi" }).contestDate).toBe("");
+  });
+
+  it("contestDate vide reste explicitement valide (aucune date choisie, pas une erreur)", () => {
+    expect(normalizePreferences({ contestDate: "" }).contestDate).toBe("");
+  });
+
+  it("contestDate une vraie date au format du champ <input type=\"date\"> reste intacte", () => {
+    expect(normalizePreferences({ contestDate: "2027-06-01" }).contestDate).toBe("2027-06-01");
+  });
+
   it("un objet de préférences entièrement mal typé ne plante jamais et ne renvoie que des types valides", () => {
     const prefs = normalizePreferences({
       displayName: 1,
@@ -369,6 +392,67 @@ describe("restoreBackup — atomicité face à un échec en cours de restauratio
     expect(localData.exercises()[0].title).toBe("ANCIEN");
     expect(localData.preferences().displayName).toBe("Ancien nom");
     expect(localData.sessions()).toEqual([]);
+  });
+
+  it("l'échec peut survenir sur N'IMPORTE LAQUELLE des cinq clés (pas seulement exercises/sessions) : rollback complet à chaque fois", async () => {
+    // Ordre réel d'écriture dans restoreBackup : exercises, sessions, preferences, chapters, weekSnapshots.
+    // On fait successivement échouer chacune des CINQ clés (via une clé "poison" trop grosse pour le
+    // budget restant) et on vérifie, à chaque fois, que les CINQ reviennent à l'état précédent.
+    const cases: Array<"exercises" | "sessions" | "preferences" | "chapters" | "weekSnapshots"> = [
+      "exercises",
+      "sessions",
+      "preferences",
+      "chapters",
+      "weekSnapshots",
+    ];
+    for (const poisoned of cases) {
+      const storage = new QuotaLimitedStorage(100_000);
+      vi.stubGlobal("localStorage", storage);
+      const { restoreBackup, localData } = await import("@/lib/storage");
+
+      localData.saveExercises([{ ...makeExerciseForTest(), id: "old-ex", title: "ANCIEN-EX" }]);
+      localData.saveSessions([{ id: "old-s", subject: "Mathématiques", exercise_id: null, started_at: "2026-01-01T00:00:00.000Z", ended_at: null, duration_seconds: 1, note: null, created_at: "2026-01-01T00:00:00.000Z", result: null }]);
+      localData.savePreferences({ ...defaultPreferencesForTest(), displayName: "ANCIEN-NOM" });
+      localData.saveChapters([{ id: "old-c", subject: "Mathématiques", label: "ANCIEN-CHAPITRE" }]);
+      localData.saveWeekSnapshots([{ weekStart: "2026-01-05T00:00:00.000Z", capturedAt: "2026-01-12T00:00:00.000Z", totalSeconds: 111, bySubject: [], activeCount: 1, masteredCount: 0, completionRate: 0, bySubjectProgress: [] }]);
+
+      const hugeText = "p".repeat(150_000);
+      const payload = {
+        exercises: [{ ...makeExerciseForTest(), id: "new-ex", title: poisoned === "exercises" ? hugeText : "NOUVEAU-EX" }],
+        sessions: [{ id: "new-s", subject: "Mathématiques" as const, exercise_id: null, started_at: "2026-01-01T00:00:00.000Z", ended_at: null, duration_seconds: 1, note: poisoned === "sessions" ? hugeText : "nouveau", created_at: "2026-01-01T00:00:00.000Z", result: null }],
+        preferences: { ...defaultPreferencesForTest(), displayName: poisoned === "preferences" ? hugeText : "NOUVEAU-NOM" },
+        chapters: [{ id: "new-c", subject: "Mathématiques" as const, label: poisoned === "chapters" ? hugeText : "NOUVEAU-CHAPITRE" }],
+        weekSnapshots: [{ weekStart: poisoned === "weekSnapshots" ? hugeText : "2026-01-12T00:00:00.000Z", capturedAt: "2026-01-19T00:00:00.000Z", totalSeconds: 222, bySubject: [], activeCount: 2, masteredCount: 0, completionRate: 0, bySubjectProgress: [] }],
+      };
+
+      const result = restoreBackup(payload);
+      expect(result.ok, `poisoned=${poisoned}`).toBe(false);
+      if (!result.ok) expect(result.rolledBack, `poisoned=${poisoned}`).toBe(true);
+
+      // Les CINQ clés doivent être revenues à l'ancien état — pas seulement celle qui a échoué.
+      expect(localData.exercises()[0].title, `poisoned=${poisoned}`).toBe("ANCIEN-EX");
+      expect(localData.sessions()[0].note, `poisoned=${poisoned}`).toBe(null);
+      expect(localData.preferences().displayName, `poisoned=${poisoned}`).toBe("ANCIEN-NOM");
+      expect(localData.chapters()[0].label, `poisoned=${poisoned}`).toBe("ANCIEN-CHAPITRE");
+      expect(localData.weekSnapshots()[0].totalSeconds, `poisoned=${poisoned}`).toBe(111);
+    }
+  });
+
+  it("cas pathologique : le rollback lui-même échoue (ex. localStorage totalement indisponible) — renvoie rolledBack:false, jamais une exception non gérée", async () => {
+    const alwaysFails = { getItem: () => null, setItem: () => { throw new DOMException("disabled", "QuotaExceededError"); } };
+    vi.stubGlobal("localStorage", alwaysFails);
+    const { restoreBackup } = await import("@/lib/storage");
+    let result: ReturnType<typeof restoreBackup> | undefined;
+    expect(() => {
+      result = restoreBackup({
+        exercises: [makeExerciseForTest()],
+        sessions: [],
+        preferences: defaultPreferencesForTest(),
+        chapters: [],
+        weekSnapshots: [],
+      });
+    }).not.toThrow();
+    expect(result).toEqual({ ok: false, rolledBack: false });
   });
 });
 

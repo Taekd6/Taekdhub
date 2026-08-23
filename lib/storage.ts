@@ -276,14 +276,27 @@ function normalizeWeekSnapshot(raw: unknown): WeekSnapshot | null {
  * `hexToRgb(preferences.accent)` dans ThemeSync/ThemePicker — `?.` protège
  * contre `null`/`undefined`, jamais contre un type inattendu mais non-nul) —
  * reproduit réellement via un import de sauvegarde corrompue.
+ *
+ * `contestDate` : vérifié type STRING mais pas FORMAT jusqu'ici — un champ
+ * qui `new Date(...)` en `NaN` (chaîne corrompue, format inattendu) ne
+ * plante rien directement ici, mais se propage silencieusement jusqu'au
+ * Dashboard (`contestDays`, app/(app)/dashboard non — dashboard-overview.tsx)
+ * qui affichait littéralement "NaN j avant le concours" — reproduit
+ * réellement via une préférence corrompue. `""` (aucune date choisie) reste
+ * explicitement valide, seule une chaîne non vide mais non convertible en
+ * date réelle retombe sur le défaut.
  */
 export function normalizePreferences(raw: unknown): Preferences {
   const item = isRecord(raw) ? raw : {};
+  const contestDate =
+    typeof item.contestDate === "string" && (item.contestDate === "" || !Number.isNaN(new Date(item.contestDate).getTime()))
+      ? item.contestDate
+      : defaults.contestDate;
   return {
     displayName: typeof item.displayName === "string" ? item.displayName : defaults.displayName,
     dailyGoalMinutes: typeof item.dailyGoalMinutes === "number" && item.dailyGoalMinutes > 0 ? item.dailyGoalMinutes : defaults.dailyGoalMinutes,
     weeklyGoalMinutes: typeof item.weeklyGoalMinutes === "number" && item.weeklyGoalMinutes > 0 ? item.weeklyGoalMinutes : defaults.weeklyGoalMinutes,
-    contestDate: typeof item.contestDate === "string" ? item.contestDate : defaults.contestDate,
+    contestDate,
     accent: typeof item.accent === "string" && hexToRgb(item.accent) ? item.accent : defaults.accent,
     themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE,
   };
