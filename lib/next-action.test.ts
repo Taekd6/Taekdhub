@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  computeChapterDetail,
   computeChaptersToConsolidate,
   computeCommandCenterProgress,
   computeDailyObjective,
@@ -44,6 +45,7 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     favorite: false,
     archived: false,
     hints: [],
+    answer: null,
     correction: null,
     last_worked_at: null,
     ...overrides,
@@ -143,6 +145,110 @@ describe("computeNextAction", () => {
     const archived = makeExercise({ archived: true, mastery: 0 });
     const action = computeNextAction([archived], [], 45, NOW);
     expect(action.kind).toBe("empty-bank");
+  });
+});
+
+/**
+ * Sprint Study OS Phase 4 — signaux échéance/plan hebdomadaire transmis tels
+ * quels au moteur de recommandation. Sans 5e argument, comportement
+ * strictement inchangé (déjà couvert par tous les tests ci-dessus).
+ */
+describe("computeNextAction — signaux échéance/plan (Sprint Study OS Phase 4)", () => {
+  it("un exercice sans aucune autre raison, autrement up-to-date, devient start-session grâce à une échéance de chapitre", () => {
+    const exercise = makeExercise({ chapter_id: "c-continuite", status: "à faire", mastery: 50, priority: 2, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const withoutSignal = computeNextAction([exercise], [], 45, NOW);
+    expect(withoutSignal.kind).toBe("up-to-date");
+
+    const withSignal = computeNextAction([exercise], [], 45, NOW, {
+      chapterDeadlines: new Map([["c-continuite", { days: 2, label: "ton DS de Mathématiques dans 2 j" }]]),
+    });
+    expect(withSignal.kind).toBe("start-session");
+    expect(withSignal.picks[0].exercise.id).toBe(exercise.id);
+    expect(withSignal.description).toContain("Prioritaire : ton DS de Mathématiques dans 2 j");
+  });
+
+  it("une séance interrompue (gérée ailleurs par ResumeBanner) n'est pas concernée par ce mécanisme — computeNextAction reste indépendant de la reprise", () => {
+    // Ce test documente la frontière : computeNextAction ne connaît jamais
+    // les séances interrompues, uniquement la banque/l'historique — la
+    // priorité "reprise > tout le reste" est assurée en amont, côté Dashboard
+    // (voir components/resume-banner.tsx), jamais ici.
+    const exercise = makeExercise({ mastery: 0 });
+    const action = computeNextAction([exercise], [], 45, NOW, { chapterDeadlines: new Map() });
+    expect(action.kind).toBe("start-session");
+  });
+});
+
+describe("computeNextAction — objectif atteint + échéance proche (Daily Copilot, État G)", () => {
+  it("objectif du jour atteint ET une échéance proche existe : le titre annonce l'objectif atteint et pointe vers l'échéance, plutôt que de continuer à recommander comme si de rien n'était", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
+    const action = computeNextAction([exercise], sessions, 45, NOW, {
+      nearestDeadline: { label: "ton DS de Mathématiques dans 2 j", days: 2 },
+    });
+    expect(action.kind).toBe("start-session");
+    expect(action.title).toBe("Tu as rempli ton objectif quotidien.");
+    expect(action.description).toBe("Il reste cependant ton DS de Mathématiques dans 2 j.");
+    expect(action.ctaLabel).toBe("Préparer cette échéance");
+    // Les exercices concrets proposés restent ceux réellement calculés (pas une liste vide inventée) — /session propose exactement ce qui est annoncé ici.
+    expect(action.picks.length).toBeGreaterThan(0);
+  });
+
+  it("objectif du jour PAS encore atteint : aucune bascule même avec une échéance proche — le pivot ne s'applique qu'une fois l'objectif rempli", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const action = computeNextAction([exercise], [], 45, NOW, {
+      nearestDeadline: { label: "ton DS de Mathématiques dans 2 j", days: 2 },
+    });
+    expect(action.title).not.toBe("Tu as rempli ton objectif quotidien.");
+  });
+
+  it("objectif atteint mais aucune échéance proche : comportement inchangé (pas de bascule)", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
+    const action = computeNextAction([exercise], sessions, 45, NOW);
+    expect(action.title).not.toBe("Tu as rempli ton objectif quotidien.");
+  });
+
+  // État H (Sprint « rentrée MP ») : un bonus de rentrée présent en même
+  // temps qu'un objectif atteint ne doit jamais perturber le pivot Daily
+  // Copilot déjà en place — le bonus n'affecte que le CLASSEMENT des
+  // exercices, jamais ces branches de message, évaluées avant tout usage de `top`.
+  it("État H — objectif atteint + bonus de rentrée présent : le pivot Daily Copilot reste inchangé", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
+    const action = computeNextAction([exercise], sessions, 45, NOW, {
+      nearestDeadline: { label: "ton DS de Mathématiques dans 2 j", days: 2 },
+      mpReadinessBonus: new Map([[exercise.id, { notion: { id: "x", subject: "Mathématiques", block: "b", label: "Groupes", tier: "rentree", keywords: [] }, reason: "Priorité de rentrée" }]]),
+    });
+    expect(action.title).toBe("Tu as rempli ton objectif quotidien.");
+    expect(action.description).toBe("Il reste cependant ton DS de Mathématiques dans 2 j.");
+  });
+});
+
+describe("computeNextAction — programme du jour terminé (Sprint Adaptive Day / Day Flow)", () => {
+  it("todayPlanAllDone + une échéance proche : 'Journée terminée', prioritaire sur le pivot 'objectif atteint'", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
+    const action = computeNextAction([exercise], sessions, 45, NOW, {
+      todayPlanAllDone: true,
+      nearestDeadline: { label: "ton DS de Mathématiques dans 2 j", days: 2 },
+    });
+    expect(action.title).toBe("Journée terminée.");
+    expect(action.description).toBe("Ton programme prévu est terminé. Il reste ton DS de Mathématiques dans 2 j.");
+    expect(action.ctaLabel).toBe("Préparer cette échéance");
+  });
+
+  it("todayPlanAllDone sans échéance : message de fin de journée neutre, jamais culpabilisant", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const action = computeNextAction([exercise], [], 45, NOW, { todayPlanAllDone: true });
+    expect(action.title).toBe("Journée terminée.");
+    expect(action.description).not.toMatch(/retard/i);
+    expect(action.ctaLabel).toBe("Consolider une notion");
+  });
+
+  it("todayPlanAllDone absent/faux : comportement inchangé (pas de bascule)", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const action = computeNextAction([exercise], [], 45, NOW, { todayPlanAllDone: false });
+    expect(action.title).not.toBe("Journée terminée.");
   });
 });
 
@@ -266,6 +372,23 @@ describe("computeChaptersToConsolidate", () => {
     const items = computeChaptersToConsolidate(exercises, [], chapters, NOW);
     expect(items.length).toBeLessThanOrEqual(5);
   });
+
+  // Sprint « Mastery Engine » — champ additif, jamais utilisé pour le tri ni
+  // le filtrage ci-dessus (voir la doc de `ChapterConsolidation.knowledgeState`) :
+  // fournit un signal supplémentaire à la consolidation existante, sans la remplacer.
+  it("expose l'état du Mastery Engine (knowledgeState/knowledgeReason) sans changer le comportement existant", () => {
+    const chapters: Chapter[] = [{ id: "chap-1", subject: "Physique", label: "Mécanique" }];
+    const exercise = makeExercise({ chapter_id: "chap-1", mastery: 50, status: "en cours" });
+    const sessions = [
+      makeSession(exercise.id, { result: "échoué", started_at: "2026-08-09T10:00:00.000Z" }),
+      makeSession(exercise.id, { result: "échoué", started_at: "2026-08-08T10:00:00.000Z" }),
+    ];
+    const items = computeChaptersToConsolidate([exercise], sessions, chapters, NOW);
+    expect(items[0].knowledgeState).toBe("fragile");
+    expect(items[0].knowledgeReason.length).toBeGreaterThan(0);
+    // Le champ existant reste inchangé en parallèle : aucune régression.
+    expect(items[0].reasons).toContain("2 échecs récents");
+  });
 });
 
 describe("computeStatusLine", () => {
@@ -275,7 +398,7 @@ describe("computeStatusLine", () => {
     expect(computeStatusLine(objective, action)).toMatch(/banque est vide/);
   });
 
-  it("objectif atteint : message positif", () => {
+  it("objectif atteint : message positif, jamais culpabilisant", () => {
     const exercise = makeExercise({ mastery: 0 });
     const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
     const objective = computeDailyObjective(sessions, 45, NOW);
@@ -283,11 +406,40 @@ describe("computeStatusLine", () => {
     expect(computeStatusLine(objective, action)).toMatch(/atteint/);
   });
 
-  it("rien travaillé aujourd'hui : message dédié", () => {
+  it("objectif atteint ET une échéance proche existe (Daily Copilot) : la ligne d'état nomme l'échéance plutôt qu'un générique \"tu peux t'arrêter ici\"", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
+    const objective = computeDailyObjective(sessions, 45, NOW);
+    const action = computeNextAction([exercise], sessions, 45, NOW);
+    const nearestDeadline = { label: "ton DS de Mathématiques dans 2 j", days: 2 };
+    expect(computeStatusLine(objective, action, nearestDeadline)).toBe("Objectif du jour atteint 🎯 Il reste ton DS de Mathématiques dans 2 j.");
+  });
+
+  it("programme du jour terminé (Day Flow) : priorité sur le pivot 'objectif atteint'", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
+    const objective = computeDailyObjective(sessions, 45, NOW);
+    const action = computeNextAction([exercise], sessions, 45, NOW);
+    expect(computeStatusLine(objective, action, null, true)).toBe("Programme du jour terminé. Tu peux t'arrêter ici.");
+    const nearestDeadline = { label: "ton DS de Mathématiques dans 2 j", days: 2 };
+    expect(computeStatusLine(objective, action, nearestDeadline, true)).toBe("Programme du jour terminé. Il reste ton DS de Mathématiques dans 2 j.");
+  });
+
+  it("rien travaillé aujourd'hui : indique le temps restant réel (micro-sprint « Ah ouais »)", () => {
     const exercise = makeExercise({ mastery: 0 });
     const objective = computeDailyObjective([], 45, NOW);
     const action = computeNextAction([exercise], [], 45, NOW);
-    expect(computeStatusLine(objective, action)).toBe("Tu n'as encore rien travaillé aujourd'hui.");
+    const line = computeStatusLine(objective, action);
+    expect(line).toMatch(/pas encore travaillé/);
+    expect(line).toContain("45 min");
+  });
+
+  it("rien travaillé, banque à jour (aucun exercice signalé) : message dédié, sans temps restant inventé en trop", () => {
+    const exercise = makeExercise({ status: "maîtrisé", mastery: 100, priority: 1, attempts: 3, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const objective = computeDailyObjective([], 45, NOW);
+    const action = computeNextAction([exercise], [], 45, NOW);
+    expect(action.kind).toBe("up-to-date");
+    expect(computeStatusLine(objective, action)).toBe("Rien n'est signalé aujourd'hui — bon moment pour avancer librement.");
   });
 
   it("progression partielle : reprend le temps travaillé et restant", () => {
@@ -328,5 +480,48 @@ describe("computeCommandCenterProgress", () => {
     const archived = makeExercise({ mastery: 100, archived: true });
     const progress = computeCommandCenterProgress([active, archived], [], NOW);
     expect(progress.averageMastery).toBe(0);
+  });
+});
+
+describe("computeChapterDetail", () => {
+  const chapter: Chapter = { id: "chap-1", subject: "Mathématiques", label: "Suites numériques" };
+
+  it("chapitre sans exercice : agrégats à zéro, pas d'erreur", () => {
+    const detail = computeChapterDetail(chapter, [], [], NOW);
+    expect(detail.total).toBe(0);
+    expect(detail.mastered).toBe(0);
+    expect(detail.averageMastery).toBe(0);
+    expect(detail.attemptedCount).toBe(0);
+    expect(detail.lastSessionAt).toBeNull();
+    expect(detail.totalSeconds).toBe(0);
+    expect(detail.recommendations).toEqual([]);
+  });
+
+  it("agrège maîtrise, tentatives, résultats et temps à partir des exercices et séances du chapitre uniquement", () => {
+    const inChapter1 = makeExercise({ chapter_id: chapter.id, mastery: 50, attempts: 2, status: "en cours" });
+    const inChapter2 = makeExercise({ chapter_id: chapter.id, mastery: 100, status: "maîtrisé", attempts: 1 });
+    const outsideChapter = makeExercise({ chapter_id: "other-chapter", mastery: 0 });
+    const sessions = [
+      makeSession(inChapter1.id, { started_at: "2026-08-09T10:00:00.000Z", duration_seconds: 300, result: "échoué" }),
+      makeSession(inChapter2.id, { started_at: "2026-08-10T10:00:00.000Z", duration_seconds: 200, result: "réussi" }),
+      makeSession(outsideChapter.id, { started_at: "2026-08-11T10:00:00.000Z", duration_seconds: 999, result: "réussi" }),
+    ];
+    const detail = computeChapterDetail(chapter, [inChapter1, inChapter2, outsideChapter], sessions, NOW);
+    expect(detail.total).toBe(2);
+    expect(detail.mastered).toBe(1);
+    expect(detail.averageMastery).toBe(75);
+    expect(detail.attemptedCount).toBe(2);
+    expect(detail.results.success).toBe(1);
+    expect(detail.results.failure).toBe(1);
+    expect(detail.totalSeconds).toBe(500);
+    expect(detail.lastSessionAt).toBe("2026-08-10T10:00:00.000Z");
+  });
+
+  it("les recommandations viennent du même moteur que partout ailleurs, restreintes au chapitre", () => {
+    const inChapter = makeExercise({ chapter_id: chapter.id, mastery: 0, status: "à faire" });
+    const outsideChapter = makeExercise({ chapter_id: "other-chapter", mastery: 0, status: "à faire" });
+    const detail = computeChapterDetail(chapter, [inChapter, outsideChapter], [], NOW);
+    expect(detail.recommendations).toHaveLength(1);
+    expect(detail.recommendations[0].exercise.id).toBe(inChapter.id);
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import katex from "katex";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -22,6 +22,18 @@ import { cn } from "@/lib/cn";
  * le composant retombe sur le texte source tel quel plutôt que de planter la
  * page — un énoncé mal formé doit rester lisible, pas faire disparaître
  * l'exercice.
+ *
+ * Formule plus large que son conteneur (matrice, longue expression — fréquent
+ * sur mobile) : jamais coupée/perdue. `.katex-display` (bloc `$$…$$`) comme
+ * `.katex` (inline `$…$`) restent chacun défilables horizontalement dans
+ * leurs propres limites (`max-w-full overflow-x-auto`) sans jamais élargir la
+ * page ni dépendre d'un ancêtre — de nombreuses cartes de l'app posent
+ * `overflow-hidden` pour leurs coins arrondis, ce qui aurait sinon
+ * silencieusement rogné tout dépassement, sans indice ni scroll possible. Un
+ * bloc défilable affiche en plus un repère textuel discret UNIQUEMENT quand
+ * il dépasse réellement (mesuré via `ResizeObserver`, jamais deviné à partir
+ * du texte source) — l'inline n'en a pas besoin : il reste au fil du texte,
+ * un swipe suffit à le découvrir comme le reste de la page.
  */
 
 type Segment = { type: "text" | "inline" | "block"; value: string };
@@ -64,6 +76,33 @@ function renderKatex(value: string, displayMode: boolean): string | null {
   }
 }
 
+/** Bloc `$$…$$` : défilable horizontalement, avec un repère "défiler" affiché
+ * seulement si la formule dépasse réellement son conteneur — recalculé à
+ * chaque changement de largeur (rotation d'écran, sidebar qui s'ouvre…). */
+function DisplayFormula({ html, fallback }: { html: string | null; fallback: string }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [overflowing, setOverflowing] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const checkOverflow = () => setOverflowing(el.scrollWidth > el.clientWidth + 1);
+    checkOverflow();
+    const observer = new ResizeObserver(checkOverflow);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [html]);
+
+  return (
+    <div className="my-2">
+      <div ref={scrollRef} className="max-w-full overflow-x-auto">
+        {html ? <span dangerouslySetInnerHTML={{ __html: html }} /> : fallback}
+      </div>
+      {overflowing && <p className="mt-1 text-2xs text-zinc-600">⟷ défile pour voir la suite</p>}
+    </div>
+  );
+}
+
 export function RichMath({ text, className }: { text: string; className?: string }) {
   const segments = useMemo(() => splitBlocks(text), [text]);
 
@@ -77,13 +116,13 @@ export function RichMath({ text, className }: { text: string; className?: string
         const fallback = displayMode ? `$$${segment.value}$$` : `$${segment.value}$`;
 
         if (displayMode) {
-          return (
-            <div key={index} className="my-2 overflow-x-auto">
-              {html ? <span dangerouslySetInnerHTML={{ __html: html }} /> : fallback}
-            </div>
-          );
+          return <DisplayFormula key={index} html={html} fallback={fallback} />;
         }
-        return html ? <span key={index} dangerouslySetInnerHTML={{ __html: html }} /> : <span key={index}>{fallback}</span>;
+        return (
+          <span key={index} className="inline-block max-w-full overflow-x-auto align-baseline">
+            {html ? <span dangerouslySetInnerHTML={{ __html: html }} /> : fallback}
+          </span>
+        );
       })}
     </div>
   );

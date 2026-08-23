@@ -1,1 +1,1 @@
-import { PageHeader } from "@/components/page-header"; import { Timer } from "@/components/timer"; export default function TimerPage(){return <><PageHeader eyebrow="Focus" title="Chronomètre" description="Une seule chose à la fois."/><Timer/></>}
+import { PageHeader } from "@/components/page-header"; import { Timer } from "@/components/timer"; export default function TimerPage(){return <><PageHeader eyebrow="Chrono libre" title="Chronomètre" description="Une seule chose à la fois."/><Timer/></>}

@@ -18,7 +18,7 @@ export default function Home() {
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-accent-foreground shadow-glow">
               <Sparkles size={16} />
             </span>
-            <p className="eyebrow text-accent">TaekdHub</p>
+            <p className="eyebrow text-accent-text">TaekdHub</p>
           </div>
           <h1 className="mt-6 max-w-3xl text-5xl font-semibold tracking-tight md:text-7xl">
             Chaque heure <span className="text-gradient">compte.</span>
@@ -44,7 +44,7 @@ export default function Home() {
           {features.map(({ icon: Icon, title, desc }) => (
             <article key={title} className="surface surface-hover rounded-2xl p-6">
               <div className="grid h-10 w-10 place-items-center rounded-xl bg-accent/10">
-                <Icon size={18} className="text-accent" />
+                <Icon size={18} className="text-accent-text" />
               </div>
               <h2 className="mt-4 font-semibold">{title}</h2>
               <p className="mt-2 text-sm leading-6 text-muted">{desc}</p>

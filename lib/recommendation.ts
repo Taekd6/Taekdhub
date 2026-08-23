@@ -1,6 +1,9 @@
+import { DEADLINE_RELEVANCE_HORIZON_DAYS } from "@/lib/deadline-horizon";
+import type { ChapterDeadlineSignal } from "@/lib/deadlines";
+import type { MpReadinessBonusInfo } from "@/lib/mp-readiness";
 import { minutesByExerciseMap, totalSeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
-import type { Exercise, ExerciseStatus, WorkSession } from "@/lib/supabase/types";
+import type { Exercise, ExerciseStatus, Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
  * Moteur de révision — Sprint 3A, étendu au Sprint 4 (décroissance de
@@ -18,12 +21,20 @@ import type { Exercise, ExerciseStatus, WorkSession } from "@/lib/supabase/types
  * ordre" rend chaque partie indépendamment lisible et modifiable : ajouter
  * un critère d'inclusion ne touche pas au calcul du score, et inversement.
  *
- * ## Sprint 4 : décroissance de maîtrise (voir `isStaleMastery`/`staleMasteryBonus`)
- * Un exercice "maîtrisé" non retravaillé depuis longtemps redevient éligible
- * (nouveau critère dans `evaluateExercise`) et son score augmente
- * progressivement avec le temps écoulé (nouveau terme, plafonné, dans
- * `urgencyScore`). Ni `status` ni `mastery` ne sont jamais modifiés par ce
- * mécanisme : seul le classement en est influencé.
+ * ## Sprint 4 → Sprint répétition espacée : urgence de révision adaptative
+ * (voir `revisionUrgencyFromAttempts`)
+ * Un exercice non retravaillé depuis longtemps redevient éligible (critère
+ * dans `evaluateExercise`) et son score augmente progressivement avec le
+ * temps écoulé (terme plafonné dans `urgencyScore`). À l'origine (Sprint 4),
+ * le seuil était fixe (`MASTERY_STALE_DAYS`, 21 jours) et ne s'appliquait
+ * qu'aux exercices marqués "maîtrisé" à la main. Il est maintenant adaptatif :
+ * l'intervalle avant révision dépend de la série de réussites consécutives
+ * réelle (`recentSuccessStreak`, inchangée) et de la difficulté de
+ * l'exercice — un Leitner léger, jamais persisté (voir `revisionIntervalDays`).
+ * Le seuil fixe reste utilisé comme repli (`legacyStaleBonus`) uniquement
+ * quand aucune tentative avec résultat n'existe : c'est tout ce qu'on peut
+ * savoir dans ce cas. Ni `status` ni `mastery` ne sont jamais modifiés par ce
+ * mécanisme : seul le classement (et l'inclusion) en sont influencés.
  *
  * ## Sprint 4 : sélection bornée par le temps (voir `selectWithinBudget`)
  * `recommendExercises` accepte un budget optionnel (`availableMinutes`). Sans
@@ -52,36 +63,25 @@ export function isNeverWorked(exercise: Exercise, minutesSpent: number): boolean
 }
 
 /**
- * Nombre de jours sans retravail au-delà duquel un exercice "maîtrisé"
- * redevient éligible à la recommandation (voir `isStaleMastery`). Trois
- * semaines : assez long pour ne pas rappeler un exercice tout juste maîtrisé,
- * assez court pour détecter un oubli avant qu'il ne devienne un trou le jour
- * d'un DS.
+ * Seuil fixe historique (Sprint 4) : nombre de jours sans retravail au-delà
+ * duquel un exercice "maîtrisé" redevient éligible. Sert maintenant de repli
+ * quand aucun intervalle adaptatif n'est calculable (voir `legacyStaleBonus`)
+ * et de plafond à l'intervalle adaptatif (`REVISION_MAX_INTERVAL_DAYS`).
+ * Trois semaines : assez long pour ne pas rappeler un exercice tout juste
+ * maîtrisé, assez court pour détecter un oubli avant qu'il ne devienne un
+ * trou le jour d'un DS.
  */
 export const MASTERY_STALE_DAYS = 21;
+
+/** Nombre de jours pleins écoulés entre une date ISO et `now` (toujours ≥ 0 en usage normal). */
+function daysBetween(isoDate: string, now: Date): number {
+  return Math.floor((now.getTime() - new Date(isoDate).getTime()) / 86400000);
+}
 
 /** `null` si l'exercice n'a jamais eu de séance focus achevée dessus (voir `Exercise.last_worked_at`). */
 function daysSinceLastWorked(exercise: Exercise, now: Date): number | null {
   if (!exercise.last_worked_at) return null;
-  return Math.floor((now.getTime() - new Date(exercise.last_worked_at).getTime()) / 86400000);
-}
-
-/**
- * Un exercice "maîtrisé" mais non retravaillé depuis longtemps ne doit jamais
- * rester invisible indéfiniment : sans ce critère, un oubli réel ne serait
- * détecté qu'au moment du DS. Ne modifie jamais `status` ni `mastery` — voir
- * la note Sprint 4 en tête de fichier.
- *
- * `last_worked_at` nul (jamais de séance focus achevée dessus, y compris pour
- * une fiche marquée "maîtrisé" à la main) est traité comme "tout juste au
- * seuil", pas comme "infiniment ancien" : on n'a aucune preuve de fraîcheur,
- * mais on n'invente pas non plus un signal fort à partir d'une donnée absente
- * (même logique que `lib/week.ts#neglectedSubjects`).
- */
-function isStaleMastery(exercise: Exercise, now: Date): boolean {
-  if (exercise.status !== "maîtrisé") return false;
-  const days = daysSinceLastWorked(exercise, now);
-  return days === null || days >= MASTERY_STALE_DAYS;
+  return daysBetween(exercise.last_worked_at, now);
 }
 
 /**
@@ -91,7 +91,7 @@ function isStaleMastery(exercise: Exercise, now: Date): boolean {
  * ignorées : on ne sait rien de leur issue, donc elles ne doivent influencer
  * ni les raisons ni le score (voir la doc de `WorkSession.result`).
  */
-function attemptsWithResult(sessions: WorkSession[], exerciseId: string): WorkSession[] {
+export function attemptsWithResult(sessions: WorkSession[], exerciseId: string): WorkSession[] {
   return sessions
     .filter((session) => session.exercise_id === exerciseId && session.result)
     .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
@@ -100,8 +100,8 @@ function attemptsWithResult(sessions: WorkSession[], exerciseId: string): WorkSe
 /** Fenêtre d'analyse pour détecter des échecs répétés — les 3 tentatives les plus récentes, pas tout l'historique. */
 const RECENT_ATTEMPTS_WINDOW = 3;
 
-/** Nombre d'échecs parmi les tentatives récentes (déjà triées, plus récentes en premier). */
-function recentFailureCount(attempts: WorkSession[]): number {
+/** Nombre d'échecs parmi les tentatives récentes (déjà triées, plus récentes en premier). Exportée (MP Readiness) pour que lib/mp-readiness.ts détecte une fragilité récente sur une notion sans redéfinir ce seuil séparément. */
+export function recentFailureCount(attempts: WorkSession[]): number {
   return attempts.slice(0, RECENT_ATTEMPTS_WINDOW).filter((attempt) => attempt.result === "échoué").length;
 }
 
@@ -132,17 +132,68 @@ function recentSuccessStreak(attempts: WorkSession[]): number {
  * séances sans résultat renseigné) n'obtient aucune raison ni bonus
  * supplémentaire de cette section : le comportement "jamais tenté" / "à
  * revoir" existant reste strictement inchangé.
+ *
+ * Sprint système de révision : différencie explicitement "jamais travaillé"
+ * (A) de "travaillé mais faible" (B) — une maîtrise basse par défaut sur un
+ * exercice jamais tenté n'est pas un signal de difficulté, juste l'absence
+ * de donnée (même principe que `hasChapterEngagement`/`hasEngagement`,
+ * lib/next-action.ts et lib/plan.ts, appliqué ici à l'échelle de l'exercice) —
+ * "Maîtrise faible" ne s'affiche donc que si l'exercice a déjà été engagé.
  */
-function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date): string[] {
+function evaluateExercise(
+  exercise: Exercise,
+  minutesSpent: number,
+  attempts: WorkSession[],
+  now: Date,
+  deadlineSignal?: ChapterDeadlineSignal,
+  planGapMinutes?: number,
+  mpReadinessInfo?: MpReadinessBonusInfo
+): string[] {
   const reasons: string[] = [];
-  if (exercise.mastery <= 25) reasons.push("Maîtrise faible");
+  const neverWorked = isNeverWorked(exercise, minutesSpent);
+  // MP Readiness (Sprint « rentrée MP ») : critère d'inclusion à part entière,
+  // comme l'échéance de chapitre ci-dessous — une notion explicitement
+  // attendue à la rentrée doit pouvoir faire remonter un exercice même sans
+  // aucun autre signal (brief, État A : "aucun travail" → une priorité de
+  // rentrée peut quand même être proposée). `lib/mp-readiness.ts` ne retient
+  // déjà que les notions "rentree" en état "renforcer" : jamais une notion
+  // déjà maîtrisée, jamais une simple notion à découvrir.
+  if (mpReadinessInfo) reasons.push(mpReadinessInfo.reason);
+  if (exercise.mastery <= 25 && !neverWorked) reasons.push("Maîtrise faible");
   if (exercise.priority >= 4) reasons.push("Priorité élevée");
-  if (isNeverWorked(exercise, minutesSpent)) reasons.push("Jamais travaillé");
+  // `attempts.length === 0` en plus de `neverWorked` (Sprint Study OS Phase 6) :
+  // une séance de moins d'une minute ne fait pas passer `exercise.attempts`/
+  // `minutesSpent` au-dessus de 0 (voir `commitResult`, lib/session.ts), donc
+  // `neverWorked` restait vrai juste après un tel échec — "Jamais travaillé"
+  // s'affichait alors CÔTE À CÔTE avec "Échec récent" pour le même exercice,
+  // une contradiction visible détectée en direct pendant l'audit de cette
+  // phase. `attempts` (séances avec résultat, voir plus bas) est déjà la
+  // source de vérité pour "Échec récent" : s'il en existe une, l'exercice a
+  // été travaillé, quelle que soit sa durée.
+  if (neverWorked && attempts.length === 0) reasons.push("Jamais travaillé");
   if (exercise.status === "en cours") reasons.push("En cours");
   if (exercise.status === "à revoir") reasons.push("Marqué à revoir");
-  if (isStaleMastery(exercise, now)) {
-    const days = daysSinceLastWorked(exercise, now);
-    reasons.push(days === null ? "Maîtrisé, jamais retravaillé" : `Non retravaillé depuis ${days} j`);
+  // Échéance (Sprint Study OS Phase 4 — DS/khôlle) : un chapitre associé à
+  // une échéance proche (voir lib/deadlines.ts#chapterDeadlineSignals) suffit
+  // à proposer cet exercice, même si aucun autre critère ne le retenait —
+  // c'est un critère d'inclusion À PART ENTIÈRE, pas un simple bonus de tri
+  // (voir `urgencyScore` pour l'effet sur le score). Exclu pour un exercice
+  // déjà "maîtrisé" : rien à regagner d'une simple échéance sur un exercice
+  // déjà acquis (le mécanisme de révision adaptative existant couvre déjà
+  // "maîtrisé mais pas retravaillé depuis longtemps", plus bas).
+  if (deadlineSignal && exercise.status !== "maîtrisé") reasons.push(`Prioritaire : ${deadlineSignal.label}`);
+  // "Maîtrisé, jamais retravaillé" : cas particulier conservé tel quel
+  // (Sprint 4) — aucune tentative avec résultat, donc aucun intervalle
+  // adaptatif calculable ; seule la fiche manuelle "maîtrisé" donne un
+  // signal. Le reste du critère est adaptatif (voir
+  // `revisionUrgencyFromAttempts`) et ne dépend plus du statut manuel : un
+  // exercice "à revoir" ou "en cours" dont la série de réussites est due
+  // redevient éligible au même titre qu'un exercice "maîtrisé".
+  if (exercise.status === "maîtrisé" && daysSinceLastWorked(exercise, now) === null) {
+    reasons.push("Maîtrisé, jamais retravaillé");
+  } else if (revisionUrgencyFromAttempts(exercise, attempts, now) > 0) {
+    const days = daysSinceLastWorked(exercise, now) ?? daysBetween(attempts[0].started_at, now);
+    reasons.push(`Non retravaillé depuis ${days} j`);
   }
   // Échec récent : signal fort, exprimé comme un critère d'inclusion à part
   // entière (un échec suffit à justifier de revoir l'exercice, même si aucun
@@ -153,13 +204,25 @@ function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: Wo
   else if (attempts[0]?.result === "échoué") reasons.push("Échec récent");
   // Une réussite récente n'est jamais, à elle seule, un critère d'inclusion
   // (même logique que "Favori" ci-dessous) : elle ne fait que compléter les
-  // raisons d'un exercice déjà retenu par ailleurs.
-  if (reasons.length > 0 && attempts[0]?.result === "réussi") reasons.push("Réussi récemment");
+  // raisons d'un exercice déjà retenu par ailleurs. Distingue une vraie
+  // progression (catégorie D : échec récent puis réussite) d'une simple
+  // réussite isolée — signal plus informatif pour l'utilisateur qu'un
+  // "Réussi récemment" générique.
+  if (reasons.length > 0 && attempts[0]?.result === "réussi") {
+    const recovered = attempts.slice(1, RECENT_ATTEMPTS_WINDOW).some((attempt) => attempt.result === "échoué");
+    reasons.push(recovered ? "Progrès récents" : "Réussi récemment");
+  }
   // Le favori n'est jamais un critère d'inclusion à lui seul (un exercice
   // favori déjà maîtrisé et récent n'a aucune raison de revenir) : il ne
   // s'ajoute qu'aux raisons déjà réunies, pour un exercice retenu par
   // ailleurs — voir `urgencyScore` pour son (léger) effet sur le tri.
   if (reasons.length > 0 && exercise.favorite) reasons.push("Favori");
+  // Retard sur le plan hebdomadaire (Sprint Study OS Phase 4) : même
+  // principe que "Favori" ci-dessus — jamais un critère d'inclusion à lui
+  // seul (une matière en retard n'invente pas un exercice à proposer), sert
+  // uniquement à expliquer pourquoi CET exercice, déjà retenu par ailleurs,
+  // est spécialement pertinent maintenant (voir lib/weekly-plan.ts#planGapMinutesBySubject).
+  if (reasons.length > 0 && planGapMinutes && planGapMinutes > 0) reasons.push("En retard sur ton plan de la semaine");
   return reasons;
 }
 
@@ -171,24 +234,103 @@ const STATUS_WEIGHT: Record<ExerciseStatus, number> = {
   maîtrisé: -30,
 };
 
-/** Plafond du bonus de décroissance (voir `staleMasteryBonus`) — comparable en amplitude à `momentumBonus`, jamais dominant. */
-const MASTERY_STALE_BONUS_CAP = 30;
-const MASTERY_STALE_BONUS_PER_DAY = 0.5;
+/** Plafond commun aux deux chemins de `revisionUrgencyFromAttempts` (adaptatif et repli) — comparable en amplitude à `momentumBonus`, jamais dominant. */
+const REVISION_URGENCY_CAP = 30;
+const REVISION_URGENCY_PER_DAY = 0.5;
 
 /**
- * Contribution continue de la décroissance au score — 0 avant le seuil de
- * `MASTERY_STALE_DAYS`, puis croît progressivement (jamais un saut) avec le
- * nombre de jours de retard, plafonnée pour ne jamais dominer les autres
- * termes (même logique que `momentumBonus`). `last_worked_at` nul est traité
- * comme "tout juste au seuil" (bonus nul) — voir `isStaleMastery`.
+ * Intervalle avant révision (jours), pas une valeur stockée : reconstruite à
+ * chaque appel à partir de la série de réussites consécutives la plus
+ * récente. Double à chaque réussite supplémentaire (Leitner léger : 1
+ * réussite → court, 2 → plus long, 3 → plus long encore), plafonné à partir
+ * de `REVISION_MAX_STREAK_FOR_INTERVAL` réussites pour ne jamais croître sans
+ * limite, et toujours borné par `REVISION_MAX_INTERVAL_DAYS`.
+ *
+ * `difficultyFactor` ajuste modérément (±20 %, jamais plus) autour de la
+ * difficulté 3 comme référence neutre — même convention que
+ * `estimatedDurationMinutes`. Un exercice difficile (5) resserre l'intervalle
+ * (0.8×) : une réussite n'y vaut pas la même confiance à long terme que sur
+ * un exercice facile (1, 1.2×) — sans pour autant lui donner un énorme bonus.
  */
-function staleMasteryBonus(exercise: Exercise, now: Date): number {
+const REVISION_BASE_INTERVAL_DAYS = 3;
+const REVISION_MAX_STREAK_FOR_INTERVAL = 4;
+const REVISION_MAX_INTERVAL_DAYS = MASTERY_STALE_DAYS;
+
+function revisionIntervalDays(streak: number, difficulty: Exercise["difficulty"]): number {
+  const effectiveStreak = Math.min(streak, REVISION_MAX_STREAK_FOR_INTERVAL);
+  const difficultyFactor = 1 - (difficulty - 3) * 0.1; // 0.8 (difficile) à 1.2 (facile)
+  const raw = REVISION_BASE_INTERVAL_DAYS * 2 ** (effectiveStreak - 1) * difficultyFactor;
+  return Math.min(REVISION_MAX_INTERVAL_DAYS, raw);
+}
+
+/**
+ * Urgence adaptative quand une série de réussites consécutives existe
+ * (`streak > 0`) : 0 tant que la dernière réussite est dans l'intervalle
+ * théorique (`revisionIntervalDays`), puis croît progressivement au-delà,
+ * plafonnée à `REVISION_URGENCY_CAP` — même forme que l'ancien
+ * `staleMasteryBonus`, mais avec un seuil désormais adaptatif au lieu de
+ * `MASTERY_STALE_DAYS` fixe.
+ */
+function adaptiveRevisionUrgency(attempts: WorkSession[], streak: number, difficulty: Exercise["difficulty"], now: Date): number {
+  const daysSince = daysBetween(attempts[0].started_at, now);
+  if (!Number.isFinite(daysSince)) return 0; // `started_at` corrompu : robustesse avant tout, jamais de crash
+  const overdueDays = daysSince - revisionIntervalDays(streak, difficulty);
+  if (overdueDays <= 0) return 0;
+  return Math.min(REVISION_URGENCY_CAP, overdueDays * REVISION_URGENCY_PER_DAY);
+}
+
+/**
+ * Repli quand aucune tentative avec résultat n'existe pour l'exercice : aucun
+ * intervalle adaptatif n'est calculable (Étape 2 — pas d'historique, pas de
+ * série). Reprend exactement l'ancien mécanisme fixe (Sprint 4) : seuil de
+ * `MASTERY_STALE_DAYS`, gardé par le statut manuel "maîtrisé". `last_worked_at`
+ * nul est traité comme "tout juste au seuil" (0), pas comme "infiniment
+ * ancien" — même logique que `lib/week.ts#neglectedSubjects`.
+ */
+function legacyStaleBonus(exercise: Exercise, now: Date): number {
   if (exercise.status !== "maîtrisé") return 0;
   const days = daysSinceLastWorked(exercise, now);
-  const effectiveDays = days ?? MASTERY_STALE_DAYS;
-  if (effectiveDays < MASTERY_STALE_DAYS) return 0;
-  const overdueDays = effectiveDays - MASTERY_STALE_DAYS;
-  return Math.min(MASTERY_STALE_BONUS_CAP, overdueDays * MASTERY_STALE_BONUS_PER_DAY);
+  if (days === null) return 0;
+  const overdueDays = days - MASTERY_STALE_DAYS;
+  if (overdueDays <= 0) return 0;
+  return Math.min(REVISION_URGENCY_CAP, overdueDays * REVISION_URGENCY_PER_DAY);
+}
+
+/**
+ * Urgence de révision (0 à `REVISION_URGENCY_CAP`) à partir de tentatives
+ * déjà filtrées/triées pour un exercice (voir `attemptsWithResult`) — cœur
+ * partagé par `computeRevisionUrgency` (export public) et par
+ * `evaluateExercise`/`urgencyScore` (qui ont déjà `attempts` sous la main,
+ * jamais filtré deux fois).
+ *
+ * Trois cas, mutuellement exclusifs (jamais de double comptage) :
+ * - Série de réussites en cours (`streak > 0`) → chemin adaptatif
+ *   (`adaptiveRevisionUrgency`), fondé sur l'historique réel.
+ * - Dernière tentative connue ratée/partielle (`streak === 0` mais
+ *   `attempts` non vide) → 0 ici : le signal est déjà porté par
+ *   `failureBonus`/les raisons "Échec récent" · "Plusieurs échecs" — un
+ *   échec récent réduit fortement la confiance sans la recalculer ici en
+ *   plus (voir la doc de `urgencyScore`).
+ * - Aucune tentative avec résultat → repli sur l'ancien signal fixe
+ *   (`legacyStaleBonus`), seule information disponible dans ce cas.
+ */
+function revisionUrgencyFromAttempts(exercise: Exercise, attempts: WorkSession[], now: Date): number {
+  const streak = recentSuccessStreak(attempts);
+  if (streak > 0) return adaptiveRevisionUrgency(attempts, streak, exercise.difficulty, now);
+  if (attempts.length > 0) return 0;
+  return legacyStaleBonus(exercise, now);
+}
+
+/**
+ * Urgence de révision adaptative pour un exercice, à partir de tout
+ * l'historique de séances — export public (Étape 2) pour un usage direct
+ * (debug, simulation, futurs consommateurs) sans dupliquer le filtrage déjà
+ * fait ici. Fonction pure et déterministe : ne dépend jamais de `new Date()`
+ * en interne, uniquement du paramètre `now` (même convention que
+ * `computeExerciseBankStats`).
+ */
+export function computeRevisionUrgency(exercise: Exercise, sessions: WorkSession[], now: Date = new Date()): number {
+  return revisionUrgencyFromAttempts(exercise, attemptsWithResult(sessions, exercise.id), now);
 }
 
 /**
@@ -201,7 +343,52 @@ function staleMasteryBonus(exercise: Exercise, now: Date): number {
  * avec résultat, `failureBonus` et `successPenalty` valent 0 et le score est
  * strictement identique à avant ce sprint.
  */
-function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date): number {
+/** 0-25 : plus l'échéance associée au chapitre est proche, plus le bonus grimpe — même ordre de grandeur que `failureBonus`, jamais dominant à lui seul. Nul sans échéance pertinente. */
+const DEADLINE_BONUS_CAP = 25;
+function chapterDeadlineBonus(signal: ChapterDeadlineSignal | undefined): number {
+  if (!signal) return 0;
+  const urgencyFactor = Math.max(0, Math.min(1, 1 - signal.days / DEADLINE_RELEVANCE_HORIZON_DAYS));
+  return urgencyFactor * DEADLINE_BONUS_CAP;
+}
+
+/** 0-20 : proportionnel au retard (minutes) sur le plan hebdomadaire pour la matière de l'exercice — plafonné pour ne jamais dominer un signal plus direct (échec récent, échéance). Nul sans plan configuré pour cette matière (voir `lib/weekly-plan.ts#planGapMinutesBySubject`, qui n'émet un retard que si un plan existe). */
+const PLAN_GAP_BONUS_CAP = 20;
+const PLAN_GAP_BONUS_PER_MINUTE = 0.4;
+function planGapBonus(minutesBehind: number | undefined): number {
+  if (!minutesBehind || minutesBehind <= 0) return 0;
+  return Math.min(PLAN_GAP_BONUS_CAP, minutesBehind * PLAN_GAP_BONUS_PER_MINUTE);
+}
+
+/**
+ * Poids du bonus de rentrée MP dans `urgencyScore` (Sprint « rentrée MP »,
+ * recalibré Sprint « Mastery Engine ») — exporté pour que
+ * lib/mp-readiness.ts (qui décide QUELS exercices méritent ce bonus) n'ait
+ * pas à redéfinir cette valeur séparément.
+ *
+ * Volontairement modeste, sous `DEADLINE_BONUS_CAP` (25) ET assez bas pour
+ * ne jamais faire basculer un cas limite : un exercice de rentrée fragile
+ * (`failureBonus`, jusqu'à 45, déjà établi ailleurs) peut légitimement
+ * rivaliser avec une échéance proche même SANS ce bonus — un audit E2E réel
+ * (échéance à J+1 face à une notion de rentrée avec un seul échec récent) a
+ * montré qu'un poids de 16 suffisait, dans ce cas précis, à faire basculer
+ * le classement en faveur de la notion de rentrée (133 contre 132,2),
+ * contredisant le brief (« échéance urgente + fragilité → priorité
+ * existante respectée »). Ramené à 8 : la marge redevient nette dans ce
+ * même scénario, sans pour autant priver `computeMpReadinessBonus` de son
+ * rôle (faire remonter une priorité de rentrée quand RIEN d'autre n'est
+ * urgent, brief État A).
+ */
+export const MP_READINESS_BONUS = 8;
+
+function urgencyScore(
+  exercise: Exercise,
+  minutesSpent: number,
+  attempts: WorkSession[],
+  now: Date,
+  deadlineSignal?: ChapterDeadlineSignal,
+  planGapMinutes?: number,
+  mpReadinessInfo?: MpReadinessBonusInfo
+): number {
   const masteryGap = (100 - exercise.mastery) * 0.6; // 0 (maîtrisé à 100%) à 60 (maîtrisé à 0%)
   const priorityWeight = exercise.priority * 8; // 8 à 40
   const statusWeight = STATUS_WEIGHT[exercise.status]; // -30 à 40
@@ -210,7 +397,13 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
   // autres termes — un exercice presque fini mérite d'être terminé, mais pas
   // au point d'éclipser une priorité élevée ou une maîtrise très faible.
   const momentumBonus = Math.min(minutesSpent, 60) * 0.3; // 0 à 18
-  const staleBonus = staleMasteryBonus(exercise, now); // 0 à 30, voir staleMasteryBonus
+  // Généralise l'ancien staleBonus fixe (21 jours, uniquement "maîtrisé") :
+  // intervalle adaptatif fondé sur la série de réussites réelle (voir
+  // `revisionUrgencyFromAttempts`). Remplace `staleMasteryBonus` dans la
+  // somme plutôt que de s'y ajouter — les deux mesuraient le même
+  // phénomène (retard de révision), les additionner aurait compté ce
+  // phénomène deux fois.
+  const revisionBonus = revisionUrgencyFromAttempts(exercise, attempts, now); // 0 à 30
   // Léger coup de pouce, jamais déterminant seul (comparable à neverWorkedBonus) :
   // entre deux exercices par ailleurs comparables, celui marqué favori remonte
   // légèrement — mais un favori ne devient jamais éligible que par ce bonus
@@ -226,16 +419,29 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
   // critère d'exclusion, seulement un effet sur le tri), et d'une amplitude
   // comparable à favoriteBonus/momentumBonus, pas dominante.
   const successPenalty = Math.min(24, recentSuccessStreak(attempts) * 8); // 0 à 24
+  // Sprint Study OS Phase 4 : deux signaux additifs de plus, chacun plafonné
+  // indépendamment et nul par défaut (voir `chapterDeadlineBonus`/`planGapBonus`) —
+  // comportement strictement inchangé pour tout appelant qui ne les fournit pas.
+  const deadlineBonus = chapterDeadlineBonus(deadlineSignal); // 0 à 25
+  const planBonus = planGapBonus(planGapMinutes); // 0 à 20
+  // MP Readiness : bonus plat, volontairement sous `deadlineBonus`/`planBonus`
+  // à leur maximum (voir lib/mp-readiness.ts#MP_READINESS_BONUS) — une
+  // échéance réelle ou un vrai retard de plan restent prioritaires sur une
+  // simple priorité de rentrée (brief, États E/G).
+  const mpReadinessBonus = mpReadinessInfo ? MP_READINESS_BONUS : 0;
   return (
     masteryGap +
     priorityWeight +
     statusWeight +
     neverWorkedBonus +
     momentumBonus +
-    staleBonus +
+    revisionBonus +
     favoriteBonus +
     failureBonus -
-    successPenalty
+    successPenalty +
+    deadlineBonus +
+    planBonus +
+    mpReadinessBonus
   );
 }
 
@@ -314,6 +520,27 @@ export interface RecommendationOptions {
    * (panneau "À revoir" du Dashboard notamment).
    */
   availableMinutes?: number;
+  /**
+   * Échéances (DS/khôlle) proches, résolues par chapitre — voir
+   * lib/deadlines.ts#chapterDeadlineSignals. Omis : comportement strictement
+   * inchangé (aucun chapitre n'est jamais bonifié), pour ne rien casser chez
+   * les appelants existants qui n'ont pas connaissance des échéances.
+   */
+  chapterDeadlines?: Map<string, ChapterDeadlineSignal>;
+  /**
+   * Retard (minutes) sur le plan hebdomadaire, par matière — voir
+   * lib/weekly-plan.ts#planGapMinutesBySubject. Omis : comportement
+   * strictement inchangé.
+   */
+  subjectPlanGap?: Partial<Record<Subject, number>>;
+  /**
+   * Bonus « rentrée MP », par exercice — voir
+   * lib/mp-readiness.ts#computeMpReadinessBonus. Omis : comportement
+   * strictement inchangé (aucun exercice n'est jamais bonifié), pour ne rien
+   * casser chez les appelants existants qui n'ont pas connaissance des
+   * priorités de rentrée.
+   */
+  mpReadinessBonus?: Map<string, MpReadinessBonusInfo>;
 }
 
 /**
@@ -380,9 +607,16 @@ export function recommendExercises(
     if (exercise.archived) continue;
     const minutesSpent = minutesByExercise.get(exercise.id) ?? 0;
     const attempts = attemptsWithResult(sessions, exercise.id);
-    const reasons = evaluateExercise(exercise, minutesSpent, attempts, now);
+    const deadlineSignal = exercise.chapter_id ? options.chapterDeadlines?.get(exercise.chapter_id) : undefined;
+    const planGapMinutes = options.subjectPlanGap?.[exercise.subject];
+    const mpReadinessInfo = options.mpReadinessBonus?.get(exercise.id);
+    const reasons = evaluateExercise(exercise, minutesSpent, attempts, now, deadlineSignal, planGapMinutes, mpReadinessInfo);
     if (reasons.length === 0) continue;
-    candidates.push({ exercise, score: urgencyScore(exercise, minutesSpent, attempts, now), reasons });
+    candidates.push({
+      exercise,
+      score: urgencyScore(exercise, minutesSpent, attempts, now, deadlineSignal, planGapMinutes, mpReadinessInfo),
+      reasons,
+    });
   }
   candidates.sort((a, b) => b.score - a.score);
   const diversified = diversifyByChapter(candidates);
@@ -401,8 +635,20 @@ export interface ExerciseBankStats {
   neverWorkedCount: number;
 }
 
-/** Tableau de bord de la banque d'exercices — agrégats simples, tous dérivés des mêmes règles que `recommendExercises` (voir `evaluateExercise`). */
-export function computeExerciseBankStats(exercises: Exercise[], sessions: WorkSession[], now: Date = new Date()): ExerciseBankStats {
+/**
+ * Tableau de bord de la banque d'exercices — agrégats simples, tous dérivés
+ * des mêmes règles que `recommendExercises` (voir `evaluateExercise`).
+ * `options` (Sprint Study OS Phase 4, optionnel, `{}` par défaut — comportement
+ * strictement inchangé sans lui) : mêmes signaux échéance/plan hebdomadaire
+ * que `recommendExercises`, pour que `toReviewCount` ne dise jamais "rien à
+ * signaler" alors qu'un DS proche rendrait un exercice éligible.
+ */
+export function computeExerciseBankStats(
+  exercises: Exercise[],
+  sessions: WorkSession[],
+  now: Date = new Date(),
+  options: Pick<RecommendationOptions, "chapterDeadlines" | "subjectPlanGap" | "mpReadinessBonus"> = {}
+): ExerciseBankStats {
   const minutesByExercise = minutesByExerciseMap(sessions);
   const active = exercises.filter((exercise) => !exercise.archived);
 
@@ -414,7 +660,10 @@ export function computeExerciseBankStats(exercises: Exercise[], sessions: WorkSe
   for (const exercise of active) {
     const minutesSpent = minutesByExercise.get(exercise.id) ?? 0;
     const attempts = attemptsWithResult(sessions, exercise.id);
-    if (evaluateExercise(exercise, minutesSpent, attempts, now).length > 0) toReviewCount++;
+    const deadlineSignal = exercise.chapter_id ? options.chapterDeadlines?.get(exercise.chapter_id) : undefined;
+    const planGapMinutes = options.subjectPlanGap?.[exercise.subject];
+    const mpReadinessInfo = options.mpReadinessBonus?.get(exercise.id);
+    if (evaluateExercise(exercise, minutesSpent, attempts, now, deadlineSignal, planGapMinutes, mpReadinessInfo).length > 0) toReviewCount++;
     if (isNeverWorked(exercise, minutesSpent)) neverWorkedCount++;
     masterySum += exercise.mastery;
     prioritySum += exercise.priority;

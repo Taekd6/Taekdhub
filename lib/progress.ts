@@ -56,25 +56,36 @@ export interface SubjectProgress {
 }
 
 /**
- * Progression par matière, dans l'ordre de `lib/study.ts#subjects`.
+ * Progression par matière, uniquement les matières avec au moins un exercice
+ * actif (même principe que `progressByChapter` ci-dessous, et que
+ * `lib/readiness.ts#computeReadinessBySubject`) — `lib/study.ts#subjects`
+ * énumère les matières que l'app sait représenter, pas celles qui ont
+ * réellement du contenu aujourd'hui ; une matière sans aucun exercice n'a
+ * rien à montrer ici, jamais une ligne à 0/0. Purement dérivé de la banque
+ * réelle : dès qu'une matière obtient du contenu, elle apparaît d'elle-même,
+ * sans liste figée à maintenir.
+ *
  * Source unique pour le Dashboard ET la page Progression (avant le Sprint
- * 3B, ce calcul était dupliqué dans les deux composants).
+ * 3B, ce calcul était dupliqué dans les deux composants). Ordre : celui de
+ * `lib/study.ts#subjects` parmi les matières retenues.
  */
 export function computeProgressBySubject(exercises: Exercise[]): SubjectProgress[] {
   const active = exercises.filter((exercise) => !exercise.archived);
-  return subjects.map((subject) => {
-    const subjectExercises = active.filter((exercise) => exercise.subject === subject);
-    const mastered = subjectExercises.filter((exercise) => exercise.status === "maîtrisé").length;
-    return {
-      subject,
-      total: subjectExercises.length,
-      mastered,
-      completionRate: subjectExercises.length ? Math.round((mastered / subjectExercises.length) * 100) : 0,
-      averageMastery: subjectExercises.length
-        ? Math.round(subjectExercises.reduce((sum, exercise) => sum + exercise.mastery, 0) / subjectExercises.length)
-        : 0,
-    };
-  });
+  return subjects
+    .map((subject) => {
+      const subjectExercises = active.filter((exercise) => exercise.subject === subject);
+      const mastered = subjectExercises.filter((exercise) => exercise.status === "maîtrisé").length;
+      return {
+        subject,
+        total: subjectExercises.length,
+        mastered,
+        completionRate: subjectExercises.length ? Math.round((mastered / subjectExercises.length) * 100) : 0,
+        averageMastery: subjectExercises.length
+          ? Math.round(subjectExercises.reduce((sum, exercise) => sum + exercise.mastery, 0) / subjectExercises.length)
+          : 0,
+      };
+    })
+    .filter((entry) => entry.total > 0);
 }
 
 export interface MasteryBucket {

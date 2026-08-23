@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { localData, normalizeDeadline, normalizePreferences, normalizeSession, normalizeWeeklyPlan, validateBackupPayload } from "@/lib/storage";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -133,5 +133,258 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     expect(prefs.accent).toBe("#6366f1");
     expect(prefs.themeMode).toBe("system");
     expect(prefs.weeklyGoalMinutes).toBe(300);
+  });
+});
+
+/**
+ * Sprint planification hebdomadaire adaptative — `subjectDeadlines` doit
+ * suivre exactement les mêmes garanties de rétrocompatibilité que
+ * `weeklyGoalMinutes`/`themeMode` ci-dessus : absent → `{}`, jamais une
+ * exception, jamais une clé/valeur inventée à partir de rien.
+ */
+describe("normalizePreferences — subjectDeadlines (rétrocompatibilité)", () => {
+  it("absence de subjectDeadlines (préférence vide) → {}", () => {
+    expect(normalizePreferences({})).toMatchObject({ subjectDeadlines: {} });
+  });
+
+  it("objet vide → {}", () => {
+    expect(normalizePreferences({ subjectDeadlines: {} })).toMatchObject({ subjectDeadlines: {} });
+  });
+
+  it("une échéance valide pour une matière est conservée telle quelle", () => {
+    const prefs = normalizePreferences({ subjectDeadlines: { Physique: "2026-09-21" } });
+    expect(prefs.subjectDeadlines).toEqual({ Physique: "2026-09-21" });
+  });
+
+  it("plusieurs échéances, pour plusieurs matières, sont toutes conservées", () => {
+    const prefs = normalizePreferences({
+      subjectDeadlines: { Physique: "2026-09-21", Mathématiques: "2026-09-25", Chimie: "2026-09-18" },
+    });
+    expect(prefs.subjectDeadlines).toEqual({ Physique: "2026-09-21", Mathématiques: "2026-09-25", Chimie: "2026-09-18" });
+  });
+
+  it("une valeur invalide (pas une string, ou vide) est écartée silencieusement, sans planter", () => {
+    expect(normalizePreferences({ subjectDeadlines: { Physique: 42, Chimie: "", Mathématiques: null } }).subjectDeadlines).toEqual({});
+  });
+
+  it("une clé qui n'est pas une matière connue est ignorée (jamais injectée telle quelle)", () => {
+    const prefs = normalizePreferences({ subjectDeadlines: { "Matière Fantôme": "2026-09-21", Physique: "2026-09-21" } });
+    expect(prefs.subjectDeadlines).toEqual({ Physique: "2026-09-21" });
+  });
+
+  it("subjectDeadlines n'étant pas un objet (corrompu) retombe sur {} sans planter", () => {
+    expect(normalizePreferences({ subjectDeadlines: "pas un objet" }).subjectDeadlines).toEqual({});
+    expect(normalizePreferences({ subjectDeadlines: null }).subjectDeadlines).toEqual({});
+    expect(normalizePreferences({ subjectDeadlines: 42 }).subjectDeadlines).toEqual({});
+  });
+
+  it("migration d'une ancienne préférence sans subjectDeadlines : reste valide, {} par défaut, rien d'autre inventé", () => {
+    const legacy = { displayName: "Ancien utilisateur", dailyGoalMinutes: 120, weeklyGoalMinutes: 300, contestDate: "", accent: "#6366f1" };
+    const prefs = normalizePreferences(legacy);
+    expect(prefs.subjectDeadlines).toEqual({});
+    expect(prefs.displayName).toBe("Ancien utilisateur");
+  });
+
+  it("une date syntaxiquement invalide mais bien une string non vide est conservée telle quelle — même convention que contestDate : la validité de la date se vérifie à la lecture (lib/plan.ts#daysUntilContest), jamais ici", () => {
+    const prefs = normalizePreferences({ subjectDeadlines: { Physique: "pas une date" } });
+    expect(prefs.subjectDeadlines).toEqual({ Physique: "pas une date" });
+  });
+});
+
+/**
+ * Sprint Study OS (Aujourd'hui) — `dailySubjectGoals`/`dailyExerciseGoal`
+ * suivent exactement les mêmes garanties de rétrocompatibilité que
+ * `subjectDeadlines` ci-dessus : absent → valeur par défaut, jamais une
+ * exception, jamais une valeur inventée à partir de rien.
+ */
+describe("normalizePreferences — dailySubjectGoals / dailyExerciseGoal", () => {
+  it("absence des deux champs (préférence vide) → {} / null", () => {
+    const prefs = normalizePreferences({});
+    expect(prefs.dailySubjectGoals).toEqual({});
+    expect(prefs.dailyExerciseGoal).toBeNull();
+  });
+
+  it("un objectif par matière valide (nombre positif) est conservé", () => {
+    const prefs = normalizePreferences({ dailySubjectGoals: { Mathématiques: 90, Physique: 60 } });
+    expect(prefs.dailySubjectGoals).toEqual({ Mathématiques: 90, Physique: 60 });
+  });
+
+  it("une valeur non numérique, nulle, ou ≤ 0 est écartée silencieusement, sans planter", () => {
+    expect(normalizePreferences({ dailySubjectGoals: { Physique: "90", Chimie: 0, Mathématiques: -5, Anglais: null } }).dailySubjectGoals).toEqual({});
+  });
+
+  it("une clé qui n'est pas une matière connue est ignorée", () => {
+    const prefs = normalizePreferences({ dailySubjectGoals: { "Matière Fantôme": 60, Physique: 60 } });
+    expect(prefs.dailySubjectGoals).toEqual({ Physique: 60 });
+  });
+
+  it("dailySubjectGoals corrompu (pas un objet) retombe sur {} sans planter", () => {
+    expect(normalizePreferences({ dailySubjectGoals: "pas un objet" }).dailySubjectGoals).toEqual({});
+    expect(normalizePreferences({ dailySubjectGoals: null }).dailySubjectGoals).toEqual({});
+  });
+
+  it("dailyExerciseGoal valide (nombre positif) est conservé, arrondi", () => {
+    expect(normalizePreferences({ dailyExerciseGoal: 5 }).dailyExerciseGoal).toBe(5);
+    expect(normalizePreferences({ dailyExerciseGoal: 5.6 }).dailyExerciseGoal).toBe(6);
+  });
+
+  it("dailyExerciseGoal invalide (0, négatif, non numérique) retombe sur null — jamais 0 (ambigu avec \"objectif atteint d'office\")", () => {
+    expect(normalizePreferences({ dailyExerciseGoal: 0 }).dailyExerciseGoal).toBeNull();
+    expect(normalizePreferences({ dailyExerciseGoal: -3 }).dailyExerciseGoal).toBeNull();
+    expect(normalizePreferences({ dailyExerciseGoal: "5" }).dailyExerciseGoal).toBeNull();
+  });
+
+  it("migration d'une ancienne préférence sans ces champs : reste valide, défauts appliqués, rien d'autre inventé", () => {
+    const legacy = { displayName: "Ancien utilisateur", dailyGoalMinutes: 120, weeklyGoalMinutes: 300, contestDate: "", accent: "#6366f1" };
+    const prefs = normalizePreferences(legacy);
+    expect(prefs.dailySubjectGoals).toEqual({});
+    expect(prefs.dailyExerciseGoal).toBeNull();
+    expect(prefs.displayName).toBe("Ancien utilisateur");
+  });
+});
+
+/**
+ * Robustesse stockage (audit produit) : une écriture `localStorage` qui
+ * échoue (quota dépassé, navigation privée…) ne doit jamais faire planter
+ * l'appelant — voir `lib/storage.ts#safeSetItem`, seul point d'écriture.
+ * `localStorage` est stubbé ici (absent de l'environnement de test Node,
+ * voir vitest.config.ts) pour simuler les deux issues possibles.
+ */
+describe("localData.save* — robustesse d'écriture", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("renvoie true et persiste quand l'écriture réussit", () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      setItem: (key: string, value: string) => store.set(key, value),
+      getItem: (key: string) => store.get(key) ?? null,
+    });
+    expect(localData.saveSessions([])).toBe(true);
+    expect(store.get("prepahub:sessions")).toBe("[]");
+  });
+
+  it("renvoie false sans jeter quand setItem échoue (quota dépassé)", () => {
+    vi.stubGlobal("localStorage", {
+      setItem: () => {
+        throw new DOMException("The quota has been exceeded.", "QuotaExceededError");
+      },
+      getItem: () => null,
+    });
+    expect(() => localData.saveExercises([])).not.toThrow();
+    expect(localData.saveExercises([])).toBe(false);
+  });
+
+  it("le même échec s'applique à chaque type de donnée (chapitres, préférences)", () => {
+    vi.stubGlobal("localStorage", {
+      setItem: () => {
+        throw new Error("stockage indisponible");
+      },
+      getItem: () => null,
+    });
+    expect(localData.saveChapters([])).toBe(false);
+    expect(localData.savePreferences(normalizePreferences({}))).toBe(false);
+  });
+});
+
+/**
+ * Sprint Study OS Phase 4 ("DS et khôlles") — `normalizeDeadline` doit
+ * suivre les mêmes garanties défensives que `normalizeChapter`/`normalizeSession` :
+ * jamais planter, un champ manquant/corrompu retombe sur une valeur sûre ou
+ * écarte l'entrée entière si son identité (id/date/titre) est irrécupérable.
+ */
+describe("normalizeDeadline", () => {
+  function makeRawDeadline(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+    return { id: "d-1", type: "DS", subject: "Mathématiques", date: "2026-08-28", title: "DS de rentrée", chapterIds: ["c-1", "c-2"], ...overrides };
+  }
+
+  it("conserve une échéance valide telle quelle", () => {
+    expect(normalizeDeadline(makeRawDeadline())).toEqual({
+      id: "d-1",
+      type: "DS",
+      subject: "Mathématiques",
+      date: "2026-08-28",
+      title: "DS de rentrée",
+      chapterIds: ["c-1", "c-2"],
+    });
+  });
+
+  it("écarte l'entrée si id, date ou titre est manquant/invalide", () => {
+    expect(normalizeDeadline(makeRawDeadline({ id: 42 }))).toBeNull();
+    expect(normalizeDeadline(makeRawDeadline({ date: null }))).toBeNull();
+    expect(normalizeDeadline(makeRawDeadline({ title: "" }))).toBeNull();
+    expect(normalizeDeadline(makeRawDeadline({ title: "   " }))).toBeNull();
+  });
+
+  it("un type invalide ou corrompu retombe sur \"autre\", sans écarter l'échéance", () => {
+    expect(normalizeDeadline(makeRawDeadline({ type: "examen" }))?.type).toBe("autre");
+    expect(normalizeDeadline(makeRawDeadline({ type: null }))?.type).toBe("autre");
+  });
+
+  it("conserve chacun des trois types valides", () => {
+    expect(normalizeDeadline(makeRawDeadline({ type: "DS" }))?.type).toBe("DS");
+    expect(normalizeDeadline(makeRawDeadline({ type: "khôlle" }))?.type).toBe("khôlle");
+    expect(normalizeDeadline(makeRawDeadline({ type: "autre" }))?.type).toBe("autre");
+  });
+
+  it("chapterIds corrompu (pas un tableau, ou contenant des non-strings) est filtré, jamais toute l'échéance écartée", () => {
+    expect(normalizeDeadline(makeRawDeadline({ chapterIds: "pas un tableau" }))?.chapterIds).toEqual([]);
+    expect(normalizeDeadline(makeRawDeadline({ chapterIds: ["c-1", 42, null, "c-2"] }))?.chapterIds).toEqual(["c-1", "c-2"]);
+    expect(normalizeDeadline(makeRawDeadline({ chapterIds: undefined }))?.chapterIds).toEqual([]);
+  });
+
+  it("subject invalide/corrompu retombe sur Mathématiques (même repli que migrateSubject)", () => {
+    expect(normalizeDeadline(makeRawDeadline({ subject: "Matière Fantôme" }))?.subject).toBe("Mathématiques");
+  });
+
+  it("round-trip export → JSON → import intact", () => {
+    const deadline = normalizeDeadline(makeRawDeadline());
+    const roundTripped = JSON.parse(JSON.stringify([deadline]));
+    expect(roundTripped.map(normalizeDeadline)).toEqual([deadline]);
+  });
+});
+
+/**
+ * Sprint Study OS Phase 4 ("planification hebdomadaire") — `normalizeWeeklyPlan`
+ * doit toujours renvoyer EXACTEMENT 7 jours (0-6), quelle que soit la
+ * corruption des données brutes (tableau vide, jours manquants, dupliqués,
+ * dans le désordre, ou pas un tableau du tout).
+ */
+describe("normalizeWeeklyPlan", () => {
+  it("tableau vide ou absent → 7 jours, tous avec subjectMinutes: {}", () => {
+    for (const raw of [[], null, undefined, "pas un tableau"]) {
+      const plan = normalizeWeeklyPlan(raw);
+      expect(plan).toHaveLength(7);
+      expect(plan.every((day) => Object.keys(day.subjectMinutes).length === 0)).toBe(true);
+      expect(plan.map((day) => day.day)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    }
+  });
+
+  it("conserve les minutes par matière pour un jour valide", () => {
+    const plan = normalizeWeeklyPlan([{ day: 0, subjectMinutes: { Mathématiques: 90, Physique: 60 } }]);
+    expect(plan[0]).toEqual({ day: 0, subjectMinutes: { Mathématiques: 90, Physique: 60 } });
+    // Les 6 autres jours restent vides, jamais devinés à partir du lundi.
+    expect(plan.slice(1).every((day) => Object.keys(day.subjectMinutes).length === 0)).toBe(true);
+  });
+
+  it("un jour hors 0-6, dupliqué, ou avec un index invalide est écarté proprement", () => {
+    const plan = normalizeWeeklyPlan([
+      { day: 9, subjectMinutes: { Mathématiques: 60 } },
+      { day: 0, subjectMinutes: { Mathématiques: 30 } },
+      { day: 0, subjectMinutes: { Mathématiques: 45 } }, // doublon : le dernier gagne
+      { day: -1, subjectMinutes: { Mathématiques: 60 } },
+    ]);
+    expect(plan).toHaveLength(7);
+    expect(plan[0].subjectMinutes).toEqual({ Mathématiques: 45 });
+  });
+
+  it("une valeur de minutes non numérique, nulle, ou ≤ 0 est écartée silencieusement", () => {
+    const plan = normalizeWeeklyPlan([{ day: 1, subjectMinutes: { Physique: "60", Chimie: 0, Mathématiques: -5 } }]);
+    expect(plan[1].subjectMinutes).toEqual({});
+  });
+
+  it("round-trip export → JSON → import intact", () => {
+    const plan = normalizeWeeklyPlan([{ day: 2, subjectMinutes: { Mathématiques: 90 } }]);
+    const roundTripped = JSON.parse(JSON.stringify(plan));
+    expect(normalizeWeeklyPlan(roundTripped)).toEqual(plan);
   });
 });

@@ -172,7 +172,7 @@ export function ExerciseImport({
           <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
             {rows.slice(0, 50).map((row) => (
               <div key={row.index} className="flex items-center gap-2.5 rounded-lg border border-hairline/[0.06] px-3 py-2 text-sm">
-                <CheckCircle2 size={14} className="shrink-0 text-accent" />
+                <CheckCircle2 size={14} className="shrink-0 text-accent-text" />
                 <span className="min-w-0 flex-1 truncate font-medium text-zinc-100">{row.input.title}</span>
                 <Badge className="shrink-0">{row.input.subject}</Badge>
                 {row.input.competition && (

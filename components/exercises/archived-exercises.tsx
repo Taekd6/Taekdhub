@@ -18,7 +18,7 @@ export function ArchivedExercises({ exercises, onRestore }: { exercises: Exercis
   if (!exercises.length) {
     return (
       <Card className="px-6 py-16 text-center">
-        <Archive className="mx-auto text-accent" />
+        <Archive className="mx-auto text-accent-text" />
         <p className="mt-4 font-semibold">Aucun exercice archivé.</p>
         <p className="mt-1 text-sm text-zinc-500">Les exercices que tu archives depuis la banque apparaîtront ici.</p>
       </Card>

@@ -1,0 +1,8 @@
+{
+  "source_filename": "cahier_de_calcul(1).pdf",
+  "pages": 119,
+  "sha256": "2e4597642bf1e658ed5ef4b7e0639de0e863730e48c8b4bfd475d89e453aec87",
+  "extraction": "pdftotext -layout",
+  "source_note": "Exact user-provided PDF; do not substitute an Internet version.",
+  "transcription_file": "cahier-de-calcul-professeur-source.md"
+}

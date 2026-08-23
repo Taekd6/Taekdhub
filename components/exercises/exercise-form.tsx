@@ -34,6 +34,8 @@ export interface NewExerciseInput {
   note: string;
   hints: string[];
   correction: string;
+  /** Réponse brute — voir la doc du champ `answer` sur `Exercise` (lib/supabase/types.ts). Optionnel : absent du formulaire manuel, comme `competition`/`programmeLevel`/etc. ci-dessous — seul le pipeline d'import le renseigne aujourd'hui. */
+  answer?: string | null;
   year?: number | null;
   competition?: string | null;
   programmeLevel?: ProgrammeLevel | null;

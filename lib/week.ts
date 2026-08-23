@@ -1,6 +1,6 @@
 import { computeProgressBySubject } from "@/lib/progress";
-import { subjects, totalSeconds } from "@/lib/study";
-import { minutesToSeconds } from "@/lib/utils";
+import { dayKey, subjects, totalSeconds } from "@/lib/study";
+import { minutesToSeconds, secondsToWholeMinutes } from "@/lib/utils";
 import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -115,6 +115,35 @@ export function neglectedSubjects(exercises: Exercise[], sessions: WorkSession[]
     .map(({ subject, pendingCount }) => ({ subject, pendingCount }));
 }
 
+export type WeeklyPace = "en avance" | "dans le rythme" | "à travailler";
+
+/**
+ * État du rythme hebdomadaire — compare la progression réelle à ce qui est
+ * "normal" pour le jour de la semaine actuel (ex. mercredi soir = ~3/7 de la
+ * semaine écoulée, donc ~43% de l'objectif est un rythme normal, pas un
+ * retard). Seuil de ±15 points volontairement large : évite de signaler "à
+ * travailler" pour un simple décalage d'un jour, qui n'a rien d'anormal.
+ *
+ * `null` avant mercredi (< 2 jours écoulés depuis lundi) — même garde que
+ * `neglectedSubjects` ci-dessus : trop tôt dans la semaine pour qu'un écart
+ * signifie quoi que ce soit, plutôt que d'inventer un jugement prématuré.
+ *
+ * Volontairement pas de version "objectif du jour" équivalente (Dashboard) :
+ * une journée n'a pas de repère horaire fiable dans les données disponibles
+ * (on ne sait pas à quelle heure l'utilisateur compte travailler), donc tout
+ * seuil serait arbitraire et risquerait un message culpabilisant à tort
+ * (ex. "en retard" à 9h du matin). L'objectif du jour garde son message
+ * binaire existant (atteint / reste X min).
+ */
+function computeWeeklyPace(progressPercent: number, daysElapsed: number): WeeklyPace | null {
+  if (daysElapsed < 2) return null;
+  const expectedPercent = Math.min(100, Math.round((Math.min(daysElapsed, 7) / 7) * 100));
+  const delta = progressPercent - expectedPercent;
+  if (delta >= 15) return "en avance";
+  if (delta <= -15) return "à travailler";
+  return "dans le rythme";
+}
+
 export interface WeeklySummary {
   totalSeconds: number;
   objectiveSeconds: number;
@@ -122,6 +151,8 @@ export interface WeeklySummary {
   progressPercent: number;
   bySubject: SubjectWeekTime[];
   neglected: NeglectedSubject[];
+  /** `null` tant qu'il est trop tôt dans la semaine pour juger (voir `computeWeeklyPace`). */
+  pace: WeeklyPace | null;
 }
 
 /**
@@ -136,15 +167,91 @@ export interface WeeklySummary {
  * jours de la semaine).
  */
 export function computeWeeklySummary(exercises: Exercise[], sessions: WorkSession[], weeklyGoalMinutes: number, now: Date = new Date()): WeeklySummary {
-  const bySubject = weeklyTimeBySubject(sessions, now);
-  const total = bySubject.reduce((sum, entry) => sum + entry.seconds, 0);
+  // Le temps total de la semaine reste calculé sur TOUTES les matières (y
+  // compris une matière sans exercice actif aujourd'hui mais qui aurait
+  // quand même une séance enregistrée — cas archive/suppression) : seul
+  // l'AFFICHAGE par matière (`bySubject` du résultat) doit être restreint
+  // aux matières qui ont réellement du contenu, pas le total.
+  const allBySubject = weeklyTimeBySubject(sessions, now);
+  const total = allBySubject.reduce((sum, entry) => sum + entry.seconds, 0);
+  // Filtre sur le CONTENU réel de la banque (`computeProgressBySubject`,
+  // déjà filtré), jamais sur `seconds > 0` : une matière avec des exercices
+  // mais 0 minute cette semaine doit rester visible (rien à signaler de
+  // spécial), seule une matière sans aucun exercice ne doit jamais
+  // apparaître ici.
+  const subjectsWithContent = new Set(computeProgressBySubject(exercises).map((entry) => entry.subject));
+  const bySubject = allBySubject.filter((entry) => subjectsWithContent.has(entry.subject));
   const objectiveSeconds = minutesToSeconds(weeklyGoalMinutes);
+  const progressPercent = objectiveSeconds ? Math.min(100, Math.round((total / objectiveSeconds) * 100)) : 0;
+  const daysElapsed = Math.floor((now.getTime() - startOfWeek(now).getTime()) / 86400000);
 
   return {
     totalSeconds: total,
     objectiveSeconds,
-    progressPercent: objectiveSeconds ? Math.min(100, Math.round((total / objectiveSeconds) * 100)) : 0,
+    progressPercent,
     bySubject,
     neglected: neglectedSubjects(exercises, sessions, now),
+    pace: computeWeeklyPace(progressPercent, daysElapsed),
   };
+}
+
+export interface WeeklyDayBar {
+  /** Jour civil local (lib/study.ts#dayKey) — même convention que le reste de l'app, pas un jour UTC. */
+  dayKey: string;
+  /** Libellé court à 3 lettres pour l'affichage compact — Lun/Mar/Mer/Jeu/Ven/Sam/Dim, dans cet ordre. */
+  label: string;
+  minutes: number;
+  isToday: boolean;
+  /** Jour pas encore atteint dans la semaine — jamais de jugement porté dessus (voir `met`). */
+  isFuture: boolean;
+  /** Objectif quotidien atteint ce jour-là — toujours faux pour un jour futur (0 minute travaillée n'y est pas un manquement). */
+  met: boolean;
+}
+
+const WEEKDAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+export interface WeekDayRef {
+  dayKey: string;
+  label: string;
+  /** 0 = lundi … 6 = dimanche — même convention que `lib/storage.ts#WeeklyPlanDay`. */
+  index: number;
+  isToday: boolean;
+  isFuture: boolean;
+}
+
+/**
+ * Les 7 jours (lundi → dimanche) de la semaine CIVILE contenant `now`, avec
+ * leur `dayKey`/libellé/statut temporel — brique commune à
+ * `computeWeeklyDayBars` ci-dessous ET à `lib/weekly-plan.ts#computeWeeklyPlanRows`
+ * (Sprint Study OS Phase 4), pour ne jamais dupliquer ce découpage en 7
+ * jours : un seul endroit décide "quel jour est aujourd'hui/futur".
+ */
+export function weekDayRefs(now: Date = new Date()): WeekDayRef[] {
+  const monday = startOfWeek(now);
+  const todayKey = dayKey(now);
+  return WEEKDAY_LABELS.map((label, index) => {
+    const date = new Date(monday);
+    date.setDate(date.getDate() + index);
+    const key = dayKey(date);
+    return { dayKey: key, label, index, isToday: key === todayKey, isFuture: key > todayKey };
+  });
+}
+
+/**
+ * Vue "Lun → Dim" de la semaine en cours (Sprint Study OS — "Est-ce que je
+ * travaille vraiment toutes mes matières ?" généralisé à "est-ce que je
+ * travaille régulièrement ?"). Un seul passage sur `sessions` par jour,
+ * regroupées par `dayKey` — même découpage que `groupSessionsByDay`
+ * (lib/history.ts), mais sur les 7 jours de la semaine CIVILE (lundi →
+ * dimanche, voir `startOfWeek`) plutôt que les jours les plus récents.
+ *
+ * Volontairement indépendant de `computeWeeklySummary` ci-dessus : aucun
+ * nouveau total, seulement la RÉPARTITION jour par jour d'un temps déjà
+ * comptabilisé ailleurs.
+ */
+export function computeWeeklyDayBars(sessions: WorkSession[], dailyGoalMinutes: number, now: Date = new Date()): WeeklyDayBar[] {
+  return weekDayRefs(now).map((ref) => {
+    const minutes = secondsToWholeMinutes(totalSeconds(sessions.filter((session) => dayKey(session.started_at) === ref.dayKey)));
+    return { dayKey: ref.dayKey, label: ref.label, minutes, isToday: ref.isToday, isFuture: ref.isFuture, met: dailyGoalMinutes > 0 && minutes >= dailyGoalMinutes };
+  });
 }

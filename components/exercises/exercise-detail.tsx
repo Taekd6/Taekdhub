@@ -34,6 +34,7 @@ export function ExerciseDetail({
   onRemoveChapter: (id: string) => void;
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
+  const [answerVisible, setAnswerVisible] = useState(false);
   const [hintCount, setHintCount] = useState(0);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
@@ -53,7 +54,17 @@ export function ExerciseDetail({
           className="mt-2 min-h-32"
           placeholder={"Énoncé complet — maths en LaTeX : $x^2$ inline, $$\\int_0^1 f$$ en bloc"}
         />
-        {item.statement.trim() && (
+        {/* Distingue "cet exercice n'a simplement jamais eu d'énoncé enregistré"
+            d'un champ qui semblerait cassé — même principe déjà appliqué en
+            Focus (voir focus-view.tsx), qui affiche ce même message plutôt
+            qu'un vide silencieux. `(item.statement || "")` : garde défensive
+            alignée sur celle du `value` du Textarea ci-dessus, au cas où une
+            donnée corrompue (édition manuelle du localStorage) présenterait
+            `statement` à `null`/`undefined` malgré le type. */}
+        {!(item.statement || "").trim() && (
+          <p className="mt-2 text-2xs text-zinc-600">Aucun énoncé enregistré pour cet exercice — complète-le ici si tu l&apos;as sous la main.</p>
+        )}
+        {(item.statement || "").trim() && (
           <div className="mt-3 rounded-xl border border-hairline/[0.08] bg-hairline/[0.035] p-3 text-sm leading-6 text-zinc-300">
             <p className="mb-1 text-2xs uppercase tracking-wide text-zinc-600">Aperçu</p>
             <RichMath text={item.statement} />
@@ -193,9 +204,22 @@ export function ExerciseDetail({
           </div>
         ))}
         {hintCount < item.hints.length && (
-          <Button variant="ghost" onClick={() => setHintCount((count) => count + 1)} className="text-accent">
+          <Button variant="ghost" onClick={() => setHintCount((count) => count + 1)} className="text-accent-text">
             Afficher l&apos;indice {hintCount + 1}
           </Button>
+        )}
+        {item.answer && (
+          <div>
+            <Button variant="ghost" onClick={() => setAnswerVisible((value) => !value)}>
+              {answerVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+              {answerVisible ? "Masquer la réponse" : "Afficher la réponse"}
+            </Button>
+            {answerVisible && (
+              <div className="mt-3 rounded-xl border border-hairline/[0.08] bg-hairline/[0.035] p-3 text-sm leading-6 text-zinc-300">
+                <RichMath text={item.answer} />
+              </div>
+            )}
+          </div>
         )}
         {item.correction && (
           <div>

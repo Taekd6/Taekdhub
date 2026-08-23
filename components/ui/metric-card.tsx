@@ -31,7 +31,7 @@ export function MetricCard({
         <div className="flex items-start justify-between">
           <p className="text-sm text-zinc-400">{label}</p>
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent/10">
-            <Icon size={16} className="text-accent" />
+            <Icon size={16} className="text-accent-text" />
           </div>
         </div>
         <p className="mt-6 text-2xl font-semibold tracking-tight">{value}</p>

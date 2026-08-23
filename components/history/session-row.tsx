@@ -51,7 +51,7 @@ export function SessionRow({
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {resultBadge && <Badge variant={resultBadge.variant}>{resultBadge.label}</Badge>}
-        <p className="font-semibold tabular-nums text-accent">{formatDuration(session.duration_seconds)}</p>
+        <p className="font-semibold tabular-nums text-accent-text">{formatDuration(session.duration_seconds)}</p>
       </div>
     </motion.article>
   );

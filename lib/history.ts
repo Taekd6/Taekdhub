@@ -69,6 +69,39 @@ export function summarizeSessions(sessions: WorkSession[]): HistorySummary {
   };
 }
 
+export interface HistoryDayGroup {
+  /** Clé de jour (voir lib/study.ts#dayKey) — identifiant stable pour une `key` React. */
+  dateKey: string;
+  /** Même libellé que "Activité récente" du Dashboard (voir `dayLabel` ci-dessus) — une seule définition de "Aujourd'hui"/"Hier"/jour de la semaine dans tout le produit. */
+  label: string;
+  sessions: WorkSession[];
+}
+
+/**
+ * Regroupe des séances par jour civil (Sprint poste de pilotage) — répond
+ * directement à "sur quoi ai-je travaillé mardi ?", qu'une simple liste
+ * chronologique plate ne permet pas de voir d'un coup d'œil. Aucune nouvelle
+ * donnée : uniquement `started_at`, déjà présent sur chaque `WorkSession`.
+ *
+ * Suppose `sessions` déjà trié (plus récent en premier, comme le fait
+ * `SessionHistory` avant d'appeler cette fonction) : `Map` conserve l'ordre
+ * d'insertion, donc les groupes ressortent dans le même ordre sans second tri.
+ */
+export function groupSessionsByDay(sessions: WorkSession[], now: Date = new Date()): HistoryDayGroup[] {
+  const groups = new Map<string, WorkSession[]>();
+  for (const session of sessions) {
+    const key = dayKey(session.started_at);
+    const group = groups.get(key);
+    if (group) group.push(session);
+    else groups.set(key, [session]);
+  }
+  return Array.from(groups.entries()).map(([key, groupSessions]) => ({
+    dateKey: key,
+    label: dayLabel(key, now),
+    sessions: groupSessions,
+  }));
+}
+
 /** Séances liées à un exercice donné, la plus récente d'abord — pour le lien "exercice → historique" (ExerciseDetail). */
 export function sessionsForExercise(sessions: WorkSession[], exerciseId: string): WorkSession[] {
   return sessions

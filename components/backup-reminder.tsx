@@ -46,7 +46,7 @@ export function BackupReminder() {
         <Button size="sm" variant="secondary" onClick={handleExport}>
           <Download size={14} /> Exporter maintenant
         </Button>
-        <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Ignorer le rappel" onClick={() => setDismissed(true)}>
+        <Button size="icon" variant="ghost" aria-label="Ignorer le rappel" onClick={() => setDismissed(true)}>
           <X size={14} />
         </Button>
       </div>

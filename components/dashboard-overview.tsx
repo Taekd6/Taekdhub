@@ -10,26 +10,38 @@ import {
   BookOpenCheck,
   CalendarClock,
   CalendarRange,
+  Check,
+  Circle,
   Clock3,
+  Compass,
   Flag,
   Flame,
   GraduationCap,
   History as HistoryIcon,
   ListChecks,
+  ListPlus,
   ListTodo,
   Sparkles,
   Target,
   Trophy,
+  X,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
+import { ResumeBanner } from "@/components/resume-banner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { WhyThisExercise } from "@/components/exercises/why-this-exercise";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { useResumableFocus } from "@/hooks/use-resumable-focus";
 import { cn } from "@/lib/cn";
+import { computeDailyObjectiveBreakdown } from "@/lib/daily-goals";
+import { computeDayFlow } from "@/lib/day-flow";
+import { chapterDeadlineSignals, nearestDeadlineForSubject, nearestUpcomingDeadline } from "@/lib/deadlines";
+import { computeMpReadinessAssessments, computeMpReadinessBonus, MP_READINESS_REMINDERS } from "@/lib/mp-readiness";
 import { computeStreak } from "@/lib/gamification";
 import { recentDaySummaries } from "@/lib/history";
 import {
@@ -42,18 +54,28 @@ import {
 import {
   computeDailyPlan,
   computeSubjectPriorities,
+  computeSubjectTrajectory,
+  computeWeeklyProjection,
+  CONTEST_URGENCY_HORIZON_DAYS,
+  daysUntilContest,
   DEFAULT_PLAN_MINUTES,
   PLAN_DURATION_PRESETS,
   PLAN_STORAGE_KEY,
   serializePlan,
   type SubjectPriorityLevel,
+  type SubjectTrajectoryStatus,
 } from "@/lib/plan";
+import { computePilotagePhrase } from "@/lib/pilotage";
 import { computeProgressBySubject } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META } from "@/lib/readiness";
+import { estimatedDurationMinutes } from "@/lib/recommendation";
 import { subjectMeta } from "@/lib/study";
 import { formatDuration, formatMinutes } from "@/lib/utils";
-import { computeWeeklySummary } from "@/lib/week";
-import type { UpcomingItem } from "@/lib/next-action";
+import { computeWeeklyDayBars, computeWeeklySummary, type WeeklyPace } from "@/lib/week";
+import { computeWeeklyPlanRows, hasAnyPlannedMinutes, planGapMinutesBySubject } from "@/lib/weekly-plan";
+import { removeFromQueue, usableQueueEntries } from "@/lib/work-queue";
+import type { NextAction, UpcomingItem } from "@/lib/next-action";
+import type { StoredPlan } from "@/lib/plan";
 
 const UPCOMING_META: Record<UpcomingItem["key"], { label: string; icon: typeof BookOpenCheck }> = {
   chapter: { label: "Chapitre à consolider", icon: BookOpenCheck },
@@ -75,6 +97,34 @@ const READINESS_DOT_CLASS: Record<"success" | "warning" | "default", string> = {
   default: "bg-zinc-400",
 };
 
+/** Badge "rythme" de l'objectif hebdomadaire (lib/week.ts#computeWeeklyPace) — "à travailler" reste en `warning` (ambre), jamais `danger` : un rythme en retard n'est pas une erreur, voir la note dans lib/week.ts. */
+const WEEKLY_PACE_BADGE: Record<WeeklyPace, "success" | "warning" | "accent"> = {
+  "en avance": "success",
+  "dans le rythme": "accent",
+  "à travailler": "warning",
+};
+
+/**
+ * Trajectoire par matière (Sprint trajectoire par matière) — même vocabulaire
+ * visuel (points colorés) que `PRIORITY_META` ci-dessus, mais des libellés
+ * distincts : c'est un signal différent ("suis-je dans les temps cette
+ * semaine sur cette matière", pas "quel est le niveau de priorité global").
+ * Explique la décision déjà prise par `subjectWeight`/`computeWeeklyProjection`
+ * — n'en recalcule jamais aucune.
+ */
+const TRAJECTORY_META: Record<SubjectTrajectoryStatus, { dot: string; label: string }> = {
+  "prioritaire": { dot: "bg-rose-400", label: "Prioritaire" },
+  "à renforcer": { dot: "bg-amber-400", label: "À renforcer" },
+  "dans le rythme": { dot: "bg-emerald-400", label: "Dans le rythme" },
+};
+
+/** Même formulation que l'ancienne annotation "← dans N j" (avant ce sprint) — désormais accolée au statut de trajectoire plutôt qu'aux minutes restantes, voir la carte "Cette semaine". */
+function deadlineLabel(deadlineDays: number): string {
+  if (deadlineDays === 0) return "aujourd'hui";
+  if (deadlineDays === 1) return "demain";
+  return `dans ${deadlineDays} j`;
+}
+
 /**
  * Centre de pilotage (Sprint Study OS) — le véritable point d'entrée de
  * TaekdHub : "où j'en suis, quoi faire maintenant, pourquoi, combien de
@@ -85,36 +135,157 @@ const READINESS_DOT_CLASS: Record<"success" | "warning" | "default", string> = {
  * dans ce composant, uniquement de la présentation et de la navigation.
  */
 export function DashboardOverview() {
-  const { sessions, exercises, chapters, preferences, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, preferences, workQueue, saveWorkQueue, deadlines, weeklyPlan, ready } = usePrepahubData();
   const router = useRouter();
   /** Durée choisie pour "Plan du jour" — état purement local à cette page, jamais persisté (voir Phase 3 du sprint : pas de système de calendrier). */
   const [planMinutes, setPlanMinutes] = useState<number>(DEFAULT_PLAN_MINUTES);
+  // Sprint Study OS Phase 5 (production readiness) — même signal que
+  // `ResumeBanner` ci-dessous : sans lui, "À faire maintenant" affichait une
+  // recommandation concurrente à côté du bouton "Reprendre" (deux CTA
+  // contradictoires visibles en même temps, détecté en direct pendant
+  // l'audit). Une séance interrompue reste l'action la plus prioritaire de
+  // toutes ; tant qu'elle existe, le Hero ne doit jamais proposer autre chose.
+  const resumable = useResumableFocus(exercises, ready);
+
+  // Signaux de priorité Sprint Study OS Phase 4 — calculés une seule fois,
+  // partagés par `model` ET `dailyPlan` ci-dessous (deux useMemo séparés,
+  // voir leur doc respective) : jamais recalculés deux fois pour la même
+  // donnée. `chapterDeadlines` (lib/deadlines.ts) et `subjectPlanGap`
+  // (lib/weekly-plan.ts) restent chacun à `{}`/Map vide tant que
+  // l'utilisateur n'a configuré ni échéance ni plan — comportement
+  // strictement inchangé pour qui n'utilise pas ces fonctionnalités.
+  // Day Flow (Sprint Adaptive Day) — lecture du programme du jour par
+  // matière (lib/day-flow.ts), séparée de `prioritySignals` ci-dessous : ce
+  // composant a aussi besoin des blocs eux-mêmes pour la carte "Aujourd'hui",
+  // pas seulement du booléen `allDone` qui alimente le Hero.
+  const dayFlow = useMemo(() => computeDayFlow(weeklyPlan, sessions), [weeklyPlan, sessions]);
+
+  // Rentrée MP (Sprint « rentrée MP ») — évaluation par notion à partir des
+  // données déjà existantes (chapitres/exercices/sessions), séparée de
+  // `prioritySignals` ci-dessous pour la même raison que `dayFlow` : la carte
+  // "Rentrée MP" a besoin du détail par notion, pas seulement du bonus par
+  // exercice qui alimente le Hero.
+  const mpReadinessAssessments = useMemo(
+    () => computeMpReadinessAssessments(chapters, exercises, sessions),
+    [chapters, exercises, sessions]
+  );
+
+  // Regroupement pour la carte "Rentrée MP" — lecture seule (voir la doc de
+  // la carte plus bas) : ne retient que ce qui mérite d'être montré à
+  // l'élève (jamais "complement", non prioritaire pour les premiers jours,
+  // ni une notion déjà solide qu'on afficherait individuellement).
+  const mpReadinessOverview = useMemo(() => {
+    const rentree = mpReadinessAssessments.filter((assessment) => assessment.notion.tier === "rentree");
+    return {
+      toDiscover: rentree.filter((assessment) => assessment.state === "decouvrir"),
+      toReinforce: rentree.filter((assessment) => assessment.state === "renforcer"),
+      masteredCount: rentree.filter((assessment) => assessment.state === "maitriser" || assessment.state === "approfondir").length,
+    };
+  }, [mpReadinessAssessments]);
+
+  const prioritySignals = useMemo(() => {
+    const now = new Date();
+    return {
+      chapterDeadlines: chapterDeadlineSignals(deadlines, now),
+      subjectPlanGap: planGapMinutesBySubject(weeklyPlan, sessions, now),
+      nearestDeadline: nearestUpcomingDeadline(deadlines, now),
+      todayPlanAllDone: dayFlow.allDone,
+      mpReadinessBonus: computeMpReadinessBonus(mpReadinessAssessments),
+    };
+  }, [deadlines, weeklyPlan, sessions, dayFlow.allDone, mpReadinessAssessments]);
 
   const model = useMemo(() => {
     const now = new Date();
+    // Sprint planification hebdomadaire adaptative — "sur ce qu'il reste
+    // cette semaine, combien pour chaque matière ?". Réutilise le même
+    // allocateur que le Plan du jour (voir lib/plan.ts), jamais un second
+    // moteur : complémentaire de `weeklySummary` (qui regarde ce qui a été
+    // fait), celui-ci regarde ce qu'il reste à faire.
+    const weeklyProjection = computeWeeklyProjection(
+      exercises,
+      sessions,
+      preferences.weeklyGoalMinutes,
+      now,
+      preferences.contestDate,
+      preferences.subjectDeadlines,
+      prioritySignals.subjectPlanGap,
+      prioritySignals.chapterDeadlines
+    );
+    const weeklySummary = computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now);
+    // Sprint trajectoire par matière — explique CE QUE `weeklyProjection`
+    // a déjà décidé, ne recalcule aucun poids : consomme directement
+    // `weeklyProjection.bySubject` (voir lib/plan.ts#computeSubjectTrajectory).
+    const trajectoryBySubject = computeSubjectTrajectory(weeklyProjection.bySubject, now);
     return {
-      nextAction: computeNextAction(exercises, sessions, preferences.dailyGoalMinutes, now),
+      nextAction: computeNextAction(exercises, sessions, preferences.dailyGoalMinutes, now, prioritySignals),
       objective: computeDailyObjective(sessions, preferences.dailyGoalMinutes, now),
+      // Sprint Study OS — "Aujourd'hui" : décompose l'objectif du jour par
+      // matière et en nombre d'exercices, quand configuré (voir
+      // lib/daily-goals.ts). N'affecte jamais `objective` ci-dessus, qui
+      // reste l'unique source du total global.
+      dailyObjectiveBreakdown: computeDailyObjectiveBreakdown(sessions, preferences.dailySubjectGoals, preferences.dailyExerciseGoal, now),
       upcoming: computeUpcoming(exercises, sessions, chapters, now),
       progress: computeCommandCenterProgress(exercises, sessions, now),
-      bySubject: computeProgressBySubject(exercises).filter((entry) => entry.total > 0),
+      bySubject: computeProgressBySubject(exercises),
       toConsolidate: computeChaptersToConsolidate(exercises, sessions, chapters, now),
       recentDays: recentDaySummaries(sessions, now, 5),
-      readiness: computeReadinessBySubject(exercises, sessions, now),
-      weeklySummary: computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now),
-      subjectPriorities: computeSubjectPriorities(exercises, sessions, chapters, now),
+      readiness: computeReadinessBySubject(exercises, sessions, now, prioritySignals),
+      weeklySummary,
+      weeklyProjection,
+      trajectoryBySubject,
+      // Sprint Study OS — vue "Lun → Dim" : répartition JOUR PAR JOUR d'un
+      // temps déjà comptabilisé dans `weeklySummary` ci-dessus, aucun second
+      // total (voir lib/week.ts#computeWeeklyDayBars).
+      weeklyDayBars: computeWeeklyDayBars(sessions, preferences.dailyGoalMinutes, now),
+      // Sprint Study OS Phase 4 — "Ma semaine" : prévu vs réalisé jour par
+      // jour, à partir du plan hebdomadaire (voir lib/weekly-plan.ts). Vide
+      // tant que rien n'est configuré (voir `hasWeeklyPlan` ci-dessous,
+      // condition d'affichage de la carte).
+      weeklyPlanRows: computeWeeklyPlanRows(weeklyPlan, sessions, now),
+      hasWeeklyPlan: hasAnyPlannedMinutes(weeklyPlan),
+      // Micro-sprint polish UX final — phrase de pilotage du Dashboard :
+      // compose uniquement ces valeurs déjà calculées ci-dessus, voir
+      // lib/pilotage.ts. Aucun nouveau signal, aucune nouvelle décision.
+      pilotagePhrase: computePilotagePhrase({
+        weeklyGoalMet: weeklyProjection.met,
+        weeklyPace: weeklySummary.pace,
+        workedMinutes: weeklyProjection.workedMinutes,
+        trajectoryBySubject,
+      }),
+      subjectPriorities: computeSubjectPriorities(
+        exercises,
+        sessions,
+        chapters,
+        now,
+        preferences.contestDate,
+        preferences.subjectDeadlines,
+        prioritySignals.subjectPlanGap
+      ),
       streak: computeStreak(sessions),
-      contestDays: preferences.contestDate
-        ? Math.max(0, Math.ceil((new Date(preferences.contestDate).getTime() - now.getTime()) / 86400000))
-        : null,
+      // Même calcul que `lib/plan.ts#daysUntilContest`, réutilisé tel quel
+      // plutôt que redupliqué ici — voir Sprint priorisation + sync + XP,
+      // qui a introduit cette fonction précisément pour éviter deux formules
+      // légèrement différentes du même "jours avant le concours".
+      contestDays: daysUntilContest(preferences.contestDate, now),
     };
-  }, [exercises, sessions, chapters, preferences]);
+  }, [exercises, sessions, chapters, preferences, weeklyPlan, prioritySignals]);
 
   // Séparé de `model` : ne dépend que du choix de durée, pas besoin de
   // recalculer tout le reste du Dashboard à chaque clic sur 30/45/60 min.
   const dailyPlan = useMemo(
-    () => computeDailyPlan(exercises, sessions, chapters, planMinutes, new Date()),
-    [exercises, sessions, chapters, planMinutes]
+    () =>
+      computeDailyPlan(
+        exercises,
+        sessions,
+        chapters,
+        planMinutes,
+        new Date(),
+        preferences.contestDate,
+        preferences.subjectDeadlines,
+        prioritySignals.subjectPlanGap,
+        prioritySignals.chapterDeadlines
+      ),
+    [exercises, sessions, chapters, planMinutes, preferences.contestDate, preferences.subjectDeadlines, prioritySignals]
   );
 
   // Dépose le plan dans sessionStorage puis navigue vers /session, qui le lit
@@ -126,6 +297,35 @@ export function DashboardOverview() {
     router.push("/session");
   }, [dailyPlan, router]);
 
+  // File de travail (Sprint Study OS — "Je choisis mon travail") : une
+  // sélection manuelle, distincte du Plan du jour ci-dessus (automatique).
+  // Résolue contre la banque actuelle à chaque rendu (voir
+  // lib/work-queue.ts#usableQueueEntries) pour ne jamais afficher un exercice
+  // supprimé ou archivé depuis son ajout.
+  const queueEntries = useMemo(() => usableQueueEntries(workQueue, exercises), [workQueue, exercises]);
+  const removeFromWorkQueue = useCallback((id: string) => saveWorkQueue(removeFromQueue(workQueue, id)), [workQueue, saveWorkQueue]);
+  // Même transport que `startPlan` (PLAN_STORAGE_KEY/StoredPlan) : /session ne
+  // fait aucune différence entre un plan automatique et une file choisie à la
+  // main, le Focus reste l'unique moteur d'exécution.
+  //
+  // La file n'est PLUS vidée ici (Sprint Study OS Phase 6) : ce transfert vit
+  // en sessionStorage, qui disparaît si l'utilisateur ferme l'app entre
+  // l'aperçu ("Ton plan du jour") et le clic sur "Commencer ma séance" — la
+  // file, elle, vit en localStorage et serait alors perdue pour de bon, une
+  // vraie perte de données détectée en direct pendant l'audit go-live.
+  // `source: "queue"` marque l'origine du transfert pour que /session (seul
+  // endroit qui sait si la lecture a réellement eu lieu) vide la file
+  // lui-même une fois consommé, jamais avant (voir session-runner.tsx).
+  const startQueue = useCallback(() => {
+    const stored: StoredPlan = {
+      items: queueEntries.map(({ exercise }) => ({ exerciseId: exercise.id, reasons: ["Ajouté à ta file de travail"] })),
+      requestedMinutes: queueEntries.reduce((total, { exercise }) => total + estimatedDurationMinutes(exercise, sessions), 0),
+      source: "queue",
+    };
+    sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(stored));
+    router.push("/session");
+  }, [queueEntries, sessions, router]);
+
   if (!ready) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -136,19 +336,76 @@ export function DashboardOverview() {
     );
   }
 
-  const { nextAction, objective, upcoming, progress, bySubject, toConsolidate, recentDays, readiness, weeklySummary, subjectPriorities, streak, contestDays } = model;
-  const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
-  const secondaryPicks = nextAction.picks.slice(1);
+  const {
+    nextAction,
+    objective,
+    dailyObjectiveBreakdown,
+    upcoming,
+    progress,
+    bySubject,
+    toConsolidate,
+    recentDays,
+    readiness,
+    weeklySummary,
+    weeklyProjection,
+    trajectoryBySubject,
+    weeklyDayBars,
+    weeklyPlanRows,
+    hasWeeklyPlan,
+    pilotagePhrase,
+    subjectPriorities,
+    streak,
+    contestDays,
+  } = model;
+
+  // "Ma prochaine action" (Sprint Study OS) — un travail explicitement
+  // planifié par l'utilisateur (la file de travail) prime sur la
+  // recommandation automatique de `computeNextAction` : la reprise d'une
+  // séance interrompue reste gérée séparément par ResumeBanner, affichée
+  // au-dessus de ce bloc — c'est donc bien ici le second échelon de la
+  // priorité demandée (interrompu > planifié > à revoir/prioritaire >
+  // recommandation, ces deux derniers déjà couverts par le tri de
+  // `recommendExercises` à l'intérieur de `computeNextAction`).
+  // Aucune nouvelle règle de sélection : reprend tels quels les exercices
+  // déjà choisis par l'utilisateur, juste mis en forme comme `NextAction`.
+  const effectiveNextAction: NextAction =
+    queueEntries.length > 0
+      ? {
+          kind: "start-session",
+          title: queueEntries[0].exercise.title,
+          description: `Ajouté à ta file de travail — 1 sur ${queueEntries.length}.`,
+          ctaLabel: queueEntries.length > 1 ? `Commencer ta file (${queueEntries.length} exercices)` : "Commencer",
+          href: "/session",
+          minutes: queueEntries.reduce((total, { exercise }) => total + estimatedDurationMinutes(exercise, sessions), 0),
+          picks: queueEntries.slice(0, 3).map(({ exercise }) => ({ exercise, score: 0, reasons: ["Ajouté à ta file de travail"] })),
+        }
+      : nextAction;
+  const sessionHref = effectiveNextAction.kind === "start-session" ? `/session?minutes=${effectiveNextAction.minutes}` : effectiveNextAction.href;
+  const secondaryPicks = effectiveNextAction.picks.slice(1);
   // "Revoir mes priorités" (Phase 8) : ouvre directement le premier exercice déjà signalé par le moteur de recommandation — même convention que computeUpcoming (lib/next-action.ts), aucune nouvelle route.
   const prioritiesHref = nextAction.picks[0] ? `/exercises?focus=${nextAction.picks[0].exercise.id}` : "/exercises";
   // "Prochainement" ne montre plus le chapitre le plus faible : la section "À consolider" ci-dessous couvre ce signal en mieux (plusieurs chapitres, raisons explicites) — computeUpcoming lui-même reste inchangé (voir lib/next-action.test.ts).
   const otherSignals = upcoming.filter((item) => item.key !== "chapter");
+  // "Cette semaine" (Sprint planification hebdomadaire adaptative) : la
+  // matière en tête de la projection (déjà triée par minutes décroissantes,
+  // voir computeWeeklyProjection) devient le CTA "Commencer" — jamais une
+  // nouvelle décision de recommandation, juste une navigation vers /session
+  // avec la matière déjà la plus prioritaire pour le reste de la semaine
+  // (même mécanisme que `computeUpcoming`/`neglectedSubjects` ailleurs sur
+  // cette page : `?subject=` pré-rempli, recommendExercises décide le reste).
+  const topWeeklySubject = weeklyProjection.bySubject[0];
 
   return (
     <div className="space-y-6">
+      {/* Priorité absolue (Sprint poste de pilotage) : reprendre un travail
+          déjà commencé passe avant toute nouvelle recommandation ou rappel. */}
+      <ResumeBanner />
       <BackupReminder />
 
-      {/* À FAIRE MAINTENANT */}
+      {/* À FAIRE MAINTENANT — masqué tant qu'une séance interrompue existe
+          (voir `resumable` ci-dessus) : ResumeBanner porte alors seul la
+          décision "quoi faire maintenant", jamais deux CTA concurrents. */}
+      {!resumable && (
       <motion.section
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -158,7 +415,7 @@ export function DashboardOverview() {
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-accent/[0.06] blur-3xl" />
         <div className="relative">
           <div className="flex flex-wrap items-center gap-2">
-            <Sparkles size={16} className="text-accent" />
+            <Sparkles size={16} className="text-accent-text" />
             <p className="eyebrow">À faire maintenant</p>
             {contestDays !== null && (
               <Badge variant="accent" className="ml-auto flex items-center gap-1">
@@ -167,16 +424,34 @@ export function DashboardOverview() {
             )}
           </div>
 
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{nextAction.title}</h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">{nextAction.description}</p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{effectiveNextAction.title}</h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">{effectiveNextAction.description}</p>
+
+          {/* Phrase de pilotage (Micro-sprint polish UX final) — contexte
+              hebdomadaire ("où j'en suis, pourquoi"), distinct du "quoi faire
+              maintenant" ci-dessus. `null` : rien d'assez significatif à dire
+              (voir lib/pilotage.ts), aucun bloc affiché plutôt qu'une phrase
+              creuse. */}
+          {pilotagePhrase && (
+            <p className="mt-3 flex max-w-xl items-start gap-2 rounded-xl border border-accent/15 bg-accent/[0.05] px-3.5 py-2.5 text-sm leading-6 text-zinc-300">
+              <Compass size={14} className="mt-0.5 shrink-0 text-accent-text" />
+              <span>{pilotagePhrase}</span>
+            </p>
+          )}
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Link href={sessionHref}>
-              <Button size="lg">
-                {nextAction.ctaLabel} <ArrowRight size={16} />
+            {queueEntries.length > 0 ? (
+              <Button size="lg" onClick={startQueue}>
+                {effectiveNextAction.ctaLabel} <ArrowRight size={16} />
               </Button>
-            </Link>
-            {nextAction.kind !== "start-session" && (
+            ) : (
+              <Link href={sessionHref}>
+                <Button size="lg">
+                  {effectiveNextAction.ctaLabel} <ArrowRight size={16} />
+                </Button>
+              </Link>
+            )}
+            {nextAction.kind !== "start-session" && queueEntries.length === 0 && (
               <Link href="/session">
                 <Button variant="secondary" size="lg">
                   Ouvrir une séance
@@ -210,6 +485,7 @@ export function DashboardOverview() {
           )}
         </div>
       </motion.section>
+      )}
 
       {/* RACCOURCIS D'ACTION */}
       <section className="flex flex-wrap gap-2.5">
@@ -235,135 +511,10 @@ export function DashboardOverview() {
         </Link>
       </section>
 
-      {/* PLAN DU JOUR */}
-      <Card className="p-6 sm:p-7">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <ListTodo size={14} className="text-accent" />
-            <div>
-              <p className="eyebrow">Plan du jour</p>
-              <CardTitle className="mt-1 text-lg">Ce que tu devrais travailler aujourd&apos;hui</CardTitle>
-            </div>
-          </div>
-          <div className="inline-flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-black/20 p-1">
-            {PLAN_DURATION_PRESETS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => setPlanMinutes(preset)}
-                aria-pressed={planMinutes === preset}
-                className={cn(
-                  "rounded-lg px-3 py-1.5 text-xs font-medium transition",
-                  planMinutes === preset ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300"
-                )}
-              >
-                {preset} min
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {dailyPlan.blocks.length === 0 ? (
-          <p className="mt-5 text-sm text-zinc-500">
-            {nextAction.kind === "empty-bank" ? "Ajoute des exercices pour que TaekdHub puisse te construire un plan." : "Rien à planifier pour l'instant — ta banque est à jour."}
-          </p>
-        ) : (
-          <>
-            <ol className="mt-5 space-y-2.5">
-              {dailyPlan.blocks.map((block, index) => (
-                <li key={block.subject} className="flex items-start gap-3 rounded-xl border border-hairline/[0.06] p-3.5 text-sm">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent">{index + 1}</span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                      <p className="truncate font-medium text-zinc-100">{block.label}</p>
-                      <span className="shrink-0 text-xs text-zinc-500">{block.estimatedMinutes} min</span>
-                    </div>
-                    <p className="mt-1 text-xs text-zinc-500">{block.pickLabel}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.06] pt-5">
-              <p className="text-sm text-zinc-400">
-                Total : <span className="font-semibold text-zinc-100">{formatMinutes(dailyPlan.totalMinutes)}</span> · {dailyPlan.totalExercises} exercice
-                {dailyPlan.totalExercises > 1 ? "s" : ""}
-              </p>
-              <Button onClick={startPlan}>
-                Commencer le plan <ArrowRight size={16} />
-              </Button>
-            </div>
-          </>
-        )}
-      </Card>
-
-      {/* PRIORITÉS DE LA SEMAINE — "pourquoi" : juste après le plan, avant les chiffres d'état ("où j'en suis" ci-dessous), pour rester dans l'ordre de lecture quoi → pourquoi → où j'en suis → comment (voir la doc du composant). */}
-      {subjectPriorities.length > 0 && (
-        <Card className="p-6">
-          <div className="flex items-center gap-2">
-            <Flag size={14} className="text-accent" />
-            <p className="eyebrow">Priorités de la semaine</p>
-          </div>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2">
-            {subjectPriorities.map(({ subject, label, level, reason }) => {
-              const meta = PRIORITY_META[level];
-              return (
-                <div key={subject} className="flex items-center justify-between gap-3 rounded-xl border border-hairline/[0.06] px-3.5 py-2.5 text-sm">
-                  <span className="flex items-center gap-2 font-medium text-zinc-100">
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
-                    {label}
-                  </span>
-                  <span className="text-right text-xs text-zinc-500">{reason}</span>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
-
-      {/* À CONSOLIDER — même logique "pourquoi", au niveau du chapitre. */}
-      {chapters.length > 0 && (
-        <Card className="p-6">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={14} className="text-accent" />
-            <p className="eyebrow">À consolider</p>
-          </div>
-          <CardTitle className="mt-2">
-            {toConsolidate.length > 0 ? "Ces chapitres méritent ton attention" : "Rien à consolider pour l'instant"}
-          </CardTitle>
-
-          {toConsolidate.length === 0 ? (
-            <p className="mt-2 text-sm text-zinc-500">Tous les chapitres actifs sont sous contrôle. Continue comme ça.</p>
-          ) : (
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {toConsolidate.map(({ chapter, averageMastery, reasons, href }) => (
-                <Link
-                  key={chapter.id}
-                  href={href}
-                  className="focus-ring flex flex-col gap-2.5 rounded-xl border border-hairline/[0.06] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="min-w-0 truncate font-medium text-zinc-100">{chapter.label}</p>
-                    <span className="whitespace-nowrap text-xs text-zinc-500">{averageMastery}%</span>
-                  </div>
-                  <p className="-mt-1.5 text-2xs text-zinc-500">{chapter.subject}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {reasons.map((reason) => (
-                      <Badge key={reason} variant="warning">
-                        {reason}
-                      </Badge>
-                    ))}
-                  </div>
-                  <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-accent">
-                    Travailler ce chapitre <ArrowRight size={11} />
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </Card>
-      )}
-
-      {/* OBJECTIF DU JOUR + TA PROGRESSION — "où j'en suis" à partir d'ici. */}
+      {/* OBJECTIF DU JOUR + TA PROGRESSION — hiérarchie Daily Copilot : Hero
+          ("quoi faire maintenant") puis, immédiatement après, "où j'en suis"
+          (objectif du jour + vue d'ensemble), avant le détail du jour
+          (Plan du jour/File de travail/semaine) et les échéances. */}
       <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
         <Card className="rounded-3xl p-6 sm:p-7">
           <div className="flex items-start justify-between">
@@ -374,7 +525,7 @@ export function DashboardOverview() {
                 <span className="text-base font-normal text-zinc-500">/ {formatDuration(objective.goalMinutes * 60)}</span>
               </CardTitle>
             </div>
-            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">{objective.percent}%</span>
+            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent-text">{objective.percent}%</span>
           </div>
           <ProgressBar value={objective.percent} className="mt-5" />
           <p className="mt-3 text-xs text-zinc-500">
@@ -384,11 +535,38 @@ export function DashboardOverview() {
                 ? "Tu n'as encore rien travaillé aujourd'hui."
                 : `Encore ${objective.remainingMinutes} min`}
             {streak > 0 && (
-              <span className="ml-1.5 inline-flex items-center gap-1 text-accent">
+              <span className="ml-1.5 inline-flex items-center gap-1 text-accent-text">
                 <Flame size={11} className="inline" /> {streak} j de suite
               </span>
             )}
           </p>
+
+          {/* Détail de l'objectif du jour (Sprint Study OS — Aujourd'hui) —
+              rien n'apparaît tant que rien n'est configuré dans Réglages
+              (voir lib/daily-goals.ts) : ni exercices, ni matière forcée à
+              l'affichage. */}
+          {(dailyObjectiveBreakdown.exercises || dailyObjectiveBreakdown.bySubject.length > 0) && (
+            <div className="mt-4 space-y-2 border-t border-hairline/[0.07] pt-4">
+              {dailyObjectiveBreakdown.exercises && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-zinc-400">Exercices</span>
+                  <span className={cn("font-medium", dailyObjectiveBreakdown.exercises.met ? "text-emerald-300" : "text-zinc-300")}>
+                    {dailyObjectiveBreakdown.exercises.worked} / {dailyObjectiveBreakdown.exercises.goal}
+                  </span>
+                </div>
+              )}
+              {dailyObjectiveBreakdown.bySubject.map((entry) => (
+                <div key={entry.subject} className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-zinc-400">
+                    <SubjectAvatar subject={entry.subject} size="sm" /> {entry.subject}
+                  </span>
+                  <span className={cn("font-medium", entry.met ? "text-emerald-300" : "text-zinc-300")}>
+                    {entry.workedMinutes} / {entry.goalMinutes} min
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="mt-5 flex flex-wrap gap-2">
             {objective.workedMinutes === 0 && !objective.met ? (
@@ -415,7 +593,7 @@ export function DashboardOverview() {
               <p className="eyebrow">Ta progression</p>
               <CardTitle className="mt-2">Vue d&apos;ensemble</CardTitle>
             </div>
-            <Target size={16} className="text-accent" />
+            <Target size={16} className="text-accent-text" />
           </div>
           <div className="mt-6 grid grid-cols-2 gap-4">
             <div>
@@ -435,17 +613,155 @@ export function DashboardOverview() {
               <p className="mt-0.5 text-xs text-zinc-500">Temps travaillé</p>
             </div>
           </div>
-          <Link href="/progress" className="mt-5 inline-flex items-center gap-1.5 text-xs text-accent hover:underline">
+          <Link href="/progress" className="mt-5 inline-flex items-center gap-1.5 text-xs text-accent-text hover:underline">
             Voir le détail <ArrowRight size={12} />
           </Link>
         </Card>
       </section>
 
+      {/* AUJOURD'HUI (Day Flow) — lecture du programme du jour par matière
+          (lib/day-flow.ts), jamais un calendrier ni des créneaux horaires :
+          juste terminé / en cours / à venir, dans l'ordre des matières
+          planifiées. Masquée sans plan pour aujourd'hui, même convention que
+          "Ma semaine" (hasWeeklyPlan) — rien à lire tant que rien n'est
+          configuré. Vocabulaire "programme", jamais "objectif" : signal
+          distinct de la carte "Objectif du jour" ci-dessus (weeklyPlan vs
+          dailySubjectGoals, deux intentions différentes qui coexistent sans
+          se contredire tant qu'elles restent nommées différemment). */}
+      {dayFlow.blocks.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <ListChecks size={14} className="text-accent-text" />
+            <p className="eyebrow">Aujourd&apos;hui</p>
+          </div>
+          <ol className="mt-4 space-y-2">
+            {dayFlow.blocks.map((block) => {
+              const isNext = block.status !== "terminé" && dayFlow.blocks.find((b) => b.status !== "terminé") === block;
+              return (
+                <li key={block.subject} className="flex items-center gap-3 text-sm">
+                  {block.status === "terminé" && <Check size={15} className="shrink-0 text-emerald-400" />}
+                  {block.status !== "terminé" && isNext && <span className="grid h-[15px] w-[15px] shrink-0 place-items-center"><span className="h-2 w-2 rounded-full bg-accent" /></span>}
+                  {block.status !== "terminé" && !isNext && <Circle size={15} className="shrink-0 text-zinc-600" />}
+                  <span className={cn("flex items-center gap-1.5", block.status === "terminé" ? "text-zinc-500 line-through decoration-zinc-700" : "text-zinc-200")}>
+                    <SubjectAvatar subject={block.subject} size="sm" />
+                    {block.subject}
+                  </span>
+                  <span className="ml-auto shrink-0 text-xs text-zinc-500">
+                    {block.status === "terminé"
+                      ? `${formatMinutes(block.workedMinutes)} faites`
+                      : isNext
+                        ? "maintenant"
+                        : "ensuite"}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </Card>
+      )}
+
+      {/* PLAN DU JOUR */}
+      <Card className="p-6 sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <ListTodo size={14} className="text-accent-text" />
+            <div>
+              <p className="eyebrow">Plan du jour</p>
+              <CardTitle className="mt-1 text-lg">Ce que tu devrais travailler aujourd&apos;hui</CardTitle>
+            </div>
+          </div>
+          <div className="inline-flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-black/20 p-1">
+            {PLAN_DURATION_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setPlanMinutes(preset)}
+                aria-pressed={planMinutes === preset}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                  planMinutes === preset ? "bg-accent text-accent-foreground" : "text-zinc-500 hover:text-zinc-300"
+                )}
+              >
+                {preset} min
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {dailyPlan.blocks.length === 0 ? (
+          <p className="mt-5 text-sm text-zinc-500">
+            {nextAction.kind === "empty-bank" ? "Ajoute des exercices pour que TaekdHub puisse te construire un plan." : "Rien à planifier pour l'instant — ta banque est à jour."}
+          </p>
+        ) : (
+          <>
+            <ol className="mt-5 space-y-2.5">
+              {dailyPlan.blocks.map((block, index) => (
+                <li key={block.subject} className="flex items-start gap-3 rounded-xl border border-hairline/[0.06] p-3.5 text-sm">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent-text">{index + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <p className="truncate font-medium text-zinc-100">{block.label}</p>
+                      <span className="shrink-0 text-xs text-zinc-500">{block.estimatedMinutes} min</span>
+                    </div>
+                    <p className="mt-1 text-xs text-zinc-500">{block.pickLabel}</p>
+                    <WhyThisExercise reasons={block.picks[0]?.reasons} className="mt-1.5" />
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.06] pt-5">
+              <p className="text-sm text-zinc-400">
+                Total : <span className="font-semibold text-zinc-100">{formatMinutes(dailyPlan.totalMinutes)}</span> · {dailyPlan.totalExercises} exercice
+                {dailyPlan.totalExercises > 1 ? "s" : ""}
+              </p>
+              <Button onClick={startPlan}>
+                Commencer le plan <ArrowRight size={16} />
+              </Button>
+            </div>
+          </>
+        )}
+      </Card>
+
+      {/* FILE DE TRAVAIL — sélection manuelle (voir "Ajouter à la file de travail" sur chaque exercice), distincte du Plan du jour ci-dessus. Masquée quand vide : pas de carte à faire disparaître par défaut, rien à décider tant que rien n'a été choisi. */}
+      {queueEntries.length > 0 && (
+        <Card className="p-6 sm:p-7">
+          <div className="flex items-center gap-2">
+            <ListPlus size={14} className="text-accent-text" />
+            <div>
+              <p className="eyebrow">File de travail</p>
+              <CardTitle className="mt-1 text-lg">Ta sélection, dans l&apos;ordre</CardTitle>
+            </div>
+          </div>
+          <ol className="mt-5 space-y-2.5">
+            {queueEntries.map(({ exercise }, index) => (
+              <li key={exercise.id} className="flex items-center gap-3 rounded-xl border border-hairline/[0.06] p-3.5 text-sm">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent-text">{index + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
+                  <p className="mt-0.5 text-xs text-zinc-500">{exercise.subject}</p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => removeFromWorkQueue(exercise.id)} aria-label="Retirer de la file" className="h-8 w-8 shrink-0">
+                  <X size={15} />
+                </Button>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.06] pt-5">
+            <p className="text-sm text-zinc-400">
+              {queueEntries.length} exercice{queueEntries.length > 1 ? "s" : ""} choisi{queueEntries.length > 1 ? "s" : ""}
+            </p>
+            <Button onClick={startQueue}>
+              Commencer <ArrowRight size={16} />
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* CETTE SEMAINE */}
       <Card className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <CalendarRange size={14} className="text-accent" />
+            <CalendarRange size={14} className="text-accent-text" />
             <div>
               <p className="eyebrow">Cette semaine</p>
               <CardTitle className="mt-1 text-lg">
@@ -454,19 +770,139 @@ export function DashboardOverview() {
               </CardTitle>
             </div>
           </div>
-          <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">{weeklySummary.progressPercent}%</span>
+          <div className="flex items-center gap-2">
+            {weeklySummary.pace && <Badge variant={WEEKLY_PACE_BADGE[weeklySummary.pace]}>{weeklySummary.pace}</Badge>}
+            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent-text">{weeklySummary.progressPercent}%</span>
+          </div>
         </div>
         <ProgressBar value={weeklySummary.progressPercent} className="mt-5" />
-        {weeklySummary.bySubject.length > 0 && (
-          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-zinc-500">
-            {weeklySummary.bySubject.map(({ subject, seconds }) => (
-              <span key={subject}>
-                {subject} : <span className="text-zinc-300">{formatDuration(seconds)}</span>
-              </span>
-            ))}
-          </div>
+
+        {/* Vue "Lun → Dim" (Sprint Study OS) — répartition JOUR PAR JOUR d'un
+            temps déjà compté ci-dessus (voir lib/week.ts#computeWeeklyDayBars),
+            aucun second total. ✓ objectif quotidien atteint ce jour-là, ⚠
+            sinon — un jour futur ne reçoit jamais de jugement (rien à
+            afficher). Complémentaire de la répartition par matière ci-dessous
+            (celle-ci répond "sur quoi", celle-là répond "quand"). */}
+        <div className="mt-5 flex items-end justify-between gap-1.5 border-t border-hairline/[0.06] pt-5">
+          {weeklyDayBars.map((day) => {
+            const heightPercent =
+              preferences.dailyGoalMinutes > 0
+                ? Math.min(100, Math.round((day.minutes / preferences.dailyGoalMinutes) * 100))
+                : day.minutes > 0
+                  ? 100
+                  : 0;
+            return (
+              <div key={day.dayKey} className="flex flex-1 flex-col items-center gap-1.5">
+                <div className="flex h-14 w-full items-end justify-center">
+                  <div
+                    className={cn(
+                      "w-2.5 rounded-full transition-all",
+                      day.isFuture ? "bg-hairline/[0.12]" : day.met ? "bg-emerald-400" : day.minutes > 0 ? "bg-amber-400" : "bg-hairline/[0.15]"
+                    )}
+                    style={{ height: `${Math.max(heightPercent, 6)}%` }}
+                  />
+                </div>
+                <span className="grid h-[13px] place-items-center">
+                  {!day.isFuture && (day.met ? <Check size={11} className="text-emerald-400" /> : <AlertTriangle size={11} className="text-amber-400" />)}
+                </span>
+                <span className={cn("text-2xs", day.isToday ? "font-semibold text-zinc-200" : "text-zinc-500")}>{day.label}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Reste de la semaine par matière (Sprint planification hebdomadaire
+            adaptative) — combien reste à consacrer à chaque matière, voir
+            computeWeeklyProjection. Objectif atteint : pas de répartition à
+            afficher, juste un état positif (jamais "0 min restantes" ni de
+            ton culpabilisant).
+            Sprint trajectoire par matière : chaque ligne reçoit en plus une
+            lecture explicite de sa trajectoire (`trajectoryBySubject`, voir
+            lib/plan.ts#computeSubjectTrajectory) — explique la décision déjà
+            prise par `subjectWeight`, n'en recalcule aucune. L'échéance
+            (auparavant "← dans N j" à côté des minutes) est désormais
+            rattachée à cette ligne d'explication plutôt qu'aux minutes, pour
+            que "quoi" (le temps restant) et "pourquoi" (le statut) restent
+            lisibles séparément. */}
+        {weeklyProjection.met ? (
+          <p className="mt-5 text-sm text-emerald-300">Objectif de la semaine atteint. Bien joué.</p>
+        ) : (
+          weeklyProjection.bySubject.length > 0 && (
+            <>
+              <div className="mt-5 space-y-3">
+                {weeklyProjection.bySubject.map(({ subject, minutes, deadlineDays }) => {
+                  const trajectory = trajectoryBySubject.find((entry) => entry.subject === subject);
+                  const trajectoryMeta = trajectory ? TRAJECTORY_META[trajectory.status] : null;
+                  // Même horizon que contestUrgencyBonus (voir CONTEST_URGENCY_HORIZON_DAYS) : une échéance trop lointaine pour influencer réellement le poids n'a rien d'actionnable à signaler ici non plus.
+                  const showDeadline = deadlineDays !== null && deadlineDays <= CONTEST_URGENCY_HORIZON_DAYS;
+                  return (
+                    <div key={subject} className="flex items-center justify-between gap-3 text-sm">
+                      <div className="min-w-0">
+                        <p className="text-zinc-300">{subject}</p>
+                        {trajectoryMeta && (
+                          <p className="mt-0.5 flex items-center gap-1.5 text-2xs text-zinc-500">
+                            <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", trajectoryMeta.dot)} />
+                            {trajectoryMeta.label}
+                            {showDeadline && ` · échéance ${deadlineLabel(deadlineDays)}`}
+                          </p>
+                        )}
+                      </div>
+                      <span className="shrink-0 text-zinc-500">{formatMinutes(minutes)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {topWeeklySubject && (
+                <Link href={`/session?subject=${encodeURIComponent(topWeeklySubject.subject)}`} className="mt-5 inline-block">
+                  <Button size="sm">
+                    Commencer <ArrowRight size={13} />
+                  </Button>
+                </Link>
+              )}
+            </>
+          )
         )}
       </Card>
+
+      {/* MA SEMAINE — Sprint Study OS Phase 4 : prévu vs réalisé, jour par
+          jour, à partir du plan hebdomadaire (Réglages). Entièrement
+          facultative : masquée tant que rien n'est planifié (voir
+          hasAnyPlannedMinutes), pour ne jamais imposer cette carte à un
+          utilisateur qui n'utilise pas la planification. Jamais de jugement
+          négatif sur un jour futur (voir lib/weekly-plan.ts#computeWeeklyPlanRows). */}
+      {hasWeeklyPlan && (
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="eyebrow">Ma semaine</p>
+              <CardTitle className="mt-2">Prévu vs réalisé</CardTitle>
+            </div>
+            <Link href="/settings#planification" className="text-xs text-accent-text hover:underline">
+              Modifier le plan
+            </Link>
+          </div>
+          <div className="mt-5 space-y-1.5">
+            {weeklyPlanRows.map((row) => (
+              <div
+                key={row.dayKey}
+                className={cn(
+                  "flex items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-sm",
+                  row.isToday ? "bg-accent/[0.06]" : "border border-hairline/[0.06]"
+                )}
+              >
+                <span className={cn("w-20 shrink-0", row.isToday ? "font-semibold text-zinc-100" : "text-zinc-300")}>{row.label}</span>
+                <span className="flex-1 text-right text-xs text-zinc-500">
+                  {row.plannedMinutes > 0 ? `${formatMinutes(row.workedMinutes)} / ${formatMinutes(row.plannedMinutes)}` : row.isFuture ? "—" : "sans plan"}
+                </span>
+                <span className="w-6 shrink-0 text-right">
+                  {row.state === "atteint" && <Check size={14} className="ml-auto text-emerald-400" />}
+                  {row.state === "en cours" && <AlertTriangle size={14} className="ml-auto text-amber-400" />}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* PROGRESSION PAR MATIÈRE + PRÉPARATION */}
       {(bySubject.length > 0 || readiness.length > 0) && (
@@ -478,7 +914,7 @@ export function DashboardOverview() {
                   <p className="eyebrow">Tes matières</p>
                   <CardTitle className="mt-2">Progression</CardTitle>
                 </div>
-                <BarChart3 size={16} className="text-accent" />
+                <BarChart3 size={16} className="text-accent-text" />
               </div>
               <div className="mt-6 space-y-4">
                 {bySubject.map(({ subject, completionRate }) => (
@@ -510,19 +946,32 @@ export function DashboardOverview() {
                   <p className="eyebrow">Échéances</p>
                   <CardTitle className="mt-2">Prêt pour le DS ?</CardTitle>
                 </div>
-                <GraduationCap size={16} className="text-accent" />
+                <GraduationCap size={16} className="text-accent-text" />
               </div>
               <div className="mt-6 space-y-2.5">
                 {readiness.map(({ subject, level }) => {
                   const meta = READINESS_META[level];
+                  // Sprint Study OS Phase 4 : prochaine échéance concrète pour
+                  // cette matière, si une a été renseignée dans Réglages —
+                  // n'affecte jamais `level` (toujours dérivé uniquement du
+                  // moteur de recommandation, voir lib/readiness.ts), une
+                  // simple annotation supplémentaire.
+                  const nearest = nearestDeadlineForSubject(deadlines, subject);
                   return (
                     <Link
                       key={subject}
                       href="/progress"
                       className="focus-ring flex items-center justify-between gap-2 rounded-xl border border-hairline/[0.06] px-3.5 py-2.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
                     >
-                      <span className="font-medium text-zinc-100">{subject}</span>
-                      <span className="flex items-center gap-1.5 text-xs text-zinc-400">
+                      <div className="min-w-0">
+                        <span className="font-medium text-zinc-100">{subject}</span>
+                        {nearest && (
+                          <p className="mt-0.5 truncate text-2xs text-zinc-500">
+                            {nearest.deadline.type} {nearest.days === 0 ? "aujourd'hui" : nearest.days === 1 ? "demain" : `dans ${nearest.days} j`}
+                          </p>
+                        )}
+                      </div>
+                      <span className="flex shrink-0 items-center gap-1.5 text-xs text-zinc-400">
                         <span className={`h-1.5 w-1.5 rounded-full ${READINESS_DOT_CLASS[meta.badge]}`} />
                         {meta.label}
                       </span>
@@ -536,11 +985,199 @@ export function DashboardOverview() {
         </section>
       )}
 
+      {/* PRIORITÉS DE LA SEMAINE — "pourquoi", en complément de ce qui précède
+          (Daily Copilot) : une fois le Hero, "où j'en suis" et les échéances
+          déjà lus, ce détail hebdomadaire par matière reste secondaire, jamais
+          concurrent de la seule action principale du Hero. */}
+      {subjectPriorities.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <Flag size={14} className="text-accent-text" />
+            <p className="eyebrow">Priorités de la semaine</p>
+          </div>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            {subjectPriorities.map(({ subject, label, level, reason }) => {
+              const meta = PRIORITY_META[level];
+              return (
+                <div key={subject} className="flex items-center justify-between gap-3 rounded-xl border border-hairline/[0.06] px-3.5 py-2.5 text-sm">
+                  <span className="flex items-center gap-2 font-medium text-zinc-100">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
+                    {label}
+                  </span>
+                  <span className="text-right text-xs text-zinc-500">{reason}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* À CONSOLIDER — même logique "pourquoi", au niveau du chapitre. */}
+      {chapters.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={14} className="text-accent-text" />
+            <p className="eyebrow">À consolider</p>
+          </div>
+          <CardTitle className="mt-2">
+            {toConsolidate.length > 0 ? "Ces chapitres méritent ton attention" : "Rien à consolider pour l'instant"}
+          </CardTitle>
+
+          {toConsolidate.length === 0 ? (
+            <p className="mt-2 text-sm text-zinc-500">Tous les chapitres actifs sont sous contrôle. Continue comme ça.</p>
+          ) : (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {toConsolidate.map(({ chapter, averageMastery, reasons, href }) => (
+                <Link
+                  key={chapter.id}
+                  href={href}
+                  className="focus-ring flex flex-col gap-2.5 rounded-xl border border-hairline/[0.06] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="min-w-0 truncate font-medium text-zinc-100">{chapter.label}</p>
+                    <span className="whitespace-nowrap text-xs text-zinc-500">{averageMastery}%</span>
+                  </div>
+                  <p className="-mt-1.5 text-2xs text-zinc-500">{chapter.subject}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {reasons.map((reason) => (
+                      <Badge key={reason} variant="warning">
+                        {reason}
+                      </Badge>
+                    ))}
+                  </div>
+                  <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-accent-text">
+                    Travailler ce chapitre <ArrowRight size={11} />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/*
+        RENTRÉE MP (Sprint « rentrée MP ») — carte de LECTURE SEULE : elle
+        explique POURQUOI le Hero peut proposer telle notion (voir
+        `mpReadinessBonus` ci-dessus, déjà consommé par `computeNextAction`),
+        elle ne décide jamais elle-même quoi faire — aucun second CTA
+        "commencer" ici, juste un lien direct vers un exercice concret quand
+        il en existe un (même convention `?focus=` que "À consolider").
+        Masquée entièrement si le catalogue de rentrée ne trouve RIEN à dire
+        (aucune notion à découvrir/à renforcer et aucun rappel) : jamais une
+        carte vide forcée.
+      */}
+      {(mpReadinessOverview.toDiscover.length > 0 || mpReadinessOverview.toReinforce.length > 0 || MP_READINESS_REMINDERS.length > 0) && (
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <GraduationCap size={14} className="text-accent-text" />
+            <p className="eyebrow">Rentrée MP</p>
+          </div>
+          <CardTitle className="mt-2">Ce qui compte pour bien démarrer ta MP</CardTitle>
+          <p className="mt-1.5 text-sm text-zinc-500">D&apos;après les priorités annoncées par tes professeurs.</p>
+
+          {mpReadinessOverview.toDiscover.length > 0 && (
+            <div className="mt-5">
+              <p className="text-2xs font-medium uppercase tracking-wide text-zinc-500">À découvrir</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {mpReadinessOverview.toDiscover.map((assessment) => {
+                  const target = assessment.matchedExercises[0];
+                  const content = (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="min-w-0 truncate font-medium text-zinc-100">{assessment.notion.label}</p>
+                        <span className="whitespace-nowrap text-2xs text-zinc-500">{assessment.notion.subject}</span>
+                      </div>
+                      <Badge variant="accent">Notion nouvelle à découvrir</Badge>
+                      <p className="text-2xs text-zinc-600">{assessment.reason}</p>
+                    </>
+                  );
+                  return target ? (
+                    <Link
+                      key={assessment.notion.id}
+                      href={`/exercises?focus=${target.id}`}
+                      className="focus-ring flex min-w-0 flex-col gap-2 rounded-xl border border-hairline/[0.06] p-3 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                    >
+                      {content}
+                    </Link>
+                  ) : (
+                    <div key={assessment.notion.id} className="flex min-w-0 flex-col gap-2 rounded-xl border border-hairline/[0.06] p-3 text-sm">
+                      {content}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {mpReadinessOverview.toReinforce.length > 0 && (
+            <div className="mt-5">
+              <p className="text-2xs font-medium uppercase tracking-wide text-zinc-500">À renforcer</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {mpReadinessOverview.toReinforce.map((assessment) => {
+                  const target = assessment.matchedExercises[0];
+                  // Sprint « Mastery Engine » : "Fragile" (échecs récents, signal
+                  // fort — brief : « Priorité de rentrée + notion à renforcer »)
+                  // se distingue visuellement d'un simple manque de preuves
+                  // (jamais évalué / en cours d'acquisition), sans jamais changer
+                  // QUELS exercices sont mis en avant (voir computeMpReadinessBonus).
+                  const isFragile = assessment.knowledgeState === "fragile";
+                  const content = (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="min-w-0 truncate font-medium text-zinc-100">{assessment.notion.label}</p>
+                        <span className="whitespace-nowrap text-2xs text-zinc-500">{assessment.notion.subject}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <Badge variant="warning">Priorité de rentrée</Badge>
+                        {isFragile && <Badge variant="danger">Fragile</Badge>}
+                      </div>
+                      {assessment.knowledgeState !== "inconnu" && <p className="text-2xs text-zinc-600">{assessment.reason}</p>}
+                    </>
+                  );
+                  return target ? (
+                    <Link
+                      key={assessment.notion.id}
+                      href={`/exercises?focus=${target.id}`}
+                      className="focus-ring flex min-w-0 flex-col gap-2 rounded-xl border border-hairline/[0.06] p-3 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                    >
+                      {content}
+                    </Link>
+                  ) : (
+                    <div key={assessment.notion.id} className="flex min-w-0 flex-col gap-2 rounded-xl border border-hairline/[0.06] p-3 text-sm opacity-80">
+                      {content}
+                      <span className="text-2xs text-zinc-600">Pas encore de traces dans ta banque.</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {mpReadinessOverview.masteredCount > 0 && (
+            <p className="mt-5 text-xs text-zinc-500">
+              {mpReadinessOverview.masteredCount} notion{mpReadinessOverview.masteredCount > 1 ? "s" : ""} de rentrée déjà solide
+              {mpReadinessOverview.masteredCount > 1 ? "s" : ""} — rien à faire dessus pour l&apos;instant.
+            </p>
+          )}
+
+          {MP_READINESS_REMINDERS.length > 0 && (
+            <div className="mt-5 space-y-2 border-t border-hairline/[0.06] pt-4">
+              {MP_READINESS_REMINDERS.map((reminder) => (
+                <div key={reminder.id} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-zinc-300">{reminder.label}</span>
+                  <span className="text-right text-xs text-zinc-500">{reminder.detail}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
       {/* ACTIVITÉ RÉCENTE */}
       {recentDays.length > 0 && (
         <Card className="p-6">
           <div className="flex items-center gap-2">
-            <HistoryIcon size={14} className="text-accent" />
+            <HistoryIcon size={14} className="text-accent-text" />
             <p className="eyebrow">Activité récente</p>
           </div>
           <div className="mt-4 divide-y divide-hairline/[0.06]">
@@ -560,7 +1197,7 @@ export function DashboardOverview() {
       {otherSignals.length > 0 && (
         <Card className="p-6">
           <div className="flex items-center gap-2">
-            <Clock3 size={14} className="text-accent" />
+            <Clock3 size={14} className="text-accent-text" />
             <p className="eyebrow">Prochainement</p>
           </div>
           <div className="mt-5 grid gap-2 sm:grid-cols-2">

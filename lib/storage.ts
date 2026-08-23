@@ -10,17 +10,58 @@ const preferencesKey = "prepahub:preferences";
 const chaptersKey = "prepahub:chapters";
 const lastBackupKey = "prepahub:last-backup";
 const weekSnapshotsKey = "prepahub:week-snapshots";
+const workQueueKey = "prepahub:work-queue";
+const deadlinesKey = "prepahub:deadlines";
+const weeklyPlanKey = "prepahub:weekly-plan";
 
 /**
  * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
  * `themeMode` (Sprint personnalisation) : clair/sombre/système — voir lib/theme.ts#ThemeMode, indépendant de `accent`.
  * `weeklyGoalMinutes` (Sprint Plan de travail) : objectif hebdomadaire, indépendant de `dailyGoalMinutes`
  * (voir lib/week.ts#computeWeeklySummary) — alimente le Dashboard ("Cette semaine") et les statistiques.
+ * `subjectDeadlines` (Sprint planification hebdomadaire adaptative) : échéance optionnelle PAR MATIÈRE
+ * (DS, colle, DM…), distincte de `contestDate` (le concours, global, à horizon généralement plus long).
+ * Même forme qu'un simple champ date (ISO ou `""`), jamais un objet plus riche : pas de libellé, pas de
+ * type d'échéance (voir lib/plan.ts#subjectDeadlineDays, qui réutilise `daysUntilContest` tel quel, la
+ * même échéance générique paramétrée par matière au lieu d'être globale). Clé absente = pas d'échéance
+ * pour cette matière — jamais les 7 matières forcées à `""` (voir `normalizeSubjectDeadlines`).
  * Absents d'une préférence enregistrée avant leur sprint respectif : retombent sur `defaults` via le
  * merge ci-dessous, comme tout champ ajouté après coup.
  */
-export type Preferences = { displayName: string; dailyGoalMinutes: number; weeklyGoalMinutes: number; contestDate: string; accent: string; themeMode: ThemeMode };
-const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, weeklyGoalMinutes: 300, contestDate: "", accent: DEFAULT_ACCENT, themeMode: DEFAULT_THEME_MODE };
+export type Preferences = {
+  displayName: string;
+  dailyGoalMinutes: number;
+  weeklyGoalMinutes: number;
+  contestDate: string;
+  /** Échéance optionnelle par matière — voir la note ci-dessus. Clé absente = pas d'échéance pour cette matière. */
+  subjectDeadlines: Partial<Record<Subject, string>>;
+  /**
+   * Objectif du jour PAR MATIÈRE, en minutes (Sprint Study OS — Aujourd'hui) —
+   * optionnel, indépendant de `dailyGoalMinutes` (qui reste le seul total
+   * global, jamais recalculé comme une somme de ces valeurs : rien n'oblige
+   * les deux à s'accorder, exactement comme `weeklyGoalMinutes` vis-à-vis de
+   * `dailyGoalMinutes`). Même convention que `subjectDeadlines` : clé absente
+   * = pas d'objectif pour cette matière, jamais les 7 matières forcées à 0
+   * (voir `normalizeDailySubjectGoals`).
+   */
+  dailySubjectGoals: Partial<Record<Subject, number>>;
+  /** Objectif du jour en nombre d'exercices — `null` : pas d'objectif configuré (voir lib/daily-goals.ts). */
+  dailyExerciseGoal: number | null;
+  accent: string;
+  themeMode: ThemeMode;
+};
+/** Exporté (Sprint Study OS Phase 6) pour que le rendu initial côté client (hooks/use-prepahub-data.ts) parte de la même valeur que le rendu serveur, sans lire localStorage avant l'hydratation — voir `preferences()` juste en dessous, dont c'est déjà le repli côté serveur. */
+export const defaultPreferences: Preferences = {
+  displayName: "",
+  dailyGoalMinutes: 240,
+  weeklyGoalMinutes: 300,
+  contestDate: "",
+  subjectDeadlines: {},
+  dailySubjectGoals: {},
+  dailyExerciseGoal: null,
+  accent: DEFAULT_ACCENT,
+  themeMode: DEFAULT_THEME_MODE,
+};
 
 /**
  * Chapitre/thème (Sprint 3D) — créé et géré par l'utilisateur, jamais
@@ -28,6 +69,61 @@ const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, weeklyGo
  * `Preferences`, ce concept n'existe qu'en local pour l'instant.
  */
 export type Chapter = { id: string; subject: Subject; label: string };
+
+/**
+ * File de travail (Sprint Study OS — "Je choisis mon travail") : une petite
+ * liste d'exercices choisis explicitement par l'utilisateur, dans l'ordre où
+ * il veut les traiter — jamais recalculée par un moteur de recommandation
+ * (voir lib/work-queue.ts). Persistée séparément des exercices eux-mêmes :
+ * seule une référence par `exerciseId`, jamais une copie de l'exercice
+ * (source unique de vérité inchangée). Un exercice supprimé ou archivé après
+ * son ajout est simplement filtré à la lecture (voir
+ * lib/work-queue.ts#usableQueueEntries), jamais une entrée fantôme affichée.
+ */
+export type WorkQueueItem = { exerciseId: string };
+
+/**
+ * Échéance (Sprint Study OS Phase 4 — "DS et khôlles") : DS/khôlle/autre,
+ * associée à une matière ET à une liste de chapitres précis — extension du
+ * concept déjà existant `Preferences.subjectDeadlines` (une simple date par
+ * matière), qui reste inchangé (utilisé tel quel par `lib/plan.ts` pour la
+ * répartition du temps par matière). Une `Deadline` est un concept plus riche
+ * et plus précis : liée au(x) chapitre(s) concerné(s), ce qui permet à
+ * `lib/deadlines.ts#chapterDeadlineSignals` de faire remonter les exercices
+ * de CES chapitres précis dans les recommandations, pas toute la matière.
+ * `chapterIds` référence des `Chapter.id` existants — jamais de libellé de
+ * chapitre dupliqué ici (voir `lib/chapters.ts`) : un chapitre supprimé
+ * depuis est simplement sans effet (voir la doc de `chapterDeadlineSignals`),
+ * jamais une entrée fantôme affichée.
+ */
+export type DeadlineType = "DS" | "khôlle" | "autre";
+export interface Deadline {
+  id: string;
+  type: DeadlineType;
+  subject: Subject;
+  /** Date ISO (yyyy-mm-dd) — même convention que `Preferences.subjectDeadlines`, validée à la lecture par `lib/deadlines.ts#daysUntilDeadline`, jamais ici. */
+  date: string;
+  title: string;
+  chapterIds: string[];
+}
+
+/**
+ * Plan de travail hebdomadaire (Sprint Study OS Phase 4 — "planification
+ * hebdomadaire") : une INTENTION de travail par jour de la semaine (0 = lundi
+ * … 6 = dimanche, même convention que `lib/week.ts`'s `WEEKDAY_LABELS`), pas
+ * une deuxième mesure du temps réellement travaillé — celle-ci reste
+ * entièrement portée par `WorkSession` (voir `lib/weekly-plan.ts`, qui
+ * compare les deux sans jamais les confondre). Toujours exactement 7 entrées
+ * (voir `normalizeWeeklyPlan`), un jour sans rien de prévu ayant simplement
+ * `subjectMinutes: {}` plutôt qu'être absent — un jour manquant serait
+ * ambigu avec "jour non encore normalisé".
+ */
+export interface WeeklyPlanDay {
+  /** 0 = lundi … 6 = dimanche. */
+  day: number;
+  subjectMinutes: Partial<Record<Subject, number>>;
+}
+export type WeeklyPlan = WeeklyPlanDay[];
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
 export interface WeekSnapshotSubjectTime {
@@ -216,6 +312,7 @@ function normalizeExercise(raw: unknown): Exercise {
     favorite: Boolean(item.favorite),
     archived: Boolean(item.archived),
     hints: stringArray(item.hints),
+    answer: typeof item.answer === "string" ? item.answer : null,
     correction: typeof item.correction === "string" ? item.correction : null,
     last_worked_at: lastWorkedAt,
   };
@@ -226,6 +323,59 @@ function normalizeChapter(raw: unknown): Chapter | null {
   const item = isRecord(raw) ? raw : {};
   if (typeof item.id !== "string" || typeof item.label !== "string" || !item.label.trim()) return null;
   return { id: item.id, subject: migrateSubject(item.subject), label: item.label };
+}
+
+/** Ramène une entrée de file de travail potentiellement corrompue vers une forme valide, ou l'écarte — même principe que `normalizeChapter`. */
+function normalizeWorkQueueItem(raw: unknown): WorkQueueItem | null {
+  const item = isRecord(raw) ? raw : {};
+  if (typeof item.exerciseId !== "string" || !item.exerciseId) return null;
+  return { exerciseId: item.exerciseId };
+}
+
+const DEADLINE_TYPES: readonly DeadlineType[] = ["DS", "khôlle", "autre"];
+
+/** Ramène une échéance potentiellement corrompue vers une forme valide, ou l'écarte — même principe que `normalizeChapter`. `chapterIds` invalides sont simplement filtrés, jamais toute l'échéance écartée pour ça. */
+export function normalizeDeadline(raw: unknown): Deadline | null {
+  const item = isRecord(raw) ? raw : {};
+  if (typeof item.id !== "string" || typeof item.date !== "string" || typeof item.title !== "string" || !item.title.trim()) return null;
+  return {
+    id: item.id,
+    type: (DEADLINE_TYPES as string[]).includes(item.type as string) ? (item.type as DeadlineType) : "autre",
+    subject: migrateSubject(item.subject),
+    date: item.date,
+    title: item.title,
+    chapterIds: stringArray(item.chapterIds),
+  };
+}
+
+/** Même principe que `normalizeDailySubjectGoals` : objet corrompu → `{}`, seules les valeurs numériques strictement positives sont conservées. */
+function normalizeWeeklyPlanSubjectMinutes(raw: unknown): Partial<Record<Subject, number>> {
+  if (!isRecord(raw)) return {};
+  const result: Partial<Record<Subject, number>> = {};
+  for (const subject of subjects) {
+    const value = raw[subject];
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) result[subject] = Math.round(value);
+  }
+  return result;
+}
+
+function normalizeWeeklyPlanDay(raw: unknown): WeeklyPlanDay | null {
+  const item = isRecord(raw) ? raw : {};
+  if (typeof item.day !== "number" || !Number.isFinite(item.day) || item.day < 0 || item.day > 6) return null;
+  return { day: Math.round(item.day), subjectMinutes: normalizeWeeklyPlanSubjectMinutes(item.subjectMinutes) };
+}
+
+/**
+ * Ramène un plan hebdomadaire potentiellement corrompu (jours manquants,
+ * dupliqués, dans le désordre) vers EXACTEMENT 7 jours (0-6) — un jour absent
+ * ou invalide dans les données brutes retombe sur `subjectMinutes: {}` pour
+ * ce jour plutôt que de propager un tableau de longueur inattendue vers
+ * `lib/weekly-plan.ts`, qui suppose toujours les 7 jours présents.
+ */
+export function normalizeWeeklyPlan(raw: unknown): WeeklyPlan {
+  const days = Array.isArray(raw) ? raw.map(normalizeWeeklyPlanDay).filter((day): day is WeeklyPlanDay => day !== null) : [];
+  const byDay = new Map(days.map((day) => [day.day, day]));
+  return Array.from({ length: 7 }, (_, day) => byDay.get(day) ?? { day, subjectMinutes: {} });
 }
 
 function isNumber(value: unknown): value is number {
@@ -264,40 +414,156 @@ function normalizeWeekSnapshot(raw: unknown): WeekSnapshot | null {
 }
 
 /**
+ * Ramène `subjectDeadlines` potentiellement corrompu (édition manuelle du
+ * localStorage, ancienne sauvegarde sans ce champ) vers une forme valide —
+ * même principe que `normalizeExercise`/`normalizeChapter` : un objet qui
+ * n'en est pas un retombe sur `{}`, et seules les clés correspondant à une
+ * vraie `Subject` avec une valeur `string` non vide sont conservées (jamais
+ * une clé arbitraire injectée depuis un fichier corrompu, jamais une valeur
+ * vide qui équivaudrait à "pas d'échéance" de toute façon — voir
+ * `daysUntilContest`, qui traite `""` comme absent). La VALIDITÉ de la date
+ * elle-même (parseable ou non) n'est PAS vérifiée ici : exactement comme
+ * `contestDate`, elle est simplement stockée telle quelle et validée à la
+ * lecture par `daysUntilContest` (lib/plan.ts) — un seul endroit qui décide
+ * "date valide ou non", jamais dupliqué.
+ */
+function normalizeSubjectDeadlines(raw: unknown): Partial<Record<Subject, string>> {
+  if (!isRecord(raw)) return {};
+  const result: Partial<Record<Subject, string>> = {};
+  for (const subject of subjects) {
+    const value = raw[subject];
+    if (typeof value === "string" && value.trim()) result[subject] = value;
+  }
+  return result;
+}
+
+/**
+ * Même principe que `normalizeSubjectDeadlines` ci-dessus, appliqué à
+ * `dailySubjectGoals` (Sprint Study OS — Aujourd'hui) : un objet qui n'en est
+ * pas retombe sur `{}`, seules les valeurs numériques strictement positives
+ * sont conservées (un objectif à 0 ou négatif n'a pas de sens et équivaudrait
+ * de toute façon à "pas d'objectif" — jamais stocké comme tel pour ne pas
+ * laisser deux représentations différentes du même "rien configuré").
+ */
+function normalizeDailySubjectGoals(raw: unknown): Partial<Record<Subject, number>> {
+  if (!isRecord(raw)) return {};
+  const result: Partial<Record<Subject, number>> = {};
+  for (const subject of subjects) {
+    const value = raw[subject];
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) result[subject] = Math.round(value);
+  }
+  return result;
+}
+
+/** `null` : pas d'objectif configuré — jamais 0, qui serait ambigu avec "objectif atteint d'office". */
+function normalizeDailyExerciseGoal(raw: unknown): number | null {
+  return typeof raw === "number" && Number.isFinite(raw) && raw > 0 ? Math.round(raw) : null;
+}
+
+/**
  * Fusionne une préférence potentiellement partielle/corrompue (import, ancienne
- * sauvegarde, édition manuelle du localStorage) avec `defaults` — même principe
+ * sauvegarde, édition manuelle du localStorage) avec `defaultPreferences` — même principe
  * que `normalizeExercise`/`normalizeChapter` : un champ absent ou invalide
  * retombe sur sa valeur par défaut plutôt que de propager une valeur incohérente
  * (notamment `themeMode`, posé tel quel en attribut DOM par `applyThemeMode`).
+ * `subjectDeadlines` a besoin de la même validation explicite que `themeMode` :
+ * le simple merge par spread ci-dessous ne suffit pas pour un objet imbriqué
+ * (il le remplacerait tel quel, sans filtrer un contenu corrompu).
  */
 export function normalizePreferences(raw: unknown): Preferences {
   const item = isRecord(raw) ? raw : {};
-  const merged = { ...defaults, ...item };
-  return { ...merged, themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE };
+  const merged = { ...defaultPreferences, ...item };
+  return {
+    ...merged,
+    themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE,
+    subjectDeadlines: normalizeSubjectDeadlines(item.subjectDeadlines),
+    dailySubjectGoals: normalizeDailySubjectGoals(item.dailySubjectGoals),
+    dailyExerciseGoal: normalizeDailyExerciseGoal(item.dailyExerciseGoal),
+  };
+}
+
+/**
+ * Nom de l'événement `window` diffusé par `hooks/use-prepahub-data.ts` dès
+ * qu'une écriture échoue — `usePrepahubData()` est un simple hook (pas un
+ * contexte React), donc chaque composant qui l'appelle a son PROPRE état
+ * local : sans ce signal, un échec détecté par ex. dans `ExerciseManager`
+ * n'atteindrait jamais `StorageErrorBanner` (monté séparément dans
+ * `AppShell`). Même principe que l'écoute déjà en place pour l'événement
+ * natif `storage` (qui, lui, ne couvre QUE les autres onglets — jamais le
+ * document courant, limite native du navigateur) : ce nom est défini ici
+ * pour rester à un seul endroit, importé par le hook des deux côtés
+ * (émission ET écoute).
+ */
+export const STORAGE_ERROR_EVENT = "prepahub:storage-error";
+
+/**
+ * Nom de l'événement `window` diffusé par `hooks/use-prepahub-data.ts` après
+ * CHAQUE écriture métier RÉUSSIE (exercices/séances/chapitres/préférences) —
+ * distinct de `STORAGE_ERROR_EVENT` ci-dessus (qui ne porte qu'un succès/échec,
+ * jamais "quoi relire"). Sert uniquement à prévenir les autres instances de
+ * `usePrepahubData()` vivant dans le MÊME onglet (ex. la sidebar, montée une
+ * seule fois dans AppShell, donc jamais remontée par une navigation) qu'une
+ * relecture est nécessaire — l'événement natif `storage` ne couvre que les
+ * AUTRES onglets, jamais le document courant (limite native du navigateur,
+ * déjà documentée sur `STORAGE_ERROR_EVENT`). Aucun `detail` : chaque
+ * écouteur relit tout via `refresh()`, jamais une clé précise — une seule
+ * source de vérité (localStorage), jamais un second état à tenir cohérent.
+ */
+export const DATA_WRITTEN_EVENT = "prepahub:data-written";
+
+/**
+ * Écrit dans `localStorage` sans jamais laisser une exception remonter non
+ * gérée (quota dépassé — `QuotaExceededError`, navigation privée sur Safari,
+ * stockage désactivé par l'utilisateur…). Renvoie `true`/`false` plutôt que
+ * de jeter : chaque appelant (`localData.saveX` ci-dessous) décide comment
+ * réagir, au lieu que l'échec d'une seule écriture ne fasse planter tout
+ * l'écran en cours (voir `hooks/use-prepahub-data.ts#storageError`, seul
+ * endroit qui traduit ce booléen en message pour l'utilisateur).
+ */
+function safeSetItem(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export const localData = {
   sessions: (): WorkSession[] =>
     typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(sessionsKey) || "[]") as unknown[]).map(normalizeSession),
-  saveSessions: (items: WorkSession[]) => localStorage.setItem(sessionsKey, JSON.stringify(items)),
+  saveSessions: (items: WorkSession[]): boolean => safeSetItem(sessionsKey, JSON.stringify(items)),
   exercises: (): Exercise[] =>
     typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(exercisesKey) || "[]") as unknown[]).map(normalizeExercise),
-  saveExercises: (items: Exercise[]) => localStorage.setItem(exercisesKey, JSON.stringify(items)),
+  saveExercises: (items: Exercise[]): boolean => safeSetItem(exercisesKey, JSON.stringify(items)),
   chapters: (): Chapter[] =>
     typeof window === "undefined"
       ? []
       : (JSON.parse(localStorage.getItem(chaptersKey) || "[]") as unknown[]).map(normalizeChapter).filter((item): item is Chapter => item !== null),
-  saveChapters: (items: Chapter[]) => localStorage.setItem(chaptersKey, JSON.stringify(items)),
-  preferences: (): Preferences => (typeof window === "undefined" ? defaults : normalizePreferences(JSON.parse(localStorage.getItem(preferencesKey) || "{}"))),
-  savePreferences: (preferences: Preferences) => localStorage.setItem(preferencesKey, JSON.stringify(preferences)),
+  saveChapters: (items: Chapter[]): boolean => safeSetItem(chaptersKey, JSON.stringify(items)),
+  preferences: (): Preferences => (typeof window === "undefined" ? defaultPreferences : normalizePreferences(JSON.parse(localStorage.getItem(preferencesKey) || "{}"))),
+  savePreferences: (preferences: Preferences): boolean => safeSetItem(preferencesKey, JSON.stringify(preferences)),
   /** Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`), ou `null` si aucune n'a jamais été faite. */
   lastBackupAt: (): string | null => (typeof window === "undefined" ? null : localStorage.getItem(lastBackupKey)),
-  saveLastBackupAt: (iso: string) => localStorage.setItem(lastBackupKey, iso),
+  saveLastBackupAt: (iso: string): boolean => safeSetItem(lastBackupKey, iso),
   weekSnapshots: (): WeekSnapshot[] =>
     typeof window === "undefined"
       ? []
       : (JSON.parse(localStorage.getItem(weekSnapshotsKey) || "[]") as unknown[]).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
-  saveWeekSnapshots: (items: WeekSnapshot[]) => localStorage.setItem(weekSnapshotsKey, JSON.stringify(items)),
+  saveWeekSnapshots: (items: WeekSnapshot[]): boolean => safeSetItem(weekSnapshotsKey, JSON.stringify(items)),
+  workQueue: (): WorkQueueItem[] =>
+    typeof window === "undefined"
+      ? []
+      : (JSON.parse(localStorage.getItem(workQueueKey) || "[]") as unknown[]).map(normalizeWorkQueueItem).filter((item): item is WorkQueueItem => item !== null),
+  saveWorkQueue: (items: WorkQueueItem[]): boolean => safeSetItem(workQueueKey, JSON.stringify(items)),
+  deadlines: (): Deadline[] =>
+    typeof window === "undefined"
+      ? []
+      : (JSON.parse(localStorage.getItem(deadlinesKey) || "[]") as unknown[]).map(normalizeDeadline).filter((item): item is Deadline => item !== null),
+  saveDeadlines: (items: Deadline[]): boolean => safeSetItem(deadlinesKey, JSON.stringify(items)),
+  weeklyPlan: (): WeeklyPlan =>
+    normalizeWeeklyPlan(typeof window === "undefined" ? [] : JSON.parse(localStorage.getItem(weeklyPlanKey) || "[]")),
+  saveWeeklyPlan: (plan: WeeklyPlan): boolean => safeSetItem(weeklyPlanKey, JSON.stringify(plan)),
 };
 
 /** Rappel de sauvegarde (finalisation V1) : au-delà de ce nombre de jours sans export, la sauvegarde est considérée périmée. */
@@ -329,6 +595,13 @@ export function exportBackup(): void {
       // fantômes (chapter_id pointant vers un catalogue vide).
       chapters: localData.chapters(),
       weekSnapshots: localData.weekSnapshots(),
+      // Échéances/plan hebdomadaire (Sprint Study OS Phase 4) : données
+      // durables saisies à la main par l'utilisateur (contrairement à la file
+      // de travail, éphémère et volontairement exclue de la sauvegarde) —
+      // perdre un DS déjà planifié en changeant d'appareil serait une vraie
+      // régression, pas un simple confort.
+      deadlines: localData.deadlines(),
+      weeklyPlan: localData.weeklyPlan(),
     },
     null,
     2
@@ -357,6 +630,10 @@ export interface BackupPayload {
   /** Optionnel : une sauvegarde exportée avant l'ajout des chapitres à l'export n'a pas ce champ ; restauré à `[]` dans ce cas (voir components/data-backup.tsx#confirmImport). */
   chapters?: Chapter[];
   weekSnapshots?: WeekSnapshot[];
+  /** Optionnel : absent d'une sauvegarde exportée avant le Sprint Study OS Phase 4 ; restauré à `[]` dans ce cas. */
+  deadlines?: Deadline[];
+  /** Optionnel : absent d'une sauvegarde exportée avant le Sprint Study OS Phase 4 ; restauré à un plan vide (7 jours sans rien de prévu) dans ce cas. */
+  weeklyPlan?: WeeklyPlan;
 }
 
 /**
@@ -407,5 +684,9 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   // Idem : absent d'une sauvegarde exportée avant l'ajout des chapitres à
   // l'export ; chaque entrée est revalidée par `normalizeChapter` à la lecture.
   if (data.chapters !== undefined && !Array.isArray(data.chapters)) return false;
+  // Idem (Sprint Study OS Phase 4) : absents d'une sauvegarde antérieure ;
+  // chaque entrée/jour est revalidé par `normalizeDeadline`/`normalizeWeeklyPlan` à la lecture.
+  if (data.deadlines !== undefined && !Array.isArray(data.deadlines)) return false;
+  if (data.weeklyPlan !== undefined && !Array.isArray(data.weeklyPlan)) return false;
   return true;
 }

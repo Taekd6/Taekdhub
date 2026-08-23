@@ -32,6 +32,18 @@
   :root {
     --accent-rgb: 212 243 107;
     --accent-fg-rgb: 0 0 0;
+    /*
+     * Texte utilisant la couleur d'accent (`text-accent-text` — voir
+     * tailwind.config.ts) : l'accent brut (`--accent-rgb`) reste inchangé
+     * pour les fonds/bordures/glows (`bg-accent`, `border-accent`…), mais
+     * posé tel quel en TEXTE sur fond clair il peut devenir trop pâle. `-dark`
+     * et `-light` sont calculées par `applyAccent` (lib/theme.ts) à chaque
+     * changement d'accent ; seule la variable "active" ci-dessous change avec
+     * le thème (même mécanisme que les couleurs de statut plus bas).
+     */
+    --accent-text-rgb-dark: 212 243 107;
+    --accent-text-rgb-light: 107 123 54;
+    --accent-text-rgb: var(--accent-text-rgb-dark);
 
     /* Thème sombre — valeurs par défaut, identiques à celles utilisées avant ce sprint : aucun changement visuel pour un utilisateur qui ne touche à rien. */
     --canvas-rgb: 9 9 11;
@@ -99,6 +111,7 @@
     --muted-rgb: 82 82 91;
     --subtle-rgb: 113 113 122;
     --hairline-rgb: 0 0 0;
+    --accent-text-rgb: var(--accent-text-rgb-light);
 
     /* Échelle "zinc" inversée : une classe conçue pour "texte clair sur fond sombre" (ex. text-zinc-100 = texte principal) doit rester le texte PRINCIPAL une fois le fond devenu clair — donc devenir sombre, pas rester claire. */
     --zinc-50-rgb: 9 9 11;
@@ -148,6 +161,7 @@
       --muted-rgb: 82 82 91;
       --subtle-rgb: 113 113 122;
       --hairline-rgb: 0 0 0;
+      --accent-text-rgb: var(--accent-text-rgb-light);
 
       --zinc-50-rgb: 9 9 11;
       --zinc-100-rgb: 24 24 27;

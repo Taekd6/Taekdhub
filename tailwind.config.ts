@@ -28,6 +28,10 @@ export default {
           dim: "rgb(var(--accent-rgb) / 0.12)",
           glow: "rgb(var(--accent-rgb) / 0.25)",
           foreground: "rgb(var(--accent-fg-rgb) / <alpha-value>)",
+          // Variante assombrie en thème clair pour rester lisible en TEXTE
+          // (`text-accent-text`) — voir la note dans app/globals.css.
+          // `bg-accent`/`border-accent`/etc. gardent l'accent brut ci-dessus.
+          text: "rgb(var(--accent-text-rgb) / <alpha-value>)",
         },
         // Échelle "zinc" réécrite en CSS variables (voir app/globals.css) :
         // TOUTES les classes text-zinc-N / bg-zinc-N déjà utilisées dans

@@ -1,5 +1,5 @@
 import { computeProgressBySubject } from "@/lib/progress";
-import { estimatedDurationMinutes, recommendExercises } from "@/lib/recommendation";
+import { estimatedDurationMinutes, recommendExercises, type RecommendationOptions } from "@/lib/recommendation";
 import { subjects } from "@/lib/study";
 import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
@@ -47,10 +47,23 @@ function readinessLevel(flaggedCount: number, completionRate: number): Readiness
   return completionRate >= 50 ? "à consolider" : "pas prêt";
 }
 
-/** Uniquement les matières avec au moins un exercice actif — une matière vide n'a rien à évaluer. */
-export function computeReadinessBySubject(exercises: Exercise[], sessions: WorkSession[], now: Date = new Date()): SubjectReadiness[] {
+/**
+ * Uniquement les matières avec au moins un exercice actif — une matière vide
+ * n'a rien à évaluer. `signals` (Sprint Study OS Phase 5, optionnel, `{}` par
+ * défaut — comportement strictement inchangé sans lui) : mêmes échéances/
+ * retard de plan que "À faire maintenant" (lib/next-action.ts) — sans ce
+ * paramètre, un chapitre lié à un DS imminent pouvait être signalé "Prêt"
+ * ici tout en étant affiché "Prioritaire" sur le Dashboard, une contradiction
+ * détectée en direct pendant l'audit de cette phase.
+ */
+export function computeReadinessBySubject(
+  exercises: Exercise[],
+  sessions: WorkSession[],
+  now: Date = new Date(),
+  signals: Pick<RecommendationOptions, "chapterDeadlines" | "subjectPlanGap"> = {}
+): SubjectReadiness[] {
   const progress = computeProgressBySubject(exercises);
-  const flagged = recommendExercises(exercises, sessions, exercises.length, { now });
+  const flagged = recommendExercises(exercises, sessions, exercises.length, { now, ...signals });
 
   const flaggedBySubject = new Map<Subject, { count: number; minutes: number }>();
   for (const { exercise } of flagged) {

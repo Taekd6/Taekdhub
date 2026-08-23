@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { useScrollLock } from "@/hooks/use-scroll-lock";
 import { useWorkTimer } from "@/hooks/use-work-timer";
 import { subjects } from "@/lib/study";
 import { formatDuration } from "@/lib/utils";
@@ -24,6 +25,10 @@ export function Timer() {
     subject: "Mathématiques",
   });
   const [fullscreen, setFullscreen] = useState(false);
+  // Même abstraction que Focus/ChapterDetail (Sprint Mobile UX + PWA
+  // Foundation) — actif seulement pendant le mode plein écran, pas en mode
+  // carte normal.
+  useScrollLock(fullscreen);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
