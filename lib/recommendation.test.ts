@@ -567,3 +567,55 @@ describe("recommendExercises — signal de retard sur le plan hebdomadaire", () 
     expect(result[0].exercise.id).toBe("ex-behind");
   });
 });
+
+/**
+ * Sprint « rentrée MP » — signal `mpReadinessBonus`, même convention que
+ * `chapterDeadlines`/`subjectPlanGap` ci-dessus : jamais un nouveau moteur,
+ * juste un signal de plus consommé par `evaluateExercise`/`urgencyScore`.
+ */
+describe("recommendExercises — signal de priorité de rentrée MP", () => {
+  // État A du brief MP Readiness : aucun autre signal, une priorité de
+  // rentrée doit quand même pouvoir faire remonter un exercice.
+  it("État A — fait remonter un exercice autrement non signalé, à lui seul", () => {
+    const exercise = makeExercise({ status: "à faire", priority: 2, mastery: 50, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const withoutSignal = recommendExercises([exercise], [], 6, { now: NOW });
+    expect(withoutSignal).toEqual([]);
+
+    const withSignal = recommendExercises([exercise], [], 6, {
+      now: NOW,
+      mpReadinessBonus: new Map([[exercise.id, { notion: { id: "x", subject: "Mathématiques", block: "b", label: "Groupes", tier: "rentree", keywords: [] }, reason: "Priorité de rentrée" }]]),
+    });
+    expect(withSignal.some((r) => r.exercise.id === exercise.id)).toBe(true);
+    expect(withSignal[0].reasons).toContain("Priorité de rentrée");
+  });
+
+  // État E du brief MP Readiness : une échéance réelle reste prioritaire sur
+  // une simple priorité de rentrée.
+  it("État E — une échéance de chapitre proche reste prioritaire sur un simple bonus de rentrée", () => {
+    const withDeadline = makeExercise({ id: "ex-deadline", chapter_id: "c1", status: "à revoir" });
+    const withMpBonus = makeExercise({ id: "ex-mp", status: "à revoir" });
+    const result = recommendExercises([withMpBonus, withDeadline], [], 6, {
+      now: NOW,
+      chapterDeadlines: new Map([["c1", { days: 1, label: "ton DS dans 1 j" }]]),
+      mpReadinessBonus: new Map([[withMpBonus.id, { notion: { id: "x", subject: "Mathématiques", block: "b", label: "Groupes", tier: "rentree", keywords: [] }, reason: "Priorité de rentrée" }]]),
+    });
+    expect(result[0].exercise.id).toBe("ex-deadline");
+  });
+
+  // État I du brief MP Readiness : plusieurs notions bonifiées, mais une
+  // seule action principale ressort (le classement reste total, jamais deux
+  // exercices ex-æquo affichés comme "le" top pick).
+  it("État I — plusieurs exercices bonifiés : un seul reste le premier de la liste", () => {
+    const fragile = makeExercise({ id: "ex-fragile", status: "à revoir", mastery: 0 });
+    const lessFragile = makeExercise({ id: "ex-less-fragile", status: "à revoir", mastery: 50 });
+    const result = recommendExercises([lessFragile, fragile], [], 6, {
+      now: NOW,
+      mpReadinessBonus: new Map([
+        [fragile.id, { notion: { id: "a", subject: "Mathématiques", block: "b", label: "Groupes", tier: "rentree", keywords: [] }, reason: "Priorité de rentrée" }],
+        [lessFragile.id, { notion: { id: "b", subject: "Physique", block: "b", label: "Équations différentielles", tier: "rentree", keywords: [] }, reason: "Priorité de rentrée" }],
+      ]),
+    });
+    expect(result[0].exercise.id).toBe("ex-fragile");
+    expect(result[0].exercise.id).not.toBe(result[1]?.exercise.id);
+  });
+});

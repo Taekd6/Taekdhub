@@ -207,6 +207,21 @@ describe("computeNextAction — objectif atteint + échéance proche (Daily Copi
     const action = computeNextAction([exercise], sessions, 45, NOW);
     expect(action.title).not.toBe("Tu as rempli ton objectif quotidien.");
   });
+
+  // État H (Sprint « rentrée MP ») : un bonus de rentrée présent en même
+  // temps qu'un objectif atteint ne doit jamais perturber le pivot Daily
+  // Copilot déjà en place — le bonus n'affecte que le CLASSEMENT des
+  // exercices, jamais ces branches de message, évaluées avant tout usage de `top`.
+  it("État H — objectif atteint + bonus de rentrée présent : le pivot Daily Copilot reste inchangé", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
+    const action = computeNextAction([exercise], sessions, 45, NOW, {
+      nearestDeadline: { label: "ton DS de Mathématiques dans 2 j", days: 2 },
+      mpReadinessBonus: new Map([[exercise.id, { notion: { id: "x", subject: "Mathématiques", block: "b", label: "Groupes", tier: "rentree", keywords: [] }, reason: "Priorité de rentrée" }]]),
+    });
+    expect(action.title).toBe("Tu as rempli ton objectif quotidien.");
+    expect(action.description).toBe("Il reste cependant ton DS de Mathématiques dans 2 j.");
+  });
 });
 
 describe("computeNextAction — programme du jour terminé (Sprint Adaptive Day / Day Flow)", () => {

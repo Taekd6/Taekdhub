@@ -1,5 +1,6 @@
 import type { ChapterDeadlineSignal } from "@/lib/deadlines";
 import { resultCounts, type ResultCounts } from "@/lib/history";
+import type { MpReadinessBonusInfo } from "@/lib/mp-readiness";
 import { progressByChapter, type ChapterProgress } from "@/lib/progress";
 import { computeExerciseBankStats, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import type { Chapter } from "@/lib/storage";
@@ -99,6 +100,15 @@ export interface NextActionSignals {
    * ou pas encore terminé).
    */
   todayPlanAllDone?: boolean;
+  /**
+   * Bonus « rentrée MP », par exercice (Sprint « rentrée MP ») — voir
+   * lib/mp-readiness.ts#computeMpReadinessBonus. Simplement transmis au
+   * moteur de recommandation (`recommendExercises`/`computeExerciseBankStats`
+   * ci-dessous), comme `chapterDeadlines`/`subjectPlanGap` : `computeNextAction`
+   * ne recalcule jamais lui-même quelles notions sont prioritaires à la
+   * rentrée. `undefined` : comportement strictement inchangé.
+   */
+  mpReadinessBonus?: Map<string, MpReadinessBonusInfo>;
 }
 
 export function computeNextAction(

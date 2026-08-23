@@ -9,6 +9,7 @@ import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeDayFlow } from "@/lib/day-flow";
 import { chapterDeadlineSignals, nearestUpcomingDeadline } from "@/lib/deadlines";
 import { timeOfDayGreetingWord } from "@/lib/greeting";
+import { computeMpReadinessAssessments, computeMpReadinessBonus } from "@/lib/mp-readiness";
 import { computeDailyObjective, computeNextAction, computeStatusLine } from "@/lib/next-action";
 import { planGapMinutesBySubject } from "@/lib/weekly-plan";
 
@@ -20,7 +21,7 @@ const today = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric"
  * (lib/next-action.ts), jamais une deuxième lecture de l'état.
  */
 export default function DashboardPage() {
-  const { sessions, exercises, preferences, deadlines, weeklyPlan, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, preferences, deadlines, weeklyPlan, ready } = usePrepahubData();
   const name = preferences.displayName?.trim();
   // Micro-sprint « Ah ouais » — contexte temporel léger (optionnel) : seul le
   // mot de salutation varie selon l'heure, la personnalisation par prénom
@@ -42,10 +43,15 @@ export default function DashboardPage() {
       subjectPlanGap: planGapMinutesBySubject(weeklyPlan, sessions, now),
       nearestDeadline: nearestUpcomingDeadline(deadlines, now),
       todayPlanAllDone: computeDayFlow(weeklyPlan, sessions, now).allDone,
+      // Sprint « rentrée MP » : même signal que le Hero
+      // (components/dashboard-overview.tsx) — sans lui, cette ligne pouvait
+      // annoncer un état différent de celui réellement proposé juste en
+      // dessous.
+      mpReadinessBonus: computeMpReadinessBonus(computeMpReadinessAssessments(chapters, exercises, sessions)),
     };
     const nextAction = computeNextAction(exercises, sessions, preferences.dailyGoalMinutes, now, signals);
     return computeStatusLine(objective, nextAction, signals.nearestDeadline, signals.todayPlanAllDone);
-  }, [ready, sessions, exercises, preferences.dailyGoalMinutes, deadlines, weeklyPlan]);
+  }, [ready, sessions, exercises, chapters, preferences.dailyGoalMinutes, deadlines, weeklyPlan]);
 
   return (
     <>

@@ -16,6 +16,7 @@ import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises,
 import { computeDayFlow } from "@/lib/day-flow";
 import { chapterDeadlineSignals, nearestUpcomingDeadline } from "@/lib/deadlines";
 import { findPersistedFocusDraft } from "@/lib/focus-draft";
+import { computeMpReadinessAssessments, computeMpReadinessBonus } from "@/lib/mp-readiness";
 import { computeNextAction } from "@/lib/next-action";
 import { computeDailyPlan, PLAN_STORAGE_KEY, summarizePlanObjective, type StoredPlan } from "@/lib/plan";
 import { computeProgressBySubject, type SubjectProgress } from "@/lib/progress";
@@ -81,8 +82,12 @@ export function SessionRunner() {
       // d'être travaillé), jamais une lecture différée qui attendrait un
       // aller-retour par /dashboard pour s'en apercevoir.
       todayPlanAllDone: computeDayFlow(weeklyPlan, sessions).allDone,
+      // Sprint « rentrée MP » : même signal que le Hero du Dashboard —
+      // sans lui, /session pourrait proposer un exercice différent de celui
+      // déjà annoncé pour une priorité de rentrée.
+      mpReadinessBonus: computeMpReadinessBonus(computeMpReadinessAssessments(chapters, exercises, sessions)),
     }),
-    [deadlines, weeklyPlan, sessions]
+    [deadlines, weeklyPlan, sessions, chapters, exercises]
   );
   const [phase, setPhase] = useState<Phase>("loading");
   const [recommendations, setRecommendations] = useState<ExerciseRecommendation[]>([]);

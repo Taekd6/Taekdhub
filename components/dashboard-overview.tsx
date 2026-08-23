@@ -41,6 +41,7 @@ import { cn } from "@/lib/cn";
 import { computeDailyObjectiveBreakdown } from "@/lib/daily-goals";
 import { computeDayFlow } from "@/lib/day-flow";
 import { chapterDeadlineSignals, nearestDeadlineForSubject, nearestUpcomingDeadline } from "@/lib/deadlines";
+import { computeMpReadinessAssessments, computeMpReadinessBonus, MP_READINESS_REMINDERS } from "@/lib/mp-readiness";
 import { computeStreak } from "@/lib/gamification";
 import { recentDaySummaries } from "@/lib/history";
 import {
@@ -159,6 +160,29 @@ export function DashboardOverview() {
   // pas seulement du booléen `allDone` qui alimente le Hero.
   const dayFlow = useMemo(() => computeDayFlow(weeklyPlan, sessions), [weeklyPlan, sessions]);
 
+  // Rentrée MP (Sprint « rentrée MP ») — évaluation par notion à partir des
+  // données déjà existantes (chapitres/exercices/sessions), séparée de
+  // `prioritySignals` ci-dessous pour la même raison que `dayFlow` : la carte
+  // "Rentrée MP" a besoin du détail par notion, pas seulement du bonus par
+  // exercice qui alimente le Hero.
+  const mpReadinessAssessments = useMemo(
+    () => computeMpReadinessAssessments(chapters, exercises, sessions),
+    [chapters, exercises, sessions]
+  );
+
+  // Regroupement pour la carte "Rentrée MP" — lecture seule (voir la doc de
+  // la carte plus bas) : ne retient que ce qui mérite d'être montré à
+  // l'élève (jamais "complement", non prioritaire pour les premiers jours,
+  // ni une notion déjà solide qu'on afficherait individuellement).
+  const mpReadinessOverview = useMemo(() => {
+    const rentree = mpReadinessAssessments.filter((assessment) => assessment.notion.tier === "rentree");
+    return {
+      toDiscover: rentree.filter((assessment) => assessment.state === "decouvrir"),
+      toReinforce: rentree.filter((assessment) => assessment.state === "renforcer"),
+      masteredCount: rentree.filter((assessment) => assessment.state === "maitriser" || assessment.state === "approfondir").length,
+    };
+  }, [mpReadinessAssessments]);
+
   const prioritySignals = useMemo(() => {
     const now = new Date();
     return {
@@ -166,8 +190,9 @@ export function DashboardOverview() {
       subjectPlanGap: planGapMinutesBySubject(weeklyPlan, sessions, now),
       nearestDeadline: nearestUpcomingDeadline(deadlines, now),
       todayPlanAllDone: dayFlow.allDone,
+      mpReadinessBonus: computeMpReadinessBonus(mpReadinessAssessments),
     };
-  }, [deadlines, weeklyPlan, sessions, dayFlow.allDone]);
+  }, [deadlines, weeklyPlan, sessions, dayFlow.allDone, mpReadinessAssessments]);
 
   const model = useMemo(() => {
     const now = new Date();
@@ -1024,6 +1049,113 @@ export function DashboardOverview() {
                     Travailler ce chapitre <ArrowRight size={11} />
                   </span>
                 </Link>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/*
+        RENTRÉE MP (Sprint « rentrée MP ») — carte de LECTURE SEULE : elle
+        explique POURQUOI le Hero peut proposer telle notion (voir
+        `mpReadinessBonus` ci-dessus, déjà consommé par `computeNextAction`),
+        elle ne décide jamais elle-même quoi faire — aucun second CTA
+        "commencer" ici, juste un lien direct vers un exercice concret quand
+        il en existe un (même convention `?focus=` que "À consolider").
+        Masquée entièrement si le catalogue de rentrée ne trouve RIEN à dire
+        (aucune notion à découvrir/à renforcer et aucun rappel) : jamais une
+        carte vide forcée.
+      */}
+      {(mpReadinessOverview.toDiscover.length > 0 || mpReadinessOverview.toReinforce.length > 0 || MP_READINESS_REMINDERS.length > 0) && (
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <GraduationCap size={14} className="text-accent-text" />
+            <p className="eyebrow">Rentrée MP</p>
+          </div>
+          <CardTitle className="mt-2">Ce qui compte pour bien démarrer ta MP</CardTitle>
+          <p className="mt-1.5 text-sm text-zinc-500">D&apos;après les priorités annoncées par tes professeurs.</p>
+
+          {mpReadinessOverview.toDiscover.length > 0 && (
+            <div className="mt-5">
+              <p className="text-2xs font-medium uppercase tracking-wide text-zinc-500">À découvrir</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {mpReadinessOverview.toDiscover.map((assessment) => {
+                  const target = assessment.matchedExercises[0];
+                  const content = (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="min-w-0 truncate font-medium text-zinc-100">{assessment.notion.label}</p>
+                        <span className="whitespace-nowrap text-2xs text-zinc-500">{assessment.notion.subject}</span>
+                      </div>
+                      <Badge variant="accent">Notion nouvelle à découvrir</Badge>
+                    </>
+                  );
+                  return target ? (
+                    <Link
+                      key={assessment.notion.id}
+                      href={`/exercises?focus=${target.id}`}
+                      className="focus-ring flex min-w-0 flex-col gap-2 rounded-xl border border-hairline/[0.06] p-3 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                    >
+                      {content}
+                    </Link>
+                  ) : (
+                    <div key={assessment.notion.id} className="flex min-w-0 flex-col gap-2 rounded-xl border border-hairline/[0.06] p-3 text-sm">
+                      {content}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {mpReadinessOverview.toReinforce.length > 0 && (
+            <div className="mt-5">
+              <p className="text-2xs font-medium uppercase tracking-wide text-zinc-500">À renforcer</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {mpReadinessOverview.toReinforce.map((assessment) => {
+                  const target = assessment.matchedExercises[0];
+                  const content = (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="min-w-0 truncate font-medium text-zinc-100">{assessment.notion.label}</p>
+                        <span className="whitespace-nowrap text-2xs text-zinc-500">{assessment.notion.subject}</span>
+                      </div>
+                      <Badge variant="warning">Priorité de rentrée</Badge>
+                    </>
+                  );
+                  return target ? (
+                    <Link
+                      key={assessment.notion.id}
+                      href={`/exercises?focus=${target.id}`}
+                      className="focus-ring flex min-w-0 flex-col gap-2 rounded-xl border border-hairline/[0.06] p-3 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                    >
+                      {content}
+                    </Link>
+                  ) : (
+                    <div key={assessment.notion.id} className="flex min-w-0 flex-col gap-2 rounded-xl border border-hairline/[0.06] p-3 text-sm opacity-80">
+                      {content}
+                      <span className="text-2xs text-zinc-600">Pas encore de traces dans ta banque.</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {mpReadinessOverview.masteredCount > 0 && (
+            <p className="mt-5 text-xs text-zinc-500">
+              {mpReadinessOverview.masteredCount} notion{mpReadinessOverview.masteredCount > 1 ? "s" : ""} de rentrée déjà solide
+              {mpReadinessOverview.masteredCount > 1 ? "s" : ""} — rien à faire dessus pour l&apos;instant.
+            </p>
+          )}
+
+          {MP_READINESS_REMINDERS.length > 0 && (
+            <div className="mt-5 space-y-2 border-t border-hairline/[0.06] pt-4">
+              {MP_READINESS_REMINDERS.map((reminder) => (
+                <div key={reminder.id} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-zinc-300">{reminder.label}</span>
+                  <span className="text-right text-xs text-zinc-500">{reminder.detail}</span>
+                </div>
               ))}
             </div>
           )}

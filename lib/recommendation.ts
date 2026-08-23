@@ -1,5 +1,6 @@
 import { DEADLINE_RELEVANCE_HORIZON_DAYS } from "@/lib/deadline-horizon";
 import type { ChapterDeadlineSignal } from "@/lib/deadlines";
+import type { MpReadinessBonusInfo } from "@/lib/mp-readiness";
 import { minutesByExerciseMap, totalSeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
 import type { Exercise, ExerciseStatus, Subject, WorkSession } from "@/lib/supabase/types";
@@ -90,7 +91,7 @@ function daysSinceLastWorked(exercise: Exercise, now: Date): number | null {
  * ignorées : on ne sait rien de leur issue, donc elles ne doivent influencer
  * ni les raisons ni le score (voir la doc de `WorkSession.result`).
  */
-function attemptsWithResult(sessions: WorkSession[], exerciseId: string): WorkSession[] {
+export function attemptsWithResult(sessions: WorkSession[], exerciseId: string): WorkSession[] {
   return sessions
     .filter((session) => session.exercise_id === exerciseId && session.result)
     .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
@@ -99,8 +100,8 @@ function attemptsWithResult(sessions: WorkSession[], exerciseId: string): WorkSe
 /** Fenêtre d'analyse pour détecter des échecs répétés — les 3 tentatives les plus récentes, pas tout l'historique. */
 const RECENT_ATTEMPTS_WINDOW = 3;
 
-/** Nombre d'échecs parmi les tentatives récentes (déjà triées, plus récentes en premier). */
-function recentFailureCount(attempts: WorkSession[]): number {
+/** Nombre d'échecs parmi les tentatives récentes (déjà triées, plus récentes en premier). Exportée (MP Readiness) pour que lib/mp-readiness.ts détecte une fragilité récente sur une notion sans redéfinir ce seuil séparément. */
+export function recentFailureCount(attempts: WorkSession[]): number {
   return attempts.slice(0, RECENT_ATTEMPTS_WINDOW).filter((attempt) => attempt.result === "échoué").length;
 }
 
@@ -145,10 +146,19 @@ function evaluateExercise(
   attempts: WorkSession[],
   now: Date,
   deadlineSignal?: ChapterDeadlineSignal,
-  planGapMinutes?: number
+  planGapMinutes?: number,
+  mpReadinessInfo?: MpReadinessBonusInfo
 ): string[] {
   const reasons: string[] = [];
   const neverWorked = isNeverWorked(exercise, minutesSpent);
+  // MP Readiness (Sprint « rentrée MP ») : critère d'inclusion à part entière,
+  // comme l'échéance de chapitre ci-dessous — une notion explicitement
+  // attendue à la rentrée doit pouvoir faire remonter un exercice même sans
+  // aucun autre signal (brief, État A : "aucun travail" → une priorité de
+  // rentrée peut quand même être proposée). `lib/mp-readiness.ts` ne retient
+  // déjà que les notions "rentree" en état "renforcer" : jamais une notion
+  // déjà maîtrisée, jamais une simple notion à découvrir.
+  if (mpReadinessInfo) reasons.push(mpReadinessInfo.reason);
   if (exercise.mastery <= 25 && !neverWorked) reasons.push("Maîtrise faible");
   if (exercise.priority >= 4) reasons.push("Priorité élevée");
   // `attempts.length === 0` en plus de `neverWorked` (Sprint Study OS Phase 6) :
@@ -349,13 +359,26 @@ function planGapBonus(minutesBehind: number | undefined): number {
   return Math.min(PLAN_GAP_BONUS_CAP, minutesBehind * PLAN_GAP_BONUS_PER_MINUTE);
 }
 
+/**
+ * Poids du bonus de rentrée MP dans `urgencyScore` (Sprint « rentrée MP ») —
+ * exporté pour que lib/mp-readiness.ts (qui décide QUELS exercices méritent
+ * ce bonus) n'ait pas à redéfinir cette valeur séparément. Volontairement
+ * sous `DEADLINE_BONUS_CAP` (25, au maximum) : une échéance réelle doit
+ * rester prioritaire sur une simple priorité de rentrée (brief, État E). Au
+ * même ordre de grandeur que `neverWorkedBonus` (15) et sous
+ * `PLAN_GAP_BONUS_CAP` (20) : un vrai retard de plan garde l'avantage sur une
+ * notion de rentrée déjà un peu travaillée.
+ */
+export const MP_READINESS_BONUS = 16;
+
 function urgencyScore(
   exercise: Exercise,
   minutesSpent: number,
   attempts: WorkSession[],
   now: Date,
   deadlineSignal?: ChapterDeadlineSignal,
-  planGapMinutes?: number
+  planGapMinutes?: number,
+  mpReadinessInfo?: MpReadinessBonusInfo
 ): number {
   const masteryGap = (100 - exercise.mastery) * 0.6; // 0 (maîtrisé à 100%) à 60 (maîtrisé à 0%)
   const priorityWeight = exercise.priority * 8; // 8 à 40
@@ -392,6 +415,11 @@ function urgencyScore(
   // comportement strictement inchangé pour tout appelant qui ne les fournit pas.
   const deadlineBonus = chapterDeadlineBonus(deadlineSignal); // 0 à 25
   const planBonus = planGapBonus(planGapMinutes); // 0 à 20
+  // MP Readiness : bonus plat, volontairement sous `deadlineBonus`/`planBonus`
+  // à leur maximum (voir lib/mp-readiness.ts#MP_READINESS_BONUS) — une
+  // échéance réelle ou un vrai retard de plan restent prioritaires sur une
+  // simple priorité de rentrée (brief, États E/G).
+  const mpReadinessBonus = mpReadinessInfo ? MP_READINESS_BONUS : 0;
   return (
     masteryGap +
     priorityWeight +
@@ -403,7 +431,8 @@ function urgencyScore(
     failureBonus -
     successPenalty +
     deadlineBonus +
-    planBonus
+    planBonus +
+    mpReadinessBonus
   );
 }
 
@@ -495,6 +524,14 @@ export interface RecommendationOptions {
    * strictement inchangé.
    */
   subjectPlanGap?: Partial<Record<Subject, number>>;
+  /**
+   * Bonus « rentrée MP », par exercice — voir
+   * lib/mp-readiness.ts#computeMpReadinessBonus. Omis : comportement
+   * strictement inchangé (aucun exercice n'est jamais bonifié), pour ne rien
+   * casser chez les appelants existants qui n'ont pas connaissance des
+   * priorités de rentrée.
+   */
+  mpReadinessBonus?: Map<string, MpReadinessBonusInfo>;
 }
 
 /**
@@ -563,9 +600,14 @@ export function recommendExercises(
     const attempts = attemptsWithResult(sessions, exercise.id);
     const deadlineSignal = exercise.chapter_id ? options.chapterDeadlines?.get(exercise.chapter_id) : undefined;
     const planGapMinutes = options.subjectPlanGap?.[exercise.subject];
-    const reasons = evaluateExercise(exercise, minutesSpent, attempts, now, deadlineSignal, planGapMinutes);
+    const mpReadinessInfo = options.mpReadinessBonus?.get(exercise.id);
+    const reasons = evaluateExercise(exercise, minutesSpent, attempts, now, deadlineSignal, planGapMinutes, mpReadinessInfo);
     if (reasons.length === 0) continue;
-    candidates.push({ exercise, score: urgencyScore(exercise, minutesSpent, attempts, now, deadlineSignal, planGapMinutes), reasons });
+    candidates.push({
+      exercise,
+      score: urgencyScore(exercise, minutesSpent, attempts, now, deadlineSignal, planGapMinutes, mpReadinessInfo),
+      reasons,
+    });
   }
   candidates.sort((a, b) => b.score - a.score);
   const diversified = diversifyByChapter(candidates);
@@ -596,7 +638,7 @@ export function computeExerciseBankStats(
   exercises: Exercise[],
   sessions: WorkSession[],
   now: Date = new Date(),
-  options: Pick<RecommendationOptions, "chapterDeadlines" | "subjectPlanGap"> = {}
+  options: Pick<RecommendationOptions, "chapterDeadlines" | "subjectPlanGap" | "mpReadinessBonus"> = {}
 ): ExerciseBankStats {
   const minutesByExercise = minutesByExerciseMap(sessions);
   const active = exercises.filter((exercise) => !exercise.archived);
@@ -611,7 +653,8 @@ export function computeExerciseBankStats(
     const attempts = attemptsWithResult(sessions, exercise.id);
     const deadlineSignal = exercise.chapter_id ? options.chapterDeadlines?.get(exercise.chapter_id) : undefined;
     const planGapMinutes = options.subjectPlanGap?.[exercise.subject];
-    if (evaluateExercise(exercise, minutesSpent, attempts, now, deadlineSignal, planGapMinutes).length > 0) toReviewCount++;
+    const mpReadinessInfo = options.mpReadinessBonus?.get(exercise.id);
+    if (evaluateExercise(exercise, minutesSpent, attempts, now, deadlineSignal, planGapMinutes, mpReadinessInfo).length > 0) toReviewCount++;
     if (isNeverWorked(exercise, minutesSpent)) neverWorkedCount++;
     masterySum += exercise.mastery;
     prioritySum += exercise.priority;
