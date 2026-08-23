@@ -186,15 +186,15 @@ export function FocusView({
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-50 flex flex-col bg-canvas"
     >
-      <header className="flex items-center justify-between border-b border-hairline/[0.07] px-6 py-4">
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between gap-3 border-b border-hairline/[0.07] px-6 py-4">
+        <div className="flex min-w-0 items-center gap-3">
           <SubjectAvatar subject={item.subject} />
-          <div>
-            <p className="text-sm font-semibold">{item.title}</p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{item.title}</p>
             <p className="text-xs text-zinc-500">{item.source}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <span className="flex items-center gap-2 tabular-nums text-lg font-semibold text-zinc-100">
             {running && <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent" />}
             {formatDuration(seconds)}
