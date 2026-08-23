@@ -209,6 +209,34 @@ describe("computeNextAction — objectif atteint + échéance proche (Daily Copi
   });
 });
 
+describe("computeNextAction — programme du jour terminé (Sprint Adaptive Day / Day Flow)", () => {
+  it("todayPlanAllDone + une échéance proche : 'Journée terminée', prioritaire sur le pivot 'objectif atteint'", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
+    const action = computeNextAction([exercise], sessions, 45, NOW, {
+      todayPlanAllDone: true,
+      nearestDeadline: { label: "ton DS de Mathématiques dans 2 j", days: 2 },
+    });
+    expect(action.title).toBe("Journée terminée.");
+    expect(action.description).toBe("Ton programme prévu est terminé. Il reste ton DS de Mathématiques dans 2 j.");
+    expect(action.ctaLabel).toBe("Préparer cette échéance");
+  });
+
+  it("todayPlanAllDone sans échéance : message de fin de journée neutre, jamais culpabilisant", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const action = computeNextAction([exercise], [], 45, NOW, { todayPlanAllDone: true });
+    expect(action.title).toBe("Journée terminée.");
+    expect(action.description).not.toMatch(/retard/i);
+    expect(action.ctaLabel).toBe("Consolider une notion");
+  });
+
+  it("todayPlanAllDone absent/faux : comportement inchangé (pas de bascule)", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const action = computeNextAction([exercise], [], 45, NOW, { todayPlanAllDone: false });
+    expect(action.title).not.toBe("Journée terminée.");
+  });
+});
+
 describe("computeUpcoming", () => {
   it("aucune donnée : liste vide, pas d'erreur", () => {
     expect(computeUpcoming([], [], [], NOW)).toEqual([]);
@@ -353,6 +381,16 @@ describe("computeStatusLine", () => {
     const action = computeNextAction([exercise], sessions, 45, NOW);
     const nearestDeadline = { label: "ton DS de Mathématiques dans 2 j", days: 2 };
     expect(computeStatusLine(objective, action, nearestDeadline)).toBe("Objectif du jour atteint 🎯 Il reste ton DS de Mathématiques dans 2 j.");
+  });
+
+  it("programme du jour terminé (Day Flow) : priorité sur le pivot 'objectif atteint'", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:00:00.000Z", duration_seconds: 60 * 60 })];
+    const objective = computeDailyObjective(sessions, 45, NOW);
+    const action = computeNextAction([exercise], sessions, 45, NOW);
+    expect(computeStatusLine(objective, action, null, true)).toBe("Programme du jour terminé. Tu peux t'arrêter ici.");
+    const nearestDeadline = { label: "ton DS de Mathématiques dans 2 j", days: 2 };
+    expect(computeStatusLine(objective, action, nearestDeadline, true)).toBe("Programme du jour terminé. Il reste ton DS de Mathématiques dans 2 j.");
   });
 
   it("rien travaillé aujourd'hui : indique le temps restant réel (micro-sprint « Ah ouais »)", () => {

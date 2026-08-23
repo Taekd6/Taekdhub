@@ -11,6 +11,7 @@ import {
   CalendarClock,
   CalendarRange,
   Check,
+  Circle,
   Clock3,
   Compass,
   Flag,
@@ -38,6 +39,7 @@ import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { useResumableFocus } from "@/hooks/use-resumable-focus";
 import { cn } from "@/lib/cn";
 import { computeDailyObjectiveBreakdown } from "@/lib/daily-goals";
+import { computeDayFlow } from "@/lib/day-flow";
 import { chapterDeadlineSignals, nearestDeadlineForSubject, nearestUpcomingDeadline } from "@/lib/deadlines";
 import { computeStreak } from "@/lib/gamification";
 import { recentDaySummaries } from "@/lib/history";
@@ -151,14 +153,21 @@ export function DashboardOverview() {
   // (lib/weekly-plan.ts) restent chacun à `{}`/Map vide tant que
   // l'utilisateur n'a configuré ni échéance ni plan — comportement
   // strictement inchangé pour qui n'utilise pas ces fonctionnalités.
+  // Day Flow (Sprint Adaptive Day) — lecture du programme du jour par
+  // matière (lib/day-flow.ts), séparée de `prioritySignals` ci-dessous : ce
+  // composant a aussi besoin des blocs eux-mêmes pour la carte "Aujourd'hui",
+  // pas seulement du booléen `allDone` qui alimente le Hero.
+  const dayFlow = useMemo(() => computeDayFlow(weeklyPlan, sessions), [weeklyPlan, sessions]);
+
   const prioritySignals = useMemo(() => {
     const now = new Date();
     return {
       chapterDeadlines: chapterDeadlineSignals(deadlines, now),
       subjectPlanGap: planGapMinutesBySubject(weeklyPlan, sessions, now),
       nearestDeadline: nearestUpcomingDeadline(deadlines, now),
+      todayPlanAllDone: dayFlow.allDone,
     };
-  }, [deadlines, weeklyPlan, sessions]);
+  }, [deadlines, weeklyPlan, sessions, dayFlow.allDone]);
 
   const model = useMemo(() => {
     const now = new Date();
@@ -584,6 +593,47 @@ export function DashboardOverview() {
           </Link>
         </Card>
       </section>
+
+      {/* AUJOURD'HUI (Day Flow) — lecture du programme du jour par matière
+          (lib/day-flow.ts), jamais un calendrier ni des créneaux horaires :
+          juste terminé / en cours / à venir, dans l'ordre des matières
+          planifiées. Masquée sans plan pour aujourd'hui, même convention que
+          "Ma semaine" (hasWeeklyPlan) — rien à lire tant que rien n'est
+          configuré. Vocabulaire "programme", jamais "objectif" : signal
+          distinct de la carte "Objectif du jour" ci-dessus (weeklyPlan vs
+          dailySubjectGoals, deux intentions différentes qui coexistent sans
+          se contredire tant qu'elles restent nommées différemment). */}
+      {dayFlow.blocks.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <ListChecks size={14} className="text-accent-text" />
+            <p className="eyebrow">Aujourd&apos;hui</p>
+          </div>
+          <ol className="mt-4 space-y-2">
+            {dayFlow.blocks.map((block) => {
+              const isNext = block.status !== "terminé" && dayFlow.blocks.find((b) => b.status !== "terminé") === block;
+              return (
+                <li key={block.subject} className="flex items-center gap-3 text-sm">
+                  {block.status === "terminé" && <Check size={15} className="shrink-0 text-emerald-400" />}
+                  {block.status !== "terminé" && isNext && <span className="grid h-[15px] w-[15px] shrink-0 place-items-center"><span className="h-2 w-2 rounded-full bg-accent" /></span>}
+                  {block.status !== "terminé" && !isNext && <Circle size={15} className="shrink-0 text-zinc-600" />}
+                  <span className={cn("flex items-center gap-1.5", block.status === "terminé" ? "text-zinc-500 line-through decoration-zinc-700" : "text-zinc-200")}>
+                    <SubjectAvatar subject={block.subject} size="sm" />
+                    {block.subject}
+                  </span>
+                  <span className="ml-auto shrink-0 text-xs text-zinc-500">
+                    {block.status === "terminé"
+                      ? `${formatMinutes(block.workedMinutes)} faites`
+                      : isNext
+                        ? "maintenant"
+                        : "ensuite"}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </Card>
+      )}
 
       {/* PLAN DU JOUR */}
       <Card className="p-6 sm:p-7">

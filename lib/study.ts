@@ -41,6 +41,17 @@ export function todaySeconds(sessions: WorkSession[], now: Date = new Date()): n
   return totalSeconds(todaySessions(sessions, now));
 }
 
+/** Temps investi aujourd'hui, PAR MATIÈRE, en secondes — même filtrage que `lib/daily-goals.ts#computeDailyObjectiveBreakdown` (déjà écrit inline là-bas), extrait ici pour que Day Flow (lib/day-flow.ts) le réutilise sans le redéfinir une troisième fois. */
+export function todaySecondsBySubject(sessions: WorkSession[], now: Date = new Date()): Partial<Record<Subject, number>> {
+  const today = todaySessions(sessions, now);
+  const result: Partial<Record<Subject, number>> = {};
+  for (const subject of subjects) {
+    const seconds = totalSeconds(today.filter((session) => session.subject === subject));
+    if (seconds > 0) result[subject] = seconds;
+  }
+  return result;
+}
+
 /**
  * Temps réellement passé par exercice, en MINUTES — dérivé des `WorkSession`
  * liées par `exercise_id` (Sprint 2.6, seule source de vérité). Calculé en

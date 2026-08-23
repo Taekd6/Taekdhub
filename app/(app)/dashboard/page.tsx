@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { DashboardOverview } from "@/components/dashboard-overview";
 import { Button } from "@/components/ui/button";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { computeDayFlow } from "@/lib/day-flow";
 import { chapterDeadlineSignals, nearestUpcomingDeadline } from "@/lib/deadlines";
 import { timeOfDayGreetingWord } from "@/lib/greeting";
 import { computeDailyObjective, computeNextAction, computeStatusLine } from "@/lib/next-action";
@@ -40,9 +41,10 @@ export default function DashboardPage() {
       chapterDeadlines: chapterDeadlineSignals(deadlines, now),
       subjectPlanGap: planGapMinutesBySubject(weeklyPlan, sessions, now),
       nearestDeadline: nearestUpcomingDeadline(deadlines, now),
+      todayPlanAllDone: computeDayFlow(weeklyPlan, sessions, now).allDone,
     };
     const nextAction = computeNextAction(exercises, sessions, preferences.dailyGoalMinutes, now, signals);
-    return computeStatusLine(objective, nextAction, signals.nearestDeadline);
+    return computeStatusLine(objective, nextAction, signals.nearestDeadline, signals.todayPlanAllDone);
   }, [ready, sessions, exercises, preferences.dailyGoalMinutes, deadlines, weeklyPlan]);
 
   return (

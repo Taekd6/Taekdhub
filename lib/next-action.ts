@@ -89,6 +89,16 @@ export interface NextActionSignals {
    * comportement strictement inchangé.
    */
   nearestDeadline?: { label: string; days: number } | null;
+  /**
+   * `true` quand le programme du jour (plan hebdomadaire, voir
+   * lib/day-flow.ts#computeDayFlow) est entièrement réalisé — signal
+   * distinct de `objective.met` (objectif quotidien en minutes) : un
+   * utilisateur peut finir précisément ce qu'il s'était fixé pour aujourd'hui
+   * sans avoir atteint son objectif global, ou l'inverse. `false`/absent :
+   * comportement strictement inchangé (pas de plan configuré pour aujourd'hui,
+   * ou pas encore terminé).
+   */
+  todayPlanAllDone?: boolean;
 }
 
 export function computeNextAction(
@@ -134,6 +144,29 @@ export function computeNextAction(
   // `/session` lui-même au moment de démarrer.
   const picks = bounded.length > 0 ? bounded : recommendExercises(active, sessions, NEXT_ACTION_PICKS, { now, ...signals });
   const top = picks[0];
+
+  // Programme du jour entièrement réalisé (Sprint Adaptive Day / Day Flow) :
+  // priorité sur le pivot "objectif atteint" ci-dessous — "j'ai fini ce que
+  // je m'étais fixé aujourd'hui" est un signal plus précis et plus fort
+  // qu'un simple quota de minutes rempli. Jamais de discours culpabilisant
+  // ("tu es en retard") : la journée est reconnue comme terminée, avec
+  // l'échéance la plus proche en complément si elle existe — sinon une
+  // suite facultative, réutilisant les mêmes `picks` déjà calculés (à
+  // revoir/échec récent si le moteur en signale, jamais recalculés
+  // séparément).
+  if (signals.todayPlanAllDone) {
+    return {
+      kind: "start-session",
+      title: "Journée terminée.",
+      description: signals.nearestDeadline
+        ? `Ton programme prévu est terminé. Il reste ${signals.nearestDeadline.label}.`
+        : "Ton programme prévu est terminé. Tu peux t'arrêter ici, ou consolider une notion récente.",
+      ctaLabel: signals.nearestDeadline ? "Préparer cette échéance" : "Consolider une notion",
+      href: "/session",
+      minutes,
+      picks,
+    };
+  }
 
   // Objectif du jour déjà atteint + échéance proche (Daily Copilot, État G) :
   // dire explicitement que l'objectif est rempli plutôt que de continuer à
@@ -364,9 +397,16 @@ function hasFailureSignal(reasons: string[]): boolean {
 export function computeStatusLine(
   objective: DailyObjective,
   nextAction: NextAction,
-  nearestDeadline?: { label: string; days: number } | null
+  nearestDeadline?: { label: string; days: number } | null,
+  todayPlanAllDone?: boolean
 ): string {
   if (nextAction.kind === "empty-bank") return "Ta banque est vide pour l'instant — ajoute tes premiers exercices.";
+  // Programme du jour terminé (Day Flow) : priorité sur "objectif atteint"
+  // ci-dessous — même ordre que computeNextAction, jamais deux discours
+  // différents pour un même état.
+  if (todayPlanAllDone) {
+    return nearestDeadline ? `Programme du jour terminé. Il reste ${nearestDeadline.label}.` : "Programme du jour terminé. Tu peux t'arrêter ici.";
+  }
   if (objective.met) {
     // Daily Copilot (État G) : dire QUOI reste important plutôt qu'un
     // générique "tu peux t'arrêter ici" — même signal que le Hero

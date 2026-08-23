@@ -13,6 +13,7 @@ import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix, findRecoverableCheckpoint, type RecoveredTimerSeed } from "@/hooks/use-work-timer";
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { computeDayFlow } from "@/lib/day-flow";
 import { chapterDeadlineSignals, nearestUpcomingDeadline } from "@/lib/deadlines";
 import { findPersistedFocusDraft } from "@/lib/focus-draft";
 import { computeNextAction } from "@/lib/next-action";
@@ -74,6 +75,12 @@ export function SessionRunner() {
       chapterDeadlines: chapterDeadlineSignals(deadlines),
       subjectPlanGap: planGapMinutesBySubject(weeklyPlan, sessions),
       nearestDeadline: nearestUpcomingDeadline(deadlines),
+      // Day Flow : "Et maintenant ?" (fin de séance) doit reconnaître une
+      // journée terminée au même titre que le Hero du Dashboard — recalculé
+      // ici sur les données FRAÎCHES (sessions inclut déjà ce qui vient
+      // d'être travaillé), jamais une lecture différée qui attendrait un
+      // aller-retour par /dashboard pour s'en apercevoir.
+      todayPlanAllDone: computeDayFlow(weeklyPlan, sessions).allDone,
     }),
     [deadlines, weeklyPlan, sessions]
   );

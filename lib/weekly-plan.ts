@@ -31,6 +31,17 @@ export function plannedMinutesForDay(plan: WeeklyPlan, day: number): number {
   return subjects.reduce((sum, subject) => sum + (entry.subjectMinutes[subject] ?? 0), 0);
 }
 
+/** Minutes planifiées PAR MATIÈRE pour un jour donné — même source que `plannedMinutesForDay` (qui, lui, ne garde que la somme), pour Day Flow (lib/day-flow.ts), seul consommateur qui a besoin du détail par matière d'une seule journée plutôt que du cumul de la semaine (`plannedMinutesSoFarBySubject`). */
+export function subjectMinutesForDay(plan: WeeklyPlan, day: number): Partial<Record<Subject, number>> {
+  const entry = dayEntry(plan, day);
+  const result: Partial<Record<Subject, number>> = {};
+  for (const subject of subjects) {
+    const minutes = entry.subjectMinutes[subject];
+    if (minutes) result[subject] = minutes;
+  }
+  return result;
+}
+
 /**
  * Met à jour une seule cellule (jour × matière) du plan — pure, utilisée par
  * l'éditeur de réglages. `minutes <= 0` retire la clé plutôt que de la garder

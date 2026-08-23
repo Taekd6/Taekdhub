@@ -7,6 +7,7 @@ import {
   plannedMinutesSoFarBySubject,
   planGapMinutesBySubject,
   setDayCellMinutes,
+  subjectMinutesForDay,
 } from "@/lib/weekly-plan";
 import type { WorkSession } from "@/lib/supabase/types";
 
@@ -56,6 +57,18 @@ describe("setDayCellMinutes", () => {
     let plan = setDayCellMinutes(emptyWeeklyPlan(), 0, "Mathématiques", 90);
     plan = setDayCellMinutes(plan, 0, "Mathématiques", 0);
     expect(plan.find((d) => d.day === 0)?.subjectMinutes).toEqual({});
+  });
+});
+
+describe("subjectMinutesForDay", () => {
+  it("détail par matière pour un jour donné, jamais les matières sans minute", () => {
+    let plan = setDayCellMinutes(emptyWeeklyPlan(), 0, "Mathématiques", 90);
+    plan = setDayCellMinutes(plan, 0, "Physique", 45);
+    expect(subjectMinutesForDay(plan, 0)).toEqual({ Mathématiques: 90, Physique: 45 });
+  });
+
+  it("jour sans plan : objet vide", () => {
+    expect(subjectMinutesForDay(emptyWeeklyPlan(), 3)).toEqual({});
   });
 });
 
