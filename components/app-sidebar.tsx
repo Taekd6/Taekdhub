@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
+import { useEffect } from "react";
 import {
   BarChart3,
   BookOpenCheck,
@@ -64,7 +65,20 @@ function NavItems({ compact = false }: { compact?: boolean }) {
 }
 
 export function AppSidebar() {
-  const { sessions, exercises, ready } = usePrepahubData();
+  const { sessions, exercises, ready, refresh } = usePrepahubData();
+  const pathname = usePathname();
+  // `AppShell`/`AppSidebar` vit dans le layout partagé (app/(app)/layout.tsx)
+  // : contrairement au contenu de chaque page, il ne démonte/remonte JAMAIS
+  // en naviguant entre /dashboard, /exercises, etc. — son PROPRE effet de
+  // montage (dans usePrepahubData) ne s'exécute donc qu'UNE SEULE FOIS par
+  // session. Sans ce `refresh()` explicite à chaque changement de route,
+  // XP/Niveau restaient figés à leur valeur du tout premier chargement, quel
+  // que soit le nombre de séances terminées ensuite sur les autres pages —
+  // chaque page a sa PROPRE instance du hook (pas de store partagé), donc
+  // aucune de leurs écritures ne pouvait jamais atteindre celle-ci.
+  useEffect(() => {
+    refresh();
+  }, [pathname, refresh]);
   const xp = ready ? totalXp(exercises, sessions) : 0;
   const level = levelFromXp(xp);
 
