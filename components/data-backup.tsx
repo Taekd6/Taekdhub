@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { reconcileExerciseChapters } from "@/lib/chapters";
-import { exportBackup, localData, validateBackupPayload, type BackupPayload } from "@/lib/storage";
+import { exportBackup, restoreBackup, validateBackupPayload, type BackupPayload } from "@/lib/storage";
 
 export function DataBackup() {
   const { refresh } = usePrepahubData();
@@ -54,16 +54,31 @@ export function DataBackup() {
     // fiche restaurée pointerait vers un chapitre fantôme : son sélecteur de
     // chapitre l'afficherait comme "Sans chapitre" (aucune option ne
     // correspond) alors que la donnée réelle dirait le contraire.
-    localData.saveExercises(reconcileExerciseChapters(pendingImport.exercises, chapters));
-    localData.saveSessions(pendingImport.sessions);
-    localData.savePreferences(pendingImport.preferences);
-    // Chapitres : indispensables pour que les `chapter_id` des exercices
-    // pointent vers un catalogue réel. Absents d'une sauvegarde ancienne
-    // (exportée avant l'ajout des chapitres à l'export) → restaurés à [].
-    localData.saveChapters(chapters);
-    // Sauvegarde d'avant le Sprint 2.1 : pas de weekSnapshots dans le fichier, restaurés à [] proprement.
-    localData.saveWeekSnapshots(pendingImport.weekSnapshots ?? []);
+    //
+    // `restoreBackup` (lib/storage.ts) écrit les cinq clés de façon atomique
+    // au niveau applicatif — un import qui échoue en cours de route (ex.
+    // quota localStorage dépassé sur un gros fichier, reproduit réellement en
+    // audit) ne doit jamais laisser certaines clés remplacées et d'autres non.
+    const result = restoreBackup({
+      exercises: reconcileExerciseChapters(pendingImport.exercises, chapters),
+      sessions: pendingImport.sessions,
+      preferences: pendingImport.preferences,
+      // Chapitres : indispensables pour que les `chapter_id` des exercices
+      // pointent vers un catalogue réel. Absents d'une sauvegarde ancienne
+      // (exportée avant l'ajout des chapitres à l'export) → restaurés à [].
+      chapters,
+      // Sauvegarde d'avant le Sprint 2.1 : pas de weekSnapshots dans le fichier, restaurés à [] proprement.
+      weekSnapshots: pendingImport.weekSnapshots ?? [],
+    });
     setPendingImport(null);
+    if (!result.ok) {
+      setMessage(
+        result.rolledBack
+          ? "Échec de la restauration (espace de stockage insuffisant pour ce fichier ?) — tes données précédentes ont été conservées, rien n'a été perdu."
+          : "Échec de la restauration ET de la récupération de tes données précédentes (espace de stockage insuffisant) — vérifie tes exercices avant de continuer, et libère de l'espace si besoin."
+      );
+      return;
+    }
     // `usePrepahubData` n'est pas un store partagé : chaque composant monté
     // (Dashboard, barre latérale…) a sa PROPRE instance du hook, et l'événement
     // navigateur `storage` ne se déclenche jamais dans l'onglet qui a lui-même

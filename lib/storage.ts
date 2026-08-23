@@ -1,5 +1,5 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
-import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, THEME_MODES, type ThemeMode } from "@/lib/theme";
+import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, hexToRgb, THEME_MODES, type ThemeMode } from "@/lib/theme";
 import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, Priority, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
 
 const ATTEMPT_RESULTS: readonly AttemptResult[] = ["réussi", "partiel", "échoué"];
@@ -266,14 +266,27 @@ function normalizeWeekSnapshot(raw: unknown): WeekSnapshot | null {
 /**
  * Fusionne une préférence potentiellement partielle/corrompue (import, ancienne
  * sauvegarde, édition manuelle du localStorage) avec `defaults` — même principe
- * que `normalizeExercise`/`normalizeChapter` : un champ absent ou invalide
- * retombe sur sa valeur par défaut plutôt que de propager une valeur incohérente
- * (notamment `themeMode`, posé tel quel en attribut DOM par `applyThemeMode`).
+ * que `normalizeExercise`/`normalizeChapter` : un champ absent OU DE MAUVAIS
+ * TYPE retombe sur sa valeur par défaut plutôt que de propager une valeur
+ * incohérente. Chaque champ est explicitement vérifié (comme partout ailleurs
+ * dans ce fichier) — un simple `{ ...defaults, ...item }` laissait passer
+ * n'importe quel type sans contrôle : un `displayName`/`accent` importé avec
+ * un type incorrect (ex. un nombre au lieu d'une chaîne) faisait planter
+ * l'app entière ailleurs (`preferences.displayName?.trim()` dans le Dashboard,
+ * `hexToRgb(preferences.accent)` dans ThemeSync/ThemePicker — `?.` protège
+ * contre `null`/`undefined`, jamais contre un type inattendu mais non-nul) —
+ * reproduit réellement via un import de sauvegarde corrompue.
  */
 export function normalizePreferences(raw: unknown): Preferences {
   const item = isRecord(raw) ? raw : {};
-  const merged = { ...defaults, ...item };
-  return { ...merged, themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE };
+  return {
+    displayName: typeof item.displayName === "string" ? item.displayName : defaults.displayName,
+    dailyGoalMinutes: typeof item.dailyGoalMinutes === "number" && item.dailyGoalMinutes > 0 ? item.dailyGoalMinutes : defaults.dailyGoalMinutes,
+    weeklyGoalMinutes: typeof item.weeklyGoalMinutes === "number" && item.weeklyGoalMinutes > 0 ? item.weeklyGoalMinutes : defaults.weeklyGoalMinutes,
+    contestDate: typeof item.contestDate === "string" ? item.contestDate : defaults.contestDate,
+    accent: typeof item.accent === "string" && hexToRgb(item.accent) ? item.accent : defaults.accent,
+    themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE,
+  };
 }
 
 /**
@@ -438,6 +451,57 @@ function isValidSessionShape(value: unknown): value is WorkSession {
     typeof value.started_at === "string" &&
     typeof value.duration_seconds === "number"
   );
+}
+
+/**
+ * Écrit les cinq clés d'une restauration de sauvegarde (exercices, séances,
+ * préférences, chapitres, semaines) de façon atomique au niveau applicatif —
+ * voir components/data-backup.tsx#confirmImport, seul appelant. localStorage
+ * n'offre aucune transaction native, mais chaque `setItem` est
+ * individuellement indivisible : un import qui écrit plusieurs clés à la
+ * suite peut donc échouer AU MILIEU (ex. quota dépassé sur un gros fichier —
+ * reproduit réellement : exercices remplacés par l'import, séances restées
+ * à l'ancienne version, car le fichier importé ne tenait pas en entier) et
+ * laisser un mélange entre l'ancien et le nouveau — un état hybride pire
+ * qu'un import raté. On relit d'abord la valeur ACTUELLE de chaque clé, on
+ * tente les cinq écritures, et on restaure tout si l'une échoue.
+ */
+export function restoreBackup(payload: {
+  exercises: Exercise[];
+  sessions: WorkSession[];
+  preferences: Preferences;
+  chapters: Chapter[];
+  weekSnapshots: WeekSnapshot[];
+}): { ok: true } | { ok: false; rolledBack: boolean } {
+  const previous = {
+    exercises: localData.exercises(),
+    sessions: localData.sessions(),
+    preferences: localData.preferences(),
+    chapters: localData.chapters(),
+    weekSnapshots: localData.weekSnapshots(),
+  };
+  try {
+    localData.saveExercises(payload.exercises);
+    localData.saveSessions(payload.sessions);
+    localData.savePreferences(payload.preferences);
+    localData.saveChapters(payload.chapters);
+    localData.saveWeekSnapshots(payload.weekSnapshots);
+    return { ok: true };
+  } catch {
+    try {
+      localData.saveExercises(previous.exercises);
+      localData.saveSessions(previous.sessions);
+      localData.savePreferences(previous.preferences);
+      localData.saveChapters(previous.chapters);
+      localData.saveWeekSnapshots(previous.weekSnapshots);
+      return { ok: false, rolledBack: true };
+    } catch {
+      // Le rollback lui-même a échoué (quota toujours dépassé même pour les
+      // anciennes valeurs, cas pathologique) : rien de plus à tenter ici,
+      // l'appelant doit prévenir clairement l'utilisateur d'un état incertain.
+      return { ok: false, rolledBack: false };
+    }
+  }
 }
 
 export function validateBackupPayload(data: unknown): data is BackupPayload {

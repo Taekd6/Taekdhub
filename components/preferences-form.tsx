@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,19 @@ export function PreferencesForm() {
   const [prefs, setPrefs] = useState<Preferences>(preferences);
   const [saved, setSaved] = useState(false);
 
+  // Ne synchronise `prefs` qu'UNE SEULE FOIS après le montage (valeur réelle
+  // de `preferences`, disponible seulement côté client — voir `usePrepahubData`,
+  // qui retombe sur `defaults` pendant le rendu serveur). Un second onglet qui
+  // enregistre N'IMPORTE QUEL champ de préférence (ex. la couleur d'accent
+  // depuis ThemePicker) déclenche ici un `refresh()` via l'événement `storage`
+  // — sans cette garde, l'effet se ré-exécutait à CHAQUE changement externe et
+  // écrasait silencieusement tout ce que l'utilisateur était en train de
+  // taper dans CE formulaire (ex. un prénom à moitié saisi, jamais enregistré)
+  // avec la valeur figée d'il y a un instant, reproduit réellement en audit.
+  const hydrated = useRef(false);
   useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
     setPrefs(preferences);
   }, [preferences]);
 

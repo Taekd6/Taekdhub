@@ -44,7 +44,18 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr" className={inter.variable}>
+    // `suppressHydrationWarning` : le script anti-flash ci-dessous pose
+    // volontairement `style`/`data-theme` sur `<html>` AVANT l'hydratation
+    // React (voir sa doc) — pour tout utilisateur ayant déjà enregistré une
+    // préférence, ce `style` diffère nécessairement du HTML rendu côté
+    // serveur (qui ignore localStorage), un mismatch React signale à
+    // chaque rechargement (confirmé en audit) sans jamais "réparer" quoi
+    // que ce soit — React garde déjà la valeur du DOM (donc la bonne),
+    // seul l'avertissement est du bruit. Ce flag React est fait
+    // précisément pour ce cas documenté (script anti-flash de thème),
+    // limité au SEUL nœud concerné — jamais un silence général des
+    // mismatchs ailleurs dans l'app.
+    <html lang="fr" className={inter.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
