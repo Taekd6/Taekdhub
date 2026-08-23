@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * État persisté d'une séance chronométrée (Timer plein écran ou FocusView).
@@ -121,10 +121,20 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
     setSnapshot((prev) => (prev ? { ...prev, context: next } : prev));
   }, []);
 
+  // Garde anti double-clic pour `stop()` (voir sa doc) — réarmée uniquement
+  // quand une séance VRAIMENT nouvelle démarre (branche `!prev` ci-dessous),
+  // jamais à la fin de `stop()` lui-même : deux appels à `stop()` déclenchés
+  // par deux clics rapprochés doivent rester bloqués tant qu'aucune nouvelle
+  // séance n'a repris, pas seulement le temps d'un cycle de rendu.
+  const stoppedRef = useRef(false);
+
   const start = useCallback(() => {
     setSnapshot((prev) => {
       const now = new Date().toISOString();
-      if (!prev) return { startedAt: now, accumulatedSeconds: 0, runningSince: now, context };
+      if (!prev) {
+        stoppedRef.current = false;
+        return { startedAt: now, accumulatedSeconds: 0, runningSince: now, context };
+      }
       if (prev.runningSince) return prev;
       return { ...prev, runningSince: now };
     });
@@ -145,12 +155,29 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
     else start();
   }, [running, start, pause]);
 
+  /**
+   * Contrairement à `start`/`pause` (qui décident via l'updater fonctionnel
+   * de `setSnapshot`, donc toujours sûrs même appelés plusieurs fois avant un
+   * re-rendu), `stop` lit `snapshot` directement depuis la closure pour
+   * calculer `finalSeconds` et appeler `onComplete` — un effet de bord, pas
+   * une simple mise à jour d'état. Deux clics rapprochés sur "Terminer" (ex.
+   * double-clic, ou clic + Entrée) déclenchent alors DEUX appels à `stop()`
+   * avant que React n'ait eu le temps de re-rendre avec `snapshot = null` :
+   * les deux verraient le même `snapshot` non nul et appelleraient
+   * `onComplete` chacun — pour le Timer libre (components/timer.tsx), qui
+   * enregistre directement une `WorkSession` dans `onComplete`, cela créait
+   * DEUX séances dupliquées pour la même plage horaire (impact direct sur le
+   * streak, la heatmap et les statistiques). `stoppedRef` bloque tout appel
+   * supplémentaire tant qu'aucune nouvelle séance n'a été démarrée (voir
+   * `start`), indépendamment du moment où React re-rend.
+   */
   const stop = useCallback(
     (onComplete?: (result: { startedAt: string; seconds: number }) => void) => {
-      if (snapshot) {
-        const finalSeconds = computeElapsedSeconds(snapshot);
-        if (finalSeconds > 0 && onComplete) onComplete({ startedAt: snapshot.startedAt, seconds: finalSeconds });
-      }
+      if (stoppedRef.current) return;
+      if (!snapshot) return;
+      stoppedRef.current = true;
+      const finalSeconds = computeElapsedSeconds(snapshot);
+      if (finalSeconds > 0 && onComplete) onComplete({ startedAt: snapshot.startedAt, seconds: finalSeconds });
       // Nettoyage immédiat et synchrone : on ne peut pas compter sur l'effet
       // de persistance pour réagir à `snapshot === null`, car l'appelant
       // (ex. FocusView) démonte souvent le composant dans la même mise à
