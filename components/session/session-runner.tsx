@@ -266,8 +266,22 @@ export function SessionRunner() {
   }
 
   if (phase === "focus") {
-    const current = recommendations[currentIndex]?.exercise;
-    if (!current) return null;
+    const frozen = recommendations[currentIndex]?.exercise;
+    if (!frozen) return null;
+    // `recommendations` est figée au clic sur "Commencer ma séance" (voir
+    // startSession) — c'est volontaire pour la SÉLECTION (quels exercices,
+    // dans quel ordre), mais son `exercise` est un instantané ponctuel des
+    // CHAMPS de l'exercice. Or `FocusView` appelle `update()` (via
+    // PriorityPicker/MasteryPicker/boutons de statut) sur CE MÊME exercice
+    // pendant qu'il est affiché — `update()` écrit bien dans `exercises` (le
+    // tableau réellement source de vérité), mais `recommendations` n'est
+    // jamais recalculée : sans cette relecture, `item.priority`/`mastery`/
+    // `status` transmis à FocusView restaient figés à leur valeur de début de
+    // séance, donc les pickers ne reflétaient jamais visuellement son propre
+    // clic (repérable en storage, invisible à l'écran) tant qu'on ne changeait
+    // pas d'exercice. `exercises` étant réindexé par id, pas par position,
+    // retomber sur `frozen` si l'exercice a été supprimé entre-temps reste sûr.
+    const current = exercises.find((item) => item.id === frozen.id) ?? frozen;
     return <FocusView item={current} update={update} sessions={sessions} saveSessions={saveSessions} onClose={handleExerciseWorked} />;
   }
 
