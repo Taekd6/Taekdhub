@@ -452,7 +452,13 @@ export function SessionRunner() {
         </Card>
 
         {previewSelection.length > 0 && (
-          <div className="grid gap-2 sm:grid-cols-2">
+          // `grid-cols-1` explicite (pas seulement `sm:grid-cols-2`) : sans lui,
+          // la piste de grille par défaut se dimensionne sur le contenu le
+          // plus large plutôt que sur le conteneur — un titre d'exercice long
+          // faisait déborder toute la carte hors du viewport mobile (`min-w-0`
+          // sur l'enfant ne peut rien y faire sans cette contrainte sur la
+          // grille elle-même), repro réelle en audit mobile.
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {previewSelection.map(({ exercise, reasons }) => (
               <div key={exercise.id} className="flex items-start gap-3 rounded-xl border border-hairline/[0.06] p-3 text-sm">
                 <SubjectAvatar subject={exercise.subject} size="sm" />

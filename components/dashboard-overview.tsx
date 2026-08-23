@@ -510,7 +510,7 @@ export function DashboardOverview() {
             <div>
               <p className="eyebrow">Objectif du jour</p>
               <CardTitle className="mt-2 text-xl">
-                {formatDuration(objective.workedMinutes * 60)}{" "}
+                {formatDuration(objective.workedSeconds)}{" "}
                 <span className="text-base font-normal text-zinc-500">/ {formatDuration(objective.goalMinutes * 60)}</span>
               </CardTitle>
             </div>
@@ -520,7 +520,7 @@ export function DashboardOverview() {
           <p className="mt-3 text-xs text-zinc-500">
             {objective.met
               ? "Objectif atteint."
-              : objective.workedMinutes === 0
+              : objective.workedSeconds === 0
                 ? "Tu n'as encore rien travaillé aujourd'hui."
                 : `Encore ${objective.remainingMinutes} min`}
             {streak > 0 && (
@@ -531,7 +531,7 @@ export function DashboardOverview() {
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {objective.workedMinutes === 0 && !objective.met ? (
+            {objective.workedSeconds === 0 && !objective.met ? (
               <Link href={`/session?minutes=${objective.goalMinutes > 0 ? Math.min(objective.goalMinutes, 60) : 45}`}>
                 <Button size="sm">
                   Commencer une session <ArrowRight size={13} />

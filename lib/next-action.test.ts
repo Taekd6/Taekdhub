@@ -70,7 +70,7 @@ const NOW = new Date("2026-08-10T12:00:00.000Z");
 describe("computeDailyObjective", () => {
   it("aucune séance aujourd'hui : 0 travaillé, tout l'objectif restant", () => {
     const objective = computeDailyObjective([], 45, NOW);
-    expect(objective).toEqual({ goalMinutes: 45, workedMinutes: 0, remainingMinutes: 45, percent: 0, met: false });
+    expect(objective).toEqual({ goalMinutes: 45, workedMinutes: 0, workedSeconds: 0, remainingMinutes: 45, percent: 0, met: false });
   });
 
   it("objectif partiellement atteint : temps travaillé et restant cohérents", () => {
@@ -93,6 +93,26 @@ describe("computeDailyObjective", () => {
   it("les séances d'hier ne comptent pas dans l'objectif du jour", () => {
     const sessions = [makeSession(null, { started_at: "2026-08-09T09:00:00.000Z", duration_seconds: 3600 })];
     const objective = computeDailyObjective(sessions, 45, NOW);
+    expect(objective.workedMinutes).toBe(0);
+    expect(objective.workedSeconds).toBe(0);
+  });
+
+  /**
+   * Audit "Grand Jour" (Launch Readiness) : `workedMinutes` (arrondi à la
+   * minute) servait aussi de signal booléen "l'utilisateur a-t-il déjà
+   * travaillé aujourd'hui ?" — une séance de quelques dizaines de secondes
+   * (exercice rapide, focus bref) le laissait à 0, et le Dashboard affirmait
+   * "Tu n'as encore rien travaillé aujourd'hui" juste après une vraie séance
+   * enregistrée — repro réelle en simulation du grand jour, visible côte à
+   * côte avec "Ta progression"/"Activité récente" qui comptaient déjà cette
+   * même séance. `workedSeconds` (jamais arrondi) est le signal correct.
+   */
+  it("workedSeconds reflète le temps réel, même sous la minute (jamais arrondi à 0 à tort)", () => {
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:59:38.000Z", duration_seconds: 22 })];
+    const objective = computeDailyObjective(sessions, 45, NOW);
+    expect(objective.workedSeconds).toBe(22);
+    // `workedMinutes` reste à 0 (arrondi), volontairement — seul le signal
+    // booléen "rien travaillé" doit se baser sur `workedSeconds`, pas ce champ.
     expect(objective.workedMinutes).toBe(0);
   });
 });
@@ -288,6 +308,21 @@ describe("computeStatusLine", () => {
     const objective = computeDailyObjective([], 45, NOW);
     const action = computeNextAction([exercise], [], 45, NOW);
     expect(computeStatusLine(objective, action)).toBe("Tu n'as encore rien travaillé aujourd'hui.");
+  });
+
+  /**
+   * Audit "Grand Jour" : une séance réellement enregistrée mais sous la
+   * minute (exercice rapide) ne doit plus déclencher le message "rien
+   * travaillé" — repro réelle en simulation du grand jour, où ce message
+   * s'affichait juste après une séance déjà comptée ailleurs sur le
+   * Dashboard ("Ta progression", "Activité récente").
+   */
+  it("une séance sous la minute ne déclenche PLUS le message \"rien travaillé\"", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    const sessions = [makeSession(null, { started_at: "2026-08-10T09:59:38.000Z", duration_seconds: 22 })];
+    const objective = computeDailyObjective(sessions, 45, NOW);
+    const action = computeNextAction([exercise], sessions, 45, NOW);
+    expect(computeStatusLine(objective, action)).not.toBe("Tu n'as encore rien travaillé aujourd'hui.");
   });
 
   it("progression partielle : reprend le temps travaillé et restant", () => {
