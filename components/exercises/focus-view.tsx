@@ -32,9 +32,23 @@ export function FocusView({
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
   const [hintCount, setHintCount] = useState(0);
-  const { seconds, running, toggle, stop } = useWorkTimer<{ exerciseId: string }>(focusTimerKey(item.id), {
+  const { seconds, running, start, toggle, stop } = useWorkTimer<{ exerciseId: string }>(focusTimerKey(item.id), {
     exerciseId: item.id,
   });
+
+  // Démarre le chrono dès l'entrée en mode focus : ouvrir un exercice EST déjà
+  // la décision de s'y mettre, exactement comme pour une séance reprise après
+  // rechargement (voir SessionRunner, qui rouvre directement en phase "focus").
+  // Avant ce correctif, le chrono restait à l'arrêt tant que l'élève ne
+  // pensait pas à cliquer sur "Timer" — un oubli fréquent qui faisait
+  // disparaître silencieusement du temps de travail pourtant bien réel,
+  // rongeant la fiabilité de tout ce qui en dépend (maîtrise, recommandation,
+  // objectif du jour). `start()` est idempotent (voir hooks/use-work-timer.ts) :
+  // sans effet si une séance persistée était déjà en cours après reprise.
+  useEffect(() => {
+    start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** Micro-célébration au moment précis où l'exercice devient "maîtrisé" — jamais au montage sur un exercice déjà maîtrisé, ni sur les autres transitions de statut. */
   const [justMastered, setJustMastered] = useState(false);
