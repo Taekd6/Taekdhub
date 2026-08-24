@@ -8,13 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ProgressBar } from "@/components/ui/progress";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
-import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
+import { FocusView } from "@/components/exercises/focus-view";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
+import { FOCUS_TIMER_PREFIX, findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import { computeNextAction } from "@/lib/next-action";
-import { PLAN_STORAGE_KEY, type StoredPlan } from "@/lib/plan";
+import { PLAN_STORAGE_KEY, withPlanItemRemoved, type StoredPlan } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 import { subjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
@@ -101,15 +102,26 @@ export function SessionRunner() {
       setPhase("focus");
       return;
     }
+    // `pendingId` présent mais introuvable/archivé : même nettoyage que
+    // components/exercises/exercise-manager.tsx — sans ça, cette clé orpheline
+    // resterait indéfiniment en sessionStorage, revérifiée à chaque montage
+    // sans jamais pouvoir être reprise.
+    if (pendingId) sessionStorage.removeItem(FOCUS_TIMER_PREFIX + pendingId);
 
     // Plan du jour (Sprint Plan de travail) : un plan déposé par le Dashboard
     // ("Commencer le plan") prime sur le calcul habituel ci-dessous — mêmes
     // exercices, même ordre, AUCUNE recommandation recalculée ici (voir
-    // lib/plan.ts#computeDailyPlan, qui a déjà tranché). Clé retirée dès
-    // lecture : c'est un transfert à usage unique, pas un état persistant.
+    // lib/plan.ts#computeDailyPlan, qui a déjà tranché).
+    //
+    // Reprise de plan interrompu (Sprint Adaptive Day) : la clé N'EST PLUS
+    // retirée ici. `handleExerciseWorked` la réécrit après chaque exercice
+    // travaillé (voir `withPlanItemRemoved`, lib/plan.ts), sans celui qui
+    // vient d'être fait — si l'onglet est fermé avant la fin, elle contient
+    // exactement ce qu'il reste, retrouvé tel quel à la prochaine ouverture.
+    // Elle n'est retirée que si le plan est vide/périmé (rien de valide à
+    // reprendre) ou entièrement terminé.
     const storedPlanRaw = sessionStorage.getItem(PLAN_STORAGE_KEY);
     if (storedPlanRaw) {
-      sessionStorage.removeItem(PLAN_STORAGE_KEY);
       try {
         const stored = JSON.parse(storedPlanRaw) as StoredPlan;
         const picks = stored.items
@@ -124,8 +136,11 @@ export function SessionRunner() {
           setPhase("preview");
           return;
         }
+        // Plan vide après filtrage (tous les exercices restants ont été supprimés/archivés entre-temps) : on nettoie, comportement normal ci-dessous.
+        sessionStorage.removeItem(PLAN_STORAGE_KEY);
       } catch {
-        // Plan corrompu ou périmé (exercices supprimés entre-temps) : on retombe sur le comportement normal ci-dessous.
+        // Plan corrompu : on nettoie, comportement normal ci-dessous.
+        sessionStorage.removeItem(PLAN_STORAGE_KEY);
       }
     }
 
@@ -204,13 +219,34 @@ export function SessionRunner() {
   // arrêté le timer et sauvegardé la WorkSession avant d'appeler ceci (voir
   // focus-view.tsx#endSession) — on ne fait ici qu'avancer dans la séance,
   // sans jamais toucher au statut ni à la maîtrise de l'exercice.
+  //
+  // Reprise de plan interrompu (Sprint Adaptive Day) : si cette séance vient
+  // du Plan du jour (`planSelection` non null), on réécrit la clé
+  // sessionStorage SANS l'exercice qui vient d'être travaillé — qu'il soit
+  // réussi, partiel ou échoué, il est "traité" pour aujourd'hui (mêmes
+  // règles que `Exercise.attempts`/`status`, jamais reproposé de force dans
+  // ce même plan). Si plus rien ne reste, la clé est retirée : le plan est
+  // terminé, pas seulement interrompu.
   const handleExerciseWorked = useCallback(
     (result?: AttemptResult | null) => {
       setVisitedCount((count) => count + 1);
       if (result) setRunResults((results) => [...results, result]);
+      if (planSelection) {
+        const doneId = recommendations[currentIndex]?.exercise.id;
+        const raw = doneId ? sessionStorage.getItem(PLAN_STORAGE_KEY) : null;
+        if (raw && doneId) {
+          try {
+            const remaining = withPlanItemRemoved(JSON.parse(raw) as StoredPlan, doneId);
+            if (remaining.items.length > 0) sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(remaining));
+            else sessionStorage.removeItem(PLAN_STORAGE_KEY);
+          } catch {
+            sessionStorage.removeItem(PLAN_STORAGE_KEY);
+          }
+        }
+      }
       setPhase(hasNext ? "between" : "summary");
     },
-    [hasNext]
+    [hasNext, planSelection, recommendations, currentIndex]
   );
 
   const continueToNext = useCallback(() => {
@@ -231,8 +267,22 @@ export function SessionRunner() {
   }
 
   if (phase === "focus") {
-    const current = recommendations[currentIndex]?.exercise;
-    if (!current) return null;
+    const frozen = recommendations[currentIndex]?.exercise;
+    if (!frozen) return null;
+    // `recommendations` est figée au clic sur "Commencer ma séance" (voir
+    // startSession) — c'est volontaire pour la SÉLECTION (quels exercices,
+    // dans quel ordre), mais son `exercise` est un instantané ponctuel des
+    // CHAMPS de l'exercice. Or `FocusView` appelle `update()` (via
+    // PriorityPicker/MasteryPicker/boutons de statut) sur CE MÊME exercice
+    // pendant qu'il est affiché — `update()` écrit bien dans `exercises` (le
+    // tableau réellement source de vérité), mais `recommendations` n'est
+    // jamais recalculée : sans cette relecture, `item.priority`/`mastery`/
+    // `status` transmis à FocusView restaient figés à leur valeur de début de
+    // séance, donc les pickers ne reflétaient jamais visuellement son propre
+    // clic (repérable en storage, invisible à l'écran) tant qu'on ne changeait
+    // pas d'exercice. `exercises` étant réindexé par id, pas par position,
+    // retomber sur `frozen` si l'exercice a été supprimé entre-temps reste sûr.
+    const current = exercises.find((item) => item.id === frozen.id) ?? frozen;
     return <FocusView item={current} update={update} sessions={sessions} saveSessions={saveSessions} onClose={handleExerciseWorked} />;
   }
 
@@ -403,7 +453,13 @@ export function SessionRunner() {
         </Card>
 
         {previewSelection.length > 0 && (
-          <div className="grid gap-2 sm:grid-cols-2">
+          // `grid-cols-1` explicite (pas seulement `sm:grid-cols-2`) : sans lui,
+          // la piste de grille par défaut se dimensionne sur le contenu le
+          // plus large plutôt que sur le conteneur — un titre d'exercice long
+          // faisait déborder toute la carte hors du viewport mobile (`min-w-0`
+          // sur l'enfant ne peut rien y faire sans cette contrainte sur la
+          // grille elle-même), repro réelle en audit mobile.
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {previewSelection.map(({ exercise, reasons }) => (
               <div key={exercise.id} className="flex items-start gap-3 rounded-xl border border-hairline/[0.06] p-3 text-sm">
                 <SubjectAvatar subject={exercise.subject} size="sm" />
@@ -427,15 +483,24 @@ export function SessionRunner() {
   } else if (phase === "between") {
     const done = recommendations[currentIndex]?.exercise;
     const next = recommendations[currentIndex + 1]?.exercise;
+    // Progression dans LA FILE de cette séance (pas dans le plan pédagogique
+    // global — voir DifficultyDots/ProgressBar sur le Dashboard pour ça) :
+    // "où en suis-je dans les exercices que j'ai choisi de faire maintenant".
+    const queueProgress = recommendations.length > 0 ? ((currentIndex + 1) / recommendations.length) * 100 : 0;
     content = (
       <Card className="p-8 text-center">
-        <CheckCircle2 className="mx-auto text-accent" size={28} />
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent/10">
+          <CheckCircle2 className="text-accent" size={24} />
+        </div>
         <h2 className="mt-4 text-xl font-semibold tracking-tight">Exercice travaillé</h2>
         {done && <p className="mt-2 text-sm text-zinc-400">{done.title}</p>}
-        <p className="mt-1 text-xs text-zinc-500">
-          {currentIndex + 1} / {recommendations.length}
-          {next && <> · Prochain : {next.title}</>}
-        </p>
+        <div className="mx-auto mt-4 max-w-xs">
+          <ProgressBar value={queueProgress} />
+          <p className="mt-2 text-xs text-zinc-500">
+            {currentIndex + 1} / {recommendations.length}
+            {next && <> · Prochain : {next.title}</>}
+          </p>
+        </div>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Button onClick={continueToNext}>
             Continuer <ArrowRight size={16} />
@@ -453,10 +518,47 @@ export function SessionRunner() {
     const runFailureCount = runResults.filter((result) => result === "échoué").length;
     content = (
       <Card className="p-10 text-center">
-        <CardTitle className="text-xl">Séance terminée</CardTitle>
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-accent/10">
+          <CheckCircle2 className="text-accent" size={28} />
+        </div>
+        <CardTitle className="mt-4 text-xl">Séance terminée</CardTitle>
         <p className="mt-2 text-sm text-zinc-400">
           {visitedCount} exercice{visitedCount > 1 ? "s" : ""} travaillé{visitedCount > 1 ? "s" : ""} durant cette séance.
         </p>
+        {runResults.length > 0 && (
+          <div className="mx-auto mt-4 max-w-sm">
+            <div
+              className="flex h-2 overflow-hidden rounded-full bg-hairline/[0.07]"
+              role="img"
+              aria-label={`${runSuccessCount} réussis, ${runPartialCount} partiels, ${runFailureCount} échoués sur ${runResults.length} exercices`}
+            >
+              {runSuccessCount > 0 && (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(runSuccessCount / runResults.length) * 100}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className="h-full bg-emerald-400"
+                />
+              )}
+              {runPartialCount > 0 && (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(runPartialCount / runResults.length) * 100}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+                  className="h-full bg-amber-400"
+                />
+              )}
+              {runFailureCount > 0 && (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(runFailureCount / runResults.length) * 100}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                  className="h-full bg-rose-400"
+                />
+              )}
+            </div>
+          </div>
+        )}
         {runResults.length > 0 && (
           <div className="mx-auto mt-3 flex max-w-sm flex-wrap items-center justify-center gap-1.5">
             {runSuccessCount > 0 && (

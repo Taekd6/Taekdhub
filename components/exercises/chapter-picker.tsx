@@ -45,7 +45,14 @@ export function ChapterPicker({
   function confirmCreate() {
     const trimmed = label.trim();
     if (!trimmed) return;
-    onChange(onCreateChapter(subject, trimmed).id);
+    // Réutilise un chapitre existant de même libellé (insensible à la casse)
+    // pour cette matière plutôt que d'en créer un doublon — même règle que
+    // l'import en masse (lib/exercise-import.ts#parseExerciseImportPayload),
+    // jamais appliquée jusqu'ici à cette création inline. Sans ça, taper deux
+    // fois "Suites numériques" créait deux chapitres distincts, indiscernables
+    // dans la liste.
+    const existing = options.find((chapter) => chapter.label.toLowerCase() === trimmed.toLowerCase());
+    onChange(existing ? existing.id : onCreateChapter(subject, trimmed).id);
     setLabel("");
     setCreating(false);
   }
@@ -63,11 +70,19 @@ export function ChapterPicker({
               event.preventDefault();
               confirmCreate();
             }
-            if (event.key === "Escape") setCreating(false);
+            // `stopPropagation` : sans elle, l'Échap remonte jusqu'au raccourci
+            // clavier global d'ExerciseManager, qui referme AUSSI toute la carte
+            // exercice (voir sa gestion d'Échap) — un seul appui fermerait alors
+            // et ce sous-panneau ET la fiche entière, bien plus que ce que
+            // l'utilisateur voulait annuler.
+            if (event.key === "Escape") {
+              event.stopPropagation();
+              setCreating(false);
+            }
           }}
           className="h-9 max-w-[180px]"
         />
-        <Button type="button" size="sm" onClick={confirmCreate}>
+        <Button type="button" size="sm" onClick={confirmCreate} disabled={!label.trim()}>
           Créer
         </Button>
         <Button

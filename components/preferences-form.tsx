@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { PLAN_DURATION_PRESETS } from "@/lib/plan";
-import type { Preferences } from "@/lib/storage";
+import { patchPreferences, type Preferences } from "@/lib/storage";
 
 /** Préréglages "objectif hebdomadaire" (Sprint Plan de travail), en minutes — 3h/5h/7h, plus une valeur libre déjà couverte par le champ nombre ci-dessous. */
 const WEEKLY_GOAL_PRESETS = [180, 300, 420];
@@ -22,13 +22,53 @@ export function PreferencesForm() {
   const [prefs, setPrefs] = useState<Preferences>(preferences);
   const [saved, setSaved] = useState(false);
 
+  // Ne synchronise `prefs` qu'UNE SEULE FOIS après le montage (valeur réelle
+  // de `preferences`, disponible seulement côté client — voir `usePrepahubData`,
+  // qui retombe sur `defaults` pendant le rendu serveur). Un second onglet qui
+  // enregistre N'IMPORTE QUEL champ de préférence (ex. la couleur d'accent
+  // depuis ThemePicker) déclenche ici un `refresh()` via l'événement `storage`
+  // — sans cette garde, l'effet se ré-exécutait à CHAQUE changement externe et
+  // écrasait silencieusement tout ce que l'utilisateur était en train de
+  // taper dans CE formulaire (ex. un prénom à moitié saisi, jamais enregistré)
+  // avec la valeur figée d'il y a un instant, reproduit réellement en audit.
+  //
+  // `loaded` retient ce même instantané de référence pour `save()` ci-dessous
+  // : sans lui, corriger le problème ci-dessus en créait un AUTRE, tout aussi
+  // réel — enregistrer un SEUL champ modifié (ex. le prénom) renvoyait quand
+  // même les QUATRE champs de ce formulaire à `patchPreferences`, y compris
+  // ceux jamais touchés ici mais changés entre-temps dans un AUTRE onglet
+  // (ex. objectif quotidien importé depuis une sauvegarde) — puisque `prefs`
+  // ne se resynchronise plus après le montage, ces champs non touchés
+  // restaient figés à leur valeur du chargement et écrasaient silencieusement
+  // ce que l'autre onglet venait d'enregistrer, reproduit réellement en audit.
+  const hydrated = useRef(false);
+  const loaded = useRef<Preferences>(preferences);
   useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
     setPrefs(preferences);
+    loaded.current = preferences;
   }, [preferences]);
 
+  // `patchPreferences` (voir lib/storage.ts) plutôt que `savePreferences(prefs)`
+  // tel quel : ce formulaire n'est monté qu'avec SA PROPRE instance de
+  // `usePrepahubData`, indépendante de celle de ThemePicker (juste en dessous
+  // sur cette même page) — enregistrer l'instantané complet `prefs` écraserait
+  // silencieusement une couleur d'accent ou un mode d'apparence changé entre-
+  // temps ailleurs sur la page. Seuls les champs réellement possédés par CE
+  // formulaire sont appliqués, par-dessus les préférences les plus fraîches —
+  // et, parmi eux, uniquement ceux que l'utilisateur a RÉELLEMENT modifiés
+  // depuis le chargement (comparé à `loaded.current`) : un champ resté
+  // identique à sa valeur de chargement n'est jamais renvoyé, pour ne jamais
+  // écraser une modification faite entre-temps ailleurs sur ce même champ.
   function save(event: React.FormEvent) {
     event.preventDefault();
-    savePreferences(prefs);
+    const patch: Partial<Preferences> = {};
+    if (prefs.displayName !== loaded.current.displayName) patch.displayName = prefs.displayName;
+    if (prefs.dailyGoalMinutes !== loaded.current.dailyGoalMinutes) patch.dailyGoalMinutes = prefs.dailyGoalMinutes;
+    if (prefs.weeklyGoalMinutes !== loaded.current.weeklyGoalMinutes) patch.weeklyGoalMinutes = prefs.weeklyGoalMinutes;
+    if (prefs.contestDate !== loaded.current.contestDate) patch.contestDate = prefs.contestDate;
+    savePreferences(patchPreferences(patch));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }

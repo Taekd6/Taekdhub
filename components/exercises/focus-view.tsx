@@ -8,12 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryPicker, PriorityPicker, SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { RichMath } from "@/components/rich-math";
-import { useWorkTimer } from "@/hooks/use-work-timer";
+import { FOCUS_TIMER_PREFIX, useWorkTimer } from "@/hooks/use-work-timer";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
 import type { AttemptResult, Exercise, ExerciseStatus, Mastery, Priority, WorkSession } from "@/lib/supabase/types";
 
-/** Une seule séance focus à la fois : la clé encode l'exercice concerné, ce qui permet de retrouver après un rechargement lequel reprendre automatiquement. */
-export const FOCUS_TIMER_PREFIX = "prepahub:timer:focus:";
 const focusTimerKey = (exerciseId: string) => `${FOCUS_TIMER_PREFIX}${exerciseId}`;
 
 export function FocusView({
@@ -188,15 +186,15 @@ export function FocusView({
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-50 flex flex-col bg-canvas"
     >
-      <header className="flex items-center justify-between border-b border-hairline/[0.07] px-6 py-4">
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between gap-3 border-b border-hairline/[0.07] px-6 py-4">
+        <div className="flex min-w-0 items-center gap-3">
           <SubjectAvatar subject={item.subject} />
-          <div>
-            <p className="text-sm font-semibold">{item.title}</p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{item.title}</p>
             <p className="text-xs text-zinc-500">{item.source}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <span className="flex items-center gap-2 tabular-nums text-lg font-semibold text-zinc-100">
             {running && <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent" />}
             {formatDuration(seconds)}

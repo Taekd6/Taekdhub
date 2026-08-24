@@ -276,7 +276,7 @@ export function computeSubjectPriorities(exercises: Exercise[], sessions: WorkSe
     .map(({ subject, label, level, reason }) => ({ subject, label, level, reason }));
 }
 
-/** Clé sessionStorage pour le transfert Dashboard → /session (voir components/session/session-runner.tsx) — même famille de clés que FOCUS_TIMER_PREFIX (components/exercises/focus-view.tsx), un seul usage puis retirée. */
+/** Clé sessionStorage pour le transfert Dashboard → /session (voir components/session/session-runner.tsx) — même famille de clés que FOCUS_TIMER_PREFIX (hooks/use-work-timer.ts), un seul usage puis retirée. */
 export const PLAN_STORAGE_KEY = "prepahub:plan:pending";
 
 export interface StoredPlanItem {
@@ -295,4 +295,18 @@ export function serializePlan(plan: DailyPlan): StoredPlan {
     items: plan.blocks.flatMap((block) => block.picks.map(({ exercise, reasons }) => ({ exerciseId: exercise.id, reasons }))),
     requestedMinutes: plan.requestedMinutes,
   };
+}
+
+/**
+ * Reprise de plan interrompu (Sprint Adaptive Day) — un plan déposé par le
+ * Dashboard n'est plus retiré de `sessionStorage` dès sa lecture : /session
+ * le réécrit après chaque exercice travaillé, sans celui qui vient d'être
+ * fait (voir components/session/session-runner.tsx). Si l'onglet est fermé
+ * ou l'utilisateur quitte avant la fin, la clé garde exactement ce qu'il
+ * reste — /session la retrouve telle quelle à la prochaine ouverture, sans
+ * recalculer un nouveau plan ni perdre les exercices déjà traités. Fonction
+ * pure, testée indépendamment de sessionStorage (voir lib/plan.test.ts).
+ */
+export function withPlanItemRemoved(plan: StoredPlan, exerciseId: string): StoredPlan {
+  return { ...plan, items: plan.items.filter((item) => item.exerciseId !== exerciseId) };
 }

@@ -23,6 +23,19 @@ import type { Exercise, WorkSession } from "@/lib/supabase/types";
 export interface DailyObjective {
   goalMinutes: number;
   workedMinutes: number;
+  /**
+   * Secondes réellement travaillées aujourd'hui, JAMAIS arrondies à la
+   * minute — contrairement à `workedMinutes`. Sert uniquement à répondre à
+   * "l'utilisateur a-t-il déjà travaillé aujourd'hui ?" (voir
+   * `computeStatusLine` et dashboard-overview.tsx) : sur un exercice rapide
+   * (quelques dizaines de secondes, ex. un focus bref jugé "réussi" tout de
+   * suite), `workedMinutes` arrondi restait à 0, et le Dashboard affirmait
+   * "Tu n'as encore rien travaillé aujourd'hui" juste après une séance
+   * réellement enregistrée (visible ailleurs sur la même page — "Ta
+   * progression"/"Activité récente" comptaient déjà la séance) — repro
+   * réelle en simulation du grand jour.
+   */
+  workedSeconds: number;
   /** Toujours ≥ 0 — jamais négatif même si l'objectif est dépassé. */
   remainingMinutes: number;
   /** 0-100, plafonné. */
@@ -32,11 +45,13 @@ export interface DailyObjective {
 
 /** Progression de l'objectif du jour — seule source pour le Dashboard ET le budget par défaut d'une nouvelle séance (voir `computeNextAction`). */
 export function computeDailyObjective(sessions: WorkSession[], goalMinutes: number, now: Date = new Date()): DailyObjective {
-  const workedMinutes = secondsToWholeMinutes(todaySeconds(sessions, now));
+  const workedSeconds = todaySeconds(sessions, now);
+  const workedMinutes = secondsToWholeMinutes(workedSeconds);
   const remainingMinutes = Math.max(0, goalMinutes - workedMinutes);
   return {
     goalMinutes,
     workedMinutes,
+    workedSeconds,
     remainingMinutes,
     percent: goalMinutes > 0 ? Math.min(100, Math.round((workedMinutes / goalMinutes) * 100)) : 0,
     met: goalMinutes > 0 && remainingMinutes === 0,
@@ -313,7 +328,10 @@ function hasFailureSignal(reasons: string[]): boolean {
 export function computeStatusLine(objective: DailyObjective, nextAction: NextAction): string {
   if (nextAction.kind === "empty-bank") return "Ta banque est vide pour l'instant — ajoute tes premiers exercices.";
   if (objective.met) return "Objectif du jour atteint. Belle séance.";
-  if (objective.workedMinutes === 0) {
+  // `workedSeconds` (pas `workedMinutes`, arrondi) : une séance de quelques
+  // dizaines de secondes ne doit jamais se voir dire "rien travaillé" — voir
+  // la doc de `DailyObjective.workedSeconds`.
+  if (objective.workedSeconds === 0) {
     return nextAction.kind === "up-to-date"
       ? "Rien n'est signalé aujourd'hui — bon moment pour avancer librement."
       : "Tu n'as encore rien travaillé aujourd'hui.";

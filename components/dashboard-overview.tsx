@@ -21,14 +21,16 @@ import {
   Target,
   Trophy,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { FOCUS_TIMER_PREFIX, findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { cn } from "@/lib/cn";
 import { computeStreak } from "@/lib/gamification";
 import { recentDaySummaries } from "@/lib/history";
@@ -46,6 +48,7 @@ import {
   PLAN_DURATION_PRESETS,
   PLAN_STORAGE_KEY,
   serializePlan,
+  type StoredPlan,
   type SubjectPriorityLevel,
 } from "@/lib/plan";
 import { computeProgressBySubject } from "@/lib/progress";
@@ -54,6 +57,7 @@ import { subjectMeta } from "@/lib/study";
 import { formatDuration, formatMinutes } from "@/lib/utils";
 import { computeWeeklySummary } from "@/lib/week";
 import type { UpcomingItem } from "@/lib/next-action";
+import type { Exercise } from "@/lib/supabase/types";
 
 const UPCOMING_META: Record<UpcomingItem["key"], { label: string; icon: typeof BookOpenCheck }> = {
   chapter: { label: "Chapitre à consolider", icon: BookOpenCheck },
@@ -89,6 +93,90 @@ export function DashboardOverview() {
   const router = useRouter();
   /** Durée choisie pour "Plan du jour" — état purement local à cette page, jamais persisté (voir Phase 3 du sprint : pas de système de calendrier). */
   const [planMinutes, setPlanMinutes] = useState<number>(DEFAULT_PLAN_MINUTES);
+  /**
+   * Plan interrompu (Sprint Adaptive Day) — présent si une séance de plan a
+   * été quittée avant la fin (voir components/session/session-runner.tsx,
+   * qui réécrit `PLAN_STORAGE_KEY` sans les exercices déjà travaillés à
+   * chaque étape). Lu une seule fois au montage : sessionStorage n'est pas
+   * une source réactive, un `focus`/`visibilitychange` suffit à la
+   * réévaluer si besoin, mais un simple retour sur le Dashboard suffit déjà
+   * dans l'usage réel (navigation complète depuis /session).
+   *
+   * Le nombre affiché est filtré contre `exercises` (même filtre que
+   * SessionRunner au moment de la reprise : id existant et non archivé) —
+   * sans ça, un exercice supprimé/archivé depuis /exercises (ou un autre
+   * onglet) entre le dépôt du plan et ce retour sur le Dashboard laissait ce
+   * bandeau annoncer un nombre d'exercices restants supérieur à ce que
+   * "Reprendre" relance réellement (SessionRunner filtre déjà ces mêmes
+   * exercices disparus, silencieusement, à l'ouverture de /session). On
+   * attend `ready` avant de filtrer : tant que `exercises` n'est pas encore
+   * chargé (valeur initiale `[]`), le filtrer donnerait à tort zéro exercice
+   * valide et effacerait un plan pourtant légitime.
+   */
+  const [interruptedPlan, setInterruptedPlan] = useState<StoredPlan | null>(null);
+  useEffect(() => {
+    if (!ready) return;
+    const raw = sessionStorage.getItem(PLAN_STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const stored = JSON.parse(raw) as StoredPlan;
+      const validItems = stored.items.filter((item) => exercises.some((exercise) => exercise.id === item.exerciseId && !exercise.archived));
+      if (validItems.length > 0) setInterruptedPlan({ ...stored, items: validItems });
+      else sessionStorage.removeItem(PLAN_STORAGE_KEY);
+    } catch {
+      sessionStorage.removeItem(PLAN_STORAGE_KEY);
+    }
+  }, [ready, exercises]);
+
+  const discardInterruptedPlan = useCallback(() => {
+    sessionStorage.removeItem(PLAN_STORAGE_KEY);
+    setInterruptedPlan(null);
+  }, []);
+
+  /**
+   * Séance focus interrompue HORS plan (bug réel trouvé à l'audit) : quand
+   * l'utilisateur quitte un focus en cours autrement que par Échap/le bouton
+   * fermer (fermeture d'onglet, navigation directe…), `useWorkTimer` laisse
+   * la clé `prepahub:timer:focus:<id>` en sessionStorage — et
+   * SessionRunner la reprend TOUJOURS en priorité au montage suivant de
+   * /session, quel que soit le lien cliqué pour y arriver (voir son effet de
+   * montage). Sans détection ici, le Dashboard n'en dit rien : le Hero
+   * continue de promettre "Commencer une séance de N min" sur un tout autre
+   * exercice (le mieux classé du moment), alors que cliquer ce CTA rouvre en
+   * réalité silencieusement l'exercice abandonné — un lien qui ne démarre
+   * pas ce qu'il annonce. N'est évalué que si aucun plan interrompu n'est
+   * déjà affiché ci-dessus (même mécanisme sous-jacent : si l'interruption
+   * a eu lieu PENDANT un exercice du plan, ce dernier référence déjà cet
+   * exercice, et son propre "Reprendre" mène déjà correctement au bon
+   * endroit) — remis à `null` explicitement dans ce cas (pas un simple
+   * `return` anticipé) : les deux effets de ce composant lisent le même
+   * `interruptedPlan` figé au moment du rendu qui les a déclenchés, donc au
+   * tout premier passage après `ready` (le cas le plus fréquent : une
+   * interruption EN PLEIN exercice du plan laisse les deux clés en même
+   * temps), celui-ci peut encore valoir `null` ici alors qu'il vient
+   * justement d'être posé par l'autre effet — sans ce reset explicite, les
+   * deux bandeaux s'affichaient ensemble jusqu'à la prochaine navigation.
+   */
+  const [interruptedFocus, setInterruptedFocus] = useState<Exercise | null>(null);
+  useEffect(() => {
+    if (!ready) return;
+    if (interruptedPlan) {
+      setInterruptedFocus(null);
+      return;
+    }
+    const pendingId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX);
+    if (!pendingId) {
+      setInterruptedFocus(null);
+      return;
+    }
+    const exercise = exercises.find((item) => item.id === pendingId && !item.archived);
+    setInterruptedFocus(exercise ?? null);
+  }, [ready, exercises, interruptedPlan]);
+
+  const discardInterruptedFocus = useCallback(() => {
+    if (interruptedFocus) sessionStorage.removeItem(FOCUS_TIMER_PREFIX + interruptedFocus.id);
+    setInterruptedFocus(null);
+  }, [interruptedFocus]);
 
   const model = useMemo(() => {
     const now = new Date();
@@ -138,6 +226,7 @@ export function DashboardOverview() {
 
   const { nextAction, objective, upcoming, progress, bySubject, toConsolidate, recentDays, readiness, weeklySummary, subjectPriorities, streak, contestDays } = model;
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
+  const topPick = nextAction.picks[0];
   const secondaryPicks = nextAction.picks.slice(1);
   // "Revoir mes priorités" (Phase 8) : ouvre directement le premier exercice déjà signalé par le moteur de recommandation — même convention que computeUpcoming (lib/next-action.ts), aucune nouvelle route.
   const prioritiesHref = nextAction.picks[0] ? `/exercises?focus=${nextAction.picks[0].exercise.id}` : "/exercises";
@@ -147,6 +236,59 @@ export function DashboardOverview() {
   return (
     <div className="space-y-6">
       <BackupReminder />
+
+      {/* PLAN INTERROMPU — Adaptive Day : reprise avant tout le reste, "où j'en étais" prime sur "quoi de neuf". */}
+      {interruptedPlan && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-accent/20 p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent/10 text-accent">
+              <CalendarClock size={16} />
+            </span>
+            <div>
+              <p className="text-sm font-medium text-zinc-100">
+                Plan interrompu — {interruptedPlan.items.length} exercice{interruptedPlan.items.length > 1 ? "s" : ""} restant
+                {interruptedPlan.items.length > 1 ? "s" : ""}
+              </p>
+              <p className="text-xs text-zinc-500">Reprends exactement là où tu t&apos;es arrêté, ou repars sur un plan frais.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/session">
+              <Button size="sm">
+                Reprendre <ArrowRight size={13} />
+              </Button>
+            </Link>
+            <Button size="sm" variant="secondary" onClick={discardInterruptedPlan}>
+              Recommencer à zéro
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* FOCUS INTERROMPU — hors plan (bug d'audit corrigé) : sans ce bandeau, le Hero ci-dessous continue de promettre un tout autre exercice alors que son propre CTA rouvrirait en réalité celui-ci (SessionRunner reprend toujours un focus persisté en priorité). */}
+      {interruptedFocus && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-accent/20 p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent/10 text-accent">
+              <Clock3 size={16} />
+            </span>
+            <div>
+              <p className="text-sm font-medium text-zinc-100">Séance focus interrompue — {interruptedFocus.title}</p>
+              <p className="text-xs text-zinc-500">Ton chrono tourne encore sur cet exercice — reprends-le, ou repars sur autre chose.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/session">
+              <Button size="sm">
+                Reprendre <ArrowRight size={13} />
+              </Button>
+            </Link>
+            <Button size="sm" variant="secondary" onClick={discardInterruptedFocus}>
+              Abandonner cette séance
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* À FAIRE MAINTENANT */}
       <motion.section
@@ -168,6 +310,12 @@ export function DashboardOverview() {
           </div>
 
           <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{nextAction.title}</h2>
+          {topPick && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-zinc-500">
+              <DifficultyDots value={topPick.exercise.difficulty} />
+              <span>Difficulté {topPick.exercise.difficulty}/5</span>
+            </div>
+          )}
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">{nextAction.description}</p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -196,6 +344,9 @@ export function DashboardOverview() {
                   <SubjectAvatar subject={exercise.subject} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <DifficultyDots value={exercise.difficulty} />
+                    </div>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {reasons.slice(0, 2).map((reason) => (
                         <Badge key={reason} variant="warning">
@@ -278,7 +429,10 @@ export function DashboardOverview() {
                       <p className="truncate font-medium text-zinc-100">{block.label}</p>
                       <span className="shrink-0 text-xs text-zinc-500">{block.estimatedMinutes} min</span>
                     </div>
-                    <p className="mt-1 text-xs text-zinc-500">{block.pickLabel}</p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      {block.picks[0] && <DifficultyDots value={block.picks[0].exercise.difficulty} />}
+                      <p className="text-xs text-zinc-500">{block.pickLabel}</p>
+                    </div>
                   </div>
                 </li>
               ))}
@@ -370,7 +524,7 @@ export function DashboardOverview() {
             <div>
               <p className="eyebrow">Objectif du jour</p>
               <CardTitle className="mt-2 text-xl">
-                {formatDuration(objective.workedMinutes * 60)}{" "}
+                {formatDuration(objective.workedSeconds)}{" "}
                 <span className="text-base font-normal text-zinc-500">/ {formatDuration(objective.goalMinutes * 60)}</span>
               </CardTitle>
             </div>
@@ -380,7 +534,7 @@ export function DashboardOverview() {
           <p className="mt-3 text-xs text-zinc-500">
             {objective.met
               ? "Objectif atteint."
-              : objective.workedMinutes === 0
+              : objective.workedSeconds === 0
                 ? "Tu n'as encore rien travaillé aujourd'hui."
                 : `Encore ${objective.remainingMinutes} min`}
             {streak > 0 && (
@@ -391,7 +545,7 @@ export function DashboardOverview() {
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {objective.workedMinutes === 0 && !objective.met ? (
+            {objective.workedSeconds === 0 && !objective.met ? (
               <Link href={`/session?minutes=${objective.goalMinutes > 0 ? Math.min(objective.goalMinutes, 60) : 45}`}>
                 <Button size="sm">
                   Commencer une session <ArrowRight size={13} />

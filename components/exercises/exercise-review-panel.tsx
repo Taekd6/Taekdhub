@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { recommendExercises } from "@/lib/recommendation";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 
@@ -23,12 +24,20 @@ export function ExerciseReviewPanel({
   onSelect: (id: string) => void;
 }) {
   const recommendations = useMemo(() => recommendExercises(exercises, sessions, 6), [exercises, sessions]);
+  // Distingue "banque à jour" (message positif, mérité) de "banque vide" —
+  // sans ça, une banque totalement vide affichait le même "continue comme
+  // ça" qu'une banque à jour, un message positif trompeur qui ne dit jamais
+  // à l'utilisateur qu'il doit d'abord ajouter des exercices (voir aussi
+  // `SubjectGrid`, components/exercises/exercise-browser.tsx, même distinction).
+  const hasActiveExercises = useMemo(() => exercises.some((exercise) => !exercise.archived), [exercises]);
 
   if (recommendations.length === 0) {
     return (
       <Card className="p-5 text-center">
         <Sparkles className="mx-auto text-accent" size={20} />
-        <p className="mt-3 text-sm text-zinc-400">Rien à revoir pour l&apos;instant — continue comme ça.</p>
+        <p className="mt-3 text-sm text-zinc-400">
+          {hasActiveExercises ? "Rien à revoir pour l'instant — continue comme ça." : "Ta banque est vide — ajoute ou importe des exercices pour commencer."}
+        </p>
       </Card>
     );
   }
@@ -50,6 +59,9 @@ export function ExerciseReviewPanel({
               <div className="flex items-center gap-2">
                 <SubjectAvatar subject={exercise.subject} size="sm" />
                 <p className="truncate text-sm font-medium text-zinc-100">{exercise.title}</p>
+              </div>
+              <div className="mt-1.5">
+                <DifficultyDots value={exercise.difficulty} />
               </div>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {reasons.map((reason) => (

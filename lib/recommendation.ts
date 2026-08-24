@@ -191,6 +191,77 @@ function staleMasteryBonus(exercise: Exercise, now: Date): number {
   return Math.min(MASTERY_STALE_BONUS_CAP, overdueDays * MASTERY_STALE_BONUS_PER_DAY);
 }
 
+/** Nombre de séances récentes (toutes matières, avec résultat) considérées pour juger le niveau actuel de l'élève — voir `recentGlobalPerformance`. */
+const PERFORMANCE_WINDOW = 8;
+/** En dessous de ce nombre de séances avec résultat, l'historique est jugé insuffisant pour évaluer un niveau (reprise, ou tout début) — voir `difficultyFitBonus`. */
+const MIN_SESSIONS_FOR_CONFIDENCE = 5;
+/** Plafond du terme de difficulté — comparable à favoriteBonus/momentumBonus, jamais dominant face à masteryGap/failureBonus (voir urgencyScore). */
+const DIFFICULTY_FIT_CAP = 12;
+
+export interface GlobalPerformance {
+  /** Taux de réussite sur les `PERFORMANCE_WINDOW` dernières séances avec résultat, toutes matières confondues — `0` si `count === 0`. */
+  rate: number;
+  /** Nombre de séances avec résultat effectivement prises en compte (≤ `PERFORMANCE_WINDOW`). */
+  count: number;
+}
+
+/**
+ * Niveau récent de l'élève, TOUTES matières confondues — calculé une seule
+ * fois par appel à `recommendExercises` (pas par exercice), à la différence
+ * de `attemptsWithResult`/`recentFailureCount` qui restent scopés à UN seul
+ * exercice. Sert uniquement de signal doux pour `difficultyFitBonus` : ne
+ * remplace ni la maîtrise, ni le statut, ni les échecs — un simple terme de
+ * plus dans une somme déjà robuste sans lui (voir `urgencyScore`).
+ */
+export function recentGlobalPerformance(sessions: WorkSession[]): GlobalPerformance {
+  const withResult = [...sessions]
+    .filter((session) => session.result !== null)
+    .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
+    .slice(0, PERFORMANCE_WINDOW);
+  if (withResult.length === 0) return { rate: 0, count: 0 };
+  const successes = withResult.filter((session) => session.result === "réussi").length;
+  return { rate: successes / withResult.length, count: withResult.length };
+}
+
+/**
+ * Sprint "Reprise MP" : léger coup de pouce pour que l'ordre proposé suive,
+ * en moyenne, une vraie logique de reprise — sans jamais devenir une
+ * planification rigide (aucun exercice n'est exclu ni débloqué par ce terme,
+ * voir `evaluateExercise` : l'inclusion reste inchangée, seul l'ORDRE en tient
+ * compte). Deux cas seulement, symétriques et bornés :
+ *
+ * - Historique insuffisant (`< MIN_SESSIONS_FOR_CONFIDENCE` séances avec
+ *   résultat, notamment tout début ou reprise après une coupure) : léger
+ *   bonus aux difficultés 1-2, léger malus aux difficultés 4-5 — remonter en
+ *   douceur plutôt que risquer de se "faire massacrer" dès la première
+ *   séance. Un exercice difficile reste recommandé s'il l'est par ailleurs
+ *   (mastery/priorité/échec) : ce terme ne fait que départager des candidats
+ *   par ailleurs proches.
+ * - Historique confirmé avec un bon taux de réussite récent (≥ 80 %) : léger
+ *   bonus aux difficultés 4-5, pour ne jamais laisser un élève qui réussit
+ *   tout rester indéfiniment dans sa zone de confort. Un taux de réussite
+ *   faible (≤ 40 %) fait au contraire redescendre les difficultés 4-5 — jamais
+ *   pousser plus dur un élève déjà en difficulté.
+ *
+ * Aucun effet dans la zone intermédiaire (taux 40-80 %, difficulté 3) :
+ * comportement inchangé par défaut, ce terme ne s'active que dans les cas
+ * clairement tranchés.
+ */
+function difficultyFitBonus(exercise: Exercise, performance: GlobalPerformance): number {
+  if (performance.count < MIN_SESSIONS_FOR_CONFIDENCE) {
+    if (exercise.difficulty <= 2) return DIFFICULTY_FIT_CAP * 0.5;
+    if (exercise.difficulty >= 4) return -DIFFICULTY_FIT_CAP * 0.5;
+    return 0;
+  }
+  if (performance.rate >= 0.8) {
+    if (exercise.difficulty >= 4) return DIFFICULTY_FIT_CAP;
+    if (exercise.difficulty <= 1) return -DIFFICULTY_FIT_CAP * 0.5;
+    return 0;
+  }
+  if (performance.rate <= 0.4 && exercise.difficulty >= 4) return -DIFFICULTY_FIT_CAP;
+  return 0;
+}
+
 /**
  * Score d'urgence continu, utilisé UNIQUEMENT pour ordonner les exercices
  * déjà retenus par `evaluateExercise` (pas pour décider de leur inclusion).
@@ -201,7 +272,13 @@ function staleMasteryBonus(exercise: Exercise, now: Date): number {
  * avec résultat, `failureBonus` et `successPenalty` valent 0 et le score est
  * strictement identique à avant ce sprint.
  */
-function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date): number {
+function urgencyScore(
+  exercise: Exercise,
+  minutesSpent: number,
+  attempts: WorkSession[],
+  now: Date,
+  performance: GlobalPerformance
+): number {
   const masteryGap = (100 - exercise.mastery) * 0.6; // 0 (maîtrisé à 100%) à 60 (maîtrisé à 0%)
   const priorityWeight = exercise.priority * 8; // 8 à 40
   const statusWeight = STATUS_WEIGHT[exercise.status]; // -30 à 40
@@ -226,6 +303,7 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
   // critère d'exclusion, seulement un effet sur le tri), et d'une amplitude
   // comparable à favoriteBonus/momentumBonus, pas dominante.
   const successPenalty = Math.min(24, recentSuccessStreak(attempts) * 8); // 0 à 24
+  const difficultyFit = difficultyFitBonus(exercise, performance); // -12 à +12, voir difficultyFitBonus
   return (
     masteryGap +
     priorityWeight +
@@ -235,7 +313,8 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
     staleBonus +
     favoriteBonus +
     failureBonus -
-    successPenalty
+    successPenalty +
+    difficultyFit
   );
 }
 
@@ -375,6 +454,7 @@ export function recommendExercises(
 ): ExerciseRecommendation[] {
   const now = options.now ?? new Date();
   const minutesByExercise = minutesByExerciseMap(sessions);
+  const performance = recentGlobalPerformance(sessions);
   const candidates: ExerciseRecommendation[] = [];
   for (const exercise of exercises) {
     if (exercise.archived) continue;
@@ -382,7 +462,7 @@ export function recommendExercises(
     const attempts = attemptsWithResult(sessions, exercise.id);
     const reasons = evaluateExercise(exercise, minutesSpent, attempts, now);
     if (reasons.length === 0) continue;
-    candidates.push({ exercise, score: urgencyScore(exercise, minutesSpent, attempts, now), reasons });
+    candidates.push({ exercise, score: urgencyScore(exercise, minutesSpent, attempts, now, performance), reasons });
   }
   candidates.sort((a, b) => b.score - a.score);
   const diversified = diversifyByChapter(candidates);

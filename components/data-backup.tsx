@@ -6,13 +6,16 @@ import { ChangeEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { exportBackup, localData, validateBackupPayload, type BackupPayload } from "@/lib/storage";
+import { reconcileExerciseChapters } from "@/lib/chapters";
+import { exportBackup, restoreBackup, validateBackupPayload, type BackupPayload } from "@/lib/storage";
 
 export function DataBackup() {
   const { refresh } = usePrepahubData();
   const input = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
   const [pendingImport, setPendingImport] = useState<BackupPayload | null>(null);
+  /** `true` une fois l'import confirmé et écrit — voir la note dans `confirmImport` sur pourquoi un rechargement complet est nécessaire. */
+  const [importDone, setImportDone] = useState(false);
 
   function exportData() {
     exportBackup();
@@ -31,6 +34,7 @@ export function DataBackup() {
         if (!validateBackupPayload(data)) throw new Error();
         // Rien n'est écrit ici : on attend la confirmation explicite de l'utilisateur.
         setMessage("");
+        setImportDone(false);
         setPendingImport(data);
       } catch {
         setPendingImport(null);
@@ -42,17 +46,48 @@ export function DataBackup() {
 
   function confirmImport() {
     if (!pendingImport) return;
-    localData.saveExercises(pendingImport.exercises);
-    localData.saveSessions(pendingImport.sessions);
-    localData.savePreferences(pendingImport.preferences);
-    // Chapitres : indispensables pour que les `chapter_id` des exercices
-    // pointent vers un catalogue réel. Absents d'une sauvegarde ancienne
-    // (exportée avant l'ajout des chapitres à l'export) → restaurés à [].
-    localData.saveChapters(pendingImport.chapters ?? []);
-    // Sauvegarde d'avant le Sprint 2.1 : pas de weekSnapshots dans le fichier, restaurés à [] proprement.
-    localData.saveWeekSnapshots(pendingImport.weekSnapshots ?? []);
+    const chapters = pendingImport.chapters ?? [];
+    // `reconcileExerciseChapters` (lib/chapters.ts) : un fichier de sauvegarde
+    // vient de l'EXTÉRIEUR de l'app (édité à la main, tronqué, ou simplement
+    // incohérent) — un exercice peut référencer un `chapter_id` absent de ce
+    // même fichier, ou appartenant à une autre matière. Sans ce nettoyage, la
+    // fiche restaurée pointerait vers un chapitre fantôme : son sélecteur de
+    // chapitre l'afficherait comme "Sans chapitre" (aucune option ne
+    // correspond) alors que la donnée réelle dirait le contraire.
+    //
+    // `restoreBackup` (lib/storage.ts) écrit les cinq clés de façon atomique
+    // au niveau applicatif — un import qui échoue en cours de route (ex.
+    // quota localStorage dépassé sur un gros fichier, reproduit réellement en
+    // audit) ne doit jamais laisser certaines clés remplacées et d'autres non.
+    const result = restoreBackup({
+      exercises: reconcileExerciseChapters(pendingImport.exercises, chapters),
+      sessions: pendingImport.sessions,
+      preferences: pendingImport.preferences,
+      // Chapitres : indispensables pour que les `chapter_id` des exercices
+      // pointent vers un catalogue réel. Absents d'une sauvegarde ancienne
+      // (exportée avant l'ajout des chapitres à l'export) → restaurés à [].
+      chapters,
+      // Sauvegarde d'avant le Sprint 2.1 : pas de weekSnapshots dans le fichier, restaurés à [] proprement.
+      weekSnapshots: pendingImport.weekSnapshots ?? [],
+    });
     setPendingImport(null);
-    setMessage("Sauvegarde restaurée. Recharge la page.");
+    if (!result.ok) {
+      setMessage(
+        result.rolledBack
+          ? "Échec de la restauration (espace de stockage insuffisant pour ce fichier ?) — tes données précédentes ont été conservées, rien n'a été perdu."
+          : "Échec de la restauration ET de la récupération de tes données précédentes (espace de stockage insuffisant) — vérifie tes exercices avant de continuer, et libère de l'espace si besoin."
+      );
+      return;
+    }
+    // `usePrepahubData` n'est pas un store partagé : chaque composant monté
+    // (Dashboard, barre latérale…) a sa PROPRE instance du hook, et l'événement
+    // navigateur `storage` ne se déclenche jamais dans l'onglet qui a lui-même
+    // écrit (seulement dans les AUTRES onglets) — `refresh()` ici ne mettrait
+    // à jour que ce composant, laissant le reste de l'app silencieusement
+    // périmé. Un rechargement complet est donc le seul moyen honnête de
+    // garantir que toute l'app reflète l'import — proposé en un clic plutôt
+    // que laissé à la charge de l'utilisateur.
+    setImportDone(true);
   }
 
   function cancelImport() {
@@ -124,6 +159,15 @@ export function DataBackup() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {importDone && (
+        <div role="status" className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4">
+          <p className="text-sm text-zinc-200">Sauvegarde restaurée — recharge la page pour que tout l&apos;affichage en tienne compte.</p>
+          <Button size="sm" onClick={() => window.location.reload()}>
+            Recharger maintenant
+          </Button>
+        </div>
+      )}
 
       {message && (
         <p role="status" className="mt-4 text-sm text-accent">
