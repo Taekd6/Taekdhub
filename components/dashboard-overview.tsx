@@ -429,7 +429,10 @@ export function DashboardOverview() {
                       <p className="truncate font-medium text-zinc-100">{block.label}</p>
                       <span className="shrink-0 text-xs text-zinc-500">{block.estimatedMinutes} min</span>
                     </div>
-                    <p className="mt-1 text-xs text-zinc-500">{block.pickLabel}</p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      {block.picks[0] && <DifficultyDots value={block.picks[0].exercise.difficulty} />}
+                      <p className="text-xs text-zinc-500">{block.pickLabel}</p>
+                    </div>
                   </div>
                 </li>
               ))}
