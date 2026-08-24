@@ -695,7 +695,7 @@
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
-    "difficulty": 1,
+    "difficulty": 2,
     "chapter": "Électrocinétique",
     "estimatedMinutes": 15,
     "tags": [
@@ -827,7 +827,7 @@
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Physique",
     "type": "TD",
-    "difficulty": 2,
+    "difficulty": 3,
     "chapter": "Thermodynamique",
     "estimatedMinutes": 20,
     "tags": [
@@ -5424,5 +5424,1793 @@
     "competition": null,
     "programmeLevel": "sup",
     "licenseStatus": "libre"
+  },
+  {
+    "title": "PGCD et PPCM par l'algorithme d'Euclide",
+    "statement": "Calculer, à l'aide de l'algorithme d'Euclide, le PGCD de $252$ et $105$, puis en déduire leur PPCM à l'aide de la relation $\\mathrm{PGCD}(a,b) \\times \\mathrm{PPCM}(a,b) = a \\times b$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Arithmétique",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "PGCD",
+      "PPCM",
+      "algorithme d'Euclide"
+    ],
+    "hints": [
+      "Applique l'algorithme d'Euclide : divise 252 par 105, puis 105 par le reste obtenu, et ainsi de suite jusqu'à un reste nul.",
+      "Le PGCD est le dernier reste non nul de cette suite de divisions.",
+      "Une fois PGCD(252,105) trouvé, utilise PPCM(a,b) = a×b / PGCD(a,b) pour calculer le PPCM directement, sans refaire de division."
+    ],
+    "correction": "252 = 2×105+42 ; 105=2×42+21 ; 42=2×21+0. Le dernier reste non nul est 21 : PGCD(252,105)=21. Par la relation PGCD×PPCM=a×b : PPCM=252×105/21=26460/21=1260.",
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "division euclidienne"
+    ],
+    "pedagogicalGoal": "automatisme fondateur : appliquer l'algorithme d'Euclide sans hésitation, puis relier PGCD et PPCM par leur relation produit — base de toute l'arithmétique de Sup.",
+    "archived": false
+  },
+  {
+    "title": "Identité de Bézout par l'algorithme d'Euclide étendu",
+    "statement": "1. Justifier que $17$ et $5$ sont premiers entre eux.\n2. Déterminer, à l'aide de l'algorithme d'Euclide étendu, un couple d'entiers relatifs $(u,v)$ tel que $17u + 5v = 1$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Arithmétique",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "Bézout",
+      "algorithme d'Euclide étendu"
+    ],
+    "hints": [
+      "Deux entiers sont premiers entre eux si et seulement si leur PGCD vaut 1 — vérifie-le avec l'algorithme d'Euclide standard.",
+      "Pour l'identité de Bézout, remonte l'algorithme d'Euclide depuis la dernière division non triviale, en exprimant chaque reste en fonction des deux précédents.",
+      "Depuis 17=3×5+2 et 5=2×2+1, exprime 1=5-2×2, puis remplace 2 par 17-3×5 pour tout écrire en fonction de 17 et 5 uniquement."
+    ],
+    "correction": "1. Euclide : 17=3×5+2, 5=2×2+1, 2=2×1+0. Dernier reste non nul : 1. Donc PGCD(17,5)=1 : 17 et 5 sont premiers entre eux.\n2. Remontée : 1=5-2×2. Or 2=17-3×5 (première division). En substituant : 1=5-2×(17-3×5)=5-2×17+6×5=7×5-2×17. Donc (u,v)=(-2,7) convient : 17×(-2)+5×7=-34+35=1 ✓.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "algorithme d'Euclide",
+      "PGCD"
+    ],
+    "pedagogicalGoal": "maîtriser la remontée de l'algorithme d'Euclide (Euclide étendu) pour construire explicitement une identité de Bézout, outil central de toute l'arithmétique qui suit (Gauss, inverses modulaires).",
+    "archived": false
+  },
+  {
+    "title": "Théorème de Gauss — application aux congruences",
+    "statement": "1. Énoncer le théorème de Gauss.\n2. Soit $n \\in \\mathbb{Z}$ tel que $7$ divise $3n$. Montrer, à l'aide du théorème de Gauss, que $7$ divise $n$.\n3. Résoudre dans $\\mathbb{Z}$ l'équation $3n \\equiv 0\\ [7]$ (justifier que c'est équivalent à la question précédente).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Arithmétique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "Gauss",
+      "divisibilité",
+      "congruences"
+    ],
+    "hints": [
+      "Le théorème de Gauss dit : si a divise bc et si a est premier avec b, alors a divise c.",
+      "Ici 7 divise 3n = 3×n : identifie qui joue le rôle de b (le facteur premier avec 7) et qui joue le rôle de c.",
+      "Comme PGCD(7,3)=1 (7 est premier, ne divise pas 3), le théorème de Gauss s'applique directement avec a=7, b=3, c=n : 7 divise 3n et 7 est premier avec 3, donc 7 divise n."
+    ],
+    "correction": "1. Théorème de Gauss : si a|bc et PGCD(a,b)=1, alors a|c.\n2. Ici a=7, produit bc=3n avec b=3, c=n. PGCD(7,3)=1 (7 est premier et ne divise pas 3). Le théorème de Gauss s'applique : 7|3n et PGCD(7,3)=1 ⟹ 7|n.\n3. 3n≡0[7] signifie exactement 7|3n : c'est la même hypothèse qu'en question 2, donc les solutions sont exactement les n tels que 7|n, c'est-à-dire n≡0[7] : l'ensemble solution est 7ℤ.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "théorème de Gauss",
+      "divisibilité"
+    ],
+    "pedagogicalGoal": "appliquer le théorème de Gauss dans un cas concret et faire le lien direct avec la résolution d'une équation de congruence — les deux formulations désignent le même fait.",
+    "archived": false
+  },
+  {
+    "title": "Piège : confondre \"premiers entre eux\" et \"nombres premiers\"",
+    "statement": "1. Rappeler la différence entre « $a$ et $b$ sont premiers entre eux » et « $a$ est un nombre premier ».\n2. Les entiers $8$ et $15$ sont-ils premiers entre eux ? Sont-ils des nombres premiers ? Justifier.\n3. Donner un exemple de deux entiers premiers entre eux dont AUCUN n'est un nombre premier.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Arithmétique",
+    "estimatedMinutes": 12,
+    "tags": [
+      "piège",
+      "erreur classique",
+      "nombres premiers entre eux"
+    ],
+    "hints": [
+      "'Premiers entre eux' est une propriété de la PAIRE (a,b) — leur PGCD vaut 1 ; 'premier' est une propriété d'un seul nombre — n'avoir que deux diviseurs. Ne mélange jamais les deux.",
+      "Décompose 8 et 15 en facteurs premiers : 8=2³, 15=3×5. Aucun facteur commun ⟹ premiers entre eux, même si aucun des deux n'est premier individuellement.",
+      "Cherche deux nombres composés (non premiers) dont les décompositions en facteurs premiers n'ont AUCUN facteur en commun — 8 et 15, ou 4 et 9, conviennent."
+    ],
+    "correction": "1. 'a et b premiers entre eux' signifie PGCD(a,b)=1 (propriété relative à la PAIRE) ; 'a est premier' signifie que a≥2 n'a que 1 et a comme diviseurs positifs (propriété INTRINSÈQUE à a seul). Ce sont deux notions de nature différente, l'une ne présuppose pas l'autre.\n2. PGCD(8,15) : 8=2³, 15=3×5, aucun facteur premier commun, donc PGCD(8,15)=1 : 8 et 15 SONT premiers entre eux. Mais 8=2×4 n'est pas premier, et 15=3×5 n'est pas premier non plus : AUCUN des deux n'est un nombre premier.\n3. L'exemple de la question 2 (8 et 15) convient déjà. Un autre exemple simple : 4=2² et 9=3², premiers entre eux (PGCD=1) et ni 4 ni 9 n'est premier.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "PGCD",
+      "nombres premiers"
+    ],
+    "pedagogicalGoal": "piège classique : dissocier définitivement 'premiers entre eux' (relatif) et 'premier' (absolu) — confusion très fréquente en début d'apprentissage.",
+    "archived": false
+  },
+  {
+    "title": "Résolution d'une équation de congruence par inverse modulaire",
+    "statement": "Résoudre dans $\\mathbb{Z}$ l'équation de congruence $5x \\equiv 3\\ [11]$ (on donnera l'ensemble des solutions sous la forme d'une classe modulo $11$).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Arithmétique",
+    "estimatedMinutes": 18,
+    "tags": [
+      "consolidation",
+      "congruences",
+      "inverse modulaire"
+    ],
+    "hints": [
+      "Comme PGCD(5,11)=1 (11 est premier et ne divise pas 5), 5 est inversible modulo 11 : il existe un entier b tel que 5b≡1[11].",
+      "Cherche cet inverse b en testant les multiples de 5 modulo 11 (5×1, 5×2, …), jusqu'à tomber sur un résultat ≡1[11].",
+      "Tu dois trouver 5×9=45≡1[11] (car 45=4×11+1) : l'inverse de 5 est 9. En multipliant l'équation 5x≡3[11] par 9 : x≡9×3=27≡5[11]."
+    ],
+    "correction": "PGCD(5,11)=1 (11 premier, ne divise pas 5) : 5 est inversible modulo 11. Cherchons son inverse : 5×9=45=4×11+1≡1[11], donc 9 est l'inverse de 5 modulo 11. En multipliant les deux membres de 5x≡3[11] par 9 : x≡9×3=27[11], soit x≡5[11] (car 27=2×11+5). L'ensemble des solutions est {x∈ℤ : x≡5[11]} = 5+11ℤ. Vérification : 5×5=25=2×11+3≡3[11] ✓.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "congruences",
+      "PGCD",
+      "identité de Bézout"
+    ],
+    "pedagogicalGoal": "résoudre une équation de congruence linéaire en construisant explicitement un inverse modulaire — technique réutilisée dans tout calcul modulaire ultérieur.",
+    "archived": false
+  },
+  {
+    "title": "Infinité des nombres premiers — démonstration d'Euclide",
+    "statement": "Démontrer, par un raisonnement d'Euclide (par l'absurde), qu'il existe une infinité de nombres premiers.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Arithmétique",
+    "estimatedMinutes": 25,
+    "tags": [
+      "classique",
+      "nombres premiers",
+      "raisonnement par l'absurde"
+    ],
+    "hints": [
+      "Raisonne par l'absurde : suppose qu'il n'existe qu'un nombre FINI de nombres premiers p1, …, pn (la totalité d'entre eux).",
+      "Considère l'entier N = p1×p2×…×pn + 1, et réfléchis à son reste dans la division par chacun des pi.",
+      "N n'est divisible par aucun des pi (le reste vaut toujours 1), pourtant N≥2 admet forcément un diviseur premier — ce diviseur ne peut être aucun des pi, ce qui contredit l'hypothèse que p1,…,pn étaient TOUS les nombres premiers."
+    ],
+    "correction": "Par l'absurde : supposons qu'il n'existe qu'un nombre fini de nombres premiers, notés p1,p2,…,pn (l'ensemble de TOUS les nombres premiers). Posons N = p1×p2×⋯×pn + 1. Pour chaque i, la division de N par pi donne un reste de 1 (p1⋯pn est divisible par pi, mais pas le +1) : donc AUCUN des pi ne divise N. Or N≥2, donc N admet au moins un diviseur premier q (tout entier ≥2 a un diviseur premier). Ce q ne peut être égal à aucun des pi (aucun ne divise N), ce qui contredit l'hypothèse que p1,…,pn constituaient la liste de TOUS les nombres premiers. Cette contradiction prouve qu'il existe une infinité de nombres premiers.",
+    "note": "Exercice original TaekdHub — démonstration classique attribuée à Euclide.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "nombres premiers",
+      "raisonnement par l'absurde",
+      "diviseur premier d'un entier"
+    ],
+    "pedagogicalGoal": "démonstration patrimoniale par l'absurde, exemple parfait de la puissance de ce mode de raisonnement — à connaître par cœur, tant pour son résultat que pour sa méthode.",
+    "archived": false
+  },
+  {
+    "title": "Petit théorème de Fermat — application au calcul de reste",
+    "statement": "Soit $p$ un nombre premier et $a$ un entier tel que $p$ ne divise pas $a$. On admet le petit théorème de Fermat : $a^{p-1} \\equiv 1\\ [p]$.\n1. En déduire que pour tout entier $a$ (y compris si $p$ divise $a$), $a^p \\equiv a\\ [p]$.\n2. Application : déterminer le reste de la division euclidienne de $2^{100}$ par $7$.",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Arithmétique",
+    "estimatedMinutes": 35,
+    "tags": [
+      "style-concours",
+      "petit théorème de Fermat",
+      "congruences",
+      "exponentiation modulaire"
+    ],
+    "hints": [
+      "Distingue deux cas : si p divise a, alors a≡0[p], et le résultat est immédiat. Sinon, applique directement le petit théorème de Fermat donné et multiplie les deux membres par a.",
+      "Pour l'application, calcule d'abord l'ordre du cycle : par Fermat, 2^6≡1[7]. Décompose ensuite l'exposant 100 en un multiple de 6 plus un reste.",
+      "100 = 6×16+4, donc 2^100 = (2^6)^16 × 2^4 ≡ 1^16 × 2^4 = 16 [7]. Il ne reste plus qu'à réduire 16 modulo 7."
+    ],
+    "correction": "1. Si p|a : a≡0[p], donc a^p≡0[p] également, et a≡0[p] : l'égalité a^p≡a[p] est immédiate. Si p∤a : le petit théorème de Fermat donne a^(p-1)≡1[p] ; en multipliant les deux membres par a : a^p≡a[p]. Dans les deux cas, a^p≡a[p] pour tout entier a.\n2. p=7, a=2 : PGCD(2,7)=1, donc 2^6≡1[7] (Fermat). Comme 100=6×16+4 : 2^100=(2^6)^16×2^4≡1^16×2^4=16[7]. Or 16=2×7+2, donc 16≡2[7]. Le reste de la division de 2^100 par 7 est 2.",
+    "note": "Exercice original TaekdHub, non attribué à un concours réel — inspiré d'une question classique d'exponentiation modulaire. Entièrement soluble avec le programme de Sup (le petit théorème de Fermat est admis dans l'énoncé).",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "congruences",
+      "petit théorème de Fermat (admis)",
+      "division euclidienne de l'exposant"
+    ],
+    "pedagogicalGoal": "technique de concours incontournable : réduire une puissance énorme modulo un nombre premier en combinant le petit théorème de Fermat et la division euclidienne de l'exposant, plutôt que de calculer 2^100 directement.",
+    "archived": false
+  },
+  {
+    "title": "Équation de propagation d'une onde sur une corde vibrante",
+    "statement": "On considère une corde vibrante, tendue horizontalement avec une tension $T$ constante, de masse linéique $\\mu$. On note $y(x,t)$ le déplacement transversal (perpendiculaire à la corde) d'un point d'abscisse $x$ à l'instant $t$, supposé petit devant la longueur de la corde.\n1. En appliquant le principe fondamental de la dynamique à un petit élément de corde compris entre $x$ et $x+dx$, et en supposant les déplacements et pentes petits (approximation des petits mouvements), établir l'équation aux dérivées partielles vérifiée par $y(x,t)$.\n2. Mettre cette équation sous la forme $\\dfrac{\\partial^2 y}{\\partial t^2} = c^2 \\dfrac{\\partial^2 y}{\\partial x^2}$, et exprimer la célérité $c$ en fonction de $T$ et $\\mu$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Ondes",
+    "estimatedMinutes": 30,
+    "tags": [
+      "ondes",
+      "équation de d'Alembert",
+      "corde vibrante"
+    ],
+    "hints": [
+      "Isole un petit élément de corde entre x et x+dx, de masse dm=μdx, et projette le PFD sur la direction transversale (perpendiculaire à la corde au repos).",
+      "Dans l'approximation des petits mouvements, la composante transversale de la tension au point x vaut T·∂y/∂x (l'angle est petit, sin θ≈∂y/∂x) : calcule la résultante entre x et x+dx.",
+      "Tu dois obtenir μ·∂²y/∂t² = T·∂²y/∂x² après simplification par dx : identifie alors c²=T/μ par comparaison avec la forme canonique ∂²y/∂t²=c²∂²y/∂x²."
+    ],
+    "correction": "1. Isolons un élément de corde de masse dm=μ·dx, soumis à la tension T de part et d'autre. Dans l'approximation des petits mouvements, la composante transversale de la tension au point x+dx vaut T·∂y/∂x|_{x+dx} (angle petit, sin θ≈tan θ≈∂y/∂x), et au point x elle vaut -T·∂y/∂x|_x (opposée). Le PFD projeté transversalement donne : μ·dx·∂²y/∂t² = T·[∂y/∂x|_{x+dx} - ∂y/∂x|_x] ≈ T·dx·∂²y/∂x² (développement à l'ordre 1 en dx). En simplifiant par dx : μ·∂²y/∂t² = T·∂²y/∂x².\n2. En divisant par μ : ∂²y/∂t² = (T/μ)·∂²y/∂x², soit ∂²y/∂t² = c²·∂²y/∂x² avec c² = T/μ, donc c = √(T/μ) (équation de d'Alembert).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "principe fondamental de la dynamique",
+      "développement limité à l'ordre 1"
+    ],
+    "pedagogicalGoal": "établir par la physique (PFD sur un élément infinitésimal) l'équation de d'Alembert, socle de tout le chapitre ondes — comprendre d'où vient l'équation plutôt que l'apprendre par cœur.",
+    "archived": false
+  },
+  {
+    "title": "Onde progressive sinusoïdale — période, longueur d'onde, célérité",
+    "statement": "Une onde progressive sinusoïdale se propageant le long d'un axe $(Ox)$ dans le sens des $x$ croissants est décrite par $y(x,t) = A\\cos(\\omega t - kx)$, avec $A = 2\\ \\text{mm}$, $\\omega = 100\\pi\\ \\text{rad/s}$ et $k = 2\\pi\\ \\text{rad/m}$.\n1. Déterminer la période $T$, la fréquence $f$ et la longueur d'onde $\\lambda$ de cette onde.\n2. En déduire sa célérité $c$, de deux façons : $c = \\lambda/T$ puis $c = \\omega/k$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Ondes",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "onde progressive",
+      "célérité"
+    ],
+    "hints": [
+      "Identifie ω et k par comparaison directe avec la forme générale y=A·cos(ωt-kx) : ici ω=100π rad/s et k=2π rad/m.",
+      "Utilise T=2π/ω et λ=2π/k séparément avant de calculer la célérité.",
+      "Une fois T=0,02 s et λ=1 m trouvés, c=λ/T=50 m/s — vérifie ta cohérence en calculant aussi c=ω/k, qui doit donner exactement la même valeur."
+    ],
+    "correction": "1. T=2π/ω=2π/(100π)=1/50=0,02 s=20 ms. f=1/T=50 Hz. λ=2π/k=2π/(2π)=1 m.\n2. c=λ/T=1/0,02=50 m/s ; de façon équivalente, c=ω/k=100π/2π=50 m/s : les deux formules coïncident, comme il se doit.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "onde progressive sinusoïdale"
+    ],
+    "pedagogicalGoal": "automatisme : lire directement ω et k dans l'expression d'une onde et en tirer toutes les grandeurs caractéristiques, avec double vérification de la célérité.",
+    "archived": false
+  },
+  {
+    "title": "Superposition de deux ondes sonores proches — battements",
+    "statement": "Deux ondes sonores de même amplitude $A$, de fréquences proches $f_1 = 440\\ \\text{Hz}$ et $f_2 = 444\\ \\text{Hz}$, se superposent en un même point.\n1. Écrire l'expression de la pression acoustique résultante sous la forme d'un produit, à l'aide de la formule $\\cos(a) + \\cos(b) = 2\\cos\\!\\left(\\dfrac{a+b}{2}\\right)\\cos\\!\\left(\\dfrac{a-b}{2}\\right)$.\n2. En déduire la fréquence de la porteuse (l'onde « moyenne ») ainsi que la fréquence du battement perçu.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Ondes",
+    "estimatedMinutes": 25,
+    "tags": [
+      "ondes",
+      "battements",
+      "superposition",
+      "interférences"
+    ],
+    "hints": [
+      "Utilise la formule de factorisation cos(a)+cos(b)=2cos((a+b)/2)cos((a-b)/2) avec a=2πf1t et b=2πf2t.",
+      "Le terme en (a+b)/2 donne la fréquence porteuse (moyenne des deux fréquences) ; le terme en (a-b)/2 donne l'enveloppe, qui module l'amplitude.",
+      "La fréquence de battement PERÇUE (variations d'intensité) est le double de la fréquence de l'enveloppe cos(π(f1-f2)t), car c'est |cos| qui module l'intensité (elle s'annule deux fois par période de cos) : tu dois trouver |f1-f2|=4 Hz."
+    ],
+    "correction": "En posant f_m=(f1+f2)/2=442 Hz (fréquence porteuse) : p(t)=p1+p2=A cos(2πf1t)+A cos(2πf2t)=2A cos(2πf_m t)·cos(π(f1-f2)t) [avec a=2πf1t, b=2πf2t dans la formule donnée]. Le terme cos(2πf_m t) oscille rapidement (442 Hz), modulé en amplitude par le terme lent 2A cos(π(f1-f2)t). Le battement perceptible correspond aux annulations/maxima de |cos(π(f1-f2)t)|, qui se reproduisent à la fréquence |f1-f2|=4 Hz (le module d'un cosinus varie à une fréquence double de celle du cosinus lui-même). Fréquence de battement : 4 Hz. Fréquence de la porteuse : 442 Hz.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "superposition d'ondes",
+      "formules de factorisation trigonométriques"
+    ],
+    "pedagogicalGoal": "comprendre physiquement le phénomène de battement en le retrouvant par un pur calcul de factorisation trigonométrique — relier un résultat trigonométrique de Sup à un phénomène physique audible.",
+    "archived": false
+  },
+  {
+    "title": "Ondes stationnaires sur une corde fixée aux extrémités — modes propres",
+    "statement": "Une corde de longueur $L$ est fixée à ses deux extrémités ($x=0$ et $x=L$). On cherche les solutions de l'équation de d'Alembert (voir l'exercice sur la corde vibrante) sous la forme d'ondes stationnaires $y(x,t) = f(x)\\cdot g(t)$.\n1. Montrer que $f$ et $g$ vérifient chacune une équation différentielle du second ordre, reliées par une constante de séparation.\n2. En utilisant les conditions aux limites $y(0,t) = y(L,t) = 0$ pour tout $t$, montrer que seules certaines valeurs discrètes du nombre d'onde $k$ sont possibles, et déterminer les longueurs d'onde $\\lambda_n$ des modes propres correspondants, pour $n \\in \\mathbb{N}^*$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Ondes",
+    "estimatedMinutes": 40,
+    "tags": [
+      "ondes",
+      "ondes stationnaires",
+      "modes propres",
+      "séparation des variables"
+    ],
+    "hints": [
+      "Injecte y(x,t)=f(x)g(t) dans l'équation de d'Alembert et divise par f(x)g(t) : le membre de gauche ne dépend que de t, le membre de droite que de x — ils doivent donc être égaux à une même constante.",
+      "Les conditions y(0,t)=0 et y(L,t)=0 pour tout t se traduisent directement sur f seule : f(0)=0 et f(L)=0 (car g(t) n'est pas nul en général).",
+      "Avec f(x)=B sin(kx) (le terme en cosinus disparaît à cause de f(0)=0), la condition f(L)=0 impose sin(kL)=0 pour B≠0, donc kL=nπ : seules les valeurs discrètes k_n=nπ/L sont possibles, donnant λ_n=2L/n."
+    ],
+    "correction": "1. En injectant y(x,t)=f(x)g(t) dans ∂²y/∂t²=c²∂²y/∂x² : f(x)g''(t)=c²f''(x)g(t). En divisant par f(x)g(t) (supposés non nuls) : g''(t)/g(t) = c²f''(x)/f(x). Le membre de gauche ne dépend que de t, le membre de droite que de x : ils sont donc tous deux égaux à une même constante, notée -ω² (choix de signe anticipant des solutions oscillantes). D'où g''(t)+ω²g(t)=0 et f''(x)+(ω²/c²)f(x)=0, soit f''(x)+k²f(x)=0 avec k=ω/c.\n2. La solution générale en f est f(x)=B sin(kx)+C cos(kx). La condition y(0,t)=0 pour tout t impose f(0)=0 (car g(t) n'est pas identiquement nul), soit C=0 : f(x)=B sin(kx). La condition y(L,t)=0 impose f(L)=0, soit B sin(kL)=0. Pour une solution non triviale (B≠0), il faut sin(kL)=0, c'est-à-dire kL=nπ pour un entier n∈ℕ*. Les valeurs possibles de k sont donc discrètes : k_n=nπ/L, et les longueurs d'onde des modes propres sont λ_n=2π/k_n=2L/n, pour n=1,2,3,…",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "équation de d'Alembert",
+      "équations différentielles du second ordre",
+      "séparation des variables"
+    ],
+    "pedagogicalGoal": "introduire la méthode de séparation des variables (outil transversal réutilisé plus tard en Spé) sur un exemple physique concret et calculable entièrement avec le programme de Sup.",
+    "archived": false
+  },
+  {
+    "title": "Piège : confondre vitesse transversale d'un point et célérité de l'onde",
+    "statement": "On considère une onde progressive sinusoïdale $y(x,t) = A\\cos(\\omega t - kx)$ se propageant le long d'une corde.\n1. Calculer la vitesse transversale $v(x,t) = \\dfrac{\\partial y}{\\partial t}$ d'un point matériel de la corde, et donner sa valeur maximale.\n2. Comparer cette vitesse transversale maximale à la célérité $c = \\omega/k$ de l'onde. Ces deux vitesses désignent-elles la même chose ? Justifier en précisant ce que chacune représente physiquement.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Ondes",
+    "estimatedMinutes": 15,
+    "tags": [
+      "piège",
+      "erreur classique",
+      "ondes",
+      "vitesse transversale",
+      "célérité"
+    ],
+    "hints": [
+      "Dérive y(x,t) par rapport à t (x fixé) pour obtenir la vitesse d'un point matériel de la corde — ce n'est PAS la même dérivation que celle qui donne la célérité de l'onde.",
+      "Calcule v_max=Aω et compare-le à c=ω/k : rien ne garantit a priori qu'ils soient égaux, car A et k sont deux grandeurs physiquement indépendantes.",
+      "Un point de la corde ne se déplace JAMAIS le long de (Ox) : il oscille perpendiculairement à cet axe. La célérité c décrit le déplacement de la FORME de l'onde le long de (Ox) — deux vitesses de nature géométrique différente (transversale vs longitudinale)."
+    ],
+    "correction": "1. v(x,t)=∂y/∂t=-Aω sin(ωt-kx). Sa valeur maximale (en valeur absolue) est v_max=Aω, atteinte lorsque sin(ωt-kx)=±1.\n2. En général, Aω ≠ ω/k = c (rien ne relie a priori l'amplitude A et le nombre d'onde k, deux grandeurs indépendantes). Ces deux vitesses ne désignent PAS la même chose : v(x,t) est la vitesse TRANSVERSALE d'un point matériel de la corde (il oscille perpendiculairement à l'axe (Ox), sans se déplacer le long de la corde), alors que c=ω/k est la vitesse de PROPAGATION de la forme de l'onde (célérité) — la vitesse à laquelle un point de phase constante se déplace le long de (Ox). Confondre la vitesse d'un point de la corde avec la célérité de l'onde est une erreur classique.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "onde progressive sinusoïdale",
+      "dérivée partielle"
+    ],
+    "pedagogicalGoal": "piège classique et fondamental du chapitre ondes : distinguer la vitesse (transversale) d'une particule du milieu de la célérité (longitudinale) de propagation de l'onde — confusion très fréquente.",
+    "archived": false
+  },
+  {
+    "title": "Loi de Faraday — f.é.m. induite dans une spire",
+    "statement": "Une spire conductrice plane, de surface $S = 50\\ \\text{cm}^2$, est placée dans un champ magnétique uniforme $B(t) = B_0\\cos(\\omega t)$, avec $B_0 = 0{,}2\\ \\text{T}$ et $\\omega = 100\\ \\text{rad/s}$, orienté perpendiculairement au plan de la spire.\n1. Exprimer le flux magnétique $\\Phi(t)$ à travers la spire.\n2. En déduire, à l'aide de la loi de Faraday, la force électromotrice induite $e(t)$ dans la spire, et calculer son amplitude maximale.",
+    "source": "TaekdHub — exercice original (Spé)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Électromagnétisme (Spé)",
+    "estimatedMinutes": 25,
+    "tags": [
+      "induction électromagnétique",
+      "loi de Faraday",
+      "flux magnétique"
+    ],
+    "hints": [
+      "Le flux à travers une spire plane dans un champ uniforme perpendiculaire au plan vaut simplement Φ=B×S (produit champ × surface), sans intégrale nécessaire ici.",
+      "La loi de Faraday donne e(t)=-dΦ/dt : dérive Φ(t)=B0 S cos(ωt) par rapport au temps.",
+      "N'oublie pas de convertir S en m² (50 cm² = 50×10⁻⁴ m² = 5×10⁻³ m²) avant de calculer numériquement e_max=B0·S·ω=0,1 V."
+    ],
+    "correction": "1. Φ(t)=B(t)·S=B0·S·cos(ωt) (champ uniforme, perpendiculaire au plan de la spire).\n2. Loi de Faraday : e(t)=-dΦ/dt=-d/dt[B0 S cos(ωt)]=B0 S ω sin(ωt). Amplitude maximale : e_max=B0·S·ω=0,2×(50×10⁻⁴)×100=0,2×5×10⁻³×100=0,1 V=100 mV.",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé : à débloquer une fois le cours d'électromagnétisme (induction) vu en classe.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "level": 4,
+    "prerequisites": [
+      "flux magnétique",
+      "loi de Faraday"
+    ],
+    "pedagogicalGoal": "premier contact calculatoire avec l'induction électromagnétique : relier un champ variable, un flux, et une f.é.m. induite par simple dérivation — prépare les circuits couplés vus plus tard en Spé.",
+    "archived": true
+  },
+  {
+    "title": "Auto-induction — établissement du courant dans un circuit RL",
+    "statement": "On considère un circuit série comportant un générateur de force électromotrice $E$, une résistance $R$ et une bobine idéale d'inductance $L$ (sans résistance interne). À l'instant $t=0$, le courant dans le circuit est nul, et on ferme l'interrupteur.\n1. Établir l'équation différentielle vérifiée par le courant $i(t)$ dans le circuit, en utilisant la loi des mailles et la relation $u_L = L\\dfrac{di}{dt}$ aux bornes de la bobine.\n2. Résoudre cette équation et donner l'expression de $i(t)$ pour $t \\geq 0$.\n3. Définir la constante de temps $\\tau$ du circuit et l'exprimer en fonction de $R$ et $L$.",
+    "source": "TaekdHub — exercice original (Spé)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Électromagnétisme (Spé)",
+    "estimatedMinutes": 25,
+    "tags": [
+      "auto-induction",
+      "circuit RL",
+      "régime transitoire"
+    ],
+    "hints": [
+      "La loi des mailles donne E=Ri+u_L, avec u_L=L·di/dt : c'est une équation différentielle linéaire d'ordre 1 en i, tout à fait analogue à celle d'un circuit RC, avec les rôles de u_C et i échangés.",
+      "Cherche i(t) sous la forme E/R+A·e^{-Rt/L} (solution particulière constante + solution homogène) : la condition initiale i(0)=0 impose A=-E/R.",
+      "Par analogie avec le circuit RC (où τ=RC), la constante de temps du circuit RL vaut τ=L/R — identifie-la directement dans l'exposant de l'exponentielle trouvée."
+    ],
+    "correction": "1. Loi des mailles : E=R·i+u_L, avec u_L=L·di/dt. D'où l'équation différentielle : L·di/dt+R·i=E.\n2. Solution homogène : i_h(t)=A·e^{-Rt/L}. Solution particulière constante : i_p=E/R. Solution générale : i(t)=E/R+A·e^{-Rt/L}. Avec i(0)=0 : A=-E/R. D'où i(t)=(E/R)·(1-e^{-Rt/L}) pour t≥0.\n3. La constante de temps τ=L/R est le temps caractéristique d'établissement du courant (au bout de τ, i atteint ≈0,63×E/R ; au bout de 5τ, l'établissement est pratiquement complet).",
+    "note": "Exercice original TaekdHub — pilier de Spé, archivé : à débloquer une fois le cours sur l'auto-induction vu en classe.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "level": 4,
+    "prerequisites": [
+      "circuit RC (analogie)",
+      "équations différentielles linéaires d'ordre 1"
+    ],
+    "pedagogicalGoal": "transférer directement la méthode déjà maîtrisée sur le circuit RC (Sup) au circuit RL (Spé) — même structure d'équation, même méthode de résolution, pour construire l'auto-induction sur des bases familières.",
+    "archived": true
+  },
+  {
+    "title": "Développements limités usuels à l'ordre 3 en 0",
+    "statement": "Écrire le développement limité à l'ordre 3 en $0$ des fonctions suivantes :\n1. $f(x) = e^x$\n2. $g(x) = \\sin(x)$\n3. $h(x) = \\cos(x)$\nVérifier, en dérivant terme à terme le DL de $\\sin$, que l'on retrouve bien (au bon ordre) le DL de $\\cos$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Développements limités",
+    "estimatedMinutes": 12,
+    "tags": [
+      "automatisme",
+      "DL usuels",
+      "parité"
+    ],
+    "hints": [
+      "Les DL usuels (exp, sin, cos) sont à connaître par cœur — ne les redémontre pas à chaque fois.",
+      "Profite de la parité : sin est impaire (DL sans terme pair), cos est paire (DL sans terme impair) — cela te dit immédiatement quels coefficients sont nuls.",
+      "Pour la vérification, dérive terme à terme le DL de sin(x)=x-x³/6+o(x³) : tu dois retrouver 1-x²/2, le DL de cos à l'ordre 2 (un ordre de moins, normal en dérivant un DL)."
+    ],
+    "correction": "1. e^x = 1+x+x²/2+x³/6+o(x³).\n2. sin(x)=x-x³/6+o(x³) (pas de terme constant ni de terme en x², car sin est impaire).\n3. cos(x)=1-x²/2+o(x³) (pas de terme en x ni en x³, car cos est paire).\nVérification : en dérivant terme à terme x-x³/6 (DL de sin), on obtient 1-x²/2 : c'est exactement le DL de cos à l'ordre 2, cohérent avec (sin)'=cos.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "dérivées usuelles",
+      "parité d'une fonction"
+    ],
+    "pedagogicalGoal": "mémoriser sans hésitation les trois DL usuels fondamentaux et vérifier leur cohérence mutuelle par dérivation.",
+    "archived": false
+  },
+  {
+    "title": "Position d'une courbe par rapport à sa tangente — cas de cos(x)",
+    "statement": "Soit $f(x)=\\cos(x)$.\n1. Déterminer le développement limité de $f$ en 0 à l'ordre 2.\n2. En déduire l'équation de la tangente à la courbe de $f$ en $x=0$, et la position locale de la courbe par rapport à cette tangente.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Développements limités",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "tangente",
+      "position locale"
+    ],
+    "hints": [
+      "Le DL à l'ordre 1 de cos(x) est 1+0·x+o(x) (car cos'(0)=0) : la tangente en 0 est donc horizontale, d'équation y=1.",
+      "Le signe du terme suivant dans le DL (celui d'ordre 2) donne directement la position de la courbe par rapport à la tangente.",
+      "Le coefficient de x² dans le DL de cos vaut -1/2, négatif : la courbe est donc EN DESSOUS de sa tangente horizontale y=1 au voisinage de 0."
+    ],
+    "correction": "1. cos(x)=1-x²/2+o(x²).\n2. Le DL à l'ordre 1 donne cos(x)=1+0·x+o(x) : la tangente en 0 est y=1 (tangente horizontale, cohérent avec cos'(0)=-sin(0)=0). Le terme suivant, -x²/2, donne le signe de f(x)-1=-x²/2+o(x²) : NÉGATIF pour x≠0 proche de 0, donc la courbe de cos est EN DESSOUS de sa tangente horizontale y=1 au voisinage de 0 (cohérent avec le maximum local de cos en 0).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "DL usuels",
+      "tangente à une courbe"
+    ],
+    "pedagogicalGoal": "retrouver, par un DL à l'ordre 2, la position d'une courbe par rapport à sa tangente — méthode systématique, transférable à toute fonction.",
+    "archived": false
+  },
+  {
+    "title": "Limite classique (1+x)^(1/x) par développement limité",
+    "statement": "Calculer, à l'aide d'un développement limité, $\\displaystyle\\lim_{x\\to 0} (1+x)^{1/x}$.",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Développements limités",
+    "estimatedMinutes": 30,
+    "tags": [
+      "style-concours",
+      "forme indéterminée",
+      "exponentielle",
+      "limite classique"
+    ],
+    "hints": [
+      "Passe par la forme exponentielle : (1+x)^{1/x} = exp[(1/x)ln(1+x)], pour te ramener à une limite d'exposant plutôt qu'une forme indéterminée 1^∞ directe.",
+      "Utilise le DL de ln(1+x) à l'ordre 2 (x-x²/2+o(x²)), divisé par x, pour obtenir la limite de l'exposant.",
+      "Tu dois trouver que l'exposant (1/x)ln(1+x) tend vers 1 quand x→0 : par continuité de exp, la limite cherchée est donc exp(1)=e."
+    ],
+    "correction": "Écrivons (1+x)^{1/x} = exp[(1/x)ln(1+x)] (valable pour x proche de 0, x≠0). DL de ln(1+x) à l'ordre 2 : ln(1+x)=x-x²/2+o(x²). Donc (1/x)ln(1+x) = 1 - x/2 + o(x) → 1 quand x→0. Par continuité de exp : (1+x)^{1/x} = exp[1-x/2+o(x)] → exp(1) = e quand x→0. La limite cherchée vaut e.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "DL de ln(1+x)",
+      "forme exponentielle",
+      "continuité de exp"
+    ],
+    "pedagogicalGoal": "technique classique de concours : traiter une forme indéterminée 1^∞ en passant systématiquement par exp(ln), puis un DL de l'exposant — méthode transférable à toute limite de ce type.",
+    "archived": false
+  },
+  {
+    "title": "Critère spécial des séries alternées (CSSA)",
+    "statement": "On considère la série de terme général $u_n = \\dfrac{(-1)^n}{n}$, pour $n\\geq 1$.\n1. Énoncer le critère spécial des séries alternées (CSSA).\n2. Vérifier que les hypothèses du CSSA sont satisfaites, et conclure quant à la convergence de la série.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Séries numériques",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "séries alternées",
+      "CSSA"
+    ],
+    "hints": [
+      "Le CSSA s'applique à une série de la forme Σ(-1)^n a_n avec (a_n) positive, décroissante et de limite nulle — vérifie ces trois conditions une par une sur a_n=1/n.",
+      "1/n est positive et tend vers 0 — reste à vérifier la décroissance : compare 1/(n+1) à 1/n.",
+      "Les trois hypothèses étant vérifiées, le CSSA conclut à la convergence — mais attention, cette convergence est seulement SEMI-convergente : Σ1/n (harmonique) diverge, il n'y a pas convergence absolue."
+    ],
+    "correction": "1. CSSA : soit (a_n) une suite décroissante, positive, tendant vers 0. Alors la série alternée Σ(-1)^n a_n converge.\n2. Ici u_n=(-1)^n/n = (-1)^n·a_n avec a_n=1/n. La suite (1/n) est positive, décroissante (1/(n+1)<1/n), et tend vers 0. Les trois hypothèses du CSSA sont vérifiées : la série Σ(-1)^n/n CONVERGE (bien que la série des valeurs absolues Σ1/n, série harmonique, DIVERGE — convergence seulement semi-convergente, pas absolue).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "séries numériques",
+      "monotonie d'une suite"
+    ],
+    "pedagogicalGoal": "appliquer le CSSA, seul critère de convergence au programme qui ne requiert pas la convergence absolue — distinguer semi-convergence et convergence absolue.",
+    "archived": false
+  },
+  {
+    "title": "Reste d'une série géométrique convergente",
+    "statement": "On considère la série convergente de terme général $u_n = 1/2^n$, $n \\geq 0$.\n1. Calculer la somme totale $S = \\displaystyle\\sum_{n=0}^{+\\infty} u_n$.\n2. Calculer le reste $R_N = S - \\displaystyle\\sum_{n=0}^{N} u_n$ après $N+1$ termes, et déterminer le plus petit entier $N$ tel que $R_N < 10^{-3}$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Séries numériques",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "reste d'une série",
+      "série géométrique"
+    ],
+    "hints": [
+      "La somme d'une série géométrique de raison q=1/2 et de premier terme 1 (n=0) est S=1/(1-q)=2.",
+      "Calcule la somme partielle S_N par la formule de la somme géométrique finie, puis R_N=S-S_N — tu dois trouver une expression simple, R_N=(1/2)^N.",
+      "Résous (1/2)^N<10⁻³ en passant par 2^N>1000 : teste 2^9=512 et 2^10=1024 pour trouver le plus petit N qui convient."
+    ],
+    "correction": "1. Série géométrique de raison q=1/2<1, premier terme 1 : S=1/(1-1/2)=2.\n2. Somme partielle : S_N=Σ_{n=0}^{N}(1/2)^n = [1-(1/2)^{N+1}]/(1-1/2) = 2-(1/2)^N. Reste : R_N=S-S_N=2-[2-(1/2)^N]=(1/2)^N. On cherche (1/2)^N<10⁻³, soit 2^N>1000. Comme 2^9=512<1000 et 2^10=1024>1000, le plus petit N convenable est N=10.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "série géométrique",
+      "inégalités et puissances de 2"
+    ],
+    "pedagogicalGoal": "manipuler la notion de reste d'une série convergente et la relier à une précision numérique cible — utile pour toute approximation par somme partielle.",
+    "archived": false
+  },
+  {
+    "title": "Piège : \"le terme général tend vers 0\" ne suffit pas à la convergence",
+    "statement": "1. La suite $(u_n)$ définie par $u_n = 1/n$ pour $n\\geq 1$ converge-t-elle vers 0 ?\n2. La série de terme général $u_n=1/n$ converge-t-elle ?\n3. Un élève affirme : « comme $u_n\\to 0$, la série $\\sum u_n$ converge forcément ». Cette affirmation est-elle correcte ? Justifier, en rappelant ce que $u_n\\to 0$ garantit réellement (condition nécessaire, pas suffisante).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Séries numériques",
+    "estimatedMinutes": 15,
+    "tags": [
+      "piège",
+      "erreur classique",
+      "condition nécessaire",
+      "série harmonique"
+    ],
+    "hints": [
+      "Rappelle-toi la série harmonique Σ1/n : c'est LE contre-exemple classique à connaître pour ce genre de piège.",
+      "u_n→0 est une condition nécessaire (critère de divergence grossière, dans le sens contraposé), jamais suffisante.",
+      "La série harmonique répond exactement à la question 3 : 1/n→0, et pourtant Σ1/n diverge (Σ1/k~ln(n)→+∞) — l'affirmation de l'élève est donc fausse."
+    ],
+    "correction": "1. Oui : u_n=1/n→0 quand n→+∞.\n2. Non : la série harmonique Σ1/n DIVERGE (comparaison série-intégrale : Σ_{k=1}^n 1/k ~ ln(n) → +∞).\n3. L'affirmation est INCORRECTE. u_n→0 est une condition NÉCESSAIRE à la convergence de Σu_n (critère de divergence grossière), mais PAS SUFFISANTE : la série harmonique est le contre-exemple emblématique, u_n=1/n→0 et pourtant Σ1/n diverge. Ne jamais conclure à la convergence d'une série à partir du seul fait que son terme général tend vers 0.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "critère de divergence grossière",
+      "série harmonique"
+    ],
+    "pedagogicalGoal": "piège fondamental et très fréquent : dissocier condition nécessaire et condition suffisante sur l'exemple le plus classique qui soit, la série harmonique.",
+    "archived": false
+  },
+  {
+    "title": "Barycentre de trois points pondérés",
+    "statement": "Dans le plan, on considère les points $A(0,0)$, $B(3,0)$, $C(0,3)$, affectés respectivement des coefficients $1$, $1$ et $2$.\n1. Justifier l'existence du barycentre $G$ de ce système pondéré, et calculer ses coordonnées.\n2. Vérifier que $G$ satisfait $\\vec{GA} + \\vec{GB} + 2\\vec{GC} = \\vec{0}$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Géométrie",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "barycentre",
+      "vecteurs"
+    ],
+    "hints": [
+      "Le barycentre existe si et seulement si la somme des coefficients est non nulle — vérifie-le avant tout calcul (ici 1+1+2=4≠0).",
+      "Les coordonnées du barycentre s'obtiennent par une moyenne pondérée : x_G = (Σ coefficient×abscisse)/(Σ coefficients), et de même pour y_G.",
+      "Pour la vérification, calcule chaque vecteur GA, GB, GC séparément, puis combine-les avec les MÊMES coefficients (1, 1, 2) que ceux utilisés pour définir G."
+    ],
+    "correction": "1. La somme des coefficients vaut 1+1+2=4≠0 : G existe et est unique. x_G=(1×0+1×3+2×0)/4=3/4, y_G=(1×0+1×0+2×3)/4=6/4=3/2. Donc G(3/4, 3/2).\n2. GA=A-G=(-3/4,-3/2), GB=B-G=(9/4,-3/2), GC=C-G=(-3/4,3/2). GA+GB+2GC = (-3/4+9/4-6/4, -3/2-3/2+3) = (0,0) = 0⃗ : la relation caractéristique du barycentre est vérifiée.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "coordonnées d'un vecteur",
+      "combinaison linéaire de points"
+    ],
+    "pedagogicalGoal": "manipuler la définition du barycentre par ses deux facettes (formule de calcul des coordonnées, relation vectorielle caractéristique) et vérifier leur cohérence.",
+    "archived": false
+  },
+  {
+    "title": "Produit vectoriel et aire d'un triangle dans l'espace",
+    "statement": "Dans l'espace muni d'un repère orthonormé, on considère les points $A(1,0,0)$, $B(0,2,0)$, $C(0,0,3)$.\n1. Calculer les coordonnées des vecteurs $\\vec{AB}$ et $\\vec{AC}$.\n2. Calculer le produit vectoriel $\\vec{AB} \\wedge \\vec{AC}$.\n3. En déduire l'aire du triangle $ABC$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Géométrie",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "produit vectoriel",
+      "aire",
+      "géométrie dans l'espace"
+    ],
+    "hints": [
+      "Calcule d'abord les composantes des deux vecteurs AB et AC séparément, en soustrayant les coordonnées de A.",
+      "Applique la formule du produit vectoriel composante par composante : (u∧v) = (u_y v_z - u_z v_y, u_z v_x - u_x v_z, u_x v_y - u_y v_x).",
+      "L'aire du triangle est la MOITIÉ de la norme du produit vectoriel : tu dois trouver ‖AB∧AC‖=7, donc une aire de 3,5."
+    ],
+    "correction": "1. AB=B-A=(-1,2,0). AC=C-A=(-1,0,3).\n2. AB∧AC = (2×3-0×0, 0×(-1)-(-1)×3, (-1)×0-2×(-1)) = (6,3,2).\n3. |AB∧AC| = √(6²+3²+2²) = √49 = 7. Aire du triangle ABC = (1/2)|AB∧AC| = 3,5 unités d'aire.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "produit vectoriel",
+      "vecteurs dans l'espace"
+    ],
+    "pedagogicalGoal": "manier le produit vectoriel dans un cas de calcul concret et l'interpréter géométriquement comme une aire — passerelle essentielle entre algèbre vectorielle et géométrie.",
+    "archived": false
+  },
+  {
+    "title": "Équation d'un plan et distance point-plan dans l'espace",
+    "statement": "Dans l'espace muni d'un repère orthonormé, on considère le plan $\\mathcal{P}$ passant par le point $A(1,1,1)$ et de vecteur normal $\\vec{n}(2,-1,2)$.\n1. Déterminer une équation cartésienne de $\\mathcal{P}$.\n2. Calculer la distance du point $M(4,0,-1)$ au plan $\\mathcal{P}$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Géométrie",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "plan",
+      "distance point-plan",
+      "géométrie dans l'espace"
+    ],
+    "hints": [
+      "L'équation cartésienne d'un plan de normale n(a,b,c) passant par A s'obtient en écrivant n·(M-A)=0 pour un point M(x,y,z) quelconque du plan.",
+      "Développe soigneusement 2(x-1)-1(y-1)+2(z-1)=0 pour obtenir la forme réduite ax+by+cz+d=0.",
+      "La formule de distance point-plan généralise celle du plan (droite) : |a·x0+b·y0+c·z0+d|/√(a²+b²+c²) — applique-la directement."
+    ],
+    "correction": "1. n·(M-A)=0 : 2(x-1)-1(y-1)+2(z-1)=0, soit 2x-y+2z-3=0.\n2. Distance de M(4,0,-1) : |2×4-1×0+2×(-1)-3|/√(4+1+4) = |8-0-2-3|/√9 = |3|/3 = 1.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "produit scalaire",
+      "équation cartésienne d'une droite (analogie 2D→3D)"
+    ],
+    "pedagogicalGoal": "transférer directement la méthode de la distance point-droite (2D) à la distance point-plan (3D) — même structure de formule, une dimension de plus.",
+    "archived": false
+  },
+  {
+    "title": "Piège : confondre vecteur directeur et vecteur normal d'une droite",
+    "statement": "On considère la droite $\\mathcal{D}$ d'équation cartésienne $3x - 2y + 5 = 0$ dans le plan. Un élève affirme que le vecteur $(3,-2)$ est un vecteur directeur de $\\mathcal{D}$.\n1. Cette affirmation est-elle correcte ? Justifier.\n2. Donner un vecteur directeur correct de $\\mathcal{D}$, ainsi qu'un vecteur normal.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Géométrie",
+    "estimatedMinutes": 12,
+    "tags": [
+      "piège",
+      "erreur classique",
+      "vecteur directeur",
+      "vecteur normal"
+    ],
+    "hints": [
+      "Dans l'équation ax+by+c=0, le couple (a,b) est TOUJOURS un vecteur NORMAL à la droite, jamais un vecteur directeur — confusion très fréquente.",
+      "Un vecteur directeur s'obtient à partir du vecteur normal par une rotation de 90° : si n=(a,b), alors u=(-b,a) est un vecteur directeur.",
+      "Vérifie ta réponse en calculant le produit scalaire entre le vecteur normal (3,-2) et le vecteur directeur proposé : il doit être nul."
+    ],
+    "correction": "1. L'affirmation est INCORRECTE. Pour une droite ax+by+c=0, (a,b) est un vecteur NORMAL, pas directeur. Ici (3,-2) est donc le vecteur normal de D, pas un vecteur directeur.\n2. Vecteur normal : n(3,-2) (lu directement dans l'équation). Vecteur directeur : u(-b,a)=(2,3) (rotation de 90° du normal). Vérification : u·n=3×2+(-2)×3=6-6=0, bien perpendiculaires.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "équation cartésienne d'une droite",
+      "produit scalaire"
+    ],
+    "pedagogicalGoal": "piège très fréquent en début d'apprentissage de la géométrie analytique : ne jamais confondre le couple (a,b) d'une équation ax+by+c=0 (normal) avec un vecteur directeur.",
+    "archived": false
+  },
+  {
+    "title": "Configuration électronique du chrome — exception à Klechkowski",
+    "statement": "Le chrome a pour numéro atomique $Z=24$.\n1. Donner la configuration électronique « attendue » du chrome en appliquant strictement la règle de Klechkowski.\n2. La configuration électronique réelle du chrome est $[Ar]\\,3d^5\\,4s^1$ (et non celle attendue). Proposer une explication qualitative à cette exception, en te basant sur la stabilité particulière des sous-couches à demi-remplies.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Structure de la matière",
+    "estimatedMinutes": 15,
+    "tags": [
+      "configuration électronique",
+      "Klechkowski",
+      "exception",
+      "stabilité"
+    ],
+    "hints": [
+      "Applique Klechkowski dans l'ordre strict, sans réfléchir à une éventuelle exception — tu dois trouver [Ar]3d⁴4s².",
+      "La configuration réelle a un électron 4s de moins et un électron 3d de plus que l'attendue : cela correspond à une promotion 4s→3d.",
+      "La sous-couche 3d⁵ (demi-remplie, 5 électrons dans 5 orbitales, tous de même spin par la règle de Hund) est particulièrement stable — c'est cette stabilité qui motive la promotion."
+    ],
+    "correction": "1. En suivant Klechkowski (…4s,3d,…) : [Ar] (Z=18) puis 4s² (Z=20) puis 3d⁴ (Z=24). Configuration attendue : [Ar]3d⁴4s².\n2. La configuration réelle [Ar]3d⁵4s¹ correspond à la promotion d'un électron 4s→3d : cela donne une sous-couche 3d à demi-remplie (5 électrons sur 5 orbitales, spins parallèles par la règle de Hund), configuration particulièrement stable (répulsion électronique minimisée) — cette stabilité compense le coût de la promotion. Exception classique, comme celle du cuivre ([Ar]3d¹⁰4s¹ au lieu de 3d⁹4s²).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "règle de Klechkowski",
+      "règle de Hund"
+    ],
+    "pedagogicalGoal": "comprendre — pas seulement mémoriser — les exceptions célèbres à Klechkowski via l'argument physique de la stabilité des sous-couches demi-remplies ou pleines.",
+    "archived": false
+  },
+  {
+    "title": "Nombres quantiques et capacité des sous-couches électroniques",
+    "statement": "1. Rappeler le nombre maximal d'électrons que peut contenir une sous-couche $s$, une sous-couche $p$, une sous-couche $d$, et une sous-couche $f$.\n2. En déduire le nombre maximal d'électrons de la couche $n=3$ (sous-couches $3s$, $3p$, $3d$).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Structure de la matière",
+    "estimatedMinutes": 8,
+    "tags": [
+      "automatisme",
+      "nombres quantiques",
+      "sous-couches électroniques"
+    ],
+    "hints": [
+      "Le nombre d'orbitales d'une sous-couche est 2l+1 (l=0 pour s, 1 pour p, 2 pour d, 3 pour f), et chaque orbitale accueille 2 électrons.",
+      "Additionne simplement les capacités de chaque sous-couche présente dans la couche n=3.",
+      "Tu dois trouver 2+6+10=18 électrons au maximum — la formule générale 2n² (2×3²=18) donne directement ce résultat, à titre de vérification."
+    ],
+    "correction": "1. s (l=0, 1 orbitale) → 2 électrons max ; p (l=1, 3 orbitales) → 6 électrons max ; d (l=2, 5 orbitales) → 10 électrons max ; f (l=3, 7 orbitales) → 14 électrons max.\n2. Couche n=3 : 3s(2)+3p(6)+3d(10) = 18 électrons au maximum.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "nombres quantiques",
+      "principe de Pauli"
+    ],
+    "pedagogicalGoal": "automatisme fondateur pour construire toute configuration électronique : dénombrer sans hésiter la capacité de chaque sous-couche.",
+    "archived": false
+  },
+  {
+    "title": "Charge nucléaire effective et évolution du rayon atomique",
+    "statement": "1. Rappeler qualitativement l'effet de la charge nucléaire effective $Z^*$ ressentie par un électron de valence sur le rayon atomique.\n2. Le sodium ($Na$, $Z=11$) et le magnésium ($Mg$, $Z=12$) appartiennent à la même période. Sachant que leur électron de valence subit un écrantage comparable de la part des électrons internes, lequel des deux a le rayon atomique le plus petit ? Justifier.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Structure de la matière",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "charge nucléaire effective",
+      "rayon atomique",
+      "période"
+    ],
+    "hints": [
+      "Une charge nucléaire effective plus grande attire plus fortement l'électron de valence vers le noyau : réfléchis à l'effet sur la distance électron-noyau.",
+      "Compare directement Z pour Na et Mg à écrantage comparable : celui qui a la charge nucléaire effective la plus grande a le rayon le plus petit.",
+      "Mg a un proton de plus que Na pour un écrantage similaire : Z*(Mg)>Z*(Na), donc Mg a un rayon atomique plus PETIT que Na."
+    ],
+    "correction": "1. Plus Z* est grande, plus l'électron de valence est attiré fortement vers le noyau, et plus le rayon atomique est petit.\n2. Mg (Z=12) a un proton de plus que Na (Z=11), pour un écrantage comparable : Z*(Mg)>Z*(Na). L'électron de valence de Mg est donc plus fortement attiré : le rayon atomique de Mg est plus PETIT que celui de Na — cohérent avec la tendance générale (rayon décroissant de gauche à droite sur une période).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "charge nucléaire effective",
+      "écrantage"
+    ],
+    "pedagogicalGoal": "relier la notion (parfois abstraite) de charge nucléaire effective à une conséquence observable et comparable : le rayon atomique.",
+    "archived": false
+  },
+  {
+    "title": "Retrouver la position dans le tableau à partir de la configuration de valence",
+    "statement": "Un atome a pour configuration électronique de valence $3s^2 3p^4$.\n1. Donner la période et la colonne de cet élément dans le tableau périodique.\n2. Identifier cet élément (numéro atomique et symbole).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Classification périodique",
+    "estimatedMinutes": 10,
+    "tags": [
+      "automatisme",
+      "configuration électronique",
+      "position tableau périodique"
+    ],
+    "hints": [
+      "Le numéro de la période est directement le n de la couche de valence (ici n=3).",
+      "Le numéro de la colonne se lit en comptant le nombre total d'électrons de valence (s+p) : ici 2+4=6.",
+      "Additionne tous les électrons ([Ne]=10, plus 3s²3p⁴=6) pour trouver Z=16 : cherche l'élément correspondant, tu dois trouver le soufre (S)."
+    ],
+    "correction": "1. Le n maximal de la couche de valence est 3 : période 3. Le nombre d'électrons de valence est 2+4=6 : colonne 16 (chalcogènes, VIA).\n2. Configuration complète : [Ne]3s²3p⁴ = 1s²2s²2p⁶3s²3p⁴, soit 2+2+6+2+4=16 électrons : Z=16, c'est le soufre (S).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "configuration électronique",
+      "tableau périodique"
+    ],
+    "pedagogicalGoal": "automatisme de lecture directe : passer de la configuration de valence à la position dans le tableau périodique, dans les deux sens.",
+    "archived": false
+  },
+  {
+    "title": "Énergie de première ionisation — une exception liée à la règle de Hund",
+    "statement": "1. Rappeler la tendance générale d'évolution de l'énergie de première ionisation $E_{i1}$ le long d'une période.\n2. L'énergie de première ionisation de l'azote ($N$, $Z=7$) est supérieure à celle de l'oxygène ($O$, $Z=8$), alors que $Z(O) > Z(N)$. Expliquer cette exception apparente à l'aide des configurations électroniques de valence.",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Chimie",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Classification périodique",
+    "estimatedMinutes": 25,
+    "tags": [
+      "style-concours",
+      "énergie d'ionisation",
+      "exception",
+      "règle de Hund"
+    ],
+    "hints": [
+      "La tendance générale (Ei1 croît avec Z sur une période) suppose une comparaison 'à structure électronique équivalente' — ici les deux structures (2p³ et 2p⁴) ne sont PAS équivalentes.",
+      "N a une sous-couche 2p à demi-remplie (2p³, un électron par orbitale) : configuration particulièrement stable. O a un électron de plus, forcé de s'apparier.",
+      "L'appariement de deux électrons dans la MÊME orbitale (cas de O) crée une répulsion supplémentaire qui facilite l'arrachement de l'un des deux — c'est cette répulsion qui explique Ei1(O)<Ei1(N)."
+    ],
+    "correction": "1. Ei1 croît globalement de gauche à droite le long d'une période (Z* croissante retient plus fortement les électrons de valence).\n2. N : 2s²2p³ (sous-couche 2p à demi-remplie, un électron par orbitale, spins parallèles — configuration stable par la règle de Hund). O : 2s²2p⁴ — le 4ᵉ électron de 2p doit s'apparier avec un électron déjà présent dans une orbitale, augmentant la répulsion électronique locale. Cette répulsion facilite l'arrachement de cet électron apparié : Ei1(O) est plus FAIBLE que prévu par la seule tendance de Z croissant, au point de devenir inférieure à Ei1(N) — exception directement liée à la stabilité particulière de la sous-couche 2p³ à demi-remplie de l'azote.",
+    "note": "Exercice original TaekdHub, non attribué à un concours réel.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "énergie d'ionisation",
+      "règle de Hund",
+      "configuration électronique"
+    ],
+    "pedagogicalGoal": "aller au-delà de la tendance générale mémorisée, en expliquant une exception réelle et classique à l'aide de la structure électronique fine — capacité attendue au niveau concours.",
+    "archived": false
+  },
+  {
+    "title": "Piège : confondre électronégativité et énergie d'ionisation",
+    "statement": "Un élève affirme : « l'électronégativité et l'énergie d'ionisation d'un élément mesurent la même chose : sa capacité à attirer des électrons ».\n1. Rappeler la définition précise de l'énergie de première ionisation.\n2. Rappeler la définition (qualitative) de l'électronégativité.\n3. Expliquer en quoi ces deux grandeurs sont liées mais NE mesurent PAS exactement la même chose.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Classification périodique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "piège",
+      "erreur classique",
+      "électronégativité",
+      "énergie d'ionisation"
+    ],
+    "hints": [
+      "Précise bien le contexte de chaque définition : Ei1 porte sur un atome SEUL, isolé ; l'électronégativité porte sur un atome ENGAGÉ dans une liaison, en comparaison avec son partenaire.",
+      "Les deux grandeurs suivent des tendances périodiques similaires (ce qui explique la confusion), mais 'similaire' n'est pas 'identique'.",
+      "La définition de Mulliken de l'électronégativité (moyenne de Ei1 et de l'affinité électronique) montre qu'elle est CONSTRUITE à partir de Ei1, et n'est donc pas la même grandeur."
+    ],
+    "correction": "1. Ei1 est l'énergie qu'il faut fournir pour arracher un électron à un atome ISOLÉ, à l'état gazeux et fondamental : X(g) → X⁺(g) + e⁻. Grandeur mesurable, en joules ou eV.\n2. L'électronégativité mesure la tendance d'un atome, ENGAGÉ DANS UNE LIAISON avec un autre atome, à attirer vers lui le doublet d'électrons de liaison partagé.\n3. Ces deux grandeurs sont corrélées (mêmes tendances périodiques ; la définition de Mulliken de l'électronégativité est la moyenne de Ei1 et de l'affinité électronique), mais elles ne mesurent PAS la même chose : Ei1 concerne un atome ISOLÉ, l'électronégativité concerne un atome DANS une liaison, comparé à son partenaire — on ne peut jamais les utiliser l'une pour l'autre.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "énergie d'ionisation",
+      "électronégativité"
+    ],
+    "pedagogicalGoal": "clarifier deux notions souvent confondues faute d'avoir été comparées explicitement — contexte 'atome isolé' vs 'atome en liaison'.",
+    "archived": false
+  },
+  {
+    "title": "Enthalpie de réaction à partir des énergies de liaison",
+    "statement": "On donne les énergies de liaison (en kJ/mol, valeurs moyennes) : $E(H-H)=436$, $E(Cl-Cl)=243$, $E(H-Cl)=432$. En utilisant le cycle énergétique associé à la réaction $H_2(g) + Cl_2(g) \\rightarrow 2\\,HCl(g)$, estimer son enthalpie standard de réaction $\\Delta_rH°$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Thermochimie",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "énergie de liaison",
+      "cycle énergétique",
+      "enthalpie de réaction"
+    ],
+    "hints": [
+      "Le cycle énergétique décompose la réaction en deux étapes fictives : rompre TOUTES les liaisons des réactifs (coûte de l'énergie, +), puis former TOUTES les liaisons des produits (libère de l'énergie, -).",
+      "N'oublie pas le coefficient stœchiométrique 2 devant HCl : il faut former DEUX liaisons H-Cl, pas une seule.",
+      "ΔrH° = [énergie pour rompre H-H et Cl-Cl] - [énergie libérée en formant 2×H-Cl] = (436+243)-(2×432) = -185 kJ/mol."
+    ],
+    "correction": "Le cycle énergétique consiste à rompre toutes les liaisons des réactifs (coût énergétique positif) puis à former toutes les liaisons des produits (gain énergétique, donc négatif) : ΔrH° = Σ E(liaisons rompues) - Σ E(liaisons formées) = [E(H-H)+E(Cl-Cl)] - [2×E(H-Cl)] = (436+243) - (2×432) = 679 - 864 = -185 kJ/mol. La réaction est exothermique (ΔrH°<0) : les liaisons formées (2 H-Cl) sont globalement plus fortes que les liaisons rompues (H-H et Cl-Cl).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "énergie de liaison",
+      "premier principe de la thermodynamique"
+    ],
+    "pedagogicalGoal": "estimer une enthalpie de réaction par un cycle énergétique sur les liaisons, méthode alternative à la loi de Hess quand on dispose des énergies de liaison plutôt que d'enthalpies de formation.",
+    "archived": false
+  },
+  {
+    "title": "Loi de Kirchhoff — variation de l'enthalpie de réaction avec la température",
+    "statement": "On considère la réaction $A(g) \\rightarrow B(g)$, d'enthalpie standard de réaction $\\Delta_rH°(T_1) = 50\\ \\text{kJ/mol}$ à $T_1=298\\ \\text{K}$. On donne les capacités thermiques molaires standard $C°_{p,m}(A) = 40\\ \\text{J/(mol·K)}$ et $C°_{p,m}(B) = 55\\ \\text{J/(mol·K)}$, supposées indépendantes de la température.\n1. Énoncer la loi de Kirchhoff, qui donne la dérivée de $\\Delta_rH°$ par rapport à la température.\n2. Calculer $\\Delta_rH°(T_2)$ à $T_2=398\\ \\text{K}$, en supposant $\\Delta_rC°_p$ constant sur cet intervalle.",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Chimie",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Thermochimie",
+    "estimatedMinutes": 30,
+    "tags": [
+      "style-concours",
+      "loi de Kirchhoff",
+      "capacité thermique",
+      "enthalpie de réaction"
+    ],
+    "hints": [
+      "ΔrC°p se calcule exactement comme un ΔrH° standard, mais avec les capacités thermiques molaires à la place des enthalpies molaires.",
+      "Comme ΔrC°p est supposé constant, la loi de Kirchhoff s'intègre directement (linéairement) entre T1 et T2.",
+      "N'oublie pas de convertir 50 kJ/mol en 50000 J/mol avant d'ajouter le terme correctif 15×100=1500 J/mol — tu dois trouver 51,5 kJ/mol."
+    ],
+    "correction": "1. Loi de Kirchhoff : d[ΔrH°(T)]/dT = ΔrC°p, où ΔrC°p = Σ(coefficients produits)×C°p,m(produits) - Σ(coefficients réactifs)×C°p,m(réactifs).\n2. ΔrC°p = C°p,m(B) - C°p,m(A) = 55-40 = 15 J/(mol·K). En intégrant (ΔrC°p constant) : ΔrH°(T2) = ΔrH°(T1) + ΔrC°p×(T2-T1) = 50000 + 15×(398-298) = 50000+1500 = 51500 J/mol = 51,5 kJ/mol.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "enthalpie de réaction",
+      "capacité thermique molaire"
+    ],
+    "pedagogicalGoal": "manipuler la loi de Kirchhoff pour extrapoler une enthalpie de réaction hors de la température de référence — technique de concours réutilisant directement le formalisme ΔrH°.",
+    "archived": false
+  },
+  {
+    "title": "Piège : confondre enthalpie de réaction et enthalpie de formation",
+    "statement": "Un élève affirme : « l'enthalpie standard de réaction $\\Delta_rH°$ et l'enthalpie standard de formation $\\Delta_fH°$ sont la même chose, ce sont toutes les deux des enthalpies liées à une réaction chimique ».\n1. Rappeler la définition précise de $\\Delta_fH°$ d'un composé.\n2. Rappeler la définition de $\\Delta_rH°$ d'une réaction quelconque.\n3. Expliquer pourquoi $\\Delta_fH°$ est en réalité un CAS PARTICULIER de $\\Delta_rH°$, et à quelle condition.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Thermochimie",
+    "estimatedMinutes": 15,
+    "tags": [
+      "piège",
+      "erreur classique",
+      "enthalpie de formation",
+      "enthalpie de réaction"
+    ],
+    "hints": [
+      "Une enthalpie de FORMATION concerne une réaction très spécifique : celle qui forme 1 mole d'UN SEUL composé à partir de ses éléments à l'état standard de référence.",
+      "ΔrH° s'applique à toute réaction équilibrée, sans aucune restriction sur sa nature.",
+      "Demande-toi si la réaction dont on calcule ΔrH° est EXACTEMENT une réaction de formation : si oui, ΔrH°=ΔfH° du produit ; sinon, ce sont deux grandeurs distinctes."
+    ],
+    "correction": "1. ΔfH° d'un composé est l'enthalpie standard de la réaction de formation de CE composé, à partir de ses éléments constitutifs pris dans leur état standard de référence (298 K, 1 bar), pour former exactement 1 mole du composé.\n2. ΔrH° est l'enthalpie standard associée à N'IMPORTE QUELLE réaction chimique équilibrée.\n3. ΔfH° EST un cas particulier de ΔrH° : c'est le ΔrH° d'une réaction très spécifique (formation de 1 mole d'un composé à partir de ses éléments à l'état standard). Toute autre réaction (combustion, neutralisation, synthèse à partir de composés déjà élaborés…) a un ΔrH° qui n'est PAS une enthalpie de formation. L'élève voit un lien réel (les deux sont des ΔH de réaction), mais ΔfH° est un cas très restreint, pas une notion équivalente à ΔrH° en général.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "enthalpie de formation",
+      "enthalpie de réaction"
+    ],
+    "pedagogicalGoal": "clarifier une confusion très fréquente entre une notion générale (ΔrH°) et son cas particulier restreint (ΔfH°), condition sine qua non pour appliquer correctement la loi de Hess.",
+    "archived": false
+  },
+  {
+    "title": "Cinétique d'ordre 0 — résolution et méthode intégrale",
+    "statement": "On étudie une réaction d'ordre 0 par rapport à un réactif $A$ : $-\\dfrac{d[A]}{dt} = k$ ($k$ constant).\n1. Résoudre cette équation différentielle et donner l'expression de $[A](t)$ en fonction de $[A]_0$, $k$ et $t$.\n2. Quelle grandeur, tracée en fonction du temps, donne une droite pour une cinétique d'ordre 0 ? Quelle est sa pente ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Cinétique chimique",
+    "estimatedMinutes": 18,
+    "tags": [
+      "classique",
+      "ordre 0",
+      "méthode intégrale"
+    ],
+    "hints": [
+      "L'équation -d[A]/dt=k est la plus simple à intégrer : sépare les variables et intègre directement des deux côtés.",
+      "Contrairement à l'ordre 1 (qui nécessite ln[A]) ou l'ordre 2 (qui nécessite 1/[A]), l'ordre 0 se teste avec [A] elle-même, sans transformation.",
+      "[A](t)=[A]0-kt est déjà une fonction affine du temps : trace [A] en fonction de t, tu dois obtenir directement une droite de pente -k."
+    ],
+    "correction": "1. -d[A]/dt=k ⟺ d[A]/dt=-k, équation directement intégrable : [A](t)=[A]0-kt (tant que cette expression reste positive, la réaction étant terminée à t=[A]0/k).\n2. Tracer [A] directement en fonction de t donne une droite (contrairement à ln[A] pour l'ordre 1, ou 1/[A] pour l'ordre 2), de pente -k : c'est le test graphique caractéristique d'un ordre 0.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "équations différentielles simples",
+      "méthode intégrale en cinétique"
+    ],
+    "pedagogicalGoal": "compléter la panoplie des tests graphiques d'ordre (0, 1, 2) déjà entamée — l'ordre 0, souvent oublié, est le plus simple des trois à intégrer.",
+    "archived": false
+  },
+  {
+    "title": "Temps de demi-réaction pour une cinétique d'ordre 1",
+    "statement": "Une réaction d'ordre 1 par rapport à $A$ a pour loi de vitesse $-\\dfrac{d[A]}{dt} = k[A]$, de solution $[A](t)=[A]_0\\, e^{-kt}$.\n1. Définir le temps de demi-réaction $t_{1/2}$ (temps au bout duquel la concentration de $A$ a été divisée par 2).\n2. Montrer que $t_{1/2}$ est indépendant de la concentration initiale $[A]_0$, et l'exprimer en fonction de $k$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Cinétique chimique",
+    "estimatedMinutes": 20,
+    "tags": [
+      "consolidation",
+      "ordre 1",
+      "temps de demi-réaction"
+    ],
+    "hints": [
+      "Pose directement [A](t_{1/2})=[A]_0/2 dans l'expression [A](t)=[A]_0 e^{-kt} et résous en t_{1/2}.",
+      "Remarque que [A]_0 se simplifie des deux côtés de l'équation dès le début — c'est cette simplification qui prouve l'indépendance vis-à-vis de la concentration initiale.",
+      "Tu dois trouver t_{1/2}=ln(2)/k : mémorise cette formule, caractéristique de l'ordre 1 uniquement."
+    ],
+    "correction": "1. t_{1/2} est défini par [A](t_{1/2}) = [A]_0/2.\n2. [A]_0/2 = [A]_0 e^{-k t_{1/2}} ⟺ 1/2 = e^{-k t_{1/2}} (le terme [A]_0 se simplifie, prouvant l'indépendance vis-à-vis de [A]_0) ⟺ -k t_{1/2} = ln(1/2) = -ln(2) ⟺ t_{1/2} = ln(2)/k. Cette indépendance vis-à-vis de [A]_0 est une signature caractéristique de l'ordre 1.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "cinétique d'ordre 1",
+      "fonction exponentielle"
+    ],
+    "pedagogicalGoal": "établir et retenir la formule du temps de demi-réaction d'ordre 1 et sa propriété remarquable d'indépendance vis-à-vis de la concentration initiale — signature expérimentale de l'ordre 1.",
+    "archived": false
+  },
+  {
+    "title": "Piège : confondre vitesse de réaction et constante de vitesse",
+    "statement": "Un élève affirme : « la vitesse de réaction et la constante de vitesse $k$ sont la même chose, elles mesurent toutes deux la rapidité de la réaction ».\n1. Rappeler la définition de la vitesse de réaction (volumique) $v$.\n2. Rappeler ce que représente la constante de vitesse $k$ dans une loi de vitesse $v=k[A]^n$.\n3. Expliquer pourquoi ces deux grandeurs ne sont PAS interchangeables (unités, dépendance au temps…).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Cinétique chimique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "piège",
+      "erreur classique",
+      "vitesse de réaction",
+      "constante de vitesse"
+    ],
+    "hints": [
+      "La vitesse v dépend du temps (car les concentrations varient) ; la constante k, à température fixée, ne dépend NI du temps NI des concentrations.",
+      "Compare les unités : v est toujours en mol·L⁻¹·s⁻¹, alors que l'unité de k dépend de l'ordre n de la réaction.",
+      "Repense à la loi v=k[A]^n : k est le coefficient FIXE, v est le résultat VARIABLE de ce coefficient multiplié par une concentration qui évolue."
+    ],
+    "correction": "1. La vitesse de réaction v est définie à partir du taux de consommation/formation des espèces (v=-(1/ν)·d[A]/dt par exemple) : elle VARIE au cours du temps, car les concentrations varient.\n2. La constante de vitesse k est le coefficient de proportionnalité dans v=k[A]^n : à température FIXÉE, k est une CONSTANTE, indépendante du temps et des concentrations (elle ne dépend que de T, via Arrhénius).\n3. v varie au cours de la réaction (généralement décroissante, [A] décroissant), k reste constante à T fixée ; leurs unités diffèrent aussi (v toujours en mol·L⁻¹·s⁻¹, k dépendant de l'ordre n, par exemple s⁻¹ pour l'ordre 1). Assimiler v et k confond une grandeur évolutive avec le paramètre fixe qui la gouverne.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "vitesse de réaction",
+      "loi de vitesse"
+    ],
+    "pedagogicalGoal": "dissocier deux notions constamment mélangées en début d'apprentissage de la cinétique : une grandeur qui varie (v) et le paramètre constant qui la détermine (k).",
+    "archived": false
+  },
+  {
+    "title": "Moment dipolaire : pourquoi CO2 est apolaire et H2O est polaire",
+    "statement": "On considère la molécule de dioxyde de carbone $CO_2$, linéaire, et la molécule d'eau $H_2O$, coudée. Les deux liaisons impliquées ($C=O$ et $O-H$) sont chacune polarisées (moment dipolaire de liaison non nul).\n1. Expliquer pourquoi $CO_2$ est une molécule apolaire (moment dipolaire total nul), malgré ses liaisons polarisées.\n2. Expliquer pourquoi $H_2O$ est, elle, une molécule polaire.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Liaison chimique",
+    "estimatedMinutes": 18,
+    "tags": [
+      "classique",
+      "moment dipolaire",
+      "polarité",
+      "géométrie moléculaire"
+    ],
+    "hints": [
+      "Le moment dipolaire TOTAL d'une molécule est la SOMME VECTORIELLE des moments dipolaires de chaque liaison — la géométrie compte autant que la polarité de chaque liaison.",
+      "Pour CO2 (linéaire, 180°), les deux vecteurs C=O sont exactement opposés : leur somme est le vecteur nul.",
+      "Pour H2O (coudée, ~104,5°, pas 180°), les deux vecteurs O-H ne peuvent PAS s'annuler exactement : leur résultante est non nulle."
+    ],
+    "correction": "1. CO2 est linéaire (O=C=O) : les deux vecteurs moments dipolaires de liaison C=O sont de même norme, orientés en sens opposés (180°, par symétrie). Leur somme vectorielle est NULLE : CO2 est apolaire, malgré des liaisons individuellement polarisées.\n2. H2O est coudée (angle H-O-H≈104,5°) : les deux vecteurs O-H ne sont PAS opposés — leur somme vectorielle est non nulle (dirigée vers la bissectrice de l'angle). Le moment dipolaire total de H2O est donc non nul : la molécule est polaire.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "géométrie VSEPR",
+      "vecteurs"
+    ],
+    "pedagogicalGoal": "comprendre que la polarité globale d'une molécule dépend de la géométrie autant que de la polarité individuelle des liaisons — erreur d'intuition très fréquente si l'on ne pense qu'aux liaisons isolément.",
+    "archived": false
+  },
+  {
+    "title": "Hybridation des orbitales atomiques dans l'éthylène",
+    "statement": "On considère la molécule d'éthylène $C_2H_4$ ($H_2C=CH_2$), plane, dont chaque atome de carbone est engagé dans trois liaisons $\\sigma$ (deux $C-H$ et une $C-C$) et une liaison $\\pi$ (formant la double liaison $C=C$ avec la liaison $\\sigma$ $C-C$).\n1. Déterminer l'état d'hybridation de chaque atome de carbone.\n2. Expliquer, en termes d'orbitales atomiques, la différence entre la liaison $\\sigma$ et la liaison $\\pi$ de la double liaison $C=C$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Liaison chimique",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "hybridation",
+      "liaison σ et π",
+      "orbitales atomiques"
+    ],
+    "hints": [
+      "Compte le nombre de liaisons σ (pas π) formées par chaque carbone, et regarde la géométrie qui en résulte (angles ≈120°, plane) : cela détermine directement l'hybridation.",
+      "Une hybridation sp² utilise 3 orbitales hybrides pour les liaisons σ, et laisse UNE orbitale p pure, non hybridée, disponible.",
+      "La liaison σ vient d'un recouvrement axial des orbitales hybrides sp² ; la liaison π vient d'un recouvrement latéral des orbitales p pures restantes, perpendiculaires au plan."
+    ],
+    "correction": "1. Chaque carbone forme 3 liaisons σ (2 C-H + 1 C-C), géométrie plane trigonale (angles ≈120°) : chaque carbone est hybridé sp² (3 orbitales hybrides sp² pour les 3 liaisons σ, plus une orbitale p pure non hybridée, perpendiculaire au plan de la molécule).\n2. La liaison σ C-C résulte du recouvrement AXIAL (frontal) de deux orbitales hybrides sp², une par carbone. La liaison π résulte du recouvrement LATÉRAL des deux orbitales p PURES restantes, perpendiculaires au plan moléculaire — ce recouvrement latéral est plus faible que le recouvrement axial, ce qui explique pourquoi la liaison π est généralement moins forte et plus réactive que la liaison σ (siège privilégié des réactions d'addition sur les alcènes).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "théorie de la liaison de valence",
+      "géométrie VSEPR"
+    ],
+    "pedagogicalGoal": "relier la géométrie observée (plane, 120°) à l'hybridation sp² et comprendre la nature distincte des liaisons σ et π — base indispensable de toute la réactivité des alcènes en chimie organique.",
+    "archived": false
+  },
+  {
+    "title": "Piège : liaison polarisée n'implique pas molécule polaire",
+    "statement": "Un élève affirme : « si toutes les liaisons d'une molécule sont polarisées, alors la molécule est forcément polaire ».\n1. Cette affirmation est-elle correcte en général ?\n2. Illustrer ta réponse à l'aide de la molécule de tétrachlorure de carbone $CCl_4$ (tétraédrique, 4 liaisons $C-Cl$ polarisées).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Liaison chimique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "piège",
+      "erreur classique",
+      "moment dipolaire",
+      "géométrie moléculaire"
+    ],
+    "hints": [
+      "Repense à l'exercice sur CO2 : une molécule peut avoir des liaisons polarisées et être globalement apolaire si la géométrie est suffisamment symétrique.",
+      "CCl4 a une géométrie tétraédrique parfaitement symétrique (4 liaisons identiques, angles de 109,5°).",
+      "Comme pour CO2, la clé est la symétrie de la géométrie moléculaire, pas seulement la polarité de chaque liaison prise isolément."
+    ],
+    "correction": "1. Non, cette affirmation est INCORRECTE en général : la polarité d'une molécule dépend de la somme VECTORIELLE des moments dipolaires de liaison, pas seulement de leur existence individuelle — une géométrie suffisamment symétrique peut annuler cette somme même si chaque liaison est polarisée (comparer avec CO2).\n2. CCl4 est tétraédrique, avec 4 liaisons C-Cl identiques et polarisées, disposées symétriquement (angles de 109,5°). Par symétrie tétraédrique parfaite, la somme vectorielle des 4 moments dipolaires de liaison est NULLE : CCl4 est APOLAIRE, malgré 4 liaisons individuellement polarisées — contre-exemple direct à l'affirmation de l'élève.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "moment dipolaire",
+      "géométrie VSEPR"
+    ],
+    "pedagogicalGoal": "consolider, sur un second exemple emblématique (CCl4, après CO2), que c'est la symétrie géométrique, pas seulement la polarité des liaisons, qui détermine la polarité globale d'une molécule.",
+    "archived": false
+  },
+  {
+    "title": "Propagation des incertitudes dans un quotient",
+    "statement": "On mesure la résistance d'un conducteur ohmique par la loi d'Ohm $R=U/I$, avec $U=(5{,}0\\pm0{,}1)\\ \\text{V}$ et $I=(0{,}50\\pm0{,}02)\\ \\text{A}$.\n1. Calculer la valeur de $R$.\n2. En utilisant la formule de propagation des incertitudes relatives pour un quotient, $\\dfrac{\\Delta R}{R} = \\dfrac{\\Delta U}{U} + \\dfrac{\\Delta I}{I}$, calculer l'incertitude absolue $\\Delta R$, et exprimer le résultat sous la forme $R=(\\ldots\\pm\\ldots)\\ \\Omega$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Outils physiques",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "incertitudes",
+      "propagation d'incertitude"
+    ],
+    "hints": [
+      "Pour un quotient (ou un produit), les incertitudes RELATIVES s'additionnent — calcule d'abord ΔU/U et ΔI/I séparément.",
+      "ΔU/U=0,1/5,0=0,02 et ΔI/I=0,02/0,50=0,04 : additionne ces deux incertitudes relatives.",
+      "Une fois ΔR/R=0,06 trouvé, multiplie par R (10 Ω) pour obtenir l'incertitude ABSOLUE ΔR=0,6 Ω."
+    ],
+    "correction": "1. R=U/I=5,0/0,50=10 Ω.\n2. ΔR/R = ΔU/U+ΔI/I = 0,1/5,0 + 0,02/0,50 = 0,02+0,04 = 0,06 (6%). Donc ΔR=0,06×10=0,6 Ω. Résultat : R=(10,0±0,6) Ω.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "loi d'Ohm",
+      "incertitudes de mesure"
+    ],
+    "pedagogicalGoal": "appliquer correctement la propagation des incertitudes pour un quotient et bien distinguer incertitude relative (sans dimension) et incertitude absolue (même unité que la grandeur).",
+    "archived": false
+  },
+  {
+    "title": "Piège : confondre précision et exactitude d'une mesure",
+    "statement": "Un élève affirme : « une mesure précise est forcément une mesure exacte ».\n1. Rappeler la différence entre précision (fidélité) et exactitude (justesse) d'une série de mesures.\n2. Un instrument mal étalonné donne, pour cinq mesures répétées d'une même grandeur, des valeurs très proches les unes des autres, mais toutes décalées de la vraie valeur. Cet instrument est-il précis ? Est-il exact ? Justifier.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Physique",
+    "type": "Colle",
+    "difficulty": 1,
+    "chapter": "Outils physiques",
+    "estimatedMinutes": 12,
+    "tags": [
+      "piège",
+      "erreur classique",
+      "précision",
+      "exactitude",
+      "incertitudes"
+    ],
+    "hints": [
+      "La précision concerne la dispersion des mesures ENTRE ELLES ; l'exactitude concerne l'écart entre leur moyenne et la VRAIE valeur.",
+      "Des mesures 'très proches les unes des autres' décrit la précision, pas l'exactitude.",
+      "Un instrument mal étalonné introduit une erreur SYSTÉMATIQUE : cela dégrade l'exactitude sans nécessairement dégrader la précision."
+    ],
+    "correction": "1. La précision (fidélité) mesure la DISPERSION entre plusieurs mesures répétées : des mesures précises sont proches les unes des autres, qu'elles soient ou non proches de la vraie valeur. L'exactitude (justesse) mesure l'écart entre la moyenne des mesures et la VRAIE valeur.\n2. L'instrument décrit est PRÉCIS (mesures très proches entre elles) mais PAS EXACT (toutes décalées de la vraie valeur — erreur systématique due au mauvais étalonnage). L'affirmation de l'élève est INCORRECTE : précision et exactitude sont deux qualités indépendantes.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 1,
+    "prerequisites": [
+      "incertitudes de mesure"
+    ],
+    "pedagogicalGoal": "dissocier deux notions souvent fusionnées dans le langage courant mais rigoureusement distinctes en physique expérimentale.",
+    "archived": false
+  },
+  {
+    "title": "Détermination graphique du volume équivalent — méthode des tangentes",
+    "statement": "Lors d'un titrage pH-métrique, on trace la courbe $pH=f(V_{versé})$.\n1. Décrire la méthode des tangentes parallèles pour déterminer graphiquement le volume équivalent $V_E$.\n2. Pourquoi cette méthode est-elle utile même lorsque le saut de pH n'est pas parfaitement vertical (titrage d'un acide faible par exemple) ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Outils chimiques",
+    "estimatedMinutes": 18,
+    "tags": [
+      "classique",
+      "titrage",
+      "méthode des tangentes",
+      "équivalence"
+    ],
+    "hints": [
+      "Trace deux tangentes PARALLÈLES à la courbe, chacune dans une zone plate (avant et après le saut de pH), puis la droite équidistante des deux.",
+      "L'intersection de cette droite médiane avec la courbe expérimentale donne directement V_E en abscisse.",
+      "Cette méthode graphique ne dépend pas de la verticalité du saut de pH — elle fonctionne tant qu'il existe deux zones suffisamment plates de part et d'autre."
+    ],
+    "correction": "1. On trace deux tangentes à la courbe pH=f(V), parallèles entre elles, l'une dans la partie 'plate' avant le saut de pH, l'autre après. On trace ensuite la droite ÉQUIDISTANTE de ces deux tangentes. L'intersection de cette droite médiane avec la courbe expérimentale donne le point équivalent, d'abscisse V_E.\n2. Cette méthode reste utilisable même quand le saut de pH est peu marqué (titrage d'un acide faible) : elle ne nécessite pas de repérer un point d'inflexion vertical, seulement deux zones suffisamment plates de part et d'autre, ce qui reste possible avec un saut de pH modéré.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "titrage acido-basique",
+      "lecture graphique"
+    ],
+    "pedagogicalGoal": "maîtriser une méthode graphique robuste et universelle de détermination de l'équivalence, utile même quand le saut de pH est peu marqué.",
+    "archived": false
+  },
+  {
+    "title": "Masse molaire d'un gaz à partir de sa masse volumique",
+    "statement": "On mesure la masse volumique d'un gaz inconnu : $\\rho = 1{,}78\\ \\text{g/L}$, dans les conditions $P=1{,}0\\times10^5\\ \\text{Pa}$ et $T=298\\ \\text{K}$. On donne $R=8{,}314\\ \\text{J/(mol·K)}$.\n1. Exprimer la masse molaire $M$ du gaz en fonction de $\\rho$, $R$, $T$ et $P$, à partir de la loi des gaz parfaits $PV=nRT$.\n2. Calculer numériquement $M$, et identifier ce gaz parmi $O_2$ ($M=32$ g/mol), $CO_2$ ($M=44$ g/mol) et $N_2$ ($M=28$ g/mol).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Outils chimiques",
+    "estimatedMinutes": 20,
+    "tags": [
+      "consolidation",
+      "loi des gaz parfaits",
+      "masse molaire",
+      "masse volumique"
+    ],
+    "hints": [
+      "Combine PV=nRT avec n=m/M pour faire apparaître la masse volumique ρ=m/V dans l'expression de M.",
+      "Tu dois obtenir M=ρRT/P — attention aux unités : 1 g/L équivaut exactement à 1 kg/m³, cohérent avec les unités SI de R.",
+      "Une fois M calculée numériquement (≈44 g/mol), compare-la aux trois valeurs proposées : elle correspond à CO2."
+    ],
+    "correction": "1. PV=nRT et n=m/M, donc PV=(m/M)RT, soit M=mRT/(PV). Comme ρ=m/V : M=ρRT/P.\n2. M = ρRT/P = 1,78×8,314×298/(1,0×10⁵) ≈ 44,1×10⁻³ kg/mol = 44 g/mol. Cette valeur correspond à CO2 (M=44 g/mol) : le gaz inconnu est le dioxyde de carbone.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "loi des gaz parfaits",
+      "masse volumique"
+    ],
+    "pedagogicalGoal": "combiner la loi des gaz parfaits et la définition de la masse volumique pour identifier un gaz par une mesure macroscopique simple.",
+    "archived": false
+  },
+  {
+    "title": "Mécanisme de substitution nucléophile SN2",
+    "statement": "On considère la réaction entre le bromométhane $CH_3Br$ et l'ion hydroxyde $HO^-$, conduisant au méthanol $CH_3OH$ et à l'ion bromure $Br^-$, selon un mécanisme de substitution nucléophile bimoléculaire (SN2).\n1. Identifier le site électrophile de $CH_3Br$ et le site nucléophile de $HO^-$.\n2. Décrire les grandes étapes du mécanisme SN2 (approche, état de transition, départ du groupe partant), en précisant la géométrie de l'état de transition.\n3. Quelle conséquence stéréochimique ce mécanisme a-t-il sur un substrat chiral ?",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Chimie",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Chimie organique",
+    "estimatedMinutes": 30,
+    "tags": [
+      "style-concours",
+      "SN2",
+      "mécanisme réactionnel",
+      "stéréochimie"
+    ],
+    "hints": [
+      "Le site électrophile porte une charge partielle positive (δ+) ; le site nucléophile porte un doublet non liant disponible.",
+      "L'attaque du nucléophile se fait TOUJOURS du côté opposé au groupe partant (Br) dans un mécanisme SN2 — jamais du même côté.",
+      "L'attaque en arrière ('backside attack') retourne littéralement la configuration spatiale du carbone, comme un parapluie qui se retourne : c'est l'inversion de Walden, systématique en SN2."
+    ],
+    "correction": "1. Site électrophile de CH3Br : le carbone lié au brome (δ+, Br étant plus électronégatif). Site nucléophile de HO⁻ : l'oxygène, porteur de doublets non liants et de la charge négative.\n2. Le mécanisme SN2 est CONCERTÉ (une seule étape) : HO⁻ attaque le carbone par le côté OPPOSÉ à Br ('backside attack'), tandis que la liaison C-Br s'affaiblit. L'état de transition est pentacoordonné, de géométrie bipyramide à base triangulaire, avec HO···C···Br quasi alignés. Br⁻ part simultanément à la formation de la liaison C-OH.\n3. Conséquence stéréochimique : INVERSION DE CONFIGURATION (inversion de Walden), comme un parapluie qui se retourne — si le carbone attaqué est un centre stéréogène, sa configuration (R ou S) s'inverse systématiquement.",
+    "note": "Exercice original TaekdHub, non attribué à un concours réel.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "nucléophile et électrophile",
+      "géométrie moléculaire"
+    ],
+    "pedagogicalGoal": "maîtriser le mécanisme SN2 de référence et sa conséquence stéréochimique caractéristique — l'inversion de Walden — véritable signature expérimentale du mécanisme concerté.",
+    "archived": false
+  },
+  {
+    "title": "Détermination d'une configuration R/S par les règles CIP",
+    "statement": "On considère le bromochlorofluorométhane $CHFClBr$, dont le carbone central porte quatre substituants différents ($H$, $F$, $Cl$, $Br$) : c'est un carbone asymétrique.\n1. Classer les quatre substituants par ordre de priorité décroissante, selon les règles de Cahn-Ingold-Prelog (CIP).\n2. Expliquer le principe permettant de déterminer si la configuration est $R$ ou $S$ une fois cet ordre établi.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Chimie organique",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "CIP",
+      "configuration R/S",
+      "stéréochimie"
+    ],
+    "hints": [
+      "La règle CIP se base sur le numéro atomique Z de l'atome directement attaché au carbone asymétrique — plus Z est grand, plus la priorité est élevée.",
+      "Classe les quatre halogènes/hydrogène par Z croissant, puis inverse pour obtenir l'ordre de priorité décroissant : Br(35) > Cl(17) > F(9) > H(1).",
+      "Place le substituant de plus basse priorité (H) à l'arrière, regarde le sens de rotation Br→Cl→F — horaire donne R, anti-horaire donne S."
+    ],
+    "correction": "1. Les règles CIP classent les substituants par numéro atomique décroissant de l'atome directement lié : Br (Z=35) > Cl (Z=17) > F (Z=9) > H (Z=1).\n2. On oriente la molécule de sorte que le substituant de PLUS BASSE priorité (H) pointe à l'opposé de l'observateur. On observe le sens de parcours des trois substituants restants, dans l'ordre décroissant (Br→Cl→F) : sens HORAIRE ⟹ configuration R (rectus) ; sens ANTI-HORAIRE ⟹ configuration S (sinister).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "carbone asymétrique",
+      "numéro atomique"
+    ],
+    "pedagogicalGoal": "appliquer sans erreur le protocole complet de détermination R/S — priorité CIP puis orientation spatiale — sur l'exemple le plus classique (CHFClBr).",
+    "archived": false
+  },
+  {
+    "title": "Piège : nucléophile/électrophile ne se définit pas par la charge",
+    "statement": "Un élève affirme : « un réactif nucléophile est un réactif chargé négativement, un réactif électrophile est un réactif chargé positivement ».\n1. Rappeler la définition précise (en termes d'électrons, pas de charge) d'un nucléophile et d'un électrophile.\n2. Le trifluorure de bore $BF_3$ est une espèce neutre, mais c'est un électrophile puissant. Expliquer pourquoi, en identifiant la lacune électronique du bore.\n3. L'ammoniac $NH_3$ est également neutre, mais c'est un nucléophile. Expliquer pourquoi.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Chimie organique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "piège",
+      "erreur classique",
+      "nucléophile",
+      "électrophile",
+      "acide-base de Lewis"
+    ],
+    "hints": [
+      "La bonne définition se fait en termes d'ÉLECTRONS (doublet donné ou accepté), pas de charge — la charge est une corrélation fréquente, jamais le critère.",
+      "Compte les électrons de valence autour du bore dans BF3 : il n'en a que 6 (3 liaisons, aucun doublet non liant) — une lacune électronique classique, malgré la neutralité.",
+      "NH3, malgré sa neutralité, possède un doublet non liant sur l'azote, disponible pour être donné — c'est ce qui en fait un nucléophile."
+    ],
+    "correction": "1. Un nucléophile DONNE un doublet d'électrons pour former une nouvelle liaison (riche en électrons, doublet non liant ou liaison π disponible). Un électrophile ACCEPTE un doublet d'électrons (pauvre en électrons, orbitale vide disponible). La charge est souvent corrélée, mais n'est PAS le critère.\n2. Dans BF3, le bore ne forme que 3 liaisons et ne possède aucun doublet non liant : 6 électrons de valence seulement (octet incomplet), orbitale p vide disponible. Cette lacune rend BF3 fortement ÉLECTROPHILE (acide de Lewis), bien que neutre.\n3. Dans NH3, l'azote possède un doublet non liant disponible (en plus de 3 liaisons N-H) : ce doublet peut être donné, ce qui rend NH3 NUCLÉOPHILE (base de Lewis), également neutre. L'affirmation de l'élève (fondée sur la charge) est donc INCORRECTE.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "doublets non liants",
+      "octet"
+    ],
+    "pedagogicalGoal": "corriger une confusion fondamentale : nucléophilie/électrophilie se définissent par la disponibilité d'électrons, pas par la charge globale — condition pour comprendre tout mécanisme réactionnel ultérieur.",
+    "archived": false
+  },
+  {
+    "title": "Quotient réactionnel et sens d'évolution spontanée",
+    "statement": "On considère l'équilibre en phase gazeuse $2SO_2(g) + O_2(g) \\rightleftharpoons 2SO_3(g)$, de constante d'équilibre $K_{eq}=280$ à une température donnée. Dans un état initial (hors équilibre), on a $[SO_2]=0{,}50$, $[O_2]=0{,}50$ et $[SO_3]=1{,}0$ (en mol/L).\n1. Calculer le quotient de réaction $Q$ dans cet état initial.\n2. Comparer $Q$ à $K_{eq}$ et en déduire le sens d'évolution spontanée du système.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Équilibres chimiques",
+    "estimatedMinutes": 18,
+    "tags": [
+      "classique",
+      "quotient réactionnel",
+      "sens d'évolution"
+    ],
+    "hints": [
+      "Applique la formule de Q avec exactement la même expression que celle de Keq, mais avec les concentrations de l'état INITIAL.",
+      "N'oublie pas l'exposant 2 sur [SO2] et sur [SO3] (coefficients stœchiométriques 2).",
+      "Compare directement Q=8 à Keq=280 : comme Q<Keq, le système évolue dans le sens direct (vers plus de produits)."
+    ],
+    "correction": "1. Q = [SO3]²/([SO2]²·[O2]) = (1,0)²/[(0,50)²×0,50] = 1,0/0,125 = 8.\n2. Q=8 < Keq=280 : le système n'a pas encore atteint l'équilibre et évolue dans le SENS DIRECT (formation supplémentaire de SO3), pour que Q augmente jusqu'à rejoindre Keq.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "constante d'équilibre",
+      "quotient de réaction"
+    ],
+    "pedagogicalGoal": "distinguer clairement Q (calculé à tout instant) de Keq (valeur cible à l'équilibre), et utiliser leur comparaison pour prédire un sens d'évolution — sans loi de modération qualitative, par le calcul direct.",
+    "archived": false
+  },
+  {
+    "title": "Effet de la température sur une constante d'équilibre — loi de van't Hoff qualitative",
+    "statement": "On considère une réaction EXOTHERMIQUE à l'équilibre ($\\Delta_rH°<0$ dans le sens direct). On admet la loi de van't Hoff (qualitative) : une augmentation de température déplace l'équilibre dans le sens ENDOTHERMIQUE de la réaction.\n1. Dans quel sens (direct ou indirect) l'équilibre se déplace-t-il si l'on augmente la température ?\n2. En déduire l'effet d'une augmentation de température sur la constante d'équilibre $K_{eq}$ d'une réaction exothermique.",
+    "source": "TaekdHub — exercice original, style concours (Sup)",
+    "subject": "Chimie",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Équilibres chimiques",
+    "estimatedMinutes": 25,
+    "tags": [
+      "style-concours",
+      "loi de van't Hoff",
+      "constante d'équilibre",
+      "température"
+    ],
+    "hints": [
+      "Si la réaction est exothermique dans le sens direct, la réaction INVERSE est nécessairement endothermique — identifie donc quel sens est 'le sens endothermique' avant d'appliquer la loi de van't Hoff.",
+      "Une augmentation de température favorise TOUJOURS le sens endothermique — ici, le sens indirect.",
+      "Si l'équilibre se déplace vers les réactifs quand T augmente, le rapport [produits]/[réactifs] (Keq) DIMINUE."
+    ],
+    "correction": "1. La réaction est exothermique dans le sens DIRECT : le sens ENDOTHERMIQUE est donc le sens INDIRECT. Une augmentation de température déplace l'équilibre dans le sens INDIRECT (favorise les réactifs).\n2. Comme l'équilibre se déplace vers les réactifs quand T augmente, Keq = [produits]/[réactifs] (à l'équilibre) DIMINUE quand la température augmente, pour une réaction exothermique. (À l'inverse, pour une réaction endothermique, Keq augmenterait avec T.)",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "loi de modération",
+      "enthalpie de réaction"
+    ],
+    "pedagogicalGoal": "relier qualitativement (sans calcul numérique) le signe de ΔrH° à l'évolution de Keq avec la température — raisonnement transférable à toute réaction, exothermique ou endothermique.",
+    "archived": false
+  },
+  {
+    "title": "Piège : confondre déplacement d'équilibre et rupture d'équilibre",
+    "statement": "Un élève affirme : « ajouter un réactif à un système à l'équilibre casse l'équilibre chimique, le système n'est alors plus régi par la constante $K_{eq}$ ».\n1. Rappeler ce qu'est un déplacement d'équilibre (loi de modération).\n2. Expliquer pourquoi cette affirmation est incorrecte : le système reste-t-il gouverné par la même constante $K_{eq}$ après la perturbation ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Équilibres chimiques",
+    "estimatedMinutes": 15,
+    "tags": [
+      "piège",
+      "erreur classique",
+      "déplacement d'équilibre",
+      "constante d'équilibre"
+    ],
+    "hints": [
+      "La loi de modération dit que le système s'oppose PARTIELLEMENT à la perturbation, en évoluant vers un NOUVEL équilibre — 'casser l'équilibre' n'a pas de sens ici.",
+      "Keq ne dépend que de la température (à T fixée, elle est constante) : un ajout de réactif ne change pas T, donc ne change pas Keq.",
+      "Ce qui change après l'ajout, c'est le quotient de réaction Q (momentanément différent de Keq), pas Keq elle-même."
+    ],
+    "correction": "1. Un déplacement d'équilibre est l'évolution du système suite à une perturbation, gouvernée par la loi de modération : le système évolue de façon à s'opposer PARTIELLEMENT à la perturbation, jusqu'à un NOUVEL état d'équilibre.\n2. L'affirmation est INCORRECTE : ajouter un réactif rend Q momentanément différent de Keq (Q≠Keq juste après l'ajout), ce qui pousse le système à évoluer (sens direct, pour consommer une partie du réactif ajouté) jusqu'à ce que Q rejoigne à nouveau la MÊME valeur de Keq qu'avant (Keq ne dépend que de T, inchangée ici). Le système reste constamment gouverné par Keq ; seul l'état d'équilibre change, pas la constante elle-même.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "loi de modération",
+      "quotient de réaction"
+    ],
+    "pedagogicalGoal": "clarifier définitivement que Keq (fonction de T seule) et Q (fonction de l'état instantané) sont deux grandeurs distinctes — une perturbation change Q, jamais Keq à température fixée.",
+    "archived": false
+  },
+  {
+    "title": "Pile électrochimique — polarité et force électromotrice standard",
+    "statement": "On construit une pile à partir des couples $Cu^{2+}/Cu$ ($E°=0{,}34$ V) et $Zn^{2+}/Zn$ ($E°=-0{,}76$ V).\n1. Identifier l'électrode qui joue le rôle d'anode (siège de l'oxydation) et celle qui joue le rôle de cathode (siège de la réduction).\n2. Écrire l'équation bilan de fonctionnement spontané de la pile.\n3. Calculer la force électromotrice standard $E°_{pile}$ de cette pile.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Oxydoréduction",
+    "estimatedMinutes": 20,
+    "tags": [
+      "classique",
+      "pile électrochimique",
+      "f.é.m.",
+      "potentiel standard"
+    ],
+    "hints": [
+      "Le couple de plus haut potentiel standard est toujours le siège de la réduction (cathode) dans une pile fonctionnant spontanément — règle du gamma.",
+      "Écris séparément les deux demi-équations (réduction à la cathode, oxydation à l'anode), avec le même nombre d'électrons échangés de chaque côté.",
+      "E°_pile = E°(cathode) - E°(anode), jamais l'inverse : tu dois trouver 0,34-(-0,76)=1,10 V — attention au double signe négatif."
+    ],
+    "correction": "1. Le couple de plus haut potentiel (Cu2+/Cu, E°=0,34V) est le siège de la RÉDUCTION (cathode) ; le couple de plus bas potentiel (Zn2+/Zn, E°=-0,76V) est le siège de l'OXYDATION (anode).\n2. Cathode : Cu2++2e⁻→Cu. Anode : Zn→Zn2++2e⁻. Bilan global : Zn + Cu2+ → Zn2+ + Cu.\n3. E°_pile = E°(cathode) - E°(anode) = 0,34 - (-0,76) = 1,10 V.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "potentiel standard",
+      "demi-équations d'oxydoréduction"
+    ],
+    "pedagogicalGoal": "construire et analyser une pile électrochimique de référence (Daniell), en identifiant systématiquement anode/cathode par comparaison des potentiels standard.",
+    "archived": false
+  },
+  {
+    "title": "Réaction de dismutation — cas du cuivre(I)",
+    "statement": "L'ion cuivre(I) $Cu^+$ peut subir une réaction de dismutation en solution aqueuse, selon $2Cu^+ \\rightarrow Cu^{2+} + Cu(s)$, mettant en jeu les couples $Cu^{2+}/Cu^+$ ($E°_1=0{,}16$ V) et $Cu^+/Cu$ ($E°_2=0{,}52$ V).\n1. Rappeler ce qu'est une réaction de dismutation.\n2. En identifiant, dans cette réaction, quel couple joue le rôle d'oxydant et lequel joue le rôle de réducteur, déterminer si cette dismutation est thermodynamiquement favorable.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Oxydoréduction",
+    "estimatedMinutes": 25,
+    "tags": [
+      "consolidation",
+      "dismutation",
+      "règle du gamma",
+      "potentiel standard"
+    ],
+    "hints": [
+      "Une dismutation, c'est une seule espèce qui joue simultanément les deux rôles (oxydant ET réducteur) dans deux couples différents impliquant cette espèce.",
+      "Identifie dans quel couple Cu+ est oxydant (Cu+/Cu) et dans quel couple il est réducteur (Cu2+/Cu+) — ce sont deux couples DIFFÉRENTS, avec deux E° différents.",
+      "Compare le E° du couple où Cu+ est oxydant (0,52V) à celui où Cu+ est réducteur (0,16V) — le premier étant plus grand, la réaction est favorable (ΔE°=0,36V>0)."
+    ],
+    "correction": "1. Une dismutation est une réaction d'oxydoréduction où une même espèce joue à la fois le rôle d'oxydant et de réducteur, donnant deux produits d'états d'oxydation différents.\n2. Cu+ est réducteur dans Cu2+/Cu+ (Cu+→Cu2++e⁻, E°1=0,16V) et oxydant dans Cu+/Cu (Cu++e⁻→Cu, E°2=0,52V). La réaction combine l'oxydant du couple de plus haut potentiel (E°2=0,52V) avec le réducteur du couple de plus bas potentiel (E°1=0,16V) : règle du gamma respectée. La réaction est FAVORABLE, ΔE°=E°2-E°1=0,36V>0.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "règle du gamma",
+      "potentiel standard"
+    ],
+    "pedagogicalGoal": "reconnaître et traiter une dismutation comme une application non triviale de la règle du gamma, où la même espèce apparaît dans deux couples distincts.",
+    "archived": false
+  },
+  {
+    "title": "Critère pratique de réaction totale à partir de la constante d'équilibre",
+    "statement": "1. Rappeler le critère (portant sur la constante d'équilibre $K$) permettant de considérer, en pratique, qu'une réaction chimique est « totale » plutôt que simplement « équilibrée ».\n2. La réaction de combustion du méthane $CH_4+2O_2\\rightarrow CO_2+2H_2O$ a une constante d'équilibre extrêmement grande ($K>10^{140}$ à 298 K). Que peut-on en conclure sur l'avancement final de cette réaction, en pratique ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Réactions chimiques",
+    "estimatedMinutes": 15,
+    "tags": [
+      "classique",
+      "réaction totale",
+      "constante d'équilibre"
+    ],
+    "hints": [
+      "Le critère de 'réaction totale' est un critère de SEUIL sur K, pas une propriété absolue — retiens l'ordre de grandeur usuel (K≥10⁴).",
+      "Compare K=10^140 à ce seuil : plus K est grand au-delà de ce seuil, plus l'approximation 'réaction totale' est justifiée.",
+      "Une réaction totale signifie, en pratique, que le réactif limitant est intégralement consommé à l'équilibre."
+    ],
+    "correction": "1. En pratique, une réaction est considérée 'totale' lorsque K est très grande (seuil usuel K≥10⁴) : l'avancement final est alors si proche de l'avancement maximal que l'écart est négligeable.\n2. Avec K>10^140, largement au-delà de tout seuil raisonnable, la combustion du méthane peut être considérée TOTALE en pratique : à l'équilibre, il ne reste pratiquement plus de réactif limitant, l'avancement final coïncide (à une précision extrême près) avec l'avancement maximal théorique.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 2,
+    "prerequisites": [
+      "constante d'équilibre",
+      "avancement d'une réaction"
+    ],
+    "pedagogicalGoal": "relier explicitement la notion intuitive de 'réaction totale' (souvent utilisée sans justification en Sup) au critère rigoureux qui la fonde : une constante d'équilibre très grande.",
+    "archived": false
+  },
+  {
+    "title": "Réactif limitant dans une suite de deux réactions successives",
+    "statement": "On fait réagir $n_1=0{,}30$ mol de $Fe$ avec $n_2=0{,}40$ mol de $S$ selon $Fe+S\\rightarrow FeS$, puis, une fois cette réaction terminée, on ajoute $n_3=0{,}20$ mol de $O_2$ pour faire réagir le $FeS$ formé selon $2FeS+3O_2\\rightarrow 2FeO+2SO_2$.\n1. Déterminer le réactif limitant de la première réaction, et la quantité de $FeS$ formée.\n2. Déterminer le réactif limitant de la seconde réaction (entre le $FeS$ formé et le $O_2$ ajouté), et la quantité de $SO_2$ finalement obtenue.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Chimie",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Réactions chimiques",
+    "estimatedMinutes": 30,
+    "tags": [
+      "consolidation",
+      "réactif limitant",
+      "réactions successives",
+      "tableau d'avancement"
+    ],
+    "hints": [
+      "Traite les deux réactions SÉPARÉMENT et dans l'ORDRE : d'abord Fe+S→FeS jusqu'à épuisement du réactif limitant, puis seulement ensuite la seconde réaction avec le FeS réellement formé.",
+      "Pour la seconde réaction, calcule x_max séparément pour FeS (0,30/2) et pour O2 (0,20/3) : le plus petit désigne le réactif limitant.",
+      "N'utilise QUE la quantité de FeS réellement formée à l'étape 1 (0,30 mol) comme donnée d'entrée de l'étape 2 — pas les 0,40 mol de soufre initial."
+    ],
+    "correction": "1. Fe+S→FeS (1:1). n(Fe)=0,30 mol < n(S)=0,40 mol : Fe est LIMITANT. FeS formé = 0,30 mol (S restant en excès : 0,10 mol, sans effet sur la suite).\n2. 2FeS+3O2→2FeO+2SO2. x_max pour FeS (0,30 mol) : x=0,30/2=0,15. x_max pour O2 (0,20 mol) : x=0,20/3≈0,0667. Comme 0,0667<0,15, O2 est LIMITANT. L'avancement réel est x=0,20/3 mol, et n(SO2)=2x=0,40/3≈0,133 mol.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "réactif limitant",
+      "tableau d'avancement"
+    ],
+    "pedagogicalGoal": "traiter un enchaînement de deux réactions successives sans se laisser piéger par les quantités de l'étape 1 qui ne sont plus pertinentes à l'étape 2 — rigueur du tableau d'avancement appliquée deux fois de suite.",
+    "archived": false
   }
 ]
