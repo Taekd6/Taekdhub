@@ -23,6 +23,7 @@ import { chapterOptionsForSubject, defaultExerciseFilters, distinctYears, filter
 import { defaultExerciseSort, exerciseSortOptions, sortExercises, type ExerciseSort } from "@/lib/exercise-sort";
 import { createExerciseFromInput } from "@/lib/exercise-import";
 import { SessionBuilderBar } from "@/components/exercises/session-builder-bar";
+import { recommendExercises } from "@/lib/recommendation";
 import { minutesByExerciseMap } from "@/lib/study";
 import { cn } from "@/lib/cn";
 import type { Exercise, Subject } from "@/lib/supabase/types";
@@ -255,7 +256,7 @@ export function ExerciseManager() {
 
   // Callbacks dédiés d'ExerciseBrowser (Matière → Chapitre) : choisir une
   // matière ou remonter garde le mode navigation actif (on reste dans la
-  // hiérarchie) ; choisir un chapitre en sort (ses exercices s'affichent en
+  // hiérarchie) ; choisir un chapitre en SORT (ses exercices s'affichent en
   // liste normale, juste en dessous). `filters` reste l'unique source de
   // vérité du "où en est-on" — ces callbacks ne font que l'écrire.
   const goHome = useCallback(() => {
@@ -287,6 +288,22 @@ export function ExerciseManager() {
   );
 
   const selected = exercises.find((item) => item.id === selectedId);
+
+  // "Pourquoi cet exercice ?" en mode focus (voir focus-view.tsx) : recalculé
+  // à la volée sur TOUTE la banque active, pas seulement les exercices déjà
+  // visibles dans la liste filtrée — un exercice ouvert par simple curiosité
+  // en parcourant la banque garde exactement la même explication que s'il
+  // avait été atteint depuis le Dashboard ou "À revoir en priorité", puisque
+  // c'est le même moteur (`recommendExercises`) qui a déjà tranché. Un
+  // exercice non signalé n'a simplement aucune entrée ici — FocusView
+  // n'affiche alors rien, jamais de justification inventée.
+  const recommendationReasons = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const { exercise, reasons } of recommendExercises(exercises, sessions, exercises.length)) {
+      map.set(exercise.id, reasons);
+    }
+    return map;
+  }, [exercises, sessions]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -331,6 +348,7 @@ export function ExerciseManager() {
         sessions={sessions}
         saveSessions={saveSessions}
         onClose={() => setFocusMode(false)}
+        reasons={recommendationReasons.get(selected.id)}
       />
     );
   }
