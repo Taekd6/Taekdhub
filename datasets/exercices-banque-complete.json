@@ -8004,5 +8004,389 @@
       "familles libres/liées"
     ],
     "pedagogicalGoal": "premier exercice complet (linéarité, image d'un vecteur, noyau, image, injectivité/surjectivité) sur un exemple minimal en dimension 2, avant l'exercice existant en dimension 3 avec recherche de bases explicites (diff.3) — comble le trou entre la famille libre/liée de base (diff.1 ci-dessus) et cet exercice plus avancé."
+  },
+  {
+    "title": "Primitives immédiates du formulaire usuel",
+    "statement": "Déterminer une primitive de chacune des fonctions suivantes, en utilisant directement le formulaire usuel (sans aucune composition à repérer) :\n1. $f(x) = x^3$\n2. $g(x) = \\dfrac{1}{x}$ sur $]0,+\\infty[$\n3. $h(x) = \\cos(x) + e^x$\n4. $k(x) = \\dfrac{1}{1+x^2}$",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Intégration",
+    "estimatedMinutes": 10,
+    "tags": [
+      "intégration",
+      "primitives",
+      "formulaire usuel"
+    ],
+    "hints": [
+      "Chaque fonction ici est directement une fonction usuelle du formulaire (puissance, $1/x$, $\\cos$, $e^x$, $1/(1+x^2)$) : il n'y a aucune règle de composition $u'\\times f(u)$ à repérer, seulement le formulaire à connaître par cœur.",
+      "Pour une somme de fonctions, une primitive de la somme est la somme des primitives (linéarité de la primitivation)."
+    ],
+    "correction": "1. Une primitive de $x^n$ (pour $n\\neq-1$) est $\\dfrac{x^{n+1}}{n+1}$ : ici $n=3$, donc une primitive de $f$ est $F(x) = \\dfrac{x^4}{4}$.\n2. Une primitive de $\\dfrac{1}{x}$ sur $]0,+\\infty[$ est $G(x) = \\ln(x)$.\n3. Par linéarité, une primitive de $h(x)=\\cos(x)+e^x$ est $H(x) = \\sin(x) + e^x$ (primitive de $\\cos$ = $\\sin$, primitive de $e^x$ = $e^x$).\n4. Une primitive de $\\dfrac{1}{1+x^2}$ est $K(x) = \\arctan(x)$.\n\nCes quatre résultats font partie du formulaire de primitives usuelles à connaître par cœur (au même titre que les dérivées usuelles) : ils constituent la base sur laquelle s'appuient ensuite toutes les techniques plus élaborées (changement de variable, intégration par parties, reconnaissance de forme $u'\\times f(u)$).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "formulaire de primitives usuelles"
+    ],
+    "pedagogicalGoal": "porte d'entrée du chapitre Intégration : primitives strictement issues du formulaire, sans aucune reconnaissance de composition à faire (contrairement à l'exercice diff.1 déjà présent qui demande de repérer des formes u'/u, u'e^u, u'u^n) — sert de tout premier contact avant celui-ci."
+  },
+  {
+    "title": "Calcul d'une intégrale définie simple",
+    "statement": "Calculer les intégrales suivantes :\n1. $\\displaystyle\\int_0^1 (2x+1)\\,dx$\n2. $\\displaystyle\\int_1^2 (3x^2-2)\\,dx$",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Intégration",
+    "estimatedMinutes": 10,
+    "tags": [
+      "intégration",
+      "intégrale définie",
+      "primitives"
+    ],
+    "hints": [
+      "Détermine d'abord une primitive $F$ de la fonction à intégrer (sans te soucier des bornes), puis applique la formule $\\int_a^b f(x)\\,dx = F(b) - F(a)$.",
+      "Prends garde à bien évaluer $F$ aux deux bornes séparément avant de soustraire — une erreur de signe est vite arrivée."
+    ],
+    "correction": "1. Une primitive de $2x+1$ est $F(x) = x^2+x$. Donc $\\displaystyle\\int_0^1 (2x+1)\\,dx = F(1) - F(0) = (1+1) - (0+0) = 2$.\n2. Une primitive de $3x^2-2$ est $F(x) = x^3-2x$. Donc $\\displaystyle\\int_1^2 (3x^2-2)\\,dx = F(2)-F(1) = (8-4) - (1-2) = 4-(-1) = 5$.\n\nPoint de méthode fondamental (théorème fondamental de l'analyse, ou formule de Newton-Leibniz) : calculer une intégrale définie se ramène toujours à trouver UNE primitive $F$ de la fonction, puis à évaluer la différence $F(b)-F(a)$ — le choix précis de la primitive (à une constante près) n'a aucune importance car la constante s'annule dans la différence.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "primitives immédiates",
+      "théorème fondamental de l'analyse"
+    ],
+    "pedagogicalGoal": "deuxième barreau diff.1 du chapitre Intégration : passer de la primitive (exercice précédent) à l'intégrale définie via Newton-Leibniz, sur des fonctions polynomiales sans aucune subtilité de signe ou de valeur absolue — avant l'interprétation géométrique et l'encadrement."
+  },
+  {
+    "title": "Intégrale et aire sous une courbe : interprétation géométrique",
+    "statement": "On considère la fonction $f(x) = x+1$ sur $[0,2]$.\n1. Calculer $\\displaystyle\\int_0^2 (x+1)\\,dx$.\n2. Représenter mentalement (ou sur un schéma) la région du plan délimitée par la courbe de $f$, l'axe des abscisses, et les droites $x=0$ et $x=2$. Quelle est sa nature géométrique ?\n3. Retrouver la valeur de l'intégrale en calculant directement l'aire de cette figure géométrique par une formule usuelle, et vérifier la cohérence avec la question 1.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Intégration",
+    "estimatedMinutes": 15,
+    "tags": [
+      "intégration",
+      "aire",
+      "interprétation géométrique"
+    ],
+    "hints": [
+      "Comme $f(x) = x+1 \\geq 0$ sur $[0,2]$, l'intégrale $\\int_0^2 f(x)\\,dx$ est exactement égale à l'aire (positive) de la région sous la courbe.",
+      "La figure délimitée par une droite non horizontale, l'axe des abscisses et deux verticales est un trapèze : rappelle-toi la formule d'aire d'un trapèze, $\\dfrac{(\\text{petite base}+\\text{grande base})}{2}\\times\\text{hauteur}$."
+    ],
+    "correction": "1. Une primitive de $x+1$ est $F(x) = \\dfrac{x^2}{2}+x$. Donc $\\displaystyle\\int_0^2 (x+1)\\,dx = F(2)-F(0) = (2+2) - 0 = 4$.\n2. Comme $f(x)=x+1 \\geq 0$ sur $[0,2]$ (avec $f(0)=1$ et $f(2)=3$), la région sous la courbe entre $x=0$ et $x=2$ est un **trapèze** de hauteur $2$ (la largeur sur l'axe des abscisses), de petite base $f(0)=1$ et de grande base $f(2)=3$.\n3. L'aire d'un trapèze est $\\dfrac{(\\text{petite base}+\\text{grande base})}{2}\\times\\text{hauteur} = \\dfrac{1+3}{2}\\times 2 = 2\\times2 = 4$. On retrouve exactement la valeur de l'intégrale calculée à la question 1 : $4=4$. Cohérence vérifiée.\n\nPoint de méthode essentiel : pour une fonction positive sur $[a,b]$, l'intégrale $\\int_a^b f(x)\\,dx$ EST, par définition, l'aire du domaine compris entre la courbe et l'axe des abscisses — ce n'est pas une coïncidence si les deux calculs donnent le même résultat, c'est la définition même de l'intégrale (initialement construite comme une aire, avant d'être généralisée aux fonctions de signe quelconque).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "intégrale définie",
+      "aire d'un trapèze"
+    ],
+    "pedagogicalGoal": "installer explicitement le lien entre calcul intégral et aire géométrique (souvent perçu comme acquis mais rarement vérifié sur un exemple concret croisant les deux méthodes), avant l'exercice existant de calcul d'aire entre deux courbes qui suppose ce lien déjà maîtrisé."
+  },
+  {
+    "title": "Encadrer une intégrale sans la calculer",
+    "statement": "On veut encadrer $\\displaystyle I = \\int_1^2 \\dfrac{1}{x}\\,dx$ sans en calculer la valeur exacte.\n1. Montrer que pour tout $x \\in [1,2]$, on a $\\dfrac{1}{2} \\leq \\dfrac{1}{x} \\leq 1$.\n2. En déduire un encadrement de $I$.\n3. Calculer la valeur exacte de $I$ et vérifier qu'elle est bien compatible avec l'encadrement obtenu.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Intégration",
+    "estimatedMinutes": 15,
+    "tags": [
+      "intégration",
+      "encadrement",
+      "inégalités",
+      "croissance de l'intégrale"
+    ],
+    "hints": [
+      "Utilise la décroissance de $x \\mapsto 1/x$ sur $[1,2]$ pour encadrer directement la fonction entre ses valeurs aux bornes.",
+      "Une fois l'encadrement $m \\leq f(x) \\leq M$ obtenu sur $[a,b]$, la croissance de l'intégrale donne directement $m(b-a) \\leq \\int_a^b f(x)\\,dx \\leq M(b-a)$ — inutile de calculer $I$ pour obtenir cet encadrement."
+    ],
+    "correction": "1. La fonction $x \\mapsto \\dfrac{1}{x}$ est strictement décroissante sur $[1,2]$ (comme sur tout intervalle de $]0,+\\infty[$). Donc pour $x\\in[1,2]$, on a $\\dfrac{1}{2} = \\dfrac{1}{2} \\leq \\dfrac{1}{x} \\leq \\dfrac{1}{1} = 1$.\n2. Par croissance de l'intégrale (si $m\\leq f(x)\\leq M$ sur $[a,b]$ alors $m(b-a) \\leq \\int_a^b f(x)\\,dx \\leq M(b-a)$), on intègre l'encadrement de la question 1 sur $[1,2]$ (longueur $2-1=1$) : $\\dfrac{1}{2}\\times1 \\leq I \\leq 1\\times1$, soit $\\dfrac{1}{2} \\leq I \\leq 1$.\n3. Une primitive de $1/x$ est $\\ln(x)$, donc $I = \\ln(2)-\\ln(1) = \\ln(2) \\approx 0,693$. On vérifie bien $0,5 \\leq 0,693 \\leq 1$ : l'encadrement obtenu sans calcul est cohérent avec la valeur exacte.\n\nPoint de méthode central : encadrer une intégrale sans la calculer est une technique fondamentale (utile notamment quand l'intégrale n'a pas de primitive explicite calculable) — le principe est toujours le même : encadrer la fonction sur l'intervalle, puis intégrer terme à terme l'encadrement grâce à la croissance de l'intégrale.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "monotonie",
+      "croissance de l'intégrale",
+      "intégrale définie"
+    ],
+    "pedagogicalGoal": "installer la technique d'encadrement d'intégrale par encadrement de la fonction, sur l'exemple le plus simple possible (fonction monotone, encadrement immédiat par les bornes), avant de la retrouver de façon plus implicite dans des exercices avancés (Wallis, suites définies par une intégrale)."
+  },
+  {
+    "title": "Continuité d'une fonction définie par morceaux : premier diagnostic",
+    "statement": "On définit $f$ sur $\\mathbb{R}$ par $f(x) = \\begin{cases} x+1 & \\text{si } x < 0 \\\\ x^2 & \\text{si } x \\geq 0 \\end{cases}$.\n1. Justifier que $f$ est continue sur $]-\\infty,0[$ et sur $[0,+\\infty[$.\n2. Calculer $\\displaystyle\\lim_{x \\to 0^-} f(x)$ et $\\displaystyle\\lim_{x \\to 0^+} f(x)$. Que peut-on en conclure sur la continuité de $f$ en $0$ ?\n3. Sur quel(s) intervalle(s) $f$ est-elle finalement continue ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Fonctions",
+    "estimatedMinutes": 12,
+    "tags": [
+      "continuité",
+      "fonction définie par morceaux",
+      "limite à gauche/à droite"
+    ],
+    "hints": [
+      "Sur chaque morceau, $f$ coïncide avec une fonction usuelle (affine, polynomiale) : la continuité y est acquise sans calcul, par les théorèmes généraux.",
+      "Pour la continuité EN $0$ précisément (le point de raccord), il faut comparer trois valeurs : la limite à gauche, la limite à droite, et $f(0)$ lui-même — les trois doivent coïncider."
+    ],
+    "correction": "1. Sur $]-\\infty,0[$, $f(x)=x+1$ est une fonction affine, donc continue. Sur $[0,+\\infty[$, $f(x)=x^2$ est une fonction polynomiale, donc continue. Sur chacun de ces deux intervalles pris séparément, $f$ est donc continue (comme restriction d'une fonction usuelle continue).\n2. $\\displaystyle\\lim_{x\\to0^-} f(x) = \\lim_{x\\to0^-}(x+1) = 1$ et $\\displaystyle\\lim_{x\\to0^+} f(x) = \\lim_{x\\to0^+} x^2 = 0$. Les deux limites latérales sont différentes ($1 \\neq 0$), donc $f$ n'admet pas de limite en $0$ : $f$ **n'est pas continue en $0$**.\n3. En combinant les questions 1 et 2 : $f$ est continue sur $]-\\infty,0[$ et sur $[0,+\\infty[$ séparément, mais **pas** continue en $0$ (le point de raccord). Finalement, $f$ est continue sur $\\mathbb{R}\\setminus\\{0\\}$, c'est-à-dire sur $]-\\infty,0[\\,\\cup\\,]0,+\\infty[$.\n\nPoint de méthode à retenir dès ce premier exercice : la continuité « sur chaque morceau » ne suffit jamais à garantir la continuité globale d'une fonction définie par morceaux — il faut TOUJOURS vérifier séparément le ou les points de raccord, en comparant limite à gauche, limite à droite et valeur en ce point.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "limite à gauche et à droite",
+      "continuité des fonctions usuelles"
+    ],
+    "pedagogicalGoal": "tout premier contact avec le diagnostic de continuité d'une fonction par morceaux, sur un exemple où la fonction n'est PAS continue (contrairement à l'exercice existant sur les raccords, où elle l'est) — installe le réflexe de vérification systématique avant les exercices où l'on doit rendre une fonction continue (constante à déterminer) ou la prolonger."
+  },
+  {
+    "title": "Déterminer une constante pour assurer la continuité",
+    "statement": "On définit $f$ sur $\\mathbb{R}$ par $f(x) = \\begin{cases} ax+1 & \\text{si } x \\leq 2 \\\\ x^2-3 & \\text{si } x > 2 \\end{cases}$, où $a \\in \\mathbb{R}$ est un paramètre.\n1. Justifier que, quelle que soit la valeur de $a$, $f$ est continue sur $]-\\infty,2[$ et sur $]2,+\\infty[$.\n2. Déterminer la valeur de $a$ pour laquelle $f$ est continue en $2$ (donc sur $\\mathbb{R}$ tout entier).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Fonctions",
+    "estimatedMinutes": 15,
+    "tags": [
+      "continuité",
+      "fonction définie par morceaux",
+      "paramètre"
+    ],
+    "hints": [
+      "Ici, $f(2)$ est donné par la première expression (car la condition est $x \\leq 2$) : c'est avec cette valeur que la limite à droite doit coïncider.",
+      "Pose l'équation « limite à gauche = limite à droite » (ou, de manière équivalente ici, $f(2)$ = limite à droite) et résous-la en $a$ : c'est une simple équation du premier degré."
+    ],
+    "correction": "1. Sur $]-\\infty,2[$, $f(x)=ax+1$ est affine donc continue pour toute valeur de $a$. Sur $]2,+\\infty[$, $f(x)=x^2-3$ est polynomiale donc continue. La continuité sur ces deux intervalles est donc acquise indépendamment de $a$ ; seule la continuité au point de raccord $x=2$ dépend du choix de $a$.\n2. Comme la condition de la première branche est $x \\leq 2$, on a $f(2) = a(2)+1 = 2a+1$, et par continuité de cette branche, $\\displaystyle\\lim_{x\\to2^-} f(x) = f(2) = 2a+1$. D'autre part, $\\displaystyle\\lim_{x\\to2^+} f(x) = \\lim_{x\\to2^+}(x^2-3) = 4-3 = 1$. Pour que $f$ soit continue en $2$, il faut et il suffit que ces deux limites latérales coïncident : $2a+1 = 1$, soit $a = 0$.\n\nVérification : avec $a=0$, $f(x)=1$ pour $x\\leq2$ et $f(x)=x^2-3$ pour $x>2$ ; on a bien $f(2)=1$ et $\\lim_{x\\to2^+}f(x)=1$ : la fonction est continue sur $\\mathbb{R}$.\n\nMéthode générale : ce type d'exercice se résout toujours de la même façon — poser l'égalité entre les deux expressions candidates à la limite au point de raccord, ce qui donne une équation (généralement simple) en le paramètre inconnu.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "continuité en un point",
+      "limites à gauche et à droite",
+      "résolution d'équation du premier degré"
+    ],
+    "pedagogicalGoal": "compétence calculatoire explicitement demandée (déterminer un paramètre pour assurer la continuité), intermédiaire entre le diagnostic pur (exercice précédent) et le prolongement par continuité (exercice suivant) — technique très fréquemment testée en colle."
+  },
+  {
+    "title": "Prolongement par continuité en un point",
+    "statement": "On considère la fonction $f(x) = \\dfrac{x^2-1}{x-1}$, définie pour $x \\neq 1$.\n1. Simplifier l'expression de $f(x)$ pour $x \\neq 1$.\n2. Montrer que $f$ admet une limite finie en $1$, et la déterminer.\n3. En déduire que $f$ est prolongeable par continuité en $1$, et donner l'expression de son prolongement $\\tilde{f}$, défini sur $\\mathbb{R}$ tout entier.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Fonctions",
+    "estimatedMinutes": 15,
+    "tags": [
+      "continuité",
+      "prolongement par continuité",
+      "limites",
+      "factorisation"
+    ],
+    "hints": [
+      "$x=1$ n'appartient pas au domaine de $f$ : il ne s'agit donc pas de « vérifier » la continuité en 1 (impossible, $f(1)$ n'existe pas), mais de voir si $f$ admet malgré tout une limite finie en ce point.",
+      "Factorise le numérateur par une identité remarquable pour simplifier l'écriture de $f$ et lever l'indétermination $0/0$ (c'est la même technique que dans le chapitre Limites)."
+    ],
+    "correction": "1. On factorise le numérateur avec l'identité remarquable $a^2-b^2=(a-b)(a+b)$ : $x^2-1=(x-1)(x+1)$. Donc pour $x\\neq1$ : $f(x) = \\dfrac{(x-1)(x+1)}{x-1} = x+1$.\n2. D'après la question 1, $f(x)=x+1$ pour tout $x\\neq1$, et $x\\mapsto x+1$ est continue en $1$ : donc $\\displaystyle\\lim_{x\\to1} f(x) = \\lim_{x\\to1}(x+1) = 2$. La limite existe et est finie, égale à $2$.\n3. Puisque $f$ n'est pas définie en $1$ mais y admet une limite finie ($=2$), $f$ est **prolongeable par continuité en $1$** : il suffit de définir $\\tilde{f}(1) = 2$ et $\\tilde{f}(x) = f(x)$ pour $x\\neq1$. Comme $f(x)=x+1$ pour $x\\neq1$ et que $\\tilde f(1)=2=1+1$, on a en fait $\\tilde{f}(x) = x+1$ pour tout $x\\in\\mathbb{R}$ : le prolongement par continuité de $f$ est simplement la fonction affine $x\\mapsto x+1$.\n\nPoint de méthode à bien distinguer de l'exercice précédent : ici, on ne cherche PAS un paramètre pour recoller deux morceaux déjà définis — on part d'une fonction non définie en un point isolé et on montre qu'on peut « combler le trou » car la limite existe. C'est une situation totalement différente du raccord de fonctions par morceaux, bien qu'utilisant les mêmes outils (limites latérales, factorisation).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "limites",
+      "factorisation",
+      "forme indéterminée 0/0",
+      "continuité en un point"
+    ],
+    "pedagogicalGoal": "installer la notion de prolongement par continuité (distincte du raccord de morceaux et de la détermination de constante), en réutilisant directement la technique de factorisation déjà installée dans le chapitre Limites — dernier barreau avant l'usage du TVI dans un vrai problème (déjà couvert par l'exercice diff.2 existant sur ce chapitre)."
+  },
+  {
+    "title": "Racine évidente et factorisation d'un trinôme",
+    "statement": "On considère le polynôme $P(X) = X^2 - 5X + 6$.\n1. Vérifier que $2$ est une racine de $P$.\n2. En utilisant le théorème de factorisation (« $a$ est racine de $P$ si et seulement si $(X-a)$ divise $P$ »), en déduire qu'il existe un polynôme $Q$ de degré $1$ tel que $P(X) = (X-2)Q(X)$, et déterminer $Q$.\n3. En déduire la factorisation complète de $P$ sous forme de produit de facteurs du premier degré.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Polynômes",
+    "estimatedMinutes": 12,
+    "tags": [
+      "polynômes",
+      "racine évidente",
+      "théorème de factorisation",
+      "factorisation"
+    ],
+    "hints": [
+      "Pour vérifier qu'un nombre est racine, il suffit de l'évaluer dans le polynôme et de constater que le résultat est nul — aucun calcul de division n'est nécessaire pour cette étape.",
+      "Comme $P$ est de degré $2$ et que $(X-2)$ est de degré $1$, le quotient $Q$ est nécessairement de degré $1$ : cherche-le sous la forme $Q(X)=X+b$ et identifie $b$ en développant $(X-2)(X+b)$."
+    ],
+    "correction": "1. $P(2) = 2^2 - 5\\times2 + 6 = 4-10+6 = 0$. Donc $2$ est bien une racine de $P$.\n2. D'après le théorème de factorisation, comme $P(2)=0$, le polynôme $(X-2)$ divise $P$ : il existe donc un polynôme $Q$ tel que $P(X)=(X-2)Q(X)$, avec $\\deg(Q) = \\deg(P)-1 = 1$. On cherche $Q(X)=X+b$ : en développant, $(X-2)(X+b) = X^2+bX-2X-2b = X^2+(b-2)X-2b$. En identifiant avec $P(X)=X^2-5X+6$ : $b-2=-5$ donc $b=-3$, et on vérifie $-2b=-2\\times(-3)=6$, cohérent avec le terme constant de $P$. Donc $Q(X) = X-3$.\n3. On obtient $P(X) = (X-2)(X-3)$ : c'est la factorisation complète de $P$ en produit de facteurs du premier degré (on retrouve au passage que $3$ est l'autre racine de $P$, puisque $Q(3)=0$).\n\nPoint de méthode fondamental : dès qu'une racine « évidente » d'un polynôme est repérée ou donnée (souvent par essais avec de petites valeurs entières : $0,\\pm1,\\pm2,\\dots$), le théorème de factorisation garantit qu'on peut « sortir » un facteur $(X-a)$ — c'est la technique de base pour factoriser des polynômes de degré $\\geq2$, indispensable avant d'aborder les polynômes de degré $3$ ou plus.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "évaluation d'un polynôme",
+      "développement de produits"
+    ],
+    "pedagogicalGoal": "premier pont explicitement manquant du chapitre Polynômes : passer de la division euclidienne mécanique (diff.1 déjà présent) à l'utilisation active du théorème de factorisation via une racine évidente — socle indispensable avant la factorisation complète d'un polynôme de degré 3 (exercice suivant)."
+  },
+  {
+    "title": "Factorisation complète d'un polynôme de degré 3 via une racine évidente",
+    "statement": "On considère le polynôme $P(X) = X^3 - 6X^2 + 11X - 6$.\n1. Vérifier que $1$ est une racine évidente de $P$.\n2. Effectuer la division euclidienne de $P$ par $(X-1)$ pour obtenir un polynôme $Q$ de degré $2$ tel que $P(X)=(X-1)Q(X)$.\n3. Factoriser complètement $Q$, puis en déduire la factorisation complète de $P$ en produit de trois facteurs du premier degré.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Polynômes",
+    "estimatedMinutes": 18,
+    "tags": [
+      "polynômes",
+      "racine évidente",
+      "division euclidienne",
+      "factorisation",
+      "degré 3"
+    ],
+    "hints": [
+      "Teste d'abord les petites valeurs entières usuelles ($0, 1, -1, 2, \\dots$) pour repérer la racine évidente, en évaluant $P$ en chacune.",
+      "Une fois la division euclidienne par $(X-1)$ effectuée, le quotient $Q$ est un trinôme de degré $2$ que tu sais déjà factoriser avec les techniques habituelles (racine évidente, discriminant, ou identification)."
+    ],
+    "correction": "1. $P(1) = 1^3-6\\times1^2+11\\times1-6 = 1-6+11-6 = 0$. Donc $1$ est bien une racine de $P$, et $(X-1)$ divise $P$ d'après le théorème de factorisation.\n2. On effectue la division euclidienne de $P(X)=X^3-6X^2+11X-6$ par $X-1$ : le premier terme du quotient est $X^2$ (car $X^3 \\div X = X^2$) ; $X^2(X-1) = X^3-X^2$, qu'on soustrait à $P$ : $(X^3-6X^2+11X-6)-(X^3-X^2) = -5X^2+11X-6$. Le terme suivant du quotient est $-5X$ (car $-5X^2\\div X=-5X$) ; $-5X(X-1)=-5X^2+5X$, qu'on soustrait : $(-5X^2+11X-6)-(-5X^2+5X) = 6X-6$. Le dernier terme est $6$ (car $6X\\div X=6$) ; $6(X-1)=6X-6$, reste nul. On obtient $Q(X) = X^2-5X+6$ (reste $0$, ce qui confirme que $1$ est bien racine).\n3. On reconnaît exactement le trinôme de l'exercice précédent : $Q(X) = X^2-5X+6 = (X-2)(X-3)$. On en déduit la factorisation complète de $P$ : $$P(X) = (X-1)(X-2)(X-3).$$\n\nMéthode générale à retenir pour tout polynôme de degré $3$ (ou plus) : repérer une racine évidente par essais successifs, diviser euclidiennement pour abaisser le degré d'une unité, puis factoriser le quotient obtenu par les techniques déjà connues pour le degré inférieur — c'est le principe de récurrence sur lequel repose toute factorisation complète d'un polynôme.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "racine évidente et théorème de factorisation",
+      "division euclidienne de polynômes",
+      "factorisation d'un trinôme"
+    ],
+    "pedagogicalGoal": "généraliser à un degré 3 la technique de l'exercice précédent (réutilisant volontairement le même trinôme comme quotient, pour souligner explicitement l'enchaînement) — dernier barreau avant l'exercice existant sur les relations coefficients-racines, qui suppose cette technique de factorisation déjà acquise."
+  },
+  {
+    "title": "Système 2×2 : substitution puis combinaison linéaire",
+    "statement": "On considère le système $\\begin{cases} x + 2y = 5 \\\\ 3x - y = 1 \\end{cases}$ d'inconnues $x,y \\in \\mathbb{R}$.\n1. Résoudre ce système par la méthode de substitution.\n2. Résoudre à nouveau ce même système, mais cette fois par combinaison linéaire des deux équations. Vérifier que l'on retrouve bien le même résultat.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Matrices et systèmes",
+    "estimatedMinutes": 12,
+    "tags": [
+      "systèmes linéaires",
+      "substitution",
+      "combinaison linéaire",
+      "système 2×2"
+    ],
+    "hints": [
+      "Pour la substitution, isole une variable dans l'une des deux équations (par exemple $y$ dans la seconde), puis remplace-la dans l'autre équation.",
+      "Pour la combinaison linéaire, cherche un multiple de l'une des équations qui, ajouté ou soustrait à l'autre, fait disparaître l'une des deux inconnues."
+    ],
+    "correction": "**Méthode 1 — substitution.** De la seconde équation, $3x-y=1$, on tire $y=3x-1$. En substituant dans la première équation : $x+2(3x-1)=5$, soit $x+6x-2=5$, soit $7x=7$, donc $x=1$. On en déduit $y=3(1)-1=2$. Le couple solution est $(x,y)=(1,2)$.\n\n**Méthode 2 — combinaison linéaire.** On multiplie la seconde équation par $2$ : $6x-2y=2$. En additionnant cette nouvelle équation à la première ($x+2y=5$), les termes en $y$ s'éliminent : $(x+2y)+(6x-2y) = 5+2$, soit $7x=7$, donc $x=1$. En reportant dans la première équation initiale : $1+2y=5$, donc $y=2$. On retrouve bien $(x,y)=(1,2)$.\n\nLes deux méthodes donnent exactement le même résultat, ce qui est normal : elles reposent toutes deux sur des opérations réversibles (isoler une variable ou combiner des équations) qui ne changent pas l'ensemble des solutions du système. Le choix entre les deux est souvent une question de commodité selon la forme du système : la substitution est naturelle quand une variable est facile à isoler, la combinaison linéaire quand les coefficients se prêtent bien à une élimination directe.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "résolution d'équations du premier degré"
+    ],
+    "pedagogicalGoal": "porte d'entrée du chapitre Matrices et systèmes : résoudre un système 2×2 par les deux méthodes élémentaires (substitution, combinaison linéaire) sur le même exemple, pour bâtir confiance et intuition avant l'écriture matricielle et le pivot de Gauss sur des systèmes plus grands."
+  },
+  {
+    "title": "Écriture matricielle d'un système et résolution par l'inverse",
+    "statement": "On considère le système $\\begin{cases} 2x + y = 8 \\\\ x - 3y = -3 \\end{cases}$ d'inconnues $x,y \\in \\mathbb{R}$.\n1. Écrire ce système sous la forme matricielle $AX=B$, où $A$ est une matrice $2\\times2$, $X=\\begin{pmatrix}x\\\\y\\end{pmatrix}$ et $B$ une matrice colonne à préciser.\n2. Calculer $\\det(A)$ et en déduire que $A$ est inversible, puis déterminer $A^{-1}$.\n3. En déduire $X = A^{-1}B$, et donner la solution du système.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Matrices et systèmes",
+    "estimatedMinutes": 18,
+    "tags": [
+      "systèmes linéaires",
+      "matrices",
+      "inverse d'une matrice",
+      "déterminant"
+    ],
+    "hints": [
+      "Pour écrire $AX=B$, les coefficients de chaque ligne de $A$ sont exactement les coefficients de $x$ et $y$ dans l'équation correspondante, dans le même ordre.",
+      "Réutilise la formule directe de l'inverse d'une matrice $2\\times2$ : pour $A=\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}$ avec $\\det(A)=ad-bc\\neq0$, on a $A^{-1} = \\dfrac{1}{\\det(A)}\\begin{pmatrix}d&-b\\\\-c&a\\end{pmatrix}$."
+    ],
+    "correction": "1. Le système s'écrit $AX=B$ avec $A=\\begin{pmatrix}2&1\\\\1&-3\\end{pmatrix}$, $X=\\begin{pmatrix}x\\\\y\\end{pmatrix}$ et $B=\\begin{pmatrix}8\\\\-3\\end{pmatrix}$ (chaque ligne de $A$ reproduit les coefficients d'une équation, et $B$ contient les seconds membres).\n2. $\\det(A) = 2\\times(-3) - 1\\times1 = -6-1=-7 \\neq 0$ : $A$ est donc inversible. Avec la formule directe : $A^{-1} = \\dfrac{1}{-7}\\begin{pmatrix}-3&-1\\\\-1&2\\end{pmatrix} = \\begin{pmatrix}\\frac{3}{7}&\\frac{1}{7}\\\\[2pt]\\frac{1}{7}&-\\frac{2}{7}\\end{pmatrix}$.\n3. $X = A^{-1}B = \\begin{pmatrix}\\frac{3}{7}&\\frac{1}{7}\\\\[2pt]\\frac{1}{7}&-\\frac{2}{7}\\end{pmatrix}\\begin{pmatrix}8\\\\-3\\end{pmatrix} = \\begin{pmatrix}\\frac{3}{7}\\times8+\\frac{1}{7}\\times(-3)\\\\[2pt]\\frac{1}{7}\\times8+(-\\frac{2}{7})\\times(-3)\\end{pmatrix} = \\begin{pmatrix}\\frac{24-3}{7}\\\\[2pt]\\frac{8+6}{7}\\end{pmatrix} = \\begin{pmatrix}3\\\\2\\end{pmatrix}$. Donc $x=3$ et $y=2$. Vérification directe dans le système initial : $2(3)+2=8$ ✓ et $3-3(2)=3-6=-3$ ✓.\n\nPoint de méthode : cette approche matricielle ($X=A^{-1}B$) généralise directement les méthodes de substitution/combinaison linéaire de l'exercice précédent — elle devient particulièrement puissante pour des systèmes plus grands (3×3 et plus), où la formule directe de l'inverse n'existe plus mais où le même principe ($X=A^{-1}B$) reste valable dès que $A$ est inversible.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "inversion d'une matrice 2×2",
+      "produit matriciel",
+      "systèmes linéaires 2×2"
+    ],
+    "pedagogicalGoal": "faire le pont explicite entre la résolution 'à la main' d'un système (exercice précédent) et l'écriture matricielle AX=B, en réutilisant directement la formule d'inversion 2×2 déjà installée par l'exercice diff.1 existant — avant le pivot de Gauss, qui prend le relais pour des systèmes où l'inverse n'est pas praticable directement."
+  },
+  {
+    "title": "Système 3×3 par la méthode de Gauss avec un pivot nul",
+    "statement": "Résoudre par la méthode du pivot de Gauss le système suivant, d'inconnues $x,y,z \\in \\mathbb{R}$ :\n$$\\begin{cases} y + z = 3 \\\\ x + y - z = 2 \\\\ 2x - y + z = 1 \\end{cases}$$\nOn commencera par observer que le coefficient de $x$ dans la première équation est nul, ce qui empêche de l'utiliser directement comme pivot : on effectuera l'échange de lignes nécessaire avant de poursuivre l'élimination.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Matrices et systèmes",
+    "estimatedMinutes": 20,
+    "tags": [
+      "systèmes linéaires",
+      "pivot de Gauss",
+      "échange de lignes",
+      "système 3×3"
+    ],
+    "hints": [
+      "La méthode du pivot exige un coefficient non nul pour la variable qu'on élimine : si ce coefficient est nul dans l'équation qu'on utiliserait normalement, échange-la avec une autre équation où il ne l'est pas.",
+      "Une fois l'échange effectué, la méthode se poursuit exactement comme d'habitude : éliminer $x$ des lignes suivantes, puis $y$, jusqu'à un système triangulaire qu'on résout par remontée."
+    ],
+    "correction": "Le coefficient de $x$ dans la première équation ($L_1 : y+z=3$) est nul : on ne peut pas l'utiliser comme pivot pour éliminer $x$. On échange donc $L_1$ et $L_2$ :\n$$\\begin{cases} L_1 : x+y-z=2 \\\\ L_2 : y+z=3 \\\\ L_3 : 2x-y+z=1 \\end{cases}$$\nOn élimine $x$ de $L_3$ en effectuant $L_3 \\leftarrow L_3 - 2L_1$ : $(2x-y+z) - 2(x+y-z) = 1-2\\times2$, soit $2x-y+z-2x-2y+2z = -3$, soit $-3y+3z=-3$, soit (en divisant par $-3$) $y-z=1$. Le système devient :\n$$\\begin{cases} x+y-z=2 \\\\ y+z=3 \\\\ y-z=1 \\end{cases}$$\nOn élimine maintenant $y$ de la troisième ligne en effectuant $L_3 \\leftarrow L_3 - L_2$ : $(y-z)-(y+z) = 1-3$, soit $-2z=-2$, soit $z=1$. Le système est maintenant triangulaire, on résout par remontée : de $L_2$, $y+1=3$ donc $y=2$ ; de $L_1$, $x+2-1=2$ donc $x=1$. La solution est $(x,y,z)=(1,2,1)$.\n\nVérification dans le système initial : $y+z=2+1=3$ ✓, $x+y-z=1+2-1=2$ ✓, $2x-y+z=2-2+1=1$ ✓.\n\nPoint de méthode important, complémentaire de l'exercice diff.1 existant sur le pivot de Gauss (où aucun pivot n'était nul) : quand le coefficient qu'on voudrait utiliser comme pivot est nul, la méthode ne s'arrête pas — un simple échange de lignes (qui ne change pas l'ensemble des solutions) permet toujours de la poursuivre, à condition qu'il existe une autre ligne avec un coefficient non nul sur cette variable.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "méthode du pivot de Gauss",
+      "systèmes linéaires 3×3"
+    ],
+    "pedagogicalGoal": "compléter l'exercice diff.1 existant sur le pivot de Gauss (où la procédure se déroule sans complication) par la subtilité algorithmique du pivot nul et de l'échange de lignes, avant les exercices existants avec paramètre (diff.3-4) qui supposent cette maîtrise acquise."
   }
 ]
