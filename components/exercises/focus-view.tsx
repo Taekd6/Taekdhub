@@ -9,6 +9,7 @@ import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryPicker, PriorityPicker, SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { RichMath } from "@/components/rich-math";
 import { useWorkTimer } from "@/hooks/use-work-timer";
+import { explainReasons } from "@/lib/recommendation";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
 import type { AttemptResult, Exercise, ExerciseStatus, Mastery, Priority, WorkSession } from "@/lib/supabase/types";
 
@@ -22,6 +23,7 @@ export function FocusView({
   sessions,
   saveSessions,
   onClose,
+  reasons,
 }: {
   item: Exercise;
   update: (id: string, patch: Partial<Exercise>) => void;
@@ -29,6 +31,18 @@ export function FocusView({
   saveSessions: (sessions: WorkSession[]) => void;
   /** Appelé à la fermeture du focus, avec le résultat choisi — `null`/`undefined` si aucune séance n'a été enregistrée (rien à qualifier) ou si l'utilisateur a passé l'étape. */
   onClose: (result?: AttemptResult | null) => void;
+  /**
+   * Raisons réelles (voir `ExerciseRecommendation.reasons`,
+   * lib/recommendation.ts) pour lesquelles cet exercice a été proposé —
+   * transmises telles quelles par l'appelant (SessionRunner : celles déjà
+   * calculées pour la séance en cours ; ExerciseManager : recalculées à la
+   * volée via `recommendExercises` pour l'exercice ouvert, même hors
+   * séance). `undefined`/`[]` : l'exercice n'est signalé par aucun critère
+   * en ce moment (ex. ouvert simplement par curiosité) — le panneau
+   * "Pourquoi cet exercice ?" ne s'affiche alors pas du tout, jamais de
+   * justification inventée pour combler ce cas.
+   */
+  reasons?: string[];
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
   const [hintCount, setHintCount] = useState(0);
@@ -202,15 +216,20 @@ export function FocusView({
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-50 flex flex-col bg-canvas"
     >
-      <header className="flex items-center justify-between border-b border-hairline/[0.07] px-6 py-4">
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between gap-3 border-b border-hairline/[0.07] px-6 py-4">
+        <div className="flex min-w-0 items-center gap-3">
           <SubjectAvatar subject={item.subject} />
-          <div>
-            <p className="text-sm font-semibold">{item.title}</p>
-            <p className="text-xs text-zinc-500">{item.source}</p>
+          {/* min-w-0 + truncate : sur mobile, sans ça le titre entier
+              retombait en 5-6 lignes verticales (le bandeau chrono/boutons
+              à droite ne laissant qu'une colonne étroite au bloc titre) —
+              redondant de toute façon avec le <h1> complet juste en dessous,
+              donc tronquer ici ne perd aucune information réelle. */}
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{item.title}</p>
+            <p className="truncate text-xs text-zinc-500">{item.source}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <span className="flex items-center gap-2 tabular-nums text-lg font-semibold text-zinc-100">
             {running && <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent" />}
             {formatDuration(seconds)}
@@ -244,6 +263,20 @@ export function FocusView({
           </div>
           <h1 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">{item.title}</h1>
           <p className="mt-1 text-sm text-zinc-500">{item.subject} · {item.source}</p>
+
+          {/* "Pourquoi cet exercice ?" — le contexte de recommandation ne
+              doit jamais disparaître entre l'aperçu de séance (où il est déjà
+              affiché, voir SessionRunner) et le moment où l'élève travaille
+              réellement dessus : perdre cette explication ici, précisément
+              quand l'attention est maximale, revenait à faire passer le choix
+              pour arbitraire. `explainReasons` ne fabrique rien : sans raison
+              réelle transmise, ce bloc ne s'affiche simplement pas. */}
+          {explainReasons(reasons ?? []) && (
+            <p className="mt-3 inline-flex items-start gap-1.5 rounded-lg bg-accent/[0.07] px-3 py-2 text-xs leading-5 text-accent/90">
+              <Sparkles size={13} className="mt-0.5 shrink-0" />
+              {explainReasons(reasons ?? [])}
+            </p>
+          )}
 
           {/* Énoncé — cœur de la séance : immédiatement visible, sans clic ni révélation, contrairement aux indices/correction. */}
           <div className="mt-6 rounded-2xl border border-hairline/[0.08] bg-hairline/[0.025] p-5 sm:p-6">
