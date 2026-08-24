@@ -1,6 +1,6 @@
 import { resultCounts, type ResultCounts } from "@/lib/history";
 import { progressByChapter, type ChapterProgress } from "@/lib/progress";
-import { computeExerciseBankStats, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { computeExerciseBankStats, explainReasons, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import type { Chapter } from "@/lib/storage";
 import { todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
@@ -108,10 +108,15 @@ export function computeNextAction(exercises: Exercise[], sessions: WorkSession[]
   const picks = bounded.length > 0 ? bounded : recommendExercises(active, sessions, NEXT_ACTION_PICKS, { now });
   const top = picks[0];
 
+  // Une phrase de contexte lisible ("pourquoi CET exercice ?"), pas les
+  // raisons brutes concaténées (voir lib/recommendation.ts#explainReasons) —
+  // c'est le tout premier endroit où l'élève doit comprendre le choix.
+  const description = top ? (explainReasons(top.reasons) ?? "Une sélection prête à l'emploi t'attend.") : "Une sélection prête à l'emploi t'attend.";
+
   return {
     kind: "start-session",
     title: top ? top.exercise.title : "Commencer une séance",
-    description: top ? top.reasons.join(" · ") : "Une sélection prête à l'emploi t'attend.",
+    description,
     ctaLabel: objective.remainingMinutes > 0 ? `Commencer une séance de ${minutes} min` : `Continuer avec une séance de ${minutes} min`,
     href: "/session",
     minutes,

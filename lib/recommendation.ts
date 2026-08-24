@@ -432,6 +432,77 @@ export function recommendExercises(
   return selectWithinBudget(diversified, sessions, limit, options.availableMinutes);
 }
 
+/**
+ * Une règle candidate pour `explainReasons` : `test` décide si elle
+ * s'applique à un jeu de raisons donné, `sentence` construit le texte à
+ * partir de ces mêmes raisons (utile pour la seule règle dynamique, celle
+ * de la maîtrise qui redevient obsolète, qui a besoin d'en extraire le
+ * nombre de jours).
+ */
+interface ReasonRule {
+  test: (reasons: string[]) => boolean;
+  sentence: (reasons: string[]) => string;
+}
+
+/**
+ * Ordre de priorité d'affichage quand plusieurs raisons sont réunies pour un
+ * même exercice — la plus décisive (celle qui explique le mieux "pourquoi
+ * maintenant") passe en premier. `Séance reprise`/`Séance libre` sont des
+ * raisons SYNTHÉTIQUES injectées ailleurs (SessionRunner à la reprise d'un
+ * focus interrompu ; lib/plan.ts#buildFreeSessionPlan pour une sélection
+ * filtrée à la main) — elles voyagent dans le même tableau `reasons` que
+ * celles d'`evaluateExercise`, donc `explainReasons` doit aussi les
+ * reconnaître pour ne jamais retomber sur le texte brut en dernier recours.
+ */
+const REASON_RULES: ReasonRule[] = [
+  { test: (r) => r.includes("Séance reprise"), sentence: () => "Tu avais laissé cette séance en cours — on reprend là où tu t'étais arrêté." },
+  { test: (r) => r.includes("Plusieurs échecs"), sentence: () => "Tu as échoué plusieurs fois récemment dessus — ça mérite une nouvelle tentative." },
+  { test: (r) => r.includes("Échec récent"), sentence: () => "Ta dernière tentative n'a pas abouti — on retente." },
+  { test: (r) => r.includes("Marqué à revoir"), sentence: () => "Tu l'as toi-même marqué à revoir." },
+  // Avant "Maîtrise faible" : un exercice jamais travaillé a par construction
+  // une maîtrise à 0 (voir isNeverWorked/evaluateExercise), donc les deux
+  // raisons coexistent presque toujours pour une fiche neuve — mais "jamais
+  // travaillé" est l'explication réellement première, pas une conséquence
+  // ("maîtrise faible" laisserait croire, à tort, que l'élève a déjà tenté
+  // et raté).
+  { test: (r) => r.includes("Jamais travaillé"), sentence: () => "Tu n'as pas encore travaillé cet exercice." },
+  { test: (r) => r.includes("Maîtrise faible"), sentence: () => "Ta maîtrise est encore faible sur cet exercice." },
+  { test: (r) => r.includes("En cours"), sentence: () => "Tu l'avais laissé en cours — autant le terminer." },
+  { test: (r) => r.includes("Priorité élevée"), sentence: () => "Tu l'as toi-même marqué comme prioritaire." },
+  {
+    test: (r) => r.some((reason) => reason.startsWith("Non retravaillé depuis")),
+    sentence: (r) => {
+      const match = r.find((reason) => reason.startsWith("Non retravaillé depuis"));
+      const days = match?.match(/\d+/)?.[0];
+      return days
+        ? `Tu ne l'as pas retravaillé depuis ${days} jour${days === "1" ? "" : "s"}, alors qu'il était maîtrisé.`
+        : "Il n'a pas été retravaillé depuis un moment, alors qu'il était maîtrisé.";
+    },
+  },
+  { test: (r) => r.includes("Maîtrisé, jamais retravaillé"), sentence: () => "Marqué maîtrisé, mais jamais retravaillé depuis — un rappel ne fait pas de mal." },
+  { test: (r) => r.includes("Séance libre"), sentence: () => "Choisi par toi dans la banque d'exercices." },
+];
+
+/**
+ * Traduit les raisons brutes d'`ExerciseRecommendation.reasons` (déjà
+ * utilisées comme badges partout dans l'app) en UNE phrase de contexte
+ * lisible — "pourquoi CET exercice, maintenant ?". Ne fabrique jamais de
+ * justification : dérivée exclusivement des raisons réellement produites par
+ * `evaluateExercise` (ou des raisons synthétiques ci-dessus) ; `null` si
+ * `reasons` est vide, jamais un texte générique inventé pour combler le vide.
+ *
+ * Une seule raison est retenue (la plus décisive selon `REASON_RULES`)
+ * plutôt que toutes concaténées : "tu as échoué plusieurs fois récemment
+ * dessus" se comprend en un coup d'œil, contrairement à "Plusieurs échecs ·
+ * Maîtrise faible · Priorité élevée" (l'ancien comportement, un simple
+ * `.join(" · ")` des raisons brutes).
+ */
+export function explainReasons(reasons: string[]): string | null {
+  if (reasons.length === 0) return null;
+  const rule = REASON_RULES.find(({ test }) => test(reasons));
+  return rule ? rule.sentence(reasons) : reasons[0];
+}
+
 export interface ExerciseBankStats {
   /** Nombre total d'exercices qui apparaîtraient dans le tableau "À revoir" (pas seulement ceux affichés). */
   toReviewCount: number;
