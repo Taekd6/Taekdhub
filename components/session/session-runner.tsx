@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ProgressBar } from "@/components/ui/progress";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { FocusView } from "@/components/exercises/focus-view";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -482,15 +483,24 @@ export function SessionRunner() {
   } else if (phase === "between") {
     const done = recommendations[currentIndex]?.exercise;
     const next = recommendations[currentIndex + 1]?.exercise;
+    // Progression dans LA FILE de cette séance (pas dans le plan pédagogique
+    // global — voir DifficultyDots/ProgressBar sur le Dashboard pour ça) :
+    // "où en suis-je dans les exercices que j'ai choisi de faire maintenant".
+    const queueProgress = recommendations.length > 0 ? ((currentIndex + 1) / recommendations.length) * 100 : 0;
     content = (
       <Card className="p-8 text-center">
-        <CheckCircle2 className="mx-auto text-accent" size={28} />
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent/10">
+          <CheckCircle2 className="text-accent" size={24} />
+        </div>
         <h2 className="mt-4 text-xl font-semibold tracking-tight">Exercice travaillé</h2>
         {done && <p className="mt-2 text-sm text-zinc-400">{done.title}</p>}
-        <p className="mt-1 text-xs text-zinc-500">
-          {currentIndex + 1} / {recommendations.length}
-          {next && <> · Prochain : {next.title}</>}
-        </p>
+        <div className="mx-auto mt-4 max-w-xs">
+          <ProgressBar value={queueProgress} />
+          <p className="mt-2 text-xs text-zinc-500">
+            {currentIndex + 1} / {recommendations.length}
+            {next && <> · Prochain : {next.title}</>}
+          </p>
+        </div>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Button onClick={continueToNext}>
             Continuer <ArrowRight size={16} />
@@ -508,10 +518,47 @@ export function SessionRunner() {
     const runFailureCount = runResults.filter((result) => result === "échoué").length;
     content = (
       <Card className="p-10 text-center">
-        <CardTitle className="text-xl">Séance terminée</CardTitle>
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-accent/10">
+          <CheckCircle2 className="text-accent" size={28} />
+        </div>
+        <CardTitle className="mt-4 text-xl">Séance terminée</CardTitle>
         <p className="mt-2 text-sm text-zinc-400">
           {visitedCount} exercice{visitedCount > 1 ? "s" : ""} travaillé{visitedCount > 1 ? "s" : ""} durant cette séance.
         </p>
+        {runResults.length > 0 && (
+          <div className="mx-auto mt-4 max-w-sm">
+            <div
+              className="flex h-2 overflow-hidden rounded-full bg-hairline/[0.07]"
+              role="img"
+              aria-label={`${runSuccessCount} réussis, ${runPartialCount} partiels, ${runFailureCount} échoués sur ${runResults.length} exercices`}
+            >
+              {runSuccessCount > 0 && (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(runSuccessCount / runResults.length) * 100}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className="h-full bg-emerald-400"
+                />
+              )}
+              {runPartialCount > 0 && (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(runPartialCount / runResults.length) * 100}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+                  className="h-full bg-amber-400"
+                />
+              )}
+              {runFailureCount > 0 && (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(runFailureCount / runResults.length) * 100}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                  className="h-full bg-rose-400"
+                />
+              )}
+            </div>
+          </div>
+        )}
         {runResults.length > 0 && (
           <div className="mx-auto mt-3 flex max-w-sm flex-wrap items-center justify-center gap-1.5">
             {runSuccessCount > 0 && (
