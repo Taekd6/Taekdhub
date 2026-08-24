@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { recommendExercises } from "@/lib/recommendation";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 
@@ -58,6 +59,9 @@ export function ExerciseReviewPanel({
               <div className="flex items-center gap-2">
                 <SubjectAvatar subject={exercise.subject} size="sm" />
                 <p className="truncate text-sm font-medium text-zinc-100">{exercise.title}</p>
+              </div>
+              <div className="mt-1.5">
+                <DifficultyDots value={exercise.difficulty} />
               </div>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {reasons.map((reason) => (

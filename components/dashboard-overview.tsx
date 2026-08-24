@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { FOCUS_TIMER_PREFIX, findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { cn } from "@/lib/cn";
@@ -225,6 +226,7 @@ export function DashboardOverview() {
 
   const { nextAction, objective, upcoming, progress, bySubject, toConsolidate, recentDays, readiness, weeklySummary, subjectPriorities, streak, contestDays } = model;
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
+  const topPick = nextAction.picks[0];
   const secondaryPicks = nextAction.picks.slice(1);
   // "Revoir mes priorités" (Phase 8) : ouvre directement le premier exercice déjà signalé par le moteur de recommandation — même convention que computeUpcoming (lib/next-action.ts), aucune nouvelle route.
   const prioritiesHref = nextAction.picks[0] ? `/exercises?focus=${nextAction.picks[0].exercise.id}` : "/exercises";
@@ -308,6 +310,12 @@ export function DashboardOverview() {
           </div>
 
           <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{nextAction.title}</h2>
+          {topPick && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-zinc-500">
+              <DifficultyDots value={topPick.exercise.difficulty} />
+              <span>Difficulté {topPick.exercise.difficulty}/5</span>
+            </div>
+          )}
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">{nextAction.description}</p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -336,6 +344,9 @@ export function DashboardOverview() {
                   <SubjectAvatar subject={exercise.subject} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <DifficultyDots value={exercise.difficulty} />
+                    </div>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {reasons.slice(0, 2).map((reason) => (
                         <Badge key={reason} variant="warning">
