@@ -12,7 +12,7 @@ import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
-import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { computeExerciseBankStats, estimatedDurationMinutes, explainReasons, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import { computeNextAction } from "@/lib/next-action";
 import { PLAN_STORAGE_KEY, type StoredPlan } from "@/lib/plan";
 import { cn } from "@/lib/cn";
@@ -234,9 +234,18 @@ export function SessionRunner() {
   }
 
   if (phase === "focus") {
-    const current = recommendations[currentIndex]?.exercise;
+    const current = recommendations[currentIndex];
     if (!current) return null;
-    return <FocusView item={current} update={update} sessions={sessions} saveSessions={saveSessions} onClose={handleExerciseWorked} />;
+    return (
+      <FocusView
+        item={current.exercise}
+        update={update}
+        sessions={sessions}
+        saveSessions={saveSessions}
+        onClose={handleExerciseWorked}
+        reasons={current.reasons}
+      />
+    );
   }
 
   // Contenu par phase, calculé (pas retourné directement) pour que chaque
@@ -438,7 +447,10 @@ export function SessionRunner() {
     );
   } else if (phase === "between") {
     const done = recommendations[currentIndex]?.exercise;
-    const next = recommendations[currentIndex + 1]?.exercise;
+    const nextPick = recommendations[currentIndex + 1];
+    // Même sentence qu'en Focus (explainReasons) : la continuité "pourquoi le
+    // suivant ?" ne doit pas s'arrêter à un simple titre entre deux exercices.
+    const nextReason = nextPick ? explainReasons(nextPick.reasons) : null;
     content = (
       <Card className="p-8 text-center">
         <CheckCircle2 className="mx-auto text-accent" size={28} />
@@ -446,8 +458,9 @@ export function SessionRunner() {
         {done && <p className="mt-2 text-sm text-zinc-400">{done.title}</p>}
         <p className="mt-1 text-xs text-zinc-500">
           {currentIndex + 1} / {recommendations.length}
-          {next && <> · Prochain : {next.title}</>}
+          {nextPick && <> · Prochain : {nextPick.exercise.title}</>}
         </p>
+        {nextReason && <p className="mx-auto mt-2 max-w-sm text-xs text-accent/90">{nextReason}</p>}
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Button onClick={continueToNext}>
             Continuer <ArrowRight size={16} />

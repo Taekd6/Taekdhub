@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeExerciseBankStats, isNeverWorked, recommendExercises } from "@/lib/recommendation";
+import { computeExerciseBankStats, explainReasons, isNeverWorked, recommendExercises } from "@/lib/recommendation";
 import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
 
 let counter = 0;
@@ -231,6 +231,36 @@ describe("recommendExercises — signaux échec/réussite (Sprint 5)", () => {
     const exercise = makeExercise({ mastery: 50, priority: 3, status: "à faire" });
     const [result] = recommendExercises([exercise], [], 10, { now: NOW });
     expect(result.reasons).toEqual(["Jamais travaillé"]);
+  });
+});
+
+describe("explainReasons — phrase de contexte 'pourquoi cet exercice ?'", () => {
+  it("aucune raison : null, jamais de phrase générique inventée", () => {
+    expect(explainReasons([])).toBeNull();
+  });
+
+  it("une seule raison connue : la phrase correspondante", () => {
+    expect(explainReasons(["Jamais travaillé"])).toBe("Tu n'as pas encore travaillé cet exercice.");
+    expect(explainReasons(["Marqué à revoir"])).toBe("Tu l'as toi-même marqué à revoir.");
+  });
+
+  it("plusieurs raisons : la plus décisive (échecs) prime sur les signaux plus faibles", () => {
+    const sentence = explainReasons(["Maîtrise faible", "Priorité élevée", "Plusieurs échecs"]);
+    expect(sentence).toBe("Tu as échoué plusieurs fois récemment dessus — ça mérite une nouvelle tentative.");
+  });
+
+  it("raison dynamique 'Non retravaillé depuis N j' : le nombre de jours est repris dans la phrase", () => {
+    expect(explainReasons(["Non retravaillé depuis 12 j"])).toBe("Tu ne l'as pas retravaillé depuis 12 jours, alors qu'il était maîtrisé.");
+    expect(explainReasons(["Non retravaillé depuis 1 j"])).toBe("Tu ne l'as pas retravaillé depuis 1 jour, alors qu'il était maîtrisé.");
+  });
+
+  it("raisons synthétiques (reprise de séance, séance libre) reconnues comme les raisons réelles", () => {
+    expect(explainReasons(["Séance reprise"])).toMatch(/reprend/);
+    expect(explainReasons(["Séance libre"])).toMatch(/Choisi par toi/);
+  });
+
+  it("une raison sans règle dédiée (ex. 'Favori' seul, cas normalement impossible en pratique) retombe sur le texte brut plutôt que de planter", () => {
+    expect(explainReasons(["Favori"])).toBe("Favori");
   });
 });
 
