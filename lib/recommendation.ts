@@ -323,40 +323,38 @@ export interface RecommendationOptions {
  * Fonction pure : aucun effet de bord, aucune dépendance à autre chose que
  * ses arguments.
  */
-/**
- * Réordonne les candidats (déjà triés par score décroissant) pour éviter que
- * les premiers de la liste s'entassent sur un seul chapitre : un exercice
- * sans `chapter_id` compte comme son propre groupe par matière (jamais
- * mélangé à un autre chapitre, ni traité comme "diversifié" à tort).
- *
- * Round-robin déterministe, pas une pénalité numérique de plus à calibrer :
- * on prend le meilleur candidat de chaque chapitre représenté, dans l'ordre
- * où ces chapitres sont apparus (donc le chapitre le plus urgent d'abord),
- * puis on recommence un tour pour le deuxième meilleur de chaque chapitre,
- * etc. Le score d'origine décide QUELS chapitres passent en premier ; le
- * round-robin décide seulement de ne jamais répéter un chapitre tant qu'une
- * alternative existe. Aucun candidat n'est perdu — un chapitre épuisé est
- * simplement sauté aux tours suivants, jamais remplacé par du bourrage.
- */
-function diversifyByChapter(candidates: ExerciseRecommendation[]): ExerciseRecommendation[] {
-  const byGroup = new Map<string, ExerciseRecommendation[]>();
-  const groupOrder: string[] = [];
-  for (const candidate of candidates) {
-    const key = candidate.exercise.chapter_id ?? `subject:${candidate.exercise.subject}`;
-    let group = byGroup.get(key);
+/** Répartit `items` (déjà triés par score décroissant) en groupes, dans l'ordre de leur première apparition — brique commune à `roundRobinFromGroups`/`diversifyByChapter`. */
+function groupByKey<T>(items: T[], keyFn: (item: T) => string): { order: string[]; groups: Map<string, T[]> } {
+  const groups = new Map<string, T[]>();
+  const order: string[] = [];
+  for (const item of items) {
+    const key = keyFn(item);
+    let group = groups.get(key);
     if (!group) {
       group = [];
-      byGroup.set(key, group);
-      groupOrder.push(key);
+      groups.set(key, group);
+      order.push(key);
     }
-    group.push(candidate);
+    group.push(item);
   }
+  return { order, groups };
+}
 
-  const result: ExerciseRecommendation[] = [];
-  for (let round = 0; result.length < candidates.length; round++) {
+/**
+ * Round-robin déterministe sur des groupes déjà constitués (voir
+ * `groupByKey`) : le meilleur candidat de chaque groupe d'abord (dans
+ * l'ordre où ces groupes sont apparus, donc le plus urgent en premier), puis
+ * un deuxième tour pour le deuxième meilleur de chaque groupe, etc. Aucun
+ * candidat n'est perdu — un groupe épuisé est simplement sauté aux tours
+ * suivants, jamais remplacé par du bourrage.
+ */
+function roundRobinFromGroups<T>(order: string[], groups: Map<string, T[]>): T[] {
+  const total = order.reduce((sum, key) => sum + groups.get(key)!.length, 0);
+  const result: T[] = [];
+  for (let round = 0; result.length < total; round++) {
     let addedThisRound = false;
-    for (const key of groupOrder) {
-      const group = byGroup.get(key)!;
+    for (const key of order) {
+      const group = groups.get(key)!;
       if (round < group.length) {
         result.push(group[round]);
         addedThisRound = true;
@@ -365,6 +363,49 @@ function diversifyByChapter(candidates: ExerciseRecommendation[]): ExerciseRecom
     if (!addedThisRound) break;
   }
   return result;
+}
+
+/** Compose `groupByKey` + `roundRobinFromGroups` pour un seul niveau de diversification. */
+function roundRobinByGroup<T>(candidates: T[], keyFn: (item: T) => string): T[] {
+  const { order, groups } = groupByKey(candidates, keyFn);
+  return roundRobinFromGroups(order, groups);
+}
+
+/**
+ * Réordonne les candidats (déjà triés par score décroissant) pour éviter que
+ * les premiers de la liste s'entassent sur un seul chapitre — ET, niveau
+ * au-dessus, sur une seule matière. Un exercice sans `chapter_id` compte
+ * comme son propre groupe par matière (jamais mélangé à un autre chapitre,
+ * ni traité comme "diversifié" à tort).
+ *
+ * Deux niveaux de round-robin emboîtés, pas une pénalité numérique de plus à
+ * calibrer : d'abord une diversification par CHAPITRE à l'intérieur de
+ * chaque matière (comportement historique, inchangé), puis un round-robin
+ * par MATIÈRE entre ces listes déjà diversifiées. Le score d'origine décide
+ * toujours QUELS chapitres/matières passent en premier ; le round-robin
+ * décide seulement de ne jamais répéter un groupe tant qu'une alternative
+ * existe.
+ *
+ * Le niveau matière est nécessaire en plus du niveau chapitre : sans lui, un
+ * tri stable dont TOUS les candidats ont exactement le même score (état réel
+ * au tout premier lancement — maîtrise, priorité et statut identiques sur
+ * toute la banque avant la moindre séance) dégénère silencieusement en
+ * "ordre du fichier source", structurellement dominé par la matière la plus
+ * fournie (Mathématiques) — un artefact d'implémentation, pas un signal de
+ * pertinence. Le round-robin par matière garantit une rotation équitable
+ * entre matières même dans ce cas dégénéré, sans rien changer quand les
+ * scores différencient réellement les candidats (le tri par score reste
+ * l'unique décideur DANS chaque groupe).
+ */
+function diversifyByChapter(candidates: ExerciseRecommendation[]): ExerciseRecommendation[] {
+  const { order: subjectOrder, groups: bySubject } = groupByKey(candidates, (candidate) => candidate.exercise.subject);
+  const diversifiedBySubject = new Map(
+    subjectOrder.map((subject) => [
+      subject,
+      roundRobinByGroup(bySubject.get(subject)!, (candidate) => candidate.exercise.chapter_id ?? `subject:${candidate.exercise.subject}`),
+    ])
+  );
+  return roundRobinFromGroups(subjectOrder, diversifiedBySubject);
 }
 
 export function recommendExercises(

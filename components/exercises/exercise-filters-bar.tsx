@@ -56,7 +56,13 @@ export function ExerciseFiltersBar({
         </Button>
       </div>
 
-      <div className="mt-3 flex gap-2 overflow-x-auto scrollbar-none">
+      {/* flex-wrap plutôt que overflow-x-auto : avec 9 filtres + favoris, un
+          défilement horizontal masqué (scrollbar-none) rendait certains
+          filtres invisibles sans aucun indice qu'ils existaient (priorité,
+          maîtrise, année, favoris systématiquement hors champ à largeur
+          d'écran normale) — un filtre qu'on ne peut pas découvrir équivaut,
+          pour l'élève, à un filtre qui n'existe pas. */}
+      <div className="mt-3 flex flex-wrap gap-2">
         <Select value={filters.subject} onChange={(event) => onChange({ subject: event.target.value as Subject | "Toutes", chapter: "Tous" })} className="w-auto min-w-[150px]">
           {["Toutes", ...subjects].map((value) => (
             <option key={value}>{value}</option>

@@ -15,7 +15,7 @@ import { computeStreak, workByDayMap } from "@/lib/gamification";
 import { computeGlobalProgress, computeProgressBySubject, masteryDistribution, progressByChapter, statusDistribution } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META, type ReadinessLevel } from "@/lib/readiness";
 import type { WeekSnapshot } from "@/lib/storage";
-import { statusMeta, subjectMeta, totalSeconds } from "@/lib/study";
+import { statusMeta, subjectMeta, subjects, totalSeconds } from "@/lib/study";
 import { compareToPreviousWeek, findPreviousWeekSnapshot } from "@/lib/week-snapshot";
 import { formatDuration } from "@/lib/utils";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -102,6 +102,11 @@ const READINESS_STYLE: Record<ReadinessLevel, { border: string; bg: string }> = 
   "prêt": { border: "border-emerald-500/20", bg: "bg-emerald-500/[0.06]" },
   "à consolider": { border: "border-amber-500/20", bg: "bg-amber-500/[0.06]" },
   "pas prêt": { border: "border-rose-500/20", bg: "bg-rose-500/[0.06]" },
+  // Neutre, jamais rose : une matière "pas commencé" n'a encore RIEN révélé
+  // sur le niveau réel de l'élève — un fond d'alarme identique à "pas prêt"
+  // laisserait croire, dès la première visite, qu'il est déjà en retard sur
+  // les trois matières à la fois.
+  "pas commencé": { border: "border-hairline/[0.08]", bg: "bg-hairline/[0.02]" },
 };
 
 /**
@@ -135,8 +140,10 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
                 <Badge variant={meta.badge}>{meta.label}</Badge>
               </div>
               <p className="mt-2 text-xs text-zinc-400">
-                {completionRate}% maîtrisé
-                {flaggedCount > 0 && ` · ${flaggedCount} exercice${flaggedCount > 1 ? "s" : ""} à retravailler · ≈ ${estimatedMinutes} min`}
+                {level === "pas commencé"
+                  ? // "N exercices à retravailler" donnerait l'impression d'un retard déjà pris, alors qu'aucune séance n'a même commencé sur cette matière.
+                    "Aucune séance enregistrée pour l'instant."
+                  : `${completionRate}% maîtrisé${flaggedCount > 0 ? ` · ${flaggedCount} exercice${flaggedCount > 1 ? "s" : ""} à retravailler · ≈ ${estimatedMinutes} min` : ""}`}
               </p>
               {/* Sprint 3.1 : réutilise tel quel /session?subject=… (voir SessionRunner), aucun nouveau système de séance. */}
               <Link href={`/session?subject=${encodeURIComponent(subject)}`} className="mt-3 inline-block">
@@ -249,22 +256,42 @@ export function ProgressOverview() {
         <p className="eyebrow">Répartition</p>
         <h3 className="mb-4 mt-2 font-semibold tracking-tight">Par chapitre</h3>
         {model.byChapter.length ? (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {model.byChapter.map(({ chapter, total, mastered, completionRate }) => (
-              <div key={chapter.id} className="rounded-xl border border-hairline/[0.07] p-3.5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{chapter.label}</p>
-                    <p className="text-2xs text-zinc-500">{chapter.subject}</p>
-                  </div>
-                  <span className="whitespace-nowrap text-xs text-zinc-500">
-                    {mastered}/{total}
+          // Groupé par matière (dans l'ordre du programme, `subjects` de
+          // lib/study.ts) plutôt qu'une seule grille plate de ~40 chapitres :
+          // sur mobile (une colonne), un défilement ininterrompu de tuiles
+          // identiques ("0/N" pour chacune, avant toute séance) donne
+          // l'impression d'une liste sans fin et sans repère. Le tri PAR
+          // TAILLE DE CHAPITRE à l'intérieur de chaque matière (déjà décidé
+          // par `progressByChapter`, lib/progress.ts) reste inchangé — seul
+          // le regroupement visuel est ajouté ici, aucun recalcul.
+          subjects
+            .map((subject) => ({ subject, chapters: model.byChapter.filter((entry) => entry.chapter.subject === subject) }))
+            .filter((group) => group.chapters.length > 0)
+            .map(({ subject, chapters: subjectChapters }) => (
+              <div key={subject} className="mb-5 last:mb-0">
+                <div className="mb-2.5 flex items-center gap-2">
+                  <span className={`grid h-5 w-5 place-items-center rounded text-[9px] font-bold ${subjectMeta[subject].className}`}>
+                    {subjectMeta[subject].short}
                   </span>
+                  <p className="text-xs font-medium text-zinc-400">
+                    {subject} <span className="text-zinc-600">· {subjectChapters.length} chapitre{subjectChapters.length > 1 ? "s" : ""}</span>
+                  </p>
                 </div>
-                <ProgressBar value={completionRate} animated={false} barClassName="bg-accent/80" className="mt-3 h-1.5" />
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {subjectChapters.map(({ chapter, total, mastered, completionRate }) => (
+                    <div key={chapter.id} className="rounded-xl border border-hairline/[0.07] p-3.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 truncate text-sm font-medium">{chapter.label}</p>
+                        <span className="whitespace-nowrap text-xs text-zinc-500">
+                          {mastered}/{total}
+                        </span>
+                      </div>
+                      <ProgressBar value={completionRate} animated={false} barClassName="bg-accent/80" className="mt-3 h-1.5" />
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
+            ))
         ) : (
           <Card className="p-8 text-center text-sm text-zinc-500">Crée des chapitres depuis un exercice pour voir leur progression ici.</Card>
         )}

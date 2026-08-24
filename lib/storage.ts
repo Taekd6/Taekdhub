@@ -20,7 +20,13 @@ const weekSnapshotsKey = "prepahub:week-snapshots";
  * merge ci-dessous, comme tout champ ajouté après coup.
  */
 export type Preferences = { displayName: string; dailyGoalMinutes: number; weeklyGoalMinutes: number; contestDate: string; accent: string; themeMode: ThemeMode };
-const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, weeklyGoalMinutes: 300, contestDate: "", accent: DEFAULT_ACCENT, themeMode: DEFAULT_THEME_MODE };
+// `dailyGoalMinutes: 60` correspond exactement au plus haut des trois préréglages du
+// Dashboard/Réglages (PLAN_DURATION_PRESETS = [30, 45, 60], lib/plan.ts) : un premier
+// objectif ambitieux mais tenable, jamais un chiffre hors de tout préréglage cliquable
+// (l'ancien défaut de 240 min produisait un "Commencer une séance de 240 min" absurde
+// dès la toute première visite, avant tout réglage par l'élève). `weeklyGoalMinutes: 300`
+// reste cohérent avec ce nouveau quotidien (5 × 60 min ≈ une semaine de cours).
+const defaults: Preferences = { displayName: "", dailyGoalMinutes: 60, weeklyGoalMinutes: 300, contestDate: "", accent: DEFAULT_ACCENT, themeMode: DEFAULT_THEME_MODE };
 
 /**
  * Chapitre/thème (Sprint 3D) — créé et géré par l'utilisateur, jamais
