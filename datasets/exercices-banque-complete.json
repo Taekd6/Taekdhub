@@ -8388,5 +8388,139 @@
       "systèmes linéaires 3×3"
     ],
     "pedagogicalGoal": "compléter l'exercice diff.1 existant sur le pivot de Gauss (où la procédure se déroule sans complication) par la subtilité algorithmique du pivot nul et de l'échange de lignes, avant les exercices existants avec paramètre (diff.3-4) qui supposent cette maîtrise acquise."
+  },
+  {
+    "title": "Divisibilité : diviseurs et transitivité",
+    "statement": "On considère l'entier $n = 84$.\n1. Donner la décomposition de $84$ en produit de facteurs premiers.\n2. En déduire la liste de tous les diviseurs positifs de $84$.\n3. Vérifier que $12$ divise $84$.\n4. En utilisant la propriété de transitivité de la divisibilité (« si $a$ divise $b$ et $b$ divise $c$, alors $a$ divise $c$ »), déduire de la question 3, sans nouveau calcul, que $6$ et $4$ divisent également $84$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Arithmétique dans Z",
+    "estimatedMinutes": 12,
+    "tags": [
+      "arithmétique",
+      "divisibilité",
+      "diviseurs",
+      "transitivité",
+      "nombres premiers"
+    ],
+    "hints": [
+      "Pour lister tous les diviseurs à partir de la décomposition en facteurs premiers $p_1^{\\alpha_1}\\cdots p_k^{\\alpha_k}$, un diviseur est n'importe quel produit $p_1^{\\beta_1}\\cdots p_k^{\\beta_k}$ avec $0\\leq\\beta_i\\leq\\alpha_i$.",
+      "La transitivité évite un nouveau calcul de division : il suffit de vérifier que $6$ et $4$ divisent $12$ (calcul immédiat), pour en déduire directement qu'ils divisent $84$ sans avoir à effectuer $84\\div6$ ou $84\\div4$."
+    ],
+    "correction": "1. $84 = 4\\times21 = 2^2\\times3\\times7$.\n2. À partir de $84=2^2\\times3^1\\times7^1$, tout diviseur s'écrit $2^a\\times3^b\\times7^c$ avec $a\\in\\{0,1,2\\}$, $b\\in\\{0,1\\}$, $c\\in\\{0,1\\}$, ce qui donne $3\\times2\\times2=12$ diviseurs positifs : $\\{1,2,3,4,6,7,12,14,21,28,42,84\\}$.\n3. $84 = 12\\times7$, donc $12$ divise $84$ (le quotient $7$ est bien un entier).\n4. On vérifie que $6$ divise $12$ (car $12=6\\times2$) et que $4$ divise $12$ (car $12=4\\times3$). Par transitivité de la divisibilité, comme $6\\mid12$ et $12\\mid84$ (question 3), on obtient directement $6\\mid84$ ; de même, comme $4\\mid12$ et $12\\mid84$, on obtient $4\\mid84$ — sans avoir eu besoin de diviser $84$ par $6$ ou par $4$ directement.\n\nPoint de méthode essentiel pour bien démarrer l'arithmétique : la transitivité de la divisibilité est l'une des propriétés les plus utilisées en pratique, car elle permet de « chaîner » des divisibilités déjà connues au lieu de refaire un calcul de division à chaque fois — c'est le réflexe qui remplace la vérification systématique par calcul direct dès que la situation s'y prête.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "décomposition en facteurs premiers",
+      "définition de la divisibilité"
+    ],
+    "pedagogicalGoal": "porte d'entrée du chapitre Arithmétique dans Z, explicitement absente jusqu'ici (le chapitre démarrait directement au calcul de PGCD) : installer le vocabulaire et une propriété de base (transitivité) sur un exemple purement calculatoire, avant l'algorithme d'Euclide."
+  },
+  {
+    "title": "Bézout et inverse modulaire",
+    "statement": "1. Vérifier que $4$ et $15$ sont premiers entre eux, à l'aide de l'algorithme d'Euclide.\n2. En remontant l'algorithme d'Euclide, déterminer un couple d'entiers $(u,v)\\in\\mathbb{Z}^2$ tel que $4u+15v=1$.\n3. En déduire un entier $b\\in\\{0,1,\\dots,14\\}$ tel que $4b \\equiv 1 \\pmod{15}$ (on dit que $b$ est l'inverse de $4$ modulo $15$).",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Arithmétique dans Z",
+    "estimatedMinutes": 18,
+    "tags": [
+      "arithmétique",
+      "identité de Bézout",
+      "algorithme d'Euclide",
+      "inverse modulaire",
+      "congruences"
+    ],
+    "hints": [
+      "L'algorithme d'Euclide pour $15$ et $4$ tient en très peu d'étapes : $15=3\\times4+3$, puis $4=1\\times3+1$, puis $3=3\\times1+0$ — le dernier reste non nul est le PGCD.",
+      "Une fois $1$ obtenu comme reste, remonte les divisions une par une pour exprimer $1$ comme combinaison de $4$ et $15$ ; l'égalité $4u+15v=1$ donne directement $4u\\equiv1\\pmod{15}$ en réduisant modulo $15$ (le terme $15v$ disparaît)."
+    ],
+    "correction": "1. Algorithme d'Euclide : $15 = 3\\times4+3$ ; $4=1\\times3+1$ ; $3=3\\times1+0$. Le dernier reste non nul est $1$, donc $\\mathrm{pgcd}(4,15)=1$ : $4$ et $15$ sont bien premiers entre eux.\n2. On remonte l'algorithme : de la deuxième ligne, $1 = 4-1\\times3$. De la première ligne, $3=15-3\\times4$. En substituant : $1 = 4-1\\times(15-3\\times4) = 4-15+3\\times4 = 4\\times4-1\\times15$. On obtient donc $4\\times4+15\\times(-1)=1$, soit $(u,v)=(4,-1)$ (on vérifie : $4\\times4+15\\times(-1)=16-15=1$ ✓).\n3. En réduisant l'égalité $4\\times4-1\\times15=1$ modulo $15$, le terme $-1\\times15$ s'annule et il reste $4\\times4 \\equiv 1 \\pmod{15}$. L'inverse de $4$ modulo $15$ est donc $b=4$ (fait remarquable ici : $4$ est son propre inverse modulo $15$, car $4\\times4=16=15+1$).\n\nPoint de méthode central, qui fait le lien entre Bézout et les congruences : dès que $\\mathrm{pgcd}(a,n)=1$, l'identité de Bézout $au+nv=1$ garantit, en réduisant modulo $n$, que $au\\equiv1\\pmod n$ — c'est-à-dire que $a$ admet un inverse modulo $n$, à savoir $u$ (ou son représentant dans $\\{0,\\dots,n-1\\}$). Cette technique est la méthode systématique pour résoudre une congruence linéaire du type $ax\\equiv c\\pmod n$.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "algorithme d'Euclide",
+      "identité de Bézout",
+      "notion de congruence"
+    ],
+    "pedagogicalGoal": "application concrète de Bézout demandée explicitement (au-delà de l'équation diophantienne diff.3 déjà présente) : faire le pont entre Bézout et les congruences via la notion d'inverse modulaire, technique directement réutilisée dans l'exercice suivant sur les congruences élémentaires."
+  },
+  {
+    "title": "Congruences élémentaires : calcul modulo et équation linéaire",
+    "statement": "1. Calculer $2^{10} \\pmod 7$ (on pourra d'abord chercher une puissance de $2$ congrue à $1$ modulo $7$).\n2. Résoudre dans $\\{0,1,\\dots,6\\}$ l'équation $3x \\equiv 2 \\pmod 7$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Arithmétique dans Z",
+    "estimatedMinutes": 15,
+    "tags": [
+      "arithmétique",
+      "congruences",
+      "puissances modulaires",
+      "équation modulaire"
+    ],
+    "hints": [
+      "Repère la plus petite puissance de $2$ congrue à $1$ modulo $7$ : toutes les puissances suivantes se déduisent alors par périodicité, en réduisant l'exposant modulo cette période.",
+      "Pour résoudre $3x\\equiv2\\pmod7$, multiplie les deux membres par l'inverse de $3$ modulo $7$ (cherche-le par petits essais, ou par Bézout comme dans l'exercice précédent)."
+    ],
+    "correction": "1. On calcule les premières puissances de $2$ modulo $7$ : $2^1\\equiv2$, $2^2\\equiv4$, $2^3\\equiv8\\equiv1\\pmod7$. On a donc $2^3\\equiv1\\pmod7$, ce qui signifie que les puissances de $2$ modulo $7$ sont périodiques de période $3$. En écrivant $10 = 3\\times3+1$ : $2^{10} = (2^3)^3\\times2^1 \\equiv 1^3\\times2 \\equiv 2 \\pmod7$.\n2. On cherche l'inverse de $3$ modulo $7$ : par essais, $3\\times5=15=2\\times7+1\\equiv1\\pmod7$, donc $5$ est l'inverse de $3$ modulo $7$. En multipliant les deux membres de $3x\\equiv2\\pmod7$ par $5$ : $5\\times3x \\equiv 5\\times2 \\pmod7$, soit $15x\\equiv10\\pmod7$, soit $x\\equiv3\\pmod7$ (car $15\\equiv1$ et $10\\equiv3$ modulo $7$). La solution dans $\\{0,\\dots,6\\}$ est donc $x=3$. Vérification : $3\\times3=9\\equiv2\\pmod7$ ✓.\n\nPoint de méthode à retenir : le calcul d'une grande puissance modulo $n$ repose systématiquement sur la recherche d'une période (une puissance congrue à $1$), qui permet de réduire l'exposant ; la résolution d'une équation linéaire $ax\\equiv c\\pmod n$ repose systématiquement sur la multiplication par l'inverse de $a$ modulo $n$ (obtenu par essais pour de petits nombres, ou par Bézout en général comme dans l'exercice précédent).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "notion de congruence",
+      "inverse modulaire",
+      "division euclidienne"
+    ],
+    "pedagogicalGoal": "premier exercice de calcul de congruences en tant que tel (compétence explicitement demandée et jusqu'ici totalement absente de la banque), combinant les deux réflexes fondamentaux (réduction d'exposant par périodicité, résolution par inverse modulaire) avant l'exercice suivant qui les réutilise dans un problème."
+  },
+  {
+    "title": "Un problème avec les congruences : le chiffre des unités de 7^100",
+    "statement": "On souhaite déterminer le chiffre des unités de $7^{100}$ (c'est-à-dire $7^{100} \\pmod{10}$), sans calculer explicitement ce nombre.\n1. Calculer $7^1, 7^2, 7^3, 7^4$ modulo $10$, et observer la périodicité obtenue.\n2. En déduire, à l'aide d'une division euclidienne de $100$ par la période trouvée, la valeur de $7^{100} \\pmod{10}$.\n3. Conclure : quel est le chiffre des unités de $7^{100}$ ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Arithmétique dans Z",
+    "estimatedMinutes": 18,
+    "tags": [
+      "arithmétique",
+      "congruences",
+      "périodicité",
+      "puissances modulaires",
+      "problème"
+    ],
+    "hints": [
+      "Le chiffre des unités d'un entier $N$ est exactement le reste de $N$ dans la division euclidienne par $10$, c'est-à-dire $N \\pmod{10}$.",
+      "Une fois la période $T$ des puissances de $7$ modulo $10$ identifiée (le plus petit exposant qui ramène à la valeur de $7^1$), écris $100 = qT+r$ pour te ramener à $7^r \\pmod{10}$, avec un exposant $r$ beaucoup plus petit."
+    ],
+    "correction": "1. $7^1\\equiv7$, $7^2=49\\equiv9$, $7^3=343\\equiv3$, $7^4=2401\\equiv1\\pmod{10}$. On observe que $7^4\\equiv1\\pmod{10}$ : les puissances de $7$ modulo $10$ sont donc périodiques, de période $4$ (le cycle $7,9,3,1$ se répète ensuite indéfiniment, car $7^5=7^4\\times7\\equiv1\\times7\\equiv7$, etc.).\n2. On effectue la division euclidienne de $100$ par $4$ : $100 = 25\\times4+0$, donc $100$ est un multiple exact de la période $4$. Ainsi $7^{100} = (7^4)^{25} \\equiv 1^{25} \\equiv 1 \\pmod{10}$.\n3. Le chiffre des unités de $7^{100}$ est donc $\\boxed{1}$.\n\nPoint de méthode central, réutilisable pour tout problème de « dernier chiffre » ou de « reste modulo $n$ d'une grande puissance » : (1) calculer les premières puissances modulo $n$ jusqu'à repérer une période (un exposant qui ramène à $1$, ou plus généralement une valeur déjà rencontrée), (2) réduire le grand exposant modulo cette période par division euclidienne, (3) conclure avec un exposant réduit, beaucoup plus simple à traiter. C'est exactement la même démarche que celle utilisée dans l'exercice précédent pour $2^{10}\\pmod7$, appliquée ici à un exposant beaucoup plus grand, ce qui montre toute la puissance de la méthode.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "congruences élémentaires",
+      "périodicité des puissances modulaires",
+      "division euclidienne"
+    ],
+    "pedagogicalGoal": "dernier barreau de la rampe Arithmétique (divisibilité -> PGCD -> Bézout -> congruences -> problème) : appliquer les congruences à un vrai petit problème classique (chiffre des unités d'une grande puissance), en réutilisant explicitement la technique de périodicité installée dans l'exercice précédent, avant l'exercice existant et plus exigeant sur la divisibilité de n^5-n par 30 (diff.4)."
   }
 ]
