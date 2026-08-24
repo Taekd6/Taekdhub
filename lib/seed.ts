@@ -61,7 +61,7 @@ function buildSeed(bank: unknown): { exercises: Exercise[]; chapters: Chapter[] 
  * normaux). Source unique de vérité : `datasets/exercices-banque-complete.json`.
  */
 export async function loadSeedBank(): Promise<{ exercises: Exercise[]; chapters: Chapter[] }> {
-  const module = await import("@/datasets/exercices-banque-complete.json");
-  const bank = (module as { default: unknown }).default;
+  const imported = await import("@/datasets/exercices-banque-complete.json");
+  const bank = (imported as { default: unknown }).default;
   return buildSeed(bank);
 }

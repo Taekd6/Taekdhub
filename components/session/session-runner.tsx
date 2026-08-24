@@ -67,8 +67,10 @@ export function SessionRunner() {
   const [countTarget, setCountTarget] = useState(10);
   /** Matière imposée par `?subject=`, ou `null` pour une séance normale (toute la banque) — voir la note Sprint 3.1 ci-dessus. */
   const [contextSubject, setContextSubject] = useState<Subject | null>(null);
-  /** Sélection déposée par le Dashboard ("Commencer le plan", voir lib/plan.ts) — remplace `computedSelection` tel quel quand elle est présente, jamais recalculée ici. `null` : comportement normal, inchangé. */
+  /** Sélection déposée par le Dashboard ("Commencer le plan") ou par la banque d'exercices ("Séance libre", voir lib/plan.ts) — remplace `computedSelection` tel quel quand elle est présente, jamais recalculée ici. `null` : comportement normal, inchangé. */
   const [planSelection, setPlanSelection] = useState<ExerciseRecommendation[] | null>(null);
+  /** D'où vient `planSelection` — distingue uniquement le texte affiché à l'écran d'aperçu (voir StoredPlan.source, lib/plan.ts) ; la mécanique de séance est identique dans les deux cas. */
+  const [planSource, setPlanSource] = useState<"plan-du-jour" | "libre">("plan-du-jour");
   const initialized = useRef(false);
 
   // Décide une seule fois, au montage, entre reprendre un focus interrompu
@@ -120,6 +122,7 @@ export function SessionRunner() {
           .filter((item): item is ExerciseRecommendation => item !== null);
         if (picks.length > 0) {
           setPlanSelection(picks);
+          setPlanSource(stored.source ?? "plan-du-jour");
           setBudgetMinutes(stored.requestedMinutes);
           setPhase("preview");
           return;
@@ -273,12 +276,21 @@ export function SessionRunner() {
           <PlayCircle className="mx-auto text-accent" size={28} />
 
           {planSelection ? (
-            <>
-              <h2 className="mt-4 text-xl font-semibold tracking-tight">Ton plan du jour</h2>
-              <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
-                Réparti sur tes matières prioritaires, dans le temps que tu as choisi depuis le tableau de bord.
-              </p>
-            </>
+            planSource === "libre" ? (
+              <>
+                <h2 className="mt-4 text-xl font-semibold tracking-tight">Ta séance libre</h2>
+                <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+                  Exactement la sélection choisie dans la banque d&apos;exercices — matière, chapitre, sous-thème et difficulté filtrés à la main.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="mt-4 text-xl font-semibold tracking-tight">Ton plan du jour</h2>
+                <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+                  Réparti sur tes matières prioritaires, dans le temps que tu as choisi depuis le tableau de bord.
+                </p>
+              </>
+            )
           ) : (
             <>
               <h2 className="mt-4 text-xl font-semibold tracking-tight">

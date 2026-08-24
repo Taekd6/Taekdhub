@@ -21,6 +21,7 @@ export function ExerciseFiltersBar({
   filters,
   onChange,
   chapterOptions,
+  tagOptions,
   yearOptions,
   onAddClick,
   onImportClick,
@@ -28,6 +29,8 @@ export function ExerciseFiltersBar({
   filters: ExerciseFilters;
   onChange: (patch: Partial<ExerciseFilters>) => void;
   chapterOptions: Chapter[];
+  /** Sous-thèmes disponibles pour le périmètre matière/chapitre déjà choisi — voir lib/exercise-filters.ts#tagOptionsForFilters. */
+  tagOptions: string[];
   yearOptions: number[];
   onAddClick: () => void;
   onImportClick: () => void;
@@ -64,6 +67,20 @@ export function ExerciseFiltersBar({
           {chapterOptions.map((chapter) => (
             <option key={chapter.id} value={chapter.id}>
               {chapter.label}
+            </option>
+          ))}
+        </Select>
+        <Select
+          value={filters.tag}
+          onChange={(event) => onChange({ tag: event.target.value })}
+          className="w-auto min-w-[150px]"
+          disabled={tagOptions.length === 0}
+          aria-label="Sous-thème"
+        >
+          <option value="Toutes">Tous sous-thèmes</option>
+          {tagOptions.map((tag) => (
+            <option key={tag} value={tag}>
+              {tag}
             </option>
           ))}
         </Select>

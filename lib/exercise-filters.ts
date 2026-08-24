@@ -14,6 +14,15 @@ export interface ExerciseFilters {
   subject: Subject | "Toutes";
   /** Identifiant de chapitre (voir lib/chapters.ts) ou "Tous". */
   chapter: string | "Tous";
+  /**
+   * Sous-thème (Phase 7 pédagogie) — un des `tags` libres déjà présents sur
+   * chaque exercice (ex. "intégration par parties", "changement de variable"),
+   * jamais un nouveau champ de schéma : la banque a toujours porté cette
+   * granularité, elle n'était simplement pas exposée comme filtre. "Toutes"
+   * par défaut. Voir `tagOptionsForFilters` ci-dessous pour les options
+   * disponibles (dépendent de la matière/du chapitre déjà choisis).
+   */
+  tag: string | "Toutes";
   type: ExerciseType | "Tous";
   status: ExerciseStatus | "Tous";
   difficulty: Difficulty | "Toutes";
@@ -27,6 +36,7 @@ export const defaultExerciseFilters: ExerciseFilters = {
   query: "",
   subject: "Toutes",
   chapter: "Tous",
+  tag: "Toutes",
   type: "Tous",
   status: "Tous",
   difficulty: "Toutes",
@@ -56,6 +66,7 @@ export function filterExercises(exercises: Exercise[], filters: ExerciseFilters)
     .filter((item) => !item.archived)
     .filter((item) => filters.subject === "Toutes" || item.subject === filters.subject)
     .filter((item) => filters.chapter === "Tous" || item.chapter_id === filters.chapter)
+    .filter((item) => filters.tag === "Toutes" || item.tags.includes(filters.tag))
     .filter((item) => filters.type === "Tous" || item.type === filters.type)
     .filter((item) => filters.status === "Tous" || item.status === filters.status)
     .filter((item) => filters.difficulty === "Toutes" || item.difficulty === filters.difficulty)
@@ -82,4 +93,22 @@ export function distinctYears(exercises: Exercise[]): number[] {
   return Array.from(new Set(exercises.filter((item) => !item.archived && item.year !== null).map((item) => item.year as number))).sort(
     (a, b) => b - a
   );
+}
+
+/**
+ * Sous-thèmes ("tags") disponibles pour le filtre, restreints au périmètre déjà
+ * choisi par matière/chapitre (`filters.subject`/`filters.chapter`) — mêmes
+ * conventions que `chapterOptionsForSubject` : jamais un catalogue inventé,
+ * seulement ce qui existe réellement dans la banque active. Ignore
+ * volontairement `filters.tag` lui-même (sinon changer de chapitre ne
+ * réduirait jamais la liste une fois un tag choisi) et les autres filtres
+ * secondaires (difficulté, statut…) — le sous-thème reste une propriété de
+ * l'exercice, pas de son état d'avancement.
+ */
+export function tagOptionsForFilters(exercises: Exercise[], filters: Pick<ExerciseFilters, "subject" | "chapter">): string[] {
+  const scoped = exercises
+    .filter((item) => !item.archived)
+    .filter((item) => filters.subject === "Toutes" || item.subject === filters.subject)
+    .filter((item) => filters.chapter === "Tous" || item.chapter_id === filters.chapter);
+  return Array.from(new Set(scoped.flatMap((item) => item.tags))).sort((a, b) => a.localeCompare(b, "fr"));
 }

@@ -19,10 +19,10 @@ import { ExerciseListRow } from "@/components/exercises/exercise-list-row";
 import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { addChapter, removeChapter, renameChapter } from "@/lib/chapters";
-import { chapterOptionsForSubject, defaultExerciseFilters, distinctYears, filterExercises, type ExerciseFilters } from "@/lib/exercise-filters";
+import { chapterOptionsForSubject, defaultExerciseFilters, distinctYears, filterExercises, tagOptionsForFilters, type ExerciseFilters } from "@/lib/exercise-filters";
 import { defaultExerciseSort, exerciseSortOptions, sortExercises, type ExerciseSort } from "@/lib/exercise-sort";
 import { createExerciseFromInput } from "@/lib/exercise-import";
-import type { Chapter } from "@/lib/storage";
+import { SessionBuilderBar } from "@/components/exercises/session-builder-bar";
 import { minutesByExerciseMap } from "@/lib/study";
 import { cn } from "@/lib/cn";
 import type { Exercise, Subject } from "@/lib/supabase/types";
@@ -220,6 +220,10 @@ export function ExerciseManager() {
   );
 
   const chapterOptions = useMemo(() => chapterOptionsForSubject(chapters, filters.subject), [chapters, filters.subject]);
+  const tagOptions = useMemo(
+    () => tagOptionsForFilters(exercises, { subject: filters.subject, chapter: filters.chapter }),
+    [exercises, filters.subject, filters.chapter]
+  );
   const yearOptions = useMemo(() => distinctYears(exercises), [exercises]);
 
   // Un chapitre filtré peut devenir invalide si on change de matière : on le
@@ -230,6 +234,17 @@ export function ExerciseManager() {
       updateFilters({ chapter: "Tous" });
     }
   }, [chapterOptions, filters.chapter, updateFilters]);
+
+  // Même logique que ci-dessus pour le sous-thème (Phase 7 pédagogie) : un
+  // tag filtré peut ne plus exister dans le périmètre matière/chapitre choisi
+  // (ex. on change de chapitre après avoir sélectionné un sous-thème propre à
+  // l'ancien) — on le réinitialise plutôt que de masquer silencieusement toute
+  // la liste avec un filtre impossible.
+  useEffect(() => {
+    if (filters.tag !== "Toutes" && !tagOptions.includes(filters.tag)) {
+      updateFilters({ tag: "Toutes" });
+    }
+  }, [tagOptions, filters.tag, updateFilters]);
 
   // Un seul passage sur `sessions` pour calculer le temps passé de TOUS les
   // exercices (voir lib/study.ts) — recalculé uniquement quand `sessions`
@@ -275,9 +290,23 @@ export function ExerciseManager() {
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        if (focusMode) setFocusMode(false);
-        else if (importOpen) setImportOpen(false);
+      // `focusMode` court-circuite TOUT ce bloc (pas seulement la branche
+      // qui le fermait explicitement) : pendant que FocusView est monté, IL
+      // possède déjà Échap (voir focus-view.tsx#endSession, qui gère
+      // lui-même l'écran "Comment s'est passé ?" avant d'appeler `onClose`).
+      // Avant ce correctif (Phase 7 pédagogie — bug réel trouvé en testant le
+      // parcours), ce handler global interceptait Échap EN MÊME TEMPS que
+      // FocusView : les deux écouteurs `window.addEventListener` s'exécutent
+      // pour le même événement, et celui-ci démontait FocusView (directement
+      // via `setFocusMode(false)`, ou indirectement via `setSelectedId(null)`
+      // qui rend `selected` undefined) avant que sa propre logique n'ait pu
+      // enregistrer le résultat — la séance chronométrée (temps passé) était
+      // silencieusement PERDUE, et l'écran de qualification n'apparaissait
+      // jamais. Ne jamais laisser ce handler agir sur quoi que ce soit tant
+      // que FocusView est affiché : c'est lui, et lui seul, qui décide quand
+      // et comment se fermer.
+      if (event.key === "Escape" && !focusMode) {
+        if (importOpen) setImportOpen(false);
         else if (formOpen) setFormOpen(false);
         else if (selectedId) setSelectedId(null);
         else if (showArchived) setShowArchived(false);
@@ -349,6 +378,7 @@ export function ExerciseManager() {
         filters={filters}
         onChange={updateFiltersFromBar}
         chapterOptions={chapterOptions}
+        tagOptions={tagOptions}
         yearOptions={yearOptions}
         onAddClick={() => setFormOpen((value) => !value)}
         onImportClick={() => setImportOpen((value) => !value)}
@@ -372,6 +402,8 @@ export function ExerciseManager() {
 
       {!browseMode && (
         <>
+          <SessionBuilderBar exercises={sorted} sessions={sessions} />
+
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <p className="text-sm text-zinc-500">
               <span className="font-semibold text-zinc-200">{sorted.length}</span> exercice{sorted.length > 1 ? "s" : ""} affiché{sorted.length > 1 ? "s" : ""}

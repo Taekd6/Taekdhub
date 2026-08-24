@@ -287,6 +287,18 @@ export interface StoredPlanItem {
 export interface StoredPlan {
   items: StoredPlanItem[];
   requestedMinutes: number;
+  /**
+   * D'où vient cette sélection déposée dans `PLAN_STORAGE_KEY` — deux origines
+   * partagent aujourd'hui ce même mécanisme de transfert : le "Plan du jour"
+   * du Dashboard (`computeDailyPlan`/`serializePlan`) et la "Séance libre"
+   * depuis les filtres de la banque (`buildFreeSessionPlan`). SessionRunner
+   * en a besoin uniquement pour adapter le texte de l'écran d'aperçu (titre,
+   * description) — la mécanique de lecture/lancement de la séance est
+   * strictement identique dans les deux cas. Optionnel et par défaut
+   * `"plan-du-jour"` pour rester compatible avec d'éventuelles entrées
+   * sessionStorage écrites avant l'introduction de ce champ.
+   */
+  source?: "plan-du-jour" | "libre";
 }
 
 /** Sérialise un `DailyPlan` pour la traversée Dashboard → /session — voir `PLAN_STORAGE_KEY`. */
@@ -294,5 +306,27 @@ export function serializePlan(plan: DailyPlan): StoredPlan {
   return {
     items: plan.blocks.flatMap((block) => block.picks.map(({ exercise, reasons }) => ({ exerciseId: exercise.id, reasons }))),
     requestedMinutes: plan.requestedMinutes,
+    source: "plan-du-jour",
+  };
+}
+
+/**
+ * "Séance libre" (Phase 7 pédagogie) — l'élève a déjà choisi précisément quoi
+ * travailler via les filtres de la banque (matière, chapitre, sous-thème,
+ * difficulté…) ; cette fonction ne fait que transporter SA sélection, déjà
+ * ordonnée, vers /session via le même mécanisme que `serializePlan`
+ * (`PLAN_STORAGE_KEY`) — aucune recommandation recalculée, aucune règle de
+ * `lib/recommendation.ts` dupliquée ou contournée. C'est délibérément la
+ * fonction la plus simple possible : elle limite juste la sélection aux `limit`
+ * premiers exercices (déjà dans l'ordre choisi par l'élève, ex. via le tri de
+ * la banque) et fournit `requestedMinutes` pour que l'écran de reprise
+ * affiche une durée cohérente avec cette sélection.
+ */
+export function buildFreeSessionPlan(exercises: Exercise[], sessions: WorkSession[], limit: number): StoredPlan {
+  const picked = exercises.slice(0, limit);
+  return {
+    items: picked.map((exercise) => ({ exerciseId: exercise.id, reasons: ["Séance libre"] })),
+    requestedMinutes: picked.reduce((sum, exercise) => sum + estimatedDurationMinutes(exercise, sessions), 0),
+    source: "libre",
   };
 }

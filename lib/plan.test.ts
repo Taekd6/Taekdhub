@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeDailyPlan, computeSubjectPriorities, serializePlan } from "@/lib/plan";
+import { buildFreeSessionPlan, computeDailyPlan, computeSubjectPriorities, serializePlan } from "@/lib/plan";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
 
@@ -175,5 +175,37 @@ describe("serializePlan", () => {
     expect(stored.items).toHaveLength(1);
     expect(stored.items[0].exerciseId).toBe(exercise.id);
     expect(stored.items[0].reasons.length).toBeGreaterThan(0);
+    expect(stored.source).toBe("plan-du-jour");
+  });
+});
+
+describe("buildFreeSessionPlan", () => {
+  it("reprend la sélection déjà filtrée telle quelle, dans son ordre, sans recalculer de recommandation", () => {
+    const a = makeExercise({ estimated_minutes: 10 });
+    const b = makeExercise({ estimated_minutes: 15 });
+    const c = makeExercise({ estimated_minutes: 20 });
+    const stored = buildFreeSessionPlan([a, b, c], [], 2);
+    expect(stored.items.map((item) => item.exerciseId)).toEqual([a.id, b.id]);
+    expect(stored.source).toBe("libre");
+  });
+
+  it("chaque exercice retenu porte la raison \"Séance libre\"", () => {
+    const a = makeExercise();
+    const stored = buildFreeSessionPlan([a], [], 5);
+    expect(stored.items[0].reasons).toEqual(["Séance libre"]);
+  });
+
+  it("requestedMinutes est la somme des durées estimées de la sélection retenue, pas de toute la liste", () => {
+    const a = makeExercise({ estimated_minutes: 10 });
+    const b = makeExercise({ estimated_minutes: 15 });
+    const c = makeExercise({ estimated_minutes: 100 });
+    const stored = buildFreeSessionPlan([a, b, c], [], 2);
+    expect(stored.requestedMinutes).toBe(25);
+  });
+
+  it("une limite supérieure au nombre d'exercices disponibles ne plante pas, retient simplement tout", () => {
+    const a = makeExercise();
+    const stored = buildFreeSessionPlan([a], [], 50);
+    expect(stored.items).toHaveLength(1);
   });
 });
