@@ -7435,5 +7435,209 @@
       "arithmétique"
     ],
     "pedagogicalGoal": "faire pratiquer une TRIPLE boucle imbriquée (les deux exercices déjà présents n'en utilisent que deux), avec l'analyse de complexité cubique associée — première rencontre d'une complexité au-delà de O(n²) dans la banque."
+  },
+  {
+    "title": "Injectivité, surjectivité : étude complète d'un trinôme",
+    "statement": "On considère $f : \\mathbb{R} \\to \\mathbb{R}$ définie par $f(x) = x^2 - 4x + 3$.\n1. Montrer que $f$ n'est pas injective (on pourra comparer $f(1)$ et $f(3)$).\n2. Montrer que $f$ n'est pas surjective : déterminer $f(\\mathbb{R})$.\n3. On restreint $f$ à $I = [2, +\\infty[$. Montrer que $f$ induit une bijection de $I$ vers un intervalle $J$ à préciser, et donner l'expression de la bijection réciproque.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Ensembles, applications et relations",
+    "estimatedMinutes": 20,
+    "tags": [
+      "applications",
+      "injectivité",
+      "surjectivité",
+      "bijection",
+      "forme canonique"
+    ],
+    "hints": [
+      "Mets $f(x)$ sous forme canonique $(x-2)^2 - 1$ : cela révèle immédiatement la symétrie autour de $x=2$ qui casse l'injectivité, et le minimum qui donne l'image.",
+      "Sur $[2,+\\infty[$, $x \\mapsto (x-2)^2$ est strictement croissante : compose avec les bijections usuelles pour obtenir directement la réciproque."
+    ],
+    "correction": "1. $f(1) = 1 - 4 + 3 = 0$ et $f(3) = 9 - 12 + 3 = 0$ : on a $f(1) = f(3)$ avec $1 \\neq 3$, donc $f$ n'est pas injective.\n2. En écrivant $f(x) = (x-2)^2 - 1$ (forme canonique), on voit que $f(x) \\geq -1$ pour tout $x$, avec égalité en $x=2$, et que $f(x) \\to +\\infty$ quand $x \\to \\pm\\infty$. Par continuité et stricte monotonie de part et d'autre de $2$, $f(\\mathbb{R}) = [-1, +\\infty[$. Comme $f(\\mathbb{R}) \\neq \\mathbb{R}$, $f$ n'est pas surjective.\n3. Sur $I = [2,+\\infty[$, on a $x - 2 \\geq 0$, donc $x \\mapsto x-2$ réalise une bijection de $I$ vers $[0,+\\infty[$, puis $t \\mapsto t^2$ est une bijection de $[0,+\\infty[$ vers $[0,+\\infty[$, et enfin $u \\mapsto u - 1$ est une bijection de $[0,+\\infty[$ vers $J = [-1,+\\infty[$. Par composition, $f$ induit une bijection de $I$ vers $J = [-1,+\\infty[$. Pour la réciproque, on résout $y = (x-2)^2 - 1$ avec $x \\geq 2$ : $(x-2)^2 = y+1$, et comme $x - 2 \\geq 0$, $x - 2 = \\sqrt{y+1}$, soit $f^{-1}(y) = 2 + \\sqrt{y+1}$ pour $y \\in [-1, +\\infty[$.\n\nPiège classique : une fonction non injective sur $\\mathbb{R}$ tout entier peut très bien devenir bijective une fois restreinte à un intervalle bien choisi — c'est exactement la technique utilisée pour définir $\\mathrm{Arcsin}$, $\\mathrm{Arccos}$, etc.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "applications",
+      "forme canonique du trinôme",
+      "monotonie"
+    ],
+    "pedagogicalGoal": "premier contact concret avec injectivité/surjectivité/bijection sur un exemple calculatoire simple (trinôme), avant d'aborder les définitions abstraites sur des ensembles quelconques ; prépare aussi à la construction des fonctions réciproques usuelles (Arcsin, ln, etc.)."
+  },
+  {
+    "title": "Une bijection explicite de R vers un intervalle borné",
+    "statement": "Soit $f : \\mathbb{R} \\to \\mathbb{R}$ définie par $f(x) = \\dfrac{x}{1+|x|}$.\n1. Montrer que $f$ est bien définie et que $f(\\mathbb{R}) \\subset ]-1, 1[$.\n2. Montrer que $f$ est strictement croissante sur $\\mathbb{R}$ (on pourra étudier séparément $\\mathbb{R}_+$ et $\\mathbb{R}_-$).\n3. Montrer que $f$ réalise une bijection de $\\mathbb{R}$ vers $]-1,1[$, et déterminer explicitement $f^{-1}$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Ensembles, applications et relations",
+    "estimatedMinutes": 25,
+    "tags": [
+      "applications",
+      "bijection",
+      "fonction réciproque",
+      "valeur absolue"
+    ],
+    "hints": [
+      "Distingue $x \\geq 0$ (où $f(x) = \\frac{x}{1+x}$) et $x \\leq 0$ (où $f(x) = \\frac{x}{1-x}$) pour lever la valeur absolue avant d'étudier monotonie et bornes.",
+      "Pour trouver $f^{-1}$, résous $y = f(x)$ d'abord pour $y \\geq 0$ (donc $x \\geq 0$), puis pour $y \\leq 0$ : tu dois retrouver une formule symétrique en $|y|$."
+    ],
+    "correction": "1. Pour tout $x \\in \\mathbb{R}$, $1 + |x| \\geq 1 > 0$ donc $f$ est bien définie. Comme $|x| < 1+|x|$, on a $|f(x)| = \\frac{|x|}{1+|x|} < 1$, donc $f(\\mathbb{R}) \\subset ]-1,1[$.\n2. Sur $[0,+\\infty[$ : $f(x) = \\frac{x}{1+x} = 1 - \\frac{1}{1+x}$, qui est strictement croissante (car $x \\mapsto \\frac{1}{1+x}$ est strictement décroissante). Sur $]-\\infty,0]$ : $f(x) = \\frac{x}{1-x} = -1 + \\frac{1}{1-x}$, strictement croissante également (car $x \\mapsto \\frac{1}{1-x}$ est strictement croissante sur cet intervalle). Les deux morceaux se recollent continûment en $0$ (valeur commune $f(0)=0$), donc $f$ est strictement croissante sur $\\mathbb{R}$.\n3. $f$ est strictement croissante donc injective. Comme $f(x) \\to 1$ quand $x \\to +\\infty$ et $f(x) \\to -1$ quand $x \\to -\\infty$, et que $f$ est continue, le théorème de la bijection monotone donne : $f$ réalise une bijection de $\\mathbb{R}$ vers $]-1,1[$. Pour l'expression de $f^{-1}$ : soit $y \\in ]-1,1[$. Si $y \\geq 0$, on cherche $x \\geq 0$ tel que $y = \\frac{x}{1+x}$, soit $y(1+x) = x$, soit $x(1-y) = y$, soit $x = \\frac{y}{1-y} = \\frac{y}{1-|y|}$ (car $y=|y|$ ici). Si $y \\leq 0$, on cherche $x \\leq 0$ tel que $y = \\frac{x}{1-x}$, soit $x = \\frac{y}{1+y} = \\frac{y}{1-|y|}$ (car $|y|=-y$ ici). Dans les deux cas : $f^{-1}(y) = \\dfrac{y}{1-|y|}$.\n\nRemarque : ce type de fonction (« compression » de $\\mathbb{R}$ dans un intervalle borné) est le même principe que $\\tanh$ ou $\\frac{2}{\\pi}\\mathrm{Arctan}$, mais construit ici uniquement avec des fractions rationnelles.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "applications",
+      "bijection",
+      "monotonie",
+      "limites"
+    ],
+    "pedagogicalGoal": "manipuler une bijection explicite non triviale entre R et un intervalle borné, avec calcul effectif de la réciproque par disjonction de cas — renforce la compétence bijection après l'exercice précédent (diff.2) et avant les exercices plus théoriques (diff.4) sur les compositions."
+  },
+  {
+    "title": "Relation d'équivalence : droites vectorielles du plan privé de l'origine",
+    "statement": "Sur $E = \\mathbb{R}^2 \\setminus \\{(0,0)\\}$, on définit la relation $\\mathcal{R}$ par : $(x,y)\\,\\mathcal{R}\\,(x',y') \\iff xy' = x'y$.\n1. Montrer que $\\mathcal{R}$ est une relation d'équivalence sur $E$.\n2. Décrire géométriquement la classe d'équivalence d'un point $(x_0,y_0) \\in E$.\n3. Combien y a-t-il de classes d'équivalence distinctes contenant le point $(1,1)$ ? Justifier.",
+    "source": "TaekdHub — exercice original (Sup), inspiré de la construction classique de la droite projective réelle",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Ensembles, applications et relations",
+    "estimatedMinutes": 25,
+    "tags": [
+      "relations",
+      "relation d'équivalence",
+      "classes d'équivalence",
+      "colinéarité"
+    ],
+    "hints": [
+      "Pour la transitivité, à partir de $xy'=x'y$ et $x'y''=x''y'$, multiplie la première par $y''$ et la seconde par $y$, puis compare : attention au cas $y'=0$ qui doit être traité séparément.",
+      "$(x,y)\\,\\mathcal{R}\\,(x_0,y_0)$ signifie que $(x,y)$ et $(x_0,y_0)$ sont colinéaires : la classe est donc portée par une droite vectorielle bien précise, privée de l'origine."
+    ],
+    "correction": "1. Réflexivité : $xy = xy$ pour tout $(x,y) \\in E$, donc $(x,y)\\,\\mathcal{R}\\,(x,y)$. Symétrie : si $xy'=x'y$ alors $x'y=xy'$, donc $(x',y')\\,\\mathcal{R}\\,(x,y)$. Transitivité : soient $(x,y)\\,\\mathcal{R}\\,(x',y')$ et $(x',y')\\,\\mathcal{R}\\,(x'',y'')$, c'est-à-dire $xy'=x'y$ (i) et $x'y''=x''y'$ (ii). On veut $xy''=x''y$. Cas $y' \\neq 0$ : de (i), $x' = \\frac{xy'}{y}$ si $y\\neq0$... on préfère une preuve directe sans division : (i)$\\times y''$ donne $xy'y''=x'yy''$ ; (ii)$\\times y$ donne $x'y''y = x''y'y$. Le membre de droite de la première égale le membre de gauche de la seconde une fois réarrangé : $xy'y'' = x'yy'' = x''y'y$, donc $y'(xy'' - x''y) = 0$. Si $y' \\neq 0$, on simplifie : $xy'' = x''y$, ce qu'on voulait. Si $y' = 0$ : alors (i) donne $x'y=0$ et $(x',y')\\in E$ donc $x'\\neq0$ (car $y'=0$), donc $y=0$ ; de même (ii) donne $x''\\cdot 0 = x''y' = x'y''$... reprenons : $y'=0$ et $(x',y')\\ne(0,0)$ donc $x'\\neq 0$. (i) : $xy'=x'y \\Rightarrow 0 = x'y \\Rightarrow y=0$ (car $x'\\neq0$). (ii) : $x'y''=x''y'=0 \\Rightarrow y''=0$ (car $x'\\neq0$). Donc $y=y''=0$, d'où $xy''=0=x''y$ : la relation est bien vérifiée. Dans tous les cas, $\\mathcal{R}$ est transitive, donc c'est une relation d'équivalence.\n2. $(x,y)\\,\\mathcal{R}\\,(x_0,y_0) \\iff xy_0 = x_0y \\iff (x,y)$ et $(x_0,y_0)$ sont colinéaires (déterminant nul). La classe de $(x_0,y_0)$ est donc l'ensemble des points de $E$ situés sur la droite vectorielle $\\mathrm{Vect}((x_0,y_0))$, c'est-à-dire cette droite privée de l'origine.\n3. La classe de $(1,1)$ est la droite $\\{(t,t) : t \\in \\mathbb{R}^*\\}$ (droite d'équation $y=x$ privée de l'origine) : il n'y a donc qu'**une seule** classe contenant $(1,1)$, à savoir celle-là (une classe d'équivalence est toujours unique pour un point donné, par définition d'une partition).\n\nCe quotient $E/\\mathcal{R}$ (l'ensemble des droites vectorielles de $\\mathbb{R}^2$) est précisément la droite projective réelle $\\mathbb{P}^1(\\mathbb{R})$.",
+    "note": "Exercice original TaekdHub, non attribué à un sujet réel — inspiré de la construction standard du quotient projectif, mais rédigé intégralement par TaekdHub avec une consigne originale.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "relations binaires",
+      "relation d'équivalence",
+      "colinéarité"
+    ],
+    "pedagogicalGoal": "traiter un exemple non trivial de relation d'équivalence où la transitivité demande une vraie disjonction de cas (piège classique du cas y'=0), et relier la notion abstraite de classe d'équivalence à une image géométrique concrète (droites vectorielles)."
+  },
+  {
+    "title": "Images directes et réciproques par un carré",
+    "statement": "Soit $f : \\mathbb{R} \\to \\mathbb{R}$ définie par $f(x) = x^2$.\n1. Déterminer $f([-2,3])$.\n2. Déterminer $f^{-1}([1,4])$.\n3. Déterminer $f^{-1}(\\{-1\\})$. Que peut-on en déduire sur la surjectivité de $f$ ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Ensembles, applications et relations",
+    "estimatedMinutes": 20,
+    "tags": [
+      "applications",
+      "image directe",
+      "image réciproque",
+      "ensembles"
+    ],
+    "hints": [
+      "Pour l'image directe d'un intervalle par $x \\mapsto x^2$, distingue si l'intervalle contient $0$ ou non, et repère où se trouve le minimum de $x^2$ sur cet intervalle.",
+      "Pour l'image réciproque, résous d'abord les deux inéquations séparément ($x^2 \\geq 1$ et $x^2 \\leq 4$), puis prends l'intersection."
+    ],
+    "correction": "1. Sur $[-2,3]$, la fonction $x \\mapsto x^2$ atteint son minimum en $x=0$ (qui appartient à l'intervalle), valeur $0$, et son maximum aux bornes : $f(-2)=4$, $f(3)=9$, le maximum est donc $9$. Par continuité, $f([-2,3]) = [0,9]$.\n2. $f^{-1}([1,4]) = \\{x \\in \\mathbb{R} : 1 \\leq x^2 \\leq 4\\}$. L'inéquation $x^2 \\geq 1$ équivaut à $x \\leq -1$ ou $x \\geq 1$. L'inéquation $x^2 \\leq 4$ équivaut à $-2 \\leq x \\leq 2$. L'intersection donne $f^{-1}([1,4]) = [-2,-1] \\cup [1,2]$.\n3. $f^{-1}(\\{-1\\}) = \\{x \\in \\mathbb{R} : x^2 = -1\\} = \\varnothing$, car un carré réel est toujours positif ou nul. Comme $-1 \\notin f(\\mathbb{R})$, ceci confirme (sans nouveau calcul) que $f$ n'est pas surjective de $\\mathbb{R}$ vers $\\mathbb{R}$ : il suffit d'exhiber **une seule** valeur sans antécédent pour conclure à la non-surjectivité.\n\nPoint de méthode : l'image réciproque $f^{-1}(A)$ est toujours définie, même quand $f$ n'est pas bijective (contrairement à la fonction réciproque $f^{-1}$ qui, elle, exige la bijectivité) — ne pas confondre les deux usages de la notation $f^{-1}$.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "applications",
+      "image directe",
+      "image réciproque",
+      "résolution d'inéquations"
+    ],
+    "pedagogicalGoal": "automatiser le calcul d'images directes et réciproques d'ensembles (pas seulement de points), compétence indispensable et souvent mal maîtrisée en début de Sup, avec au passage la clarification du double sens de la notation f^{-1}."
+  },
+  {
+    "title": "Composition et injectivité/surjectivité : ce qui se transmet, ce qui ne se transmet pas",
+    "statement": "Soient $E, F, G$ trois ensembles et $f : E \\to F$, $g : F \\to G$ deux applications. On note $g \\circ f : E \\to G$.\n1. Montrer que si $g \\circ f$ est injective, alors $f$ est injective.\n2. Montrer que si $g \\circ f$ est surjective, alors $g$ est surjective.\n3. Montrer par un contre-exemple explicite que $g \\circ f$ injective n'implique pas que $g$ soit injective.\n4. Montrer par un contre-exemple explicite que $g \\circ f$ surjective n'implique pas que $f$ soit surjective.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 4,
+    "chapter": "Ensembles, applications et relations",
+    "estimatedMinutes": 30,
+    "tags": [
+      "applications",
+      "composition",
+      "injectivité",
+      "surjectivité",
+      "contre-exemple"
+    ],
+    "hints": [
+      "Pour 1. et 2., raisonne par contraposée ou directement sur les définitions en manipulant $g(f(x))$ ; ne cherche pas à démontrer que g est injective ou que f est surjective, ce sont de fausses pistes (voir 3. et 4.).",
+      "Pour les contre-exemples, prends les ensembles les plus petits possibles (cardinal 1, 2 ou 3) : c'est souvent avec de très petits ensembles qu'on visualise le mieux pourquoi la réciproque est fausse."
+    ],
+    "correction": "1. Soient $x_1, x_2 \\in E$ tels que $f(x_1) = f(x_2)$. Alors $g(f(x_1)) = g(f(x_2))$, c'est-à-dire $(g \\circ f)(x_1) = (g \\circ f)(x_2)$. Comme $g \\circ f$ est injective, $x_1 = x_2$. Donc $f$ est injective.\n2. Soit $z \\in G$. Comme $g \\circ f$ est surjective, il existe $x \\in E$ tel que $(g\\circ f)(x) = z$, c'est-à-dire $g(f(x)) = z$. En posant $y = f(x) \\in F$, on a trouvé $y \\in F$ tel que $g(y) = z$. Donc $g$ est surjective.\n3. Contre-exemple : $E = \\{a\\}$, $F = \\{1,2\\}$, $G = \\{x\\}$, avec $f(a) = 1$ et $g(1) = g(2) = x$. Alors $g \\circ f$ va de $E$ (un singleton) vers $G$ (un singleton) : c'est automatiquement injective (il n'y a qu'un seul élément dans $E$, donc l'hypothèse $(g\\circ f)(a_1)=(g\\circ f)(a_2) \\Rightarrow a_1=a_2$ est vide de contenu). Pourtant $g$ n'est pas injective, car $g(1) = g(2) = x$ avec $1 \\neq 2$.\n4. Contre-exemple : $E = \\{a,b\\}$, $F = \\{1,2\\}$, $G = \\{x\\}$, avec $f(a) = f(b) = 1$ et $g(1) = g(2) = x$. Alors $g \\circ f$ envoie $a$ et $b$ sur $x$ : comme $G = \\{x\\}$ est un singleton, $g \\circ f$ est automatiquement surjective. Pourtant $f$ n'est pas surjective de $E$ vers $F$, car $2 \\in F$ n'a aucun antécédent par $f$.\n\nMoyen mnémotechnique : « l'injectivité remonte vers l'intérieur (côté $f$), la surjectivité descend vers l'extérieur (côté $g$) » — dans les deux cas, c'est l'application la plus proche de l'information manquante (le départ pour l'injectivité, l'arrivée pour la surjectivité) qui hérite de la propriété.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 5,
+    "prerequisites": [
+      "applications",
+      "composition d'applications",
+      "injectivité",
+      "surjectivité"
+    ],
+    "pedagogicalGoal": "installer un résultat de cours classique et fréquemment mal cité en colle (ce qui se transmet par composition et ce qui ne se transmet pas), avec construction explicite des deux contre-exemples canoniques — clôture naturelle de la progression de la nouvelle compétence 'Ensembles, applications et relations' avant d'attaquer des exercices de synthèse."
+  },
+  {
+    "title": "Une identité binomiale par double comptage et par dérivation",
+    "statement": "Soit $n \\in \\mathbb{N}^*$. On souhaite établir l'identité $\\displaystyle\\sum_{k=0}^{n} k\\binom{n}{k} = n \\cdot 2^{n-1}$.\n1. Montrer, pour $1 \\leq k \\leq n$, l'identité $k\\binom{n}{k} = n\\binom{n-1}{k-1}$.\n2. En déduire l'identité annoncée en réindexant la somme.\n3. Retrouver le même résultat en dérivant l'identité $(1+x)^n = \\sum_{k=0}^n \\binom{n}{k}x^k$ puis en évaluant en $x=1$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Calcul algébrique",
+    "estimatedMinutes": 20,
+    "tags": [
+      "sommes",
+      "coefficients binomiaux",
+      "binôme de Newton",
+      "réindexation"
+    ],
+    "hints": [
+      "Pour la question 1, repars de la formule factorielle $\\binom{n}{k} = \\frac{n!}{k!(n-k)!}$ et fais apparaître $\\frac{(n-1)!}{(k-1)!(n-k)!}$.",
+      "Pour la question 2, le terme $k=0$ de la somme initiale est nul : tu peux donc démarrer la somme à $k=1$ sans rien changer, puis poser $j=k-1$."
+    ],
+    "correction": "1. Pour $1 \\leq k \\leq n$ : $k\\binom{n}{k} = k \\cdot \\dfrac{n!}{k!(n-k)!} = \\dfrac{n!}{(k-1)!(n-k)!} = n \\cdot \\dfrac{(n-1)!}{(k-1)!(n-k)!} = n\\binom{n-1}{k-1}$, en utilisant $n! = n\\cdot(n-1)!$ et $(n-k) = (n-1)-(k-1)$.\n2. Le terme $k=0$ vaut $0 \\cdot \\binom{n}{0} = 0$, donc $\\displaystyle\\sum_{k=0}^n k\\binom{n}{k} = \\sum_{k=1}^n k\\binom{n}{k} = \\sum_{k=1}^n n\\binom{n-1}{k-1}$ d'après la question 1. En posant $j = k-1$ (donc $j$ varie de $0$ à $n-1$) : $\\displaystyle\\sum_{k=1}^n n\\binom{n-1}{k-1} = n\\sum_{j=0}^{n-1}\\binom{n-1}{j} = n \\cdot 2^{n-1}$, d'après la formule du binôme appliquée à $(1+1)^{n-1} = 2^{n-1}$.\n3. On dérive l'identité $(1+x)^n = \\sum_{k=0}^n \\binom{n}{k}x^k$ par rapport à $x$ : à gauche, $n(1+x)^{n-1}$ ; à droite, $\\sum_{k=0}^n k\\binom{n}{k}x^{k-1}$ (le terme $k=0$ disparaît en dérivant une constante). En évaluant en $x=1$ : $n \\cdot 2^{n-1} = \\sum_{k=0}^n k\\binom{n}{k} \\cdot 1^{k-1} = \\sum_{k=0}^n k\\binom{n}{k}$, ce qui redonne exactement l'identité voulue.\n\nLes deux méthodes illustrent deux réflexes complémentaires à avoir sur les sommes binomiales : l'identité algébrique $k\\binom{n}{k}=n\\binom{n-1}{k-1}$ (très utile pour absorber un facteur $k$ devant un coefficient binomial) et la dérivation d'une identité polynomiale suivie d'une évaluation numérique (technique générale pour transformer $\\sum \\binom{n}{k}$ en $\\sum k\\binom{n}{k}$, $\\sum k^2\\binom{n}{k}$, etc.).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "coefficients binomiaux",
+      "binôme de Newton",
+      "sommes",
+      "dérivation de polynômes"
+    ],
+    "pedagogicalGoal": "présenter la double approche (combinatoire algébrique vs dérivation-évaluation) sur une identité binomiale classique très utile en probabilités (espérance d'une loi binomiale) — comble un manque d'exercices de manipulation de sommes avec coefficient k devant le binôme."
   }
 ]
