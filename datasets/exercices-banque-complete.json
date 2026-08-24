@@ -7639,5 +7639,370 @@
       "dérivation de polynômes"
     ],
     "pedagogicalGoal": "présenter la double approche (combinatoire algébrique vs dérivation-évaluation) sur une identité binomiale classique très utile en probabilités (espérance d'une loi binomiale) — comble un manque d'exercices de manipulation de sommes avec coefficient k devant le binôme."
+  },
+  {
+    "title": "Limites usuelles : calcul direct sans forme indéterminée",
+    "statement": "Calculer, en justifiant brièvement chaque étape, les limites suivantes :\n1. $\\displaystyle\\lim_{x \\to 2} (3x^2 - 5x + 1)$\n2. $\\displaystyle\\lim_{x \\to 1} \\dfrac{x^2 - 4}{x + 3}$\n3. $\\displaystyle\\lim_{x \\to +\\infty} (2x^3 - x + 5)$\n4. $\\displaystyle\\lim_{x \\to -\\infty} (-3x^2 + x)$",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Limites",
+    "estimatedMinutes": 12,
+    "tags": [
+      "limites",
+      "limites usuelles",
+      "fonctions polynômes",
+      "fonctions rationnelles"
+    ],
+    "hints": [
+      "Pour les questions 1 et 2, aucune forme indéterminée n'apparaît : le dénominateur ne s'annule pas et la fonction est continue en ce point, donc on peut remplacer directement $x$ par sa valeur.",
+      "Pour les questions 3 et 4, seul le terme de plus haut degré impose la limite en $\\pm\\infty$ (les autres termes sont négligeables devant lui)."
+    ],
+    "correction": "1. La fonction $x \\mapsto 3x^2-5x+1$ est polynomiale, donc continue sur $\\mathbb{R}$ : on calcule directement $3(2)^2 - 5(2) + 1 = 12 - 10 + 1 = 3$.\n2. La fonction $x \\mapsto \\frac{x^2-4}{x+3}$ est continue en $x=1$ car le dénominateur $1+3=4 \\neq 0$ : on calcule directement $\\frac{1-4}{1+3} = \\frac{-3}{4}$.\n3. En $+\\infty$, une fonction polynomiale a la même limite que son terme de plus haut degré : $\\lim_{x\\to+\\infty}(2x^3-x+5) = \\lim_{x\\to+\\infty} 2x^3 = +\\infty$.\n4. De même en $-\\infty$ : $\\lim_{x\\to-\\infty}(-3x^2+x) = \\lim_{x\\to-\\infty}(-3x^2) = -\\infty$ (car $x^2 \\to +\\infty$ et le coefficient est négatif).\n\nPoint de méthode essentiel : avant tout calcul de limite, vérifie toujours s'il y a réellement une forme indéterminée (dénominateur nul, $\\infty-\\infty$, $\\frac{0}{0}$, etc.). Si ce n'est pas le cas, la substitution directe (continuité) ou la règle du terme dominant suffisent — inutile de sortir l'artillerie (factorisation, DL, etc.) pour ces cas simples.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "continuité des fonctions usuelles",
+      "limites en l'infini d'un polynôme"
+    ],
+    "pedagogicalGoal": "premier contact avec le calcul de limites, volontairement sans aucune forme indéterminée, pour installer le réflexe 'vérifier s'il y a vraiment un problème avant de sortir les techniques avancées' — sert de socle avant les exercices de factorisation, quantité conjuguée et croissances comparées."
+  },
+  {
+    "title": "Lever une forme indéterminée 0/0 par factorisation",
+    "statement": "Calculer les limites suivantes :\n1. $\\displaystyle\\lim_{x \\to 3} \\dfrac{x^2 - 9}{x - 3}$\n2. $\\displaystyle\\lim_{x \\to -1} \\dfrac{x^2 + 3x + 2}{x + 1}$",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Limites",
+    "estimatedMinutes": 15,
+    "tags": [
+      "limites",
+      "forme indéterminée",
+      "factorisation",
+      "identités remarquables"
+    ],
+    "hints": [
+      "Dans les deux cas, le numérateur et le dénominateur s'annulent au même point : c'est le signe qu'ils ont un facteur commun, qu'il faut faire apparaître pour le simplifier.",
+      "Pour la question 1, reconnais une identité remarquable $a^2-b^2$ ; pour la question 2, cherche une racine évidente du trinôme au numérateur pour le factoriser."
+    ],
+    "correction": "1. En $x=3$, le numérateur $x^2-9$ et le dénominateur $x-3$ s'annulent tous les deux : c'est une forme indéterminée $\\frac{0}{0}$. On factorise le numérateur avec l'identité remarquable $a^2-b^2=(a-b)(a+b)$ : $x^2-9 = (x-3)(x+3)$. Donc pour $x \\neq 3$ : $\\frac{x^2-9}{x-3} = \\frac{(x-3)(x+3)}{x-3} = x+3$. Cette nouvelle expression est continue en $3$, donc $\\lim_{x\\to3} \\frac{x^2-9}{x-3} = \\lim_{x\\to3}(x+3) = 6$.\n2. En $x=-1$ : numérateur $(-1)^2+3(-1)+2 = 1-3+2=0$ et dénominateur $-1+1=0$ : forme $\\frac{0}{0}$. Comme $-1$ est racine du trinôme $x^2+3x+2$, on peut le factoriser par $(x+1)$ : $x^2+3x+2 = (x+1)(x+2)$ (on identifie le second facteur en développant, ou en divisant). Donc pour $x\\neq-1$ : $\\frac{x^2+3x+2}{x+1} = x+2$, continue en $-1$, d'où $\\lim_{x\\to-1}\\frac{x^2+3x+2}{x+1} = -1+2 = 1$.\n\nMéthode générale : face à une forme $\\frac{0}{0}$ avec des polynômes, le point où l'indétermination apparaît est toujours une racine commune au numérateur et au dénominateur — factoriser par $(x-a)$ (où $a$ est ce point) fait toujours disparaître l'indétermination.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "limites usuelles",
+      "factorisation de polynômes",
+      "identités remarquables"
+    ],
+    "pedagogicalGoal": "installer la technique la plus fréquente de levée de forme indéterminée 0/0 (factorisation par la racine commune), avant d'aborder la quantité conjuguée pour les expressions avec racines carrées."
+  },
+  {
+    "title": "Lever une forme indéterminée par quantité conjuguée",
+    "statement": "Calculer les limites suivantes :\n1. $\\displaystyle\\lim_{x \\to 0} \\dfrac{\\sqrt{1+x} - 1}{x}$\n2. $\\displaystyle\\lim_{x \\to 4} \\dfrac{\\sqrt{x} - 2}{x - 4}$",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Limites",
+    "estimatedMinutes": 18,
+    "tags": [
+      "limites",
+      "forme indéterminée",
+      "quantité conjuguée",
+      "racine carrée"
+    ],
+    "hints": [
+      "Multiplie numérateur et dénominateur par la quantité conjuguée du numérateur (ou du terme avec racine), pour faire apparaître une identité $(\\sqrt{a}-\\sqrt{b})(\\sqrt{a}+\\sqrt{b}) = a-b$ qui élimine la racine.",
+      "Après multiplication par la quantité conjuguée, simplifie par le facteur commun avant de faire tendre $x$ vers sa valeur — ne substitue jamais avant d'avoir simplifié."
+    ],
+    "correction": "1. En $x=0$ : $\\sqrt{1+0}-1=0$ et le dénominateur vaut $0$ : forme $\\frac{0}{0}$. On multiplie numérateur et dénominateur par la quantité conjuguée $\\sqrt{1+x}+1$ : $\\frac{\\sqrt{1+x}-1}{x} = \\frac{(\\sqrt{1+x}-1)(\\sqrt{1+x}+1)}{x(\\sqrt{1+x}+1)} = \\frac{(1+x)-1}{x(\\sqrt{1+x}+1)} = \\frac{x}{x(\\sqrt{1+x}+1)} = \\frac{1}{\\sqrt{1+x}+1}$ pour $x\\neq0$. Cette expression est continue en $0$, donc $\\lim_{x\\to0}\\frac{\\sqrt{1+x}-1}{x} = \\frac{1}{\\sqrt{1}+1} = \\frac{1}{2}$.\n2. En $x=4$ : $\\sqrt{4}-2=0$ et $4-4=0$ : forme $\\frac{0}{0}$. On multiplie par la quantité conjuguée $\\sqrt{x}+2$ : $\\frac{\\sqrt{x}-2}{x-4} = \\frac{(\\sqrt{x}-2)(\\sqrt{x}+2)}{(x-4)(\\sqrt{x}+2)} = \\frac{x-4}{(x-4)(\\sqrt{x}+2)} = \\frac{1}{\\sqrt{x}+2}$ pour $x\\neq4$, continue en $4$, d'où $\\lim_{x\\to4}\\frac{\\sqrt{x}-2}{x-4} = \\frac{1}{\\sqrt{4}+2} = \\frac{1}{4}$.\n\nPiège fréquent : oublier de multiplier aussi bien le numérateur que le dénominateur par la quantité conjuguée (multiplier « par 1 » sous cette forme ne change pas l'expression, mais l'oubli d'un des deux côtés change le résultat).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "limites usuelles",
+      "forme indéterminée 0/0",
+      "identités remarquables avec racines"
+    ],
+    "pedagogicalGoal": "installer la technique de la quantité conjuguée, complémentaire de la factorisation polynomiale (exercice précédent), pour les formes indéterminées faisant intervenir des racines carrées — combinaison classique en début de prépa."
+  },
+  {
+    "title": "Croissances comparées : limites avec exponentielle et logarithme",
+    "statement": "Calculer les limites suivantes en utilisant les croissances comparées usuelles (sans développement limité) :\n1. $\\displaystyle\\lim_{x \\to +\\infty} x^2 e^{-x}$\n2. $\\displaystyle\\lim_{x \\to 0^+} x\\ln(x)$\n3. $\\displaystyle\\lim_{x \\to +\\infty} \\dfrac{\\ln(x)}{x}$\n4. $\\displaystyle\\lim_{x \\to +\\infty} (x^3 - e^x)$",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Limites",
+    "estimatedMinutes": 20,
+    "tags": [
+      "limites",
+      "croissances comparées",
+      "exponentielle",
+      "logarithme",
+      "forme indéterminée"
+    ],
+    "hints": [
+      "Rappelle-toi la hiérarchie des croissances comparées : $\\ln(x) \\ll x^\\alpha \\ll e^x$ au voisinage de $+\\infty$ (pour tout $\\alpha>0$) — c'est elle qui tranche toutes les formes $0 \\times \\infty$, $\\frac{\\infty}{\\infty}$ ou $\\infty-\\infty$ de ce type.",
+      "Pour la question 4, factorise par le terme dominant ($e^x$) pour te ramener à une forme du type $e^x(x^3e^{-x}-1)$ et réutiliser la croissance comparée déjà connue."
+    ],
+    "correction": "1. Forme $\\infty \\times 0$ (car $x^2\\to+\\infty$ et $e^{-x}\\to0$). Par croissances comparées, l'exponentielle l'emporte toujours sur toute puissance de $x$ : $\\lim_{x\\to+\\infty} x^2 e^{-x} = \\lim_{x\\to+\\infty} \\frac{x^2}{e^x} = 0$.\n2. Forme $0 \\times (-\\infty)$ (car $x\\to0^+$ et $\\ln(x)\\to-\\infty$). Par croissances comparées, $\\lim_{x\\to0^+} x\\ln(x) = 0$ (résultat usuel, obtenu par exemple en posant $t=1/x\\to+\\infty$ : $x\\ln x = -\\frac{\\ln t}{t} \\to 0$).\n3. Forme $\\frac{\\infty}{\\infty}$. Par croissances comparées, le logarithme est négligeable devant toute puissance strictement positive de $x$ : $\\lim_{x\\to+\\infty} \\frac{\\ln x}{x} = 0$.\n4. Forme $\\infty - \\infty$. On factorise par le terme qui domine en $+\\infty$, l'exponentielle : $x^3 - e^x = e^x\\left(\\frac{x^3}{e^x} - 1\\right)$. Or $\\frac{x^3}{e^x} \\to 0$ par croissances comparées (question 1 généralisée), donc le facteur entre parenthèses tend vers $-1$, tandis que $e^x \\to +\\infty$ : par produit, $\\lim_{x\\to+\\infty}(x^3-e^x) = -\\infty$.\n\nMéthode à retenir : dès qu'une forme indéterminée mélange polynôme, exponentielle et/ou logarithme, la factorisation par le terme dominant (généralement l'exponentielle) ramène systématiquement à une croissance comparée usuelle — c'est le réflexe qui remplace la factorisation polynomiale classique dans ce contexte.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "croissances comparées",
+      "exponentielle",
+      "logarithme",
+      "factorisation par le terme dominant"
+    ],
+    "pedagogicalGoal": "quatrième et dernier maillon accessible du parcours 'Limites' : après substitution directe, factorisation polynomiale et quantité conjuguée, cette technique (croissances comparées + factorisation par le terme dominant) complète le trio de méthodes de base avant les limites plus subtiles nécessitant un DL (déjà présentes dans le chapitre Développements limités)."
+  },
+  {
+    "title": "Lire et utiliser un développement limité déjà donné",
+    "statement": "On donne le développement limité de la fonction exponentielle à l'ordre $2$ en $0$ :\n$$e^x = 1 + x + \\dfrac{x^2}{2} + o(x^2).$$\n1. En utilisant uniquement ce DL (sans calculatrice), donner une valeur approchée de $e^{0,1}$.\n2. Écrire le développement limité de $e^x$ à l'ordre $1$ en $0$ obtenu par troncature du DL ci-dessus.\n3. En déduire l'équation de la tangente à la courbe de $x \\mapsto e^x$ au point d'abscisse $0$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Développements limités",
+    "estimatedMinutes": 12,
+    "tags": [
+      "développements limités",
+      "DL usuels",
+      "tangente",
+      "approximation"
+    ],
+    "hints": [
+      "Pour la question 1, remplace simplement $x$ par $0,1$ dans le DL donné et ignore le reste $o(x^2)$ (négligeable) : aucun calcul de DL n'est nécessaire ici, seulement une lecture.",
+      "Le DL à l'ordre 1 d'une fonction $f$ en $0$ s'écrit toujours $f(x) = f(0) + f'(0)x + o(x)$ : c'est exactement l'équation de la tangente en $x=0$ à laquelle on a ajouté le petit terme d'erreur."
+    ],
+    "correction": "1. En remplaçant $x$ par $0,1$ dans $e^x \\approx 1 + x + \\frac{x^2}{2}$ : $e^{0,1} \\approx 1 + 0,1 + \\frac{0,01}{2} = 1 + 0,1 + 0,005 = 1,105$. (La valeur exacte est $e^{0,1} \\approx 1,10517$, l'approximation est donc excellente à $10^{-3}$ près.)\n2. En ne gardant que les termes de degré $\\leq 1$ dans le DL à l'ordre $2$ : $e^x = 1 + x + o(x)$. (On peut toujours tronquer un DL à un ordre inférieur : c'est un DL valide à cet ordre, avec un $o(x)$ qui absorbe tous les termes de degré supérieur.)\n3. Un DL à l'ordre $1$ en $0$ s'écrit $f(x) = f(0) + f'(0)\\,x + o(x)$, et $f(0)+f'(0)x$ est précisément l'équation de la tangente en $0$. D'après la question 2, $f(0)=1$ et $f'(0)=1$ : la tangente à la courbe de $x\\mapsto e^x$ en $0$ a donc pour équation $y = 1 + x$.\n\nPoint de méthode essentiel pour bien démarrer les DL : un développement limité n'est pas seulement un outil de calcul de limites — c'est avant tout une **information locale enrichie** sur une fonction (valeur, tangente, position par rapport à la tangente...). Savoir lire un DL déjà écrit (l'utiliser) est un préalable indispensable avant de savoir en calculer un soi-même.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "notion de développement limité",
+      "tangente à une courbe"
+    ],
+    "pedagogicalGoal": "combler le premier barreau manquant de la progression DL (diff.1 'reconnaître/utiliser un DL simple'), avant l'exercice existant de calcul de DL (diff.2) puis d'utilisation pour une limite (diff.3) — le chapitre démarrait jusqu'ici directement à un niveau qui suppose déjà de savoir manipuler un DL."
+  },
+  {
+    "title": "Théorème des valeurs intermédiaires : existence d'une solution",
+    "statement": "On considère la fonction $f(x) = x^3 + x - 1$ sur $\\mathbb{R}$.\n1. Montrer que $f$ est continue et strictement croissante sur $\\mathbb{R}$.\n2. Montrer que l'équation $f(x) = 0$ admet une unique solution $\\alpha$ dans $[0,1]$.\n3. Donner un encadrement de $\\alpha$ à $0,1$ près en calculant $f(0,6)$ et $f(0,7)$.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Fonctions",
+    "estimatedMinutes": 18,
+    "tags": [
+      "continuité",
+      "TVI",
+      "existence et unicité",
+      "monotonie"
+    ],
+    "hints": [
+      "$f$ est une fonction polynomiale : elle est continue sur $\\mathbb{R}$ sans qu'il soit nécessaire de le justifier en détail ; pour la stricte croissance, étudie le signe de $f'(x)$.",
+      "Le théorème de la bijection monotone (TVI + stricte monotonie) donne à la fois existence ET unicité en une seule étape — pas besoin de les démontrer séparément."
+    ],
+    "correction": "1. $f$ est une fonction polynomiale, donc continue sur $\\mathbb{R}$. Sa dérivée est $f'(x) = 3x^2+1$, qui est strictement positive pour tout $x \\in \\mathbb{R}$ (somme d'un carré positif ou nul et de $1$) : $f$ est donc strictement croissante sur $\\mathbb{R}$.\n2. On calcule $f(0) = 0+0-1 = -1 < 0$ et $f(1) = 1+1-1 = 1 > 0$. Comme $f$ est continue sur $[0,1]$ et change de signe entre les bornes, le théorème des valeurs intermédiaires garantit l'existence d'au moins un $\\alpha \\in [0,1]$ tel que $f(\\alpha)=0$. Comme de plus $f$ est strictement croissante (donc injective), cette solution est unique. (C'est le théorème de la bijection monotone, cas particulier du TVI.)\n3. $f(0,6) = 0,6^3+0,6-1 = 0,216+0,6-1 = -0,184 < 0$ et $f(0,7) = 0,7^3+0,7-1 = 0,343+0,7-1 = 0,043 > 0$. Comme $f$ est strictement croissante et change de signe entre $0,6$ et $0,7$, on en déduit $\\alpha \\in [0,6\\,;\\,0,7]$, ce qui donne un encadrement de $\\alpha$ à $0,1$ près.\n\nPoint de méthode : ce type de raisonnement (encadrement successif par évaluations numériques) est le principe de la méthode de dichotomie, qui permet d'approcher $\\alpha$ d'aussi près qu'on veut en répétant le procédé.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "continuité",
+      "théorème des valeurs intermédiaires",
+      "monotonie et dérivée"
+    ],
+    "pedagogicalGoal": "premier exercice accessible d'existence/unicité par TVI sur une équation simple (sans paramètre ni contexte de suite), avant l'exercice existant sur les raccords de fonctions par morceaux (diff.3) et l'étude de fonction implicite (diff.4) — comble le trou entre 'piège' (diff.2) et ces exercices plus avancés."
+  },
+  {
+    "title": "Optimisation simple : aire maximale d'un rectangle à périmètre fixé",
+    "statement": "Parmi tous les rectangles de périmètre $20$, on cherche celui dont l'aire est maximale.\n1. En notant $L$ la longueur d'un côté du rectangle (avec $0 < L < 10$), exprimer l'aire $A(L)$ du rectangle en fonction de $L$ uniquement.\n2. Étudier les variations de $A$ sur $]0,10[$.\n3. En déduire les dimensions du rectangle d'aire maximale, ainsi que la valeur de cette aire maximale. Quelle est la nature de ce rectangle ?",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Dérivation",
+    "estimatedMinutes": 18,
+    "tags": [
+      "dérivation",
+      "optimisation",
+      "variations",
+      "extremum"
+    ],
+    "hints": [
+      "Si $L$ et $\\ell$ sont les deux côtés du rectangle, le périmètre fixé donne une relation entre $L$ et $\\ell$ : utilise-la pour éliminer $\\ell$ et n'avoir plus qu'une seule variable.",
+      "Une fois $A(L)$ obtenue (fonction polynomiale de degré 2), étudie le signe de $A'(L)$ pour dresser le tableau de variations et localiser le maximum."
+    ],
+    "correction": "1. Le périmètre d'un rectangle de côtés $L$ et $\\ell$ vaut $2(L+\\ell)=20$, donc $\\ell = 10-L$ (avec $0<L<10$ pour que $\\ell>0$). L'aire est $A(L) = L \\times \\ell = L(10-L) = 10L - L^2$.\n2. $A$ est dérivable sur $]0,10[$ avec $A'(L) = 10-2L$. On a $A'(L) > 0 \\iff L < 5$ et $A'(L) < 0 \\iff L > 5$ : $A$ est donc strictement croissante sur $]0,5]$ et strictement décroissante sur $[5,10[$, avec un maximum en $L=5$.\n3. Pour $L=5$, on obtient $\\ell = 10-5 = 5$ : les deux côtés sont égaux, le rectangle d'aire maximale est donc un **carré** de côté $5$. L'aire maximale correspondante est $A(5) = 5 \\times 5 = 25$.\n\nMéthode générale d'optimisation : (1) identifier la quantité à optimiser et la contrainte, (2) utiliser la contrainte pour se ramener à une fonction d'une seule variable, (3) étudier les variations de cette fonction (signe de la dérivée) pour localiser l'extremum, (4) revenir aux données du problème initial pour conclure. Ce schéma en 4 étapes se retrouve dans la quasi-totalité des problèmes d'optimisation de prépa.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "dérivation",
+      "étude de signe",
+      "tableau de variations"
+    ],
+    "pedagogicalGoal": "premier problème d'optimisation concret utilisant la dérivation (mise en équation + étude de variations + retour au contexte), compétence explicitement citée au programme mais jusqu'ici absente du chapitre Dérivation, qui ne comportait que du calcul de dérivées et des théorèmes (Rolle, accroissements finis)."
+  },
+  {
+    "title": "Nombres complexes : opérations en forme algébrique",
+    "statement": "Effectuer les calculs suivants et donner le résultat sous forme algébrique $a+ib$ :\n1. $(2+3i)(1-i)$\n2. $(3-2i) + (-1+4i)$\n3. $\\dfrac{1}{1+i}$ (on multipliera numérateur et dénominateur par le conjugué du dénominateur)",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Nombres complexes",
+    "estimatedMinutes": 12,
+    "tags": [
+      "nombres complexes",
+      "forme algébrique",
+      "conjugué",
+      "opérations"
+    ],
+    "hints": [
+      "Pour le produit, développe comme un produit de deux binômes classique, puis utilise $i^2=-1$ pour simplifier.",
+      "Pour un quotient, la technique systématique est de multiplier haut et bas par le conjugué du dénominateur : cela transforme le dénominateur en un réel positif ($|z|^2$)."
+    ],
+    "correction": "1. $(2+3i)(1-i) = 2 - 2i + 3i - 3i^2 = 2 + i - 3(-1) = 2 + i + 3 = 5 + i$.\n2. $(3-2i)+(-1+4i) = (3-1) + (-2+4)i = 2 + 2i$.\n3. On multiplie numérateur et dénominateur par le conjugué de $1+i$, qui est $1-i$ : $\\dfrac{1}{1+i} = \\dfrac{1-i}{(1+i)(1-i)} = \\dfrac{1-i}{1^2-i^2} = \\dfrac{1-i}{1-(-1)} = \\dfrac{1-i}{2} = \\dfrac{1}{2} - \\dfrac{1}{2}i$.\n\nRègle de calcul fondamentale : dans toute expression complexe, $i^2$ se remplace systématiquement par $-1$ — c'est la seule règle supplémentaire par rapport au calcul algébrique usuel sur $\\mathbb{R}$. La technique du conjugué (question 3) est la méthode universelle pour rendre réel n'importe quel dénominateur complexe : $(a+ib)(a-ib) = a^2+b^2$ est toujours un réel positif (sauf si $a=b=0$).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "définition de i",
+      "calcul algébrique de base"
+    ],
+    "pedagogicalGoal": "premier barreau explicitement manquant du chapitre Nombres complexes : le chapitre démarrait directement avec la forme trigonométrique (Moivre) et l'équation du second degré, sans exercice pur de manipulation en forme algébrique — installe la maîtrise des opérations de base (dont la technique du conjugué) avant le module/argument."
+  },
+  {
+    "title": "Nombres complexes : calcul de module et d'argument",
+    "statement": "Pour chacun des nombres complexes suivants, déterminer le module et un argument :\n1. $z_1 = 1+i$\n2. $z_2 = -1+i\\sqrt{3}$\n3. $z_3 = \\sqrt{3}-i$",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Nombres complexes",
+    "estimatedMinutes": 15,
+    "tags": [
+      "nombres complexes",
+      "module",
+      "argument",
+      "cercle trigonométrique"
+    ],
+    "hints": [
+      "Le module se calcule directement par $|a+ib| = \\sqrt{a^2+b^2}$, sans avoir besoin de connaître l'argument.",
+      "Pour l'argument, place le point $(a,b)$ dans le plan et repère l'angle correspondant sur le cercle trigonométrique parmi les valeurs usuelles ($\\pi/6$, $\\pi/4$, $\\pi/3$, etc.) ; le signe de $a$ et de $b$ indique le quadrant."
+    ],
+    "correction": "1. $z_1 = 1+i$ : $|z_1| = \\sqrt{1^2+1^2} = \\sqrt{2}$. Le point $(1,1)$ est dans le premier quadrant, avec $a=b$ : c'est l'angle $\\frac{\\pi}{4}$. On vérifie : $\\sqrt{2}\\left(\\cos\\frac{\\pi}{4}+i\\sin\\frac{\\pi}{4}\\right) = \\sqrt{2}\\left(\\frac{\\sqrt2}{2}+i\\frac{\\sqrt2}{2}\\right) = 1+i$. Donc $\\arg(z_1) = \\frac{\\pi}{4}$.\n2. $z_2 = -1+i\\sqrt{3}$ : $|z_2| = \\sqrt{(-1)^2+(\\sqrt3)^2} = \\sqrt{1+3} = 2$. On écrit $z_2 = 2\\left(-\\frac12+i\\frac{\\sqrt3}{2}\\right)$, et on reconnaît $\\cos\\theta=-\\frac12$, $\\sin\\theta=\\frac{\\sqrt3}{2}$ : c'est l'angle $\\theta = \\frac{2\\pi}{3}$ (deuxième quadrant, cohérent avec $a<0$, $b>0$). Donc $\\arg(z_2) = \\frac{2\\pi}{3}$.\n3. $z_3 = \\sqrt3-i$ : $|z_3| = \\sqrt{(\\sqrt3)^2+(-1)^2} = \\sqrt{3+1} = 2$. On écrit $z_3 = 2\\left(\\frac{\\sqrt3}{2}-i\\frac12\\right)$, et on reconnaît $\\cos\\theta=\\frac{\\sqrt3}{2}$, $\\sin\\theta=-\\frac12$ : c'est l'angle $\\theta=-\\frac{\\pi}{6}$ (quatrième quadrant, cohérent avec $a>0$, $b<0$). Donc $\\arg(z_3) = -\\frac{\\pi}{6}$.\n\nMéthode systématique : toujours calculer $|z|$ en premier (par la formule $\\sqrt{a^2+b^2}$, sans risque d'erreur), puis factoriser $z$ par $|z|$ pour faire apparaître $\\cos\\theta$ et $\\sin\\theta$ directement lisibles sur le cercle trigonométrique — ne jamais essayer de deviner l'argument avant d'avoir factorisé par le module.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "forme algébrique d'un nombre complexe",
+      "cercle trigonométrique",
+      "angles usuels"
+    ],
+    "pedagogicalGoal": "isoler la compétence 'calculer module et argument' en tant que telle (diff.2 du parcours complexes explicitement souhaité), avant que ces notions ne soient réutilisées implicitement dans les exercices existants sur les racines n-ièmes et le piège d'inégalité triangulaire."
+  },
+  {
+    "title": "Familles de vecteurs de R² : libres ou liées ?",
+    "statement": "Dans $\\mathbb{R}^2$, on considère les familles de vecteurs suivantes :\n1. $\\mathcal{F}_1 = (u,v)$ avec $u=(1,2)$ et $v=(3,6)$.\n2. $\\mathcal{F}_2 = (w_1,w_2)$ avec $w_1=(1,2)$ et $w_2=(2,1)$.\nPour chacune, déterminer si la famille est libre ou liée. Dans le cas d'une famille liée, exprimer un vecteur comme combinaison linéaire de l'autre.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Algèbre linéaire",
+    "estimatedMinutes": 15,
+    "tags": [
+      "espaces vectoriels",
+      "famille libre",
+      "famille liée",
+      "déterminant"
+    ],
+    "hints": [
+      "Dans $\\mathbb{R}^2$, deux vecteurs forment une famille liée si et seulement si l'un est un multiple scalaire de l'autre (colinéarité) — regarde d'abord si tu repères ce rapport à l'œil.",
+      "Pour trancher rigoureusement, calcule le déterminant $\\begin{vmatrix} a & c \\\\ b & d \\end{vmatrix} = ad-bc$ des deux vecteurs $(a,b)$ et $(c,d)$ : la famille est liée si et seulement si ce déterminant est nul."
+    ],
+    "correction": "1. On remarque que $v = (3,6) = 3 \\times (1,2) = 3u$. La famille $\\mathcal{F}_1=(u,v)$ est donc **liée** (il existe une relation non triviale $v - 3u = 0$, soit une combinaison linéaire nulle à coefficients non tous nuls). Vérification par le déterminant : $\\begin{vmatrix}1 & 3\\\\2 & 6\\end{vmatrix} = 1\\times6 - 3\\times2 = 6-6=0$, ce qui confirme la liaison.\n2. On calcule le déterminant de $w_1=(1,2)$ et $w_2=(2,1)$ : $\\begin{vmatrix}1 & 2\\\\2 & 1\\end{vmatrix} = 1\\times1 - 2\\times2 = 1-4=-3 \\neq 0$. Le déterminant est non nul, donc la famille $\\mathcal{F}_2=(w_1,w_2)$ est **libre** : aucun des deux vecteurs n'est un multiple scalaire de l'autre, et la seule combinaison linéaire $\\alpha w_1+\\beta w_2=0$ possible est $\\alpha=\\beta=0$.\n\nPoint de méthode fondamental à retenir dès l'introduction des espaces vectoriels : dans $\\mathbb{R}^2$, une famille de deux vecteurs est liée si et seulement si les vecteurs sont colinéaires (portés par la même droite vectorielle), ce que le déterminant permet de vérifier instantanément sans avoir à résoudre un système. C'est le point de départ concret avant de généraliser la notion de famille libre à des familles plus grandes, à $\\mathbb{R}^3$, puis à des espaces abstraits (polynômes, fonctions).",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "vecteurs de R^n",
+      "combinaison linéaire",
+      "déterminant 2×2"
+    ],
+    "pedagogicalGoal": "premier contact totalement concret avec la notion de famille libre/liée, dans R² avec seulement deux vecteurs et un critère calculatoire immédiat (déterminant) — comble l'absence de diff.1 dans le chapitre Algèbre linéaire, qui démarrait jusqu'ici directement aux axiomes de sous-espace vectoriel (diff.2)."
+  },
+  {
+    "title": "Application linéaire de R² dans R² : image, noyau, injectivité",
+    "statement": "On définit $f : \\mathbb{R}^2 \\to \\mathbb{R}^2$ par $f(x,y) = (2x-y,\\ x+y)$.\n1. Vérifier que $f$ est une application linéaire.\n2. Calculer $f(1,2)$.\n3. Déterminer $\\mathrm{Ker}(f)$. Que peut-on en déduire sur l'injectivité de $f$ ?\n4. En utilisant le théorème du rang, déterminer $\\dim(\\mathrm{Im}(f))$, puis en déduire si $f$ est surjective.",
+    "source": "TaekdHub — exercice original (Sup)",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Algèbre linéaire",
+    "estimatedMinutes": 20,
+    "tags": [
+      "applications linéaires",
+      "noyau",
+      "image",
+      "injectivité",
+      "surjectivité",
+      "théorème du rang"
+    ],
+    "hints": [
+      "Pour vérifier la linéarité, montre que $f(\\lambda(x,y)+\\mu(x',y')) = \\lambda f(x,y)+\\mu f(x',y')$ pour tous scalaires $\\lambda,\\mu$ et tous vecteurs — ou plus simplement ici, remarque que chaque composante de $f(x,y)$ est une combinaison linéaire de $x$ et $y$.",
+      "Pour le noyau, résous le système $2x-y=0$, $x+y=0$ : si la seule solution est $(0,0)$, $f$ est injective (rappelle-toi le lien entre noyau réduit à $\\{0\\}$ et injectivité)."
+    ],
+    "correction": "1. Pour tous $(x,y),(x',y') \\in \\mathbb{R}^2$ et $\\lambda,\\mu \\in \\mathbb{R}$ : $f(\\lambda(x,y)+\\mu(x',y')) = f(\\lambda x+\\mu x',\\ \\lambda y+\\mu y') = (2(\\lambda x+\\mu x')-(\\lambda y+\\mu y'),\\ (\\lambda x+\\mu x')+(\\lambda y+\\mu y'))$. En regroupant : $= \\lambda(2x-y,\\ x+y) + \\mu(2x'-y',\\ x'+y') = \\lambda f(x,y) + \\mu f(x',y')$. Donc $f$ est bien linéaire (chaque composante de l'image est une combinaison linéaire de $x$ et $y$, ce qui garantit directement la linéarité).\n2. $f(1,2) = (2\\times1-2,\\ 1+2) = (0,3)$.\n3. $\\mathrm{Ker}(f) = \\{(x,y) \\in \\mathbb{R}^2 : 2x-y=0 \\text{ et } x+y=0\\}$. De la première équation, $y=2x$ ; en reportant dans la seconde, $x+2x=0$ donc $3x=0$, soit $x=0$, puis $y=0$. Donc $\\mathrm{Ker}(f) = \\{(0,0)\\}$ : le noyau est réduit au vecteur nul, donc $f$ est **injective**.\n4. Par le théorème du rang, $\\dim(\\mathbb{R}^2) = \\dim(\\mathrm{Ker}(f)) + \\dim(\\mathrm{Im}(f))$, soit $2 = 0 + \\dim(\\mathrm{Im}(f))$, donc $\\dim(\\mathrm{Im}(f)) = 2$. Comme $\\mathrm{Im}(f)$ est un sous-espace de $\\mathbb{R}^2$ de dimension $2 = \\dim(\\mathbb{R}^2)$, on a $\\mathrm{Im}(f) = \\mathbb{R}^2$ : $f$ est donc **surjective**. (Cohérent avec le déterminant de la matrice associée $\\begin{pmatrix}2&-1\\\\1&1\\end{pmatrix}$, qui vaut $2\\times1-(-1)\\times1=3\\neq0$ : $f$ est bijective.)\n\nPoint de méthode central : en dimension finie, dès que l'espace de départ et d'arrivée ont la même dimension, injectivité et surjectivité sont **équivalentes** pour une application linéaire (conséquence directe du théorème du rang) — il suffit de vérifier l'une des deux propriétés pour obtenir l'autre gratuitement, et donc la bijectivité.",
+    "note": "Exercice original TaekdHub.",
+    "year": null,
+    "competition": null,
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "level": 3,
+    "prerequisites": [
+      "applications linéaires",
+      "systèmes linéaires",
+      "théorème du rang",
+      "familles libres/liées"
+    ],
+    "pedagogicalGoal": "premier exercice complet (linéarité, image d'un vecteur, noyau, image, injectivité/surjectivité) sur un exemple minimal en dimension 2, avant l'exercice existant en dimension 3 avec recherche de bases explicites (diff.3) — comble le trou entre la famille libre/liée de base (diff.1 ci-dessus) et cet exercice plus avancé."
   }
 ]
