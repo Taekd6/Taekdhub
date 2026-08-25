@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { ArrowRight, BarChart3, CheckCircle2, Clock3, Flame, GraduationCap, TrendingUp } from "lucide-react";
+import { ArrowRight, BarChart3, CheckCircle2, Clock3, Flame, GraduationCap, Target, TrendingUp } from "lucide-react";
 import { MetricCard } from "@/components/ui/metric-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,10 @@ import { Heatmap } from "@/components/heatmap";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
+import { computeChaptersToConsolidate } from "@/lib/next-action";
 import { computeGlobalProgress, computeProgressBySubject, masteryDistribution, progressByChapter, statusDistribution } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META, type ReadinessLevel } from "@/lib/readiness";
-import type { WeekSnapshot } from "@/lib/storage";
+import type { Chapter, WeekSnapshot } from "@/lib/storage";
 import { statusMeta, subjectMeta, subjects, totalSeconds } from "@/lib/study";
 import { compareToPreviousWeek, findPreviousWeekSnapshot } from "@/lib/week-snapshot";
 import { formatDuration } from "@/lib/utils";
@@ -93,6 +94,74 @@ function WeekEvolution({ exercises, sessions, weekSnapshots }: { exercises: Exer
           )}
         </div>
       )}
+    </Card>
+  );
+}
+
+/**
+ * « Tes 3 priorités » — la réponse directe à la question que l'élève se pose
+ * réellement en ouvrant cette page : « qu'est-ce que je dois retravailler ? »
+ *
+ * La page savait déjà tout montrer (maîtrise par matière, par chapitre, par
+ * statut, constance, évolution) mais ne CONCLUAIT jamais : à l'élève de
+ * croiser cinq graphiques pour deviner ses points faibles. C'est
+ * précisément le travail que l'application est la mieux placée pour faire.
+ *
+ * Aucune logique nouvelle : `computeChaptersToConsolidate` (lib/next-action.ts)
+ * est la MÊME fonction qui alimente déjà "À consolider" au Dashboard, et
+ * elle s'appuie sur les mêmes champs que le moteur de recommandation. Créer
+ * ici un second classement des faiblesses aurait garanti que les deux écrans
+ * finissent par se contredire — le pire défaut possible pour un produit qui
+ * promet de savoir quoi faire travailler. On n'en montre que les trois
+ * premiers : une priorité, par définition, ne se compte pas par dix.
+ */
+function TopWeaknesses({ exercises, sessions, chapters }: { exercises: Exercise[]; sessions: WorkSession[]; chapters: Chapter[] }) {
+  const priorities = useMemo(
+    () => computeChaptersToConsolidate(exercises, sessions, chapters).slice(0, 3),
+    [exercises, sessions, chapters]
+  );
+
+  if (priorities.length === 0) return null;
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-center gap-2">
+        <Target size={14} className="text-accent" />
+        <p className="eyebrow">Priorités</p>
+      </div>
+      <CardTitle className="mt-2">Ce que tu dois retravailler en premier</CardTitle>
+      <p className="mt-1 text-xs text-zinc-500">Classé par le même moteur que tes recommandations — donc cohérent avec ce que TaekdHub te propose.</p>
+
+      <ol className="mt-5 space-y-2.5">
+        {priorities.map(({ chapter, averageMastery, reasons, href }, index) => (
+          <li key={chapter.id}>
+            <Link
+              href={href}
+              className="focus-ring flex items-start gap-3 rounded-xl border border-hairline/[0.07] p-3.5 transition hover:border-hairline/[0.14] hover:bg-hairline/[0.025]"
+            >
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent">{index + 1}</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                  <p className="truncate text-sm font-medium text-zinc-100">{chapter.label}</p>
+                  <span className="shrink-0 text-xs text-zinc-500">{averageMastery}% de maîtrise</span>
+                </div>
+                <p className="mt-0.5 text-2xs text-zinc-500">{chapter.subject}</p>
+                {/* Les preuves, pas un score opaque : l'élève doit pouvoir contester le classement. */}
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {reasons.map((reason) => (
+                    <Badge key={reason} variant="warning">
+                      {reason}
+                    </Badge>
+                  ))}
+                </div>
+                <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent">
+                  Travailler ce chapitre <ArrowRight size={11} />
+                </span>
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ol>
     </Card>
   );
 }
@@ -207,6 +276,8 @@ export function ProgressOverview() {
         <MetricCard label="Progression globale" value={`${model.global.completionRate}%`} detail="Part maîtrisée" icon={BarChart3} delay={0.1} />
         <MetricCard label="Série actuelle" value={`${model.streak} j`} detail="Jours consécutifs" icon={Flame} delay={0.15} />
       </section>
+
+      <TopWeaknesses exercises={exercises} sessions={sessions} chapters={chapters} />
 
       <WeekEvolution exercises={exercises} sessions={sessions} weekSnapshots={weekSnapshots} />
       <DsReadiness exercises={exercises} sessions={sessions} />

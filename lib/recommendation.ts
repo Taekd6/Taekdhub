@@ -105,6 +105,19 @@ function recentFailureCount(attempts: WorkSession[]): number {
   return attempts.slice(0, RECENT_ATTEMPTS_WINDOW).filter((attempt) => attempt.result === "échoué").length;
 }
 
+/**
+ * La dernière tentative a-t-elle réussi MAIS au prix de plusieurs indices ?
+ *
+ * C'est le cas que ni `result` ni `mastery` ne savaient exprimer : l'élève a
+ * coché « Réussi », donc l'exercice sortait du radar — alors qu'il n'a
+ * trouvé qu'en se faisant donner la moitié du raisonnement. Un bon
+ * professeur le repropose ; l'ancien moteur, lui, le considérait acquis.
+ */
+function lastAttemptWasAssisted(attempts: WorkSession[]): boolean {
+  const last = attempts[0];
+  return last?.result === "réussi" && last.hints_used !== null && last.hints_used >= ASSISTED_HINTS_THRESHOLD;
+}
+
 /** Longueur de la série de réussites consécutives la plus récente (s'arrête à la première tentative non réussie). */
 function recentSuccessStreak(attempts: WorkSession[]): number {
   let streak = 0;
@@ -137,17 +150,28 @@ const COMFORT_MIN_ATTEMPTS = 3;
 /** Série de réussites à partir de laquelle on propose un cran au-dessus (le seuil que l'élève voit cité dans la justification). */
 const COMFORT_STEP_UP_STREAK = 3;
 
-/** Difficulté de l'exercice associé à chaque tentative qualifiée, les plus récentes d'abord — `null` si l'exercice n'existe plus (archivé/supprimé). */
+/**
+ * Au-delà de ce nombre d'indices, une réussite cesse d'être une preuve
+ * d'autonomie : l'élève a trouvé, mais guidé. Deux indices sur trois, c'est
+ * la moitié du raisonnement donnée.
+ */
+export const ASSISTED_HINTS_THRESHOLD = 2;
+
+/** Difficulté et niveau d'aide de chaque tentative qualifiée, les plus récentes d'abord — l'exercice disparu (archivé/supprimé) est ignoré. */
 function attemptsWithDifficulty(
   exercises: Exercise[],
   sessions: WorkSession[]
-): { result: AttemptResult; difficulty: number }[] {
+): { result: AttemptResult; difficulty: number; hintsUsed: number | null }[] {
   const difficultyById = new Map(exercises.map((exercise) => [exercise.id, exercise.difficulty]));
   return sessions
     .filter((session) => session.result && session.exercise_id && difficultyById.has(session.exercise_id))
     .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
     .slice(0, COMFORT_WINDOW)
-    .map((session) => ({ result: session.result!, difficulty: difficultyById.get(session.exercise_id!)! }));
+    .map((session) => ({
+      result: session.result!,
+      difficulty: difficultyById.get(session.exercise_id!)!,
+      hintsUsed: session.hints_used,
+    }));
 }
 
 export interface ComfortLevel {
@@ -176,9 +200,18 @@ export function comfortDifficulty(exercises: Exercise[], sessions: WorkSession[]
   // celle où il échoue — auquel cas on visera en dessous, juste après.
   const base = succeeded.length > 0 ? average(succeeded.map((a) => a.difficulty)) : average(failed.map((a) => a.difficulty));
 
+  // La série de réussites qui autorise une montée ne compte QUE les
+  // réussites autonomes : réussir trois exercices en révélant tous les
+  // indices ne prouve pas qu'on est prêt pour le cran au-dessus — c'est même
+  // le contraire. Une réussite assistée n'interrompt pas la série (ce n'est
+  // pas un échec), elle ne la fait simplement pas progresser.
+  //
+  // `hintsUsed === null` (séance antérieure au champ) n'est jamais traité
+  // comme "0 indice" : sans preuve d'autonomie, on ne crédite rien.
   let streak = 0;
   for (const attempt of recent) {
     if (attempt.result !== "réussi") break;
+    if (attempt.hintsUsed === null || attempt.hintsUsed >= ASSISTED_HINTS_THRESHOLD) break;
     streak++;
   }
   const recentFailures = recent.slice(0, RECENT_ATTEMPTS_WINDOW).filter((a) => a.result === "échoué").length;
@@ -244,6 +277,11 @@ function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: Wo
   const failures = recentFailureCount(attempts);
   if (failures >= 2) reasons.push("Plusieurs échecs");
   else if (attempts[0]?.result === "échoué") reasons.push("Échec récent");
+  // Critère d'inclusion À PART ENTIÈRE : une réussite très assistée suffit à
+  // reproposer l'exercice, même si tous les autres signaux sont au vert
+  // (statut "maîtrisé", maîtrise à 100, travaillé hier). C'est précisément
+  // le trou que `result` seul laissait — voir `lastAttemptWasAssisted`.
+  else if (lastAttemptWasAssisted(attempts)) reasons.push("Réussi avec aide");
   // Une réussite récente n'est jamais, à elle seule, un critère d'inclusion
   // (même logique que "Favori" ci-dessous) : elle ne fait que compléter les
   // raisons d'un exercice déjà retenu par ailleurs.
@@ -326,7 +364,11 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
   // redescendre l'exercice — jamais jusqu'à l'exclure (ce n'est pas un
   // critère d'exclusion, seulement un effet sur le tri), et d'une amplitude
   // comparable à favoriteBonus/momentumBonus, pas dominante.
-  const successPenalty = Math.min(24, recentSuccessStreak(attempts) * 8); // 0 à 24
+  // Une réussite assistée ne doit PAS bénéficier de la décote accordée aux
+  // réussites autonomes : sans cette garde, l'exercice ressorti par
+  // "Réussi avec aide" serait aussitôt renvoyé en fin de liste par le
+  // `successPenalty` de sa propre réussite — inclus mais jamais proposé.
+  const successPenalty = lastAttemptWasAssisted(attempts) ? 0 : Math.min(24, recentSuccessStreak(attempts) * 8); // 0 à 24
   // Adéquation au niveau réel de l'élève — 0 tant qu'il n'a pas assez
   // d'historique (voir `comfortDifficulty`), donc score inchangé au démarrage.
   const difficultyFit = difficultyFitBonus(exercise, comfort); // 0 à 14
@@ -566,6 +608,7 @@ const REASON_RULES: ReasonRule[] = [
   { test: (r) => r.includes("Séance reprise"), sentence: () => "Tu avais laissé cette séance en cours — on reprend là où tu t'étais arrêté." },
   { test: (r) => r.includes("Plusieurs échecs"), sentence: () => "Tu as échoué plusieurs fois récemment dessus — ça mérite une nouvelle tentative." },
   { test: (r) => r.includes("Échec récent"), sentence: () => "Ta dernière tentative n'a pas abouti — on retente." },
+  { test: (r) => r.includes("Réussi avec aide"), sentence: () => "Tu l'avais réussi, mais avec les indices — on vérifie que c'est acquis." },
   // Avant les raisons "difficulté/maîtrise" : quand l'élève vient
   // d'enchaîner des réussites, la montée de palier est LE fait nouveau qui
   // explique le choix — et c'est la seule justification qui cite un chiffre

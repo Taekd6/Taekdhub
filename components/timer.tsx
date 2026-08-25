@@ -51,8 +51,9 @@ export function Timer() {
         created_at: new Date().toISOString(),
         // Séance libre, sans exercice précis : la question "réussi/échoué"
         // n'a pas de sens ici (voir focus-view.tsx pour le seul endroit où
-        // un résultat est demandé).
+        // un résultat est demandé) — pas davantage celle des indices.
         result: null,
+        hints_used: null,
       };
       saveSessions([session, ...sessions]);
     });

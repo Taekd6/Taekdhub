@@ -111,8 +111,19 @@ export function FocusView({
       note: `Exercice focus : ${item.title} (${item.source})`,
       created_at: new Date().toISOString(),
       result: null,
+      // Combien d'indices l'élève a-t-il eu besoin de révéler ? Capturé au
+      // moment où la séance se ferme, donc reflète bien CETTE tentative.
+      // 0 est une information à part entière (il s'en est sorti seul), pas
+      // une absence de donnée — voir lib/supabase/types.ts#hints_used.
+      hints_used: hintCount,
     });
-  }, [stop, item, onClose]);
+    // `hintCount` DOIT figurer ici : sans lui, `endSession` capture la valeur
+    // du premier rendu (0) et l'enregistre telle quelle, quels que soient les
+    // indices réellement révélés ensuite — la séance était systématiquement
+    // sauvegardée comme autonome. Bug trouvé en test bout-en-bout (3 indices
+    // révélés, `hints_used: 0` persisté), invisible au typecheck comme aux
+    // tests unitaires : seul le parcours réel le montrait.
+  }, [stop, item, onClose, hintCount]);
 
   // Sauvegarde réellement la séance — avec le résultat choisi, ou `null` si
   // l'utilisateur a préféré passer cette étape (Échap depuis l'écran de

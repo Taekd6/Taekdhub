@@ -135,6 +135,25 @@ export interface WorkSession {
    * jamais modifier `status`/`mastery` lui-même.
    */
   result: AttemptResult | null;
+  /**
+   * Nombre d'indices révélés durant CETTE tentative (0 si aucun), ou `null`
+   * quand l'information n'a jamais été enregistrée — séance antérieure à ce
+   * champ, ou séance libre depuis le Timer (aucun exercice, donc aucun
+   * indice possible).
+   *
+   * `null` et `0` ne veulent PAS dire la même chose et ne doivent jamais
+   * être confondus : `0` est une preuve positive que l'élève s'en est sorti
+   * seul — le signal le plus fort dont dispose le moteur ; `null` signifie
+   * simplement qu'on ne sait pas. Traiter `null` comme `0` reviendrait à
+   * créditer rétroactivement des mois d'historique d'une autonomie jamais
+   * observée (voir `normalizeSession`, lib/storage.ts).
+   *
+   * Signal volontairement brut : c'est un FAIT de la tentative, jamais une
+   * interprétation. Toute la lecture pédagogique (« a-t-il eu besoin d'aide
+   * ? », « ce chapitre est-il fragile ? ») vit dans lib/recommendation.ts,
+   * comme pour `result`.
+   */
+  hints_used: number | null;
 }
 
 /** Résultat d'une tentative de travail sur un exercice — voir `WorkSession.result`. */

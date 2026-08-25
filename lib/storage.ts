@@ -190,6 +190,13 @@ export function normalizeSession(raw: unknown): WorkSession {
     // sans exercice) : null, jamais deviné — voir la doc du champ dans
     // lib/supabase/types.ts.
     result: (ATTEMPT_RESULTS as string[]).includes(item.result as string) ? (item.result as AttemptResult) : null,
+    // `null` (et non 0) quand le champ est absent ou invalide : une séance
+    // enregistrée avant l'introduction de ce champ n'a PAS prouvé que l'élève
+    // s'est passé d'indices — voir la doc du champ dans lib/supabase/types.ts.
+    hints_used:
+      typeof item.hints_used === "number" && Number.isFinite(item.hints_used) && item.hints_used >= 0
+        ? Math.round(item.hints_used)
+        : null,
   };
 }
 
