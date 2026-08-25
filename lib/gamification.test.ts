@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { totalXp, xpFromSession } from "@/lib/gamification";
+import { computeStreak, totalXp, xpFromSession } from "@/lib/gamification";
 import type { Exercise, Mastery, WorkSession } from "@/lib/supabase/types";
 
 let counter = 0;
@@ -78,5 +78,86 @@ describe("XP — récompense l'apprentissage, pas le temps passé", () => {
     const xpEasy = totalXp([easy], [makeSession({ exercise_id: easy.id, result: "réussi", hints_used: 0 })]);
     const xpHard = totalXp([hard], [makeSession({ exercise_id: hard.id, result: "réussi", hints_used: 0 })]);
     expect(xpHard).toBeGreaterThan(xpEasy);
+  });
+});
+
+/**
+ * Un système de points se juge à ce qu'on peut en tirer SANS travailler.
+ * Ces tests verrouillent les trois chemins qui rapportaient gros pour rien —
+ * ils doivent échouer si l'un d'eux se rouvre.
+ */
+describe("XP — failles d'exploitation", () => {
+  it("cocher « maîtrisé » sans aucune trace de travail ne rapporte RIEN", () => {
+    const declared = makeExercise({ status: "maîtrisé", difficulty: 5 });
+    expect(totalXp([declared], [])).toBe(0);
+  });
+
+  it("… mais rapporte dès qu'une réussite autonome le prouve", () => {
+    const proven = makeExercise({ status: "maîtrisé", difficulty: 5 });
+    const xp = totalXp([proven], [makeSession({ exercise_id: proven.id, result: "réussi", hints_used: 0, duration_seconds: 900 })]);
+    expect(xp).toBe(5 * 25 + 5 * 10);
+  });
+
+  it("une réussite prouvée seulement à coups d'indices ne débloque pas l'XP de maîtrise", () => {
+    const assisted = makeExercise({ status: "maîtrisé", difficulty: 4 });
+    const xp = totalXp([assisted], [makeSession({ exercise_id: assisted.id, result: "réussi", hints_used: 3, duration_seconds: 900 })]);
+    expect(xp).toBe(4 * 5);
+  });
+
+  it("ouvrir puis refermer le focus en deux secondes en cochant « Réussi » ne rapporte RIEN", () => {
+    const exercise = makeExercise({ difficulty: 5 });
+    const farmed = Array.from({ length: 20 }, () =>
+      makeSession({ exercise_id: exercise.id, result: "réussi", hints_used: 0, duration_seconds: 2 })
+    );
+    expect(totalXp([exercise], farmed)).toBe(0);
+  });
+
+  it("réussir vingt fois le même exercice ne paie que deux fois, la seconde à moitié prix", () => {
+    const exercise = makeExercise({ difficulty: 3 });
+    const repeats = Array.from({ length: 20 }, (_, index) =>
+      makeSession({
+        id: `rep-${index}`,
+        exercise_id: exercise.id,
+        result: "réussi",
+        hints_used: 0,
+        duration_seconds: 900,
+        started_at: new Date(Date.UTC(2026, 0, index + 1)).toISOString(),
+      })
+    );
+    expect(totalXp([exercise], repeats)).toBe(3 * 10 + 3 * 10 * 0.5);
+  });
+
+  it("réussir vingt exercices DIFFÉRENTS paie vingt fois — la quantité de travail réel reste récompensée", () => {
+    const exercises = Array.from({ length: 20 }, () => makeExercise({ difficulty: 3 }));
+    const sessions = exercises.map((exercise) =>
+      makeSession({ exercise_id: exercise.id, result: "réussi", hints_used: 0, duration_seconds: 900 })
+    );
+    expect(totalXp(exercises, sessions)).toBe(20 * 3 * 10);
+  });
+});
+
+describe("Série (streak)", () => {
+  const NOW = new Date("2026-03-10T18:00:00.000Z");
+  const day = (offset: number, seconds: number) =>
+    makeSession({
+      id: `d-${offset}`,
+      duration_seconds: seconds,
+      started_at: new Date(NOW.getTime() - offset * 86400000).toISOString(),
+    });
+
+  it("compte les jours consécutifs d'au moins une minute", () => {
+    expect(computeStreak([day(0, 900), day(1, 900), day(2, 900)], NOW)).toBe(3);
+  });
+
+  it("une visite de deux secondes ne tient pas la série", () => {
+    expect(computeStreak([day(0, 2), day(1, 900)], NOW)).toBe(1);
+  });
+
+  it("ne remet pas la série à zéro tant que la journée n'a rien enregistré", () => {
+    expect(computeStreak([day(1, 900), day(2, 900), day(3, 900)], NOW)).toBe(3);
+  });
+
+  it("une journée entièrement sautée casse bien la série", () => {
+    expect(computeStreak([day(1, 900), day(3, 900)], NOW)).toBe(1);
   });
 });
