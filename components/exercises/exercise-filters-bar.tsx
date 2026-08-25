@@ -48,10 +48,16 @@ export function ExerciseFiltersBar({
             placeholder="Rechercher un titre, une source, un tag, une année, un type…"
           />
         </div>
+        {/* "Ajouter"/"Importer" en secondaire : sur une page dont tout l'objet
+            est de RETROUVER un exercice parmi 402 déjà présents, créer une
+            fiche est une action rare et administrative. En primaire plein
+            accent, "Ajouter" était l'élément le plus visible de l'écran —
+            hiérarchie inversée par rapport à ce que l'élève vient y faire.
+            Les deux actions restent au même endroit, simplement au bon rang. */}
         <Button variant="secondary" onClick={onImportClick} className="shrink-0">
           <Upload size={17} /> Importer
         </Button>
-        <Button onClick={onAddClick} className="shrink-0">
+        <Button variant="secondary" onClick={onAddClick} className="shrink-0">
           <Plus size={17} /> Ajouter
         </Button>
       </div>

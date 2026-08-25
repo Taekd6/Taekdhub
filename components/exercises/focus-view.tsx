@@ -279,7 +279,7 @@ export function FocusView({
           )}
 
           {/* Énoncé — cœur de la séance : immédiatement visible, sans clic ni révélation, contrairement aux indices/correction. */}
-          <div className="mt-6 rounded-2xl border border-hairline/[0.08] bg-hairline/[0.025] p-5 sm:p-6">
+          <div className="mt-6 rounded-2xl border border-hairline/[0.09] bg-hairline/[0.025] p-5 sm:p-6">
             {item.statement.trim() ? (
               <RichMath text={item.statement} className="text-base leading-8 text-zinc-100" />
             ) : (
@@ -312,7 +312,7 @@ export function FocusView({
                   {correctionVisible ? "Masquer la correction" : "Afficher la correction"}
                 </Button>
                 {correctionVisible && (
-                  <div className="mt-4 rounded-xl border border-hairline/[0.08] bg-hairline/[0.035] p-4 text-left text-sm leading-7 text-zinc-300">
+                  <div className="mt-4 rounded-xl border border-hairline/[0.09] bg-hairline/[0.04] p-4 text-left text-sm leading-7 text-zinc-300">
                     <RichMath text={item.correction} />
                   </div>
                 )}

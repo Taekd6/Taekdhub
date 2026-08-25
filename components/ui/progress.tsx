@@ -16,7 +16,7 @@ export function ProgressBar({
 }) {
   const clamped = Math.min(100, Math.max(0, value));
   return (
-    <div className={cn("h-2 overflow-hidden rounded-full bg-hairline/[0.07]", className)}>
+    <div className={cn("h-2 overflow-hidden rounded-full bg-hairline/[0.08]", className)}>
       {animated ? (
         <motion.div
           initial={{ width: 0 }}

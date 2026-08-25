@@ -54,7 +54,7 @@ export function ExerciseDetail({
           placeholder={"Énoncé complet — maths en LaTeX : $x^2$ inline, $$\\int_0^1 f$$ en bloc"}
         />
         {item.statement.trim() && (
-          <div className="mt-3 rounded-xl border border-hairline/[0.08] bg-hairline/[0.035] p-3 text-sm leading-6 text-zinc-300">
+          <div className="mt-3 rounded-xl border border-hairline/[0.09] bg-hairline/[0.04] p-3 text-sm leading-6 text-zinc-300">
             <p className="mb-1 text-2xs uppercase tracking-wide text-zinc-600">Aperçu</p>
             <RichMath text={item.statement} />
           </div>
@@ -204,7 +204,7 @@ export function ExerciseDetail({
               {correctionVisible ? "Masquer la correction" : "Afficher la correction"}
             </Button>
             {correctionVisible && (
-              <div className="mt-3 rounded-xl border border-hairline/[0.08] bg-hairline/[0.035] p-3 text-sm leading-6 text-zinc-300">
+              <div className="mt-3 rounded-xl border border-hairline/[0.09] bg-hairline/[0.04] p-3 text-sm leading-6 text-zinc-300">
                 <RichMath text={item.correction} />
               </div>
             )}

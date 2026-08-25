@@ -230,13 +230,40 @@
   }
 }
 
+/**
+ * ÉCHELLE `hairline` — trois marches, et seulement trois.
+ *
+ * Avant consolidation, l'app utilisait SEPT opacités de bordure
+ * (0.06/0.07/0.08/0.09/0.1/0.12/0.14) et SEPT de fond
+ * (0.02/0.025/0.035/0.04/0.045/0.07/0.08) pour des rôles pourtant
+ * identiques : deux cartes voisines pouvaient porter des bordures
+ * imperceptiblement différentes sans qu'aucune règle ne dise laquelle
+ * choisir. Un écart sub-perceptuel n'apporte rien à l'œil mais rend le
+ * système illisible et garantit la dérive à chaque ajout.
+ *
+ * Chaque marche a désormais UN rôle :
+ *
+ *   BORDURES
+ *   0.07  tuile interne, séparateur discret (le cas le plus courant)
+ *   0.09  surface, contrôle (champ, bouton secondaire, groupe segmenté)
+ *   0.14  survol / emphase
+ *
+ *   FONDS
+ *   0.025 fond à peine posé (zone en léger relief)
+ *   0.04  tuile, survol d'un élément de liste
+ *   0.08  état actif / appuyé
+ *
+ * Ajouter une valeur intermédiaire, c'est recommencer le problème : s'il
+ * semble manquer une nuance, c'est le rôle qu'il faut interroger, pas
+ * l'échelle.
+ */
 @layer components {
   .surface {
-    @apply border border-hairline/[0.08] bg-elevated/70 shadow-surface backdrop-blur-xl;
+    @apply border border-hairline/[0.09] bg-elevated/70 shadow-surface backdrop-blur-xl;
   }
 
   .surface-hover {
-    @apply transition-all duration-200 hover:border-hairline/[0.12] hover:bg-elevated/90;
+    @apply transition-all duration-200 hover:border-hairline/[0.14] hover:bg-elevated/90;
   }
 
   .eyebrow {

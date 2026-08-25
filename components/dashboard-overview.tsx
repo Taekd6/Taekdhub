@@ -27,9 +27,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress";
+import { SegmentedControl } from "@/components/ui/segmented";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { cn } from "@/lib/cn";
 import { computeStreak } from "@/lib/gamification";
 import { recentDaySummaries } from "@/lib/history";
 import {
@@ -191,7 +191,7 @@ export function DashboardOverview() {
                 <Link
                   key={exercise.id}
                   href={`/exercises?focus=${exercise.id}`}
-                  className="focus-ring flex min-w-0 items-center gap-3 rounded-xl border border-hairline/[0.06] p-3 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                  className="focus-ring flex min-w-0 items-center gap-3 rounded-xl border border-hairline/[0.07] p-3 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.025]"
                 >
                   <SubjectAvatar subject={exercise.subject} size="sm" />
                   <div className="min-w-0 flex-1">
@@ -245,22 +245,12 @@ export function DashboardOverview() {
               <CardTitle className="mt-1 text-lg">Ce que tu devrais travailler aujourd&apos;hui</CardTitle>
             </div>
           </div>
-          <div className="inline-flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-black/20 p-1">
-            {PLAN_DURATION_PRESETS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => setPlanMinutes(preset)}
-                aria-pressed={planMinutes === preset}
-                className={cn(
-                  "rounded-lg px-3 py-1.5 text-xs font-medium transition",
-                  planMinutes === preset ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300"
-                )}
-              >
-                {preset} min
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            ariaLabel="Durée du plan du jour"
+            value={planMinutes}
+            onChange={setPlanMinutes}
+            options={PLAN_DURATION_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
+          />
         </div>
 
         {dailyPlan.blocks.length === 0 ? (
@@ -271,7 +261,7 @@ export function DashboardOverview() {
           <>
             <ol className="mt-5 space-y-2.5">
               {dailyPlan.blocks.map((block, index) => (
-                <li key={block.subject} className="flex items-start gap-3 rounded-xl border border-hairline/[0.06] p-3.5 text-sm">
+                <li key={block.subject} className="flex items-start gap-3 rounded-xl border border-hairline/[0.07] p-3.5 text-sm">
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent">{index + 1}</span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
@@ -283,7 +273,7 @@ export function DashboardOverview() {
                 </li>
               ))}
             </ol>
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.06] pt-5">
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.07] pt-5">
               <p className="text-sm text-zinc-400">
                 Total : <span className="font-semibold text-zinc-100">{formatMinutes(dailyPlan.totalMinutes)}</span> · {dailyPlan.totalExercises} exercice
                 {dailyPlan.totalExercises > 1 ? "s" : ""}
@@ -307,7 +297,7 @@ export function DashboardOverview() {
             {subjectPriorities.map(({ subject, label, level, reason }) => {
               const meta = PRIORITY_META[level];
               return (
-                <div key={subject} className="flex items-center justify-between gap-3 rounded-xl border border-hairline/[0.06] px-3.5 py-2.5 text-sm">
+                <div key={subject} className="flex items-center justify-between gap-3 rounded-xl border border-hairline/[0.07] px-3.5 py-2.5 text-sm">
                   <span className="flex items-center gap-2 font-medium text-zinc-100">
                     <span className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
                     {label}
@@ -339,7 +329,7 @@ export function DashboardOverview() {
                 <Link
                   key={chapter.id}
                   href={href}
-                  className="focus-ring flex flex-col gap-2.5 rounded-xl border border-hairline/[0.06] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                  className="focus-ring flex flex-col gap-2.5 rounded-xl border border-hairline/[0.07] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.025]"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="min-w-0 truncate font-medium text-zinc-100">{chapter.label}</p>
@@ -365,7 +355,11 @@ export function DashboardOverview() {
 
       {/* OBJECTIF DU JOUR + TA PROGRESSION — "où j'en suis" à partir d'ici. */}
       <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
-        <Card className="rounded-3xl p-6 sm:p-7">
+        {/* Rayon laissé au défaut de `Card` (rounded-2xl) : cette carte est
+            posée côte à côte avec "Ta progression" dans la même grille, et un
+            rounded-3xl ici donnait deux rayons différents pour deux cartes de
+            même niveau, visibles l'une à côté de l'autre. */}
+        <Card className="p-6 sm:p-7">
           <div className="flex items-start justify-between">
             <div>
               <p className="eyebrow">Objectif du jour</p>
@@ -392,8 +386,13 @@ export function DashboardOverview() {
 
           <div className="mt-5 flex flex-wrap gap-2">
             {objective.workedMinutes === 0 && !objective.met ? (
+              // `secondary` et non `primary` : même destination que le CTA du
+              // héros ("À faire maintenant"), plus haut sur la même page. Un
+              // second bouton plein accent pour la même action mettait deux
+              // départs de séance en concurrence visuelle ; il reste
+              // parfaitement accessible, simplement au bon rang.
               <Link href={`/session?minutes=${objective.goalMinutes > 0 ? Math.min(objective.goalMinutes, 60) : 45}`}>
-                <Button size="sm">
+                <Button variant="secondary" size="sm">
                   Commencer une session <ArrowRight size={13} />
                 </Button>
               </Link>
@@ -435,7 +434,14 @@ export function DashboardOverview() {
               <p className="mt-0.5 text-xs text-zinc-500">Temps travaillé</p>
             </div>
           </div>
-          <Link href="/progress" className="mt-5 inline-flex items-center gap-1.5 text-xs text-accent hover:underline">
+          {/* `-mx-2 px-2 py-2` : lien de navigation réel, pas un mot dans une
+              phrase — mesuré à 16 px de haut, la plus petite cible tactile de
+              tout le Dashboard. Le padding négatif conserve l'alignement
+              optique du texte sur la colonne. */}
+          <Link
+            href="/progress"
+            className="focus-ring -mx-2 mt-4 inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 py-2 text-xs text-accent hover:underline max-lg:min-h-11"
+          >
             Voir le détail <ArrowRight size={12} />
           </Link>
         </Card>
@@ -485,7 +491,7 @@ export function DashboardOverview() {
                   <Link
                     key={subject}
                     href={`/progress#subject-${subjectMeta[subject].short}`}
-                    className="focus-ring -mx-2 block rounded-lg px-2 py-1 transition hover:bg-hairline/[0.02]"
+                    className="focus-ring -mx-2 block rounded-lg px-2 py-1 transition hover:bg-hairline/[0.025]"
                   >
                     <div className="flex items-center justify-between text-sm">
                       <span className="flex items-center gap-2 font-medium text-zinc-200">
@@ -519,7 +525,7 @@ export function DashboardOverview() {
                     <Link
                       key={subject}
                       href="/progress"
-                      className="focus-ring flex items-center justify-between gap-2 rounded-xl border border-hairline/[0.06] px-3.5 py-2.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                      className="focus-ring flex items-center justify-between gap-2 rounded-xl border border-hairline/[0.07] px-3.5 py-2.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.025]"
                     >
                       <span className="font-medium text-zinc-100">{subject}</span>
                       <span className="flex items-center gap-1.5 text-xs text-zinc-400">
@@ -571,7 +577,7 @@ export function DashboardOverview() {
                 <Link
                   key={item.key}
                   href={item.href}
-                  className="focus-ring flex min-w-0 flex-col gap-2 rounded-xl border border-hairline/[0.06] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                  className="focus-ring flex min-w-0 flex-col gap-2 rounded-xl border border-hairline/[0.07] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.025]"
                 >
                   <span className="flex items-center gap-1.5 text-xs text-zinc-500">
                     <Icon size={12} /> {meta.label}
