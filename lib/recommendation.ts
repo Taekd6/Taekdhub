@@ -230,7 +230,7 @@ export function comfortDifficulty(exercises: Exercise[], sessions: WorkSession[]
   return { target: Math.min(5, Math.max(1, target)), steppedUp, successStreak: streak };
 }
 
-/** Plafond du terme d'adéquation en difficulté — volontairement du même ordre que `favoriteBonus`/`neverWorkedBonus` : il oriente le classement à signaux comparables, il ne l'écrase jamais (un échec récent, plus urgent, continue de primer). */
+/** Plafond du terme d'adéquation en difficulté — volontairement du même ordre que `neverWorkedBonus` : il oriente le classement à signaux comparables, il ne l'écrase jamais (un échec récent, plus urgent, continue de primer). */
 const DIFFICULTY_FIT_BONUS = 14;
 /** Pénalité par cran d'écart à la cible — au-delà de ~2 crans le bonus est nul, jamais négatif : un exercice mal calibré est déprioritisé, jamais exclu (l'élève garde accès à toute la banque). */
 const DIFFICULTY_FIT_DECAY = 7;
@@ -262,7 +262,6 @@ function difficultyFitBonus(exercise: Exercise, comfort: ComfortLevel | null): n
 function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date, comfort: ComfortLevel | null = null): string[] {
   const reasons: string[] = [];
   if (exercise.mastery <= 25) reasons.push("Maîtrise faible");
-  if (exercise.priority >= 4) reasons.push("Priorité élevée");
   if (isNeverWorked(exercise, minutesSpent)) reasons.push("Jamais travaillé");
   if (exercise.status === "en cours") reasons.push("En cours");
   if (exercise.status === "à revoir") reasons.push("Marqué à revoir");
@@ -342,28 +341,29 @@ function staleMasteryBonus(exercise: Exercise, now: Date): number {
  */
 function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date, comfort: ComfortLevel | null = null): number {
   const masteryGap = (100 - exercise.mastery) * 0.6; // 0 (maîtrisé à 100%) à 60 (maîtrisé à 0%)
-  const priorityWeight = exercise.priority * 8; // 8 à 40
   const statusWeight = STATUS_WEIGHT[exercise.status]; // -30 à 40
   const neverWorkedBonus = isNeverWorked(exercise, minutesSpent) ? 15 : 0;
   // Temps déjà investi : léger bonus, plafonné pour ne jamais dominer les
   // autres termes — un exercice presque fini mérite d'être terminé, mais pas
-  // au point d'éclipser une priorité élevée ou une maîtrise très faible.
+  // au point d'éclipser une maîtrise très faible ou un échec récent.
   const momentumBonus = Math.min(minutesSpent, 60) * 0.3; // 0 à 18
   const staleBonus = staleMasteryBonus(exercise, now); // 0 à 30, voir staleMasteryBonus
-  // Léger coup de pouce, jamais déterminant seul (comparable à neverWorkedBonus) :
-  // entre deux exercices par ailleurs comparables, celui marqué favori remonte
-  // légèrement — mais un favori ne devient jamais éligible que par ce bonus
-  // (voir la garde `reasons.length > 0` dans `evaluateExercise`).
-  const favoriteBonus = exercise.favorite ? 10 : 0;
+  // SEUL levier manuel de l'élève depuis la suppression de `priority` : une
+  // étoile vaut désormais 20, à mi-chemin de l'ancienne échelle 8-40 qu'elle
+  // remplace. Volontairement en dessous de `failureBonus` (jusqu'à 45) : un
+  // souhait explicite oriente le classement, un échec mesuré prime. Un favori
+  // ne devient jamais éligible par ce seul bonus (voir la garde
+  // `reasons.length > 0` dans `evaluateExercise`).
+  const favoriteBonus = exercise.favorite ? 20 : 0;
   // Un échec récent doit remonter fortement l'exercice — comparable en
-  // amplitude à masteryGap/statusWeight, deux échecs récents pèsent plus
-  // qu'une simple priorité élevée. Plafonné pour ne jamais, à lui seul,
-  // écraser tous les autres signaux.
+  // amplitude à masteryGap/statusWeight, et au-dessus du seul levier manuel
+  // (`favoriteBonus`). Plafonné pour ne jamais, à lui seul, écraser tous les
+  // autres signaux.
   const failureBonus = Math.min(45, recentFailureCount(attempts) * 20); // 0 à 45
   // À l'inverse, une série de réussites récentes fait progressivement
   // redescendre l'exercice — jamais jusqu'à l'exclure (ce n'est pas un
   // critère d'exclusion, seulement un effet sur le tri), et d'une amplitude
-  // comparable à favoriteBonus/momentumBonus, pas dominante.
+  // comparable à momentumBonus, pas dominante.
   // Une réussite assistée ne doit PAS bénéficier de la décote accordée aux
   // réussites autonomes : sans cette garde, l'exercice ressorti par
   // "Réussi avec aide" serait aussitôt renvoyé en fin de liste par le
@@ -374,7 +374,6 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
   const difficultyFit = difficultyFitBonus(exercise, comfort); // 0 à 14
   return (
     masteryGap +
-    priorityWeight +
     statusWeight +
     neverWorkedBonus +
     momentumBonus +
@@ -632,7 +631,6 @@ const REASON_RULES: ReasonRule[] = [
   { test: (r) => r.includes("Jamais travaillé"), sentence: () => "Tu n'as pas encore travaillé cet exercice." },
   { test: (r) => r.includes("Maîtrise faible"), sentence: () => "Ta maîtrise est encore faible sur cet exercice." },
   { test: (r) => r.includes("En cours"), sentence: () => "Tu l'avais laissé en cours — autant le terminer." },
-  { test: (r) => r.includes("Priorité élevée"), sentence: () => "Tu l'as toi-même marqué comme prioritaire." },
   {
     test: (r) => r.some((reason) => reason.startsWith("Non retravaillé depuis")),
     sentence: (r) => {
@@ -658,7 +656,7 @@ const REASON_RULES: ReasonRule[] = [
  * Une seule raison est retenue (la plus décisive selon `REASON_RULES`)
  * plutôt que toutes concaténées : "tu as échoué plusieurs fois récemment
  * dessus" se comprend en un coup d'œil, contrairement à "Plusieurs échecs ·
- * Maîtrise faible · Priorité élevée" (l'ancien comportement, un simple
+ * Maîtrise faible · Favori" (l'ancien comportement, un simple
  * `.join(" · ")` des raisons brutes).
  */
 export function explainReasons(reasons: string[]): string | null {
@@ -672,8 +670,6 @@ export interface ExerciseBankStats {
   toReviewCount: number;
   /** Maîtrise moyenne sur les exercices actifs (non archivés), arrondie à l'entier. */
   averageMastery: number;
-  /** Priorité moyenne sur les exercices actifs, avec une décimale. */
-  averagePriority: number;
   neverWorkedCount: number;
 }
 
@@ -685,7 +681,6 @@ export function computeExerciseBankStats(exercises: Exercise[], sessions: WorkSe
   let toReviewCount = 0;
   let neverWorkedCount = 0;
   let masterySum = 0;
-  let prioritySum = 0;
 
   for (const exercise of active) {
     const minutesSpent = minutesByExercise.get(exercise.id) ?? 0;
@@ -693,13 +688,11 @@ export function computeExerciseBankStats(exercises: Exercise[], sessions: WorkSe
     if (evaluateExercise(exercise, minutesSpent, attempts, now).length > 0) toReviewCount++;
     if (isNeverWorked(exercise, minutesSpent)) neverWorkedCount++;
     masterySum += exercise.mastery;
-    prioritySum += exercise.priority;
   }
 
   return {
     toReviewCount,
     averageMastery: active.length ? Math.round(masterySum / active.length) : 0,
-    averagePriority: active.length ? Math.round((prioritySum / active.length) * 10) / 10 : 0,
     neverWorkedCount,
   };
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildFreeSessionPlan, computeDailyPlan, planIntent, serializePlan } from "@/lib/plan";
 import { computeChaptersToConsolidate } from "@/lib/next-action";
 import type { Chapter } from "@/lib/storage";
-import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
+import type { Exercise, Mastery, Subject, WorkSession } from "@/lib/supabase/types";
 
 let counter = 0;
 function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
@@ -26,7 +26,6 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     level: null,
     type: "TD",
     difficulty: 3,
-    priority: 3 as Priority,
     mastery: 0 as Mastery,
     status: "à faire",
     estimated_minutes: null,
@@ -115,7 +114,7 @@ describe("computeDailyPlan — projection temporelle des priorités", () => {
     // Banque mixte : de quoi consolider (échecs) ET réviser (maîtrisé ancien).
     const weak = Array.from({ length: 6 }, () => struggling({ estimated_minutes: 10 }));
     const stale = Array.from({ length: 6 }, () =>
-      makeExercise({ status: "maîtrisé", mastery: 100, priority: 1, attempts: 2, estimated_minutes: 10, last_worked_at: "2026-05-01T00:00:00.000Z" })
+      makeExercise({ status: "maîtrisé", mastery: 100, attempts: 2, estimated_minutes: 10, last_worked_at: "2026-05-01T00:00:00.000Z" })
     );
     const exercises = [...weak.map((w) => w.exercise), ...stale];
     const sessions = weak.flatMap((w) => w.sessions);
@@ -173,7 +172,7 @@ describe("computeDailyPlan — projection temporelle des priorités", () => {
 
   it("une banque entièrement maîtrisée et récente ne produit aucun plan", () => {
     const mastered = Array.from({ length: 5 }, () =>
-      makeExercise({ mastery: 100, status: "maîtrisé", priority: 1, attempts: 3, last_worked_at: "2026-08-09T09:00:00.000Z" })
+      makeExercise({ mastery: 100, status: "maîtrisé", attempts: 3, last_worked_at: "2026-08-09T09:00:00.000Z" })
     );
     const sessions = mastered.map((e) => makeSession(e.id, e.subject, { started_at: "2026-08-09T09:00:00.000Z", result: "réussi" as const }));
     expect(computeDailyPlan(mastered, sessions, [], 60, NOW).blocks).toEqual([]);

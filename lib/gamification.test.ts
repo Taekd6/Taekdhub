@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { totalXp, xpFromSession } from "@/lib/gamification";
-import type { Exercise, Mastery, Priority, WorkSession } from "@/lib/supabase/types";
+import type { Exercise, Mastery, WorkSession } from "@/lib/supabase/types";
 
 let counter = 0;
 function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
@@ -10,7 +10,7 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     id: `ex-${counter}`, subject: "Mathématiques", title: `Exercice ${counter}`, statement: "",
     chapter_id: null, source: "Test", year: null, competition: null, programme_level: null,
     license_status: null, external_id: null, source_url: null, prerequisites: [],
-    pedagogical_goal: null, level: null, type: "TD", difficulty: 3, priority: 3 as Priority,
+    pedagogical_goal: null, level: null, type: "TD", difficulty: 3,
     mastery: 0 as Mastery, status: "à faire", estimated_minutes: null, attempts: 0, note: null,
     created_at: now, updated_at: now, tags: [], favorite: false, archived: false, hints: [],
     correction: null, last_worked_at: null, ...overrides,

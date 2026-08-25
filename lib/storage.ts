@@ -1,6 +1,6 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
 import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, THEME_MODES, type ThemeMode } from "@/lib/theme";
-import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, Priority, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
+import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
 
 const ATTEMPT_RESULTS: readonly AttemptResult[] = ["réussi", "partiel", "échoué"];
 
@@ -82,7 +82,6 @@ export interface WeekSnapshot {
  * (components/exercises/exercise-manager.tsx), afin de n'avoir qu'une seule
  * source de vérité pour ces défauts.
  */
-export const DEFAULT_PRIORITY: Priority = 3;
 export const DEFAULT_MASTERY: Mastery = 0;
 const MASTERY_VALUES: readonly Mastery[] = [0, 25, 50, 75, 100];
 const PROGRAMME_LEVELS: readonly ProgrammeLevel[] = ["sup", "spe", "sup_spe"];
@@ -154,9 +153,6 @@ function migrateDifficulty(raw: unknown): Difficulty {
   return typeof raw === "number" && raw >= 1 && raw <= 5 ? (Math.round(raw) as Difficulty) : 3;
 }
 
-function migratePriority(raw: unknown): Priority {
-  return typeof raw === "number" && raw >= 1 && raw <= 5 ? (Math.round(raw) as Priority) : DEFAULT_PRIORITY;
-}
 
 function migrateMastery(raw: unknown): Mastery {
   return typeof raw === "number" && (MASTERY_VALUES as number[]).includes(raw) ? (raw as Mastery) : DEFAULT_MASTERY;
@@ -236,7 +232,6 @@ function normalizeExercise(raw: unknown): Exercise {
     level: (EXERCISE_LEVELS as number[]).includes(item.level as number) ? (item.level as ExerciseLevel) : null,
     type: migrateType(item.type),
     difficulty: migrateDifficulty(item.difficulty),
-    priority: migratePriority(item.priority),
     mastery: migrateMastery(item.mastery),
     status: migrateStatus(item.status),
     // Sprint 2.6 : `duration_minutes` n'existe plus — le temps passé se

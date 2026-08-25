@@ -43,7 +43,7 @@ type SizingMode = "time" | "count";
  * IMPORTANT (précision produit) : quitter le Focus signifie "exercice
  * travaillé", jamais "exercice réussi". Le statut et la maîtrise ne
  * changent QUE si l'utilisateur les modifie explicitement dans `FocusView`
- * (PriorityPicker / MasteryPicker / boutons de statut, déjà existants) —
+ * (MasteryPicker / boutons de statut, déjà existants) —
  * ce composant ne les touche jamais lui-même.
  *
  * Contexte matière (Sprint 3.1, depuis "Prêt pour le DS ?" — lib/readiness.ts) :

@@ -8,7 +8,7 @@ import {
   computeUpcoming,
 } from "@/lib/next-action";
 import type { Chapter } from "@/lib/storage";
-import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
+import type { Exercise, Mastery, Subject, WorkSession } from "@/lib/supabase/types";
 
 let counter = 0;
 function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
@@ -32,7 +32,6 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     level: null,
     type: "TD",
     difficulty: 3,
-    priority: 3 as Priority,
     mastery: 0 as Mastery,
     status: "à faire",
     estimated_minutes: null,
@@ -107,7 +106,7 @@ describe("computeNextAction", () => {
   });
 
   it("tous les exercices maîtrisés et récents : état up-to-date, aucun pick", () => {
-    const exercise = makeExercise({ status: "maîtrisé", mastery: 100, priority: 1, attempts: 3, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const exercise = makeExercise({ status: "maîtrisé", mastery: 100, attempts: 3, last_worked_at: "2026-08-09T00:00:00.000Z" });
     const action = computeNextAction([exercise], [], 45, NOW);
     expect(action.kind).toBe("up-to-date");
     expect(action.picks).toHaveLength(0);

@@ -1,7 +1,7 @@
 import { getChaptersForSubject } from "@/lib/chapters";
 import { subjects } from "@/lib/study";
 import type { Chapter } from "@/lib/storage";
-import type { Difficulty, Exercise, ExerciseStatus, ExerciseType, Mastery, Priority, Subject } from "@/lib/supabase/types";
+import type { Difficulty, Exercise, ExerciseStatus, ExerciseType, Mastery, Subject } from "@/lib/supabase/types";
 
 /**
  * État complet des filtres + recherche de la banque d'exercices.
@@ -26,7 +26,6 @@ export interface ExerciseFilters {
   type: ExerciseType | "Tous";
   status: ExerciseStatus | "Tous";
   difficulty: Difficulty | "Toutes";
-  priority: Priority | "Toutes";
   mastery: Mastery | "Toutes";
   year: number | "Toutes";
   favoritesOnly: boolean;
@@ -40,7 +39,6 @@ export const defaultExerciseFilters: ExerciseFilters = {
   type: "Tous",
   status: "Tous",
   difficulty: "Toutes",
-  priority: "Toutes",
   mastery: "Toutes",
   year: "Toutes",
   favoritesOnly: false,
@@ -70,7 +68,6 @@ export function filterExercises(exercises: Exercise[], filters: ExerciseFilters)
     .filter((item) => filters.type === "Tous" || item.type === filters.type)
     .filter((item) => filters.status === "Tous" || item.status === filters.status)
     .filter((item) => filters.difficulty === "Toutes" || item.difficulty === filters.difficulty)
-    .filter((item) => filters.priority === "Toutes" || item.priority === filters.priority)
     .filter((item) => filters.mastery === "Toutes" || item.mastery === filters.mastery)
     .filter((item) => filters.year === "Toutes" || item.year === filters.year)
     .filter((item) => !filters.favoritesOnly || item.favorite)
