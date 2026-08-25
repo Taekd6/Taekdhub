@@ -110,11 +110,14 @@ function fillBudget(
   candidates: ExerciseRecommendation[],
   sessions: WorkSession[],
   budgetMinutes: number,
-  taken: Set<string>
+  taken: Set<string>,
+  /** Nombre maximum d'exercices à retenir — sert au rattrapage des intentions vides, qui accorde UNE place, pas tout le reliquat (voir `computeDailyPlan`). */
+  maxPicks = Number.POSITIVE_INFINITY
 ): { picks: ExerciseRecommendation[]; used: number } {
   const picks: ExerciseRecommendation[] = [];
   let remaining = budgetMinutes;
   for (const candidate of candidates) {
+    if (picks.length >= maxPicks) break;
     if (taken.has(candidate.exercise.id)) continue;
     const duration = estimatedDurationMinutes(candidate.exercise, sessions);
     if (duration > remaining) continue;
@@ -224,22 +227,59 @@ export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[],
   }
 
   // Second passage : le temps qu'aucune intention n'a pu utiliser (candidats
-  // épuisés, exercices trop longs) est rendu aux intentions déjà présentes,
-  // en repartant de la plus prioritaire. Sans lui, un élève demandant 60 min
-  // pouvait repartir avec 25 min de travail parce qu'une intention n'avait
-  // rien à proposer.
+  // épuisés, exercices trop longs) est redistribué — EN DEUX TEMPS, et
+  // l'ordre compte.
+  //
+  // (a) D'abord les intentions que le mix prévoyait mais qui sont restées
+  //     VIDES. Un exercice dure 15 à 30 minutes ; une part de 25 % sur 60
+  //     minutes vaut 15 minutes, soit moins que le premier candidat venu.
+  //     Ces intentions-là ne perdaient pas quelques minutes : elles
+  //     disparaissaient entièrement, et le reliquat repartait au bloc de
+  //     consolidation déjà servi. Résultat mesuré avant ce correctif : à 45
+  //     comme à 60 minutes, le plan était 100 % consolidation — la structure
+  //     annoncée par `INTENT_MIX` n'existait qu'à partir de 90 minutes.
+  //     Quand le mix dit qu'il faut aussi réviser, une révision doit tenir
+  //     dans le plan, quitte à ne pas respecter la proportion au pourcentage
+  //     près : c'est la structure qui porte le sens, pas l'arrondi.
+  //
+  // (b) Ensuite seulement, on complète les blocs déjà servis, pour ne pas
+  //     rendre 25 minutes de séance sur un budget de 60.
   let leftover = totalMinutes - spent;
-  if (leftover > 0) {
-    for (const block of blocks) {
-      if (leftover <= 0) break;
-      const { picks, used } = fillBudget(byIntent.get(block.intent)!, sessions, leftover, taken);
-      if (picks.length === 0) continue;
-      block.picks.push(...picks);
-      block.estimatedMinutes += used;
-      block.focus = describeFocus(block.picks, chapterById);
-      leftover -= used;
+
+  const addTo = (intent: PlanIntent, budget: number, maxPicks?: number): number => {
+    const { picks, used } = fillBudget(byIntent.get(intent)!, sessions, budget, taken, maxPicks);
+    if (picks.length === 0) return 0;
+    const existing = blocks.find((block) => block.intent === intent);
+    if (existing) {
+      existing.picks.push(...picks);
+      existing.estimatedMinutes += used;
+      existing.focus = describeFocus(existing.picks, chapterById);
+    } else {
+      blocks.push({ intent, label: PLAN_INTENT_META[intent].label, focus: describeFocus(picks, chapterById), estimatedMinutes: used, picks });
     }
+    return used;
+  };
+
+  for (const intent of INTENT_ORDER) {
+    if (leftover <= 0) break;
+    if (!shares[intent]) continue;
+    if (blocks.some((block) => block.intent === intent)) continue;
+    // UN exercice, pas tout le reliquat : le rattrapage sert à faire exister
+    // l'intention, pas à lui donner la place que le mix accordait aux autres.
+    // Sans ce plafond, une révision rattrapée sur 60 minutes emportait les 40
+    // minutes restantes et repassait devant la consolidation — l'inverse
+    // exact de ce que le mix annonce.
+    leftover -= addTo(intent, leftover, 1);
   }
+
+  for (const intent of [...blocks].map((block) => block.intent)) {
+    if (leftover <= 0) break;
+    leftover -= addTo(intent, leftover);
+  }
+
+  // Les blocs ajoutés au (a) l'ont été après coup : on rétablit l'ordre de
+  // service (réparer, puis entretenir, puis pousser).
+  blocks.sort((a, b) => INTENT_ORDER.indexOf(a.intent) - INTENT_ORDER.indexOf(b.intent));
 
   return {
     blocks,
@@ -249,8 +289,16 @@ export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[],
   };
 }
 
-/** Durées proposées pour le plan du jour — mêmes valeurs que l'objectif du jour (Dashboard) et les raccourcis de séance. */
-export const PLAN_DURATION_PRESETS = [30, 45, 60] as const;
+/**
+ * Durées proposées pour le plan du jour.
+ *
+ * Une valeur par PALIER de `INTENT_MIX`, sinon les paliers ne sont pas
+ * atteignables : avec les anciens préréglages (30/45/60), le palier « une
+ * seule intention » (≤ 29 min) et le palier « séance très longue » (> 89 min)
+ * n'existaient que dans le code. 20 min répond vraiment à « je n'ai qu'un
+ * quart d'heure », 90 min à une vraie plage de travail.
+ */
+export const PLAN_DURATION_PRESETS = [20, 45, 60, 90] as const;
 export const DEFAULT_PLAN_MINUTES = 45;
 
 /** Clé sessionStorage pour le transfert Dashboard → /session (voir components/session/session-runner.tsx) — même famille de clés que FOCUS_TIMER_PREFIX (components/exercises/focus-view.tsx), un seul usage puis retirée. */

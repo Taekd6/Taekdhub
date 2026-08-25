@@ -309,6 +309,9 @@ const STATUS_WEIGHT: Record<ExerciseStatus, number> = {
   maîtrisé: -30,
 };
 
+/** Maîtrise maximale retenue AU CLASSEMENT pour un exercice dont la dernière réussite a demandé des indices — la valeur saisie par l'élève n'est jamais modifiée. */
+const ASSISTED_MASTERY_CAP = 50;
+
 /** Plafond du bonus de décroissance (voir `staleMasteryBonus`) — comparable en amplitude à `momentumBonus`, jamais dominant. */
 const MASTERY_STALE_BONUS_CAP = 30;
 const MASTERY_STALE_BONUS_PER_DAY = 0.5;
@@ -340,8 +343,15 @@ function staleMasteryBonus(exercise: Exercise, now: Date): number {
  * strictement identique à avant ce sprint.
  */
 function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date, comfort: ComfortLevel | null = null): number {
-  const masteryGap = (100 - exercise.mastery) * 0.6; // 0 (maîtrisé à 100%) à 60 (maîtrisé à 0%)
-  const statusWeight = STATUS_WEIGHT[exercise.status]; // -30 à 40
+  // Une réussite arrachée aux indices CONTREDIT la maîtrise déclarée. Pour le
+  // classement seulement (jamais dans les données de l'élève, qui restent les
+  // siennes), on ne lui accorde donc ni le crédit de `mastery` au-delà de
+  // ASSISTED_MASTERY_CAP, ni celui du statut « maîtrisé » — l'exercice est
+  // traité comme « à revoir », ce qu'il est en réalité.
+  const assisted = lastAttemptWasAssisted(attempts);
+  const effectiveMastery = assisted ? Math.min(exercise.mastery, ASSISTED_MASTERY_CAP) : exercise.mastery;
+  const masteryGap = (100 - effectiveMastery) * 0.6; // 0 (maîtrisé à 100%) à 60 (maîtrisé à 0%)
+  const statusWeight = assisted && exercise.status === "maîtrisé" ? STATUS_WEIGHT["à revoir"] : STATUS_WEIGHT[exercise.status]; // -30 à 40
   const neverWorkedBonus = isNeverWorked(exercise, minutesSpent) ? 15 : 0;
   // Temps déjà investi : léger bonus, plafonné pour ne jamais dominer les
   // autres termes — un exercice presque fini mérite d'être terminé, mais pas
@@ -360,6 +370,13 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
   // (`favoriteBonus`). Plafonné pour ne jamais, à lui seul, écraser tous les
   // autres signaux.
   const failureBonus = Math.min(45, recentFailureCount(attempts) * 20); // 0 à 45
+  // Complément au retrait de crédit ci-dessus, dimensionné pour que
+  // l'exercice repasse devant un exercice JAMAIS OUVERT (~85) sans jamais
+  // atteindre un échec constaté (~105). Mesuré avant ce correctif sur un
+  // profil « ne réussit qu'aidé » : ses 15 réussites assistées tombaient
+  // autour de -30 et n'apparaissaient nulle part — le signal était collecté,
+  // affiché en raison, et sans le moindre effet sur ce qui était proposé.
+  const assistedBonus = assisted ? 25 : 0;
   // À l'inverse, une série de réussites récentes fait progressivement
   // redescendre l'exercice — jamais jusqu'à l'exclure (ce n'est pas un
   // critère d'exclusion, seulement un effet sur le tri), et d'une amplitude
@@ -380,6 +397,7 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
     staleBonus +
     favoriteBonus +
     failureBonus +
+    assistedBonus +
     difficultyFit -
     successPenalty
   );

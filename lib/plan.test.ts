@@ -191,6 +191,86 @@ describe("computeDailyPlan — projection temporelle des priorités", () => {
   });
 });
 
+/**
+ * Les parts d'`INTENT_MIX` sont proportionnelles, les exercices non : un
+ * exercice dure 15 à 30 minutes, et 25 % de 60 minutes ne suffit pas à en
+ * loger un seul. Sans rattrapage, l'intention concernée ne perdait pas
+ * quelques minutes — elle DISPARAISSAIT, et son budget repartait à la
+ * consolidation déjà servie. Mesuré avant correctif : 45 comme 60 minutes
+ * rendaient un plan 100 % consolidation, la structure annoncée n'existant
+ * qu'à partir de 90 minutes.
+ */
+describe("computeDailyPlan — la structure annoncée existe vraiment à chaque durée", () => {
+  const chapters: Chapter[] = [
+    { id: "c-conso", subject: "Mathématiques", label: "Intégration" } as Chapter,
+    { id: "c-revis", subject: "Physique", label: "Mécanique" } as Chapter,
+  ];
+
+  function bank() {
+    const exercises: Exercise[] = [];
+    const sessions: WorkSession[] = [];
+    // À consolider : des échecs récents, 20 min pièce.
+    for (let index = 0; index < 6; index++) {
+      const exercise = makeExercise({
+        chapter_id: "c-conso",
+        estimated_minutes: 20,
+        mastery: 25 as Mastery,
+        status: "à revoir",
+        attempts: 2,
+        last_worked_at: new Date(NOW.getTime() - 2 * 86400000).toISOString(),
+      });
+      exercises.push(exercise);
+      sessions.push(
+        makeSession(exercise.id, "Mathématiques", { result: "échoué", started_at: new Date(NOW.getTime() - 2 * 86400000).toISOString() })
+      );
+    }
+    // À réviser : maîtrisés depuis longtemps, 20 min pièce.
+    for (let index = 0; index < 6; index++) {
+      exercises.push(
+        makeExercise({
+          subject: "Physique",
+          chapter_id: "c-revis",
+          estimated_minutes: 20,
+          mastery: 100 as Mastery,
+          status: "maîtrisé",
+          attempts: 3,
+          last_worked_at: new Date(NOW.getTime() - 60 * 86400000).toISOString(),
+        })
+      );
+    }
+    return { exercises, sessions };
+  }
+
+  it("une séance de 20 min ne fait que consolider — pas de miettes de trois intentions", () => {
+    const { exercises, sessions } = bank();
+    const plan = computeDailyPlan(exercises, sessions, chapters, 20, NOW);
+    expect(plan.blocks.map((block) => block.intent)).toEqual(["consolider"]);
+  });
+
+  it("une séance de 45 min réserve réellement une place à la révision", () => {
+    const { exercises, sessions } = bank();
+    const plan = computeDailyPlan(exercises, sessions, chapters, 45, NOW);
+    expect(plan.blocks.map((block) => block.intent)).toEqual(["consolider", "réviser"]);
+  });
+
+  it("le rattrapage n'accorde qu'UNE place — la consolidation reste majoritaire à 60 min", () => {
+    const { exercises, sessions } = bank();
+    const plan = computeDailyPlan(exercises, sessions, chapters, 60, NOW);
+    const consolider = plan.blocks.find((block) => block.intent === "consolider");
+    const reviser = plan.blocks.find((block) => block.intent === "réviser");
+    expect(reviser).toBeDefined();
+    expect(consolider!.estimatedMinutes).toBeGreaterThan(reviser!.estimatedMinutes);
+  });
+
+  it("les blocs restent toujours dans l'ordre réparer → entretenir → pousser", () => {
+    const { exercises, sessions } = bank();
+    for (const minutes of [20, 45, 60, 90]) {
+      const order = computeDailyPlan(exercises, sessions, chapters, minutes, NOW).blocks.map((block) => block.intent);
+      expect(order).toEqual([...order].sort((a, b) => ["consolider", "réviser", "progresser"].indexOf(a) - ["consolider", "réviser", "progresser"].indexOf(b)));
+    }
+  });
+});
+
 describe("planIntent — dérivé des raisons du moteur, jamais d'un nouveau score", () => {
   it("une montée de palier relève de la progression", () => {
     expect(planIntent(["Palier suivant (3 réussites d'affilée)"])).toBe("progresser");

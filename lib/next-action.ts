@@ -212,6 +212,16 @@ export interface ChapterConsolidation {
   reasons: string[];
   /** Un exercice concret du chapitre (le premier non maîtrisé), pour ouvrir directement dessus — même convention que `computeUpcoming`. */
   href: string;
+  /**
+   * Sur quoi le verdict porte, en clair : combien de tentatives ont été
+   * examinées et sur quelle période. Le classement montrait déjà SES RAISONS
+   * ("2 échecs récents") mais pas leur assise — « récents » depuis quand,
+   * mesurés sur combien ? Un élève (ou un professeur devant l'écran) doit
+   * pouvoir contester le verdict, donc voir la preuve datée. `sinceDays` vaut
+   * `null` quand aucune tentative avec résultat n'existe : la faiblesse est
+   * alors établie sur la seule maîtrise déclarée, et il faut le dire.
+   */
+  evidence: { attempts: number; sinceDays: number | null };
 }
 
 /** Nombre maximum de chapitres montrés dans "À consolider" — voir Sprint Study OS. */
@@ -292,12 +302,17 @@ export function computeChaptersToConsolidate(
       }
 
       const candidate = chapterExercises.find((exercise) => exercise.status !== "maîtrisé") ?? chapterExercises[0];
+      const oldestAttempt = recentAttempts[recentAttempts.length - 1];
 
       return {
         chapter: entry.chapter,
         averageMastery: entry.averageMastery,
         reasons,
         href: candidate ? `/exercises?focus=${candidate.id}` : "/exercises",
+        evidence: {
+          attempts: recentAttempts.length,
+          sinceDays: oldestAttempt ? Math.floor((now.getTime() - new Date(oldestAttempt.started_at).getTime()) / 86400000) : null,
+        },
       };
     })
     .filter((entry): entry is ChapterConsolidation => entry !== null && entry.reasons.length > 0)

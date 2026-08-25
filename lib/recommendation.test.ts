@@ -422,3 +422,41 @@ describe("isNeverWorked / computeExerciseBankStats — smoke tests de non-régre
     expect(stats).toEqual({ toReviewCount: 0, averageMastery: 0, neverWorkedCount: 0 });
   });
 });
+
+/**
+ * Le signal « réussi avec aide » a longtemps existé sans jamais servir : il
+ * entrait bien dans les raisons, mais l'exercice concerné — typiquement passé
+ * en « maîtrisé » avec une maîtrise déclarée haute — tombait autour de -30 au
+ * classement quand un exercice jamais ouvert tourne à +85. Sur 402 exercices,
+ * il n'apparaissait donc jamais. Ces tests verrouillent la remontée.
+ */
+describe("Réussite assistée — un signal qui doit vraiment remonter", () => {
+  it("un exercice réussi aux indices passe devant un exercice jamais ouvert", () => {
+    const assisted = makeExercise({ status: "maîtrisé", mastery: 100, attempts: 1, last_worked_at: new Date(NOW.getTime() - 86400000).toISOString() });
+    const fresh = makeExercise();
+    const sessions = [
+      makeSession(assisted.id, { result: "réussi", hints_used: 4, started_at: new Date(NOW.getTime() - 86400000).toISOString() }),
+    ];
+    const order = recommendExercises([fresh, assisted], sessions, 2, { now: NOW }).map((r) => r.exercise.id);
+    expect(order[0]).toBe(assisted.id);
+  });
+
+  it("… mais reste derrière un échec constaté : un échec est plus urgent qu'une réussite fragile", () => {
+    const assisted = makeExercise({ status: "maîtrisé", mastery: 100, attempts: 1, last_worked_at: new Date(NOW.getTime() - 86400000).toISOString() });
+    const failed = makeExercise({ status: "à revoir", mastery: 25, attempts: 2, last_worked_at: new Date(NOW.getTime() - 86400000).toISOString() });
+    const sessions = [
+      makeSession(assisted.id, { result: "réussi", hints_used: 4, started_at: new Date(NOW.getTime() - 86400000).toISOString() }),
+      makeSession(failed.id, { result: "échoué", started_at: new Date(NOW.getTime() - 86400000).toISOString() }),
+    ];
+    const order = recommendExercises([assisted, failed], sessions, 2, { now: NOW }).map((r) => r.exercise.id);
+    expect(order[0]).toBe(failed.id);
+  });
+
+  it("une réussite autonome ne bénéficie d'aucune remontée", () => {
+    const solo = makeExercise({ status: "maîtrisé", mastery: 100, attempts: 1, last_worked_at: new Date(NOW.getTime() - 86400000).toISOString() });
+    const fresh = makeExercise();
+    const sessions = [makeSession(solo.id, { result: "réussi", hints_used: 0, started_at: new Date(NOW.getTime() - 86400000).toISOString() })];
+    const order = recommendExercises([solo, fresh], sessions, 2, { now: NOW }).map((r) => r.exercise.id);
+    expect(order[0]).toBe(fresh.id);
+  });
+});

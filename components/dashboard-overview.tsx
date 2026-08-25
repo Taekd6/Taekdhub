@@ -130,7 +130,6 @@ export function DashboardOverview() {
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
   const secondaryPicks = nextAction.picks.slice(1);
   // "Revoir mes priorités" (Phase 8) : ouvre directement le premier exercice déjà signalé par le moteur de recommandation — même convention que computeUpcoming (lib/next-action.ts), aucune nouvelle route.
-  const prioritiesHref = nextAction.picks[0] ? `/exercises?focus=${nextAction.picks[0].exercise.id}` : "/exercises";
   // "Prochainement" ne montre plus le chapitre le plus faible : la section "À consolider" ci-dessous couvre ce signal en mieux (plusieurs chapitres, raisons explicites) — computeUpcoming lui-même reste inchangé (voir lib/next-action.test.ts).
   const otherSignals = upcoming.filter((item) => item.key !== "chapter");
 
@@ -200,30 +199,6 @@ export function DashboardOverview() {
           )}
         </div>
       </motion.section>
-
-      {/* RACCOURCIS D'ACTION */}
-      <section className="flex flex-wrap gap-2.5">
-        <Link href="/session?minutes=30">
-          <Button variant="secondary" size="sm">
-            Commencer 30 min
-          </Button>
-        </Link>
-        <Link href="/session?minutes=45">
-          <Button variant="secondary" size="sm">
-            Commencer 45 min
-          </Button>
-        </Link>
-        <Link href={prioritiesHref}>
-          <Button variant="secondary" size="sm">
-            Revoir mes priorités
-          </Button>
-        </Link>
-        <Link href="/progress">
-          <Button variant="secondary" size="sm">
-            Voir ma progression
-          </Button>
-        </Link>
-      </section>
 
       {/* PLAN DU JOUR */}
       <Card className="p-6 sm:p-7">
@@ -362,28 +337,22 @@ export function DashboardOverview() {
             )}
           </p>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            {objective.workedMinutes === 0 && !objective.met ? (
-              // `secondary` et non `primary` : même destination que le CTA du
-              // héros ("À faire maintenant"), plus haut sur la même page. Un
-              // second bouton plein accent pour la même action mettait deux
-              // départs de séance en concurrence visuelle ; il reste
-              // parfaitement accessible, simplement au bon rang.
-              <Link href={`/session?minutes=${objective.goalMinutes > 0 ? Math.min(objective.goalMinutes, 60) : 45}`}>
+          {!objective.met && (
+            // UN seul départ de séance ici, et volontairement `secondary` :
+            // le Dashboard proposait jusqu'à trois entrées de séance
+            // concurrentes sur le même écran (le CTA du héros, deux raccourcis
+            // de durée en dur, puis quatre préréglages répétés ici). Le choix
+            // de la durée appartient au « Plan du jour », qui y attache un
+            // vrai plan ; ce lien-ci ne fait que reprendre le temps qu'il
+            // reste à l'objectif, sans redemander à l'élève de trancher.
+            <div className="mt-5">
+              <Link href={`/session?minutes=${objective.remainingMinutes > 0 ? Math.min(objective.remainingMinutes, 90) : DEFAULT_PLAN_MINUTES}`}>
                 <Button variant="secondary" size="sm">
-                  Commencer une session <ArrowRight size={13} />
+                  {objective.workedMinutes === 0 ? "Commencer une session" : `Continuer — ${objective.remainingMinutes} min`} <ArrowRight size={13} />
                 </Button>
               </Link>
-            ) : (
-              PLAN_DURATION_PRESETS.map((preset) => (
-                <Link key={preset} href={`/session?minutes=${preset}`}>
-                  <Button variant="secondary" size="sm">
-                    {preset} min
-                  </Button>
-                </Link>
-              ))
-            )}
-          </div>
+            </div>
+          )}
         </Card>
 
         <Card className="p-6">

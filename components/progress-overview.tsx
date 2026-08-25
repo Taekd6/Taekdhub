@@ -12,7 +12,7 @@ import { Heatmap } from "@/components/heatmap";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
-import { computeChaptersToConsolidate } from "@/lib/next-action";
+import { computeChaptersToConsolidate, type ChapterConsolidation } from "@/lib/next-action";
 import { computeGlobalProgress, computeProgressBySubject, masteryDistribution, progressByChapter, statusDistribution } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META, type ReadinessLevel } from "@/lib/readiness";
 import type { Chapter, WeekSnapshot } from "@/lib/storage";
@@ -99,6 +99,19 @@ function WeekEvolution({ exercises, sessions, weekSnapshots }: { exercises: Exer
 }
 
 /**
+ * Formule la base du verdict — jamais une estimation : `attempts` et
+ * `sinceDays` viennent tels quels de `computeChaptersToConsolidate`. Quand
+ * aucune tentative n'a été enregistrée, on le dit plutôt que d'inventer une
+ * période.
+ */
+function describeEvidence({ attempts, sinceDays }: ChapterConsolidation["evidence"]): string {
+  if (attempts === 0) return "Aucune tentative enregistrée — établi sur ta maîtrise déclarée.";
+  const plural = attempts > 1 ? "s" : "";
+  if (sinceDays === null || sinceDays === 0) return `Sur tes ${attempts} dernière${plural} tentative${plural}, aujourd'hui.`;
+  return `Sur tes ${attempts} dernière${plural} tentative${plural}, depuis ${sinceDays} jour${sinceDays > 1 ? "s" : ""}.`;
+}
+
+/**
  * « Tes 3 priorités » — la réponse directe à la question que l'élève se pose
  * réellement en ouvrant cette page : « qu'est-ce que je dois retravailler ? »
  *
@@ -133,7 +146,7 @@ function TopWeaknesses({ exercises, sessions, chapters }: { exercises: Exercise[
       <p className="mt-1 text-xs text-zinc-500">Classé par le même moteur que tes recommandations — donc cohérent avec ce que TaekdHub te propose.</p>
 
       <ol className="mt-5 space-y-2.5">
-        {priorities.map(({ chapter, averageMastery, reasons, href }, index) => (
+        {priorities.map(({ chapter, averageMastery, reasons, href, evidence }, index) => (
           <li key={chapter.id}>
             <Link
               href={href}
@@ -154,6 +167,9 @@ function TopWeaknesses({ exercises, sessions, chapters }: { exercises: Exercise[
                     </Badge>
                   ))}
                 </div>
+                {/* Sur quoi porte le verdict — « récents » depuis quand, mesurés sur combien.
+                    Sans cette ligne, les badges ci-dessus étaient des affirmations sans assise. */}
+                <p className="mt-2 text-2xs text-zinc-500">{describeEvidence(evidence)}</p>
                 <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent">
                   Travailler ce chapitre <ArrowRight size={11} />
                 </span>
