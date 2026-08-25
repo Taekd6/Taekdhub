@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { comfortDifficulty, computeExerciseBankStats, explainReasons, isNeverWorked, recommendExercises } from "@/lib/recommendation";
+import { ASSISTED_HINTS_THRESHOLD, comfortDifficulty, computeExerciseBankStats, computeWorkingLevel, explainReasons, isNeverWorked, recommendExercises } from "@/lib/recommendation";
 import type { Exercise, Mastery, Subject, WorkSession } from "@/lib/supabase/types";
 
 let counter = 0;
@@ -458,5 +458,40 @@ describe("Réussite assistée — un signal qui doit vraiment remonter", () => {
     const sessions = [makeSession(solo.id, { result: "réussi", hints_used: 0, started_at: new Date(NOW.getTime() - 86400000).toISOString() })];
     const order = recommendExercises([solo, fresh], sessions, 2, { now: NOW }).map((r) => r.exercise.id);
     expect(order[0]).toBe(fresh.id);
+  });
+});
+
+/**
+ * `computeWorkingLevel` publie ce que le moteur utilisait déjà sans jamais le
+ * montrer. Il ne doit RIEN inventer : mêmes tentatives, même seuil d'aide.
+ */
+describe("computeWorkingLevel — la lecture publique de l'entrée du moteur", () => {
+  it("ne publie rien tant que la fenêtre manque de tentatives qualifiées", () => {
+    const exercise = makeExercise();
+    expect(computeWorkingLevel([exercise], [makeSession(exercise.id, { result: "réussi", hints_used: 0 })])).toBeNull();
+  });
+
+  it("ne compte comme autonome qu'une réussite obtenue sous le seuil d'indices", () => {
+    const exercises = Array.from({ length: 4 }, () => makeExercise({ difficulty: 3 }));
+    const sessions = exercises.map((exercise, index) =>
+      makeSession(exercise.id, { result: "réussi", hints_used: index < 2 ? 0 : ASSISTED_HINTS_THRESHOLD })
+    );
+    const level = computeWorkingLevel(exercises, sessions)!;
+    expect(level.successes).toBe(4);
+    expect(level.autonomousSuccesses).toBe(2);
+  });
+
+  it("une séance sans compteur d'indices n'est jamais créditée comme autonome", () => {
+    const exercises = Array.from({ length: 3 }, () => makeExercise({ difficulty: 2 }));
+    const sessions = exercises.map((exercise) => makeSession(exercise.id, { result: "réussi", hints_used: null }));
+    const level = computeWorkingLevel(exercises, sessions)!;
+    expect(level.successes).toBe(3);
+    expect(level.autonomousSuccesses).toBe(0);
+  });
+
+  it("la difficulté moyenne publiée est celle des tentatives réellement examinées", () => {
+    const exercises = [makeExercise({ difficulty: 1 }), makeExercise({ difficulty: 3 }), makeExercise({ difficulty: 5 })];
+    const sessions = exercises.map((exercise) => makeSession(exercise.id, { result: "réussi", hints_used: 0 }));
+    expect(computeWorkingLevel(exercises, sessions)!.averageDifficulty).toBe(3);
   });
 });

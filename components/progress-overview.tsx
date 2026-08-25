@@ -13,6 +13,7 @@ import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
 import { computeChaptersToConsolidate, type ChapterConsolidation } from "@/lib/next-action";
+import { comfortDifficulty, computeWorkingLevel } from "@/lib/recommendation";
 import { computeGlobalProgress, computeProgressBySubject, masteryDistribution, progressByChapter, statusDistribution } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META, type ReadinessLevel } from "@/lib/readiness";
 import type { Chapter, WeekSnapshot } from "@/lib/storage";
@@ -94,6 +95,73 @@ function WeekEvolution({ exercises, sessions, weekSnapshots }: { exercises: Exer
           )}
         </div>
       )}
+    </Card>
+  );
+}
+
+/**
+ * « Où tu en es » — les deux faits que le moteur utilise pour décider, rendus
+ * lisibles.
+ *
+ * Le niveau de difficulté visé (`comfortDifficulty`) et la part de réussites
+ * obtenues sans aide décisive pilotaient déjà le classement des
+ * recommandations, la formule d'XP et les raisons affichées — sans avoir
+ * jamais été montrés nulle part. L'élève subissait donc des décisions dont il
+ * ne pouvait ni voir ni contester la base ; un professeur devant l'écran ne
+ * pouvait pas répondre à « à quel niveau travaille-t-il ? » ni « s'en sort-il
+ * seul ? ». Aucun calcul nouveau : `computeWorkingLevel` et
+ * `comfortDifficulty` lisent la même fenêtre de tentatives, dans le même
+ * fichier que le moteur.
+ *
+ * Rien ne s'affiche tant que la fenêtre ne contient pas assez de tentatives
+ * qualifiées : mieux vaut ne rien dire qu'un pourcentage sur deux séances.
+ */
+function WorkingLevelCard({ exercises, sessions }: { exercises: Exercise[]; sessions: WorkSession[] }) {
+  const level = useMemo(() => computeWorkingLevel(exercises, sessions), [exercises, sessions]);
+  const comfort = useMemo(() => comfortDifficulty(exercises, sessions), [exercises, sessions]);
+  if (!level || !comfort) return null;
+
+  const autonomyPercent = level.successes > 0 ? Math.round((level.autonomousSuccesses / level.successes) * 100) : null;
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-center gap-2">
+        <GraduationCap size={14} className="text-accent" />
+        <p className="eyebrow">Où tu en es</p>
+      </div>
+      <CardTitle className="mt-2">Ce sur quoi TaekdHub s&apos;appuie pour te proposer des exercices</CardTitle>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-hairline/[0.07] p-3.5">
+          <p className="text-xs text-zinc-500">Niveau visé</p>
+          <p className="mt-1.5 text-xl font-semibold tracking-tight">{comfort.target.toFixed(1)}<span className="text-sm font-normal text-zinc-500"> / 5</span></p>
+          <p className="mt-0.5 text-2xs text-zinc-500">
+            {comfort.steppedUp
+              ? `Relevé après ${comfort.successStreak} réussites autonomes d'affilée`
+              : `Difficulté moyenne de tes tentatives : ${level.averageDifficulty}`}
+          </p>
+        </div>
+        <div className="rounded-xl border border-hairline/[0.07] p-3.5">
+          <p className="text-xs text-zinc-500">Réussites sans aide</p>
+          <p className="mt-1.5 text-xl font-semibold tracking-tight">
+            {autonomyPercent === null ? "—" : `${autonomyPercent}%`}
+          </p>
+          <p className="mt-0.5 text-2xs text-zinc-500">
+            {level.successes === 0
+              ? "Aucune réussite sur la période"
+              : `${level.autonomousSuccesses} sur ${level.successes} réussite${level.successes > 1 ? "s" : ""}`}
+          </p>
+        </div>
+        <div className="rounded-xl border border-hairline/[0.07] p-3.5">
+          <p className="text-xs text-zinc-500">Mesuré sur</p>
+          <p className="mt-1.5 text-xl font-semibold tracking-tight">{level.attempts}</p>
+          <p className="mt-0.5 text-2xs text-zinc-500">dernières tentatives qualifiées</p>
+        </div>
+      </div>
+      <p className="mt-3 text-2xs text-zinc-500">
+        Une réussite obtenue en révélant deux indices ou plus n&apos;est pas comptée comme autonome — c&apos;est aussi la règle qu&apos;utilisent
+        les recommandations et l&apos;XP.
+      </p>
     </Card>
   );
 }
@@ -293,6 +361,7 @@ export function ProgressOverview() {
         <MetricCard label="Série actuelle" value={`${model.streak} j`} detail="Jours consécutifs" icon={Flame} delay={0.15} />
       </section>
 
+      <WorkingLevelCard exercises={exercises} sessions={sessions} />
       <TopWeaknesses exercises={exercises} sessions={sessions} chapters={chapters} />
 
       <WeekEvolution exercises={exercises} sessions={sessions} weekSnapshots={weekSnapshots} />

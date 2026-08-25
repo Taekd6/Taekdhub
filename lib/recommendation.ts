@@ -174,6 +174,42 @@ function attemptsWithDifficulty(
     }));
 }
 
+/**
+ * CE QUE LE MOTEUR SAIT DE L'ÉLÈVE, rendu lisible — même fenêtre, mêmes
+ * seuils et mêmes tentatives que `comfortDifficulty` ci-dessous : c'est la
+ * lecture publique de son entrée, jamais un second calcul.
+ *
+ * Ces deux faits pilotent déjà les recommandations (le cran de difficulté
+ * visé, et la façon dont une réussite assistée est décomptée) sans avoir
+ * jamais été montrés nulle part. L'élève — et le professeur qui regarde
+ * l'écran — ne pouvaient donc ni les vérifier ni les contester.
+ *
+ * `null` tant que la fenêtre ne contient pas assez de tentatives qualifiées :
+ * on ne publie pas un pourcentage calculé sur deux séances.
+ */
+export interface WorkingLevel {
+  /** Nombre de tentatives qualifiées dans la fenêtre — l'assise du reste. */
+  attempts: number;
+  /** Difficulté moyenne des tentatives récentes, une décimale. */
+  averageDifficulty: number;
+  /** Réussites de la fenêtre (toutes, assistées comprises). */
+  successes: number;
+  /** Réussites obtenues SANS aide décisive (voir `ASSISTED_HINTS_THRESHOLD`) — une séance sans compteur d'indices n'est jamais comptée comme autonome. */
+  autonomousSuccesses: number;
+}
+
+export function computeWorkingLevel(exercises: Exercise[], sessions: WorkSession[]): WorkingLevel | null {
+  const recent = attemptsWithDifficulty(exercises, sessions);
+  if (recent.length < COMFORT_MIN_ATTEMPTS) return null;
+  const successes = recent.filter((attempt) => attempt.result === "réussi");
+  return {
+    attempts: recent.length,
+    averageDifficulty: Math.round((recent.reduce((sum, a) => sum + a.difficulty, 0) / recent.length) * 10) / 10,
+    successes: successes.length,
+    autonomousSuccesses: successes.filter((a) => a.hintsUsed !== null && a.hintsUsed < ASSISTED_HINTS_THRESHOLD).length,
+  };
+}
+
 export interface ComfortLevel {
   /** Difficulté visée maintenant (1-5, non entière possible : une cible à 2.5 tire autant vers 2 que vers 3). */
   target: number;
