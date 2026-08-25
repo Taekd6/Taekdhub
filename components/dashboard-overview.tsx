@@ -11,7 +11,6 @@ import {
   CalendarClock,
   CalendarRange,
   Clock3,
-  Flag,
   Flame,
   GraduationCap,
   History as HistoryIcon,
@@ -41,13 +40,11 @@ import {
 } from "@/lib/next-action";
 import {
   computeDailyPlan,
-  computeSubjectPriorities,
   DEFAULT_PLAN_MINUTES,
   PLAN_DURATION_PRESETS,
   PLAN_INTENT_META,
   PLAN_STORAGE_KEY,
   serializePlan,
-  type SubjectPriorityLevel,
 } from "@/lib/plan";
 import { computeProgressBySubject } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META } from "@/lib/readiness";
@@ -60,13 +57,6 @@ const UPCOMING_META: Record<UpcomingItem["key"], { label: string; icon: typeof B
   chapter: { label: "Chapitre à consolider", icon: BookOpenCheck },
   subject: { label: "Matière délaissée", icon: CalendarClock },
   review: { label: "Révision due", icon: ListChecks },
-};
-
-/** Point de statut "Priorités de la semaine" — mêmes couleurs que `READINESS_DOT_CLASS` ci-dessous, un seul vocabulaire visuel pour tout niveau qualitatif du Dashboard. */
-const PRIORITY_META: Record<SubjectPriorityLevel, { dot: string; label: string }> = {
-  "critique": { dot: "bg-rose-400", label: "Critique" },
-  "à surveiller": { dot: "bg-amber-400", label: "À surveiller" },
-  "correct": { dot: "bg-emerald-400", label: "Correct" },
 };
 
 /** Couleur du point de statut "Prêt pour le DS ?" — dérivée de la même variante de badge que `READINESS_META` (lib/readiness.ts), jamais un second système de couleurs. */
@@ -103,7 +93,6 @@ export function DashboardOverview() {
       recentDays: recentDaySummaries(sessions, now, 5),
       readiness: computeReadinessBySubject(exercises, sessions, now),
       weeklySummary: computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now),
-      subjectPriorities: computeSubjectPriorities(exercises, sessions, chapters, now),
       streak: computeStreak(sessions),
       contestDays: preferences.contestDate
         ? Math.max(0, Math.ceil((new Date(preferences.contestDate).getTime() - now.getTime()) / 86400000))
@@ -137,7 +126,7 @@ export function DashboardOverview() {
     );
   }
 
-  const { nextAction, objective, upcoming, progress, bySubject, toConsolidate, recentDays, readiness, weeklySummary, subjectPriorities, streak, contestDays } = model;
+  const { nextAction, objective, upcoming, progress, bySubject, toConsolidate, recentDays, readiness, weeklySummary, streak, contestDays } = model;
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
   const secondaryPicks = nextAction.picks.slice(1);
   // "Revoir mes priorités" (Phase 8) : ouvre directement le premier exercice déjà signalé par le moteur de recommandation — même convention que computeUpcoming (lib/next-action.ts), aucune nouvelle route.
@@ -298,30 +287,6 @@ export function DashboardOverview() {
           </>
         )}
       </Card>
-
-      {/* PRIORITÉS DE LA SEMAINE — "pourquoi" : juste après le plan, avant les chiffres d'état ("où j'en suis" ci-dessous), pour rester dans l'ordre de lecture quoi → pourquoi → où j'en suis → comment (voir la doc du composant). */}
-      {subjectPriorities.length > 0 && (
-        <Card className="p-6">
-          <div className="flex items-center gap-2">
-            <Flag size={14} className="text-accent" />
-            <p className="eyebrow">Priorités de la semaine</p>
-          </div>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2">
-            {subjectPriorities.map(({ subject, label, level, reason }) => {
-              const meta = PRIORITY_META[level];
-              return (
-                <div key={subject} className="flex items-center justify-between gap-3 rounded-xl border border-hairline/[0.07] px-3.5 py-2.5 text-sm">
-                  <span className="flex items-center gap-2 font-medium text-zinc-100">
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
-                    {label}
-                  </span>
-                  <span className="text-right text-xs text-zinc-500">{reason}</span>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
 
       {/* À CONSOLIDER — même logique "pourquoi", au niveau du chapitre. */}
       {chapters.length > 0 && (

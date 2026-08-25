@@ -42,7 +42,7 @@ export interface SubjectReadiness {
  * Critère volontairement simple et explicable, pas un score composite :
  * aucun exercice signalé → prêt ; sinon, une matière jamais engagée (voir
  * `hasEngagement`, même critère que `hasChapterEngagement` dans
- * lib/next-action.ts et `SubjectSignal.hasEngagement` dans lib/plan.ts) →
+ * lib/next-action.ts) →
  * "pas commencé", distinct de "pas prêt" — sans cette distinction, une
  * matière simplement jamais entamée (100% "à faire" par défaut, donc
  * mécaniquement 0% de complétion) ressort identique à une matière où
@@ -57,7 +57,7 @@ function readinessLevel(flaggedCount: number, completionRate: number, hasEngagem
   return completionRate >= 50 ? "à consolider" : "pas prêt";
 }
 
-/** Au moins un exercice de la matière a déjà été engagé — même critère que `hasChapterEngagement` (lib/next-action.ts) et `SubjectSignal.hasEngagement` (lib/plan.ts), jamais un quatrième calcul de la même notion. */
+/** Au moins un exercice de la matière a déjà été engagé — même critère que `hasChapterEngagement` (lib/next-action.ts), jamais un second calcul de la même notion. */
 function hasSubjectEngagement(subjectExercises: Exercise[]): boolean {
   return subjectExercises.some((exercise) => exercise.attempts > 0 || exercise.status !== "à faire" || exercise.last_worked_at !== null);
 }
