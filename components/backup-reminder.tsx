@@ -12,7 +12,15 @@ import { BACKUP_REMINDER_DAYS, daysSinceBackup, exportBackup } from "@/lib/stora
  * Réutilise `exportBackup()` (lib/storage.ts), le même mécanisme que
  * Réglages > Données locales : aucun second système de sauvegarde.
  *
- * Masqué : tant qu'il n'y a rien à protéger (banque et historique vides),
+ * Masqué : tant que l'élève n'a produit AUCUN travail personnel. La banque
+ * est amorcée avec 402 exercices dès la première seconde (lib/seed.ts) : se
+ * fier à `exercises.length` accueillait donc tout nouvel arrivant par un
+ * bandeau d'avertissement orange — « tu n'as jamais sauvegardé tes données » —
+ * avant même qu'il ait quoi que ce soit à perdre. Première impression du
+ * produit : une corvée. Seul l'historique de séances prouve un travail réel,
+ * c'est donc lui qui déclenche le rappel.
+ *
+ * Masqué aussi :
  * une fois la sauvegarde faite (le clic ici appelle le même export que
  * Réglages, donc réapparaît/disparaît selon la même règle des deux côtés),
  * ou pour le reste de la visite si l'utilisateur l'ignore (pas de "snooze"
@@ -20,13 +28,12 @@ import { BACKUP_REMINDER_DAYS, daysSinceBackup, exportBackup } from "@/lib/stora
  * jamais désactiver silencieusement le rappel pour de bon).
  */
 export function BackupReminder() {
-  const { exercises, sessions, lastBackupAt, ready, refresh } = usePrepahubData();
+  const { sessions, lastBackupAt, ready, refresh } = usePrepahubData();
   const [dismissed, setDismissed] = useState(false);
 
   if (!ready || dismissed) return null;
 
-  const hasData = exercises.length > 0 || sessions.length > 0;
-  if (!hasData) return null;
+  if (sessions.length === 0) return null;
 
   const days = daysSinceBackup(lastBackupAt);
   const overdue = days === null || days >= BACKUP_REMINDER_DAYS;

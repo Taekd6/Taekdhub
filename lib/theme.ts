@@ -45,6 +45,44 @@ export function relativeLuminance([r, g, b]: [number, number, number]): number {
   return 0.2126 * srgbToLinear(r) + 0.7152 * srgbToLinear(g) + 0.0722 * srgbToLinear(b);
 }
 
+/**
+ * L'ACCENT EN TANT QU'ENCRE — même teinte, assombrie juste ce qu'il faut pour
+ * rester lisible sur un fond clair.
+ *
+ * L'accent avait une seule valeur pour deux usages opposés : le REMPLISSAGE
+ * (bouton principal, lueur de fond), qui doit rester la couleur de marque
+ * telle quelle, et l'ENCRE (texte, icônes, liens, teintes fines), qui se pose
+ * sur le fond de la page. En thème clair, cette seconde famille tombait à
+ * **1,20:1** de contraste avec l'accent par défaut — mesuré sur /progress :
+ * les icônes de section, les liens « Travailler ce chapitre » et les pastilles
+ * de pourcentage étaient à la limite de l'invisible. (15,95:1 en thème sombre,
+ * d'où le fait que ça n'ait jamais sauté aux yeux.)
+ *
+ * L'accent restant personnalisable (n'importe quel hex), la valeur n'est pas
+ * codée en dur : on assombrit la teinte choisie, par simple mise à l'échelle
+ * des canaux — la couleur reste reconnaissable — jusqu'à passer sous le seuil
+ * de luminance qui garantit 4,5:1 sur le fond clair de l'application.
+ *
+ * Écrite en `--accent-ink-base-rgb` : c'est app/globals.css qui décide, selon
+ * le thème, si `--accent-ink-rgb` vaut cette version assombrie (clair) ou
+ * l'accent tel quel (sombre). Un seul endroit tranche, jamais deux.
+ */
+const INK_MAX_LUMINANCE = 0.174;
+
+export function accentInk(hex: string): [number, number, number] {
+  const rgb = hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]);
+  if (relativeLuminance(rgb) <= INK_MAX_LUMINANCE) return rgb;
+  let low = 0;
+  let high = 1;
+  for (let step = 0; step < 24; step++) {
+    const mid = (low + high) / 2;
+    const scaled = rgb.map((channel) => channel * mid) as [number, number, number];
+    if (relativeLuminance(scaled) > INK_MAX_LUMINANCE) high = mid;
+    else low = mid;
+  }
+  return rgb.map((channel) => Math.round(channel * low)) as [number, number, number];
+}
+
 /** Noir ou blanc — jamais une autre teinte — selon ce qui contraste le mieux avec `hex`. Retombe sur l'accent par défaut si `hex` n'est pas un hex valide. */
 export function accentForeground(hex: string): [number, number, number] {
   const rgb = hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]);
@@ -63,6 +101,7 @@ export function applyAccent(hex: string, root: HTMLElement = document.documentEl
   const fg = accentForeground(hex);
   root.style.setProperty("--accent-rgb", rgb.join(" "));
   root.style.setProperty("--accent-fg-rgb", fg.join(" "));
+  root.style.setProperty("--accent-ink-base-rgb", accentInk(hex).join(" "));
 }
 
 /**
