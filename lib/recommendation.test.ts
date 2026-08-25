@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeExerciseBankStats, explainReasons, isNeverWorked, recommendExercises } from "@/lib/recommendation";
+import { comfortDifficulty, computeExerciseBankStats, explainReasons, isNeverWorked, recommendExercises } from "@/lib/recommendation";
 import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
 
 let counter = 0;
@@ -231,6 +231,103 @@ describe("recommendExercises — signaux échec/réussite (Sprint 5)", () => {
     const exercise = makeExercise({ mastery: 50, priority: 3, status: "à faire" });
     const [result] = recommendExercises([exercise], [], 10, { now: NOW });
     expect(result.reasons).toEqual(["Jamais travaillé"]);
+  });
+});
+
+describe("comfortDifficulty — progression de difficulté", () => {
+  /** Une tentative qualifiée sur un exercice de difficulté donnée, datée pour que l'ordre de récence soit déterministe. */
+  function attempt(difficulty: number, result: "réussi" | "échoué" | "partiel", daysAgo: number) {
+    const exercise = makeExercise({ difficulty: difficulty as Exercise["difficulty"] });
+    const started = new Date(NOW.getTime() - daysAgo * 86400000).toISOString();
+    return { exercise, session: makeSession(exercise.id, { result, started_at: started }) };
+  }
+
+  it("moins de 3 tentatives qualifiées : aucun niveau déduit (on n'invente pas un niveau sans preuve)", () => {
+    const a = attempt(2, "réussi", 1);
+    const b = attempt(2, "réussi", 2);
+    expect(comfortDifficulty([a.exercise, b.exercise], [a.session, b.session])).toBeNull();
+  });
+
+  it("série de réussites : la cible monte d'un cran au-dessus du niveau réussi", () => {
+    const attempts = [attempt(2, "réussi", 1), attempt(2, "réussi", 2), attempt(2, "réussi", 3)];
+    const comfort = comfortDifficulty(attempts.map((a) => a.exercise), attempts.map((a) => a.session))!;
+    expect(comfort.target).toBe(3);
+    expect(comfort.steppedUp).toBe(true);
+    expect(comfort.successStreak).toBe(3);
+  });
+
+  it("échecs récents : la cible redescend d'un cran, sans jamais passer sous 1", () => {
+    const attempts = [attempt(1, "échoué", 1), attempt(1, "échoué", 2), attempt(1, "échoué", 3)];
+    const comfort = comfortDifficulty(attempts.map((a) => a.exercise), attempts.map((a) => a.session))!;
+    expect(comfort.target).toBe(1);
+    expect(comfort.steppedUp).toBe(false);
+  });
+
+  it("la cible reste bornée à 5 même après une série de réussites au niveau maximum", () => {
+    const attempts = [attempt(5, "réussi", 1), attempt(5, "réussi", 2), attempt(5, "réussi", 3)];
+    expect(comfortDifficulty(attempts.map((a) => a.exercise), attempts.map((a) => a.session))!.target).toBe(5);
+  });
+
+  it("ignore les séances sans résultat et celles dont l'exercice n'existe plus", () => {
+    const a = attempt(3, "réussi", 1);
+    const orphan = makeSession("exercice-supprimé", { result: "réussi" });
+    const unqualified = makeSession(a.exercise.id, { result: null });
+    expect(comfortDifficulty([a.exercise], [a.session, orphan, unqualified])).toBeNull();
+  });
+});
+
+describe("recommendExercises — effet de la progression de difficulté", () => {
+  it("à signaux par ailleurs identiques, l'exercice au niveau visé passe devant celui qui en est loin", () => {
+    // Historique : trois réussites d'affilée en difficulté 2 → cible 3.
+    const history = [1, 2, 3].map((daysAgo) => {
+      const solved = makeExercise({ difficulty: 2, status: "maîtrisé", mastery: 100, priority: 1, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+      return {
+        exercise: solved,
+        session: makeSession(solved.id, { result: "réussi" as const, started_at: new Date(NOW.getTime() - daysAgo * 86400000).toISOString() }),
+      };
+    });
+
+    const atTarget = makeExercise({ difficulty: 3, mastery: 0, priority: 3, status: "à faire" });
+    const farAbove = makeExercise({ difficulty: 5, mastery: 0, priority: 3, status: "à faire" });
+
+    const exercises = [...history.map((h) => h.exercise), farAbove, atTarget];
+    const sessions = history.map((h) => h.session);
+    const result = recommendExercises(exercises, sessions, 10, { now: NOW });
+
+    const targetRank = result.findIndex((r) => r.exercise.id === atTarget.id);
+    const aboveRank = result.findIndex((r) => r.exercise.id === farAbove.id);
+    expect(targetRank).toBeGreaterThanOrEqual(0);
+    expect(targetRank).toBeLessThan(aboveRank);
+  });
+
+  it("un exercice hors du niveau visé reste proposé — déprioritisé, jamais exclu", () => {
+    const history = [1, 2, 3].map((daysAgo) => {
+      const solved = makeExercise({ difficulty: 1, status: "maîtrisé", mastery: 100, priority: 1, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+      return { exercise: solved, session: makeSession(solved.id, { result: "réussi" as const, started_at: new Date(NOW.getTime() - daysAgo * 86400000).toISOString() }) };
+    });
+    const hard = makeExercise({ difficulty: 5, mastery: 0, status: "à faire" });
+    const result = recommendExercises([...history.map((h) => h.exercise), hard], history.map((h) => h.session), 10, { now: NOW });
+    expect(result.some((r) => r.exercise.id === hard.id)).toBe(true);
+  });
+
+  it("cold start (aucun résultat enregistré) : classement stable, la difficulté ne joue aucun rôle", () => {
+    const easy = makeExercise({ difficulty: 1, mastery: 0, priority: 3 });
+    const hard = makeExercise({ difficulty: 5, mastery: 0, priority: 3 });
+    const result = recommendExercises([easy, hard], [], 10, { now: NOW });
+    // Mêmes signaux, aucune donnée de niveau : les deux scores doivent rester égaux.
+    expect(result[0].score).toBe(result[1].score);
+  });
+
+  it("la justification cite le nombre réel de réussites consécutives", () => {
+    const history = [1, 2, 3].map((daysAgo) => {
+      const solved = makeExercise({ difficulty: 2, status: "maîtrisé", mastery: 100, priority: 1, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+      return { exercise: solved, session: makeSession(solved.id, { result: "réussi" as const, started_at: new Date(NOW.getTime() - daysAgo * 86400000).toISOString() }) };
+    });
+    const next = makeExercise({ difficulty: 3, mastery: 0, status: "à faire" });
+    const result = recommendExercises([...history.map((h) => h.exercise), next], history.map((h) => h.session), 10, { now: NOW });
+    const pick = result.find((r) => r.exercise.id === next.id)!;
+    expect(pick.reasons.some((reason) => reason.startsWith("Palier suivant"))).toBe(true);
+    expect(explainReasons(pick.reasons)).toBe("Tu as réussi 3 exercices d'affilée : on monte d'un cran de difficulté.");
   });
 });
 

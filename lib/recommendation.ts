@@ -1,6 +1,6 @@
 import { minutesByExerciseMap, totalSeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
-import type { Exercise, ExerciseStatus, WorkSession } from "@/lib/supabase/types";
+import type { AttemptResult, Exercise, ExerciseStatus, WorkSession } from "@/lib/supabase/types";
 
 /**
  * Moteur de révision — Sprint 3A, étendu au Sprint 4 (décroissance de
@@ -116,6 +116,99 @@ function recentSuccessStreak(attempts: WorkSession[]): number {
 }
 
 /**
+ * NIVEAU DE CONFORT — à quelle difficulté l'élève travaille réellement en ce
+ * moment, déduit de ses résultats passés.
+ *
+ * Comble un manque de fond du moteur : `Exercise.difficulty` ne servait
+ * jusqu'ici QU'À estimer une durée (voir `estimatedDurationMinutes`) et
+ * n'intervenait nulle part dans le choix des exercices. Autrement dit, un
+ * élève ayant réussi vingt exercices de difficulté 1 se voyait proposer un
+ * difficulté 5 exactement aussi volontiers qu'un difficulté 1 — le produit
+ * ne progressait pas avec lui, alors que toutes les données nécessaires
+ * étaient déjà enregistrées.
+ *
+ * Aucune donnée nouvelle n'est requise : uniquement `WorkSession.result`
+ * (déjà saisi en fin de séance focus) et `Exercise.difficulty` (déjà porté
+ * par chaque fiche).
+ */
+const COMFORT_WINDOW = 12;
+/** En dessous de ce nombre de tentatives qualifiées, on ne prétend rien savoir du niveau de l'élève — `comfortDifficulty` renvoie `null` et le score reste strictement celui d'avant. */
+const COMFORT_MIN_ATTEMPTS = 3;
+/** Série de réussites à partir de laquelle on propose un cran au-dessus (le seuil que l'élève voit cité dans la justification). */
+const COMFORT_STEP_UP_STREAK = 3;
+
+/** Difficulté de l'exercice associé à chaque tentative qualifiée, les plus récentes d'abord — `null` si l'exercice n'existe plus (archivé/supprimé). */
+function attemptsWithDifficulty(
+  exercises: Exercise[],
+  sessions: WorkSession[]
+): { result: AttemptResult; difficulty: number }[] {
+  const difficultyById = new Map(exercises.map((exercise) => [exercise.id, exercise.difficulty]));
+  return sessions
+    .filter((session) => session.result && session.exercise_id && difficultyById.has(session.exercise_id))
+    .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
+    .slice(0, COMFORT_WINDOW)
+    .map((session) => ({ result: session.result!, difficulty: difficultyById.get(session.exercise_id!)! }));
+}
+
+export interface ComfortLevel {
+  /** Difficulté visée maintenant (1-5, non entière possible : une cible à 2.5 tire autant vers 2 que vers 3). */
+  target: number;
+  /** `true` quand la cible a été relevée par une série de réussites — sert à formuler une justification honnête ("tu as réussi N exercices de ce niveau"). */
+  steppedUp: boolean;
+  /** Longueur de la série de réussites qui a déclenché la montée, pour la citer telle quelle. */
+  successStreak: number;
+}
+
+/**
+ * Renvoie `null` tant que l'élève n'a pas assez d'historique qualifié : sans
+ * preuve, on n'invente pas un niveau — le classement reste alors exactement
+ * celui d'avant l'introduction de ce mécanisme (garanti par les tests).
+ */
+export function comfortDifficulty(exercises: Exercise[], sessions: WorkSession[]): ComfortLevel | null {
+  const recent = attemptsWithDifficulty(exercises, sessions);
+  if (recent.length < COMFORT_MIN_ATTEMPTS) return null;
+
+  const succeeded = recent.filter((attempt) => attempt.result === "réussi");
+  const failed = recent.filter((attempt) => attempt.result === "échoué");
+  const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
+
+  // Socle : la difficulté que l'élève RÉUSSIT. À défaut de toute réussite,
+  // celle où il échoue — auquel cas on visera en dessous, juste après.
+  const base = succeeded.length > 0 ? average(succeeded.map((a) => a.difficulty)) : average(failed.map((a) => a.difficulty));
+
+  let streak = 0;
+  for (const attempt of recent) {
+    if (attempt.result !== "réussi") break;
+    streak++;
+  }
+  const recentFailures = recent.slice(0, RECENT_ATTEMPTS_WINDOW).filter((a) => a.result === "échoué").length;
+
+  // Un seul cran à la fois, jamais un saut : on accompagne la progression,
+  // on ne la devance pas.
+  let target = base;
+  let steppedUp = false;
+  if (streak >= COMFORT_STEP_UP_STREAK) {
+    target = base + 1;
+    steppedUp = true;
+  } else if (recentFailures >= 2) {
+    target = base - 1;
+  }
+
+  return { target: Math.min(5, Math.max(1, target)), steppedUp, successStreak: streak };
+}
+
+/** Plafond du terme d'adéquation en difficulté — volontairement du même ordre que `favoriteBonus`/`neverWorkedBonus` : il oriente le classement à signaux comparables, il ne l'écrase jamais (un échec récent, plus urgent, continue de primer). */
+const DIFFICULTY_FIT_BONUS = 14;
+/** Pénalité par cran d'écart à la cible — au-delà de ~2 crans le bonus est nul, jamais négatif : un exercice mal calibré est déprioritisé, jamais exclu (l'élève garde accès à toute la banque). */
+const DIFFICULTY_FIT_DECAY = 7;
+
+/** Récompense les exercices proches du niveau de confort (voir `comfortDifficulty`). Sans niveau établi, vaut 0 — le score est alors identique à celui d'avant. */
+function difficultyFitBonus(exercise: Exercise, comfort: ComfortLevel | null): number {
+  if (!comfort) return 0;
+  return Math.max(0, DIFFICULTY_FIT_BONUS - Math.abs(exercise.difficulty - comfort.target) * DIFFICULTY_FIT_DECAY);
+}
+
+/**
  * Décide si un exercice mérite d'être proposé pour révision, et pourquoi.
  * Chaque critère est indépendant et lisible en une ligne — c'est ici, et
  * uniquement ici, qu'on ajoute un nouveau critère d'inclusion.
@@ -133,7 +226,7 @@ function recentSuccessStreak(attempts: WorkSession[]): number {
  * supplémentaire de cette section : le comportement "jamais tenté" / "à
  * revoir" existant reste strictement inchangé.
  */
-function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date): string[] {
+function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date, comfort: ComfortLevel | null = null): string[] {
   const reasons: string[] = [];
   if (exercise.mastery <= 25) reasons.push("Maîtrise faible");
   if (exercise.priority >= 4) reasons.push("Priorité élevée");
@@ -160,6 +253,14 @@ function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: Wo
   // s'ajoute qu'aux raisons déjà réunies, pour un exercice retenu par
   // ailleurs — voir `urgencyScore` pour son (léger) effet sur le tri.
   if (reasons.length > 0 && exercise.favorite) reasons.push("Favori");
+  // Montée de difficulté : jamais un critère d'inclusion à elle seule (même
+  // logique que "Favori"), et ajoutée UNIQUEMENT quand l'exercice est
+  // effectivement au cran visé — sinon la phrase promettrait une montée que
+  // le classement ne produit pas. C'est la seule raison qui cite un fait
+  // chiffré de l'historique ; elle doit donc rester exacte.
+  if (reasons.length > 0 && comfort?.steppedUp && exercise.difficulty >= comfort.target) {
+    reasons.push(`Palier suivant (${comfort.successStreak} réussites d'affilée)`);
+  }
   return reasons;
 }
 
@@ -201,7 +302,7 @@ function staleMasteryBonus(exercise: Exercise, now: Date): number {
  * avec résultat, `failureBonus` et `successPenalty` valent 0 et le score est
  * strictement identique à avant ce sprint.
  */
-function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date): number {
+function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date, comfort: ComfortLevel | null = null): number {
   const masteryGap = (100 - exercise.mastery) * 0.6; // 0 (maîtrisé à 100%) à 60 (maîtrisé à 0%)
   const priorityWeight = exercise.priority * 8; // 8 à 40
   const statusWeight = STATUS_WEIGHT[exercise.status]; // -30 à 40
@@ -226,6 +327,9 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
   // critère d'exclusion, seulement un effet sur le tri), et d'une amplitude
   // comparable à favoriteBonus/momentumBonus, pas dominante.
   const successPenalty = Math.min(24, recentSuccessStreak(attempts) * 8); // 0 à 24
+  // Adéquation au niveau réel de l'élève — 0 tant qu'il n'a pas assez
+  // d'historique (voir `comfortDifficulty`), donc score inchangé au démarrage.
+  const difficultyFit = difficultyFitBonus(exercise, comfort); // 0 à 14
   return (
     masteryGap +
     priorityWeight +
@@ -234,7 +338,8 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
     momentumBonus +
     staleBonus +
     favoriteBonus +
-    failureBonus -
+    failureBonus +
+    difficultyFit -
     successPenalty
   );
 }
@@ -416,14 +521,17 @@ export function recommendExercises(
 ): ExerciseRecommendation[] {
   const now = options.now ?? new Date();
   const minutesByExercise = minutesByExerciseMap(sessions);
+  // Calculé UNE fois pour toute la banque (et non par exercice) : le niveau
+  // de confort est une propriété de l'élève, pas de l'exercice évalué.
+  const comfort = comfortDifficulty(exercises, sessions);
   const candidates: ExerciseRecommendation[] = [];
   for (const exercise of exercises) {
     if (exercise.archived) continue;
     const minutesSpent = minutesByExercise.get(exercise.id) ?? 0;
     const attempts = attemptsWithResult(sessions, exercise.id);
-    const reasons = evaluateExercise(exercise, minutesSpent, attempts, now);
+    const reasons = evaluateExercise(exercise, minutesSpent, attempts, now, comfort);
     if (reasons.length === 0) continue;
-    candidates.push({ exercise, score: urgencyScore(exercise, minutesSpent, attempts, now), reasons });
+    candidates.push({ exercise, score: urgencyScore(exercise, minutesSpent, attempts, now, comfort), reasons });
   }
   candidates.sort((a, b) => b.score - a.score);
   const diversified = diversifyByChapter(candidates);
@@ -458,6 +566,19 @@ const REASON_RULES: ReasonRule[] = [
   { test: (r) => r.includes("Séance reprise"), sentence: () => "Tu avais laissé cette séance en cours — on reprend là où tu t'étais arrêté." },
   { test: (r) => r.includes("Plusieurs échecs"), sentence: () => "Tu as échoué plusieurs fois récemment dessus — ça mérite une nouvelle tentative." },
   { test: (r) => r.includes("Échec récent"), sentence: () => "Ta dernière tentative n'a pas abouti — on retente." },
+  // Avant les raisons "difficulté/maîtrise" : quand l'élève vient
+  // d'enchaîner des réussites, la montée de palier est LE fait nouveau qui
+  // explique le choix — et c'est la seule justification qui cite un chiffre
+  // vérifiable de son historique.
+  {
+    test: (r) => r.some((reason) => reason.startsWith("Palier suivant")),
+    sentence: (r) => {
+      const count = r.find((reason) => reason.startsWith("Palier suivant"))?.match(/\d+/)?.[0];
+      return count
+        ? `Tu as réussi ${count} exercices d'affilée : on monte d'un cran de difficulté.`
+        : "Tes dernières réussites permettent de monter d'un cran de difficulté.";
+    },
+  },
   { test: (r) => r.includes("Marqué à revoir"), sentence: () => "Tu l'as toi-même marqué à revoir." },
   // Avant "Maîtrise faible" : un exercice jamais travaillé a par construction
   // une maîtrise à 0 (voir isNeverWorked/evaluateExercise), donc les deux

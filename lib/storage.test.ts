@@ -23,6 +23,40 @@ function makeRawSession(overrides: Record<string, unknown> = {}): Record<string,
   };
 }
 
+describe("normalizeSession — dates corrompues (robustesse)", () => {
+  /**
+   * Régression : une date illisible traversait la normalisation, puis faisait
+   * lever `RangeError: Invalid time value` au rendu — page BLANCHE sur toute
+   * l'application, sans retour possible depuis l'interface, puisque les
+   * données vivent dans le localStorage. Trouvé en test de destruction.
+   */
+  it("remplace une date de début illisible par une date valide plutôt que de la propager", () => {
+    const session = normalizeSession(makeRawSession({ started_at: "pas-une-date" }));
+    expect(Number.isNaN(new Date(session.started_at).getTime())).toBe(false);
+  });
+
+  it("ramène à null une date de fin illisible", () => {
+    expect(normalizeSession(makeRawSession({ ended_at: "???" })).ended_at).toBeNull();
+  });
+
+  it("retombe sur started_at quand created_at est illisible", () => {
+    const session = normalizeSession(makeRawSession({ created_at: "n'importe quoi" }));
+    expect(session.created_at).toBe(session.started_at);
+  });
+
+  it("une durée non finie (NaN/Infinity) ne contamine jamais les totaux", () => {
+    expect(normalizeSession(makeRawSession({ duration_seconds: Number.NaN })).duration_seconds).toBe(0);
+    expect(normalizeSession(makeRawSession({ duration_seconds: Number.POSITIVE_INFINITY })).duration_seconds).toBe(0);
+  });
+
+  it("toutes les dates restent valides même sur un objet entièrement corrompu", () => {
+    const session = normalizeSession({ id: 42, subject: null, started_at: {}, created_at: [], ended_at: 7 });
+    expect(Number.isNaN(new Date(session.started_at).getTime())).toBe(false);
+    expect(Number.isNaN(new Date(session.created_at).getTime())).toBe(false);
+    expect(session.ended_at).toBeNull();
+  });
+});
+
 describe("normalizeSession — rétrocompatibilité de result", () => {
   it("normalise result à null pour une séance qui n'a jamais eu ce champ (pré-Sprint 5)", () => {
     const raw = makeRawSession();

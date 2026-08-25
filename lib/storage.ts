@@ -94,6 +94,28 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
+ * Une date ISO RÉELLEMENT exploitable, ou `null`.
+ *
+ * Vérifier `typeof === "string"` ne suffisait pas : une chaîne quelconque
+ * ("pas-une-date", un champ tronqué par une sauvegarde interrompue, un JSON
+ * édité à la main) traversait la normalisation, puis faisait lever
+ * `new Date(...).toISOString()` — `RangeError: Invalid time value` — bien
+ * plus loin, au moment du rendu. Comme toutes les données de TaekdHub vivent
+ * dans le `localStorage` du navigateur, une seule date corrompue suffisait à
+ * afficher une page BLANCHE sur toute l'application, sans aucun moyen de
+ * revenir en arrière depuis l'interface (trouvé en test de destruction).
+ *
+ * La frontière de confiance est ici : rien d'invalide ne doit ressortir de
+ * `normalize*`. Une valeur rejetée retombe sur un défaut sûr plutôt que de
+ * contaminer le reste de l'app.
+ */
+function isoDate(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? null : value;
+}
+
+/**
  * Correspondances des anciennes valeurs vers le modèle actuel — appliquées
  * une seule fois, à la lecture, pour que les données locales et les
  * sauvegardes déjà exportées continuent de fonctionner sans conversion
@@ -153,17 +175,17 @@ function stringArray(raw: unknown): string[] {
  */
 export function normalizeSession(raw: unknown): WorkSession {
   const item = isRecord(raw) ? raw : {};
-  const startedAt = typeof item.started_at === "string" ? item.started_at : new Date().toISOString();
+  const startedAt = isoDate(item.started_at) ?? new Date().toISOString();
   return {
     id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
     subject: migrateSubject(item.subject),
     /** Absent avant le Sprint 2.5 : aucune ancienne session n'était liée à un exercice. */
     exercise_id: typeof item.exercise_id === "string" ? item.exercise_id : null,
     started_at: startedAt,
-    ended_at: typeof item.ended_at === "string" ? item.ended_at : null,
-    duration_seconds: typeof item.duration_seconds === "number" ? item.duration_seconds : 0,
+    ended_at: isoDate(item.ended_at),
+    duration_seconds: typeof item.duration_seconds === "number" && Number.isFinite(item.duration_seconds) ? item.duration_seconds : 0,
     note: typeof item.note === "string" ? item.note : null,
-    created_at: typeof item.created_at === "string" ? item.created_at : startedAt,
+    created_at: isoDate(item.created_at) ?? startedAt,
     // Absent de toute séance antérieure à ce champ (et de toute séance libre,
     // sans exercice) : null, jamais deviné — voir la doc du champ dans
     // lib/supabase/types.ts.
@@ -181,9 +203,10 @@ function normalizeExercise(raw: unknown): Exercise {
   // "" par défaut, jamais deviné à partir d'un autre champ (voir la doc du
   // champ dans lib/supabase/types.ts).
   const statement = typeof item.statement === "string" ? item.statement : "";
-  const createdAt = typeof item.created_at === "string" ? item.created_at : new Date().toISOString();
+  const createdAt = isoDate(item.created_at) ?? new Date().toISOString();
   // Sprint 2.5 : `last_opened_at` renommé `last_worked_at`.
-  const lastWorkedAt = typeof item.last_worked_at === "string" ? item.last_worked_at : typeof item.last_opened_at === "string" ? item.last_opened_at : null;
+  // Même garde que `created_at` : une date illisible ici cassait la Heatmap et le calcul de récence du moteur.
+  const lastWorkedAt = isoDate(item.last_worked_at) ?? isoDate(item.last_opened_at);
   return {
     id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
     subject: migrateSubject(item.subject),
@@ -217,7 +240,7 @@ function normalizeExercise(raw: unknown): Exercise {
     attempts: typeof item.attempts === "number" ? item.attempts : 0,
     note: typeof item.note === "string" ? item.note : null,
     created_at: createdAt,
-    updated_at: typeof item.updated_at === "string" ? item.updated_at : createdAt,
+    updated_at: isoDate(item.updated_at) ?? createdAt,
     tags: stringArray(item.tags),
     favorite: Boolean(item.favorite),
     archived: Boolean(item.archived),
