@@ -53,6 +53,7 @@ function makeSession(exerciseId: string, overrides: Partial<WorkSession> = {}): 
     note: null,
     created_at: "2026-01-01T00:10:00.000Z",
     result: null,
+    hints_used: null,
     ...overrides,
   };
 }
@@ -236,10 +237,10 @@ describe("recommendExercises — signaux échec/réussite (Sprint 5)", () => {
 
 describe("comfortDifficulty — progression de difficulté", () => {
   /** Une tentative qualifiée sur un exercice de difficulté donnée, datée pour que l'ordre de récence soit déterministe. */
-  function attempt(difficulty: number, result: "réussi" | "échoué" | "partiel", daysAgo: number) {
+  function attempt(difficulty: number, result: "réussi" | "échoué" | "partiel", daysAgo: number, hintsUsed: number | null = 0) {
     const exercise = makeExercise({ difficulty: difficulty as Exercise["difficulty"] });
     const started = new Date(NOW.getTime() - daysAgo * 86400000).toISOString();
-    return { exercise, session: makeSession(exercise.id, { result, started_at: started }) };
+    return { exercise, session: makeSession(exercise.id, { result, started_at: started, hints_used: hintsUsed }) };
   }
 
   it("moins de 3 tentatives qualifiées : aucun niveau déduit (on n'invente pas un niveau sans preuve)", () => {
@@ -283,7 +284,7 @@ describe("recommendExercises — effet de la progression de difficulté", () => 
       const solved = makeExercise({ difficulty: 2, status: "maîtrisé", mastery: 100, priority: 1, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
       return {
         exercise: solved,
-        session: makeSession(solved.id, { result: "réussi" as const, started_at: new Date(NOW.getTime() - daysAgo * 86400000).toISOString() }),
+        session: makeSession(solved.id, { result: "réussi" as const, hints_used: 0, started_at: new Date(NOW.getTime() - daysAgo * 86400000).toISOString() }),
       };
     });
 
@@ -303,7 +304,7 @@ describe("recommendExercises — effet de la progression de difficulté", () => 
   it("un exercice hors du niveau visé reste proposé — déprioritisé, jamais exclu", () => {
     const history = [1, 2, 3].map((daysAgo) => {
       const solved = makeExercise({ difficulty: 1, status: "maîtrisé", mastery: 100, priority: 1, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
-      return { exercise: solved, session: makeSession(solved.id, { result: "réussi" as const, started_at: new Date(NOW.getTime() - daysAgo * 86400000).toISOString() }) };
+      return { exercise: solved, session: makeSession(solved.id, { result: "réussi" as const, hints_used: 0, started_at: new Date(NOW.getTime() - daysAgo * 86400000).toISOString() }) };
     });
     const hard = makeExercise({ difficulty: 5, mastery: 0, status: "à faire" });
     const result = recommendExercises([...history.map((h) => h.exercise), hard], history.map((h) => h.session), 10, { now: NOW });
@@ -321,13 +322,64 @@ describe("recommendExercises — effet de la progression de difficulté", () => 
   it("la justification cite le nombre réel de réussites consécutives", () => {
     const history = [1, 2, 3].map((daysAgo) => {
       const solved = makeExercise({ difficulty: 2, status: "maîtrisé", mastery: 100, priority: 1, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
-      return { exercise: solved, session: makeSession(solved.id, { result: "réussi" as const, started_at: new Date(NOW.getTime() - daysAgo * 86400000).toISOString() }) };
+      return { exercise: solved, session: makeSession(solved.id, { result: "réussi" as const, hints_used: 0, started_at: new Date(NOW.getTime() - daysAgo * 86400000).toISOString() }) };
     });
     const next = makeExercise({ difficulty: 3, mastery: 0, status: "à faire" });
     const result = recommendExercises([...history.map((h) => h.exercise), next], history.map((h) => h.session), 10, { now: NOW });
     const pick = result.find((r) => r.exercise.id === next.id)!;
     expect(pick.reasons.some((reason) => reason.startsWith("Palier suivant"))).toBe(true);
     expect(explainReasons(pick.reasons)).toBe("Tu as réussi 3 exercices d'affilée : on monte d'un cran de difficulté.");
+  });
+});
+
+describe("indices — un signal pédagogique à part entière", () => {
+  const solvedAlone = { status: "maîtrisé" as const, mastery: 100 as Mastery, priority: 1 as Priority, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" };
+
+  it("une réussite très assistée repropose l'exercice, même si TOUS les autres signaux sont au vert", () => {
+    // Sans le signal d'indices, cet exercice serait considéré acquis et
+    // n'apparaîtrait jamais : maîtrisé, maîtrise 100, travaillé hier, réussi.
+    const exercise = makeExercise(solvedAlone);
+    const sessions = [makeSession(exercise.id, { started_at: "2026-08-09T00:00:00.000Z", result: "réussi", hints_used: 3 })];
+    const [pick] = recommendExercises([exercise], sessions, 10, { now: NOW });
+    expect(pick).toBeDefined();
+    expect(pick.reasons).toContain("Réussi avec aide");
+    expect(explainReasons(pick.reasons)).toBe("Tu l'avais réussi, mais avec les indices — on vérifie que c'est acquis.");
+  });
+
+  it("une réussite autonome (0 indice) laisse l'exercice tranquille", () => {
+    const exercise = makeExercise(solvedAlone);
+    const sessions = [makeSession(exercise.id, { started_at: "2026-08-09T00:00:00.000Z", result: "réussi", hints_used: 0 })];
+    expect(recommendExercises([exercise], sessions, 10, { now: NOW })).toHaveLength(0);
+  });
+
+  it("un seul indice reste sous le seuil : pas encore un signal de fragilité", () => {
+    const exercise = makeExercise(solvedAlone);
+    const sessions = [makeSession(exercise.id, { started_at: "2026-08-09T00:00:00.000Z", result: "réussi", hints_used: 1 })];
+    expect(recommendExercises([exercise], sessions, 10, { now: NOW })).toHaveLength(0);
+  });
+
+  it("MIGRATION : une séance antérieure au champ (hints_used null) ne repropose rien — on n'invente pas une fragilité", () => {
+    const exercise = makeExercise(solvedAlone);
+    const sessions = [makeSession(exercise.id, { started_at: "2026-08-09T00:00:00.000Z", result: "réussi", hints_used: null })];
+    expect(recommendExercises([exercise], sessions, 10, { now: NOW })).toHaveLength(0);
+  });
+
+  it("des réussites assistées ne font PAS monter la difficulté (réussir guidé ne prouve pas qu'on est prêt au cran suivant)", () => {
+    const attempts = [1, 2, 3].map((daysAgo) => {
+      const ex = makeExercise({ difficulty: 2 });
+      return { ex, session: makeSession(ex.id, { result: "réussi" as const, hints_used: 3, started_at: new Date(NOW.getTime() - daysAgo * 86400000).toISOString() }) };
+    });
+    const comfort = comfortDifficulty(attempts.map((a) => a.ex), attempts.map((a) => a.session))!;
+    expect(comfort.steppedUp).toBe(false);
+    expect(comfort.successStreak).toBe(0);
+  });
+
+  it("MIGRATION : un historique entièrement pré-indices ne déclenche jamais de montée de palier", () => {
+    const attempts = [1, 2, 3].map((daysAgo) => {
+      const ex = makeExercise({ difficulty: 2 });
+      return { ex, session: makeSession(ex.id, { result: "réussi" as const, hints_used: null, started_at: new Date(NOW.getTime() - daysAgo * 86400000).toISOString() }) };
+    });
+    expect(comfortDifficulty(attempts.map((a) => a.ex), attempts.map((a) => a.session))!.steppedUp).toBe(false);
   });
 });
 

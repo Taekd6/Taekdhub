@@ -1,6 +1,6 @@
 import { resultCounts, type ResultCounts } from "@/lib/history";
 import { progressByChapter, type ChapterProgress } from "@/lib/progress";
-import { computeExerciseBankStats, explainReasons, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { ASSISTED_HINTS_THRESHOLD, computeExerciseBankStats, explainReasons, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import type { Chapter } from "@/lib/storage";
 import { todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
@@ -270,6 +270,17 @@ export function computeChaptersToConsolidate(
       const failureCount = recentAttempts.filter((attempt) => attempt.result === "échoué").length;
       if (failureCount >= 2) reasons.push(`${failureCount} échecs récents`);
       else if (recentAttempts[0]?.result === "échoué") reasons.push("Échec récent");
+
+      // Recours répété aux indices SUR L'ENSEMBLE du chapitre : un élève qui
+      // ne s'en sort qu'aidé, exercice après exercice, révèle une fragilité
+      // que ni `result` (il a « réussi ») ni `mastery` (qu'il a pu monter
+      // lui-même) ne montrent. C'est le seul endroit où ce signal se lit à
+      // l'échelle d'un chapitre — au niveau d'un exercice isolé, il est trop
+      // ponctuel pour conclure.
+      const assistedCount = recentAttempts.filter(
+        (attempt) => attempt.result === "réussi" && attempt.hints_used !== null && attempt.hints_used >= ASSISTED_HINTS_THRESHOLD
+      ).length;
+      if (assistedCount >= 2) reasons.push(`${assistedCount} réussites avec indices`);
 
       const lastWorkedTimestamps = chapterExercises
         .map((exercise) => exercise.last_worked_at)
