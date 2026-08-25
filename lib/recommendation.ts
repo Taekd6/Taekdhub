@@ -348,6 +348,36 @@ const STATUS_WEIGHT: Record<ExerciseStatus, number> = {
 /** Maîtrise maximale retenue AU CLASSEMENT pour un exercice dont la dernière réussite a demandé des indices — la valeur saisie par l'élève n'est jamais modifiée. */
 const ASSISTED_MASTERY_CAP = 50;
 
+/**
+ * REPOS APRÈS UNE TENTATIVE — le pendant de `staleMasteryBonus`.
+ *
+ * Le moteur n'avait aucune notion de « je viens de le faire ». Un exercice
+ * échoué cumule `masteryGap`, le poids du statut « à revoir » et
+ * `failureBonus` : il repassait donc en tête le lendemain, l'après-demain, et
+ * indéfiniment. Mesuré en rejouant 14 jours sur la vraie banque, avec un élève
+ * qui fait ce qu'on lui propose : un élève qui échoue recevait 42 propositions
+ * pour **3 exercices distincts** — exactement les mêmes trois, chaque jour,
+ * pendant deux semaines. (Un élève qui réussit seul, lui, en voyait 41 sur 41.)
+ *
+ * Ce n'est PAS de la répétition espacée : aucune courbe d'oubli, aucun
+ * intervalle calculé par exercice. C'est la règle minimale sans laquelle le
+ * produit se répète — se remettre à un exercice raté le lendemain avec la même
+ * fatigue mentale n'apprend rien, et lisser sur deux ou trois jours suffit à
+ * rendre la banque vivante.
+ *
+ * Pénalité DE CLASSEMENT uniquement : jamais un critère d'exclusion. Un
+ * exercice écarté aujourd'hui reste accessible dans la banque, et remonte de
+ * lui-même à la fin du repos.
+ */
+const RECENT_ATTEMPT_PENALTY = 50;
+const RECENT_ATTEMPT_COOLDOWN_DAYS = 3;
+
+function recentAttemptPenalty(exercise: Exercise, now: Date): number {
+  const days = daysSinceLastWorked(exercise, now);
+  if (days === null || days >= RECENT_ATTEMPT_COOLDOWN_DAYS) return 0;
+  return RECENT_ATTEMPT_PENALTY * (1 - Math.max(0, days) / RECENT_ATTEMPT_COOLDOWN_DAYS);
+}
+
 /** Plafond du bonus de décroissance (voir `staleMasteryBonus`) — comparable en amplitude à `momentumBonus`, jamais dominant. */
 const MASTERY_STALE_BONUS_CAP = 30;
 const MASTERY_STALE_BONUS_PER_DAY = 0.5;
@@ -394,6 +424,7 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
   // au point d'éclipser une maîtrise très faible ou un échec récent.
   const momentumBonus = Math.min(minutesSpent, 60) * 0.3; // 0 à 18
   const staleBonus = staleMasteryBonus(exercise, now); // 0 à 30, voir staleMasteryBonus
+  const restPenalty = recentAttemptPenalty(exercise, now); // 0 à 50, voir recentAttemptPenalty
   // SEUL levier manuel de l'élève depuis la suppression de `priority` : une
   // étoile vaut désormais 20, à mi-chemin de l'ancienne échelle 8-40 qu'elle
   // remplace. Volontairement en dessous de `failureBonus` (jusqu'à 45) : un
@@ -435,7 +466,8 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
     failureBonus +
     assistedBonus +
     difficultyFit -
-    successPenalty
+    successPenalty -
+    restPenalty
   );
 }
 
@@ -597,7 +629,7 @@ function roundRobinByGroup<T>(candidates: T[], keyFn: (item: T) => string): T[] 
  * scores différencient réellement les candidats (le tri par score reste
  * l'unique décideur DANS chaque groupe).
  */
-function diversifyByChapter(candidates: ExerciseRecommendation[]): ExerciseRecommendation[] {
+export function diversifyByChapter(candidates: ExerciseRecommendation[]): ExerciseRecommendation[] {
   const { order: subjectOrder, groups: bySubject } = groupByKey(candidates, (candidate) => candidate.exercise.subject);
   const diversifiedBySubject = new Map(
     subjectOrder.map((subject) => [

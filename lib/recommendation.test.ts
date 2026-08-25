@@ -431,11 +431,15 @@ describe("isNeverWorked / computeExerciseBankStats — smoke tests de non-régre
  * il n'apparaissait donc jamais. Ces tests verrouillent la remontée.
  */
 describe("Réussite assistée — un signal qui doit vraiment remonter", () => {
+  // Daté hors de la fenêtre de repos (voir `recentAttemptPenalty`) : la
+  // question posée ici est « une réussite assistée remonte-t-elle ? », pas
+  // « remonte-t-elle dès le lendemain ? » — auquel cas la réponse est non, et
+  // c'est voulu : on ne redonne pas le jour même ce qui vient d'être fait.
   it("un exercice réussi aux indices passe devant un exercice jamais ouvert", () => {
-    const assisted = makeExercise({ status: "maîtrisé", mastery: 100, attempts: 1, last_worked_at: new Date(NOW.getTime() - 86400000).toISOString() });
+    const assisted = makeExercise({ status: "maîtrisé", mastery: 100, attempts: 1, last_worked_at: new Date(NOW.getTime() - 4 * 86400000).toISOString() });
     const fresh = makeExercise();
     const sessions = [
-      makeSession(assisted.id, { result: "réussi", hints_used: 4, started_at: new Date(NOW.getTime() - 86400000).toISOString() }),
+      makeSession(assisted.id, { result: "réussi", hints_used: 4, started_at: new Date(NOW.getTime() - 4 * 86400000).toISOString() }),
     ];
     const order = recommendExercises([fresh, assisted], sessions, 2, { now: NOW }).map((r) => r.exercise.id);
     expect(order[0]).toBe(assisted.id);
@@ -493,5 +497,51 @@ describe("computeWorkingLevel — la lecture publique de l'entrée du moteur", (
     const exercises = [makeExercise({ difficulty: 1 }), makeExercise({ difficulty: 3 }), makeExercise({ difficulty: 5 })];
     const sessions = exercises.map((exercise) => makeSession(exercise.id, { result: "réussi", hints_used: 0 }));
     expect(computeWorkingLevel(exercises, sessions)!.averageDifficulty).toBe(3);
+  });
+});
+
+/**
+ * Sans repos après une tentative, un exercice échoué cumulait `masteryGap`,
+ * le poids de « à revoir » et `failureBonus` : il repassait en tête chaque
+ * jour, indéfiniment. Mesuré en rejouant 14 jours sur la vraie banque avec un
+ * élève qui fait ce qu'on lui propose : 42 propositions pour 3 exercices
+ * distincts — les mêmes trois, tous les jours, pendant deux semaines.
+ */
+describe("Repos après une tentative — le produit ne se répète pas d'un jour à l'autre", () => {
+  const dayAgo = (days: number) => new Date(NOW.getTime() - days * 86400000).toISOString();
+
+  function attempted(days: number) {
+    const exercise = makeExercise({ status: "à revoir", mastery: 25, attempts: 1, last_worked_at: dayAgo(days) });
+    const session = makeSession(exercise.id, { result: "échoué", started_at: dayAgo(days) });
+    return { exercise, session };
+  }
+
+  it("un exercice raté hier passe DERRIÈRE un exercice jamais ouvert", () => {
+    const { exercise, session } = attempted(1);
+    const fresh = makeExercise();
+    const order = recommendExercises([exercise, fresh], [session], 2, { now: NOW }).map((r) => r.exercise.id);
+    expect(order[0]).toBe(fresh.id);
+  });
+
+  it("… et repasse devant une fois le repos écoulé", () => {
+    const { exercise, session } = attempted(4);
+    const fresh = makeExercise();
+    const order = recommendExercises([exercise, fresh], [session], 2, { now: NOW }).map((r) => r.exercise.id);
+    expect(order[0]).toBe(exercise.id);
+  });
+
+  it("le repos ne l'exclut jamais : il reste proposé, seulement plus bas", () => {
+    const { exercise, session } = attempted(0);
+    const result = recommendExercises([exercise], [session], 5, { now: NOW });
+    expect(result.map((r) => r.exercise.id)).toContain(exercise.id);
+  });
+
+  it("entre deux exercices ratés, le plus ancien passe devant", () => {
+    const recent = attempted(0);
+    const older = attempted(2);
+    const order = recommendExercises([recent.exercise, older.exercise], [recent.session, older.session], 2, { now: NOW }).map(
+      (r) => r.exercise.id
+    );
+    expect(order[0]).toBe(older.exercise.id);
   });
 });

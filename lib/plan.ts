@@ -1,4 +1,4 @@
-import { estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { diversifyByChapter, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import { computeChaptersToConsolidate } from "@/lib/next-action";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -196,14 +196,28 @@ export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[],
   }
 
   // Dans le bloc de consolidation SEULEMENT, les chapitres prioritaires
-  // passent devant. Tri stable : à rang égal, l'ordre du moteur (score +
-  // diversification) est conservé tel quel.
+  // passent devant — puis on REDIVERSIFIE.
+  //
+  // Le tri par rang seul regroupait tous les exercices du chapitre n°1, puis
+  // ceux du n°2, etc. : il annulait la diversification matière/chapitre que
+  // `recommendExercises` venait d'appliquer. Mesuré sur la vraie banque, en
+  // rejouant 14 jours pendant lesquels l'élève fait ce qu'on lui propose :
+  // le jour 1 était bien réparti (maths · physique · chimie), et à partir du
+  // jour 2 chaque séance ne contenait plus qu'UN seul chapitre. Pour un élève
+  // qui ne maîtrise pas du premier coup, cela donnait « Nombres complexes »
+  // quatorze jours d'affilée — 41 exercices de maths pour 4 de physique et 4
+  // de chimie sur deux semaines, alors qu'il a des DS dans les trois matières.
+  //
+  // Le rang décide donc QUI MÈNE, la diversification décide de l'étalement :
+  // `diversifyByChapter` est la fonction du moteur elle-même, pas une seconde
+  // règle de répartition.
   const NO_PRIORITY = Number.MAX_SAFE_INTEGER;
-  byIntent.get("consolider")!.sort((a, b) => {
+  const byPriority = [...byIntent.get("consolider")!].sort((a, b) => {
     const rankA = a.exercise.chapter_id ? priorityRank.get(a.exercise.chapter_id) ?? NO_PRIORITY : NO_PRIORITY;
     const rankB = b.exercise.chapter_id ? priorityRank.get(b.exercise.chapter_id) ?? NO_PRIORITY : NO_PRIORITY;
     return rankA - rankB;
   });
+  byIntent.set("consolider", diversifyByChapter(byPriority));
 
   const shares = intentSharesFor(totalMinutes);
   const taken = new Set<string>();
