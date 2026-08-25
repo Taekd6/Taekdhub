@@ -6,7 +6,7 @@ import { Archive, ChevronDown, Heart, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
-import { MasteryBar, PriorityBadge, SubjectAvatar, StatusSelect } from "@/components/exercises/exercise-badges";
+import { MasteryBar, SubjectAvatar, StatusSelect } from "@/components/exercises/exercise-badges";
 import { ExerciseDetail } from "@/components/exercises/exercise-detail";
 import { cn } from "@/lib/cn";
 import type { Chapter } from "@/lib/storage";
@@ -58,7 +58,6 @@ function ExerciseListRowImpl({
           <Badge className="hidden sm:inline-flex">{item.type}</Badge>
           <DifficultyDots value={item.difficulty} />
           <span className="hidden lg:inline-flex">
-            <PriorityBadge value={item.priority} />
           </span>
           <span className="hidden lg:inline-flex">
             <MasteryBar value={item.mastery} />

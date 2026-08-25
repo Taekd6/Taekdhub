@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
 import type { ExerciseFilters } from "@/lib/exercise-filters";
 import type { Chapter } from "@/lib/storage";
-import type { Difficulty, ExerciseStatus, ExerciseType, Mastery, Priority, Subject } from "@/lib/supabase/types";
+import type { Difficulty, ExerciseStatus, ExerciseType, Mastery, Subject } from "@/lib/supabase/types";
 
 const MASTERY_VALUES: Mastery[] = [0, 25, 50, 75, 100];
 
@@ -22,6 +22,7 @@ export function ExerciseFiltersBar({
   onChange,
   chapterOptions,
   tagOptions,
+  difficultyOptions,
   yearOptions,
   onAddClick,
   onImportClick,
@@ -31,6 +32,8 @@ export function ExerciseFiltersBar({
   chapterOptions: Chapter[];
   /** Sous-thèmes disponibles pour le périmètre matière/chapitre déjà choisi — voir lib/exercise-filters.ts#tagOptionsForFilters. */
   tagOptions: string[];
+  /** Difficultés présentes dans le périmètre choisi — voir lib/exercise-filters.ts#difficultyOptionsForFilters. */
+  difficultyOptions: Difficulty[];
   yearOptions: number[];
   onAddClick: () => void;
   onImportClick: () => void;
@@ -62,12 +65,15 @@ export function ExerciseFiltersBar({
         </Button>
       </div>
 
-      {/* flex-wrap plutôt que overflow-x-auto : avec 9 filtres + favoris, un
-          défilement horizontal masqué (scrollbar-none) rendait certains
-          filtres invisibles sans aucun indice qu'ils existaient (priorité,
-          maîtrise, année, favoris systématiquement hors champ à largeur
-          d'écran normale) — un filtre qu'on ne peut pas découvrir équivaut,
-          pour l'élève, à un filtre qui n'existe pas. */}
+      {/* flex-wrap plutôt que overflow-x-auto : un défilement horizontal
+          masqué (scrollbar-none) rendait certains filtres invisibles sans
+          aucun indice qu'ils existaient (maîtrise, année, favoris
+          systématiquement hors champ à largeur d'écran normale) — un filtre
+          qu'on ne peut pas découvrir équivaut, pour l'élève, à un filtre qui
+          n'existe pas.
+
+          Le filtre « priorité » a été retiré avec le champ lui-même : il
+          proposait 5 valeurs pour un champ qui en valait 3 partout. */}
       <div className="mt-3 flex flex-wrap gap-2">
         <Select value={filters.subject} onChange={(event) => onChange({ subject: event.target.value as Subject | "Toutes", chapter: "Tous" })} className="w-auto min-w-[150px]">
           {["Toutes", ...subjects].map((value) => (
@@ -110,23 +116,12 @@ export function ExerciseFiltersBar({
           value={filters.difficulty}
           onChange={(event) => onChange({ difficulty: event.target.value === "Toutes" ? "Toutes" : (Number(event.target.value) as Difficulty) })}
           className="w-auto min-w-[130px]"
+          disabled={difficultyOptions.length === 0}
         >
           <option value="Toutes">Toutes difficultés</option>
-          {[1, 2, 3, 4, 5].map((value) => (
+          {difficultyOptions.map((value) => (
             <option value={value} key={value}>
               Difficulté {value}/5
-            </option>
-          ))}
-        </Select>
-        <Select
-          value={filters.priority}
-          onChange={(event) => onChange({ priority: event.target.value === "Toutes" ? "Toutes" : (Number(event.target.value) as Priority) })}
-          className="w-auto min-w-[120px]"
-        >
-          <option value="Toutes">Toutes priorités</option>
-          {[1, 2, 3, 4, 5].map((value) => (
-            <option value={value} key={value}>
-              Priorité {value}/5
             </option>
           ))}
         </Select>

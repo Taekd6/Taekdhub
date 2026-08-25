@@ -5,12 +5,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { ChapterPicker } from "@/components/exercises/chapter-picker";
-import { MasteryPicker, PriorityPicker } from "@/components/exercises/exercise-badges";
+import { MasteryPicker } from "@/components/exercises/exercise-badges";
 import { SessionRow } from "@/components/history/session-row";
 import { RichMath } from "@/components/rich-math";
 import { resultCounts, sessionsForExercise } from "@/lib/history";
 import type { Chapter } from "@/lib/storage";
-import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
+import type { Exercise, Mastery, Subject, WorkSession } from "@/lib/supabase/types";
 
 export function ExerciseDetail({
   item,
@@ -97,7 +97,6 @@ export function ExerciseDetail({
         <div className="flex flex-wrap items-center gap-5">
           <label className="flex items-center gap-2 text-xs text-zinc-500">
             Priorité
-            <PriorityPicker value={item.priority} onChange={(priority: Priority) => update(item.id, { priority })} />
           </label>
           <label className="flex items-center gap-2 text-xs text-zinc-500">
             Maîtrise

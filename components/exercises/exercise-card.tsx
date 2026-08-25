@@ -6,7 +6,7 @@ import { Archive, ChevronDown, Heart, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
-import { MasteryBar, PriorityBadge, SubjectAvatar, StatusSelect } from "@/components/exercises/exercise-badges";
+import { MasteryBar, SubjectAvatar, StatusSelect } from "@/components/exercises/exercise-badges";
 import { ExerciseDetail } from "@/components/exercises/exercise-detail";
 import { cn } from "@/lib/cn";
 import type { Chapter } from "@/lib/storage";
@@ -66,7 +66,6 @@ function ExerciseCardImpl({
           <h2 className="mt-2 truncate font-semibold tracking-tight text-zinc-100">{item.title}</h2>
           <div className="mt-2 flex flex-wrap items-center gap-2.5">
             <DifficultyDots value={item.difficulty} />
-            <PriorityBadge value={item.priority} />
             <MasteryBar value={item.mastery} />
             {item.tags.slice(0, 3).map((tag) => (
               <Badge key={tag} variant="accent">

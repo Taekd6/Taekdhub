@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
+import { localData, normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -168,5 +168,53 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     expect(prefs.accent).toBe("#6366f1");
     expect(prefs.themeMode).toBe("system");
     expect(prefs.weeklyGoalMinutes).toBe(300);
+  });
+});
+
+/**
+ * `normalize*` est la frontière de confiance pour le CONTENU, mais rien ne
+ * protégeait l'ANALYSE elle-même : un `localStorage` corrompu (quota atteint
+ * en pleine écriture, extension de navigateur, synchronisation interrompue)
+ * faisait lever `JSON.parse`, erreur non rattrapée remontée dans le rendu.
+ * Trouvé en test de destruction : une seule clé illisible suffisait.
+ */
+describe("localData — lecture blindée d'un stockage corrompu", () => {
+  const store: Record<string, string> = {};
+  const stub = {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = value; },
+  };
+
+  function withStorage<T>(entries: Record<string, string>, read: () => T): T {
+    Object.keys(store).forEach((key) => delete store[key]);
+    Object.assign(store, entries);
+    const globals = globalThis as unknown as { window?: unknown; localStorage?: unknown };
+    const previousWindow = globals.window;
+    const previousStorage = globals.localStorage;
+    globals.window = globals.window ?? {};
+    globals.localStorage = stub;
+    try {
+      return read();
+    } finally {
+      globals.window = previousWindow;
+      globals.localStorage = previousStorage;
+    }
+  }
+
+  it("du JSON illisible ne lève pas — la liste est simplement vide", () => {
+    expect(withStorage({ "prepahub:sessions": "{{{cassé" }, () => localData.sessions())).toEqual([]);
+    expect(withStorage({ "prepahub:exercises": "<html>" }, () => localData.exercises())).toEqual([]);
+    expect(withStorage({ "prepahub:chapters": "" }, () => localData.chapters())).toEqual([]);
+  });
+
+  it("une valeur qui n'est pas un tableau est traitée comme absente", () => {
+    expect(withStorage({ "prepahub:sessions": "42" }, () => localData.sessions())).toEqual([]);
+    expect(withStorage({ "prepahub:exercises": '{"pas":"un tableau"}' }, () => localData.exercises())).toEqual([]);
+  });
+
+  it("des préférences illisibles retombent sur les valeurs par défaut", () => {
+    const preferences = withStorage({ "prepahub:preferences": "nope" }, () => localData.preferences());
+    expect(preferences.dailyGoalMinutes).toBeGreaterThan(0);
+    expect(preferences.themeMode).toBeTruthy();
   });
 });

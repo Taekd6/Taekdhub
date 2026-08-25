@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultExerciseFilters, filterExercises, tagOptionsForFilters } from "@/lib/exercise-filters";
-import type { Exercise, Mastery, Priority } from "@/lib/supabase/types";
+import type { Exercise, Mastery } from "@/lib/supabase/types";
 
 let counter = 0;
 function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
@@ -24,7 +24,6 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     level: null,
     type: "TD",
     difficulty: 3,
-    priority: 3 as Priority,
     mastery: 0 as Mastery,
     status: "à faire",
     estimated_minutes: null,

@@ -6,12 +6,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
-import { MasteryPicker, PriorityPicker, SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { MasteryPicker, SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { RichMath } from "@/components/rich-math";
 import { useWorkTimer } from "@/hooks/use-work-timer";
 import { explainReasons } from "@/lib/recommendation";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
-import type { AttemptResult, Exercise, ExerciseStatus, Mastery, Priority, WorkSession } from "@/lib/supabase/types";
+import type { AttemptResult, Exercise, ExerciseStatus, Mastery, WorkSession } from "@/lib/supabase/types";
 
 /** Une seule séance focus à la fois : la clé encode l'exercice concerné, ce qui permet de retrouver après un rechargement lequel reprendre automatiquement. */
 export const FOCUS_TIMER_PREFIX = "prepahub:timer:focus:";
@@ -265,7 +265,6 @@ export function FocusView({
             <Badge>{item.type}</Badge>
             <label className="flex items-center gap-2 text-xs text-zinc-500">
               Priorité
-              <PriorityPicker value={item.priority} onChange={(priority: Priority) => update(item.id, { priority })} />
             </label>
             <label className="flex items-center gap-2 text-xs text-zinc-500">
               Maîtrise

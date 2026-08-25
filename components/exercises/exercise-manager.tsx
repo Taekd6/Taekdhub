@@ -18,7 +18,7 @@ import { ExerciseListRow } from "@/components/exercises/exercise-list-row";
 import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { addChapter, removeChapter, renameChapter } from "@/lib/chapters";
-import { chapterOptionsForSubject, defaultExerciseFilters, distinctYears, filterExercises, tagOptionsForFilters, type ExerciseFilters } from "@/lib/exercise-filters";
+import { chapterOptionsForSubject, defaultExerciseFilters, difficultyOptionsForFilters, distinctYears, filterExercises, tagOptionsForFilters, type ExerciseFilters } from "@/lib/exercise-filters";
 import { defaultExerciseSort, exerciseSortOptions, sortExercises, type ExerciseSort } from "@/lib/exercise-sort";
 import { createExerciseFromInput } from "@/lib/exercise-import";
 import { SessionBuilderBar } from "@/components/exercises/session-builder-bar";
@@ -224,6 +224,10 @@ export function ExerciseManager() {
     () => tagOptionsForFilters(exercises, { subject: filters.subject, chapter: filters.chapter }),
     [exercises, filters.subject, filters.chapter]
   );
+  const difficultyOptions = useMemo(
+    () => difficultyOptionsForFilters(exercises, { subject: filters.subject, chapter: filters.chapter }),
+    [exercises, filters.subject, filters.chapter]
+  );
   const yearOptions = useMemo(() => distinctYears(exercises), [exercises]);
 
   // Un chapitre filtré peut devenir invalide si on change de matière : on le
@@ -250,8 +254,29 @@ export function ExerciseManager() {
   // exercices (voir lib/study.ts) — recalculé uniquement quand `sessions`
   // change, jamais par exercice ni à chaque rendu.
   const minutesMap = useMemo(() => minutesByExerciseMap(sessions), [sessions]);
+  // "Pourquoi cet exercice ?" en mode focus (voir focus-view.tsx) : recalculé
+  // à la volée sur TOUTE la banque active, pas seulement les exercices déjà
+  // visibles dans la liste filtrée — un exercice ouvert par simple curiosité
+  // en parcourant la banque garde exactement la même explication que s'il
+  // avait été atteint depuis le Dashboard ou "À revoir en priorité", puisque
+  // c'est le même moteur (`recommendExercises`) qui a déjà tranché. Un
+  // exercice non signalé n'a simplement aucune entrée ici — FocusView
+  // n'affiche alors rien, jamais de justification inventée.
+  // Le MÊME appel sert aussi de tri par défaut de la banque (voir
+  // `defaultExerciseSort`) : `rank` n'est que la position dans la liste que
+  // le moteur vient de rendre, jamais un second classement.
+  const { reasons: recommendationReasons, rank: recommendationRank } = useMemo(() => {
+    const reasons = new Map<string, string[]>();
+    const rank = new Map<string, number>();
+    recommendExercises(exercises, sessions, exercises.length).forEach(({ exercise, reasons: why }, index) => {
+      reasons.set(exercise.id, why);
+      rank.set(exercise.id, index);
+    });
+    return { reasons, rank };
+  }, [exercises, sessions]);
+
   const visible = useMemo(() => filterExercises(exercises, filters), [exercises, filters]);
-  const sorted = useMemo(() => sortExercises(visible, sort, minutesMap), [visible, sort, minutesMap]);
+  const sorted = useMemo(() => sortExercises(visible, sort, recommendationRank), [visible, sort, recommendationRank]);
 
   // Callbacks dédiés d'ExerciseBrowser (Matière → Chapitre) : choisir une
   // matière ou remonter garde le mode navigation actif (on reste dans la
@@ -288,21 +313,6 @@ export function ExerciseManager() {
 
   const selected = exercises.find((item) => item.id === selectedId);
 
-  // "Pourquoi cet exercice ?" en mode focus (voir focus-view.tsx) : recalculé
-  // à la volée sur TOUTE la banque active, pas seulement les exercices déjà
-  // visibles dans la liste filtrée — un exercice ouvert par simple curiosité
-  // en parcourant la banque garde exactement la même explication que s'il
-  // avait été atteint depuis le Dashboard ou "À revoir en priorité", puisque
-  // c'est le même moteur (`recommendExercises`) qui a déjà tranché. Un
-  // exercice non signalé n'a simplement aucune entrée ici — FocusView
-  // n'affiche alors rien, jamais de justification inventée.
-  const recommendationReasons = useMemo(() => {
-    const map = new Map<string, string[]>();
-    for (const { exercise, reasons } of recommendExercises(exercises, sessions, exercises.length)) {
-      map.set(exercise.id, reasons);
-    }
-    return map;
-  }, [exercises, sessions]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -402,6 +412,7 @@ export function ExerciseManager() {
         onChange={updateFiltersFromBar}
         chapterOptions={chapterOptions}
         tagOptions={tagOptions}
+        difficultyOptions={difficultyOptions}
         yearOptions={yearOptions}
         onAddClick={() => setFormOpen((value) => !value)}
         onImportClick={() => setImportOpen((value) => !value)}

@@ -1,6 +1,6 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
 import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, THEME_MODES, type ThemeMode } from "@/lib/theme";
-import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, Priority, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
+import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
 
 const ATTEMPT_RESULTS: readonly AttemptResult[] = ["réussi", "partiel", "échoué"];
 
@@ -82,7 +82,6 @@ export interface WeekSnapshot {
  * (components/exercises/exercise-manager.tsx), afin de n'avoir qu'une seule
  * source de vérité pour ces défauts.
  */
-export const DEFAULT_PRIORITY: Priority = 3;
 export const DEFAULT_MASTERY: Mastery = 0;
 const MASTERY_VALUES: readonly Mastery[] = [0, 25, 50, 75, 100];
 const PROGRAMME_LEVELS: readonly ProgrammeLevel[] = ["sup", "spe", "sup_spe"];
@@ -154,9 +153,6 @@ function migrateDifficulty(raw: unknown): Difficulty {
   return typeof raw === "number" && raw >= 1 && raw <= 5 ? (Math.round(raw) as Difficulty) : 3;
 }
 
-function migratePriority(raw: unknown): Priority {
-  return typeof raw === "number" && raw >= 1 && raw <= 5 ? (Math.round(raw) as Priority) : DEFAULT_PRIORITY;
-}
 
 function migrateMastery(raw: unknown): Mastery {
   return typeof raw === "number" && (MASTERY_VALUES as number[]).includes(raw) ? (raw as Mastery) : DEFAULT_MASTERY;
@@ -236,7 +232,6 @@ function normalizeExercise(raw: unknown): Exercise {
     level: (EXERCISE_LEVELS as number[]).includes(item.level as number) ? (item.level as ExerciseLevel) : null,
     type: migrateType(item.type),
     difficulty: migrateDifficulty(item.difficulty),
-    priority: migratePriority(item.priority),
     mastery: migrateMastery(item.mastery),
     status: migrateStatus(item.status),
     // Sprint 2.6 : `duration_minutes` n'existe plus — le temps passé se
@@ -312,27 +307,52 @@ export function normalizePreferences(raw: unknown): Preferences {
   return { ...merged, themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE };
 }
 
+/**
+ * Lecture BLINDÉE d'une liste stockée localement.
+ *
+ * Les fonctions `normalize*` sont la frontière de confiance pour le CONTENU,
+ * mais rien ne protégeait l'analyse elle-même : un `localStorage` corrompu
+ * (quota atteint en pleine écriture, extension de navigateur, synchronisation
+ * interrompue, édition manuelle) faisait lever `JSON.parse` — erreur non
+ * rattrapée, remontée telle quelle dans le rendu. Vérifié en test de
+ * destruction : une seule clé illisible suffisait.
+ *
+ * Une valeur qui n'est pas un tableau est traitée comme absente pour la même
+ * raison : `JSON.parse("42").map` lèverait tout autant.
+ */
+function readList(key: string): unknown[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Pendant de `readList` pour un objet unique (préférences) — voir sa documentation. */
+function readRecord(key: string): unknown {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "{}");
+  } catch {
+    return {};
+  }
+}
+
 export const localData = {
-  sessions: (): WorkSession[] =>
-    typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(sessionsKey) || "[]") as unknown[]).map(normalizeSession),
+  sessions: (): WorkSession[] => (typeof window === "undefined" ? [] : readList(sessionsKey).map(normalizeSession)),
   saveSessions: (items: WorkSession[]) => localStorage.setItem(sessionsKey, JSON.stringify(items)),
-  exercises: (): Exercise[] =>
-    typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(exercisesKey) || "[]") as unknown[]).map(normalizeExercise),
+  exercises: (): Exercise[] => (typeof window === "undefined" ? [] : readList(exercisesKey).map(normalizeExercise)),
   saveExercises: (items: Exercise[]) => localStorage.setItem(exercisesKey, JSON.stringify(items)),
   chapters: (): Chapter[] =>
-    typeof window === "undefined"
-      ? []
-      : (JSON.parse(localStorage.getItem(chaptersKey) || "[]") as unknown[]).map(normalizeChapter).filter((item): item is Chapter => item !== null),
+    typeof window === "undefined" ? [] : readList(chaptersKey).map(normalizeChapter).filter((item): item is Chapter => item !== null),
   saveChapters: (items: Chapter[]) => localStorage.setItem(chaptersKey, JSON.stringify(items)),
-  preferences: (): Preferences => (typeof window === "undefined" ? defaults : normalizePreferences(JSON.parse(localStorage.getItem(preferencesKey) || "{}"))),
+  preferences: (): Preferences => (typeof window === "undefined" ? defaults : normalizePreferences(readRecord(preferencesKey))),
   savePreferences: (preferences: Preferences) => localStorage.setItem(preferencesKey, JSON.stringify(preferences)),
   /** Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`), ou `null` si aucune n'a jamais été faite. */
   lastBackupAt: (): string | null => (typeof window === "undefined" ? null : localStorage.getItem(lastBackupKey)),
   saveLastBackupAt: (iso: string) => localStorage.setItem(lastBackupKey, iso),
   weekSnapshots: (): WeekSnapshot[] =>
-    typeof window === "undefined"
-      ? []
-      : (JSON.parse(localStorage.getItem(weekSnapshotsKey) || "[]") as unknown[]).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
+    typeof window === "undefined" ? [] : readList(weekSnapshotsKey).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
   saveWeekSnapshots: (items: WeekSnapshot[]) => localStorage.setItem(weekSnapshotsKey, JSON.stringify(items)),
 };
 

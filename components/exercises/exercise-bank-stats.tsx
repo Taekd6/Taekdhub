@@ -15,11 +15,11 @@ import type { Exercise, WorkSession } from "@/lib/supabase/types";
  * TROIS métriques, plus cinq. Les deux retirées l'ont été sur constat chiffré,
  * pas par goût :
  *
- * - « Priorité moyenne » : `priority` vaut 3 pour LES 402 exercices de la
+ * - « Priorité moyenne » : `priority` valait 3 pour LES 402 exercices de la
  *   banque (valeur par défaut, jamais modifiée à l'import). La carte
  *   affichait donc « 3/5 » de façon strictement constante — une valeur par
- *   défaut mise en scène comme une statistique. Elle n'a jamais pu répondre à
- *   la moindre question d'un élève.
+ *   défaut mise en scène comme une statistique. Le champ lui-même a depuis
+ *   été supprimé (un second levier manuel redondant avec l'étoile `favorite`).
  * - « Maîtrise moyenne » : moyenne de `mastery` sur toute la banque, donc
  *   structurellement proche de 0 pendant des mois (402 exercices au
  *   dénominateur), et surtout redondante avec « Progression globale », déjà
