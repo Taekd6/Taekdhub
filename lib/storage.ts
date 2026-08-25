@@ -356,8 +356,17 @@ export const localData = {
   saveWeekSnapshots: (items: WeekSnapshot[]) => localStorage.setItem(weekSnapshotsKey, JSON.stringify(items)),
 };
 
-/** Rappel de sauvegarde (finalisation V1) : au-delà de ce nombre de jours sans export, la sauvegarde est considérée périmée. */
-export const BACKUP_REMINDER_DAYS = 14;
+/**
+ * Au-delà de ce nombre de jours sans export, la sauvegarde est périmée.
+ *
+ * SEPT jours, et pas quatorze comme auparavant : TaekdHub n'a pas de compte,
+ * tout vit dans le stockage local du navigateur. Or Safari (iOS comme macOS)
+ * efface le stockage local d'un site avec lequel l'utilisateur n'a pas
+ * interagi depuis 7 jours. Le filet de sécurité se déclenchait donc APRÈS la
+ * menace qu'il est censé couvrir : une semaine de vacances suffisait à tout
+ * perdre sans que le rappel se soit jamais affiché.
+ */
+export const BACKUP_REMINDER_DAYS = 7;
 
 /** Jours écoulés depuis la dernière sauvegarde, ou `null` si aucune n'a jamais été faite (distinct de 0, qui signifie "aujourd'hui"). */
 export function daysSinceBackup(lastBackupAt: string | null, now: Date = new Date()): number | null {

@@ -46,8 +46,14 @@ export function BackupReminder() {
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3 text-sm">
+      {/* Dire la CONSÉQUENCE, pas seulement le fait : « ta dernière sauvegarde
+          date de 9 jours » se lit comme une corvée administrative. Sans compte,
+          une sauvegarde est la seule chose qui protège réellement l'année de
+          travail de l'élève — il doit savoir pourquoi on l'embête. */}
       <p className="text-zinc-300">
-        {days === null ? "Tu n'as encore jamais sauvegardé tes données." : `Ta dernière sauvegarde date de ${days} jours.`}
+        {days === null
+          ? "Ton travail n'existe que dans ce navigateur : une sauvegarde te permet de le retrouver ailleurs."
+          : `Dernière sauvegarde il y a ${days} jours — ton travail n'existe que dans ce navigateur.`}
       </p>
       <div className="flex shrink-0 items-center gap-2">
         <Button size="sm" variant="secondary" onClick={handleExport}>

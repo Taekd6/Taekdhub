@@ -65,9 +65,17 @@ export function DataBackup() {
     <Card className="max-w-2xl p-6">
       <p className="eyebrow">Données locales</p>
       <h2 className="mt-2 text-lg font-semibold">Tes données restent sous ton contrôle.</h2>
+      {/* Dit franchement ce que « local » implique. TaekdHub n'a pas de compte :
+          l'élève doit pouvoir décider en connaissance de cause, pas découvrir
+          la contrainte le jour où il perd son année. */}
       <p className="mt-2 text-sm leading-6 text-zinc-500">
-        Exporte une sauvegarde avant un changement d&apos;ordinateur ou restaure une sauvegarde existante.
-        L&apos;import remplace uniquement les données stockées localement sur cet appareil.
+        TaekdHub fonctionne sans compte : tes exercices, tes séances et ta progression sont enregistrés dans ce navigateur, sur cet
+        appareil, et nulle part ailleurs. Ils ne partent sur aucun serveur — mais ils ne te suivent pas non plus d&apos;un appareil à
+        l&apos;autre, et vider les données du navigateur les efface.
+      </p>
+      <p className="mt-2 text-sm leading-6 text-zinc-500">
+        La sauvegarde est donc ta seule copie : exporte-la régulièrement, et restaure-la sur ton nouvel appareil.
+        L&apos;import remplace les données de cet appareil, jamais celles d&apos;un autre.
       </p>
       <div className="mt-5 flex flex-wrap gap-2">
         <Button variant="secondary" onClick={exportData}>
