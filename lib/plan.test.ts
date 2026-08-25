@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildFreeSessionPlan, computeDailyPlan, computeSubjectPriorities, serializePlan } from "@/lib/plan";
+import { buildFreeSessionPlan, computeDailyPlan, computeSubjectPriorities, planIntent, serializePlan } from "@/lib/plan";
+import { computeChaptersToConsolidate } from "@/lib/next-action";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
 
@@ -61,7 +62,19 @@ function makeSession(exerciseId: string | null, subject: Subject, overrides: Par
 
 const NOW = new Date("2026-08-11T12:00:00.000Z"); // mardi
 
-describe("computeDailyPlan", () => {
+describe("computeDailyPlan — projection temporelle des priorités", () => {
+  /** Un exercice réellement en difficulté (échecs récents) → intention "consolider". */
+  function struggling(overrides: Partial<Exercise> = {}) {
+    const exercise = makeExercise({ mastery: 0, status: "à revoir", estimated_minutes: 15, ...overrides });
+    const sessions = [1, 2].map((d) =>
+      makeSession(exercise.id, exercise.subject, {
+        result: "échoué" as const,
+        started_at: new Date(NOW.getTime() - d * 86400000).toISOString(),
+      })
+    );
+    return { exercise, sessions };
+  }
+
   it("aucune donnée : plan vide, pas d'erreur", () => {
     const plan = computeDailyPlan([], [], [], 45, NOW);
     expect(plan.blocks).toEqual([]);
@@ -70,48 +83,134 @@ describe("computeDailyPlan", () => {
     expect(plan.requestedMinutes).toBe(45);
   });
 
-  it("une seule matière éligible reçoit tout le budget, sans partage artificiel", () => {
-    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 20 });
-    const plan = computeDailyPlan([exercise], [], [], 45, NOW);
-    expect(plan.blocks).toHaveLength(1);
-    expect(plan.blocks[0].subject).toBe("Mathématiques");
-    expect(plan.blocks[0].minutes).toBe(45);
-  });
-
-  it("répartit sur plusieurs matières quand plusieurs ont besoin d'attention (pas systématiquement une seule matière)", () => {
-    const maths = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 15 });
-    const physique = makeExercise({ subject: "Physique", mastery: 0, estimated_minutes: 15 });
-    const plan = computeDailyPlan([maths, physique], [], [], 60, NOW);
-    const subjectsInPlan = plan.blocks.map((block) => block.subject);
-    expect(subjectsInPlan).toContain("Mathématiques");
-    expect(subjectsInPlan).toContain("Physique");
-  });
-
-  it("une matière entièrement maîtrisée, jamais en échec, travaillée récemment n'apparaît pas dans le plan", () => {
-    const mastered = makeExercise({
-      subject: "Chimie",
-      mastery: 100,
-      status: "maîtrisé",
-      attempts: 3,
-      last_worked_at: "2026-08-11T09:00:00.000Z",
-    });
-    const struggling = makeExercise({ subject: "Mathématiques", mastery: 0, estimated_minutes: 20 });
-    const sessions = [makeSession(mastered.id, "Chimie", { started_at: "2026-08-11T09:00:00.000Z", result: "réussi" })];
-    const plan = computeDailyPlan([mastered, struggling], sessions, [], 45, NOW);
-    expect(plan.blocks.map((block) => block.subject)).not.toContain("Chimie");
-  });
-
-  it("le libellé d'un bloc utilise le chapitre du premier exercice retenu", () => {
-    const chapters: Chapter[] = [{ id: "chap-1", subject: "Mathématiques", label: "Suites numériques" }];
-    const exercise = makeExercise({ subject: "Mathématiques", chapter_id: "chap-1", mastery: 0, estimated_minutes: 20 });
-    const plan = computeDailyPlan([exercise], [], chapters, 45, NOW);
-    expect(plan.blocks[0].label).toBe("Mathématiques — Suites numériques");
-  });
-
   it("un budget de 0 minute ne produit aucun bloc", () => {
-    const exercise = makeExercise({ subject: "Mathématiques", mastery: 0 });
-    const plan = computeDailyPlan([exercise], [], [], 0, NOW);
-    expect(plan.blocks).toEqual([]);
+    const exercise = makeExercise({ mastery: 0 });
+    expect(computeDailyPlan([exercise], [], [], 0, NOW).blocks).toEqual([]);
+  });
+
+  it("un budget négatif ne plante pas et ne produit aucun bloc", () => {
+    const exercise = makeExercise({ mastery: 0 });
+    expect(computeDailyPlan([exercise], [], [], -30, NOW).blocks).toEqual([]);
+  });
+
+  it("ne dépasse JAMAIS le budget demandé, quelle que soit la durée", () => {
+    const bank = Array.from({ length: 40 }, (_, i) =>
+      makeExercise({ mastery: 0, estimated_minutes: 10 + (i % 4) * 5, subject: i % 2 ? "Physique" : "Mathématiques" })
+    );
+    for (const budget of [1, 20, 45, 60, 90, 300]) {
+      const plan = computeDailyPlan(bank, [], [], budget, NOW);
+      expect(plan.totalMinutes, `budget ${budget}`).toBeLessThanOrEqual(budget);
+      expect(plan.totalMinutes).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("20 min : une seule intention (pas de fragmentation en blocs inutilisables)", () => {
+    const bank = Array.from({ length: 20 }, () => makeExercise({ mastery: 0, estimated_minutes: 10 }));
+    const plan = computeDailyPlan(bank, [], [], 20, NOW);
+    expect(plan.blocks.length).toBeLessThanOrEqual(1);
+    if (plan.blocks.length) expect(plan.blocks[0].intent).toBe("consolider");
+  });
+
+  it("la structure change avec la durée : 90 min autorise plus d'intentions que 20 min", () => {
+    // Banque mixte : de quoi consolider (échecs) ET réviser (maîtrisé ancien).
+    const weak = Array.from({ length: 6 }, () => struggling({ estimated_minutes: 10 }));
+    const stale = Array.from({ length: 6 }, () =>
+      makeExercise({ status: "maîtrisé", mastery: 100, priority: 1, attempts: 2, estimated_minutes: 10, last_worked_at: "2026-05-01T00:00:00.000Z" })
+    );
+    const exercises = [...weak.map((w) => w.exercise), ...stale];
+    const sessions = weak.flatMap((w) => w.sessions);
+
+    const short = computeDailyPlan(exercises, sessions, [], 20, NOW);
+    const long = computeDailyPlan(exercises, sessions, [], 90, NOW);
+    expect(long.blocks.length).toBeGreaterThan(short.blocks.length);
+  });
+
+  it("chaque bloc porte une intention pédagogique lisible, jamais une simple matière", () => {
+    const weak = struggling();
+    const plan = computeDailyPlan([weak.exercise], weak.sessions, [], 45, NOW);
+    expect(plan.blocks.length).toBeGreaterThan(0);
+    expect(["consolider", "réviser", "progresser"]).toContain(plan.blocks[0].intent);
+    expect(plan.blocks[0].label).toBeTruthy();
+  });
+
+  it("COHÉRENCE : le chapitre prioritaire n°1 de la Progression est bien servi en premier dans la consolidation", () => {
+    const chapters: Chapter[] = [
+      { id: "chap-fort", subject: "Mathématiques", label: "Chapitre solide" },
+      { id: "chap-faible", subject: "Mathématiques", label: "Chapitre faible" },
+    ];
+    // Chapitre faible : engagé, maîtrise très basse, deux échecs récents.
+    const weakOne = makeExercise({ chapter_id: "chap-faible", mastery: 0, status: "à revoir", attempts: 2, estimated_minutes: 10, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    // Chapitre "fort" : engagé mais nettement mieux maîtrisé.
+    const strongOne = makeExercise({ chapter_id: "chap-fort", mastery: 75, status: "en cours", attempts: 1, estimated_minutes: 10, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const sessions = [1, 2].map((d) =>
+      makeSession(weakOne.id, "Mathématiques", { result: "échoué" as const, started_at: new Date(NOW.getTime() - d * 86400000).toISOString() })
+    );
+
+    const priorities = computeChaptersToConsolidate([weakOne, strongOne], sessions, chapters, NOW);
+    const plan = computeDailyPlan([weakOne, strongOne], sessions, chapters, 45, NOW);
+    const consolidation = plan.blocks.find((block) => block.intent === "consolider")!;
+
+    // La même priorité doit ressortir des deux côtés — c'est tout l'enjeu de la refonte.
+    expect(priorities[0].chapter.id).toBe("chap-faible");
+    expect(consolidation.picks[0].exercise.chapter_id).toBe("chap-faible");
+  });
+
+  it("aucun exercice n'est servi deux fois dans un même plan", () => {
+    const bank = Array.from({ length: 30 }, () => makeExercise({ mastery: 0, estimated_minutes: 10 }));
+    const plan = computeDailyPlan(bank, [], [], 90, NOW);
+    const ids = plan.blocks.flatMap((block) => block.picks.map((pick) => pick.exercise.id));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("le budget non utilisé par une intention absente est redistribué, pas perdu", () => {
+    // Que de la consolidation disponible : à 90 min, le plan doit quand même
+    // remplir largement le budget plutôt que de s'arrêter à sa seule part.
+    const bank = Array.from({ length: 20 }, () => makeExercise({ mastery: 0, status: "à revoir", estimated_minutes: 10 }));
+    const plan = computeDailyPlan(bank, [], [], 90, NOW);
+    expect(plan.totalMinutes).toBeGreaterThan(90 * 0.45);
+    expect(plan.totalMinutes).toBeLessThanOrEqual(90);
+  });
+
+  it("une banque entièrement maîtrisée et récente ne produit aucun plan", () => {
+    const mastered = Array.from({ length: 5 }, () =>
+      makeExercise({ mastery: 100, status: "maîtrisé", priority: 1, attempts: 3, last_worked_at: "2026-08-09T09:00:00.000Z" })
+    );
+    const sessions = mastered.map((e) => makeSession(e.id, e.subject, { started_at: "2026-08-09T09:00:00.000Z", result: "réussi" as const }));
+    expect(computeDailyPlan(mastered, sessions, [], 60, NOW).blocks).toEqual([]);
+  });
+
+  it("les exercices archivés ne sont jamais planifiés", () => {
+    const archived = makeExercise({ archived: true, mastery: 0 });
+    expect(computeDailyPlan([archived], [], [], 60, NOW).blocks).toEqual([]);
+  });
+
+  it("le focus d'un bloc nomme les chapitres réellement travaillés", () => {
+    const chapters: Chapter[] = [{ id: "chap-1", subject: "Mathématiques", label: "Suites numériques" }];
+    const exercise = makeExercise({ chapter_id: "chap-1", mastery: 0, estimated_minutes: 20 });
+    const plan = computeDailyPlan([exercise], [], chapters, 45, NOW);
+    expect(plan.blocks[0].focus).toContain("Suites numériques");
+  });
+});
+
+describe("planIntent — dérivé des raisons du moteur, jamais d'un nouveau score", () => {
+  it("une montée de palier relève de la progression", () => {
+    expect(planIntent(["Palier suivant (3 réussites d'affilée)"])).toBe("progresser");
+  });
+
+  it("un acquis qui s'effrite relève de la révision", () => {
+    expect(planIntent(["Non retravaillé depuis 40 j"])).toBe("réviser");
+    expect(planIntent(["Maîtrisé, jamais retravaillé"])).toBe("réviser");
+  });
+
+  it("échecs, maîtrise faible et réussites assistées relèvent de la consolidation", () => {
+    expect(planIntent(["Plusieurs échecs"])).toBe("consolider");
+    expect(planIntent(["Maîtrise faible"])).toBe("consolider");
+    expect(planIntent(["Réussi avec aide"])).toBe("consolider");
+    expect(planIntent(["Jamais travaillé"])).toBe("consolider");
+  });
+
+  it("la progression prime sur la révision quand les deux signaux coexistent", () => {
+    expect(planIntent(["Non retravaillé depuis 30 j", "Palier suivant (4 réussites d'affilée)"])).toBe("progresser");
   });
 });
 

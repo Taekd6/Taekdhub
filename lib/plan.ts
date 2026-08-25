@@ -1,4 +1,5 @@
 import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { computeChaptersToConsolidate } from "@/lib/next-action";
 import { progressByChapter } from "@/lib/progress";
 import { weeklyTimeBySubject } from "@/lib/week";
 import { subjects } from "@/lib/study";
@@ -15,9 +16,11 @@ import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
  * - lib/week.ts (`weeklyTimeBySubject`) reste l'UNIQUE source du temps déjà
  *   investi cette semaine.
  *
- * Ce fichier n'ajoute qu'une seule chose de nouveau : la RÉPARTITION du temps
- * disponible entre matières, pour qu'un plan de 45 min ne devienne jamais
- * "45 min de maths" par accident (voir `subjectWeight`).
+ * Ce fichier n'ajoute qu'une seule chose que personne d'autre ne calcule :
+ * COMBIEN DE TEMPS accorder à chaque intention pédagogique — consolider,
+ * réviser, progresser (voir `computeDailyPlan`). Les priorités elles-mêmes
+ * viennent de `computeChaptersToConsolidate` (lib/next-action.ts) et le choix
+ * des exercices de `recommendExercises` : ce module n'en redéfinit aucun.
  */
 
 interface SubjectSignal {
@@ -99,60 +102,47 @@ function subjectWeight(signal: SubjectSignal): number {
   return weakness + neglect + failure;
 }
 
-/** En dessous de ce nombre de minutes, un bloc matière est trop court pour être utile — mieux vaut l'éliminer et redistribuer que de fragmenter le plan. */
-const MIN_BLOCK_MINUTES = 10;
+/**
+ * INTENTION PÉDAGOGIQUE d'une partie du plan — pourquoi ce bloc existe.
+ *
+ * Ces trois intentions ne sont PAS un nouveau système de scoring : elles se
+ * lisent directement dans les raisons que le moteur attache déjà à chaque
+ * recommandation (voir `evaluateExercise`, lib/recommendation.ts). Le plan
+ * ne décide donc rien par lui-même — il classe ce que le moteur a déjà
+ * décidé, puis le projette sur le temps disponible.
+ */
+export type PlanIntent = "consolider" | "réviser" | "progresser";
+
+export const PLAN_INTENT_META: Record<PlanIntent, { label: string; description: string }> = {
+  consolider: { label: "Consolider", description: "Ce qui résiste encore" },
+  réviser: { label: "Réviser", description: "Pour ne pas l'oublier" },
+  progresser: { label: "Progresser", description: "Un cran au-dessus" },
+};
 
 /**
- * Répartit `totalMinutes` entre les matières éligibles, proportionnellement à
- * `subjectWeight`. Une seule matière éligible reçoit tout le budget sans
- * partage artificiel (le brief est explicite : ne pas forcer l'équilibre si
- * une matière est clairement prioritaire). Les blocs sous `MIN_BLOCK_MINUTES`
- * sont retirés et leur part redistribuée une seule fois (pas de boucle
- * jusqu'à convergence : au plus 7 matières à départager).
+ * Classe une recommandation par intention, à partir de ses seules raisons.
+ *
+ * Ordre volontaire : une montée de palier prime (c'est le fait nouveau), puis
+ * la révision d'un acquis qui s'effrite, et tout le reste — échecs, maîtrise
+ * faible, réussites arrachées aux indices, jamais travaillé — relève de la
+ * consolidation. C'est le cas par défaut, et c'est voulu : quand rien
+ * d'autre ne se distingue, il faut réparer avant d'avancer.
  */
-function allocateMinutesBySubject(signals: SubjectSignal[], totalMinutes: number): Map<Subject, number> {
-  const pool = signals.filter((signal) => signal.eligible).map((signal) => ({ subject: signal.subject, weight: Math.max(MIN_ELIGIBLE_WEIGHT, subjectWeight(signal)) }));
-  if (pool.length === 0 || totalMinutes <= 0) return new Map();
-  if (pool.length === 1) return new Map([[pool[0].subject, totalMinutes]]);
-
-  const totalWeight = pool.reduce((sum, entry) => sum + entry.weight, 0);
-  let allocation = pool.map((entry) => ({ subject: entry.subject, minutes: Math.round((entry.weight / totalWeight) * totalMinutes) }));
-  const kept = allocation.filter((entry) => entry.minutes >= MIN_BLOCK_MINUTES);
-
-  if (kept.length === 0) {
-    // Budget trop court pour départager plusieurs matières : tout va à la plus prioritaire plutôt que de fragmenter en blocs inutilisables.
-    const top = pool.reduce((best, entry) => (entry.weight > best.weight ? entry : best));
-    allocation = [{ subject: top.subject, minutes: totalMinutes }];
-  } else if (kept.length < allocation.length) {
-    const keptSubjects = new Set(kept.map((entry) => entry.subject));
-    const keptWeight = pool.filter((entry) => keptSubjects.has(entry.subject)).reduce((sum, entry) => sum + entry.weight, 0);
-    allocation = pool
-      .filter((entry) => keptSubjects.has(entry.subject))
-      .map((entry) => ({ subject: entry.subject, minutes: Math.round((entry.weight / keptWeight) * totalMinutes) }));
-  }
-
-  // Correction d'arrondi : la somme doit égaler exactement `totalMinutes` — l'écart est absorbé par le plus gros bloc, jamais réparti au hasard.
-  const sum = allocation.reduce((total, entry) => total + entry.minutes, 0);
-  const diff = totalMinutes - sum;
-  if (diff !== 0) {
-    const largest = allocation.reduce((best, entry) => (entry.minutes > best.minutes ? entry : best));
-    largest.minutes += diff;
-  }
-
-  return new Map(allocation.map((entry) => [entry.subject, entry.minutes]));
+export function planIntent(reasons: string[]): PlanIntent {
+  if (reasons.some((reason) => reason.startsWith("Palier suivant"))) return "progresser";
+  if (reasons.some((reason) => reason.startsWith("Non retravaillé depuis") || reason === "Maîtrisé, jamais retravaillé")) return "réviser";
+  return "consolider";
 }
 
 export interface PlanBlock {
-  subject: Subject;
-  /** "Matière — Chapitre" si un chapitre domine parmi les picks retenus, sinon juste la matière. */
+  intent: PlanIntent;
+  /** "Consolider" / "Réviser" / "Progresser" — voir `PLAN_INTENT_META`. */
   label: string;
-  /** Minutes allouées par `allocateMinutesBySubject`. */
-  minutes: number;
-  /** Durée réelle des exercices retenus (lib/recommendation.ts#estimatedDurationMinutes) — peut être < `minutes` si rien de plus ne tenait dans le budget. */
+  /** Ce que ce bloc fait travailler concrètement : les chapitres (ou matières, à défaut) réellement présents dans `picks`. */
+  focus: string;
+  /** Durée réelle des exercices retenus (lib/recommendation.ts#estimatedDurationMinutes). */
   estimatedMinutes: number;
   picks: ExerciseRecommendation[];
-  /** "N exercices recommandés" / "N exercices à revoir" selon la majorité des picks. */
-  pickLabel: string;
 }
 
 export interface DailyPlan {
@@ -163,40 +153,171 @@ export interface DailyPlan {
   totalExercises: number;
 }
 
-/** Large : la vraie limite d'un bloc vient du budget de temps (`selectWithinBudget` dans lib/recommendation.ts), pas de ce nombre. */
-const PICKS_PER_BLOCK_LIMIT = 6;
+/**
+ * RÉPARTITION DU TEMPS PAR INTENTION — la structure d'une séance change avec
+ * sa durée, elle ne fait pas que s'allonger.
+ *
+ * Vingt minutes ne sont pas « une séance de 90 min en plus court » : il n'y a
+ * de place que pour réparer ce qui bloque. C'est en montant que la séance
+ * peut s'offrir de l'entretien, puis de la progression. Les parts sont donc
+ * données par PALIER de durée, pas par une règle proportionnelle unique.
+ *
+ * Une intention sans candidat ne gèle jamais son budget : le reliquat est
+ * redistribué (voir `computeDailyPlan`), pour ne jamais rendre 20 minutes
+ * de séance sur un budget de 60.
+ */
+const INTENT_MIX: { upTo: number; shares: Partial<Record<PlanIntent, number>> }[] = [
+  // Séance courte : une seule intention. Diluer 20 min en trois blocs ne
+  // produirait que des fragments trop courts pour être utiles.
+  { upTo: 29, shares: { consolider: 1 } },
+  // Séance moyenne : réparer, puis entretenir.
+  { upTo: 59, shares: { consolider: 0.7, réviser: 0.3 } },
+  // Séance longue : les trois intentions ont chacune la place d'exister.
+  { upTo: 89, shares: { consolider: 0.55, réviser: 0.25, progresser: 0.2 } },
+  // Séance très longue : plus de marge pour pousser vraiment le niveau.
+  { upTo: Number.POSITIVE_INFINITY, shares: { consolider: 0.45, réviser: 0.25, progresser: 0.3 } },
+];
+
+function intentSharesFor(totalMinutes: number): Partial<Record<PlanIntent, number>> {
+  return INTENT_MIX.find((entry) => totalMinutes <= entry.upTo)!.shares;
+}
+
+/** Ordre d'affichage ET de service : on répare avant d'entretenir, on entretient avant de pousser. */
+const INTENT_ORDER: PlanIntent[] = ["consolider", "réviser", "progresser"];
+
+/** Remplit un budget en piochant dans `candidates` (déjà ordonnés) sans jamais le dépasser — même règle gloutonne que `selectWithinBudget` (lib/recommendation.ts) : un exercice trop long est sauté, pas forcé. */
+function fillBudget(
+  candidates: ExerciseRecommendation[],
+  sessions: WorkSession[],
+  budgetMinutes: number,
+  taken: Set<string>
+): { picks: ExerciseRecommendation[]; used: number } {
+  const picks: ExerciseRecommendation[] = [];
+  let remaining = budgetMinutes;
+  for (const candidate of candidates) {
+    if (taken.has(candidate.exercise.id)) continue;
+    const duration = estimatedDurationMinutes(candidate.exercise, sessions);
+    if (duration > remaining) continue;
+    picks.push(candidate);
+    taken.add(candidate.exercise.id);
+    remaining -= duration;
+  }
+  return { picks, used: budgetMinutes - remaining };
+}
+
+/** Les chapitres réellement travaillés par un bloc, dans l'ordre d'apparition — à défaut de chapitre assigné, la matière. Sert à dire ce que le bloc fait travailler, sans jamais l'inventer. */
+function describeFocus(picks: ExerciseRecommendation[], chapterById: Map<string, Chapter>): string {
+  const labels: string[] = [];
+  for (const { exercise } of picks) {
+    const label = (exercise.chapter_id && chapterById.get(exercise.chapter_id)?.label) || exercise.subject;
+    if (!labels.includes(label)) labels.push(label);
+  }
+  // Au-delà de deux, on nomme les deux premiers et on compte le reste : une
+  // énumération de cinq chapitres n'est plus lisible d'un coup d'œil.
+  if (labels.length <= 2) return labels.join(" · ");
+  return `${labels.slice(0, 2).join(" · ")} +${labels.length - 2}`;
+}
 
 /**
- * "Plan du jour" — répartit `totalMinutes` entre les matières qui en ont
- * besoin (voir `allocateMinutesBySubject`), puis appelle `recommendExercises`
- * une fois par matière avec son budget alloué. Un bloc sans aucun exercice
- * retenu (budget trop serré) est simplement omis, pas affiché vide.
+ * "Plan du jour" — PROJECTION TEMPORELLE des priorités pédagogiques, et non
+ * plus une répartition du temps entre matières.
+ *
+ * ## Ce qui a changé, et pourquoi
+ * L'ancienne version allouait le budget par MATIÈRE (`allocateMinutesBySubject`,
+ * via `subjectWeight`) puis appelait le moteur une fois par matière. Elle
+ * constituait donc une seconde définition de « ce qu'il faut travailler »,
+ * concurrente de celle qu'utilisaient déjà le Dashboard et la Progression
+ * (`computeChaptersToConsolidate`) — deux réponses possibles à la même
+ * question, avec la garantie qu'elles finiraient par diverger. Elle ignorait
+ * surtout tout ce que le moteur avait appris depuis : difficulté adaptée,
+ * indices, réussites assistées, échecs par chapitre.
+ *
+ * ## La source de vérité
+ * `recommendExercises` reste l'UNIQUE décideur de « quel exercice ». Il est
+ * appelé UNE fois, sur toute la banque active : la sélection hérite donc
+ * telle quelle de la difficulté visée, du signal d'indices et de la
+ * diversification matière/chapitre déjà éprouvées.
+ *
+ * `computeChaptersToConsolidate` (lib/next-action.ts) — la même fonction qui
+ * alimente « À consolider » au Dashboard et « Tes priorités » sur
+ * /progress — ne sert qu'à ORDONNER le bloc de consolidation : un exercice
+ * appartenant au chapitre n°1 de l'élève passe avant les autres. C'est ce
+ * qui rend le plan cohérent avec les deux autres écrans par construction,
+ * sans dupliquer une ligne de leur logique.
+ *
+ * Le plan n'invente donc aucune priorité : il décide seulement COMBIEN DE
+ * TEMPS accorder à chaque intention, ce qu'aucun autre module ne fait.
  */
 export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[], chapters: Chapter[], totalMinutes: number, now: Date = new Date()): DailyPlan {
-  const signals = computeSubjectSignals(exercises, sessions, now);
-  const allocation = allocateMinutesBySubject(signals, totalMinutes);
-  const chapterById = new Map(chapters.map((chapter) => [chapter.id, chapter]));
   const active = exercises.filter((exercise) => !exercise.archived);
+  const chapterById = new Map(chapters.map((chapter) => [chapter.id, chapter]));
+  const empty: DailyPlan = { blocks: [], requestedMinutes: totalMinutes, totalMinutes: 0, totalExercises: 0 };
+  if (totalMinutes <= 0 || active.length === 0) return empty;
 
-  const orderedSubjects = [...allocation.entries()].sort((a, b) => b[1] - a[1]).map(([subject]) => subject);
+  // UN SEUL appel au moteur, sur toute la banque : même ordre, même
+  // diversification, même arbitrage de difficulté que partout ailleurs.
+  const all = recommendExercises(active, sessions, active.length, { now });
+  if (all.length === 0) return empty;
+
+  // Rang du chapitre dans les priorités de l'élève — exactement celles
+  // affichées par le Dashboard et /progress.
+  const priorityRank = new Map<string, number>();
+  computeChaptersToConsolidate(exercises, sessions, chapters, now).forEach((entry, index) => {
+    priorityRank.set(entry.chapter.id, index);
+  });
+
+  const byIntent = new Map<PlanIntent, ExerciseRecommendation[]>(INTENT_ORDER.map((intent) => [intent, []]));
+  for (const recommendation of all) {
+    byIntent.get(planIntent(recommendation.reasons))!.push(recommendation);
+  }
+
+  // Dans le bloc de consolidation SEULEMENT, les chapitres prioritaires
+  // passent devant. Tri stable : à rang égal, l'ordre du moteur (score +
+  // diversification) est conservé tel quel.
+  const NO_PRIORITY = Number.MAX_SAFE_INTEGER;
+  byIntent.get("consolider")!.sort((a, b) => {
+    const rankA = a.exercise.chapter_id ? priorityRank.get(a.exercise.chapter_id) ?? NO_PRIORITY : NO_PRIORITY;
+    const rankB = b.exercise.chapter_id ? priorityRank.get(b.exercise.chapter_id) ?? NO_PRIORITY : NO_PRIORITY;
+    return rankA - rankB;
+  });
+
+  const shares = intentSharesFor(totalMinutes);
+  const taken = new Set<string>();
   const blocks: PlanBlock[] = [];
+  let spent = 0;
 
-  for (const subject of orderedSubjects) {
-    const minutes = allocation.get(subject)!;
-    const subjectExercises = active.filter((exercise) => exercise.subject === subject);
-    const picks = recommendExercises(subjectExercises, sessions, PICKS_PER_BLOCK_LIMIT, { now, availableMinutes: minutes });
+  // Premier passage : chaque intention dans la limite de sa part.
+  for (const intent of INTENT_ORDER) {
+    const share = shares[intent];
+    if (!share) continue;
+    const { picks, used } = fillBudget(byIntent.get(intent)!, sessions, Math.round(totalMinutes * share), taken);
     if (picks.length === 0) continue;
+    blocks.push({
+      intent,
+      label: PLAN_INTENT_META[intent].label,
+      focus: describeFocus(picks, chapterById),
+      estimatedMinutes: used,
+      picks,
+    });
+    spent += used;
+  }
 
-    const estimatedMinutes = picks.reduce((sum, { exercise }) => sum + estimatedDurationMinutes(exercise, sessions), 0);
-    const topChapterId = picks[0].exercise.chapter_id;
-    const chapterLabel = topChapterId ? chapterById.get(topChapterId)?.label : undefined;
-    const toReviewCount = picks.filter(({ exercise }) => exercise.status === "à revoir").length;
-    const pickLabel =
-      toReviewCount > picks.length / 2
-        ? `${picks.length} exercice${picks.length > 1 ? "s" : ""} à revoir`
-        : `${picks.length} exercice${picks.length > 1 ? "s" : ""} recommandé${picks.length > 1 ? "s" : ""}`;
-
-    blocks.push({ subject, label: chapterLabel ? `${subject} — ${chapterLabel}` : subject, minutes, estimatedMinutes, picks, pickLabel });
+  // Second passage : le temps qu'aucune intention n'a pu utiliser (candidats
+  // épuisés, exercices trop longs) est rendu aux intentions déjà présentes,
+  // en repartant de la plus prioritaire. Sans lui, un élève demandant 60 min
+  // pouvait repartir avec 25 min de travail parce qu'une intention n'avait
+  // rien à proposer.
+  let leftover = totalMinutes - spent;
+  if (leftover > 0) {
+    for (const block of blocks) {
+      if (leftover <= 0) break;
+      const { picks, used } = fillBudget(byIntent.get(block.intent)!, sessions, leftover, taken);
+      if (picks.length === 0) continue;
+      block.picks.push(...picks);
+      block.estimatedMinutes += used;
+      block.focus = describeFocus(block.picks, chapterById);
+      leftover -= used;
+    }
   }
 
   return {
@@ -226,9 +347,8 @@ const MAX_SUBJECT_PRIORITIES = 7;
 
 /**
  * "Priorités de la semaine" — un niveau explicable par matière, réutilisant
- * exactement les mêmes signaux que `computeDailyPlan` (`subjectWeight`), pour
- * qu'un chapitre ne soit jamais mieux classé ici que par le plan du jour lui-
- * même. Contrairement au plan (qui n'inclut que les matières "éligibles",
+ * `subjectWeight` — une vue par matière, complémentaire des priorités par
+ * chapitre (`computeChaptersToConsolidate`) qui pilotent le plan. Contrairement au plan (qui n'inclut que les matières "éligibles",
  * i.e. avec quelque chose à proposer maintenant), toute matière ayant au
  * moins un exercice actif apparaît ici — y compris une matière entièrement
  * maîtrisée, affichée "correct" plutôt qu'absente (voir Phase 15 du sprint :

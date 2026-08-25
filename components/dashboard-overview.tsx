@@ -44,6 +44,7 @@ import {
   computeSubjectPriorities,
   DEFAULT_PLAN_MINUTES,
   PLAN_DURATION_PRESETS,
+  PLAN_INTENT_META,
   PLAN_STORAGE_KEY,
   serializePlan,
   type SubjectPriorityLevel,
@@ -259,16 +260,28 @@ export function DashboardOverview() {
           </p>
         ) : (
           <>
+            {/* Un bloc = une INTENTION pédagogique (consolider / réviser /
+                progresser), plus une matière. L'élève lit désormais à quoi
+                sert chaque partie de sa séance, pas seulement de quelle
+                matière elle relève — c'est ce que le plan décide réellement.
+                Le nom des chapitres travaillés reste affiché juste en
+                dessous : l'intention sans le contenu serait creuse. */}
             <ol className="mt-5 space-y-2.5">
               {dailyPlan.blocks.map((block, index) => (
-                <li key={block.subject} className="flex items-start gap-3 rounded-xl border border-hairline/[0.07] p-3.5 text-sm">
+                <li key={block.intent} className="flex items-start gap-3 rounded-xl border border-hairline/[0.07] p-3.5 text-sm">
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent">{index + 1}</span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                      <p className="truncate font-medium text-zinc-100">{block.label}</p>
+                      <p className="font-medium text-zinc-100">
+                        {block.label}{" "}
+                        <span className="font-normal text-zinc-500">— {PLAN_INTENT_META[block.intent].description}</span>
+                      </p>
                       <span className="shrink-0 text-xs text-zinc-500">{block.estimatedMinutes} min</span>
                     </div>
-                    <p className="mt-1 text-xs text-zinc-500">{block.pickLabel}</p>
+                    <p className="mt-1 truncate text-xs text-zinc-400">{block.focus}</p>
+                    <p className="mt-0.5 text-2xs text-zinc-500">
+                      {block.picks.length} exercice{block.picks.length > 1 ? "s" : ""}
+                    </p>
                   </div>
                 </li>
               ))}
