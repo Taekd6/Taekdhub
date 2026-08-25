@@ -43,7 +43,12 @@ function NavItems({ compact = false }: { compact?: boolean }) {
             className={cn(
               "focus-ring group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
               active ? "text-ink" : "text-zinc-400 hover:text-zinc-100",
-              compact ? "justify-center px-2" : ""
+              // 44 px de côté en mode compact : c'est la barre du BAS sur
+              // mobile, donc le contrôle le plus touché de toute
+              // l'application — et il mesurait 34 × 38 px. Les audits
+              // précédents ne regardaient que les boutons de contenu et
+              // l'avaient manqué.
+              compact ? "min-h-11 min-w-11 justify-center px-2" : ""
             )}
             title={compact ? label : undefined}
           >
@@ -99,12 +104,6 @@ export function AppSidebar() {
               </div>
             </div>
           )}
-          <div className="rounded-2xl border border-hairline/[0.07] bg-hairline/[0.04] p-4">
-            <p className="text-xs font-semibold text-zinc-200">Règle du jour</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-500">
-              Une séance sans distraction vaut plus qu&apos;une longue liste.
-            </p>
-          </div>
         </div>
       </aside>
 

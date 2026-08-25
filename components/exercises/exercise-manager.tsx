@@ -18,7 +18,7 @@ import { ExerciseListRow } from "@/components/exercises/exercise-list-row";
 import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { addChapter, removeChapter, renameChapter } from "@/lib/chapters";
-import { chapterOptionsForSubject, defaultExerciseFilters, distinctYears, filterExercises, tagOptionsForFilters, type ExerciseFilters } from "@/lib/exercise-filters";
+import { chapterOptionsForSubject, defaultExerciseFilters, difficultyOptionsForFilters, distinctYears, filterExercises, tagOptionsForFilters, type ExerciseFilters } from "@/lib/exercise-filters";
 import { defaultExerciseSort, exerciseSortOptions, sortExercises, type ExerciseSort } from "@/lib/exercise-sort";
 import { createExerciseFromInput } from "@/lib/exercise-import";
 import { SessionBuilderBar } from "@/components/exercises/session-builder-bar";
@@ -224,6 +224,10 @@ export function ExerciseManager() {
     () => tagOptionsForFilters(exercises, { subject: filters.subject, chapter: filters.chapter }),
     [exercises, filters.subject, filters.chapter]
   );
+  const difficultyOptions = useMemo(
+    () => difficultyOptionsForFilters(exercises, { subject: filters.subject, chapter: filters.chapter }),
+    [exercises, filters.subject, filters.chapter]
+  );
   const yearOptions = useMemo(() => distinctYears(exercises), [exercises]);
 
   // Un chapitre filtré peut devenir invalide si on change de matière : on le
@@ -408,6 +412,7 @@ export function ExerciseManager() {
         onChange={updateFiltersFromBar}
         chapterOptions={chapterOptions}
         tagOptions={tagOptions}
+        difficultyOptions={difficultyOptions}
         yearOptions={yearOptions}
         onAddClick={() => setFormOpen((value) => !value)}
         onImportClick={() => setImportOpen((value) => !value)}

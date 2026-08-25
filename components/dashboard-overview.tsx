@@ -132,6 +132,8 @@ export function DashboardOverview() {
   // "Revoir mes priorités" (Phase 8) : ouvre directement le premier exercice déjà signalé par le moteur de recommandation — même convention que computeUpcoming (lib/next-action.ts), aucune nouvelle route.
   // "Prochainement" ne montre plus le chapitre le plus faible : la section "À consolider" ci-dessous couvre ce signal en mieux (plusieurs chapitres, raisons explicites) — computeUpcoming lui-même reste inchangé (voir lib/next-action.test.ts).
   const otherSignals = upcoming.filter((item) => item.key !== "chapter");
+  const subjectsInBank = new Set(bySubject.map((entry) => entry.subject));
+  const weekSubjects = weeklySummary.bySubject.filter((entry) => subjectsInBank.has(entry.subject) || entry.seconds > 0);
 
   return (
     <div className="space-y-6">
@@ -337,18 +339,17 @@ export function DashboardOverview() {
             )}
           </p>
 
-          {!objective.met && (
-            // UN seul départ de séance ici, et volontairement `secondary` :
-            // le Dashboard proposait jusqu'à trois entrées de séance
-            // concurrentes sur le même écran (le CTA du héros, deux raccourcis
-            // de durée en dur, puis quatre préréglages répétés ici). Le choix
-            // de la durée appartient au « Plan du jour », qui y attache un
-            // vrai plan ; ce lien-ci ne fait que reprendre le temps qu'il
-            // reste à l'objectif, sans redemander à l'élève de trancher.
+          {/* Reprendre, jamais commencer : tant que la journée n'a rien
+              enregistré, cette carte n'est qu'un état — le départ appartient
+              au héros ("À faire maintenant") et au Plan du jour, qui y
+              attachent une intention. Le Dashboard offrait jusqu'à sept
+              départs de séance concurrents, dont celui-ci pointait exactement
+              sur la même destination et la même durée que le héros. */}
+          {!objective.met && objective.workedMinutes > 0 && (
             <div className="mt-5">
-              <Link href={`/session?minutes=${objective.remainingMinutes > 0 ? Math.min(objective.remainingMinutes, 90) : DEFAULT_PLAN_MINUTES}`}>
+              <Link href={`/session?minutes=${Math.min(objective.remainingMinutes, 90)}`}>
                 <Button variant="secondary" size="sm">
-                  {objective.workedMinutes === 0 ? "Commencer une session" : `Continuer — ${objective.remainingMinutes} min`} <ArrowRight size={13} />
+                  Continuer — {objective.remainingMinutes} min <ArrowRight size={13} />
                 </Button>
               </Link>
             </div>
@@ -410,9 +411,15 @@ export function DashboardOverview() {
           <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">{weeklySummary.progressPercent}%</span>
         </div>
         <ProgressBar value={weeklySummary.progressPercent} className="mt-5" />
-        {weeklySummary.bySubject.length > 0 && (
+        {/* `weeklyTimeBySubject` renvoie volontairement les SEPT matières du
+            référentiel (lib/study.ts) — c'est ce qu'il faut pour détecter une
+            matière délaissée. Mais les afficher toutes signifiait, sur une
+            banque qui n'en couvre que trois, quatre lignes « 0:00 »
+            perpétuelles : pas un résultat, un remplissage. On ne montre que
+            les matières qui ont réellement quelque chose à travailler. */}
+        {weekSubjects.length > 0 && (
           <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-zinc-500">
-            {weeklySummary.bySubject.map(({ subject, seconds }) => (
+            {weekSubjects.map(({ subject, seconds }) => (
               <span key={subject}>
                 {subject} : <span className="text-zinc-300">{formatDuration(seconds)}</span>
               </span>

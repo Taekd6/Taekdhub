@@ -22,6 +22,7 @@ export function ExerciseFiltersBar({
   onChange,
   chapterOptions,
   tagOptions,
+  difficultyOptions,
   yearOptions,
   onAddClick,
   onImportClick,
@@ -31,6 +32,8 @@ export function ExerciseFiltersBar({
   chapterOptions: Chapter[];
   /** Sous-thèmes disponibles pour le périmètre matière/chapitre déjà choisi — voir lib/exercise-filters.ts#tagOptionsForFilters. */
   tagOptions: string[];
+  /** Difficultés présentes dans le périmètre choisi — voir lib/exercise-filters.ts#difficultyOptionsForFilters. */
+  difficultyOptions: Difficulty[];
   yearOptions: number[];
   onAddClick: () => void;
   onImportClick: () => void;
@@ -113,9 +116,10 @@ export function ExerciseFiltersBar({
           value={filters.difficulty}
           onChange={(event) => onChange({ difficulty: event.target.value === "Toutes" ? "Toutes" : (Number(event.target.value) as Difficulty) })}
           className="w-auto min-w-[130px]"
+          disabled={difficultyOptions.length === 0}
         >
           <option value="Toutes">Toutes difficultés</option>
-          {[1, 2, 3, 4, 5].map((value) => (
+          {difficultyOptions.map((value) => (
             <option value={value} key={value}>
               Difficulté {value}/5
             </option>

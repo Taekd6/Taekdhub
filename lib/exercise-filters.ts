@@ -102,6 +102,24 @@ export function distinctYears(exercises: Exercise[]): number[] {
  * secondaires (difficulté, statut…) — le sous-thème reste une propriété de
  * l'exercice, pas de son état d'avancement.
  */
+/**
+ * Difficultés RÉELLEMENT présentes dans le périmètre déjà choisi
+ * (matière/chapitre), croissantes — même convention que `distinctYears` et
+ * `tagOptionsForFilters` ci-dessous : jamais un catalogue inventé.
+ *
+ * Le sélecteur proposait les cinq crans partout. Sur un chapitre qui n'en
+ * contient aucun de niveau 5, choisir « Difficulté 5/5 » ne pouvait rendre
+ * qu'un écran vide — l'élève découvrait après coup que son clic n'avait
+ * jamais eu de chance d'aboutir.
+ */
+export function difficultyOptionsForFilters(exercises: Exercise[], filters: Pick<ExerciseFilters, "subject" | "chapter">): Difficulty[] {
+  const scoped = exercises
+    .filter((item) => !item.archived)
+    .filter((item) => filters.subject === "Toutes" || item.subject === filters.subject)
+    .filter((item) => filters.chapter === "Tous" || item.chapter_id === filters.chapter);
+  return Array.from(new Set(scoped.map((item) => item.difficulty))).sort((a, b) => a - b);
+}
+
 export function tagOptionsForFilters(exercises: Exercise[], filters: Pick<ExerciseFilters, "subject" | "chapter">): string[] {
   const scoped = exercises
     .filter((item) => !item.archived)
