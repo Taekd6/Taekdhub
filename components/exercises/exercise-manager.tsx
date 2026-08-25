@@ -9,7 +9,6 @@ import { Select } from "@/components/ui/input";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { ArchivedExercises } from "@/components/exercises/archived-exercises";
-import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { ExerciseBrowser } from "@/components/exercises/exercise-browser";
 import { ExerciseFiltersBar } from "@/components/exercises/exercise-filters-bar";
 import { ExerciseForm, type NewExerciseInput } from "@/components/exercises/exercise-form";
@@ -378,8 +377,14 @@ export function ExerciseManager() {
         <FocusQueryHandler ready={ready} onFocus={jumpToExerciseFromQuery} />
       </Suspense>
 
-      <ExerciseBankStats exercises={exercises} sessions={sessions} />
-
+      {/* `ExerciseBankStats` retiré d'ici (il reste sur /progress, sa vraie
+          place). Ces agrégats occupaient tout le premier écran d'une page
+          dont l'unique objet est de RETROUVER un exercice parmi 402 : ils
+          répondent à « où en est ma banque ? », question de bilan, pas à
+          « lequel je travaille maintenant ? ». Le compteur « À revoir »
+          faisait de surcroît doublon avec le panneau ci-dessous, qui montre
+          les exercices concernés — donc actionnable, lui. L'élève arrive
+          désormais directement sur ses priorités et sa navigation. */}
       <ExerciseReviewPanel exercises={exercises} sessions={sessions} onSelect={jumpToExercise} />
 
       <ExerciseBrowser
