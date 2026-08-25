@@ -56,17 +56,17 @@ function WeekEvolution({ exercises, sessions, weekSnapshots }: { exercises: Exer
       ) : (
         <div className="mt-5 space-y-4">
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-hairline/[0.06] p-3.5">
+            <div className="rounded-xl border border-hairline/[0.07] p-3.5">
               <p className="text-xs text-zinc-500">Temps travaillé</p>
               <p className="mt-1.5 text-xl font-semibold tracking-tight">{formatDuration(comparison.currentTotalSeconds)}</p>
               <p className="mt-0.5 text-xs text-zinc-500">{withSignMinutes(comparison.deltaTotalSeconds)} vs semaine précédente</p>
             </div>
-            <div className="rounded-xl border border-hairline/[0.06] p-3.5">
+            <div className="rounded-xl border border-hairline/[0.07] p-3.5">
               <p className="text-xs text-zinc-500">Exercices maîtrisés</p>
               <p className="mt-1.5 text-xl font-semibold tracking-tight">{comparison.currentMasteredCount}</p>
               <p className="mt-0.5 text-xs text-zinc-500">{withSign(comparison.deltaMasteredCount)} vs semaine précédente</p>
             </div>
-            <div className="rounded-xl border border-hairline/[0.06] p-3.5">
+            <div className="rounded-xl border border-hairline/[0.07] p-3.5">
               <p className="text-xs text-zinc-500">Progression globale</p>
               <p className="mt-1.5 text-xl font-semibold tracking-tight">{comparison.currentCompletionRate}%</p>
               <p className="mt-0.5 text-xs text-zinc-500">{withSign(comparison.deltaCompletionRate, " pt")} vs semaine précédente</p>
@@ -106,7 +106,7 @@ const READINESS_STYLE: Record<ReadinessLevel, { border: string; bg: string }> = 
   // sur le niveau réel de l'élève — un fond d'alarme identique à "pas prêt"
   // laisserait croire, dès la première visite, qu'il est déjà en retard sur
   // les trois matières à la fois.
-  "pas commencé": { border: "border-hairline/[0.08]", bg: "bg-hairline/[0.02]" },
+  "pas commencé": { border: "border-hairline/[0.09]", bg: "bg-hairline/[0.025]" },
 };
 
 /**

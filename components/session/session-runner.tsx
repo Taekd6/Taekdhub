@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { SegmentedControl } from "@/components/ui/segmented";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -15,7 +16,6 @@ import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { computeExerciseBankStats, estimatedDurationMinutes, explainReasons, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import { computeNextAction } from "@/lib/next-action";
 import { PLAN_STORAGE_KEY, type StoredPlan } from "@/lib/plan";
-import { cn } from "@/lib/cn";
 import { subjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
 import type { AttemptResult, Exercise, Subject } from "@/lib/supabase/types";
@@ -319,24 +319,16 @@ export function SessionRunner() {
                 </p>
               )}
 
-              <div className="mx-auto mt-5 inline-flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-black/20 p-1">
-                <button
-                  type="button"
-                  onClick={() => setSizingMode("time")}
-                  aria-pressed={sizingMode === "time"}
-                  className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "time" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
-                >
-                  Par temps
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSizingMode("count")}
-                  aria-pressed={sizingMode === "count"}
-                  className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "count" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
-                >
-                  Par nombre d&apos;exercices
-                </button>
-              </div>
+              <SegmentedControl
+                className="mx-auto mt-5"
+                ariaLabel="Dimensionner la séance"
+                value={sizingMode}
+                onChange={setSizingMode}
+                options={[
+                  { value: "time", label: "Par temps" },
+                  { value: "count", label: "Par nombre d'exercices" },
+                ]}
+              />
 
               {sizingMode === "time" ? (
                 <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
@@ -426,7 +418,15 @@ export function SessionRunner() {
         {previewSelection.length > 0 && (
           <div className="grid gap-2 sm:grid-cols-2">
             {previewSelection.map(({ exercise, reasons }) => (
-              <div key={exercise.id} className="flex items-start gap-3 rounded-xl border border-hairline/[0.06] p-3 text-sm">
+              // `min-w-0` obligatoire ici : un élément de grille a
+              // `min-width: auto` par défaut, donc sa largeur minimale vaut
+              // celle de son contenu — et le titre en `truncate`
+              // (white-space: nowrap) réclame la ligne entière. Sans ça,
+              // l'aperçu de séance débordait horizontalement à TOUTES les
+              // largeurs mobiles (mesuré : 521 px de contenu dans 350 px
+              // disponibles à 390 px de viewport), le `truncate` ne servant
+              // alors jamais.
+              <div key={exercise.id} className="flex min-w-0 items-start gap-3 rounded-xl border border-hairline/[0.07] p-3 text-sm">
                 <SubjectAvatar subject={exercise.subject} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
@@ -503,7 +503,7 @@ export function SessionRunner() {
         )}
 
         {upcomingNextAction.kind === "start-session" && (
-          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-hairline/[0.08] bg-hairline/[0.025] p-5 text-left">
+          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-hairline/[0.09] bg-hairline/[0.025] p-5 text-left">
             <p className="eyebrow">Et maintenant ?</p>
             <p className="mt-2 text-sm font-medium text-zinc-100">{upcomingNextAction.title}</p>
             <p className="mt-1 text-xs leading-5 text-zinc-500">{upcomingNextAction.description}</p>

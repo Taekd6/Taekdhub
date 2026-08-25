@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo } from "react";
 import { PageHeader } from "@/components/page-header";
 import { DashboardOverview } from "@/components/dashboard-overview";
-import { Button } from "@/components/ui/button";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeDailyObjective, computeNextAction, computeStatusLine } from "@/lib/next-action";
 
@@ -30,16 +28,19 @@ export default function DashboardPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow={today}
-        title={greeting}
-        description={description}
-        action={
-          <Link href="/session">
-            <Button>Démarrer une séance</Button>
-          </Link>
-        }
-      />
+      {/*
+       * Volontairement SANS `action` : ce bandeau portait un bouton primaire
+       * "Démarrer une séance" posé juste au-dessus du bloc "À faire
+       * maintenant", dont le CTA dit la même chose en mieux — il nomme
+       * l'exercice, explique pourquoi lui, et annonce la durée
+       * ("Commencer une séance de 60 min"). Deux boutons pleins accent, à
+       * trois centimètres l'un de l'autre, pour la même destination, faisaient
+       * hésiter au lieu de guider : la question "quelle est l'action
+       * principale ?" n'avait plus de réponse unique. Aucune fonctionnalité
+       * perdue — /session reste accessible depuis le CTA du héros, les
+       * raccourcis de durée et la barre latérale.
+       */}
+      <PageHeader eyebrow={today} title={greeting} description={description} />
       <DashboardOverview />
     </>
   );
