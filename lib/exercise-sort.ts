@@ -1,14 +1,25 @@
 import type { Exercise } from "@/lib/supabase/types";
 
-export type ExerciseSort = "recommande" | "recent" | "oldest" | "difficulty" | "mastery" | "time" | "alpha";
+export type ExerciseSort = "recommande" | "recent" | "difficulty" | "mastery" | "alpha";
 
+/**
+ * Chaque libellé DIT SON SENS.
+ *
+ * « Difficulté » ou « Maîtrise » ne disent pas dans quel ordre : l'élève
+ * choisissait sans savoir ce qu'il allait obtenir, et « Maîtrise » descendait
+ * — donc montrait d'abord ce qu'il maîtrise le mieux, l'inverse exact de ce
+ * qu'on cherche en triant par maîtrise.
+ *
+ * Deux options retirées : « Plus ancien » (l'inverse d'un tri par date de
+ * création, qui sur une banque amorcée en une fois n'ordonne rien) et
+ * « Temps passé » — la question « où ai-je passé du temps sans avancer ? »
+ * est exactement celle à laquelle « Recommandé » répond, en mieux.
+ */
 export const exerciseSortOptions: { value: ExerciseSort; label: string }[] = [
   { value: "recommande", label: "Recommandé" },
-  { value: "recent", label: "Plus récent" },
-  { value: "oldest", label: "Plus ancien" },
-  { value: "difficulty", label: "Difficulté" },
-  { value: "mastery", label: "Maîtrise" },
-  { value: "time", label: "Temps passé" },
+  { value: "mastery", label: "Le moins maîtrisé d'abord" },
+  { value: "difficulty", label: "Le plus difficile d'abord" },
+  { value: "recent", label: "Ajouté récemment" },
   { value: "alpha", label: "Ordre alphabétique" },
 ];
 
@@ -25,16 +36,13 @@ export const exerciseSortOptions: { value: ExerciseSort; label: string }[] = [
 export const defaultExerciseSort: ExerciseSort = "recommande";
 
 /**
- * Trie une liste déjà filtrée. `minutesByExercise` (voir
- * lib/study.ts#minutesByExerciseMap) est calculé une seule fois par le
- * composant appelant et réutilisé ici pour le tri "temps passé", plutôt que
- * d'être recalculé à chaque comparaison — important dès que la banque
- * grossit (des centaines d'exercices).
+ * Trie une liste déjà filtrée. Aucun tri ne recalcule quoi que ce soit : le
+ * seul classement de l'application (`recommendExercises`) est passé en
+ * paramètre, déjà calculé par l'appelant.
  */
 export function sortExercises(
   exercises: Exercise[],
   sort: ExerciseSort,
-  minutesByExercise: Map<string, number>,
   /**
    * Rang de chaque exercice dans `recommendExercises` (lib/recommendation.ts),
    * calculé UNE fois par l'appelant sur toute la banque — jamais un second
@@ -62,17 +70,12 @@ export function sortExercises(
     case "recent":
       sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       break;
-    case "oldest":
-      sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      break;
     case "difficulty":
       sorted.sort((a, b) => b.difficulty - a.difficulty);
       break;
     case "mastery":
-      sorted.sort((a, b) => b.mastery - a.mastery);
-      break;
-    case "time":
-      sorted.sort((a, b) => (minutesByExercise.get(b.id) ?? 0) - (minutesByExercise.get(a.id) ?? 0));
+      // Croissant : trier par maîtrise, c'est chercher ce qui n'est pas acquis.
+      sorted.sort((a, b) => a.mastery - b.mastery);
       break;
     case "alpha":
       sorted.sort((a, b) => a.title.localeCompare(b.title, "fr"));

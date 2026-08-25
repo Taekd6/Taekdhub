@@ -272,7 +272,7 @@ export function ExerciseManager() {
   }, [exercises, sessions]);
 
   const visible = useMemo(() => filterExercises(exercises, filters), [exercises, filters]);
-  const sorted = useMemo(() => sortExercises(visible, sort, minutesMap, recommendationRank), [visible, sort, minutesMap, recommendationRank]);
+  const sorted = useMemo(() => sortExercises(visible, sort, recommendationRank), [visible, sort, recommendationRank]);
 
   // Callbacks dédiés d'ExerciseBrowser (Matière → Chapitre) : choisir une
   // matière ou remonter garde le mode navigation actif (on reste dans la
