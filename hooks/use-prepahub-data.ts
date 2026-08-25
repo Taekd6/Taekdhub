@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { localData, type Chapter, type Preferences, type WeekSnapshot } from "@/lib/storage";
-import { loadSeedBank, SEED_FLAG_KEY } from "@/lib/seed";
+import { loadSeedBank, reconcileSeedBank, SEED_CONTENT_VERSION, SEED_FLAG_KEY, SEED_VERSION_KEY } from "@/lib/seed";
 import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 
@@ -19,19 +19,42 @@ import type { Exercise, WorkSession } from "@/lib/supabase/types";
  */
 async function maybeSeedBank(): Promise<void> {
   if (typeof window === "undefined") return;
-  if (localStorage.getItem(SEED_FLAG_KEY)) return;
-  if (localData.exercises().length > 0) {
-    localStorage.setItem(SEED_FLAG_KEY, new Date().toISOString());
+
+  if (!localStorage.getItem(SEED_FLAG_KEY)) {
+    if (localData.exercises().length > 0) {
+      localStorage.setItem(SEED_FLAG_KEY, new Date().toISOString());
+      localStorage.setItem(SEED_VERSION_KEY, String(SEED_CONTENT_VERSION));
+      return;
+    }
+    try {
+      const { exercises, chapters } = await loadSeedBank();
+      if (exercises.length === 0) return;
+      localData.saveChapters(chapters);
+      localData.saveExercises(exercises);
+      localStorage.setItem(SEED_FLAG_KEY, new Date().toISOString());
+      localStorage.setItem(SEED_VERSION_KEY, String(SEED_CONTENT_VERSION));
+    } catch {
+      // Amorçage best-effort : en cas d'échec, réessai au prochain montage.
+    }
     return;
   }
+
+  // Banque déjà amorcée, mais à une version antérieure du contenu : on la
+  // rattrape. Sans cela, la banque d'un élève restait figée sur la version du
+  // jour de sa première visite — un élève arrivé quand elle comptait 176
+  // fiches SANS énoncé n'a jamais vu les 404 énoncés ajoutés depuis, et sa
+  // séance affichait « aucun énoncé renseigné », définitivement.
+  const applied = Number(localStorage.getItem(SEED_VERSION_KEY) ?? 0);
+  if (applied >= SEED_CONTENT_VERSION) return;
   try {
-    const { exercises, chapters } = await loadSeedBank();
-    if (exercises.length === 0) return;
-    localData.saveChapters(chapters);
-    localData.saveExercises(exercises);
-    localStorage.setItem(SEED_FLAG_KEY, new Date().toISOString());
+    const seed = await loadSeedBank();
+    if (seed.exercises.length === 0) return;
+    const merged = reconcileSeedBank(localData.exercises(), localData.chapters(), seed);
+    localData.saveChapters(merged.chapters);
+    localData.saveExercises(merged.exercises);
+    localStorage.setItem(SEED_VERSION_KEY, String(SEED_CONTENT_VERSION));
   } catch {
-    // Amorçage best-effort : en cas d'échec, réessai au prochain montage.
+    // Même règle que l'amorçage : en cas d'échec, on retentera au prochain montage.
   }
 }
 

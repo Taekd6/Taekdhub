@@ -264,9 +264,6 @@ export function FocusView({
             <DifficultyDots value={item.difficulty} />
             <Badge>{item.type}</Badge>
             <label className="flex items-center gap-2 text-xs text-zinc-500">
-              Priorité
-            </label>
-            <label className="flex items-center gap-2 text-xs text-zinc-500">
               Maîtrise
               <MasteryPicker value={item.mastery} onChange={(mastery: Mastery) => update(item.id, { mastery })} />
             </label>
