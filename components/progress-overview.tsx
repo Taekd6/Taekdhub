@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { ArrowRight, BarChart3, CheckCircle2, Clock3, Flame, GraduationCap, Target, TrendingUp } from "lucide-react";
-import { MetricCard } from "@/components/ui/metric-card";
+import { ArrowRight, GraduationCap, Target, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -163,6 +162,16 @@ function WorkingLevelCard({ exercises, sessions }: { exercises: Exercise[]; sess
         les recommandations et l&apos;XP.
       </p>
     </Card>
+  );
+}
+
+/** Chiffre brut du bandeau de synthèse — une ligne, pas une carte : ces quatre valeurs ne se lisent qu'après les conclusions qui les précèdent. */
+function Figure({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="eyebrow">{label}</p>
+      <p className="mt-1 text-sm font-medium tabular-nums text-ink">{value}</p>
+    </div>
   );
 }
 
@@ -347,22 +356,23 @@ export function ProgressOverview() {
   }
 
   return (
-    <div className="space-y-5">
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Temps cumulé" value={formatDuration(model.totalTime)} detail="Toutes les séances" icon={Clock3} />
-        <MetricCard
-          label="Exercices maîtrisés"
-          value={`${model.global.masteredCount} / ${model.global.activeCount}`}
-          detail="Sur la banque active"
-          icon={CheckCircle2}
-          delay={0.05}
-        />
-        <MetricCard label="Progression globale" value={`${model.global.completionRate}%`} detail="Part maîtrisée" icon={BarChart3} delay={0.1} />
-        <MetricCard label="Série actuelle" value={`${model.streak} j`} detail="Jours consécutifs" icon={Flame} delay={0.15} />
-      </section>
-
-      <WorkingLevelCard exercises={exercises} sessions={sessions} />
+    <div className="space-y-6">
+      {/* CE QUE LES DONNÉES SIGNIFIENT, D'ABORD.
+          La page ouvrait sur quatre cartes de chiffres bruts — temps cumulé,
+          exercices maîtrisés, progression, série — avant toute lecture. Or
+          « 11 h 47 » ne dit pas quoi faire ; « ces trois chapitres, pour ces
+          raisons datées » si. Les conclusions passent devant, les chiffres
+          deviennent une ligne, et les répartitions détaillées forment la
+          queue de page qu'on consulte quand on veut creuser. */}
       <TopWeaknesses exercises={exercises} sessions={sessions} chapters={chapters} />
+      <WorkingLevelCard exercises={exercises} sessions={sessions} />
+
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 px-1">
+        <Figure label="Temps cumulé" value={formatDuration(model.totalTime)} />
+        <Figure label="Exercices maîtrisés" value={`${model.global.masteredCount} / ${model.global.activeCount}`} />
+        <Figure label="Progression globale" value={`${model.global.completionRate} %`} />
+        <Figure label="Série actuelle" value={`${model.streak} j`} />
+      </div>
 
       <WeekEvolution exercises={exercises} sessions={sessions} weekSnapshots={weekSnapshots} />
       <DsReadiness exercises={exercises} sessions={sessions} />

@@ -1,9 +1,7 @@
 "use client";
 
-import { Clock3, ListChecks, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
-import { MetricCard } from "@/components/ui/metric-card";
 import { ProgressBar } from "@/components/ui/progress";
 import type { HistorySummary as HistorySummaryData, ResultCounts } from "@/lib/history";
 import { subjectMeta } from "@/lib/study";
@@ -20,10 +18,16 @@ export function HistorySummary({ summary, results }: { summary: HistorySummaryDa
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-3">
-        <MetricCard label="Temps total" value={formatDuration(summary.totalSeconds)} detail="Sur la période filtrée" icon={Clock3} />
-        <MetricCard label="Séances" value={String(summary.sessionCount)} detail="Sur la période filtrée" icon={ListChecks} delay={0.05} />
-        <MetricCard label="Réussite" value={results.successRate === null ? "—" : `${results.successRate}%`} detail={`${results.attempted} tentative${results.attempted > 1 ? "s" : ""} notée${results.attempted > 1 ? "s" : ""}`} icon={Trophy} delay={0.1} />
+      {/* Trois chiffres sur la période filtrée : une ligne suffit. En cartes,
+          ils pesaient autant que le journal lui-même, qui est le contenu. */}
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 px-1">
+        <Figure label="Temps total" value={formatDuration(summary.totalSeconds)} />
+        <Figure label="Séances" value={String(summary.sessionCount)} />
+        <Figure
+          label="Réussite"
+          value={results.successRate === null ? "—" : `${results.successRate} %`}
+          detail={`${results.attempted} tentative${results.attempted > 1 ? "s" : ""} notée${results.attempted > 1 ? "s" : ""}`}
+        />
       </div>
 
       {results.attempted > 0 && (
@@ -56,6 +60,17 @@ export function HistorySummary({ summary, results }: { summary: HistorySummaryDa
           </div>
         </Card>
       )}
+    </div>
+  );
+}
+
+/** Chiffre de synthèse — même forme que le bandeau de /progress, un seul vocabulaire pour « un nombre sur une période ». */
+function Figure({ label, value, detail }: { label: string; value: string; detail?: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="eyebrow">{label}</p>
+      <p className="mt-1 text-sm font-medium tabular-nums text-ink">{value}</p>
+      {detail && <p className="t-meta mt-0.5">{detail}</p>}
     </div>
   );
 }

@@ -34,14 +34,16 @@ export function SessionRow({
     <motion.article
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="surface flex items-center justify-between gap-3 rounded-xl p-4 transition hover:border-hairline/[0.14]"
+      // Une carte encadrée par séance donnait cent cadres à la suite : le
+      // journal se lit comme une liste, pas comme une galerie.
+      className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-inset"
     >
       <div className="flex min-w-0 items-center gap-3">
         <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-lg text-xs font-bold", subjectMeta[session.subject].className)}>
           {subjectMeta[session.subject].short}
         </span>
         <div className="min-w-0">
-          <p className="truncate font-medium">{exerciseTitle ?? session.subject}</p>
+          <p className="truncate text-sm text-ink">{exerciseTitle ?? session.subject}</p>
           <p className="mt-0.5 truncate text-xs text-muted">
             {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(session.started_at))}
             {exerciseTitle && ` · ${session.subject}`}

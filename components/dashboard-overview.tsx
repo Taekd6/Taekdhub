@@ -195,7 +195,13 @@ export function DashboardOverview() {
         <Stat label="Objectif du jour" value={`${objective.workedMinutes} / ${objective.goalMinutes} min`} percent={objective.percent} />
         {streak > 0 && <Stat label="Série" value={`${streak} j`} icon={<Flame size={13} className="text-accent" />} />}
         <Stat label="Cette semaine" value={formatDuration(weeklySummary.totalSeconds)} percent={weeklySummary.progressPercent} />
-        <Link href="/progress" className="focus-ring t-meta ml-auto rounded px-1 underline-offset-4 hover:text-ink hover:underline">
+        {/* `min-h-11` sous `lg` : un lien texte de 20 px de haut est une
+            cible tactile inconfortable, même s'il n'a pas l'apparence d'un
+            bouton — la règle vaut pour tout ce qu'on touche. */}
+        <Link
+          href="/progress"
+          className="focus-ring t-meta ml-auto inline-flex items-center rounded px-1 underline-offset-4 hover:text-ink hover:underline max-lg:min-h-11"
+        >
           Voir ma progression
         </Link>
       </div>
