@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { memo } from "react";
 import { Archive, ChevronDown, Heart, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryBar, SubjectAvatar, StatusSelect } from "@/components/exercises/exercise-badges";
 import { ExerciseDetail } from "@/components/exercises/exercise-detail";
@@ -49,23 +48,33 @@ function ExerciseListRowImpl({
   onRemoveChapter,
 }: ExerciseListRowProps) {
   return (
-    <motion.article id={`exercise-${item.id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={cn("surface overflow-hidden rounded-xl", selected && "border-accent/35")}>
+    <motion.article id={`exercise-${item.id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={cn("overflow-hidden rounded-xl transition-colors", selected ? "surface" : "hover:bg-inset")}>
       <div className="flex items-center gap-3 px-3 py-2 sm:px-4">
+        {/* La rangée portait huit éléments de front : avatar, titre, source,
+            badge de type, difficulté, barre de maîtrise, cœur favori, statut.
+            À ce compte-là, on ne lit plus le titre. Ne restent que ce qui aide
+            à CHOISIR — titre, matière, difficulté, maîtrise. La source et le
+            type restent une frappe plus loin, dans le détail dépliable. */}
         <button onClick={() => onToggle(item.id)} className="focus-ring flex min-w-0 flex-1 items-center gap-3 text-left">
           <SubjectAvatar subject={item.subject} size="sm" />
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-100">{item.title}</span>
-          <span className="hidden shrink-0 text-xs text-zinc-500 md:inline">{item.source}</span>
-          <Badge className="hidden sm:inline-flex">{item.type}</Badge>
-          <DifficultyDots value={item.difficulty} />
-          <span className="hidden lg:inline-flex">
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1.5">
+              <span className="min-w-0 truncate text-sm text-ink">{item.title}</span>
+              {item.favorite && <Heart size={11} className="shrink-0 text-rose-300" fill="currentColor" />}
+            </span>
+            <span className="t-meta mt-0.5 hidden truncate sm:block">{item.subject}</span>
           </span>
-          <span className="hidden lg:inline-flex">
+          <span className="hidden shrink-0 sm:inline-flex">
+            <DifficultyDots value={item.difficulty} />
+          </span>
+          <span className="hidden shrink-0 lg:inline-flex">
             <MasteryBar value={item.mastery} />
           </span>
-          {item.favorite && <Heart size={12} className="shrink-0 text-rose-300" fill="currentColor" />}
         </button>
         <div className="flex shrink-0 items-center gap-1.5">
-          <StatusSelect value={item.status} onChange={(status: ExerciseStatus) => onUpdate(item.id, { status })} className="px-2 py-1.5 text-2xs" />
+          <span className="hidden sm:inline-flex">
+            <StatusSelect value={item.status} onChange={(status: ExerciseStatus) => onUpdate(item.id, { status })} className="px-2 py-1 text-2xs" />
+          </span>
           {selected && (
             <Button variant="ghost" size="icon" onClick={() => onFocus(item.id)} aria-label="Mode focus" className="h-8 w-8">
               <Maximize2 size={15} />

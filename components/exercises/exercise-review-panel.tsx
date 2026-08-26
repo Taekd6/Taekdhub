@@ -2,8 +2,9 @@
 
 import { ArrowRight, ListChecks, Sparkles } from "lucide-react";
 import { useMemo } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
+import { rowInteractiveClass } from "@/components/ui/section";
+import { cn } from "@/lib/cn";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { recommendExercises } from "@/lib/recommendation";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -39,30 +40,25 @@ export function ExerciseReviewPanel({
         <ListChecks size={16} className="text-accent" />
         <CardTitle className="text-base">À revoir en priorité</CardTitle>
       </div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+      {/* Des rangées, plus des cartes bordées à badges : six tuiles encadrées
+          portant chacune deux étiquettes teintées faisaient un mur d'emphase
+          où aucun titre ne ressortait — c'est pourtant le titre qu'on lit. */}
+      <ul className="mt-3 -mx-1 divide-y divide-hairline/[0.07]">
         {recommendations.map(({ exercise, reasons }) => (
-          <button
-            key={exercise.id}
-            onClick={() => onSelect(exercise.id)}
-            className="focus-ring flex min-w-0 items-center justify-between gap-3 rounded-xl border border-hairline/[0.07] p-3 text-left transition hover:border-hairline/[0.14] hover:bg-hairline/[0.025]"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+          <li key={exercise.id}>
+            <button onClick={() => onSelect(exercise.id)} className={cn(rowInteractiveClass, "w-full items-center")}>
+              <span className="mt-0.5 shrink-0">
                 <SubjectAvatar subject={exercise.subject} size="sm" />
-                <p className="truncate text-sm font-medium text-zinc-100">{exercise.title}</p>
-              </div>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {reasons.map((reason) => (
-                  <Badge key={reason} variant="warning">
-                    {reason}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            <ArrowRight size={16} className="shrink-0 text-zinc-500" />
-          </button>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm text-ink">{exercise.title}</span>
+                <span className="t-meta mt-0.5 block truncate">{reasons.join(" · ")}</span>
+              </span>
+              <ArrowRight size={15} className="shrink-0 text-subtle" />
+            </button>
+          </li>
         ))}
-      </div>
+      </ul>
     </Card>
   );
 }

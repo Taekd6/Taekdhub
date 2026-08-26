@@ -244,6 +244,7 @@ export function SessionRunner() {
         saveSessions={saveSessions}
         onClose={handleExerciseWorked}
         reasons={current.reasons}
+        progress={{ index: currentIndex, total: recommendations.length }}
       />
     );
   }
@@ -330,19 +331,18 @@ export function SessionRunner() {
                 ]}
               />
 
+              {/* Sélecteur segmenté, pas des boutons pleins : le préréglage
+                  actif portait le style « action principale » — le même que
+                  « Commencer ma séance », deux lignes plus bas. Choisir une
+                  durée n'est pas agir, c'est régler. */}
               {sizingMode === "time" ? (
                 <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
-                  {BUDGET_PRESETS.map((preset) => (
-                    <Button
-                      key={preset}
-                      type="button"
-                      size="sm"
-                      variant={budgetMinutes === preset ? "primary" : "secondary"}
-                      onClick={() => setBudgetMinutes(preset)}
-                    >
-                      {preset} min
-                    </Button>
-                  ))}
+                  <SegmentedControl
+                    ariaLabel="Temps disponible"
+                    value={budgetMinutes}
+                    onChange={setBudgetMinutes}
+                    options={BUDGET_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
+                  />
                   <div className="flex items-center gap-1.5">
                     <Input
                       type="number"
@@ -358,17 +358,12 @@ export function SessionRunner() {
                 </div>
               ) : (
                 <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
-                  {COUNT_PRESETS.map((preset) => (
-                    <Button
-                      key={preset}
-                      type="button"
-                      size="sm"
-                      variant={countTarget === preset ? "primary" : "secondary"}
-                      onClick={() => setCountTarget(preset)}
-                    >
-                      {preset}
-                    </Button>
-                  ))}
+                  <SegmentedControl
+                    ariaLabel="Nombre d'exercices"
+                    value={countTarget}
+                    onChange={setCountTarget}
+                    options={COUNT_PRESETS.map((preset) => ({ value: preset, label: String(preset) }))}
+                  />
                   <div className="flex items-center gap-1.5">
                     <Input
                       type="number"
@@ -416,7 +411,7 @@ export function SessionRunner() {
         </Card>
 
         {previewSelection.length > 0 && (
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="surface divide-y divide-hairline/[0.07] rounded-2xl px-4 py-1 sm:columns-2 sm:gap-6 sm:divide-y-0 sm:[&>*]:break-inside-avoid">
             {previewSelection.map(({ exercise, reasons }) => (
               // `min-w-0` obligatoire ici : un élément de grille a
               // `min-width: auto` par défaut, donc sa largeur minimale vaut
@@ -426,18 +421,19 @@ export function SessionRunner() {
               // largeurs mobiles (mesuré : 521 px de contenu dans 350 px
               // disponibles à 390 px de viewport), le `truncate` ne servant
               // alors jamais.
-              <div key={exercise.id} className="flex min-w-0 items-start gap-3 rounded-xl border border-hairline/[0.07] p-3 text-sm">
-                <SubjectAvatar subject={exercise.subject} size="sm" />
+              // Une ligne, pas une carte à badges : le sommaire de séance
+              // portait jusqu'à quatre étiquettes teintées par exercice, soit
+              // plus de signal d'emphase que de contenu. Durée et raisons
+              // tiennent sur une ligne secondaire, qui se lit d'un coup d'œil.
+              <div key={exercise.id} className="flex min-w-0 items-start gap-3 py-2 text-left">
+                <span className="mt-0.5 shrink-0">
+                  <SubjectAvatar subject={exercise.subject} size="sm" />
+                </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <Badge variant="accent">≈ {estimatedDurationMinutes(exercise, sessions)} min</Badge>
-                    {reasons.map((reason) => (
-                      <Badge key={reason} variant="warning">
-                        {reason}
-                      </Badge>
-                    ))}
-                  </div>
+                  <p className="truncate text-sm text-ink">{exercise.title}</p>
+                  <p className="t-meta mt-0.5 truncate">
+                    ≈ {estimatedDurationMinutes(exercise, sessions)} min{reasons.length > 0 && <> · {reasons.slice(0, 2).join(" · ")}</>}
+                  </p>
                 </div>
               </div>
             ))}

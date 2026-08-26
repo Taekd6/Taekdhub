@@ -1,12 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, Eye, EyeOff, Lightbulb, Minimize2, MinusCircle, Sparkles, X, XCircle } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Lightbulb, MinusCircle, Sparkles, X, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
-import { MasteryPicker, SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { MasteryPicker } from "@/components/exercises/exercise-badges";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { RichMath } from "@/components/rich-math";
 import { useWorkTimer } from "@/hooks/use-work-timer";
@@ -25,6 +25,7 @@ export function FocusView({
   saveSessions,
   onClose,
   reasons,
+  progress,
 }: {
   item: Exercise;
   update: (id: string, patch: Partial<Exercise>) => void;
@@ -44,6 +45,8 @@ export function FocusView({
    * justification inventée pour combler ce cas.
    */
   reasons?: string[];
+  /** Position dans la séance en cours (« 2 / 5 ») — absent hors séance, l'exercice étant alors ouvert seul depuis la banque. */
+  progress?: { index: number; total: number };
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
   const [hintCount, setHintCount] = useState(0);
@@ -228,39 +231,33 @@ export function FocusView({
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-50 flex flex-col bg-canvas"
     >
-      <header className="flex items-center justify-between gap-3 border-b border-hairline/[0.07] px-6 py-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <SubjectAvatar subject={item.subject} />
-          {/* min-w-0 + truncate : sur mobile, sans ça le titre entier
-              retombait en 5-6 lignes verticales (le bandeau chrono/boutons
-              à droite ne laissant qu'une colonne étroite au bloc titre) —
-              redondant de toute façon avec le <h1> complet juste en dessous,
-              donc tronquer ici ne perd aucune information réelle. */}
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{item.title}</p>
-            <p className="truncate text-xs text-zinc-500">{item.source}</p>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-3">
-          <span className="flex items-center gap-2 tabular-nums text-lg font-semibold text-zinc-100">
+      {/* BANDEAU DE TRAVAIL — le strict nécessaire.
+          Il répétait le titre de l'exercice, affiché en entier dans le <h1>
+          trois centimètres plus bas, et portait DEUX boutons distincts
+          (réduire, fermer) appelant la même fonction. Ne restent que les
+          informations qu'on ne peut pas lire ailleurs : où j'en suis dans la
+          séance, depuis combien de temps, et comment sortir. */}
+      <header className="flex items-center justify-between gap-3 border-b border-hairline/[0.07] px-4 py-3 sm:px-6">
+        <p className="t-meta tabular-nums">
+          {progress ? `Exercice ${progress.index + 1} sur ${progress.total}` : item.subject}
+        </p>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="flex items-center gap-2 tabular-nums text-sm font-medium text-ink">
             {running && <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent" />}
             {formatDuration(seconds)}
           </span>
-          <Button variant={running ? "secondary" : "primary"} size="sm" onClick={toggle}>
-            {running ? "Pause" : "Timer"}
+          <Button variant="ghost" size="sm" onClick={toggle}>
+            {running ? "Pause" : "Reprendre"}
           </Button>
-          <Button variant="ghost" size="icon" onClick={endSession}>
-            <Minimize2 size={18} />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={endSession}>
-            <X size={18} />
+          <Button variant="ghost" size="icon" aria-label="Terminer l'exercice" onClick={endSession}>
+            <X size={17} />
           </Button>
         </div>
       </header>
 
       {/* Contenu défilable : l'énoncé (contenu principal) prime sur le chrono, resté dans le bandeau supérieur, secondaire dans la hiérarchie visuelle. */}
-      <div className="flex-1 overflow-y-auto px-6 py-8">
-        <div className="mx-auto w-full max-w-2xl">
+      <div className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-10">
+        <div className="mx-auto w-full max-w-[42rem] pb-16">
           {/* Le titre d'abord. Les métadonnées (difficulté, type) passaient
               AVANT lui, et la molette de maîtrise — cinq pastilles — pesait
               plus lourd que l'exercice qu'elle qualifie. Elles rejoignent le
