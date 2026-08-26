@@ -2,7 +2,11 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/cn";
 
 const buttonVariants = cva(
-  "focus-ring inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 disabled:pointer-events-none disabled:opacity-50",
+  // `transition-colors` et non `transition-all` : animer toutes les propriétés
+  // fait bouger la taille au survol (padding, bordure) — un tremblement, pas
+  // une réaction. `font-medium` plutôt que `semibold` : le gras appartient aux
+  // titres, pas à chaque contrôle.
+  "focus-ring inline-flex select-none items-center justify-center gap-2 rounded-lg font-medium transition-colors duration-150 disabled:pointer-events-none disabled:opacity-40",
   {
     variants: {
       variant: {
@@ -10,10 +14,12 @@ const buttonVariants = cva(
         // COULEUR DE MARQUE telle quelle dans les deux thèmes (avec
         // `text-accent-foreground`, noir ou blanc selon sa luminance). Seule
         // l'encre — texte, icônes, teintes fines — s'assombrit en thème clair.
-        primary: "bg-accent-solid text-accent-solid-foreground hover:brightness-110 active:scale-[0.98]",
-        secondary: "border border-hairline/[0.09] bg-inset text-zinc-100 hover:border-hairline/[0.14] hover:bg-hairline/[0.04]",
-        ghost: "text-zinc-400 hover:bg-hairline/[0.04] hover:text-zinc-100",
-        danger: "border border-rose-500/20 bg-rose-500/10 text-rose-300 hover:bg-rose-500/15",
+        // UNE seule action pleine par écran : `primary` doit rester rare pour
+        // rester lisible comme « c'est ici qu'on clique ».
+        primary: "bg-accent-solid text-accent-solid-foreground hover:opacity-90 active:opacity-100",
+        secondary: "border border-hairline/[0.14] bg-transparent text-ink hover:bg-inset",
+        ghost: "text-muted hover:bg-inset hover:text-ink",
+        danger: "border border-rose-500/25 text-rose-300 hover:bg-rose-500/10",
       },
       /*
        * Hauteurs minimales explicites plutôt que « ce que le padding donne » :
@@ -29,10 +35,10 @@ const buttonVariants = cva(
        * visuelle sur les listes denses d'exercices.
        */
       size: {
-        sm: "min-h-9 px-3 py-2 text-xs max-lg:min-h-11",
-        md: "min-h-10 px-4 py-2.5 text-sm max-lg:min-h-11",
-        lg: "min-h-11 px-5 py-3 text-sm",
-        icon: "h-10 w-10 p-0 max-lg:h-11 max-lg:w-11",
+        sm: "min-h-8 gap-1.5 px-2.5 text-xs max-lg:min-h-11",
+        md: "min-h-9 px-3.5 text-sm max-lg:min-h-11",
+        lg: "min-h-11 px-5 text-sm",
+        icon: "h-9 w-9 p-0 max-lg:h-11 max-lg:w-11",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },

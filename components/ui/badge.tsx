@@ -1,7 +1,13 @@
 import { cn } from "@/lib/cn";
 
+/**
+ * Les badges étaient en CAPITALES, gras, sur fond teinté : trois signaux
+ * d'emphase pour une information de second rang, répétée jusqu'à quatre fois
+ * par ligne de liste. À ce compte-là, plus rien ne ressort. Ils redeviennent
+ * ce qu'ils sont : une étiquette discrète.
+ */
 const variants = {
-  default: "bg-hairline/[0.04] text-zinc-300",
+  default: "bg-inset text-muted",
   accent: "bg-accent/10 text-accent",
   success: "bg-emerald-400/10 text-emerald-300",
   warning: "bg-amber-400/10 text-amber-300",
@@ -21,7 +27,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide",
+        "inline-flex items-center rounded px-1.5 py-0.5 text-2xs font-medium",
         variants[variant],
         className
       )}

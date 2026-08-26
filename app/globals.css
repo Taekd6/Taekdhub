@@ -262,17 +262,10 @@
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    background:
-      radial-gradient(circle at 10% 0%, rgb(var(--accent-rgb) / 0.08), transparent 28rem),
-      radial-gradient(circle at 85% 10%, rgba(125, 161, 255, 0.07), transparent 24rem),
-      radial-gradient(circle at 50% 100%, rgb(var(--accent-rgb) / 0.03), transparent 40rem);
-    pointer-events: none;
-  }
+  /* Aucun dégradé de fond. Trois halos radiaux teintaient toutes les pages :
+     l'œil lisait une ambiance, pas une hiérarchie, et le fond « bougeait »
+     derrière des cartes censées se détacher de lui. Un fond de travail se
+     tait. */
 
   button,
   input,
@@ -315,21 +308,56 @@
  * l'échelle.
  */
 @layer components {
+  /**
+   * SURFACE — une carte, et rien d'autre.
+   *
+   * Plus de `backdrop-blur` : le flou d'arrière-plan coûte cher au rendu, ne
+   * se voyait que par-dessus les anciens dégradés, et appartient à une mode
+   * (le « verre dépoli ») plutôt qu'à une hiérarchie. Une carte se détache
+   * par sa valeur et sa bordure — c'est suffisant, et c'est net.
+   */
   .surface {
-    @apply border border-hairline/[0.09] backdrop-blur-xl;
+    @apply border border-hairline/[0.09];
     background: var(--surface-bg);
     box-shadow: var(--shadow-surface);
   }
 
   .surface-hover {
-    /* Le survol passait par `bg-elevated/90` : en thème clair, du blanc à 90 %
-       sur du blanc — donc aucun retour visuel. Le creux, lui, se voit dans les
-       deux thèmes. */
-    @apply transition-all duration-200 hover:border-hairline/[0.14] hover:bg-inset;
+    @apply transition-colors duration-150 hover:border-hairline/[0.14] hover:bg-inset;
+  }
+
+  /**
+   * ZONE EN CREUX — un bloc posé DANS une carte (tuile de liste, encart).
+   * Sans bordure ni ombre : deux cadres emboîtés font du bruit, pas de la
+   * hiérarchie. C'est la valeur du fond qui dit « ceci est à l'intérieur ».
+   */
+  .well {
+    @apply rounded-xl bg-inset;
+  }
+
+  /**
+   * ÉCHELLE TYPOGRAPHIQUE — cinq rôles nommés, au lieu d'un choix ad hoc de
+   * `text-*` à chaque écran (on comptait `text-3xl`, `2xl`, `xl`, `lg`,
+   * `base`, `sm`, `xs`, `2xs` mélangés sans règle).
+   */
+  .t-display {
+    @apply text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.02em] sm:text-[2rem];
+  }
+
+  .t-title {
+    @apply text-lg font-semibold leading-snug tracking-[-0.01em];
+  }
+
+  .t-body {
+    @apply text-sm leading-6;
+  }
+
+  .t-meta {
+    @apply text-xs leading-5 text-muted;
   }
 
   .eyebrow {
-    @apply text-2xs font-bold uppercase tracking-widest text-muted;
+    @apply text-2xs font-semibold uppercase tracking-[0.14em] text-subtle;
   }
 
   .focus-ring {

@@ -36,7 +36,7 @@ export function SegmentedControl<T extends string | number>({
     <div
       role="group"
       aria-label={ariaLabel}
-      className={cn("inline-flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-inset p-1", className)}
+      className={cn("inline-flex items-center gap-0.5 rounded-lg bg-inset p-0.5", className)}
     >
       {options.map((option) => {
         const active = option.value === value;
@@ -50,14 +50,14 @@ export function SegmentedControl<T extends string | number>({
               // `min-h-9`/`max-lg:min-h-10` : même raison que les tailles de
               // `Button` (voir components/ui/button.tsx) — mesuré à 28 px de
               // haut avant correction, bien trop court au doigt.
-              "focus-ring min-h-9 rounded-lg px-3 py-1.5 text-xs font-medium transition max-lg:min-h-10",
+              "focus-ring min-h-8 rounded-[0.4rem] px-2.5 text-xs font-medium transition-colors max-lg:min-h-10",
               // Pastille SURÉLEVÉE plutôt que teintée : une teinte d'accent à
               // 15 % se distinguait à peine de la piste en thème clair (deux
               // gris pâles côte à côte). Un fond de panneau plus une ombre
               // courte se lisent immédiatement dans les deux thèmes — c'est
               // aussi la convention que tout le monde reconnaît.
               active
-                ? "bg-panel text-ink shadow-[0_1px_2px_rgba(0,0,0,.16)] ring-1 ring-hairline/[0.07]"
+                ? "bg-panel text-ink shadow-[0_1px_2px_rgba(0,0,0,.14)]"
                 : "text-muted hover:text-ink"
             )}
           >
