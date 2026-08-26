@@ -51,8 +51,9 @@ export function Timer() {
         created_at: new Date().toISOString(),
         // Séance libre, sans exercice précis : la question "réussi/échoué"
         // n'a pas de sens ici (voir focus-view.tsx pour le seul endroit où
-        // un résultat est demandé).
+        // un résultat est demandé) — pas davantage celle des indices.
         result: null,
+        hints_used: null,
       };
       saveSessions([session, ...sessions]);
     });
@@ -62,7 +63,7 @@ export function Timer() {
     <>
       <p className="eyebrow flex items-center justify-center gap-2">
         {running && <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent" />}
-        Séance en cours
+        {running ? "Séance en cours" : "Nouvelle séance"}
       </p>
       <Select
         value={context.subject}

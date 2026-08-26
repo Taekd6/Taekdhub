@@ -1,6 +1,6 @@
 import { resultCounts, type ResultCounts } from "@/lib/history";
 import { progressByChapter, type ChapterProgress } from "@/lib/progress";
-import { computeExerciseBankStats, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { ASSISTED_HINTS_THRESHOLD, computeExerciseBankStats, explainReasons, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import type { Chapter } from "@/lib/storage";
 import { todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
@@ -108,10 +108,15 @@ export function computeNextAction(exercises: Exercise[], sessions: WorkSession[]
   const picks = bounded.length > 0 ? bounded : recommendExercises(active, sessions, NEXT_ACTION_PICKS, { now });
   const top = picks[0];
 
+  // Une phrase de contexte lisible ("pourquoi CET exercice ?"), pas les
+  // raisons brutes concaténées (voir lib/recommendation.ts#explainReasons) —
+  // c'est le tout premier endroit où l'élève doit comprendre le choix.
+  const description = top ? (explainReasons(top.reasons) ?? "Une sélection prête à l'emploi t'attend.") : "Une sélection prête à l'emploi t'attend.";
+
   return {
     kind: "start-session",
     title: top ? top.exercise.title : "Commencer une séance",
-    description: top ? top.reasons.join(" · ") : "Une sélection prête à l'emploi t'attend.",
+    description,
     ctaLabel: objective.remainingMinutes > 0 ? `Commencer une séance de ${minutes} min` : `Continuer avec une séance de ${minutes} min`,
     href: "/session",
     minutes,
@@ -207,6 +212,16 @@ export interface ChapterConsolidation {
   reasons: string[];
   /** Un exercice concret du chapitre (le premier non maîtrisé), pour ouvrir directement dessus — même convention que `computeUpcoming`. */
   href: string;
+  /**
+   * Sur quoi le verdict porte, en clair : combien de tentatives ont été
+   * examinées et sur quelle période. Le classement montrait déjà SES RAISONS
+   * ("2 échecs récents") mais pas leur assise — « récents » depuis quand,
+   * mesurés sur combien ? Un élève (ou un professeur devant l'écran) doit
+   * pouvoir contester le verdict, donc voir la preuve datée. `sinceDays` vaut
+   * `null` quand aucune tentative avec résultat n'existe : la faiblesse est
+   * alors établie sur la seule maîtrise déclarée, et il faut le dire.
+   */
+  evidence: { attempts: number; sinceDays: number | null };
 }
 
 /** Nombre maximum de chapitres montrés dans "À consolider" — voir Sprint Study OS. */
@@ -266,6 +281,17 @@ export function computeChaptersToConsolidate(
       if (failureCount >= 2) reasons.push(`${failureCount} échecs récents`);
       else if (recentAttempts[0]?.result === "échoué") reasons.push("Échec récent");
 
+      // Recours répété aux indices SUR L'ENSEMBLE du chapitre : un élève qui
+      // ne s'en sort qu'aidé, exercice après exercice, révèle une fragilité
+      // que ni `result` (il a « réussi ») ni `mastery` (qu'il a pu monter
+      // lui-même) ne montrent. C'est le seul endroit où ce signal se lit à
+      // l'échelle d'un chapitre — au niveau d'un exercice isolé, il est trop
+      // ponctuel pour conclure.
+      const assistedCount = recentAttempts.filter(
+        (attempt) => attempt.result === "réussi" && attempt.hints_used !== null && attempt.hints_used >= ASSISTED_HINTS_THRESHOLD
+      ).length;
+      if (assistedCount >= 2) reasons.push(`${assistedCount} réussites avec indices`);
+
       const lastWorkedTimestamps = chapterExercises
         .map((exercise) => exercise.last_worked_at)
         .filter((value): value is string => value !== null)
@@ -276,12 +302,17 @@ export function computeChaptersToConsolidate(
       }
 
       const candidate = chapterExercises.find((exercise) => exercise.status !== "maîtrisé") ?? chapterExercises[0];
+      const oldestAttempt = recentAttempts[recentAttempts.length - 1];
 
       return {
         chapter: entry.chapter,
         averageMastery: entry.averageMastery,
         reasons,
         href: candidate ? `/exercises?focus=${candidate.id}` : "/exercises",
+        evidence: {
+          attempts: recentAttempts.length,
+          sinceDays: oldestAttempt ? Math.floor((now.getTime() - new Date(oldestAttempt.started_at).getTime()) / 86400000) : null,
+        },
       };
     })
     .filter((entry): entry is ChapterConsolidation => entry !== null && entry.reasons.length > 0)

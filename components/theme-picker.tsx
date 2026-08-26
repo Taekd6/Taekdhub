@@ -67,7 +67,7 @@ export function ThemePicker() {
         </div>
       </div>
 
-      <div className="mt-6 border-t border-hairline/[0.06] pt-5">
+      <div className="mt-6 border-t border-hairline/[0.07] pt-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold text-zinc-200">Couleur principale</h2>
@@ -79,7 +79,7 @@ export function ThemePicker() {
             <button
               type="button"
               onClick={() => choose(DEFAULT_ACCENT)}
-              className="focus-ring flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-zinc-500 hover:bg-hairline/[0.045] hover:text-zinc-300"
+              className="focus-ring flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-zinc-500 hover:bg-hairline/[0.04] hover:text-zinc-300"
             >
               <RotateCcw size={13} /> Réinitialiser
             </button>

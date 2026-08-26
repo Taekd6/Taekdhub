@@ -8,14 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { SegmentedControl } from "@/components/ui/segmented";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
-import { computeExerciseBankStats, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { computeExerciseBankStats, estimatedDurationMinutes, explainReasons, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import { computeNextAction } from "@/lib/next-action";
 import { PLAN_STORAGE_KEY, type StoredPlan } from "@/lib/plan";
-import { cn } from "@/lib/cn";
 import { subjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
 import type { AttemptResult, Exercise, Subject } from "@/lib/supabase/types";
@@ -43,7 +43,7 @@ type SizingMode = "time" | "count";
  * IMPORTANT (précision produit) : quitter le Focus signifie "exercice
  * travaillé", jamais "exercice réussi". Le statut et la maîtrise ne
  * changent QUE si l'utilisateur les modifie explicitement dans `FocusView`
- * (PriorityPicker / MasteryPicker / boutons de statut, déjà existants) —
+ * (MasteryPicker / boutons de statut, déjà existants) —
  * ce composant ne les touche jamais lui-même.
  *
  * Contexte matière (Sprint 3.1, depuis "Prêt pour le DS ?" — lib/readiness.ts) :
@@ -67,8 +67,10 @@ export function SessionRunner() {
   const [countTarget, setCountTarget] = useState(10);
   /** Matière imposée par `?subject=`, ou `null` pour une séance normale (toute la banque) — voir la note Sprint 3.1 ci-dessus. */
   const [contextSubject, setContextSubject] = useState<Subject | null>(null);
-  /** Sélection déposée par le Dashboard ("Commencer le plan", voir lib/plan.ts) — remplace `computedSelection` tel quel quand elle est présente, jamais recalculée ici. `null` : comportement normal, inchangé. */
+  /** Sélection déposée par le Dashboard ("Commencer le plan") ou par la banque d'exercices ("Séance libre", voir lib/plan.ts) — remplace `computedSelection` tel quel quand elle est présente, jamais recalculée ici. `null` : comportement normal, inchangé. */
   const [planSelection, setPlanSelection] = useState<ExerciseRecommendation[] | null>(null);
+  /** D'où vient `planSelection` — distingue uniquement le texte affiché à l'écran d'aperçu (voir StoredPlan.source, lib/plan.ts) ; la mécanique de séance est identique dans les deux cas. */
+  const [planSource, setPlanSource] = useState<"plan-du-jour" | "libre">("plan-du-jour");
   const initialized = useRef(false);
 
   // Décide une seule fois, au montage, entre reprendre un focus interrompu
@@ -120,6 +122,7 @@ export function SessionRunner() {
           .filter((item): item is ExerciseRecommendation => item !== null);
         if (picks.length > 0) {
           setPlanSelection(picks);
+          setPlanSource(stored.source ?? "plan-du-jour");
           setBudgetMinutes(stored.requestedMinutes);
           setPhase("preview");
           return;
@@ -231,9 +234,18 @@ export function SessionRunner() {
   }
 
   if (phase === "focus") {
-    const current = recommendations[currentIndex]?.exercise;
+    const current = recommendations[currentIndex];
     if (!current) return null;
-    return <FocusView item={current} update={update} sessions={sessions} saveSessions={saveSessions} onClose={handleExerciseWorked} />;
+    return (
+      <FocusView
+        item={current.exercise}
+        update={update}
+        sessions={sessions}
+        saveSessions={saveSessions}
+        onClose={handleExerciseWorked}
+        reasons={current.reasons}
+      />
+    );
   }
 
   // Contenu par phase, calculé (pas retourné directement) pour que chaque
@@ -273,12 +285,21 @@ export function SessionRunner() {
           <PlayCircle className="mx-auto text-accent" size={28} />
 
           {planSelection ? (
-            <>
-              <h2 className="mt-4 text-xl font-semibold tracking-tight">Ton plan du jour</h2>
-              <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
-                Réparti sur tes matières prioritaires, dans le temps que tu as choisi depuis le tableau de bord.
-              </p>
-            </>
+            planSource === "libre" ? (
+              <>
+                <h2 className="mt-4 text-xl font-semibold tracking-tight">Ta séance libre</h2>
+                <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+                  Exactement la sélection choisie dans la banque d&apos;exercices — matière, chapitre, sous-thème et difficulté filtrés à la main.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="mt-4 text-xl font-semibold tracking-tight">Ton plan du jour</h2>
+                <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+                  Réparti sur tes matières prioritaires, dans le temps que tu as choisi depuis le tableau de bord.
+                </p>
+              </>
+            )
           ) : (
             <>
               <h2 className="mt-4 text-xl font-semibold tracking-tight">
@@ -298,24 +319,16 @@ export function SessionRunner() {
                 </p>
               )}
 
-              <div className="mx-auto mt-5 inline-flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-black/20 p-1">
-                <button
-                  type="button"
-                  onClick={() => setSizingMode("time")}
-                  aria-pressed={sizingMode === "time"}
-                  className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "time" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
-                >
-                  Par temps
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSizingMode("count")}
-                  aria-pressed={sizingMode === "count"}
-                  className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition", sizingMode === "count" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
-                >
-                  Par nombre d&apos;exercices
-                </button>
-              </div>
+              <SegmentedControl
+                className="mx-auto mt-5"
+                ariaLabel="Dimensionner la séance"
+                value={sizingMode}
+                onChange={setSizingMode}
+                options={[
+                  { value: "time", label: "Par temps" },
+                  { value: "count", label: "Par nombre d'exercices" },
+                ]}
+              />
 
               {sizingMode === "time" ? (
                 <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
@@ -405,7 +418,15 @@ export function SessionRunner() {
         {previewSelection.length > 0 && (
           <div className="grid gap-2 sm:grid-cols-2">
             {previewSelection.map(({ exercise, reasons }) => (
-              <div key={exercise.id} className="flex items-start gap-3 rounded-xl border border-hairline/[0.06] p-3 text-sm">
+              // `min-w-0` obligatoire ici : un élément de grille a
+              // `min-width: auto` par défaut, donc sa largeur minimale vaut
+              // celle de son contenu — et le titre en `truncate`
+              // (white-space: nowrap) réclame la ligne entière. Sans ça,
+              // l'aperçu de séance débordait horizontalement à TOUTES les
+              // largeurs mobiles (mesuré : 521 px de contenu dans 350 px
+              // disponibles à 390 px de viewport), le `truncate` ne servant
+              // alors jamais.
+              <div key={exercise.id} className="flex min-w-0 items-start gap-3 rounded-xl border border-hairline/[0.07] p-3 text-sm">
                 <SubjectAvatar subject={exercise.subject} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
@@ -426,7 +447,10 @@ export function SessionRunner() {
     );
   } else if (phase === "between") {
     const done = recommendations[currentIndex]?.exercise;
-    const next = recommendations[currentIndex + 1]?.exercise;
+    const nextPick = recommendations[currentIndex + 1];
+    // Même sentence qu'en Focus (explainReasons) : la continuité "pourquoi le
+    // suivant ?" ne doit pas s'arrêter à un simple titre entre deux exercices.
+    const nextReason = nextPick ? explainReasons(nextPick.reasons) : null;
     content = (
       <Card className="p-8 text-center">
         <CheckCircle2 className="mx-auto text-accent" size={28} />
@@ -434,8 +458,9 @@ export function SessionRunner() {
         {done && <p className="mt-2 text-sm text-zinc-400">{done.title}</p>}
         <p className="mt-1 text-xs text-zinc-500">
           {currentIndex + 1} / {recommendations.length}
-          {next && <> · Prochain : {next.title}</>}
+          {nextPick && <> · Prochain : {nextPick.exercise.title}</>}
         </p>
+        {nextReason && <p className="mx-auto mt-2 max-w-sm text-xs text-accent/90">{nextReason}</p>}
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Button onClick={continueToNext}>
             Continuer <ArrowRight size={16} />
@@ -478,7 +503,7 @@ export function SessionRunner() {
         )}
 
         {upcomingNextAction.kind === "start-session" && (
-          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-hairline/[0.08] bg-hairline/[0.025] p-5 text-left">
+          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-hairline/[0.09] bg-hairline/[0.025] p-5 text-left">
             <p className="eyebrow">Et maintenant ?</p>
             <p className="mt-2 text-sm font-medium text-zinc-100">{upcomingNextAction.title}</p>
             <p className="mt-1 text-xs leading-5 text-zinc-500">{upcomingNextAction.description}</p>

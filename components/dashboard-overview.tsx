@@ -11,7 +11,6 @@ import {
   CalendarClock,
   CalendarRange,
   Clock3,
-  Flag,
   Flame,
   GraduationCap,
   History as HistoryIcon,
@@ -27,9 +26,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress";
+import { SegmentedControl } from "@/components/ui/segmented";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { cn } from "@/lib/cn";
 import { computeStreak } from "@/lib/gamification";
 import { recentDaySummaries } from "@/lib/history";
 import {
@@ -41,12 +40,11 @@ import {
 } from "@/lib/next-action";
 import {
   computeDailyPlan,
-  computeSubjectPriorities,
   DEFAULT_PLAN_MINUTES,
   PLAN_DURATION_PRESETS,
+  PLAN_INTENT_META,
   PLAN_STORAGE_KEY,
   serializePlan,
-  type SubjectPriorityLevel,
 } from "@/lib/plan";
 import { computeProgressBySubject } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META } from "@/lib/readiness";
@@ -59,13 +57,6 @@ const UPCOMING_META: Record<UpcomingItem["key"], { label: string; icon: typeof B
   chapter: { label: "Chapitre à consolider", icon: BookOpenCheck },
   subject: { label: "Matière délaissée", icon: CalendarClock },
   review: { label: "Révision due", icon: ListChecks },
-};
-
-/** Point de statut "Priorités de la semaine" — mêmes couleurs que `READINESS_DOT_CLASS` ci-dessous, un seul vocabulaire visuel pour tout niveau qualitatif du Dashboard. */
-const PRIORITY_META: Record<SubjectPriorityLevel, { dot: string; label: string }> = {
-  "critique": { dot: "bg-rose-400", label: "Critique" },
-  "à surveiller": { dot: "bg-amber-400", label: "À surveiller" },
-  "correct": { dot: "bg-emerald-400", label: "Correct" },
 };
 
 /** Couleur du point de statut "Prêt pour le DS ?" — dérivée de la même variante de badge que `READINESS_META` (lib/readiness.ts), jamais un second système de couleurs. */
@@ -102,7 +93,6 @@ export function DashboardOverview() {
       recentDays: recentDaySummaries(sessions, now, 5),
       readiness: computeReadinessBySubject(exercises, sessions, now),
       weeklySummary: computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now),
-      subjectPriorities: computeSubjectPriorities(exercises, sessions, chapters, now),
       streak: computeStreak(sessions),
       contestDays: preferences.contestDate
         ? Math.max(0, Math.ceil((new Date(preferences.contestDate).getTime() - now.getTime()) / 86400000))
@@ -136,13 +126,14 @@ export function DashboardOverview() {
     );
   }
 
-  const { nextAction, objective, upcoming, progress, bySubject, toConsolidate, recentDays, readiness, weeklySummary, subjectPriorities, streak, contestDays } = model;
+  const { nextAction, objective, upcoming, progress, bySubject, toConsolidate, recentDays, readiness, weeklySummary, streak, contestDays } = model;
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
   const secondaryPicks = nextAction.picks.slice(1);
   // "Revoir mes priorités" (Phase 8) : ouvre directement le premier exercice déjà signalé par le moteur de recommandation — même convention que computeUpcoming (lib/next-action.ts), aucune nouvelle route.
-  const prioritiesHref = nextAction.picks[0] ? `/exercises?focus=${nextAction.picks[0].exercise.id}` : "/exercises";
   // "Prochainement" ne montre plus le chapitre le plus faible : la section "À consolider" ci-dessous couvre ce signal en mieux (plusieurs chapitres, raisons explicites) — computeUpcoming lui-même reste inchangé (voir lib/next-action.test.ts).
   const otherSignals = upcoming.filter((item) => item.key !== "chapter");
+  const subjectsInBank = new Set(bySubject.map((entry) => entry.subject));
+  const weekSubjects = weeklySummary.bySubject.filter((entry) => subjectsInBank.has(entry.subject) || entry.seconds > 0);
 
   return (
     <div className="space-y-6">
@@ -191,7 +182,7 @@ export function DashboardOverview() {
                 <Link
                   key={exercise.id}
                   href={`/exercises?focus=${exercise.id}`}
-                  className="focus-ring flex min-w-0 items-center gap-3 rounded-xl border border-hairline/[0.06] p-3 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                  className="focus-ring flex min-w-0 items-center gap-3 rounded-xl border border-hairline/[0.07] p-3 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.025]"
                 >
                   <SubjectAvatar subject={exercise.subject} size="sm" />
                   <div className="min-w-0 flex-1">
@@ -211,30 +202,6 @@ export function DashboardOverview() {
         </div>
       </motion.section>
 
-      {/* RACCOURCIS D'ACTION */}
-      <section className="flex flex-wrap gap-2.5">
-        <Link href="/session?minutes=30">
-          <Button variant="secondary" size="sm">
-            Commencer 30 min
-          </Button>
-        </Link>
-        <Link href="/session?minutes=45">
-          <Button variant="secondary" size="sm">
-            Commencer 45 min
-          </Button>
-        </Link>
-        <Link href={prioritiesHref}>
-          <Button variant="secondary" size="sm">
-            Revoir mes priorités
-          </Button>
-        </Link>
-        <Link href="/progress">
-          <Button variant="secondary" size="sm">
-            Voir ma progression
-          </Button>
-        </Link>
-      </section>
-
       {/* PLAN DU JOUR */}
       <Card className="p-6 sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -245,22 +212,12 @@ export function DashboardOverview() {
               <CardTitle className="mt-1 text-lg">Ce que tu devrais travailler aujourd&apos;hui</CardTitle>
             </div>
           </div>
-          <div className="inline-flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-black/20 p-1">
-            {PLAN_DURATION_PRESETS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => setPlanMinutes(preset)}
-                aria-pressed={planMinutes === preset}
-                className={cn(
-                  "rounded-lg px-3 py-1.5 text-xs font-medium transition",
-                  planMinutes === preset ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300"
-                )}
-              >
-                {preset} min
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            ariaLabel="Durée du plan du jour"
+            value={planMinutes}
+            onChange={setPlanMinutes}
+            options={PLAN_DURATION_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
+          />
         </div>
 
         {dailyPlan.blocks.length === 0 ? (
@@ -269,21 +226,33 @@ export function DashboardOverview() {
           </p>
         ) : (
           <>
+            {/* Un bloc = une INTENTION pédagogique (consolider / réviser /
+                progresser), plus une matière. L'élève lit désormais à quoi
+                sert chaque partie de sa séance, pas seulement de quelle
+                matière elle relève — c'est ce que le plan décide réellement.
+                Le nom des chapitres travaillés reste affiché juste en
+                dessous : l'intention sans le contenu serait creuse. */}
             <ol className="mt-5 space-y-2.5">
               {dailyPlan.blocks.map((block, index) => (
-                <li key={block.subject} className="flex items-start gap-3 rounded-xl border border-hairline/[0.06] p-3.5 text-sm">
+                <li key={block.intent} className="flex items-start gap-3 rounded-xl border border-hairline/[0.07] p-3.5 text-sm">
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent">{index + 1}</span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                      <p className="truncate font-medium text-zinc-100">{block.label}</p>
+                      <p className="font-medium text-zinc-100">
+                        {block.label}{" "}
+                        <span className="font-normal text-zinc-500">— {PLAN_INTENT_META[block.intent].description}</span>
+                      </p>
                       <span className="shrink-0 text-xs text-zinc-500">{block.estimatedMinutes} min</span>
                     </div>
-                    <p className="mt-1 text-xs text-zinc-500">{block.pickLabel}</p>
+                    <p className="mt-1 truncate text-xs text-zinc-400">{block.focus}</p>
+                    <p className="mt-0.5 text-2xs text-zinc-500">
+                      {block.picks.length} exercice{block.picks.length > 1 ? "s" : ""}
+                    </p>
                   </div>
                 </li>
               ))}
             </ol>
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.06] pt-5">
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.07] pt-5">
               <p className="text-sm text-zinc-400">
                 Total : <span className="font-semibold text-zinc-100">{formatMinutes(dailyPlan.totalMinutes)}</span> · {dailyPlan.totalExercises} exercice
                 {dailyPlan.totalExercises > 1 ? "s" : ""}
@@ -295,30 +264,6 @@ export function DashboardOverview() {
           </>
         )}
       </Card>
-
-      {/* PRIORITÉS DE LA SEMAINE — "pourquoi" : juste après le plan, avant les chiffres d'état ("où j'en suis" ci-dessous), pour rester dans l'ordre de lecture quoi → pourquoi → où j'en suis → comment (voir la doc du composant). */}
-      {subjectPriorities.length > 0 && (
-        <Card className="p-6">
-          <div className="flex items-center gap-2">
-            <Flag size={14} className="text-accent" />
-            <p className="eyebrow">Priorités de la semaine</p>
-          </div>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2">
-            {subjectPriorities.map(({ subject, label, level, reason }) => {
-              const meta = PRIORITY_META[level];
-              return (
-                <div key={subject} className="flex items-center justify-between gap-3 rounded-xl border border-hairline/[0.06] px-3.5 py-2.5 text-sm">
-                  <span className="flex items-center gap-2 font-medium text-zinc-100">
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
-                    {label}
-                  </span>
-                  <span className="text-right text-xs text-zinc-500">{reason}</span>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
 
       {/* À CONSOLIDER — même logique "pourquoi", au niveau du chapitre. */}
       {chapters.length > 0 && (
@@ -339,7 +284,7 @@ export function DashboardOverview() {
                 <Link
                   key={chapter.id}
                   href={href}
-                  className="focus-ring flex flex-col gap-2.5 rounded-xl border border-hairline/[0.06] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                  className="focus-ring flex flex-col gap-2.5 rounded-xl border border-hairline/[0.07] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.025]"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="min-w-0 truncate font-medium text-zinc-100">{chapter.label}</p>
@@ -365,7 +310,11 @@ export function DashboardOverview() {
 
       {/* OBJECTIF DU JOUR + TA PROGRESSION — "où j'en suis" à partir d'ici. */}
       <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
-        <Card className="rounded-3xl p-6 sm:p-7">
+        {/* Rayon laissé au défaut de `Card` (rounded-2xl) : cette carte est
+            posée côte à côte avec "Ta progression" dans la même grille, et un
+            rounded-3xl ici donnait deux rayons différents pour deux cartes de
+            même niveau, visibles l'une à côté de l'autre. */}
+        <Card className="p-6 sm:p-7">
           <div className="flex items-start justify-between">
             <div>
               <p className="eyebrow">Objectif du jour</p>
@@ -390,23 +339,21 @@ export function DashboardOverview() {
             )}
           </p>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            {objective.workedMinutes === 0 && !objective.met ? (
-              <Link href={`/session?minutes=${objective.goalMinutes > 0 ? Math.min(objective.goalMinutes, 60) : 45}`}>
-                <Button size="sm">
-                  Commencer une session <ArrowRight size={13} />
+          {/* Reprendre, jamais commencer : tant que la journée n'a rien
+              enregistré, cette carte n'est qu'un état — le départ appartient
+              au héros ("À faire maintenant") et au Plan du jour, qui y
+              attachent une intention. Le Dashboard offrait jusqu'à sept
+              départs de séance concurrents, dont celui-ci pointait exactement
+              sur la même destination et la même durée que le héros. */}
+          {!objective.met && objective.workedMinutes > 0 && (
+            <div className="mt-5">
+              <Link href={`/session?minutes=${Math.min(objective.remainingMinutes, 90)}`}>
+                <Button variant="secondary" size="sm">
+                  Continuer — {objective.remainingMinutes} min <ArrowRight size={13} />
                 </Button>
               </Link>
-            ) : (
-              PLAN_DURATION_PRESETS.map((preset) => (
-                <Link key={preset} href={`/session?minutes=${preset}`}>
-                  <Button variant="secondary" size="sm">
-                    {preset} min
-                  </Button>
-                </Link>
-              ))
-            )}
-          </div>
+            </div>
+          )}
         </Card>
 
         <Card className="p-6">
@@ -435,7 +382,14 @@ export function DashboardOverview() {
               <p className="mt-0.5 text-xs text-zinc-500">Temps travaillé</p>
             </div>
           </div>
-          <Link href="/progress" className="mt-5 inline-flex items-center gap-1.5 text-xs text-accent hover:underline">
+          {/* `-mx-2 px-2 py-2` : lien de navigation réel, pas un mot dans une
+              phrase — mesuré à 16 px de haut, la plus petite cible tactile de
+              tout le Dashboard. Le padding négatif conserve l'alignement
+              optique du texte sur la colonne. */}
+          <Link
+            href="/progress"
+            className="focus-ring -mx-2 mt-4 inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 py-2 text-xs text-accent hover:underline max-lg:min-h-11"
+          >
             Voir le détail <ArrowRight size={12} />
           </Link>
         </Card>
@@ -457,9 +411,15 @@ export function DashboardOverview() {
           <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">{weeklySummary.progressPercent}%</span>
         </div>
         <ProgressBar value={weeklySummary.progressPercent} className="mt-5" />
-        {weeklySummary.bySubject.length > 0 && (
+        {/* `weeklyTimeBySubject` renvoie volontairement les SEPT matières du
+            référentiel (lib/study.ts) — c'est ce qu'il faut pour détecter une
+            matière délaissée. Mais les afficher toutes signifiait, sur une
+            banque qui n'en couvre que trois, quatre lignes « 0:00 »
+            perpétuelles : pas un résultat, un remplissage. On ne montre que
+            les matières qui ont réellement quelque chose à travailler. */}
+        {weekSubjects.length > 0 && (
           <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-zinc-500">
-            {weeklySummary.bySubject.map(({ subject, seconds }) => (
+            {weekSubjects.map(({ subject, seconds }) => (
               <span key={subject}>
                 {subject} : <span className="text-zinc-300">{formatDuration(seconds)}</span>
               </span>
@@ -485,7 +445,7 @@ export function DashboardOverview() {
                   <Link
                     key={subject}
                     href={`/progress#subject-${subjectMeta[subject].short}`}
-                    className="focus-ring -mx-2 block rounded-lg px-2 py-1 transition hover:bg-hairline/[0.02]"
+                    className="focus-ring -mx-2 block rounded-lg px-2 py-1 transition hover:bg-hairline/[0.025]"
                   >
                     <div className="flex items-center justify-between text-sm">
                       <span className="flex items-center gap-2 font-medium text-zinc-200">
@@ -519,7 +479,7 @@ export function DashboardOverview() {
                     <Link
                       key={subject}
                       href="/progress"
-                      className="focus-ring flex items-center justify-between gap-2 rounded-xl border border-hairline/[0.06] px-3.5 py-2.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                      className="focus-ring flex items-center justify-between gap-2 rounded-xl border border-hairline/[0.07] px-3.5 py-2.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.025]"
                     >
                       <span className="font-medium text-zinc-100">{subject}</span>
                       <span className="flex items-center gap-1.5 text-xs text-zinc-400">
@@ -571,7 +531,7 @@ export function DashboardOverview() {
                 <Link
                   key={item.key}
                   href={item.href}
-                  className="focus-ring flex min-w-0 flex-col gap-2 rounded-xl border border-hairline/[0.06] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.02]"
+                  className="focus-ring flex min-w-0 flex-col gap-2 rounded-xl border border-hairline/[0.07] p-3.5 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.025]"
                 >
                   <span className="flex items-center gap-1.5 text-xs text-zinc-500">
                     <Icon size={12} /> {meta.label}

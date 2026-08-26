@@ -1,12 +1,38 @@
 import Link from "next/link";
-import { ArrowRight, BookOpenCheck, Clock3, Sparkles, Target, Zap } from "lucide-react";
+import { ArrowRight, CalendarClock, ListChecks, Sparkles, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+/**
+ * Ce que le produit fait RÉELLEMENT aujourd'hui.
+ *
+ * L'ancienne liste décrivait des mécaniques ("heatmap, streak, XP") plutôt que
+ * des bénéfices, et l'une d'elles était devenue fausse : « Gagne de l'XP à
+ * chaque séance et exercice terminé » promettait exactement l'automatisme qui
+ * a été supprimé — l'XP exige désormais une réussite prouvée. Une page
+ * d'accueil qui promet ce que le produit ne fait plus est le plus court chemin
+ * vers la déception au premier usage.
+ */
 const features = [
-  { icon: Clock3, title: "Focus timer", desc: "Séances de travail mesurées et enregistrées automatiquement." },
-  { icon: BookOpenCheck, title: "Banque d'exercices", desc: "Organise, filtre et résous tes exercices avec indices progressifs." },
-  { icon: Target, title: "Progression", desc: "Heatmap, streak, XP et statistiques par matière." },
-  { icon: Zap, title: "Gamification", desc: "Gagne de l'XP à chaque séance et exercice terminé." },
+  {
+    icon: Target,
+    title: "Il sait quoi te faire travailler",
+    desc: "402 exercices classés en continu selon tes résultats réels — et chaque recommandation dit pourquoi elle est là.",
+  },
+  {
+    icon: CalendarClock,
+    title: "Un plan adapté au temps que tu as",
+    desc: "20 minutes ou 90 : la séance ne fait pas que s'allonger, sa structure change. Réparer d'abord, entretenir ensuite.",
+  },
+  {
+    icon: ListChecks,
+    title: "Réussir seul ≠ réussir aidé",
+    desc: "Les indices que tu révèles sont comptés. Un exercice arraché aux indices revient ; une réussite autonome, non.",
+  },
+  {
+    icon: Sparkles,
+    title: "Tes points faibles, avec les preuves",
+    desc: "Trois chapitres prioritaires, chacun justifié par tes tentatives datées. Rien d'inventé, rien de décoratif.",
+  },
 ];
 
 export default function Home() {
@@ -15,7 +41,7 @@ export default function Home() {
       <div className="mx-auto max-w-5xl">
         <header className="flex min-h-[85vh] flex-col justify-center">
           <div className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-accent-foreground shadow-glow">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-solid text-accent-foreground shadow-glow">
               <Sparkles size={16} />
             </span>
             <p className="eyebrow text-accent">TaekdHub</p>
@@ -24,7 +50,8 @@ export default function Home() {
             Chaque heure <span className="text-gradient">compte.</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-8 text-muted">
-            Un espace calme pour piloter ton travail, consolider tes acquis et avancer avec précision en prépa scientifique.
+            TaekdHub regarde ce que tu réussis, ce que tu rates et ce que tu n&apos;obtiens qu&apos;avec des indices, puis te dit quoi
+            travailler maintenant — et pourquoi. Pour la prépa scientifique.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
             <Link href="/dashboard">
@@ -34,7 +61,7 @@ export default function Home() {
             </Link>
             <Link href="/exercises">
               <Button size="lg" variant="secondary">
-                Voir les exercices
+                Parcourir les 402 exercices
               </Button>
             </Link>
           </div>

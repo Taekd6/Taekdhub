@@ -11,13 +11,18 @@ import "./globals.css";
  * inline (ne peut pas importer de module, voir lib/theme.ts pour la version
  * "propre"), `ThemeSync` prend le relais après hydratation.
  *
+ * Calcule aussi `--accent-ink-base-rgb` (l'accent assombri pour servir
+ * d'encre en thème clair) — même formule que `accentInk` (lib/theme.ts),
+ * dupliquée ici pour la même raison que le reste de ce script : il ne peut
+ * pas importer de module.
+ *
  * Mode : "light"/"dark" pose `data-theme` sur `<html>` ; "system" (ou
  * préférence absente/invalide) ne pose rien — voir app/globals.css, qui
  * laisse alors `prefers-color-scheme` décider. C'est la même règle que
  * `applyThemeMode` (lib/theme.ts), dupliquée ici pour la même raison que
  * l'accent ci-dessus.
  */
-const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('prepahub:preferences');if(!raw)return;var prefs=JSON.parse(raw);var accent=prefs.accent;if(/^#?[0-9a-fA-F]{6}$/.test(accent||'')){var hex=accent.replace('#','');var r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);var lin=function(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);};var lum=0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b);var fg=lum>0.45?'0 0 0':'255 255 255';var root=document.documentElement.style;root.setProperty('--accent-rgb',r+' '+g+' '+b);root.setProperty('--accent-fg-rgb',fg);}var mode=prefs.themeMode;if(mode==='light'||mode==='dark'){document.documentElement.setAttribute('data-theme',mode);}}catch(e){}})();`;
+const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('prepahub:preferences');if(!raw)return;var prefs=JSON.parse(raw);var accent=prefs.accent;if(/^#?[0-9a-fA-F]{6}$/.test(accent||'')){var hex=accent.replace('#','');var r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);var lin=function(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);};var L=function(rr,gg,bb){return 0.2126*lin(rr)+0.7152*lin(gg)+0.0722*lin(bb);};var lum=L(r,g,b);var fg=lum>0.45?'0 0 0':'255 255 255';var root=document.documentElement.style;root.setProperty('--accent-rgb',r+' '+g+' '+b);root.setProperty('--accent-fg-rgb',fg);var lo=0,hi=1;if(lum>0.174){for(var i=0;i<24;i++){var m=(lo+hi)/2;if(L(r*m,g*m,b*m)>0.174){hi=m;}else{lo=m;}}}else{lo=1;}root.setProperty('--accent-ink-base-rgb',Math.round(r*lo)+' '+Math.round(g*lo)+' '+Math.round(b*lo));}var mode=prefs.themeMode;if(mode==='light'||mode==='dark'){document.documentElement.setAttribute('data-theme',mode);}}catch(e){}})();`;
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,9 +30,38 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+/**
+ * `metadataBase` est requis pour que Next résolve les URL relatives des
+ * balises Open Graph — sans lui, elles sont émises telles quelles et aucun
+ * réseau ne sait quoi en faire. Surchargée par NEXT_PUBLIC_SITE_URL pour
+ * qu'une préversion ne prétende pas être le site de production.
+ */
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://taekdhub.vercel.app";
+const TITLE = "TaekdHub — Ton système de travail en prépa";
+const DESCRIPTION =
+  "TaekdHub regarde ce que tu réussis, ce que tu rates et ce que tu n'obtiens qu'avec des indices, puis te dit quoi travailler maintenant — et pourquoi.";
+
 export const metadata: Metadata = {
-  title: "TaekdHub — Ton système de travail en prépa",
-  description: "Pilote ton travail, consolide tes acquis et avance avec précision.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  applicationName: "TaekdHub",
+  // Un lien de prépa se partage en message privé (WhatsApp, Discord, iMessage) :
+  // sans Open Graph, il n'apparaît que comme une URL nue, sans titre ni
+  // aperçu — le produit a l'air inachevé avant même d'être ouvert.
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    siteName: "TaekdHub",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE_URL,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

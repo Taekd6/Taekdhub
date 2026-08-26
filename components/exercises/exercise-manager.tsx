@@ -9,7 +9,6 @@ import { Select } from "@/components/ui/input";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { ArchivedExercises } from "@/components/exercises/archived-exercises";
-import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { ExerciseBrowser } from "@/components/exercises/exercise-browser";
 import { ExerciseFiltersBar } from "@/components/exercises/exercise-filters-bar";
 import { ExerciseForm, type NewExerciseInput } from "@/components/exercises/exercise-form";
@@ -19,10 +18,11 @@ import { ExerciseListRow } from "@/components/exercises/exercise-list-row";
 import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { addChapter, removeChapter, renameChapter } from "@/lib/chapters";
-import { chapterOptionsForSubject, defaultExerciseFilters, distinctYears, filterExercises, type ExerciseFilters } from "@/lib/exercise-filters";
+import { chapterOptionsForSubject, defaultExerciseFilters, difficultyOptionsForFilters, distinctYears, filterExercises, tagOptionsForFilters, type ExerciseFilters } from "@/lib/exercise-filters";
 import { defaultExerciseSort, exerciseSortOptions, sortExercises, type ExerciseSort } from "@/lib/exercise-sort";
 import { createExerciseFromInput } from "@/lib/exercise-import";
-import type { Chapter } from "@/lib/storage";
+import { SessionBuilderBar } from "@/components/exercises/session-builder-bar";
+import { recommendExercises } from "@/lib/recommendation";
 import { minutesByExerciseMap } from "@/lib/study";
 import { cn } from "@/lib/cn";
 import type { Exercise, Subject } from "@/lib/supabase/types";
@@ -220,6 +220,14 @@ export function ExerciseManager() {
   );
 
   const chapterOptions = useMemo(() => chapterOptionsForSubject(chapters, filters.subject), [chapters, filters.subject]);
+  const tagOptions = useMemo(
+    () => tagOptionsForFilters(exercises, { subject: filters.subject, chapter: filters.chapter }),
+    [exercises, filters.subject, filters.chapter]
+  );
+  const difficultyOptions = useMemo(
+    () => difficultyOptionsForFilters(exercises, { subject: filters.subject, chapter: filters.chapter }),
+    [exercises, filters.subject, filters.chapter]
+  );
   const yearOptions = useMemo(() => distinctYears(exercises), [exercises]);
 
   // Un chapitre filtré peut devenir invalide si on change de matière : on le
@@ -231,16 +239,48 @@ export function ExerciseManager() {
     }
   }, [chapterOptions, filters.chapter, updateFilters]);
 
+  // Même logique que ci-dessus pour le sous-thème (Phase 7 pédagogie) : un
+  // tag filtré peut ne plus exister dans le périmètre matière/chapitre choisi
+  // (ex. on change de chapitre après avoir sélectionné un sous-thème propre à
+  // l'ancien) — on le réinitialise plutôt que de masquer silencieusement toute
+  // la liste avec un filtre impossible.
+  useEffect(() => {
+    if (filters.tag !== "Toutes" && !tagOptions.includes(filters.tag)) {
+      updateFilters({ tag: "Toutes" });
+    }
+  }, [tagOptions, filters.tag, updateFilters]);
+
   // Un seul passage sur `sessions` pour calculer le temps passé de TOUS les
   // exercices (voir lib/study.ts) — recalculé uniquement quand `sessions`
   // change, jamais par exercice ni à chaque rendu.
   const minutesMap = useMemo(() => minutesByExerciseMap(sessions), [sessions]);
+  // "Pourquoi cet exercice ?" en mode focus (voir focus-view.tsx) : recalculé
+  // à la volée sur TOUTE la banque active, pas seulement les exercices déjà
+  // visibles dans la liste filtrée — un exercice ouvert par simple curiosité
+  // en parcourant la banque garde exactement la même explication que s'il
+  // avait été atteint depuis le Dashboard ou "À revoir en priorité", puisque
+  // c'est le même moteur (`recommendExercises`) qui a déjà tranché. Un
+  // exercice non signalé n'a simplement aucune entrée ici — FocusView
+  // n'affiche alors rien, jamais de justification inventée.
+  // Le MÊME appel sert aussi de tri par défaut de la banque (voir
+  // `defaultExerciseSort`) : `rank` n'est que la position dans la liste que
+  // le moteur vient de rendre, jamais un second classement.
+  const { reasons: recommendationReasons, rank: recommendationRank } = useMemo(() => {
+    const reasons = new Map<string, string[]>();
+    const rank = new Map<string, number>();
+    recommendExercises(exercises, sessions, exercises.length).forEach(({ exercise, reasons: why }, index) => {
+      reasons.set(exercise.id, why);
+      rank.set(exercise.id, index);
+    });
+    return { reasons, rank };
+  }, [exercises, sessions]);
+
   const visible = useMemo(() => filterExercises(exercises, filters), [exercises, filters]);
-  const sorted = useMemo(() => sortExercises(visible, sort, minutesMap), [visible, sort, minutesMap]);
+  const sorted = useMemo(() => sortExercises(visible, sort, recommendationRank), [visible, sort, recommendationRank]);
 
   // Callbacks dédiés d'ExerciseBrowser (Matière → Chapitre) : choisir une
   // matière ou remonter garde le mode navigation actif (on reste dans la
-  // hiérarchie) ; choisir un chapitre en sort (ses exercices s'affichent en
+  // hiérarchie) ; choisir un chapitre en SORT (ses exercices s'affichent en
   // liste normale, juste en dessous). `filters` reste l'unique source de
   // vérité du "où en est-on" — ces callbacks ne font que l'écrire.
   const goHome = useCallback(() => {
@@ -273,11 +313,26 @@ export function ExerciseManager() {
 
   const selected = exercises.find((item) => item.id === selectedId);
 
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        if (focusMode) setFocusMode(false);
-        else if (importOpen) setImportOpen(false);
+      // `focusMode` court-circuite TOUT ce bloc (pas seulement la branche
+      // qui le fermait explicitement) : pendant que FocusView est monté, IL
+      // possède déjà Échap (voir focus-view.tsx#endSession, qui gère
+      // lui-même l'écran "Comment s'est passé ?" avant d'appeler `onClose`).
+      // Avant ce correctif (Phase 7 pédagogie — bug réel trouvé en testant le
+      // parcours), ce handler global interceptait Échap EN MÊME TEMPS que
+      // FocusView : les deux écouteurs `window.addEventListener` s'exécutent
+      // pour le même événement, et celui-ci démontait FocusView (directement
+      // via `setFocusMode(false)`, ou indirectement via `setSelectedId(null)`
+      // qui rend `selected` undefined) avant que sa propre logique n'ait pu
+      // enregistrer le résultat — la séance chronométrée (temps passé) était
+      // silencieusement PERDUE, et l'écran de qualification n'apparaissait
+      // jamais. Ne jamais laisser ce handler agir sur quoi que ce soit tant
+      // que FocusView est affiché : c'est lui, et lui seul, qui décide quand
+      // et comment se fermer.
+      if (event.key === "Escape" && !focusMode) {
+        if (importOpen) setImportOpen(false);
         else if (formOpen) setFormOpen(false);
         else if (selectedId) setSelectedId(null);
         else if (showArchived) setShowArchived(false);
@@ -302,6 +357,7 @@ export function ExerciseManager() {
         sessions={sessions}
         saveSessions={saveSessions}
         onClose={() => setFocusMode(false)}
+        reasons={recommendationReasons.get(selected.id)}
       />
     );
   }
@@ -331,8 +387,14 @@ export function ExerciseManager() {
         <FocusQueryHandler ready={ready} onFocus={jumpToExerciseFromQuery} />
       </Suspense>
 
-      <ExerciseBankStats exercises={exercises} sessions={sessions} />
-
+      {/* `ExerciseBankStats` retiré d'ici (il reste sur /progress, sa vraie
+          place). Ces agrégats occupaient tout le premier écran d'une page
+          dont l'unique objet est de RETROUVER un exercice parmi 402 : ils
+          répondent à « où en est ma banque ? », question de bilan, pas à
+          « lequel je travaille maintenant ? ». Le compteur « À revoir »
+          faisait de surcroît doublon avec le panneau ci-dessous, qui montre
+          les exercices concernés — donc actionnable, lui. L'élève arrive
+          désormais directement sur ses priorités et sa navigation. */}
       <ExerciseReviewPanel exercises={exercises} sessions={sessions} onSelect={jumpToExercise} />
 
       <ExerciseBrowser
@@ -349,6 +411,8 @@ export function ExerciseManager() {
         filters={filters}
         onChange={updateFiltersFromBar}
         chapterOptions={chapterOptions}
+        tagOptions={tagOptions}
+        difficultyOptions={difficultyOptions}
         yearOptions={yearOptions}
         onAddClick={() => setFormOpen((value) => !value)}
         onImportClick={() => setImportOpen((value) => !value)}
@@ -372,6 +436,8 @@ export function ExerciseManager() {
 
       {!browseMode && (
         <>
+          <SessionBuilderBar exercises={sorted} sessions={sessions} />
+
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <p className="text-sm text-zinc-500">
               <span className="font-semibold text-zinc-200">{sorted.length}</span> exercice{sorted.length > 1 ? "s" : ""} affiché{sorted.length > 1 ? "s" : ""}

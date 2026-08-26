@@ -71,16 +71,12 @@ export type ExerciseLevel = 1 | 2 | 3 | 4 | 5 | 6;
 /**
  * Difficulté INTRINSÈQUE de l'exercice (indépendante de l'élève qui le
  * résout). Ne jamais mélanger avec `Exercise.mastery` (le degré de maîtrise
- * de l'élève) ni `Exercise.priority` (l'ordre dans lequel l'élève veut le
- * traiter) — NI avec le prestige du concours d'origine (`Exercise.competition`) :
+ * de l'élève) — NI avec le prestige du concours d'origine (`Exercise.competition`) :
  * un CCINP peut être difficile, un Mines-Ponts peut être accessible. Ce champ
  * s'évalue toujours à l'intérieur du niveau de programme réel de l'exercice
  * (voir `ProgrammeLevel`), jamais déduit automatiquement de la source.
  */
 export type Difficulty = 1 | 2 | 3 | 4 | 5;
-
-/** Priorité donnée par l'élève pour traiter l'exercice — concept distinct de `Difficulty` (voir plus haut), même si l'échelle numérique coïncide. */
-export type Priority = 1 | 2 | 3 | 4 | 5;
 
 /** Degré de maîtrise de l'élève sur cet exercice, par paliers de 25 — distinct de `Difficulty` et de `ExerciseStatus` (voir plus haut). */
 export type Mastery = 0 | 25 | 50 | 75 | 100;
@@ -135,6 +131,25 @@ export interface WorkSession {
    * jamais modifier `status`/`mastery` lui-même.
    */
   result: AttemptResult | null;
+  /**
+   * Nombre d'indices révélés durant CETTE tentative (0 si aucun), ou `null`
+   * quand l'information n'a jamais été enregistrée — séance antérieure à ce
+   * champ, ou séance libre depuis le Timer (aucun exercice, donc aucun
+   * indice possible).
+   *
+   * `null` et `0` ne veulent PAS dire la même chose et ne doivent jamais
+   * être confondus : `0` est une preuve positive que l'élève s'en est sorti
+   * seul — le signal le plus fort dont dispose le moteur ; `null` signifie
+   * simplement qu'on ne sait pas. Traiter `null` comme `0` reviendrait à
+   * créditer rétroactivement des mois d'historique d'une autonomie jamais
+   * observée (voir `normalizeSession`, lib/storage.ts).
+   *
+   * Signal volontairement brut : c'est un FAIT de la tentative, jamais une
+   * interprétation. Toute la lecture pédagogique (« a-t-il eu besoin d'aide
+   * ? », « ce chapitre est-il fragile ? ») vit dans lib/recommendation.ts,
+   * comme pour `result`.
+   */
+  hints_used: number | null;
 }
 
 /** Résultat d'une tentative de travail sur un exercice — voir `WorkSession.result`. */
@@ -162,12 +177,19 @@ export type AttemptResult = "réussi" | "partiel" | "échoué";
  * l'ensemble des `WorkSession` sans filtrer par exercice (voir lib/study.ts
  * et lib/gamification.ts).
  *
- * ## Difficulté, priorité, maîtrise, statut — quatre concepts distincts
+ * ## Difficulté, maîtrise, statut — trois concepts distincts
  * - `difficulty` : difficulté intrinsèque de l'exercice (voir `Difficulty`).
- * - `priority` : ordre dans lequel l'élève veut le traiter (voir `Priority`).
  * - `mastery` : degré de maîtrise de l'élève, par paliers de 25 (voir `Mastery`).
  * - `status` : étape du cycle de vie (à faire / en cours / à revoir / maîtrisé).
- * Ne jamais mélanger ces quatre notions (décision Sprint 2.5).
+ * Ne jamais mélanger ces trois notions (décision Sprint 2.5).
+ *
+ * ## Un seul levier manuel : `favorite`
+ * L'élève dispose d'UNE façon de dire « celui-là compte pour moi » — l'étoile
+ * (`favorite`), présente sur chaque carte et filtrable. L'ancienne échelle
+ * `priority` (1-5) exprimait exactement la même intention avec une seconde
+ * granularité, un second poids dans le moteur et un réglage caché dans le
+ * détail : deux leviers pour une seule intention, dont un que personne
+ * n'ouvrait sur 402 exercices. Supprimée.
  *
  * ## Tentatives et dernière activité
  * `attempts` est incrémenté AUTOMATIQUEMENT (Sprint 2.5) et `last_worked_at`
@@ -252,8 +274,6 @@ export interface Exercise {
   type: ExerciseType;
   /** Difficulté intrinsèque — voir `Difficulty`. */
   difficulty: Difficulty;
-  /** Priorité donnée par l'élève — voir `Priority`. */
-  priority: Priority;
   /** Degré de maîtrise de l'élève — voir `Mastery`. */
   mastery: Mastery;
   status: ExerciseStatus;

@@ -1,6 +1,6 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
 import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, THEME_MODES, type ThemeMode } from "@/lib/theme";
-import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, Priority, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
+import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
 
 const ATTEMPT_RESULTS: readonly AttemptResult[] = ["réussi", "partiel", "échoué"];
 
@@ -20,7 +20,13 @@ const weekSnapshotsKey = "prepahub:week-snapshots";
  * merge ci-dessous, comme tout champ ajouté après coup.
  */
 export type Preferences = { displayName: string; dailyGoalMinutes: number; weeklyGoalMinutes: number; contestDate: string; accent: string; themeMode: ThemeMode };
-const defaults: Preferences = { displayName: "", dailyGoalMinutes: 240, weeklyGoalMinutes: 300, contestDate: "", accent: DEFAULT_ACCENT, themeMode: DEFAULT_THEME_MODE };
+// `dailyGoalMinutes: 60` correspond exactement au plus haut des trois préréglages du
+// Dashboard/Réglages (PLAN_DURATION_PRESETS = [30, 45, 60], lib/plan.ts) : un premier
+// objectif ambitieux mais tenable, jamais un chiffre hors de tout préréglage cliquable
+// (l'ancien défaut de 240 min produisait un "Commencer une séance de 240 min" absurde
+// dès la toute première visite, avant tout réglage par l'élève). `weeklyGoalMinutes: 300`
+// reste cohérent avec ce nouveau quotidien (5 × 60 min ≈ une semaine de cours).
+const defaults: Preferences = { displayName: "", dailyGoalMinutes: 60, weeklyGoalMinutes: 300, contestDate: "", accent: DEFAULT_ACCENT, themeMode: DEFAULT_THEME_MODE };
 
 /**
  * Chapitre/thème (Sprint 3D) — créé et géré par l'utilisateur, jamais
@@ -76,7 +82,6 @@ export interface WeekSnapshot {
  * (components/exercises/exercise-manager.tsx), afin de n'avoir qu'une seule
  * source de vérité pour ces défauts.
  */
-export const DEFAULT_PRIORITY: Priority = 3;
 export const DEFAULT_MASTERY: Mastery = 0;
 const MASTERY_VALUES: readonly Mastery[] = [0, 25, 50, 75, 100];
 const PROGRAMME_LEVELS: readonly ProgrammeLevel[] = ["sup", "spe", "sup_spe"];
@@ -85,6 +90,28 @@ const LICENSE_STATUSES: readonly LicenseStatus[] = ["libre", "à vérifier", "re
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+/**
+ * Une date ISO RÉELLEMENT exploitable, ou `null`.
+ *
+ * Vérifier `typeof === "string"` ne suffisait pas : une chaîne quelconque
+ * ("pas-une-date", un champ tronqué par une sauvegarde interrompue, un JSON
+ * édité à la main) traversait la normalisation, puis faisait lever
+ * `new Date(...).toISOString()` — `RangeError: Invalid time value` — bien
+ * plus loin, au moment du rendu. Comme toutes les données de TaekdHub vivent
+ * dans le `localStorage` du navigateur, une seule date corrompue suffisait à
+ * afficher une page BLANCHE sur toute l'application, sans aucun moyen de
+ * revenir en arrière depuis l'interface (trouvé en test de destruction).
+ *
+ * La frontière de confiance est ici : rien d'invalide ne doit ressortir de
+ * `normalize*`. Une valeur rejetée retombe sur un défaut sûr plutôt que de
+ * contaminer le reste de l'app.
+ */
+function isoDate(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? null : value;
 }
 
 /**
@@ -126,9 +153,6 @@ function migrateDifficulty(raw: unknown): Difficulty {
   return typeof raw === "number" && raw >= 1 && raw <= 5 ? (Math.round(raw) as Difficulty) : 3;
 }
 
-function migratePriority(raw: unknown): Priority {
-  return typeof raw === "number" && raw >= 1 && raw <= 5 ? (Math.round(raw) as Priority) : DEFAULT_PRIORITY;
-}
 
 function migrateMastery(raw: unknown): Mastery {
   return typeof raw === "number" && (MASTERY_VALUES as number[]).includes(raw) ? (raw as Mastery) : DEFAULT_MASTERY;
@@ -147,21 +171,28 @@ function stringArray(raw: unknown): string[] {
  */
 export function normalizeSession(raw: unknown): WorkSession {
   const item = isRecord(raw) ? raw : {};
-  const startedAt = typeof item.started_at === "string" ? item.started_at : new Date().toISOString();
+  const startedAt = isoDate(item.started_at) ?? new Date().toISOString();
   return {
     id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
     subject: migrateSubject(item.subject),
     /** Absent avant le Sprint 2.5 : aucune ancienne session n'était liée à un exercice. */
     exercise_id: typeof item.exercise_id === "string" ? item.exercise_id : null,
     started_at: startedAt,
-    ended_at: typeof item.ended_at === "string" ? item.ended_at : null,
-    duration_seconds: typeof item.duration_seconds === "number" ? item.duration_seconds : 0,
+    ended_at: isoDate(item.ended_at),
+    duration_seconds: typeof item.duration_seconds === "number" && Number.isFinite(item.duration_seconds) ? item.duration_seconds : 0,
     note: typeof item.note === "string" ? item.note : null,
-    created_at: typeof item.created_at === "string" ? item.created_at : startedAt,
+    created_at: isoDate(item.created_at) ?? startedAt,
     // Absent de toute séance antérieure à ce champ (et de toute séance libre,
     // sans exercice) : null, jamais deviné — voir la doc du champ dans
     // lib/supabase/types.ts.
     result: (ATTEMPT_RESULTS as string[]).includes(item.result as string) ? (item.result as AttemptResult) : null,
+    // `null` (et non 0) quand le champ est absent ou invalide : une séance
+    // enregistrée avant l'introduction de ce champ n'a PAS prouvé que l'élève
+    // s'est passé d'indices — voir la doc du champ dans lib/supabase/types.ts.
+    hints_used:
+      typeof item.hints_used === "number" && Number.isFinite(item.hints_used) && item.hints_used >= 0
+        ? Math.round(item.hints_used)
+        : null,
   };
 }
 
@@ -175,9 +206,10 @@ function normalizeExercise(raw: unknown): Exercise {
   // "" par défaut, jamais deviné à partir d'un autre champ (voir la doc du
   // champ dans lib/supabase/types.ts).
   const statement = typeof item.statement === "string" ? item.statement : "";
-  const createdAt = typeof item.created_at === "string" ? item.created_at : new Date().toISOString();
+  const createdAt = isoDate(item.created_at) ?? new Date().toISOString();
   // Sprint 2.5 : `last_opened_at` renommé `last_worked_at`.
-  const lastWorkedAt = typeof item.last_worked_at === "string" ? item.last_worked_at : typeof item.last_opened_at === "string" ? item.last_opened_at : null;
+  // Même garde que `created_at` : une date illisible ici cassait la Heatmap et le calcul de récence du moteur.
+  const lastWorkedAt = isoDate(item.last_worked_at) ?? isoDate(item.last_opened_at);
   return {
     id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
     subject: migrateSubject(item.subject),
@@ -200,7 +232,6 @@ function normalizeExercise(raw: unknown): Exercise {
     level: (EXERCISE_LEVELS as number[]).includes(item.level as number) ? (item.level as ExerciseLevel) : null,
     type: migrateType(item.type),
     difficulty: migrateDifficulty(item.difficulty),
-    priority: migratePriority(item.priority),
     mastery: migrateMastery(item.mastery),
     status: migrateStatus(item.status),
     // Sprint 2.6 : `duration_minutes` n'existe plus — le temps passé se
@@ -211,7 +242,7 @@ function normalizeExercise(raw: unknown): Exercise {
     attempts: typeof item.attempts === "number" ? item.attempts : 0,
     note: typeof item.note === "string" ? item.note : null,
     created_at: createdAt,
-    updated_at: typeof item.updated_at === "string" ? item.updated_at : createdAt,
+    updated_at: isoDate(item.updated_at) ?? createdAt,
     tags: stringArray(item.tags),
     favorite: Boolean(item.favorite),
     archived: Boolean(item.archived),
@@ -276,32 +307,66 @@ export function normalizePreferences(raw: unknown): Preferences {
   return { ...merged, themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE };
 }
 
+/**
+ * Lecture BLINDÉE d'une liste stockée localement.
+ *
+ * Les fonctions `normalize*` sont la frontière de confiance pour le CONTENU,
+ * mais rien ne protégeait l'analyse elle-même : un `localStorage` corrompu
+ * (quota atteint en pleine écriture, extension de navigateur, synchronisation
+ * interrompue, édition manuelle) faisait lever `JSON.parse` — erreur non
+ * rattrapée, remontée telle quelle dans le rendu. Vérifié en test de
+ * destruction : une seule clé illisible suffisait.
+ *
+ * Une valeur qui n'est pas un tableau est traitée comme absente pour la même
+ * raison : `JSON.parse("42").map` lèverait tout autant.
+ */
+function readList(key: string): unknown[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Pendant de `readList` pour un objet unique (préférences) — voir sa documentation. */
+function readRecord(key: string): unknown {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "{}");
+  } catch {
+    return {};
+  }
+}
+
 export const localData = {
-  sessions: (): WorkSession[] =>
-    typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(sessionsKey) || "[]") as unknown[]).map(normalizeSession),
+  sessions: (): WorkSession[] => (typeof window === "undefined" ? [] : readList(sessionsKey).map(normalizeSession)),
   saveSessions: (items: WorkSession[]) => localStorage.setItem(sessionsKey, JSON.stringify(items)),
-  exercises: (): Exercise[] =>
-    typeof window === "undefined" ? [] : (JSON.parse(localStorage.getItem(exercisesKey) || "[]") as unknown[]).map(normalizeExercise),
+  exercises: (): Exercise[] => (typeof window === "undefined" ? [] : readList(exercisesKey).map(normalizeExercise)),
   saveExercises: (items: Exercise[]) => localStorage.setItem(exercisesKey, JSON.stringify(items)),
   chapters: (): Chapter[] =>
-    typeof window === "undefined"
-      ? []
-      : (JSON.parse(localStorage.getItem(chaptersKey) || "[]") as unknown[]).map(normalizeChapter).filter((item): item is Chapter => item !== null),
+    typeof window === "undefined" ? [] : readList(chaptersKey).map(normalizeChapter).filter((item): item is Chapter => item !== null),
   saveChapters: (items: Chapter[]) => localStorage.setItem(chaptersKey, JSON.stringify(items)),
-  preferences: (): Preferences => (typeof window === "undefined" ? defaults : normalizePreferences(JSON.parse(localStorage.getItem(preferencesKey) || "{}"))),
+  preferences: (): Preferences => (typeof window === "undefined" ? defaults : normalizePreferences(readRecord(preferencesKey))),
   savePreferences: (preferences: Preferences) => localStorage.setItem(preferencesKey, JSON.stringify(preferences)),
   /** Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`), ou `null` si aucune n'a jamais été faite. */
   lastBackupAt: (): string | null => (typeof window === "undefined" ? null : localStorage.getItem(lastBackupKey)),
   saveLastBackupAt: (iso: string) => localStorage.setItem(lastBackupKey, iso),
   weekSnapshots: (): WeekSnapshot[] =>
-    typeof window === "undefined"
-      ? []
-      : (JSON.parse(localStorage.getItem(weekSnapshotsKey) || "[]") as unknown[]).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
+    typeof window === "undefined" ? [] : readList(weekSnapshotsKey).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
   saveWeekSnapshots: (items: WeekSnapshot[]) => localStorage.setItem(weekSnapshotsKey, JSON.stringify(items)),
 };
 
-/** Rappel de sauvegarde (finalisation V1) : au-delà de ce nombre de jours sans export, la sauvegarde est considérée périmée. */
-export const BACKUP_REMINDER_DAYS = 14;
+/**
+ * Au-delà de ce nombre de jours sans export, la sauvegarde est périmée.
+ *
+ * SEPT jours, et pas quatorze comme auparavant : TaekdHub n'a pas de compte,
+ * tout vit dans le stockage local du navigateur. Or Safari (iOS comme macOS)
+ * efface le stockage local d'un site avec lequel l'utilisateur n'a pas
+ * interagi depuis 7 jours. Le filet de sécurité se déclenchait donc APRÈS la
+ * menace qu'il est censé couvrir : une semaine de vacances suffisait à tout
+ * perdre sans que le rappel se soit jamais affiché.
+ */
+export const BACKUP_REMINDER_DAYS = 7;
 
 /** Jours écoulés depuis la dernière sauvegarde, ou `null` si aucune n'a jamais été faite (distinct de 0, qui signifie "aujourd'hui"). */
 export function daysSinceBackup(lastBackupAt: string | null, now: Date = new Date()): number | null {

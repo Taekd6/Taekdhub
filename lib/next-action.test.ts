@@ -8,7 +8,7 @@ import {
   computeUpcoming,
 } from "@/lib/next-action";
 import type { Chapter } from "@/lib/storage";
-import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
+import type { Exercise, Mastery, Subject, WorkSession } from "@/lib/supabase/types";
 
 let counter = 0;
 function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
@@ -32,7 +32,6 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     level: null,
     type: "TD",
     difficulty: 3,
-    priority: 3 as Priority,
     mastery: 0 as Mastery,
     status: "à faire",
     estimated_minutes: null,
@@ -61,6 +60,7 @@ function makeSession(exerciseId: string | null, overrides: Partial<WorkSession> 
     note: null,
     created_at: "2026-08-10T08:10:00.000Z",
     result: null,
+    hints_used: null,
     ...overrides,
   };
 }
@@ -106,7 +106,7 @@ describe("computeNextAction", () => {
   });
 
   it("tous les exercices maîtrisés et récents : état up-to-date, aucun pick", () => {
-    const exercise = makeExercise({ status: "maîtrisé", mastery: 100, priority: 1, attempts: 3, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const exercise = makeExercise({ status: "maîtrisé", mastery: 100, attempts: 3, last_worked_at: "2026-08-09T00:00:00.000Z" });
     const action = computeNextAction([exercise], [], 45, NOW);
     expect(action.kind).toBe("up-to-date");
     expect(action.picks).toHaveLength(0);
@@ -254,6 +254,41 @@ describe("computeChaptersToConsolidate", () => {
     ];
     const items = computeChaptersToConsolidate([stale, failing], sessions, chapters, NOW);
     expect(items.map((item) => item.chapter.id)).toEqual(["chap-failing", "chap-stale"]);
+  });
+
+  it("détecte une fragilité de chapitre masquée par des réussites : plusieurs succès obtenus avec les indices", () => {
+    // Cas que ni `result` ni `mastery` ne savaient exprimer : l'élève réussit
+    // (donc rien ne l'alerte) mais ne s'en sort qu'en se faisant guider.
+    const chapters: Chapter[] = [{ id: "chap-1", subject: "Mathématiques", label: "Intégration" }];
+    const exercise = makeExercise({ chapter_id: "chap-1", mastery: 75, status: "en cours", attempts: 2 });
+    const sessions = [
+      makeSession(exercise.id, { result: "réussi", hints_used: 3, started_at: "2026-08-09T10:00:00.000Z" }),
+      makeSession(exercise.id, { result: "réussi", hints_used: 2, started_at: "2026-08-08T10:00:00.000Z" }),
+    ];
+    const items = computeChaptersToConsolidate([exercise], sessions, chapters, NOW);
+    expect(items[0].reasons).toContain("2 réussites avec indices");
+  });
+
+  it("des réussites autonomes ne déclenchent jamais ce signal", () => {
+    const chapters: Chapter[] = [{ id: "chap-1", subject: "Mathématiques", label: "Intégration" }];
+    const exercise = makeExercise({ chapter_id: "chap-1", mastery: 75, status: "en cours", attempts: 2 });
+    const sessions = [
+      makeSession(exercise.id, { result: "réussi", hints_used: 0, started_at: "2026-08-09T10:00:00.000Z" }),
+      makeSession(exercise.id, { result: "réussi", hints_used: 0, started_at: "2026-08-08T10:00:00.000Z" }),
+    ];
+    const items = computeChaptersToConsolidate([exercise], sessions, chapters, NOW);
+    expect(items.flatMap((item) => item.reasons).some((r) => r.includes("indices"))).toBe(false);
+  });
+
+  it("MIGRATION : un historique sans hints_used ne fabrique jamais ce signal", () => {
+    const chapters: Chapter[] = [{ id: "chap-1", subject: "Mathématiques", label: "Intégration" }];
+    const exercise = makeExercise({ chapter_id: "chap-1", mastery: 75, status: "en cours", attempts: 2 });
+    const sessions = [
+      makeSession(exercise.id, { result: "réussi", hints_used: null, started_at: "2026-08-09T10:00:00.000Z" }),
+      makeSession(exercise.id, { result: "réussi", hints_used: null, started_at: "2026-08-08T10:00:00.000Z" }),
+    ];
+    const items = computeChaptersToConsolidate([exercise], sessions, chapters, NOW);
+    expect(items.flatMap((item) => item.reasons).some((r) => r.includes("indices"))).toBe(false);
   });
 
   it("jamais plus de 5 chapitres", () => {

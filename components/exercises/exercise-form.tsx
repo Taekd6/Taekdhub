@@ -11,7 +11,7 @@ import type { Difficulty, ExerciseLevel, ExerciseType, LicenseStatus, ProgrammeL
 
 /**
  * Champs saisis à la création — le manager complète le reste (id, created_at,
- * updated_at, statut initial, priority/mastery/year par défaut, compteurs à
+ * updated_at, statut initial, mastery/year par défaut, compteurs à
  * zéro…). `chapterId` (Sprint 3D) reste optionnel : aucun chapitre n'est
  * imposé, l'utilisateur choisit "Sans chapitre" ou en crée un à la volée.
  *
@@ -166,7 +166,7 @@ export function ExerciseForm({
             <Button type="button" variant="ghost" onClick={onCancel}>
               Annuler
             </Button>
-            <Button type="submit">Créer l'exercice</Button>
+            <Button type="submit">Créer l&apos;exercice</Button>
           </div>
         </motion.form>
       )}

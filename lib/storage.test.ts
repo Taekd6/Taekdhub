@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
+import { localData, normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -19,9 +19,44 @@ function makeRawSession(overrides: Record<string, unknown> = {}): Record<string,
     duration_seconds: 600,
     note: null,
     created_at: "2026-01-01T00:10:00.000Z",
+    hints_used: null,
     ...overrides,
   };
 }
+
+describe("normalizeSession — dates corrompues (robustesse)", () => {
+  /**
+   * Régression : une date illisible traversait la normalisation, puis faisait
+   * lever `RangeError: Invalid time value` au rendu — page BLANCHE sur toute
+   * l'application, sans retour possible depuis l'interface, puisque les
+   * données vivent dans le localStorage. Trouvé en test de destruction.
+   */
+  it("remplace une date de début illisible par une date valide plutôt que de la propager", () => {
+    const session = normalizeSession(makeRawSession({ started_at: "pas-une-date" }));
+    expect(Number.isNaN(new Date(session.started_at).getTime())).toBe(false);
+  });
+
+  it("ramène à null une date de fin illisible", () => {
+    expect(normalizeSession(makeRawSession({ ended_at: "???" })).ended_at).toBeNull();
+  });
+
+  it("retombe sur started_at quand created_at est illisible", () => {
+    const session = normalizeSession(makeRawSession({ created_at: "n'importe quoi" }));
+    expect(session.created_at).toBe(session.started_at);
+  });
+
+  it("une durée non finie (NaN/Infinity) ne contamine jamais les totaux", () => {
+    expect(normalizeSession(makeRawSession({ duration_seconds: Number.NaN })).duration_seconds).toBe(0);
+    expect(normalizeSession(makeRawSession({ duration_seconds: Number.POSITIVE_INFINITY })).duration_seconds).toBe(0);
+  });
+
+  it("toutes les dates restent valides même sur un objet entièrement corrompu", () => {
+    const session = normalizeSession({ id: 42, subject: null, started_at: {}, created_at: [], ended_at: 7 });
+    expect(Number.isNaN(new Date(session.started_at).getTime())).toBe(false);
+    expect(Number.isNaN(new Date(session.created_at).getTime())).toBe(false);
+    expect(session.ended_at).toBeNull();
+  });
+});
 
 describe("normalizeSession — rétrocompatibilité de result", () => {
   it("normalise result à null pour une séance qui n'a jamais eu ce champ (pré-Sprint 5)", () => {
@@ -133,5 +168,53 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     expect(prefs.accent).toBe("#6366f1");
     expect(prefs.themeMode).toBe("system");
     expect(prefs.weeklyGoalMinutes).toBe(300);
+  });
+});
+
+/**
+ * `normalize*` est la frontière de confiance pour le CONTENU, mais rien ne
+ * protégeait l'ANALYSE elle-même : un `localStorage` corrompu (quota atteint
+ * en pleine écriture, extension de navigateur, synchronisation interrompue)
+ * faisait lever `JSON.parse`, erreur non rattrapée remontée dans le rendu.
+ * Trouvé en test de destruction : une seule clé illisible suffisait.
+ */
+describe("localData — lecture blindée d'un stockage corrompu", () => {
+  const store: Record<string, string> = {};
+  const stub = {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = value; },
+  };
+
+  function withStorage<T>(entries: Record<string, string>, read: () => T): T {
+    Object.keys(store).forEach((key) => delete store[key]);
+    Object.assign(store, entries);
+    const globals = globalThis as unknown as { window?: unknown; localStorage?: unknown };
+    const previousWindow = globals.window;
+    const previousStorage = globals.localStorage;
+    globals.window = globals.window ?? {};
+    globals.localStorage = stub;
+    try {
+      return read();
+    } finally {
+      globals.window = previousWindow;
+      globals.localStorage = previousStorage;
+    }
+  }
+
+  it("du JSON illisible ne lève pas — la liste est simplement vide", () => {
+    expect(withStorage({ "prepahub:sessions": "{{{cassé" }, () => localData.sessions())).toEqual([]);
+    expect(withStorage({ "prepahub:exercises": "<html>" }, () => localData.exercises())).toEqual([]);
+    expect(withStorage({ "prepahub:chapters": "" }, () => localData.chapters())).toEqual([]);
+  });
+
+  it("une valeur qui n'est pas un tableau est traitée comme absente", () => {
+    expect(withStorage({ "prepahub:sessions": "42" }, () => localData.sessions())).toEqual([]);
+    expect(withStorage({ "prepahub:exercises": '{"pas":"un tableau"}' }, () => localData.exercises())).toEqual([]);
+  });
+
+  it("des préférences illisibles retombent sur les valeurs par défaut", () => {
+    const preferences = withStorage({ "prepahub:preferences": "nope" }, () => localData.preferences());
+    expect(preferences.dailyGoalMinutes).toBeGreaterThan(0);
+    expect(preferences.themeMode).toBeTruthy();
   });
 });

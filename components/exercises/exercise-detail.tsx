@@ -5,12 +5,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { ChapterPicker } from "@/components/exercises/chapter-picker";
-import { MasteryPicker, PriorityPicker } from "@/components/exercises/exercise-badges";
+import { MasteryPicker } from "@/components/exercises/exercise-badges";
 import { SessionRow } from "@/components/history/session-row";
 import { RichMath } from "@/components/rich-math";
 import { resultCounts, sessionsForExercise } from "@/lib/history";
 import type { Chapter } from "@/lib/storage";
-import type { Exercise, Mastery, Priority, Subject, WorkSession } from "@/lib/supabase/types";
+import type { Exercise, Mastery, Subject, WorkSession } from "@/lib/supabase/types";
 
 export function ExerciseDetail({
   item,
@@ -54,7 +54,7 @@ export function ExerciseDetail({
           placeholder={"Énoncé complet — maths en LaTeX : $x^2$ inline, $$\\int_0^1 f$$ en bloc"}
         />
         {item.statement.trim() && (
-          <div className="mt-3 rounded-xl border border-hairline/[0.08] bg-hairline/[0.035] p-3 text-sm leading-6 text-zinc-300">
+          <div className="mt-3 rounded-xl border border-hairline/[0.09] bg-hairline/[0.04] p-3 text-sm leading-6 text-zinc-300">
             <p className="mb-1 text-2xs uppercase tracking-wide text-zinc-600">Aperçu</p>
             <RichMath text={item.statement} />
           </div>
@@ -95,10 +95,6 @@ export function ExerciseDetail({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-5">
-          <label className="flex items-center gap-2 text-xs text-zinc-500">
-            Priorité
-            <PriorityPicker value={item.priority} onChange={(priority: Priority) => update(item.id, { priority })} />
-          </label>
           <label className="flex items-center gap-2 text-xs text-zinc-500">
             Maîtrise
             <MasteryPicker value={item.mastery} onChange={(mastery: Mastery) => update(item.id, { mastery })} />
@@ -204,7 +200,7 @@ export function ExerciseDetail({
               {correctionVisible ? "Masquer la correction" : "Afficher la correction"}
             </Button>
             {correctionVisible && (
-              <div className="mt-3 rounded-xl border border-hairline/[0.08] bg-hairline/[0.035] p-3 text-sm leading-6 text-zinc-300">
+              <div className="mt-3 rounded-xl border border-hairline/[0.09] bg-hairline/[0.04] p-3 text-sm leading-6 text-zinc-300">
                 <RichMath text={item.correction} />
               </div>
             )}

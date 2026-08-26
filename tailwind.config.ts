@@ -23,9 +23,15 @@ export default {
         // note en tête d'app/globals.css : blanc-sur-blanc serait invisible
         // en thème clair, cette teinte s'inverse donc avec le mode.
         hairline: "rgb(var(--hairline-rgb) / <alpha-value>)",
+        // `accent` (text-accent, bg-accent/10, border-accent…) = l'accent en
+        // tant qu'ENCRE : identique à la couleur de marque en thème sombre,
+        // assombri en thème clair où celle-ci tombait à 1,20:1 de contraste.
+        // Le REMPLISSAGE de marque (bouton principal, lueur de fond) reste sur
+        // `--accent-rgb` — voir app/globals.css.
         accent: {
-          DEFAULT: "rgb(var(--accent-rgb) / <alpha-value>)",
-          dim: "rgb(var(--accent-rgb) / 0.12)",
+          DEFAULT: "rgb(var(--accent-ink-rgb) / <alpha-value>)",
+          solid: "rgb(var(--accent-rgb) / <alpha-value>)",
+          dim: "rgb(var(--accent-ink-rgb) / 0.12)",
           glow: "rgb(var(--accent-rgb) / 0.25)",
           foreground: "rgb(var(--accent-fg-rgb) / <alpha-value>)",
         },

@@ -1,5 +1,5 @@
 import { getChaptersForSubject } from "@/lib/chapters";
-import { DEFAULT_MASTERY, DEFAULT_PRIORITY, type Chapter } from "@/lib/storage";
+import { DEFAULT_MASTERY, type Chapter } from "@/lib/storage";
 import { exerciseTypes, subjects } from "@/lib/study";
 import type { NewExerciseInput } from "@/components/exercises/exercise-form";
 import type { Difficulty, Exercise, ExerciseLevel, ExerciseType, LicenseStatus, ProgrammeLevel, Subject } from "@/lib/supabase/types";
@@ -73,7 +73,6 @@ export function createExerciseFromInput(input: NewExerciseInput): Exercise {
     level: input.level ?? null,
     type: input.type,
     difficulty: input.difficulty,
-    priority: DEFAULT_PRIORITY,
     mastery: DEFAULT_MASTERY,
     status: "à faire",
     estimated_minutes: input.estimatedMinutes,
