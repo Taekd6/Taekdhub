@@ -4,7 +4,7 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
   return (
     <input
       className={cn(
-        "focus-ring w-full rounded-xl border border-hairline/[0.09] bg-black/20 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600",
+        "focus-ring w-full rounded-xl border border-hairline/[0.09] bg-inset px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600",
         className
       )}
       {...props}
@@ -16,7 +16,7 @@ export function Textarea({ className, ...props }: React.TextareaHTMLAttributes<H
   return (
     <textarea
       className={cn(
-        "focus-ring w-full resize-y rounded-xl border border-hairline/[0.09] bg-black/20 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600",
+        "focus-ring w-full resize-y rounded-xl border border-hairline/[0.09] bg-inset px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600",
         className
       )}
       {...props}
@@ -28,7 +28,7 @@ export function Select({ className, ...props }: React.SelectHTMLAttributes<HTMLS
   return (
     <select
       className={cn(
-        "focus-ring w-full rounded-xl border border-hairline/[0.09] bg-black/20 px-3.5 py-2.5 text-sm text-zinc-100",
+        "focus-ring w-full rounded-xl border border-hairline/[0.09] bg-inset px-3.5 py-2.5 text-sm text-zinc-100",
         className
       )}
       {...props}

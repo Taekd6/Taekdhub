@@ -450,7 +450,7 @@ export function ExerciseManager() {
                   </option>
                 ))}
               </Select>
-              <div className="flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-black/20 p-1">
+              <div className="flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-inset p-1">
                 <button
                   onClick={() => setViewMode("cards")}
                   aria-label="Vue cartes"

@@ -44,7 +44,7 @@ export function ExerciseDetail({
   const results = resultCounts(pastSessions);
 
   return (
-    <div className="grid gap-5 bg-black/10 p-5 md:grid-cols-2">
+    <div className="grid gap-5 bg-inset p-5 md:grid-cols-2">
       <div className="md:col-span-2">
         <p className="eyebrow">Énoncé</p>
         <Textarea

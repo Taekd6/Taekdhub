@@ -23,6 +23,9 @@ export default {
         // note en tête d'app/globals.css : blanc-sur-blanc serait invisible
         // en thème clair, cette teinte s'inverse donc avec le mode.
         hairline: "rgb(var(--hairline-rgb) / <alpha-value>)",
+        // Fond « en creux » (champ, bouton secondaire, piste de sélecteur) —
+        // theme-aware, contrairement au `black/20` codé en dur qu'il remplace.
+        inset: "rgb(var(--inset-rgb) / var(--inset-alpha))",
         // `accent` (text-accent, bg-accent/10, border-accent…) = l'accent en
         // tant qu'ENCRE : identique à la couleur de marque en thème sombre,
         // assombri en thème clair où celle-ci tombait à 1,20:1 de contraste.
@@ -30,7 +33,12 @@ export default {
         // `--accent-rgb` — voir app/globals.css.
         accent: {
           DEFAULT: "rgb(var(--accent-ink-rgb) / <alpha-value>)",
-          solid: "rgb(var(--accent-rgb) / <alpha-value>)",
+          // Couleur de marque brute, identique dans les deux thèmes — réservée
+          // au logo. Un logo n'est pas un contrôle : il ne suit pas le
+          // remplissage du bouton principal, qui lui s'assombrit en clair.
+          brand: "rgb(var(--accent-rgb) / <alpha-value>)",
+          solid: "rgb(var(--accent-solid-rgb) / <alpha-value>)",
+          "solid-foreground": "rgb(var(--accent-solid-fg-rgb) / <alpha-value>)",
           dim: "rgb(var(--accent-ink-rgb) / 0.12)",
           glow: "rgb(var(--accent-rgb) / 0.25)",
           foreground: "rgb(var(--accent-fg-rgb) / <alpha-value>)",
@@ -91,7 +99,9 @@ export default {
         "3xl": "1.75rem",
       },
       boxShadow: {
-        surface: "0 12px 34px rgba(0,0,0,.16)",
+        // Piloté par le thème (voir app/globals.css) : une ombre large et
+        // sombre soulève une carte sur fond noir et la salit sur fond blanc.
+        surface: "var(--shadow-surface)",
         glow: "0 0 22px rgb(var(--accent-rgb) / .18)",
         card: "0 1px 0 rgba(255,255,255,.04) inset, 0 12px 34px rgba(0,0,0,.16)",
       },

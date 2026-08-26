@@ -67,20 +67,31 @@ export function relativeLuminance([r, g, b]: [number, number, number]): number {
  * le thème, si `--accent-ink-rgb` vaut cette version assombrie (clair) ou
  * l'accent tel quel (sombre). Un seul endroit tranche, jamais deux.
  */
-const INK_MAX_LUMINANCE = 0.174;
+/** Calibré pour 4,5:1 sur `--canvas` en thème clair (#f4f5f7) — la surface la plus sombre où l'encre se pose. */
+const INK_MAX_LUMINANCE = 0.163;
+/** Aplat principal en thème clair : nettement plus sombre que l'encre, pour porter du texte blanc (≈ 11:1) au lieu d'être un surligneur. */
+const DEEP_MAX_LUMINANCE = 0.045;
 
-export function accentInk(hex: string): [number, number, number] {
-  const rgb = hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]);
-  if (relativeLuminance(rgb) <= INK_MAX_LUMINANCE) return rgb;
+/** Assombrit `rgb` par mise à l'échelle des canaux jusqu'à passer sous `target` — la teinte reste reconnaissable. */
+function darkenTo(rgb: [number, number, number], target: number): [number, number, number] {
+  if (relativeLuminance(rgb) <= target) return rgb;
   let low = 0;
   let high = 1;
   for (let step = 0; step < 24; step++) {
     const mid = (low + high) / 2;
-    const scaled = rgb.map((channel) => channel * mid) as [number, number, number];
-    if (relativeLuminance(scaled) > INK_MAX_LUMINANCE) high = mid;
+    if (relativeLuminance(rgb.map((c) => c * mid) as [number, number, number]) > target) high = mid;
     else low = mid;
   }
-  return rgb.map((channel) => Math.round(channel * low)) as [number, number, number];
+  return rgb.map((c) => Math.round(c * low)) as [number, number, number];
+}
+
+/** Teinte profonde de l'accent — remplissage du bouton principal en thème clair. */
+export function accentDeep(hex: string): [number, number, number] {
+  return darkenTo(hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]), DEEP_MAX_LUMINANCE);
+}
+
+export function accentInk(hex: string): [number, number, number] {
+  return darkenTo(hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]), INK_MAX_LUMINANCE);
 }
 
 /** Noir ou blanc — jamais une autre teinte — selon ce qui contraste le mieux avec `hex`. Retombe sur l'accent par défaut si `hex` n'est pas un hex valide. */
@@ -102,6 +113,7 @@ export function applyAccent(hex: string, root: HTMLElement = document.documentEl
   root.style.setProperty("--accent-rgb", rgb.join(" "));
   root.style.setProperty("--accent-fg-rgb", fg.join(" "));
   root.style.setProperty("--accent-ink-base-rgb", accentInk(hex).join(" "));
+  root.style.setProperty("--accent-deep-base-rgb", accentDeep(hex).join(" "));
 }
 
 /**

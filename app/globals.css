@@ -35,12 +35,35 @@
        `accentInk` (lib/theme.ts), qui recalcule cette valeur dès que l'élève
        change d'accent. Valeur de repli pour l'accent par défaut, utilisée
        avant l'exécution du script anti-flash. */
-    --accent-ink-base-rgb: 107 122 54;
+    --accent-ink-base-rgb: 104 119 52;
     /* En thème sombre l'accent EST déjà lisible (15,95:1) : l'encre lui est
        simplement égale. Les blocs "clair" plus bas basculent sur la version
        assombrie — c'est le seul endroit où l'arbitrage se fait. */
     --accent-ink-rgb: var(--accent-rgb);
     --accent-fg-rgb: 0 0 0;
+    /* Remplissage du bouton principal. En SOMBRE, le maximum de contraste
+       contre la page est la couleur de marque elle-même. En CLAIR, c'est
+       l'inverse : un aplat fluo sur du blanc se lit comme un surligneur, pas
+       comme un bouton — le bloc « clair » plus bas bascule donc sur une
+       version profonde de la même teinte. */
+    --accent-solid-rgb: var(--accent-rgb);
+    --accent-solid-fg-rgb: var(--accent-fg-rgb);
+    --accent-deep-base-rgb: 47 55 22;
+
+    /* Fond et ombre des surfaces. En sombre, une carte se détache par une
+       translucidité floutée et une ombre large ; en clair, ce même réglage
+       donne du blanc sur du blanc avec une tache grise. Les deux thèmes ont
+       donc leurs propres valeurs, au lieu d'un réglage unique pensé pour l'un
+       et subi par l'autre. */
+    --surface-bg: rgb(var(--elevated-rgb) / 0.7);
+    --shadow-surface: 0 12px 34px rgba(0, 0, 0, 0.16);
+    /* Fond « en creux » : champs, boutons secondaires, pistes de sélecteurs.
+       C'était `bg-black/20` en dur, avec l'idée qu'un noir peu opaque
+       assombrit légèrement n'importe quel fond. C'est faux : 20 % de noir sur
+       du blanc donne un gris #cccccc franc. D'où l'impression de bouillie
+       grise en thème clair, où chaque contrôle devenait une dalle. */
+    --inset-rgb: 0 0 0;
+    --inset-alpha: 0.2;
 
     /* Thème sombre — valeurs par défaut, identiques à celles utilisées avant ce sprint : aucun changement visuel pour un utilisateur qui ne touche à rien. */
     --canvas-rgb: 9 9 11;
@@ -100,15 +123,29 @@
 
   /* Thème clair explicite (Réglages → Apparence → Clair). */
   :root[data-theme="light"] {
-    --canvas-rgb: 250 250 250;
+    /* La page n'est PAS blanche : sans écart réel entre le fond et les cartes,
+       celles-ci disparaissent (l'ancien couple 250/255 laissait 2 % d'écart,
+       soit des rectangles invisibles empilés). */
+    --canvas-rgb: 244 245 247;
     --panel-rgb: 255 255 255;
     --elevated-rgb: 255 255 255;
-    --line-rgb: 228 228 231;
+    --line-rgb: 226 229 234;
     --ink-rgb: 24 24 27;
     --muted-rgb: 82 82 91;
     --subtle-rgb: 113 113 122;
     --hairline-rgb: 0 0 0;
     --accent-ink-rgb: var(--accent-ink-base-rgb);
+    /* Aplat principal : une teinte profonde de la couleur de marque, texte
+       clair dessus — la lisibilité maximale sur une page claire, et la même
+       famille chromatique que le thème sombre. */
+    --accent-solid-rgb: var(--accent-deep-base-rgb);
+    --accent-solid-fg-rgb: 255 255 255;
+    --surface-bg: rgb(var(--panel-rgb));
+    /* Deux couches courtes plutôt qu'un halo de 34 px : sur fond clair, une
+       ombre large et sombre salit au lieu de soulever. */
+    --shadow-surface: 0 1px 2px rgba(24, 24, 27, 0.05), 0 4px 14px rgba(24, 24, 27, 0.06);
+    --inset-rgb: 24 24 27;
+    --inset-alpha: 0.045;
 
     /* Échelle "zinc" inversée : une classe conçue pour "texte clair sur fond sombre" (ex. text-zinc-100 = texte principal) doit rester le texte PRINCIPAL une fois le fond devenu clair — donc devenir sombre, pas rester claire. */
     --zinc-50-rgb: 9 9 11;
@@ -150,15 +187,24 @@
   /* Mode "système" (aucun `data-theme` posé) : mêmes valeurs que `[data-theme="light"]` ci-dessus, appliquées seulement si l'OS/navigateur préfère le clair. Un choix explicite ("light"/"dark") l'emporte toujours — voir le sélecteur `:not([data-theme="dark"])`. */
   @media (prefers-color-scheme: light) {
     :root:not([data-theme="dark"]) {
-      --canvas-rgb: 250 250 250;
+      --canvas-rgb: 244 245 247;
       --panel-rgb: 255 255 255;
       --elevated-rgb: 255 255 255;
-      --line-rgb: 228 228 231;
+      --line-rgb: 226 229 234;
       --ink-rgb: 24 24 27;
       --muted-rgb: 82 82 91;
       --subtle-rgb: 113 113 122;
       --hairline-rgb: 0 0 0;
-      --accent-ink-rgb: var(--accent-ink-base-rgb);
+    --accent-ink-rgb: var(--accent-ink-base-rgb);
+      /* Aplat principal : une teinte profonde de la couleur de marque, texte
+         clair dessus — la lisibilité maximale sur une page claire, et la même
+         famille chromatique que le thème sombre. */
+      --accent-solid-rgb: var(--accent-deep-base-rgb);
+      --accent-solid-fg-rgb: 255 255 255;
+      --surface-bg: rgb(var(--panel-rgb));
+      /* Deux couches courtes plutôt qu'un halo de 34 px : sur fond clair, une
+         ombre large et sombre salit au lieu de soulever. */
+      --shadow-surface: 0 1px 2px rgba(24, 24, 27, 0.05), 0 4px 14px rgba(24, 24, 27, 0.06);
 
       --zinc-50-rgb: 9 9 11;
       --zinc-100-rgb: 24 24 27;
@@ -270,11 +316,16 @@
  */
 @layer components {
   .surface {
-    @apply border border-hairline/[0.09] bg-elevated/70 shadow-surface backdrop-blur-xl;
+    @apply border border-hairline/[0.09] backdrop-blur-xl;
+    background: var(--surface-bg);
+    box-shadow: var(--shadow-surface);
   }
 
   .surface-hover {
-    @apply transition-all duration-200 hover:border-hairline/[0.14] hover:bg-elevated/90;
+    /* Le survol passait par `bg-elevated/90` : en thème clair, du blanc à 90 %
+       sur du blanc — donc aucun retour visuel. Le creux, lui, se voit dans les
+       deux thèmes. */
+    @apply transition-all duration-200 hover:border-hairline/[0.14] hover:bg-inset;
   }
 
   .eyebrow {

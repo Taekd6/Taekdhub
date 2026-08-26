@@ -131,7 +131,7 @@ export function ExerciseImport({
         placeholder={'[\n  { "title": "…", "source": "…", "subject": "Mathématiques" }\n]'}
         rows={7}
         spellCheck={false}
-        className="focus-ring w-full rounded-xl border border-hairline/[0.09] bg-black/20 p-3 font-mono text-xs leading-6 text-zinc-200 placeholder:text-zinc-600"
+        className="focus-ring w-full rounded-xl border border-hairline/[0.09] bg-inset p-3 font-mono text-xs leading-6 text-zinc-200 placeholder:text-zinc-600"
       />
 
       <div className="flex flex-wrap items-center gap-3">

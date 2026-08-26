@@ -10,8 +10,8 @@ const buttonVariants = cva(
         // COULEUR DE MARQUE telle quelle dans les deux thèmes (avec
         // `text-accent-foreground`, noir ou blanc selon sa luminance). Seule
         // l'encre — texte, icônes, teintes fines — s'assombrit en thème clair.
-        primary: "bg-accent-solid text-accent-foreground hover:brightness-110 active:scale-[0.98]",
-        secondary: "border border-hairline/[0.09] bg-black/20 text-zinc-100 hover:border-hairline/[0.14] hover:bg-hairline/[0.04]",
+        primary: "bg-accent-solid text-accent-solid-foreground hover:brightness-110 active:scale-[0.98]",
+        secondary: "border border-hairline/[0.09] bg-inset text-zinc-100 hover:border-hairline/[0.14] hover:bg-hairline/[0.04]",
         ghost: "text-zinc-400 hover:bg-hairline/[0.04] hover:text-zinc-100",
         danger: "border border-rose-500/20 bg-rose-500/10 text-rose-300 hover:bg-rose-500/15",
       },

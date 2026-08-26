@@ -1,12 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, Eye, EyeOff, Minimize2, MinusCircle, Sparkles, X, XCircle } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Lightbulb, Minimize2, MinusCircle, Sparkles, X, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryPicker, SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { SegmentedControl } from "@/components/ui/segmented";
 import { RichMath } from "@/components/rich-math";
 import { useWorkTimer } from "@/hooks/use-work-timer";
 import { explainReasons } from "@/lib/recommendation";
@@ -260,16 +261,19 @@ export function FocusView({
       {/* Contenu défilable : l'énoncé (contenu principal) prime sur le chrono, resté dans le bandeau supérieur, secondaire dans la hiérarchie visuelle. */}
       <div className="flex-1 overflow-y-auto px-6 py-8">
         <div className="mx-auto w-full max-w-2xl">
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Le titre d'abord. Les métadonnées (difficulté, type) passaient
+              AVANT lui, et la molette de maîtrise — cinq pastilles — pesait
+              plus lourd que l'exercice qu'elle qualifie. Elles rejoignent le
+              pied de page, où l'élève va après avoir travaillé, pas avant. */}
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem] sm:leading-[1.15]">{item.title}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-zinc-500">
+            <span>{item.subject}</span>
+            <span aria-hidden>·</span>
+            <span className="min-w-0 truncate">{item.source}</span>
+            <span aria-hidden>·</span>
             <DifficultyDots value={item.difficulty} />
-            <Badge>{item.type}</Badge>
-            <label className="flex items-center gap-2 text-xs text-zinc-500">
-              Maîtrise
-              <MasteryPicker value={item.mastery} onChange={(mastery: Mastery) => update(item.id, { mastery })} />
-            </label>
+            <span className="text-xs">{item.type}</span>
           </div>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">{item.title}</h1>
-          <p className="mt-1 text-sm text-zinc-500">{item.subject} · {item.source}</p>
 
           {/* "Pourquoi cet exercice ?" — le contexte de recommandation ne
               doit jamais disparaître entre l'aperçu de séance (où il est déjà
@@ -279,18 +283,22 @@ export function FocusView({
               pour arbitraire. `explainReasons` ne fabrique rien : sans raison
               réelle transmise, ce bloc ne s'affiche simplement pas. */}
           {explainReasons(reasons ?? []) && (
-            <p className="mt-3 inline-flex items-start gap-1.5 rounded-lg bg-accent/[0.07] px-3 py-2 text-xs leading-5 text-accent/90">
-              <Sparkles size={13} className="mt-0.5 shrink-0" />
+            <p className="mt-4 flex items-start gap-2 border-l-2 border-accent/40 py-0.5 pl-3 text-sm leading-6 text-muted">
+              <Sparkles size={14} className="mt-0.5 shrink-0 text-accent" />
               {explainReasons(reasons ?? [])}
             </p>
           )}
 
-          {/* Énoncé — cœur de la séance : immédiatement visible, sans clic ni révélation, contrairement aux indices/correction. */}
-          <div className="mt-6 rounded-2xl border border-hairline/[0.09] bg-hairline/[0.025] p-5 sm:p-6">
+          {/* Énoncé — cœur de la séance. Il était enfermé dans une carte grise
+              qui, sur fond clair, n'était qu'un cadre autour de 80 % de
+              l'écran. C'est le CONTENU : il se lit comme un texte, pas comme
+              un composant. Seules les interruptions (indices, correction)
+              gardent un cadre, parce qu'elles interrompent justement. */}
+          <div className="mt-7">
             {item.statement.trim() ? (
-              <RichMath text={item.statement} className="text-base leading-8 text-zinc-100" />
+              <RichMath text={item.statement} className="text-[1.0625rem] leading-[1.85] text-ink sm:text-lg" />
             ) : (
-              <p className="text-sm italic leading-7 text-zinc-500">
+              <p className="rounded-xl border border-dashed border-hairline/[0.14] px-4 py-6 text-center text-sm leading-7 text-zinc-500">
                 Aucun énoncé renseigné pour cet exercice — ouvre sa fiche (hors mode focus) pour l&apos;ajouter.
               </p>
             )}
@@ -307,19 +315,30 @@ export function FocusView({
                 <RichMath text={`Indice ${index + 1} — ${hint}`} />
               </motion.div>
             ))}
-            {hintCount < item.hints.length && (
-              <Button variant="secondary" onClick={() => setHintCount((c) => c + 1)} className="w-full">
-                Afficher l&apos;indice {hintCount + 1}
-              </Button>
+            {/* Deux aides de même rang, côte à côte. L'indice occupait toute
+                la largeur : le bouton le plus lourd de l'écran était donc
+                celui qui invite à ne PAS chercher seul. */}
+            {(hintCount < item.hints.length || item.correction) && (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {hintCount < item.hints.length && (
+                  <Button variant="secondary" size="sm" onClick={() => setHintCount((c) => c + 1)}>
+                    <Lightbulb size={15} /> Indice {hintCount + 1}
+                    <span className="text-zinc-500">/ {item.hints.length}</span>
+                  </Button>
+                )}
+                {item.correction && (
+                  <Button variant="ghost" size="sm" onClick={() => setCorrectionVisible((v) => !v)}>
+                    {correctionVisible ? <EyeOff size={15} /> : <Eye size={15} />}
+                    {correctionVisible ? "Masquer la correction" : "Voir la correction"}
+                  </Button>
+                )}
+              </div>
             )}
             {item.correction && (
               <div>
-                <Button variant="ghost" onClick={() => setCorrectionVisible((v) => !v)}>
-                  {correctionVisible ? <EyeOff size={16} /> : <Eye size={16} />}
-                  {correctionVisible ? "Masquer la correction" : "Afficher la correction"}
-                </Button>
                 {correctionVisible && (
-                  <div className="mt-4 rounded-xl border border-hairline/[0.09] bg-hairline/[0.04] p-4 text-left text-sm leading-7 text-zinc-300">
+                  <div className="rounded-2xl border border-hairline/[0.09] bg-hairline/[0.025] p-5 text-left text-sm leading-7 text-zinc-300">
+                    <p className="eyebrow mb-2.5">Correction</p>
                     <RichMath text={item.correction} />
                   </div>
                 )}
@@ -327,17 +346,27 @@ export function FocusView({
             )}
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-2">
-            {(["à faire", "en cours", "à revoir", "maîtrisé"] as ExerciseStatus[]).map((s) => (
-              <Button
-                key={s}
-                variant={item.status === s ? "primary" : "secondary"}
-                size="sm"
-                onClick={() => update(item.id, { status: s })}
-              >
-                {s}
-              </Button>
-            ))}
+          {/* PIED DE PAGE « où j'en suis » — séparé du contenu par une règle.
+              Ces quatre statuts étaient quatre boutons de pleine importance,
+              dont l'actif en aplat de marque : le réglage administratif était
+              l'élément le plus criard de l'écran. Un sélecteur segmenté (le
+              même composant que partout ailleurs) dit « une valeur parmi
+              quatre » sans hurler. La maîtrise le rejoint : les deux
+              répondent à la même question, après l'exercice. */}
+          <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4 border-t border-hairline/[0.07] pt-6">
+            <label className="flex flex-wrap items-center gap-2.5 text-xs text-zinc-500">
+              Où j&apos;en suis
+              <SegmentedControl
+                ariaLabel="Statut de l'exercice"
+                value={item.status}
+                onChange={(status) => update(item.id, { status })}
+                options={(["à faire", "en cours", "à revoir", "maîtrisé"] as ExerciseStatus[]).map((s) => ({ value: s, label: s }))}
+              />
+            </label>
+            <label className="flex flex-wrap items-center gap-2.5 text-xs text-zinc-500">
+              Maîtrise
+              <MasteryPicker value={item.mastery} onChange={(mastery: Mastery) => update(item.id, { mastery })} />
+            </label>
             <AnimatePresence>
               {justMastered && (
                 <motion.span

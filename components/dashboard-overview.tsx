@@ -136,7 +136,7 @@ export function DashboardOverview() {
   const weekSubjects = weeklySummary.bySubject.filter((entry) => subjectsInBank.has(entry.subject) || entry.seconds > 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <BackupReminder />
 
       {/* À FAIRE MAINTENANT */}
@@ -144,7 +144,7 @@ export function DashboardOverview() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="surface relative overflow-hidden rounded-3xl p-6 sm:p-8"
+        className="surface relative overflow-hidden rounded-3xl p-6 sm:p-7"
       >
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-accent/[0.06] blur-3xl" />
         <div className="relative">
@@ -182,9 +182,15 @@ export function DashboardOverview() {
                 <Link
                   key={exercise.id}
                   href={`/exercises?focus=${exercise.id}`}
-                  className="focus-ring flex min-w-0 items-center gap-3 rounded-xl border border-hairline/[0.07] p-3 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.025]"
+                  // `items-start` : centré verticalement, l'avatar de matière
+                  // flottait au milieu de la tuile dès que le titre passait sur
+                  // deux lignes — visible sur mobile, où c'est la règle plutôt
+                  // que l'exception. Il doit s'aligner sur la PREMIÈRE ligne.
+                  className="focus-ring flex min-w-0 items-start gap-3 rounded-xl border border-hairline/[0.07] p-3 text-sm transition hover:border-hairline/[0.14] hover:bg-hairline/[0.025]"
                 >
-                  <SubjectAvatar subject={exercise.subject} size="sm" />
+                  <span className="mt-0.5 shrink-0">
+                    <SubjectAvatar subject={exercise.subject} size="sm" />
+                  </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-zinc-100">{exercise.title}</p>
                     <div className="mt-1 flex flex-wrap gap-1">
@@ -203,7 +209,7 @@ export function DashboardOverview() {
       </motion.section>
 
       {/* PLAN DU JOUR */}
-      <Card className="p-6 sm:p-7">
+      <Card className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <ListTodo size={14} className="text-accent" />
@@ -314,7 +320,7 @@ export function DashboardOverview() {
             posée côte à côte avec "Ta progression" dans la même grille, et un
             rounded-3xl ici donnait deux rayons différents pour deux cartes de
             même niveau, visibles l'une à côté de l'autre. */}
-        <Card className="p-6 sm:p-7">
+        <Card className="p-5 sm:p-6">
           <div className="flex items-start justify-between">
             <div>
               <p className="eyebrow">Objectif du jour</p>

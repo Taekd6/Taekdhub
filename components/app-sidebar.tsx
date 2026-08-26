@@ -80,7 +80,7 @@ export function AppSidebar() {
           href="/dashboard"
           className="focus-ring mb-6 mt-1 flex items-center gap-3 rounded-xl px-3 text-lg font-semibold tracking-tight"
         >
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-solid text-accent-foreground shadow-glow">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-brand text-black shadow-glow">
             <Sparkles size={16} />
           </span>
           TaekdHub
@@ -90,7 +90,11 @@ export function AppSidebar() {
           <NavItems />
         </nav>
 
-        <div className="mt-auto space-y-3">
+        {/* Le bloc « Niveau » était collé tout en bas (`mt-auto`) : la colonne
+            se lisait comme deux îlots séparés par 600 px de vide. Rattaché à
+            la navigation, elle forme un seul ensemble, et le vide restant est
+            franchement du vide plutôt qu'un décalage inexpliqué. */}
+        <div className="mt-6 space-y-3">
           {ready && (
             <div className="rounded-2xl border border-hairline/[0.07] bg-hairline/[0.04] p-4">
               <div className="flex items-center gap-2">
