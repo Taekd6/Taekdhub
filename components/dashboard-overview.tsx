@@ -8,6 +8,7 @@ import { BackupReminder } from "@/components/backup-reminder";
 import { Button } from "@/components/ui/button";
 import { rowClass, rowInteractiveClass, Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
+import { CircularProgress } from "@/components/ui/progress";
 import { cn } from "@/lib/cn";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -190,8 +191,20 @@ export function DashboardOverview() {
           reste ici que ce qui sert à décider AUJOURD'HUI — présenté comme un
           fait qu'on voit (un filet qui se remplit), pas comme un pourcentage
           qu'on doit calculer soi-même en le lisant. */}
-      <div className="flex flex-wrap items-end gap-x-10 gap-y-4 px-1">
-        <Stat label="Objectif du jour" value={`${objective.workedMinutes} / ${objective.goalMinutes} min`} percent={objective.percent} />
+      <div className="flex flex-wrap items-center gap-x-10 gap-y-4 px-1">
+        {/* L'anneau — voir la doc de `CircularProgress` — est réservé à CE
+            chiffre : le seul qui répond à "où en suis-je là, maintenant",
+            pas à une comparaison entre plusieurs valeurs (ce que les barres
+            font très bien juste à côté). */}
+        <div className="flex items-center gap-3">
+          <CircularProgress value={objective.percent} size={52} strokeWidth={5} center={<span className="text-xs">{objective.percent}%</span>} />
+          <div className="min-w-0">
+            <p className="eyebrow">Objectif du jour</p>
+            <p className="mt-1 text-sm font-medium tabular-nums text-ink">
+              {objective.workedMinutes} / {objective.goalMinutes} min
+            </p>
+          </div>
+        </div>
         <Stat label="Cette semaine" value={formatDuration(weeklySummary.totalSeconds)} percent={weeklySummary.progressPercent} />
         {streak > 0 && (
           <div className="min-w-0">
@@ -206,7 +219,7 @@ export function DashboardOverview() {
             bouton — la règle vaut pour tout ce qu'on touche. */}
         <Link
           href="/progress"
-          className="focus-ring t-meta mb-1 ml-auto inline-flex items-center rounded px-1 underline-offset-4 hover:text-ink hover:underline max-lg:min-h-11"
+          className="focus-ring t-meta ml-auto inline-flex items-center rounded px-1 underline-offset-4 hover:text-ink hover:underline max-lg:min-h-11"
         >
           Voir ma progression
         </Link>

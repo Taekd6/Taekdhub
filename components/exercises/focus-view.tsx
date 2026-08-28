@@ -227,8 +227,15 @@ export function FocusView({
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      // Un léger zoom-avant (0.99 → 1), pas un simple fondu : la différence
+      // se sent plutôt qu'elle ne se voit — l'idée d'ENTRER dans un espace
+      // plutôt que de le voir apparaître par-dessus l'écran précédent.
+      // `transform` reste sur cet élément lui-même (déjà `fixed`), jamais
+      // sur un parent : un ancêtre transformé casserait le positionnement
+      // fixe de tout ce qu'il contient.
+      initial={{ opacity: 0, scale: 0.99 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
       className="fixed inset-0 z-50 flex flex-col bg-canvas"
     >
       {/* BANDEAU DE TRAVAIL — le strict nécessaire.

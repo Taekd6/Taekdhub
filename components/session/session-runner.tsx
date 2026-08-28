@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, PlayCircle, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, PlayCircle, Sparkles, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
+import { levelFromXp, totalXp } from "@/lib/gamification";
 import { computeExerciseBankStats, estimatedDurationMinutes, explainReasons, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import { computeNextAction } from "@/lib/next-action";
 import { PLAN_STORAGE_KEY, type StoredPlan } from "@/lib/plan";
@@ -72,6 +74,12 @@ export function SessionRunner() {
   /** D'où vient `planSelection` — distingue uniquement le texte affiché à l'écran d'aperçu (voir StoredPlan.source, lib/plan.ts) ; la mécanique de séance est identique dans les deux cas. */
   const [planSource, setPlanSource] = useState<"plan-du-jour" | "libre">("plan-du-jour");
   const initialized = useRef(false);
+  /** XP au tout premier rendu prêt de cette séance — jamais recalculé ensuite,
+      pour que l'écran de fin puisse montrer "+N XP" (et un passage de niveau)
+      gagnés PENDANT cette séance précisément, pas l'XP total qui inclut tout
+      le travail des séances précédentes. Même moteur que la sidebar
+      (lib/gamification.ts) : aucune deuxième formule d'XP. */
+  const initialXpRef = useRef<number | null>(null);
 
   // Décide une seule fois, au montage, entre reprendre un focus interrompu
   // (même mécanisme que exercise-manager.tsx) et proposer un nouvel aperçu de
@@ -143,6 +151,18 @@ export function SessionRunner() {
     setPhase("preview");
   }, [ready, exercises, sessions, preferences.dailyGoalMinutes]);
 
+  // Capturé une seule fois, au tout premier rendu prêt — voir la doc de
+  // `initialXpRef` plus haut.
+  useEffect(() => {
+    if (ready && initialXpRef.current === null) {
+      initialXpRef.current = totalXp(exercises, sessions);
+    }
+    // Volontairement absent des dépendances : `exercises`/`sessions` changent à
+    // chaque exercice travaillé, et ne doivent JAMAIS redéclencher cette
+    // capture — seul le passage à `ready` compte.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
+
   /** Même banque que celle évaluée au montage (voir l'effet ci-dessus), recalculée pour l'aperçu réactif au budget. */
   const scopedExercises = useMemo(
     () => (contextSubject ? exercises.filter((item) => item.subject === contextSubject) : exercises),
@@ -180,6 +200,14 @@ export function SessionRunner() {
     () => computeNextAction(exercises, sessions, preferences.dailyGoalMinutes),
     [exercises, sessions, preferences.dailyGoalMinutes]
   );
+
+  // XP gagnée PENDANT cette séance, et passage de niveau éventuel — voir la
+  // doc de `initialXpRef`. `Math.max(0, …)` : une valeur négative ne devrait
+  // jamais arriver (l'XP ne diminue jamais), mais ne jamais afficher "-3 XP"
+  // si un cas imprévu la faisait baisser.
+  const xpGained = Math.max(0, totalXp(exercises, sessions) - (initialXpRef.current ?? totalXp(exercises, sessions)));
+  const leveledUp = initialXpRef.current !== null && levelFromXp(totalXp(exercises, sessions)) > levelFromXp(initialXpRef.current);
+  const newLevel = levelFromXp(totalXp(exercises, sessions));
 
   // Même pattern que exercise-manager.tsx#update, sans l'optimisation par
   // ref : une seule fiche est affichée à la fois ici, pas une grille de
@@ -257,27 +285,26 @@ export function SessionRunner() {
 
   if (phase === "empty") {
     content = (
-      <Card className="p-10 text-center">
-        <Sparkles className="mx-auto text-accent" size={24} />
-        <p className="mt-4 font-medium">
-          {contextSubject ? `Rien à travailler en ${contextSubject} pour l'instant.` : "Rien à travailler pour l'instant."}
-        </p>
-        <p className="mt-2 text-sm text-muted">
-          {contextSubject
+      <EmptyState
+        title={contextSubject ? `Rien à travailler en ${contextSubject} pour l'instant.` : "Rien à travailler pour l'instant."}
+        description={
+          contextSubject
             ? "Cette matière est à jour — reviens plus tard, ou explore tes exercices."
-            : "Ta banque est à jour — reviens plus tard, ou explore tes exercices."}
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Link href="/exercises">
-            <Button variant="secondary">Voir les exercices</Button>
-          </Link>
-          {contextSubject && (
-            <Link href="/session">
-              <Button variant="ghost">Séance complète</Button>
+            : "Ta banque est à jour — reviens plus tard, ou explore tes exercices."
+        }
+        action={
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link href="/exercises">
+              <Button variant="secondary">Voir les exercices</Button>
             </Link>
-          )}
-        </div>
-      </Card>
+            {contextSubject && (
+              <Link href="/session">
+                <Button variant="ghost">Séance complète</Button>
+              </Link>
+            )}
+          </div>
+        }
+      />
     );
   } else if (phase === "preview") {
     content = (
@@ -449,7 +476,17 @@ export function SessionRunner() {
     const nextReason = nextPick ? explainReasons(nextPick.reasons) : null;
     content = (
       <Card className="p-8 text-center">
-        <CheckCircle2 className="mx-auto text-accent" size={28} />
+        {/* Petit rebond plutôt qu'une simple apparition : c'est le moment
+            "oui, c'est fait" entre deux exercices — il mérite un geste, pas
+            juste un fondu identique à celui de toute la carte. */}
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", bounce: 0.55, duration: 0.5 }}
+          className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-accent/10"
+        >
+          <CheckCircle2 className="text-accent" size={22} />
+        </motion.div>
         <h2 className="mt-4 text-xl font-semibold tracking-tight">Exercice travaillé</h2>
         {done && <p className="mt-2 text-sm text-muted">{done.title}</p>}
         <p className="mt-1 text-xs text-muted">
@@ -474,10 +511,42 @@ export function SessionRunner() {
     const runFailureCount = runResults.filter((result) => result === "échoué").length;
     content = (
       <Card className="p-10 text-center">
-        <CardTitle className="text-xl">Séance terminée</CardTitle>
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", bounce: 0.55, duration: 0.55 }}
+          className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-accent/10"
+        >
+          <CheckCircle2 className="text-accent" size={28} />
+        </motion.div>
+        <CardTitle className="mt-4 text-xl">Séance terminée</CardTitle>
         <p className="mt-2 text-sm text-muted">
           {visitedCount} exercice{visitedCount > 1 ? "s" : ""} travaillé{visitedCount > 1 ? "s" : ""} durant cette séance.
         </p>
+
+        {/* Retour honnête, pas décoratif : ce chiffre vient du même calcul
+            d'XP que la sidebar (lib/gamification.ts), jamais une deuxième
+            formule — seulement la DIFFÉRENCE avec le début de séance. Rien ne
+            s'affiche si la séance n'a rapporté aucune XP (ex. rechargée sans
+            rien qualifier). */}
+        {xpGained > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 6, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: "spring", bounce: 0.45, duration: 0.5, delay: 0.1 }}
+            className="mx-auto mt-4 flex w-fit flex-wrap items-center justify-center gap-2"
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1.5 text-sm font-semibold text-accent">
+              <Zap size={14} /> +{xpGained} XP
+            </span>
+            {leveledUp && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1.5 text-sm font-semibold text-accent">
+                <Sparkles size={14} /> Niveau {newLevel}
+              </span>
+            )}
+          </motion.div>
+        )}
+
         {runResults.length > 0 && (
           <div className="mx-auto mt-3 flex max-w-sm flex-wrap items-center justify-center gap-1.5">
             {runSuccessCount > 0 && (

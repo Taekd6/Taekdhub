@@ -1,10 +1,10 @@
 "use client";
 
-import { Archive, ArrowLeft, BookOpenCheck, LayoutGrid, List } from "lucide-react";
+import { Archive, ArrowLeft, LayoutGrid, List } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Select } from "@/components/ui/input";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
@@ -525,11 +525,7 @@ export function ExerciseManager() {
               )
             )}
             {sorted.length === 0 && (
-              <Card className="px-6 py-16 text-center">
-                <BookOpenCheck className="mx-auto text-accent" />
-                <p className="mt-4 font-semibold">Aucun exercice ne correspond.</p>
-                <p className="mt-1 text-sm text-muted">Ajuste les filtres ou ajoute une nouvelle fiche.</p>
-              </Card>
+              <EmptyState title="Aucun exercice ne correspond." description="Ajuste les filtres ou ajoute une nouvelle fiche." className="py-16" />
             )}
           </div>
         </>

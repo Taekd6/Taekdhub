@@ -1,9 +1,9 @@
 "use client";
 
-import { ChevronDown, Clock3 } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { HistoryFilters } from "@/components/history/history-filters";
 import { HistorySummary } from "@/components/history/history-summary";
 import { SessionRow } from "@/components/history/session-row";
@@ -64,13 +64,7 @@ export function SessionHistory() {
   }
 
   if (!sessions.length) {
-    return (
-      <Card className="p-12 text-center">
-        <Clock3 className="mx-auto text-accent" />
-        <p className="mt-4 font-medium">Ton historique est prêt.</p>
-        <p className="mt-2 text-sm text-muted">Les séances terminées apparaîtront ici.</p>
-      </Card>
-    );
+    return <EmptyState title="Ton historique est prêt." description="Les séances terminées apparaîtront ici." />;
   }
 
   return (
@@ -85,9 +79,7 @@ export function SessionHistory() {
             return <SessionRow key={session.id} session={session} exerciseTitle={exercise?.title} chapterLabel={chapter?.label} />;
           })
         ) : (
-          <Card className="p-10 text-center">
-            <p className="text-sm text-muted">Aucune séance ne correspond à ces filtres.</p>
-          </Card>
+          <EmptyState title="Aucune séance ne correspond à ces filtres." />
         )}
       </div>
 

@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowRight, ListChecks, Sparkles } from "lucide-react";
+import { ArrowRight, ListChecks } from "lucide-react";
 import { useMemo } from "react";
 import { Card, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { rowInteractiveClass } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
@@ -26,12 +27,7 @@ export function ExerciseReviewPanel({
   const recommendations = useMemo(() => recommendExercises(exercises, sessions, 6), [exercises, sessions]);
 
   if (recommendations.length === 0) {
-    return (
-      <Card className="p-5 text-center">
-        <Sparkles className="mx-auto text-accent" size={20} />
-        <p className="mt-3 text-sm text-muted">Rien à revoir pour l&apos;instant — continue comme ça.</p>
-      </Card>
-    );
+    return <EmptyState title="Rien à revoir pour l'instant" description="Continue comme ça." className="py-8" />;
   }
 
   return (
