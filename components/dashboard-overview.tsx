@@ -106,8 +106,6 @@ export function DashboardOverview() {
 
   return (
     <div className="space-y-6">
-      <BackupReminder />
-
       {contestDays !== null && (
         <p className="t-meta -mt-2 flex items-center gap-1.5 px-1">
           <Trophy size={13} className="text-accent" /> {contestDays} jours avant le concours
@@ -213,6 +211,14 @@ export function DashboardOverview() {
           Voir ma progression
         </Link>
       </div>
+
+      {/* Décalé après l'action principale (refonte design) : un avertissement
+          de sauvegarde ouvrait autrefois la page, avant même "quoi
+          travailler aujourd'hui" — la première chose vue en arrivant n'était
+          pas la priorité du jour mais une alerte administrative. Un vrai
+          risque (perte du travail), mais qui n'a pas besoin de passer devant
+          l'action qui fait revenir chaque jour. */}
+      <BackupReminder />
 
       {/* ══ NIVEAU 3 — CE QUI MÉRITE MON ATTENTION ═══════════════════════ */}
       {toConsolidate.length > 0 && (

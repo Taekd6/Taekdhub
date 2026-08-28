@@ -4,8 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { memo } from "react";
 import { Archive, ChevronDown, Heart, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DifficultyDots } from "@/components/exercises/difficulty-dots";
-import { MasteryBar, SubjectAvatar, StatusSelect } from "@/components/exercises/exercise-badges";
+import { SubjectAvatar, StatusSelect } from "@/components/exercises/exercise-badges";
 import { ExerciseDetail } from "@/components/exercises/exercise-detail";
 import { cn } from "@/lib/cn";
 import type { Chapter } from "@/lib/storage";
@@ -53,8 +52,15 @@ function ExerciseListRowImpl({
         {/* La rangée portait huit éléments de front : avatar, titre, source,
             badge de type, difficulté, barre de maîtrise, cœur favori, statut.
             À ce compte-là, on ne lit plus le titre. Ne restent que ce qui aide
-            à CHOISIR — titre, matière, difficulté, maîtrise. La source et le
-            type restent une frappe plus loin, dans le détail dépliable. */}
+            à CHOISIR — titre, matière, difficulté, maîtrise, en une seconde
+            ligne TOUJOURS visible (même vocabulaire que les rangées du
+            Dashboard et de "À revoir en priorité" : une seule façon de
+            mentionner un exercice dans une liste, partout dans l'app).
+            Réservée aux dots/barre visuelles la vue Cartes, qui a la place —
+            ici, du texte scannable, pas des jauges qui disparaissaient
+            entièrement sous `sm`/`lg` et laissaient la rangée mobile vide
+            entre le titre et les icônes de droite. La source et le type
+            restent une frappe plus loin, dans le détail dépliable. */}
         <button onClick={() => onToggle(item.id)} className="focus-ring flex min-w-0 flex-1 items-center gap-3 text-left">
           <SubjectAvatar subject={item.subject} size="sm" />
           <span className="min-w-0 flex-1">
@@ -62,13 +68,14 @@ function ExerciseListRowImpl({
               <span className="min-w-0 truncate text-sm text-ink">{item.title}</span>
               {item.favorite && <Heart size={11} className="shrink-0 text-rose-300" fill="currentColor" />}
             </span>
-            <span className="t-meta mt-0.5 hidden truncate sm:block">{item.subject}</span>
-          </span>
-          <span className="hidden shrink-0 sm:inline-flex">
-            <DifficultyDots value={item.difficulty} />
-          </span>
-          <span className="hidden shrink-0 lg:inline-flex">
-            <MasteryBar value={item.mastery} />
+            {/* La matière n'est pas répétée en texte : l'avatar coloré à
+                gauche la porte déjà. Priorité à ce qui aide vraiment à
+                choisir — difficulté puis maîtrise, jamais tronquées avant
+                elles (un sujet long ne doit pas manger le seul chiffre qui
+                compte pour décider). */}
+            <span className="t-meta mt-0.5 block truncate">
+              Difficulté {item.difficulty}/5 · {item.mastery}% maîtrisé
+            </span>
           </span>
         </button>
         <div className="flex shrink-0 items-center gap-1.5">

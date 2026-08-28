@@ -398,18 +398,29 @@ export function ExerciseManager() {
           « lequel je travaille maintenant ? ». Le compteur « À revoir »
           faisait de surcroît doublon avec le panneau ci-dessous, qui montre
           les exercices concernés — donc actionnable, lui. L'élève arrive
-          désormais directement sur ses priorités et sa navigation. */}
-      <ExerciseReviewPanel exercises={exercises} sessions={sessions} onSelect={jumpToExercise} />
+          désormais directement sur ses priorités et sa navigation.
+          Masqué dès qu'on quitte le mode navigation (recherche, filtre,
+          chapitre choisi) : une fois qu'on regarde une sélection précise, un
+          second panneau de recommandations générales n'aide plus, il retarde
+          juste l'arrivée sur les résultats qu'on est venu chercher. */}
+      {browseMode && <ExerciseReviewPanel exercises={exercises} sessions={sessions} onSelect={jumpToExercise} />}
 
-      <ExerciseBrowser
-        exercises={exercises}
-        chapters={chapters}
-        filters={filters}
-        onGoHome={goHome}
-        onSelectSubject={selectSubject}
-        onGoToChapters={goToChapters}
-        onSelectChapter={selectChapter}
-      />
+      {/* Idem pour la grille "Toutes les matières" : hors navigation, elle ne
+          fait que répéter — en plus grand — ce que la barre de filtres et les
+          résultats du dessous savent déjà montrer. Le fil d'ariane et la
+          bannière d'un chapitre déjà choisi, eux, restent : contexte compact,
+          jamais redondant avec la liste. */}
+      {(browseMode || filters.subject !== "Toutes") && (
+        <ExerciseBrowser
+          exercises={exercises}
+          chapters={chapters}
+          filters={filters}
+          onGoHome={goHome}
+          onSelectSubject={selectSubject}
+          onGoToChapters={goToChapters}
+          onSelectChapter={selectChapter}
+        />
+      )}
 
       <ExerciseFiltersBar
         filters={filters}
