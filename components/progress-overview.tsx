@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Section } from "@/components/ui/section";
-import { ProgressBar } from "@/components/ui/progress";
+import { CircularProgress, ProgressBar } from "@/components/ui/progress";
 import { Heatmap } from "@/components/heatmap";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -16,9 +16,9 @@ import { computeChaptersToConsolidate, type ChapterConsolidation } from "@/lib/n
 import { comfortDifficulty, computeWorkingLevel } from "@/lib/recommendation";
 import { computeGlobalProgress, computeProgressBySubject, masteryDistribution, progressByChapter, statusDistribution } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META, type ReadinessLevel } from "@/lib/readiness";
-import type { Chapter, WeekSnapshot } from "@/lib/storage";
+import type { Chapter } from "@/lib/storage";
 import { statusMeta, subjectMeta, subjects, totalSeconds } from "@/lib/study";
-import { compareToPreviousWeek, findPreviousWeekSnapshot } from "@/lib/week-snapshot";
+import { compareToPreviousWeek, findPreviousWeekSnapshot, type WeekComparison } from "@/lib/week-snapshot";
 import { formatDuration } from "@/lib/utils";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 
@@ -44,6 +44,21 @@ function DeltaFigure({ label, value, delta }: { label: string; value: string; de
 }
 
 /**
+ * La phrase qui ouvre la page — une histoire, pas quatre chiffres bruts côte
+ * à côte. Rien de recalculé : `global` vient de `computeGlobalProgress`,
+ * `comparison` de `compareToPreviousWeek` (déjà nécessaire à `WeekEvolution`,
+ * remonté ici pour ne calculer la comparaison qu'une seule fois).
+ */
+function progressNarrative(global: { masteredCount: number; activeCount: number }, comparison: WeekComparison | null): string {
+  const plural = global.masteredCount > 1 ? "s" : "";
+  const base = `${global.masteredCount} exercice${plural} maîtrisé${plural} sur ${global.activeCount}.`;
+  if (!comparison || comparison.deltaCompletionRate === 0) return base;
+  const points = Math.abs(comparison.deltaCompletionRate);
+  const direction = comparison.deltaCompletionRate > 0 ? "+" : "−";
+  return `${base} ${direction}${points} point${points > 1 ? "s" : ""} de maîtrise cette semaine.`;
+}
+
+/**
  * "Évolution" (Sprint 5) — présentationnelle uniquement : toute la
  * comparaison vient de `compareToPreviousWeek` (lib/week-snapshot.ts). Ne
  * montre rien tant qu'aucune semaine précédente n'a été figée, plutôt que
@@ -52,12 +67,7 @@ function DeltaFigure({ label, value, delta }: { label: string; value: string; de
  * titre et des chiffres alignés suffisent, la comparaison EST déjà le
  * contenu, pas besoin d'un cadre en plus pour le dire.
  */
-function WeekEvolution({ exercises, sessions, weekSnapshots }: { exercises: Exercise[]; sessions: WorkSession[]; weekSnapshots: WeekSnapshot[] }) {
-  const comparison = useMemo(() => {
-    const previous = findPreviousWeekSnapshot(weekSnapshots);
-    return previous ? compareToPreviousWeek(exercises, sessions, previous) : null;
-  }, [exercises, sessions, weekSnapshots]);
-
+function WeekEvolution({ comparison }: { comparison: WeekComparison | null }) {
   if (!comparison) {
     return (
       <Section rank="secondary" eyebrow="Mémoire" title="Évolution">
@@ -280,6 +290,7 @@ export function ProgressOverview() {
   const { sessions, exercises, chapters, weekSnapshots, ready } = usePrepahubData();
 
   const model = useMemo(() => {
+    const previousWeek = findPreviousWeekSnapshot(weekSnapshots);
     return {
       global: computeGlobalProgress(exercises),
       bySubject: computeProgressBySubject(exercises),
@@ -289,8 +300,9 @@ export function ProgressOverview() {
       totalTime: totalSeconds(sessions),
       streak: computeStreak(sessions),
       workByDay: workByDayMap(sessions),
+      comparison: previousWeek ? compareToPreviousWeek(exercises, sessions, previousWeek) : null,
     };
-  }, [exercises, chapters, sessions]);
+  }, [exercises, chapters, sessions, weekSnapshots]);
 
   if (!ready) {
     return (
@@ -313,14 +325,47 @@ export function ProgressOverview() {
           queue de page qu'on consulte quand on veut creuser. */}
       <TopWeaknesses exercises={exercises} sessions={sessions} chapters={chapters} />
 
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 px-1">
-        <DeltaFigure label="Temps cumulé" value={formatDuration(model.totalTime)} delta="depuis le début" />
-        <DeltaFigure label="Exercices maîtrisés" value={`${model.global.masteredCount} / ${model.global.activeCount}`} delta={`${model.global.completionRate}% de la banque`} />
-        <DeltaFigure label="Série actuelle" value={`${model.streak} j`} delta="de suite" />
+      {/* L'HISTOIRE, PAS LE TABLEAU. Le pourcentage global devient un anneau
+          (même composant que l'objectif du jour du Dashboard — un seul
+          vocabulaire visuel pour "où j'en suis" dans toute l'app), la phrase
+          à côté raconte l'essentiel (combien, et l'évolution cette semaine
+          si elle est mesurable) au lieu de le laisser déduire de quatre
+          chiffres juxtaposés. */}
+      <div className="flex flex-col gap-6 px-1 lg:flex-row lg:items-center lg:gap-10">
+        <CircularProgress
+          value={model.global.completionRate}
+          size={132}
+          strokeWidth={10}
+          center={<span className="text-3xl font-semibold tabular-nums text-ink">{model.global.completionRate}%</span>}
+        />
+        <div className="min-w-0">
+          <p className="eyebrow">Ta progression</p>
+          <p className="mt-2 text-2xl font-semibold leading-snug tracking-tight sm:text-[1.75rem]">{progressNarrative(model.global, model.comparison)}</p>
+          <div className="mt-5 flex flex-wrap gap-x-10 gap-y-3">
+            <DeltaFigure label="Temps cumulé" value={formatDuration(model.totalTime)} delta="depuis le début" />
+            <div className="min-w-0">
+              <p className="t-meta">Série actuelle</p>
+              <p className="mt-1 flex items-center gap-1.5 t-figure">
+                <Flame size={18} className="text-accent" /> {model.streak} j
+              </p>
+              <p className="mt-0.5 text-2xs text-subtle">de suite</p>
+            </div>
+          </div>
+        </div>
       </div>
 
+      {/* Le rythme de travail dans le temps — un calendrier d'activité EST
+          déjà une histoire visuelle, pas une case à retrouver en bas de
+          page : il rejoint le haut de la page, juste après l'anneau. */}
+      <Section rank="secondary" eyebrow="Constance" title="Ton rythme de travail">
+        <div className="mt-4">
+          <Heatmap workByDay={model.workByDay} />
+          <p className="mt-4 text-xs text-muted">Chaque case représente une journée de travail enregistrée, sur 84 jours.</p>
+        </div>
+      </Section>
+
       <WorkingLevelCard exercises={exercises} sessions={sessions} />
-      <WeekEvolution exercises={exercises} sessions={sessions} weekSnapshots={weekSnapshots} />
+      <WeekEvolution comparison={model.comparison} />
       <DsReadiness exercises={exercises} sessions={sessions} />
 
       <Section rank="secondary" eyebrow="Répartition" title="Progression par matière et par maîtrise">
@@ -403,24 +448,17 @@ export function ProgressOverview() {
         )}
       </Section>
 
-      <Section rank="secondary" eyebrow="Répartition" title="Par statut et constance">
-        <div className="mt-4 grid gap-x-10 gap-y-6 sm:grid-cols-2">
-          <div className="space-y-4">
-            {model.status.map(({ status, count, percentage }) => (
-              <div key={status}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className={`rounded-md px-2 py-0.5 text-xs font-medium capitalize ${statusMeta[status].className}`}>{status}</span>
-                  <span className="text-muted">{count}</span>
-                </div>
-                <ProgressBar value={percentage} animated={false} className="mt-2 h-1.5" />
+      <Section rank="secondary" eyebrow="Répartition" title="Par statut">
+        <div className="mt-4 max-w-sm space-y-4">
+          {model.status.map(({ status, count, percentage }) => (
+            <div key={status}>
+              <div className="flex items-center justify-between text-sm">
+                <span className={`rounded-md px-2 py-0.5 text-xs font-medium capitalize ${statusMeta[status].className}`}>{status}</span>
+                <span className="text-muted">{count}</span>
               </div>
-            ))}
-          </div>
-
-          <div className="sm:border-l sm:border-hairline/[0.07] sm:pl-10">
-            <Heatmap workByDay={model.workByDay} />
-            <p className="mt-4 text-xs text-muted">Chaque case représente une journée de travail enregistrée, sur 84 jours.</p>
-          </div>
+              <ProgressBar value={percentage} animated={false} className="mt-2 h-1.5" />
+            </div>
+          ))}
         </div>
       </Section>
 
