@@ -751,6 +751,21 @@ export function explainReasons(reasons: string[]): string | null {
   return rule ? rule.sentence(reasons) : reasons[0];
 }
 
+/**
+ * Vrai si les seules raisons de proposer cet exercice sont "Jamais
+ * travaillé" (systématiquement accompagné de "Maîtrise faible", puisque tout
+ * exercice neuf a une maîtrise nulle) — aucun signal d'échec ni de statut
+ * signalé à la main. Sert à distinguer "à découvrir" (rien n'a encore été
+ * tenté) de "à revoir" (quelque chose a déjà été tenté et n'a pas tenu) :
+ * appeler le premier cas "à revoir" serait faux — on ne revoit pas ce qu'on
+ * n'a jamais vu. Utilisé par le Dashboard (libellé du plan du jour) et
+ * `ExerciseReviewPanel` (titre du panneau) : même critère, jamais recalculé
+ * différemment d'un écran à l'autre.
+ */
+export function isPureDiscovery(reasons: string[]): boolean {
+  return reasons.includes("Jamais travaillé") && !reasons.includes("Marqué à revoir") && !reasons.includes("En cours");
+}
+
 export interface ExerciseBankStats {
   /** Nombre total d'exercices qui apparaîtraient dans le tableau "À revoir" (pas seulement ceux affichés). */
   toReviewCount: number;

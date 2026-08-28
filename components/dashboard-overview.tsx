@@ -21,7 +21,7 @@ import {
   computeNextAction,
   computeUpcoming,
 } from "@/lib/next-action";
-import { explainReasons } from "@/lib/recommendation";
+import { explainReasons, isPureDiscovery } from "@/lib/recommendation";
 import {
   computeDailyPlan,
   DEFAULT_PLAN_MINUTES,
@@ -356,10 +356,9 @@ export function DashboardOverview() {
  * donc "Découvrir" à l'affichage.
  */
 function blockDisplayMeta(block: PlanBlock): { label: string; description: string } {
-  const isPureDiscovery =
-    block.intent === "consolider" &&
-    block.picks.every(({ reasons }) => reasons.includes("Jamais travaillé") && !reasons.includes("Marqué à revoir") && !reasons.includes("En cours"));
-  if (isPureDiscovery) return { label: "Découvrir", description: "Terrain encore inexploré" };
+  if (block.intent === "consolider" && block.picks.every(({ reasons }) => isPureDiscovery(reasons))) {
+    return { label: "Découvrir", description: "Terrain encore inexploré" };
+  }
   return { label: block.label, description: PLAN_INTENT_META[block.intent].description };
 }
 

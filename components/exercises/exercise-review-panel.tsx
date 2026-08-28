@@ -1,13 +1,13 @@
 "use client";
 
-import { ArrowRight, ListChecks } from "lucide-react";
+import { ArrowRight, Compass, ListChecks } from "lucide-react";
 import { useMemo } from "react";
 import { Card, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { rowInteractiveClass } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
-import { recommendExercises } from "@/lib/recommendation";
+import { isPureDiscovery, recommendExercises } from "@/lib/recommendation";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -30,11 +30,17 @@ export function ExerciseReviewPanel({
     return <EmptyState title="Rien à revoir pour l'instant" description="Continue comme ça." className="py-8" />;
   }
 
+  // Un élève tout juste arrivé n'a encore RIEN à "revoir" — tout ce qui
+  // remonte ici n'a simplement jamais été travaillé. Même critère que le
+  // Dashboard (voir `isPureDiscovery`, lib/recommendation.ts) : jamais deux
+  // façons de trancher la même question.
+  const isDiscoveryOnly = recommendations.every(({ reasons }) => isPureDiscovery(reasons));
+
   return (
     <Card className="p-5">
       <div className="flex items-center gap-2">
-        <ListChecks size={16} className="text-accent" />
-        <CardTitle className="text-base">À revoir en priorité</CardTitle>
+        {isDiscoveryOnly ? <Compass size={16} className="text-accent" /> : <ListChecks size={16} className="text-accent" />}
+        <CardTitle className="text-base">{isDiscoveryOnly ? "À découvrir en priorité" : "À revoir en priorité"}</CardTitle>
       </div>
       {/* Des rangées, plus des cartes bordées à badges : six tuiles encadrées
           portant chacune deux étiquettes teintées faisaient un mur d'emphase
