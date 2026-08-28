@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, BookOpenCheck, CalendarClock, ChevronRight, Flame, ListChecks, Trophy } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { ArrowRight, BookOpenCheck, CalendarClock, CheckCircle2, ChevronRight, Flame, ListChecks, Trophy } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { Button } from "@/components/ui/button";
 import { rowInteractiveClass, Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { CircularProgress } from "@/components/ui/progress";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 import { cn } from "@/lib/cn";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -93,6 +95,24 @@ export function DashboardOverview() {
     router.push("/session");
   }, [dailyPlan, router]);
 
+  // Objectif du jour franchi À L'INSTANT (pas déjà atteint au chargement) :
+  // seul ce cas précis mérite le petit rebond — sinon rouvrir le Dashboard
+  // un jour déjà bouclé le redéclencherait à chaque visite. Calculé avant le
+  // `return` anticipé ci-dessous : les Hooks ne peuvent pas dépendre d'une
+  // condition qui varie d'un rendu à l'autre.
+  const goalReached = model.objective.percent >= 100;
+  const [justReachedGoal, setJustReachedGoal] = useState(false);
+  const previousGoalReached = useRef(goalReached);
+  useEffect(() => {
+    const wasReached = previousGoalReached.current;
+    previousGoalReached.current = goalReached;
+    if (!wasReached && goalReached) {
+      setJustReachedGoal(true);
+      const timeout = setTimeout(() => setJustReachedGoal(false), 1800);
+      return () => clearTimeout(timeout);
+    }
+  }, [goalReached]);
+
   if (!ready) {
     return (
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-12">
@@ -133,7 +153,7 @@ export function DashboardOverview() {
           {hasPlan && (
             <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
               <span className="text-[3.25rem] font-semibold leading-none tracking-[-0.04em] tabular-nums sm:text-[4.5rem]">
-                {dailyPlan.totalMinutes}
+                <AnimatedNumber value={dailyPlan.totalMinutes} />
               </span>
               <span className="text-lg font-medium text-muted">
                 min · {dailyPlan.totalExercises} exercice{dailyPlan.totalExercises > 1 ? "s" : ""}
@@ -232,11 +252,30 @@ export function DashboardOverview() {
           qu'on descend d'un écran. */}
       <aside className="mt-12 space-y-8 lg:sticky lg:top-8 lg:mt-0">
         <div className="flex items-center gap-4">
-          <CircularProgress value={objective.percent} size={72} strokeWidth={6} center={<span className="text-base font-semibold">{objective.percent}%</span>} />
+          <CircularProgress
+            value={objective.percent}
+            size={72}
+            strokeWidth={6}
+            center={
+              goalReached ? (
+                <motion.span
+                  initial={justReachedGoal ? { scale: 0 } : false}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", bounce: 0.55, duration: 0.5 }}
+                >
+                  <CheckCircle2 size={22} className="text-accent" />
+                </motion.span>
+              ) : (
+                <span className="text-base font-semibold">
+                  <AnimatedNumber value={objective.percent} format={(n) => `${Math.round(n)}%`} />
+                </span>
+              )
+            }
+          />
           <div className="min-w-0">
-            <p className="eyebrow">Objectif du jour</p>
+            <p className="eyebrow">{goalReached ? "Objectif atteint" : "Objectif du jour"}</p>
             <p className="mt-1 text-base font-semibold tabular-nums text-ink">
-              {objective.workedMinutes} / {objective.goalMinutes} min
+              <AnimatedNumber value={objective.workedMinutes} /> / {objective.goalMinutes} min
             </p>
           </div>
         </div>

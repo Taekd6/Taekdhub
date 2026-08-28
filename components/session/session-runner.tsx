@@ -10,6 +10,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -544,12 +545,21 @@ export function SessionRunner() {
             className="mx-auto mt-4 flex w-fit flex-wrap items-center justify-center gap-2"
           >
             <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1.5 text-sm font-semibold text-accent">
-              <Zap size={14} /> +{xpGained} XP
+              <Zap size={14} /> +<AnimatedNumber value={xpGained} animateOnMount /> XP
             </span>
+            {/* Le passage de niveau est un événement plus rare que l'XP
+                courante : il arrive après (le temps que le compteur au-dessus
+                finisse de compter), et porte un fond plein plutôt que teinté
+                — un vrai jalon, pas une variante du badge XP. */}
             {leveledUp && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1.5 text-sm font-semibold text-accent">
+              <motion.span
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: "spring", bounce: 0.5, duration: 0.5, delay: 0.55 }}
+                className="inline-flex items-center gap-1.5 rounded-full bg-accent-solid px-3 py-1.5 text-sm font-semibold text-accent-solid-foreground"
+              >
                 <Sparkles size={14} /> Niveau {newLevel}
-              </span>
+              </motion.span>
             )}
           </motion.div>
         )}

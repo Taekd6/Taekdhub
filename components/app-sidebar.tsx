@@ -15,6 +15,7 @@ import {
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { levelFromXp, totalXp, xpProgressInLevel } from "@/lib/gamification";
 import { cn } from "@/lib/cn";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 
 /**
  * Deux groupes plutôt qu'une liste plate de sept entrées (refonte design) :
@@ -122,10 +123,12 @@ export function AppSidebar() {
             <div className="rounded-lg px-2.5 py-1.5">
               <div className="flex items-baseline justify-between">
                 <p className="text-xs font-medium text-ink">Niveau {level}</p>
-                <p className="text-2xs text-subtle">{xp.toLocaleString("fr-FR")} XP</p>
+                <p className="text-2xs text-subtle">
+                  <AnimatedNumber value={xp} format={(n) => `${Math.round(n).toLocaleString("fr-FR")} XP`} />
+                </p>
               </div>
               <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-hairline/[0.08]">
-                <div className="h-full rounded-full bg-accent/70" style={{ width: `${xpProgress.percent}%` }} />
+                <div className="h-full rounded-full bg-accent/70 transition-all duration-500" style={{ width: `${xpProgress.percent}%` }} />
               </div>
             </div>
           )}

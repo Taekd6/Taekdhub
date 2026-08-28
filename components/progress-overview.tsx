@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Section } from "@/components/ui/section";
 import { CircularProgress, ProgressBar } from "@/components/ui/progress";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Heatmap } from "@/components/heatmap";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -336,7 +337,11 @@ export function ProgressOverview() {
           value={model.global.completionRate}
           size={132}
           strokeWidth={10}
-          center={<span className="text-3xl font-semibold tabular-nums text-ink">{model.global.completionRate}%</span>}
+          center={
+            <span className="text-3xl font-semibold tabular-nums text-ink">
+              <AnimatedNumber value={model.global.completionRate} format={(n) => `${Math.round(n)}%`} />
+            </span>
+          }
         />
         <div className="min-w-0">
           <p className="eyebrow">Ta progression</p>
@@ -346,7 +351,7 @@ export function ProgressOverview() {
             <div className="min-w-0">
               <p className="t-meta">Série actuelle</p>
               <p className="mt-1 flex items-center gap-1.5 t-figure">
-                <Flame size={18} className="text-accent" /> {model.streak} j
+                <Flame size={18} className="text-accent" /> <AnimatedNumber value={model.streak} /> j
               </p>
               <p className="mt-0.5 text-2xs text-subtle">de suite</p>
             </div>
