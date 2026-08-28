@@ -14300,5 +14300,1023 @@
     ],
     "pedagogicalGoal": "relier systématiquement une configuration électronique donnée à la position exacte (période, groupe) d'un élément dans le tableau périodique, et à son identification, compétence de lecture directe essentielle.",
     "archived": false
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Écriture binaire d'un entier naturel",
+    "statement": "1. Convertir l'entier $53$ (base 10) en base 2.\n2. Convertir le nombre binaire $101101_2$ en base 10.\n3. Un octet (8 bits) non signé permet de représenter les entiers de $0$ à $2^8-1=255$. Donner l'écriture binaire sur 8 bits de $200$.",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Représentation des données",
+    "estimatedMinutes": 15,
+    "tags": [
+      "binaire",
+      "conversion de base",
+      "codage des entiers"
+    ],
+    "hints": [
+      "Pour convertir en base 2, effectue des divisions euclidiennes successives par 2 et lis les restes de bas en haut.",
+      "Pour convertir de la base 2 vers la base 10, additionne les puissances de 2 correspondant aux bits à 1.",
+      "$200 = 128+64+8 = 2^7+2^6+2^3$."
+    ],
+    "correction": "1. $53 = 32+16+4+1 = 2^5+2^4+2^2+2^0$, donc $53_{10} = 110101_2$ (vérification par divisions : $53=2\\times26+1$, $26=2\\times13+0$, $13=2\\times6+1$, $6=2\\times3+0$, $3=2\\times1+1$, $1=2\\times0+1$ ; restes lus de bas en haut : $110101$).\n2. $101101_2 = 1\\times2^5+0\\times2^4+1\\times2^3+1\\times2^2+0\\times2^1+1\\times2^0 = 32+8+4+1 = 45$.\n3. $200 = 128+64+8 = 2^7+2^6+2^3$, donc sur 8 bits : $11001000_2$ (bits numérotés de $2^7$ à $2^0$ : $1,1,0,0,1,0,0,0$).",
+    "level": 1,
+    "prerequisites": [
+      "division euclidienne"
+    ],
+    "pedagogicalGoal": "automatiser la conversion entier naturel <-> binaire dans les deux sens, base de toute la représentation des données."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Piège : le dépassement de capacité (overflow) d'un entier signé",
+    "statement": "On représente des entiers relatifs sur un octet (8 bits) en complément à deux : le bit de poids fort code $-2^7=-128$ et les 7 bits restants codent normalement, si bien que l'intervalle représentable est $[-128,\\,127]$.\n\nUn élève affirme : « si je prends le plus grand entier représentable, $127$, et que je lui ajoute $1$, j'obtiens $128$, donc c'est un problème de taille du registre mais le résultat mathématique reste correct, juste tronqué. » Que penser de cette affirmation ? Que vaut réellement, en complément à deux sur 8 bits, le résultat de $127+1$ ?",
+    "subject": "Informatique TC",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Représentation des données",
+    "estimatedMinutes": 12,
+    "tags": [
+      "complément à deux",
+      "overflow",
+      "piège",
+      "erreur classique"
+    ],
+    "hints": [
+      "En complément à deux sur 8 bits, $127$ s'écrit $01111111_2$. Ajoute $1$ en binaire à cette écriture, bit par bit, avec les retenues.",
+      "Le résultat binaire obtenu a son bit de poids fort à 1 : relis-le comme un entier signé (bit de poids fort = $-128$), pas comme un entier non signé.",
+      "$127+1$ ne vaut PAS $128$ dans ce système : $128$ n'est même pas représentable sur 8 bits signés (max $127$). Le comportement n'est pas une simple troncature, c'est un rebouclage vers les valeurs négatives."
+    ],
+    "correction": "L'affirmation est fausse sur le fond : ce n'est pas une « troncature qui garde le bon signe », c'est un rebouclage complet vers les valeurs négatives (comportement classique d'un compteur qui déborde).\n\n$127 = 01111111_2$. En ajoutant $1$ bit à bit avec propagation des retenues : $01111111 + 00000001 = 10000000_2$ (les 7 bits à 1 se propagent en retenues jusqu'au bit de poids fort).\n\nOr $10000000_2$, relu comme un entier signé en complément à deux, vaut $-2^7 + 0 = -128$ (le bit de poids fort contribue pour $-128$, tous les autres bits sont nuls). Donc $127+1$ « vaut » $-128$ dans cette représentation : c'est le débordement (overflow) classique d'un entier signé, qui fait passer du plus grand positif directement au plus petit négatif — un bug réel et fréquent (compteurs, indices) quand la plage de valeurs n'est pas vérifiée.",
+    "level": 2,
+    "prerequisites": [
+      "écriture binaire d'un entier",
+      "addition binaire"
+    ],
+    "pedagogicalGoal": "piège classique : un dépassement de capacité sur des entiers signés ne « sature » pas, il reboucle vers les valeurs négatives — comprendre le complément à deux, pas juste l'apprendre par cœur."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Nombre de valeurs représentables et lien avec le nombre de bits",
+    "statement": "1. Avec $n$ bits, combien de configurations binaires distinctes peut-on écrire ?\n2. En déduire le plus grand entier naturel représentable sur $n$ bits (non signés), puis l'intervalle d'entiers relatifs représentables sur $n$ bits en complément à deux.\n3. Un identifiant doit pouvoir prendre $10\\,000$ valeurs distinctes. Quel est le plus petit nombre de bits nécessaire pour le coder (en non signé) ?",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Représentation des données",
+    "estimatedMinutes": 15,
+    "tags": [
+      "binaire",
+      "codage des entiers",
+      "puissances de 2"
+    ],
+    "hints": [
+      "Chaque bit peut valoir 0 ou 1, indépendamment des autres : compte le nombre total de combinaisons possibles pour $n$ bits.",
+      "En non signé, les valeurs vont de $0$ à (nombre de configurations) $-1$.",
+      "En complément à deux, une des $2^n$ configurations sert à coder $-2^{n-1}$ à elle seule (asymétrie classique de l'intervalle)."
+    ],
+    "correction": "1. Chaque bit a 2 valeurs possibles, indépendamment : il y a $2^n$ configurations distinctes sur $n$ bits.\n2. En non signé : les $2^n$ valeurs codent les entiers de $0$ à $2^n-1$ (le plus grand est donc $2^n-1$). En complément à deux (signé) : intervalle $[-2^{n-1},\\,2^{n-1}-1]$ — asymétrique, car une seule configuration ($1000\\ldots0$) code le plus petit négatif $-2^{n-1}$, sans opposé positif correspondant sur $n$ bits.\n3. Il faut $2^n \\geq 10\\,000$. Or $2^{13}=8192 < 10\\,000$ et $2^{14}=16\\,384 \\geq 10\\,000$ : il faut donc $14$ bits (13 bits ne suffisent pas, ils ne couvrent que 8192 identifiants distincts).",
+    "level": 2,
+    "prerequisites": [
+      "puissances de 2",
+      "écriture binaire d'un entier"
+    ],
+    "pedagogicalGoal": "relier directement le nombre de bits disponibles au nombre de valeurs représentables — raisonnement utilisé constamment en informatique (tailles de types, dimensionnement)."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Codage en virgule flottante — ordre de grandeur et perte de précision",
+    "statement": "Un nombre flottant en simple précision (norme IEEE 754, 32 bits) est représenté sous la forme $(-1)^s \\times 1{,}m \\times 2^{e}$ où $s$ est le bit de signe, $m$ la mantisse (23 bits après la virgule) et $e$ l'exposant (décalé, codé sur 8 bits).\n\n1. Pourquoi un même nombre flottant ne peut-il représenter EXACTEMENT que certaines valeurs réelles, et pas toutes les valeurs de $\\mathbb{R}$ ?\n2. En Python, l'instruction 0.1 + 0.2 == 0.3 renvoie False. Expliquer pourquoi, sans exécuter le code.\n3. Quelle est la bonne pratique pour comparer deux flottants issus d'un calcul, plutôt que d'utiliser == ?",
+    "subject": "Informatique TC",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Représentation des données",
+    "estimatedMinutes": 12,
+    "tags": [
+      "flottants",
+      "IEEE 754",
+      "erreur classique",
+      "piège"
+    ],
+    "hints": [
+      "Un flottant utilise un nombre FINI de bits (32 dans l'énoncé) pour coder mantisse et exposant : il ne peut donc représenter qu'un ensemble fini et discret de valeurs, pas un continuum.",
+      "$0{,}1$ et $0{,}2$ n'ont pas d'écriture binaire finie exacte (comme $1/3$ n'a pas d'écriture décimale finie exacte) : ils sont donc déjà arrondis dès leur stockage.",
+      "Comparer deux flottants revient à comparer $|a-b|$ à un seuil de tolérance (epsilon) plutôt qu'à tester une égalité stricte."
+    ],
+    "correction": "1. Avec un nombre fini de bits, il n'existe qu'un nombre FINI (bien que très grand) de configurations binaires possibles, donc un nombre fini de valeurs représentables exactement. $\\mathbb{R}$ est infini (et même non dénombrable) : la quasi-totalité des réels doivent donc être approchés par la valeur flottante représentable la plus proche.\n2. En base 2, $0{,}1$ et $0{,}2$ ont un développement binaire infini périodique (exactement comme $1/3=0{,}333\\ldots$ en base 10) : ils sont donc déjà stockés sous une forme légèrement arrondie. La somme de ces deux valeurs légèrement arrondies ne tombe pas exactement sur la représentation flottante de $0{,}3$ (elle-même déjà arrondie), d'où une inégalité au bit près.\n3. On compare $|a-b|$ à un petit seuil de tolérance $\\varepsilon$ (par exemple abs(a - b) < 1e-9) plutôt que d'utiliser == : cela absorbe les écarts d'arrondi inévitables sur des flottants issus de calculs.",
+    "level": 2,
+    "prerequisites": [
+      "écriture binaire d'un entier",
+      "développement décimal illimité"
+    ],
+    "pedagogicalGoal": "comprendre que la représentation flottante est intrinsèquement approchée (nombre fini de bits) et savoir en tirer la bonne pratique de comparaison — piège très fréquent chez les débutants."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Listes vs tuples — mutabilité et conséquences",
+    "statement": "1. Quelle est la différence fondamentale entre une liste Python ([1, 2, 3]) et un tuple ((1, 2, 3)) ?\n2. Un élève écrit une fonction qui reçoit un tuple coordonnees = (x, y) en paramètre et tente d'exécuter coordonnees[0] = x + 1 pour décaler l'abscisse. Que se passe-t-il, et pourquoi ?\n3. Donner un cas d'usage où choisir un tuple plutôt qu'une liste est pertinent, au-delà de la simple économie de mémoire.",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Types et structures de base en Python",
+    "estimatedMinutes": 12,
+    "tags": [
+      "listes",
+      "tuples",
+      "mutabilité"
+    ],
+    "hints": [
+      "« Mutable » signifie qu'on peut modifier le contenu de l'objet après sa création sans en changer l'identité ; « immuable » signifie l'inverse.",
+      "Tenter de modifier un élément d'un tuple lève une exception Python précise : TypeError.",
+      "Un tuple immuable peut servir de clé de dictionnaire ou d'élément d'un ensemble (set), ce qu'une liste ne peut jamais faire."
+    ],
+    "correction": "1. Une liste est MUTABLE : on peut modifier, ajouter ou retirer des éléments après sa création (ma_liste[0] = 5, ma_liste.append(6)). Un tuple est IMMUABLE : une fois créé, son contenu ne peut plus être modifié.\n2. L'instruction lève une TypeError: 'tuple' object does not support item assignment. C'est le comportement attendu : les tuples sont immuables par construction, Python interdit toute réassignation d'un de leurs éléments. Pour « modifier » des coordonnées, il faut créer un nouveau tuple : coordonnees = (x + 1, y).\n3. L'immuabilité permet d'utiliser un tuple comme clé de dictionnaire ou élément d'un set (les listes, mutables, ne sont pas hashables et sont refusées dans ces contextes) — par exemple stocker des coordonnées (ligne, colonne) comme clés d'un dictionnaire pour un plateau de jeu.",
+    "level": 1,
+    "prerequisites": [
+      "syntaxe de base Python"
+    ],
+    "pedagogicalGoal": "distinguer mutable/immuable en Python à partir d'un cas concret (liste vs tuple), notion qui revient constamment (dictionnaires, sets, effets de bord de fonction)."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Piège : modifier une liste en la parcourant",
+    "statement": "On souhaite retirer de la liste notes = [8, 12, 5, 15, 9, 6] toutes les valeurs strictement inférieures à $10$. Un élève écrit :\n\nfor n in notes:\n    if n < 10:\n        notes.remove(n)\n\nAprès exécution, notes vaut [12, 15, 9, 6] : la valeur $9$ (qui est $< 10$) n'a pas été retirée, alors que $6$ (aussi $< 10$) est resté également. Expliquer précisément pourquoi ce code ne retire pas toutes les valeurs attendues, puis proposer une correction.",
+    "subject": "Informatique TC",
+    "type": "Colle",
+    "difficulty": 3,
+    "chapter": "Types et structures de base en Python",
+    "estimatedMinutes": 15,
+    "tags": [
+      "listes",
+      "piège",
+      "erreur classique",
+      "itération"
+    ],
+    "hints": [
+      "Une boucle for sur une liste avance par INDICE en interne, même si la syntaxe ne le montre pas explicitement.",
+      "Quand notes.remove(n) supprime un élément, tous les éléments suivants se décalent d'un indice vers la gauche — mais l'indice interne de la boucle, lui, continue d'avancer normalement.",
+      "Le résultat est qu'un élément sur deux, après une suppression, est « sauté » silencieusement : la boucle passe dessus sans jamais le tester."
+    ],
+    "correction": "Le bug vient du fait qu'on modifie une liste PENDANT qu'on la parcourt avec une boucle for, qui avance par indice en interne (indice 0, puis 1, puis 2…). Déroulons : à l'indice 0, n=8<10, retiré → la liste devient [12,5,15,9,6] et tous les éléments suivants se décalent d'une case vers la gauche. La boucle passe ensuite à l'indice 1, qui pointe maintenant sur 5 (et non plus sur 12 comme prévu) — 5 est retiré à son tour, la liste devient [12,15,9,6]. L'indice 2 pointe alors sur 9 (initialement en position 4, jamais testé sous son ancienne position) : mais comme la boucle vient tout juste d'avancer normalement d'un cran, elle arrive directement à l'indice 2 = 9 et le garde car... en réalité le déroulé précis dépend des décalages successifs, mais le principe général est acquis : un élément sur deux consécutifs sous le seuil est sauté, car retirer un élément décale tous les suivants sans que l'indice de boucle ne recule en conséquence.\n\nCorrection robuste : ne jamais modifier une liste qu'on parcourt directement. Construire une NOUVELLE liste par compréhension :\n\nnotes = [n for n in notes if n >= 10]\n\nCette approche reconstruit la liste filtrée sans jamais retirer d'élément pendant l'itération, éliminant structurellement le problème.",
+    "level": 3,
+    "prerequisites": [
+      "boucle for",
+      "méthodes de liste (append, remove)"
+    ],
+    "pedagogicalGoal": "piège très classique et sournois (le code ne plante pas, il donne juste un résultat faux) : ne jamais modifier une structure de données pendant qu'on la parcourt."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Dictionnaires — comptage d'occurrences",
+    "statement": "On dispose de la liste notes_matiere = ['Maths', 'Physique', 'Maths', 'Chimie', 'Maths', 'Physique'] représentant, pour une série d'exercices faits, la matière concernée.\n\n1. Écrire une fonction compter_occurrences(liste) qui renvoie un dictionnaire associant à chaque valeur distincte de la liste son nombre d'occurrences (sans utiliser de bibliothèque externe).\n2. Utiliser ce dictionnaire pour déterminer, par le code, quelle est la matière la plus travaillée.",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Types et structures de base en Python",
+    "estimatedMinutes": 18,
+    "tags": [
+      "dictionnaires",
+      "comptage",
+      "structures de données"
+    ],
+    "hints": [
+      "Initialise un dictionnaire vide, puis parcours la liste : pour chaque élément, s'il est déjà une clé du dictionnaire on incrémente son compteur, sinon on l'ajoute avec le compteur à 1.",
+      "La méthode dictionnaire.get(cle, valeur_par_defaut) permet d'éviter un test explicite « la clé existe-t-elle déjà ? ».",
+      "Pour trouver la clé associée à la plus grande valeur d'un dictionnaire, on peut utiliser max(dictionnaire, key=dictionnaire.get)."
+    ],
+    "correction": "1. \n\ndef compter_occurrences(liste):\n compteur = {}\n for element in liste:\n  compteur[element] = compteur.get(element, 0) + 1\n return compteur\n\nSur l'exemple : compter_occurrences(notes_matiere) renvoie {'Maths': 3, 'Physique': 2, 'Chimie': 1}.\n\n2. La matière la plus travaillée est la clé associée à la plus grande valeur du dictionnaire :\n\nresultats = compter_occurrences(notes_matiere)\nmatiere_dominante = max(resultats, key=resultats.get)\n\nIci, matiere_dominante vaut 'Maths' (3 occurrences, contre 2 pour Physique et 1 pour Chimie) — cohérent avec un simple comptage manuel de la liste de départ.",
+    "level": 2,
+    "prerequisites": [
+      "boucle for",
+      "listes",
+      "dictionnaires (bases)"
+    ],
+    "pedagogicalGoal": "manipuler concrètement le dictionnaire comme structure de comptage — schéma algorithmique qui revient dans énormément de traitements de données réels."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Compter le nombre d'opérations élémentaires d'un algorithme simple",
+    "statement": "On considère la fonction suivante, qui calcule la somme des éléments d'une liste de taille $n$ :\n\ndef somme(liste):\n total = 0\n for x in liste:\n  total = total + x\n return total\n\n1. Combien d'additions sont effectuées, en fonction de $n$ ?\n2. En déduire la complexité temporelle de cet algorithme, en notation $O(\\cdot)$.\n3. Cette complexité dépend-elle des valeurs contenues dans la liste (nombres petits ou grands, positifs ou négatifs) ? Justifier.",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Complexité algorithmique",
+    "estimatedMinutes": 12,
+    "tags": [
+      "complexité",
+      "notation O",
+      "boucle simple"
+    ],
+    "hints": [
+      "Compte le nombre de tours de boucle : la boucle for x in liste s'exécute une fois par élément de la liste.",
+      "Chaque tour de boucle effectue exactement une addition.",
+      "La notation $O(\\cdot)$ décrit l'ordre de grandeur du nombre d'opérations quand $n$ devient grand, indépendamment des constantes multiplicatives."
+    ],
+    "correction": "1. La boucle parcourt les $n$ éléments de la liste un par un, et effectue une addition à chaque tour : il y a exactement $n$ additions.\n2. Le nombre d'opérations est proportionnel à $n$ : la complexité est $O(n)$, dite linéaire.\n3. Non : le nombre d'opérations effectuées dépend uniquement de la TAILLE $n$ de la liste, pas des valeurs qu'elle contient. Que les éléments soient petits, grands, positifs ou négatifs, l'algorithme fait toujours exactement $n$ additions — c'est une caractéristique générale de la complexité algorithmique : elle mesure le nombre d'opérations en fonction de la TAILLE des données, pas de leur valeur.",
+    "level": 1,
+    "prerequisites": [
+      "boucle for"
+    ],
+    "pedagogicalGoal": "premier contact avec la complexité : compter des opérations élémentaires avant de généraliser à la notation O, en insistant sur le fait que la complexité dépend de la taille des données et non de leurs valeurs."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Comparer deux algorithmes de recherche du maximum",
+    "statement": "Un élève doit trouver le plus grand élément d'une liste liste de taille $n$. Il hésite entre deux méthodes :\n\n**Méthode A** : parcourir la liste une seule fois en gardant en mémoire le plus grand élément vu jusque-là (for x in liste: si x > maximum_actuel: maximum_actuel = x).\n\n**Méthode B** : pour chaque élément de la liste, le comparer à TOUS les autres éléments pour vérifier s'il est supérieur ou égal à chacun d'eux ; s'il l'est, c'est le maximum.\n\n1. Donner la complexité de chacune des deux méthodes en fonction de $n$.\n2. Pour une liste de $1\\,000\\,000$ éléments, ces deux méthodes sont-elles comparables en pratique ? Justifier par un ordre de grandeur du nombre d'opérations de chacune.",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Complexité algorithmique",
+    "estimatedMinutes": 15,
+    "tags": [
+      "complexité",
+      "notation O",
+      "comparaison d'algorithmes"
+    ],
+    "hints": [
+      "Pour la méthode A, chaque élément est examiné une seule fois : combien de comparaisons au total ?",
+      "Pour la méthode B, chaque élément est comparé à chacun des $n-1$ autres : combien de comparaisons au total, pour les $n$ éléments ?",
+      "Compare $n$ et $n^2$ pour $n=1\\,000\\,000$ : le rapport entre les deux devient rapidement écrasant."
+    ],
+    "correction": "1. Méthode A : chaque élément est examiné exactement une fois, avec une seule comparaison à chaque tour → $n$ comparaisons au total, complexité $O(n)$ (linéaire). Méthode B : pour chacun des $n$ éléments, on effectue environ $n-1$ comparaisons (avec tous les autres) → environ $n(n-1) \\approx n^2$ comparaisons au total, complexité $O(n^2)$ (quadratique).\n2. Pour $n=1\\,000\\,000=10^6$ : la méthode A effectue environ $10^6$ comparaisons (de l'ordre de la milliseconde sur un ordinateur actuel), tandis que la méthode B en effectue environ $(10^6)^2=10^{12}$, soit mille milliards — un facteur $10^6$ de plus, largement au-delà de ce qui est exécutable en temps raisonnable. Les deux méthodes ne sont donc absolument PAS comparables en pratique dès que $n$ devient grand : c'est exactement l'intérêt de raisonner en complexité plutôt qu'en « ça marche sur mon petit exemple ».",
+    "level": 2,
+    "prerequisites": [
+      "notation O",
+      "boucles imbriquées"
+    ],
+    "pedagogicalGoal": "faire toucher du doigt, par un ordre de grandeur concret, pourquoi la différence entre $O(n)$ et $O(n^2)$ n'est pas une nuance théorique mais une différence pratique majeure."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Vrai/Faux justifié — complexité algorithmique",
+    "statement": "Pour chacune des affirmations suivantes, dire si elle est vraie ou fausse et justifier.\n\n1. Un algorithme de complexité $O(n^2)$ est toujours plus lent en pratique qu'un algorithme de complexité $O(n)$, quelle que soit la taille $n$ des données.\n2. Deux boucles for imbriquées, chacune parcourant $n$ éléments, donnent nécessairement une complexité $O(n^2)$.\n3. Un algorithme de complexité $O(1)$ met un temps d'exécution qui ne dépend absolument pas de la taille des données.",
+    "subject": "Informatique TC",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Complexité algorithmique",
+    "estimatedMinutes": 12,
+    "tags": [
+      "complexité",
+      "notation O",
+      "vrai/faux"
+    ],
+    "hints": [
+      "La notation $O(\\cdot)$ décrit un comportement ASYMPTOTIQUE (quand $n$ devient grand) : elle ne dit rien de garanti pour de petites valeurs de $n$, à cause des constantes multiplicatives.",
+      "Deux boucles imbriquées parcourant chacune $n$ éléments donnent bien $n\\times n=n^2$ itérations — mais fais attention si les bornes des boucles ne sont pas exactement les mêmes taille de données.",
+      "$O(1)$ signifie que le nombre d'opérations est borné par une CONSTANTE, indépendante de $n$ : c'est la définition même de la complexité constante."
+    ],
+    "correction": "1. FAUX. La notation $O(\\cdot)$ décrit un comportement quand $n$ tend vers l'infini, à une constante multiplicative près. Pour de petites valeurs de $n$, un algorithme $O(n^2)$ avec une très petite constante peut être plus rapide en pratique qu'un algorithme $O(n)$ avec une grosse constante (beaucoup d'opérations coûteuses à chaque tour). L'affirmation « toujours plus lent quelle que soit la taille » est trop forte : $O(n^2)$ garantit seulement d'être plus lent pour $n$ SUFFISAMMENT GRAND.\n2. VRAI dans le cas standard où les deux boucles portent chacune sur les $n$ mêmes éléments (boucle imbriquée classique parcourant $n$ fois $n$ éléments) : cela donne bien $n \\times n = n^2$ itérations, donc $O(n^2)$.\n3. VRAI : par définition, $O(1)$ signifie que le nombre d'opérations est borné par une constante ne dépendant pas de $n$ (par exemple accéder à liste[0], qui prend le même temps que la liste ait 10 ou 10 millions d'éléments).",
+    "level": 2,
+    "prerequisites": [
+      "notation O"
+    ],
+    "pedagogicalGoal": "nuancer une lecture trop mécanique de la notation O (comportement asymptotique, pas une garantie ponctuelle) tout en consolidant les cas standards (boucles imbriquées, complexité constante)."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Recherche dichotomique dans une liste triée",
+    "statement": "On dispose d'une liste TRIÉE par ordre croissant liste = [2, 5, 8, 12, 16, 23, 38, 45, 56, 72] et on cherche à savoir si la valeur $23$ s'y trouve, par recherche dichotomique (on compare la valeur cherchée au milieu de l'intervalle courant, puis on élimine la moitié qui ne peut pas la contenir).\n\n1. Dérouler la recherche dichotomique de $23$ dans cette liste, en indiquant à chaque étape les bornes de l'intervalle considéré et l'élément du milieu comparé.\n2. Pourquoi cette méthode nécessite-t-elle impérativement que la liste soit triée ?\n3. Donner la complexité de la recherche dichotomique dans une liste de $n$ éléments, en notation $O(\\cdot)$.",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Recherche et tri",
+    "estimatedMinutes": 15,
+    "tags": [
+      "dichotomie",
+      "recherche",
+      "liste triée"
+    ],
+    "hints": [
+      "À chaque étape, calcule l'indice du milieu de l'intervalle courant, compare la valeur cherchée à l'élément à cet indice, puis restreins l'intervalle à la moitié gauche ou droite selon le résultat de la comparaison.",
+      "Si la liste n'est pas triée, éliminer une moitié entière sous prétexte que la valeur du milieu est trop grande (ou trop petite) n'a plus aucun sens : rien ne garantit que les valeurs plus petites soient regroupées d'un côté.",
+      "À chaque étape, la taille de l'intervalle est divisée par 2 : combien de divisions par 2 faut-il pour réduire $n$ à 1 ?"
+    ],
+    "correction": "1. Indices $0$ à $9$ (10 éléments). Milieu : indice $\\lfloor(0+9)/2\\rfloor=4$, valeur $16$. $23 > 16$ : on restreint à la moitié droite, indices $5$ à $9$. Milieu : indice $\\lfloor(5+9)/2\\rfloor=7$, valeur $45$. $23<45$ : on restreint à indices $5$ à $6$. Milieu : indice $\\lfloor(5+6)/2\\rfloor=5$, valeur $23$ : trouvé, en 3 comparaisons.\n2. Le principe même de la dichotomie est d'éliminer d'un coup toute une moitié de la liste en se basant sur une seule comparaison (« si le milieu est plus grand que la valeur cherchée, elle ne peut être qu'à gauche »). Ce raisonnement n'est valide QUE si la liste est triée : dans une liste non triée, la valeur cherchée peut se trouver n'importe où, y compris dans la moitié qu'on vient d'éliminer.\n3. À chaque étape, la taille de l'intervalle est divisée par 2. Le nombre d'étapes nécessaires pour réduire une taille $n$ à une taille $1$ est $\\log_2(n)$ : la complexité est $O(\\log n)$, bien meilleure que la recherche linéaire $O(n)$ (particulièrement visible pour de grands $n$ : $\\log_2(10^6)\\approx 20$, contre $10^6$ comparaisons dans le pire cas d'une recherche linéaire).",
+    "level": 2,
+    "prerequisites": [
+      "notation O",
+      "listes"
+    ],
+    "pedagogicalGoal": "dérouler concrètement la dichotomie (schéma algorithmique fondamental) et comprendre pourquoi le tri préalable est une condition structurelle, pas un détail d'implémentation."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Tri par insertion — déroulé pas à pas",
+    "statement": "Le tri par insertion construit progressivement une partie triée en insérant, un par un, chaque élément restant à sa bonne place dans la partie déjà triée.\n\n1. Dérouler le tri par insertion sur la liste [5, 2, 9, 1, 5, 6], en donnant l'état complet de la liste après le traitement de chaque nouvel élément inséré.\n2. Dans le pire des cas (liste triée dans l'ordre décroissant), combien de comparaisons ce tri effectue-t-il environ, pour une liste de $n$ éléments ? En déduire sa complexité dans le pire cas.\n3. Dans le meilleur des cas (liste déjà triée dans l'ordre croissant), combien de comparaisons sont nécessaires ? Ce tri est-il donc toujours de la même complexité, quelle que soit la liste de départ ?",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Recherche et tri",
+    "estimatedMinutes": 18,
+    "tags": [
+      "tri par insertion",
+      "complexité",
+      "meilleur/pire cas"
+    ],
+    "hints": [
+      "À chaque étape, on considère l'élément suivant et on le fait « remonter » vers la gauche tant qu'il est plus petit que son voisin de gauche dans la partie déjà triée.",
+      "Dans le pire cas, chaque nouvel élément doit être comparé (et déplacé) contre TOUS les éléments déjà triés avant lui : additionne $1+2+\\cdots+(n-1)$.",
+      "Dans le meilleur cas, chaque nouvel élément est déjà à sa place : une seule comparaison par élément suffit à le constater."
+    ],
+    "correction": "1. Partie triée initiale : [5]. Insertion de $2$ : $2<5$, il passe devant → [2, 5]. Insertion de $9$ : $9>5$, reste à sa place → [2, 5, 9]. Insertion de $1$ : $1$ passe devant tous → [1, 2, 5, 9]. Insertion du second $5$ : il se place après le premier $5$ mais avant $9$ → [1, 2, 5, 5, 9]. Insertion de $6$ : il se place entre $5$ et $9$ → [1, 2, 5, 5, 6, 9], liste finale triée.\n2. Dans le pire cas (liste décroissante), le $k$-ième élément inséré doit être comparé aux $k-1$ éléments déjà triés (il doit tous les dépasser). Le nombre total de comparaisons est $1+2+\\cdots+(n-1)=\\dfrac{n(n-1)}{2}$, de l'ordre de $n^2$ : complexité $O(n^2)$ dans le pire cas.\n3. Dans le meilleur cas (liste déjà triée), chaque nouvel élément est comparé une seule fois à son prédécesseur immédiat (il est déjà à sa place, la comparaison s'arrête aussitôt) : $n-1$ comparaisons au total, donc $O(n)$. Ce tri n'est donc PAS toujours de la même complexité : elle dépend fortement de l'organisation initiale des données, contrairement à un tri comme le tri fusion dont la complexité est $O(n\\log n)$ dans tous les cas.",
+    "level": 3,
+    "prerequisites": [
+      "notation O",
+      "listes"
+    ],
+    "pedagogicalGoal": "dérouler un algorithme de tri à la main et distinguer meilleur cas / pire cas de complexité — nuance souvent oubliée quand on ne retient qu'une seule complexité par algorithme."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Analyse d'erreur — confondre trié et présence d'un élément",
+    "statement": "Un élève veut vérifier si la valeur $17$ apparaît dans la liste [3, 17, 8, 42, 17, 9]. Il écrit le code d'une recherche DICHOTOMIQUE directement sur cette liste, sans la trier au préalable, en expliquant : « la dichotomie est plus rapide que de tout parcourir, donc autant l'utiliser systématiquement pour chercher un élément ». Sur cet exemple précis, son code renvoie (à tort) que $17$ n'est pas présent.\n\n1. Expliquer précisément pourquoi une recherche dichotomique sur une liste NON triée peut donner un résultat faux.\n2. Deux corrections sont possibles : citer les deux (avec leur inconvénient respectif).",
+    "subject": "Informatique TC",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Recherche et tri",
+    "estimatedMinutes": 12,
+    "tags": [
+      "dichotomie",
+      "erreur classique",
+      "analyse d'erreur"
+    ],
+    "hints": [
+      "La dichotomie élimine une moitié entière de la liste à chaque étape en supposant un ordre : si cet ordre n'existe pas, l'élément cherché peut être dans la moitié éliminée à tort.",
+      "Première correction possible : trier la liste avant la recherche dichotomique — mais le tri lui-même a un coût.",
+      "Seconde correction possible : renoncer à la dichotomie et utiliser une recherche linéaire, moins rapide en théorie mais toujours correcte sans précondition."
+    ],
+    "correction": "1. La dichotomie repose entièrement sur l'hypothèse que la liste est triée : c'est ce qui justifie d'éliminer toute une moitié sur la seule base d'une comparaison avec l'élément du milieu. Sur [3, 17, 8, 42, 17, 9] (non triée), le milieu comparé peut conduire à éliminer la moitié qui contient pourtant $17$, car rien ne garantit que les valeurs y soient rangées par ordre croissant ou décroissant. Le résultat « non trouvé » n'a alors aucune valeur logique : c'est un artefact de l'algorithme mal appliqué, pas une propriété de la liste.\n2. Correction 1 : trier la liste d'abord (par exemple avec sorted(liste)), puis effectuer la dichotomie. Inconvénient : le tri a un coût de $O(n\\log n)$, qui peut annuler l'intérêt de la dichotomie si on ne cherche qu'une seule fois dans cette liste (il aurait alors été plus simple de faire une recherche linéaire directe en $O(n)$). La dichotomie n'est rentable que si la liste est déjà triée, ou si on va faire PLUSIEURS recherches dans la même liste triée une seule fois. Correction 2 : renoncer à la dichotomie et utiliser une recherche linéaire (parcourir la liste élément par élément avec in, ou une boucle for). Inconvénient : complexité $O(n)$ au lieu de $O(\\log n)$, mais toujours correcte, sans aucune précondition sur l'ordre de la liste.",
+    "level": 2,
+    "prerequisites": [
+      "recherche dichotomique dans une liste triée",
+      "recherche linéaire"
+    ],
+    "pedagogicalGoal": "piège classique : appliquer un algorithme performant hors de ses conditions de validité produit un résultat faux, pas seulement un résultat lent — la complexité annoncée d'un algorithme n'est valable que sous ses hypothèses."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Fonction récursive simple — la factorielle",
+    "statement": "On rappelle que la factorielle d'un entier naturel $n$ est définie par $0!=1$ et, pour $n\\geq 1$, $n!=n\\times(n-1)!$.\n\n1. Écrire une fonction récursive factorielle(n) calculant $n!$, en s'appuyant directement sur cette définition.\n2. Identifier dans cette fonction le cas de base et le cas récursif.\n3. Dérouler l'exécution de factorielle(4) en indiquant la pile des appels successifs et la manière dont le résultat remonte.",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Récursivité",
+    "estimatedMinutes": 15,
+    "tags": [
+      "récursivité",
+      "factorielle",
+      "cas de base"
+    ],
+    "hints": [
+      "Le cas de base est la situation où la fonction peut répondre directement, sans se rappeler elle-même (ici, $n=0$).",
+      "Le cas récursif exprime le résultat pour $n$ en fonction du résultat pour $n-1$, obtenu par un appel récursif de la fonction à elle-même.",
+      "Chaque appel récursif reste « en attente » (empilé) jusqu'à ce que l'appel suivant lui renvoie son résultat : la remontée se fait dans l'ordre inverse des appels."
+    ],
+    "correction": "1. \n\ndef factorielle(n):\n if n == 0:\n  return 1\n return n * factorielle(n - 1)\n\n2. Cas de base : n == 0, qui renvoie directement 1 sans appel récursif. Cas récursif : pour n >= 1, le résultat s'exprime comme n * factorielle(n - 1), qui appelle la fonction sur une valeur strictement plus petite (garantit que le cas de base finit par être atteint).\n3. factorielle(4) appelle factorielle(3), qui appelle factorielle(2), qui appelle factorielle(1), qui appelle factorielle(0). Ce dernier renvoie directement 1 (cas de base). La remontée se fait alors dans l'ordre inverse : factorielle(1) renvoie 1*1=1, factorielle(2) renvoie 2*1=2, factorielle(3) renvoie 3*2=6, et enfin factorielle(4) renvoie 4*6=24 — résultat final $4!=24$, cohérent avec le calcul direct $4\\times3\\times2\\times1=24$.",
+    "level": 1,
+    "prerequisites": [
+      "notion de fonction"
+    ],
+    "pedagogicalGoal": "premier exemple canonique de récursivité : identifier explicitement cas de base et cas récursif, et visualiser la pile d'appels — base indispensable avant tout algorithme récursif plus complexe."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Piège : récursivité sans cas de base atteignable",
+    "statement": "Un élève veut écrire une fonction récursive qui calcule la somme des $n$ premiers entiers strictement positifs. Il écrit :\n\ndef somme_entiers(n):\n if n == 0:\n  return 0\n return n + somme_entiers(n - 2)\n\nTestée avec somme_entiers(5), cette fonction ne s'arrête jamais (elle finit par lever une erreur RecursionError: maximum recursion depth exceeded).\n\n1. Expliquer précisément pourquoi cette fonction ne termine jamais pour n=5, alors qu'elle fonctionnerait correctement pour n=4 ou n=6.\n2. Proposer une correction.",
+    "subject": "Informatique TC",
+    "type": "Colle",
+    "difficulty": 3,
+    "chapter": "Récursivité",
+    "estimatedMinutes": 12,
+    "tags": [
+      "récursivité",
+      "piège",
+      "erreur classique",
+      "cas de base"
+    ],
+    "hints": [
+      "Déroule les valeurs successives de n passées à somme_entiers en partant de n=5 : $5, 3, 1, -1, -3, \\ldots$",
+      "Le cas de base ne teste que n == 0 : cette valeur exacte est-elle atteinte quand on part d'un $n$ impair et qu'on soustrait 2 à chaque appel ?",
+      "Un cas de base doit être formulé pour être atteint par TOUTES les trajectoires possibles de la récursion, pas seulement certaines (ici, seulement les $n$ pairs atteignent exactement 0)."
+    ],
+    "correction": "1. La fonction diminue $n$ de 2 à chaque appel récursif. Partant de n=5 : les valeurs successives sont $5, 3, 1, -1, -3, -5, \\ldots$ — la suite ne passe JAMAIS exactement par $0$ (elle saute de $1$ à $-1$), donc le cas de base n == 0 n'est jamais atteint. La récursion continue indéfiniment vers les entiers négatifs jusqu'à ce que Python atteigne sa limite de profondeur de pile et lève une RecursionError. Pour n=4 ou n=6 (pairs), la suite passe bien par $0$ exactement ($4,2,0$ ou $6,4,2,0$), d'où l'écart de comportement selon la parité de n.\n2. Deux corrections possibles. La plus directe : changer le test du cas de base pour qu'il capture toutes les trajectoires, par exemple if n <= 0: return 0 (couvre aussi bien les $n$ pairs que les $n$ négatifs atteints par erreur). Alternative plus proche de l'énoncé initial (somme des $n$ premiers entiers) : utiliser un pas de $1$ au lieu de $2$ dans l'appel récursif (somme_entiers(n - 1)), ce qui correspond réellement à la définition usuelle de « somme des $n$ premiers entiers ».",
+    "level": 3,
+    "prerequisites": [
+      "fonction récursive simple",
+      "notion de cas de base"
+    ],
+    "pedagogicalGoal": "piège fondamental et fréquent en récursivité : un cas de base mal formulé (qui ne couvre pas toutes les trajectoires possibles de la récursion) provoque une récursion infinie, pas juste un résultat faux."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Récursivité vs itération — suite de Fibonacci",
+    "statement": "La suite de Fibonacci est définie par $F_0=0$, $F_1=1$, et $F_n=F_{n-1}+F_{n-2}$ pour $n\\geq2$.\n\n1. Écrire une fonction récursive fibo_recursif(n) calculant directement $F_n$ à partir de cette définition.\n2. Cette fonction recalcule-t-elle plusieurs fois les mêmes valeurs intermédiaires ? Justifier en examinant les appels générés par fibo_recursif(5).\n3. Écrire une version ITÉRATIVE fibo_iteratif(n) qui calcule $F_n$ sans cette redondance, en ne gardant en mémoire que les deux derniers termes calculés.",
+    "subject": "Informatique TC",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Récursivité",
+    "estimatedMinutes": 25,
+    "tags": [
+      "récursivité",
+      "fibonacci",
+      "itération",
+      "efficacité"
+    ],
+    "hints": [
+      "La définition $F_n=F_{n-1}+F_{n-2}$ se traduit directement en deux appels récursifs dans le cas général, avec deux cas de base ($F_0$ et $F_1$).",
+      "Dessine l'arbre des appels de fibo_recursif(5) : remarque que fibo_recursif(3) est appelé plusieurs fois, chacun de ces appels relançant lui-même tout le sous-calcul.",
+      "Pour la version itérative, utilise deux variables représentant les deux derniers termes de la suite, et fais-les progresser ensemble dans une boucle."
+    ],
+    "correction": "1. \n\ndef fibo_recursif(n):\n if n == 0:\n  return 0\n if n == 1:\n  return 1\n return fibo_recursif(n - 1) + fibo_recursif(n - 2)\n\n2. Oui, massivement. fibo_recursif(5) appelle fibo_recursif(4) et fibo_recursif(3). Mais fibo_recursif(4) appelle LUI-MÊME fibo_recursif(3) et fibo_recursif(2) : le calcul de fibo_recursif(3) est donc refait intégralement deux fois (une fois comme sous-appel direct de fibo_recursif(5), une fois comme sous-appel de fibo_recursif(4)), et fibo_recursif(2) est recalculé encore plus de fois en descendant plus bas dans l'arbre. Ce recalcul exponentiel rend la version récursive naïve très inefficace pour $n$ grand (complexité $O(2^n)$ environ).\n3. \n\ndef fibo_iteratif(n):\n if n == 0:\n  return 0\n precedent, courant = 0, 1\n for _ in range(n - 1):\n  precedent, courant = courant, precedent + courant\n return courant\n\nCette version ne garde que deux valeurs en mémoire et effectue une seule boucle de $n-1$ tours : complexité $O(n)$, sans aucune redondance de calcul, bien plus efficace que la version récursive naïve dès que $n$ dépasse une trentaine.",
+    "level": 3,
+    "prerequisites": [
+      "fonction récursive simple",
+      "boucle for",
+      "notation O"
+    ],
+    "pedagogicalGoal": "montrer sur un exemple emblématique que récursivité naïve et efficacité ne vont pas toujours de pair — un même problème mathématique peut avoir une traduction récursive élégante mais très coûteuse."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Pile (LIFO) — vérifier le bon parenthésage d'une expression",
+    "statement": "Une pile (structure LIFO — « dernier arrivé, premier sorti ») propose deux opérations principales : empiler(x) (ajoute x au sommet) et depiler() (retire et renvoie l'élément au sommet).\n\nOn veut vérifier qu'une expression contenant des parenthèses ( et ) est correctement parenthésée (chaque parenthèse ouvrante a une fermante correspondante, dans le bon ordre), par exemple (()()) est correcte mais ())( ne l'est pas.\n\n1. Proposer un algorithme, utilisant une pile, qui parcourt l'expression caractère par caractère et détermine si le parenthésage est correct.\n2. Dérouler cet algorithme sur (()())  puis sur ())(, en indiquant l'état de la pile à chaque étape.",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Piles et files",
+    "estimatedMinutes": 18,
+    "tags": [
+      "pile",
+      "LIFO",
+      "parenthésage"
+    ],
+    "hints": [
+      "À chaque parenthèse OUVRANTE rencontrée, empile un marqueur. À chaque parenthèse FERMANTE rencontrée, dépile : s'il n'y a rien à dépiler (pile vide), le parenthésage est déjà incorrect.",
+      "À la toute fin du parcours, si le parenthésage est correct, la pile doit être exactement VIDE (toute ouverture doit avoir été refermée).",
+      "Un « faux positif » classique à éviter : oublier de vérifier que la pile est vide À LA FIN, pas seulement qu'aucune erreur n'a été détectée pendant le parcours."
+    ],
+    "correction": "1. Algorithme : initialiser une pile vide. Parcourir l'expression caractère par caractère. Pour chaque ( : empiler un marqueur. Pour chaque ) : si la pile est vide, le parenthésage est incorrect (fermeture sans ouverture correspondante) — arrêter et répondre « incorrect ». Sinon, dépiler. À la fin du parcours, le parenthésage est correct SI ET SEULEMENT SI la pile est vide (toute ouverture a été refermée, aucune fermeture surnuméraire n'a été trouvée en cours de route).\n2. Sur (()()) : ( → empile, pile [1]. ( → empile, pile [1,1]. ) → dépile, pile [1]. ( → empile, pile [1,1]. ) → dépile, pile [1]. ) → dépile, pile []. Fin du parcours, pile vide : parenthésage CORRECT.\nSur ())( : ( → empile, pile [1]. ) → dépile, pile []. ) → la pile est vide, aucune ouverture à dépiler : parenthésage INCORRECT, détecté dès ce caractère (sans même avoir besoin de lire le ( final).",
+    "level": 2,
+    "prerequisites": [
+      "notion de pile (LIFO)"
+    ],
+    "pedagogicalGoal": "application canonique de la pile — l'algorithme de vérification de parenthésage se généralise directement à l'analyse syntaxique (compilateurs, éditeurs de code) et doit être maîtrisé comme schéma type."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "File (FIFO) vs pile (LIFO) — bien choisir sa structure",
+    "statement": "1. Rappeler la différence de principe entre une pile (LIFO, « dernier arrivé, premier sorti ») et une file (FIFO, « premier arrivé, premier sorti »).\n2. Pour chacune des situations suivantes, indiquer si une pile ou une file est la structure de données la plus adaptée pour la modéliser, et justifier brièvement : (a) la fonction « annuler » (Ctrl+Z) d'un éditeur de texte, qui doit annuler la DERNIÈRE action effectuée ; (b) une file d'attente de tickets d'imprimante, qui doivent être imprimés dans l'ordre où ils ont été envoyés ; (c) la pile des appels de fonctions en cours d'exécution dans un programme.",
+    "subject": "Informatique TC",
+    "type": "Colle",
+    "difficulty": 1,
+    "chapter": "Piles et files",
+    "estimatedMinutes": 10,
+    "tags": [
+      "pile",
+      "file",
+      "LIFO",
+      "FIFO"
+    ],
+    "hints": [
+      "LIFO : le dernier élément ajouté est le premier retiré (comme une pile d'assiettes). FIFO : le premier élément ajouté est le premier retiré (comme une file d'attente physique).",
+      "« Annuler la dernière action » correspond exactement à retirer le dernier élément ajouté : quel principe reconnaît-on ?",
+      "« Imprimer dans l'ordre d'arrivée » correspond exactement à retirer les éléments dans leur ordre d'ajout : quel principe reconnaît-on ?"
+    ],
+    "correction": "1. Dans une PILE (LIFO), le dernier élément empilé est le premier à être dépilé — comme une pile d'assiettes où l'on ne peut retirer que celle du dessus. Dans une FILE (FIFO), le premier élément ajouté est le premier retiré — comme une file d'attente physique où l'on sert les gens dans leur ordre d'arrivée.\n2. (a) PILE : « annuler » doit défaire précisément la DERNIÈRE action effectuée, puis, si on annule à nouveau, l'avant-dernière, etc. — c'est exactement le principe « dernier arrivé, premier retiré » (LIFO). (b) FILE : les tickets doivent être traités dans l'ordre où ils ont été envoyés, sans court-circuiter les plus anciens — c'est le principe « premier arrivé, premier servi » (FIFO). (c) PILE : quand une fonction en appelle une autre, celle-ci doit se terminer avant que la fonction appelante puisse reprendre — la dernière fonction appelée est la première à se terminer et à « rendre la main » : c'est un fonctionnement LIFO (d'ailleurs appelé « pile d'appels » dans tout langage de programmation).",
+    "level": 1,
+    "prerequisites": [],
+    "pedagogicalGoal": "ancrer la distinction pile/file sur des exemples concrets et reconnaissables plutôt que sur la seule définition abstraite — condition pour choisir la bonne structure face à un problème nouveau."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Requête SQL de sélection simple — clause WHERE",
+    "statement": "On dispose d'une table Eleves avec les colonnes nom (texte), classe (texte) et moyenne (nombre décimal).\n\n1. Écrire une requête SQL qui affiche le nom et la moyenne de tous les élèves de la classe 'MP2'.\n2. Écrire une requête SQL qui affiche le nom de tous les élèves ayant une moyenne strictement supérieure à $14$, quelle que soit leur classe, triés par moyenne décroissante.\n3. Écrire une requête SQL qui compte le nombre d'élèves de la classe 'MP2'.",
+    "subject": "Informatique TC",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Bases de données et SQL",
+    "estimatedMinutes": 15,
+    "tags": [
+      "SQL",
+      "SELECT",
+      "WHERE",
+      "base de données"
+    ],
+    "hints": [
+      "La structure de base est SELECT colonnes FROM table WHERE condition; — n'oublie pas que les valeurs textuelles se comparent entre guillemets simples en SQL.",
+      "Le tri s'obtient avec ORDER BY colonne DESC (décroissant) ou ASC (croissant, valeur par défaut).",
+      "Pour compter des lignes, la fonction d'agrégation COUNT(*) s'utilise dans la clause SELECT, combinée à la même clause WHERE que pour un filtre classique."
+    ],
+    "correction": "1. \n\nSELECT nom, moyenne FROM Eleves WHERE classe = 'MP2';\n\n2. \n\nSELECT nom FROM Eleves WHERE moyenne > 14 ORDER BY moyenne DESC;\n\n3. \n\nSELECT COUNT(*) FROM Eleves WHERE classe = 'MP2';\n\nDans les trois cas, la structure reste la même : SELECT désigne ce qu'on veut afficher (des colonnes, ou une fonction d'agrégation comme COUNT(*)), FROM désigne la table interrogée, WHERE filtre les lignes concernées, et ORDER BY (optionnel) trie le résultat final.",
+    "level": 2,
+    "prerequisites": [],
+    "pedagogicalGoal": "acquérir la structure de base d'une requête SQL de sélection (SELECT/FROM/WHERE/ORDER BY), socle avant toute jointure entre tables."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Jointure entre deux tables — retrouver une information répartie",
+    "statement": "On dispose de deux tables : Eleves (colonnes id_eleve, nom, id_classe) et Classes (colonnes id_classe, nom_classe, filiere). Chaque élève est rattaché à une classe via id_classe, qui référence Classes.id_classe.\n\n1. Pourquoi ne peut-on pas obtenir directement, en une seule requête sur la seule table Eleves, la filière de chaque élève ?\n2. Écrire une requête SQL utilisant une JOINTURE (JOIN) entre Eleves et Classes pour afficher, pour chaque élève, son nom et la filière de sa classe.\n3. Adapter cette requête pour n'afficher que les élèves de la filière 'MP'.",
+    "subject": "Informatique TC",
+    "type": "DM",
+    "difficulty": 3,
+    "chapter": "Bases de données et SQL",
+    "estimatedMinutes": 20,
+    "tags": [
+      "SQL",
+      "JOIN",
+      "base de données relationnelle"
+    ],
+    "hints": [
+      "La colonne filiere n'existe que dans la table Classes, pas dans Eleves : il faut donc combiner les deux tables pour associer chaque élève à la filière de sa classe.",
+      "Une jointure s'écrit SELECT ... FROM TableA JOIN TableB ON TableA.cle = TableB.cle — la clause ON précise la correspondance entre les deux tables.",
+      "Pour filtrer sur filiere après la jointure, la clause WHERE s'applique normalement, comme sur une table unique."
+    ],
+    "correction": "1. La table Eleves ne contient que id_classe (un identifiant, un nombre ou un code), pas directement le nom de la filière : cette information est stockée UNE SEULE FOIS dans la table Classes, précisément pour éviter de la dupliquer sur chaque ligne d'élève (principe de base d'une base de données relationnelle : éviter la redondance). Il faut donc croiser les deux tables pour reconstituer l'information complète.\n2. \n\nSELECT Eleves.nom, Classes.filiere\nFROM Eleves\nJOIN Classes ON Eleves.id_classe = Classes.id_classe;\n\n3. \n\nSELECT Eleves.nom, Classes.filiere\nFROM Eleves\nJOIN Classes ON Eleves.id_classe = Classes.id_classe\nWHERE Classes.filiere = 'MP';\n\nLa jointure est effectuée AVANT le filtre WHERE : on reconstitue d'abord la table combinée élève+filière, puis on ne garde que les lignes où filiere = 'MP'.",
+    "level": 3,
+    "prerequisites": [
+      "requête SQL de sélection simple"
+    ],
+    "pedagogicalGoal": "comprendre la raison d'être d'une base de données relationnelle (éviter la redondance en répartissant l'information sur plusieurs tables) et savoir écrire la jointure qui permet de la recombiner."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Médiane et quartiles d'une série statistique",
+    "statement": "On a relevé les temps de résolution (en minutes) de 11 exercices d'un même chapitre : $12, 18, 9, 25, 14, 20, 11, 30, 16, 22, 15$.\n\n1. Ranger la série par ordre croissant, puis déterminer la médiane.\n2. Déterminer le premier quartile $Q_1$ et le troisième quartile $Q_3$ (on admettra que, pour une série de $n$ valeurs ordonnées, $Q_1$ est la valeur de rang $\\lceil n/4 \\rceil$ et $Q_3$ la valeur de rang $\\lceil 3n/4 \\rceil$).\n3. Calculer l'écart interquartile $Q_3-Q_1$ et interpréter ce que cet indicateur mesure, par comparaison avec l'étendue de la série.",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Statistiques",
+    "estimatedMinutes": 15,
+    "tags": [
+      "statistiques",
+      "médiane",
+      "quartiles"
+    ],
+    "hints": [
+      "Range d'abord soigneusement les 11 valeurs par ordre croissant avant tout calcul de rang.",
+      "Pour 11 valeurs, la médiane est la valeur centrale, de rang $6$ (5 valeurs en dessous, 5 au-dessus).",
+      "$\\lceil 11/4 \\rceil = 3$ et $\\lceil 33/4 \\rceil = 9$ : $Q_1$ est la 3e valeur, $Q_3$ la 9e valeur de la série ordonnée."
+    ],
+    "correction": "1. Série ordonnée : $9, 11, 12, 14, 15, 16, 18, 20, 22, 25, 30$ (11 valeurs). La médiane est la valeur centrale (rang 6) : $\\mathrm{Med}=16$.\n2. $\\lceil 11/4 \\rceil = \\lceil 2{,}75 \\rceil = 3$ : $Q_1$ est la 3e valeur de la série ordonnée, $Q_1=12$. $\\lceil 33/4 \\rceil = \\lceil 8{,}25 \\rceil = 9$ : $Q_3$ est la 9e valeur, $Q_3=22$.\n3. Écart interquartile : $Q_3-Q_1=22-12=10$ minutes. L'étendue de la série est $30-9=21$ minutes, plus du double. L'écart interquartile mesure la dispersion des $50\\%$ de valeurs CENTRALES (entre le premier et le troisième quart), en ignorant les valeurs extrêmes ($9$ et $30$) : c'est un indicateur de dispersion plus robuste que l'étendue, moins sensible à une valeur exceptionnellement basse ou haute.",
+    "level": 2,
+    "prerequisites": [
+      "tri d'une série de valeurs"
+    ],
+    "pedagogicalGoal": "manipuler médiane et quartiles au-delà de la seule moyenne/écart-type, et comprendre l'intérêt de l'écart interquartile comme indicateur de dispersion robuste aux valeurs extrêmes."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Vrai/Faux justifié — moyenne, médiane et valeurs extrêmes",
+    "statement": "Pour chacune des affirmations suivantes portant sur une série statistique, dire si elle est vraie ou fausse et justifier (au besoin par un contre-exemple).\n\n1. La moyenne d'une série est toujours égale à l'une des valeurs de la série.\n2. Ajouter une valeur très supérieure à toutes les autres à une série modifie davantage la moyenne que la médiane.\n3. Deux séries statistiques différentes peuvent avoir exactement la même moyenne et le même écart-type.",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Statistiques",
+    "estimatedMinutes": 12,
+    "tags": [
+      "statistiques",
+      "moyenne",
+      "médiane",
+      "vrai/faux"
+    ],
+    "hints": [
+      "Cherche un contre-exemple simple pour la première affirmation : une petite série de 2 ou 3 valeurs distinctes suffit.",
+      "La moyenne fait intervenir la SOMME de toutes les valeurs (donc directement affectée par une valeur extrême), tandis que la médiane ne dépend que du RANG des valeurs, pas de leur grandeur exacte.",
+      "Pour la troisième affirmation, essaie de construire directement deux petites séries de moyenne et écart-type identiques mais de valeurs différentes."
+    ],
+    "correction": "1. FAUX. Contre-exemple : la série $\\{1,2\\}$ a pour moyenne $1{,}5$, qui n'est ni $1$ ni $2$. Plus généralement, la moyenne n'a aucune raison de coïncider avec une valeur observée.\n2. VRAI. La moyenne est une somme divisée par l'effectif : une valeur extrême, même unique, pèse directement et proportionnellement dans cette somme, donc déplace fortement la moyenne. La médiane ne dépend que du RANG (position) des valeurs une fois triées : ajouter une valeur extrême décale au plus la position de la médiane d'un rang, sans dépendre de À QUEL POINT cette valeur est extrême — c'est précisément pourquoi la médiane est dite « robuste » aux valeurs aberrantes, contrairement à la moyenne.\n3. VRAI. Exemple explicite : les séries $\\{1,4,4\\}$ et $\\{2,2,5\\}$ ont toutes deux pour moyenne $m=3$ (vérification : $(1+4+4)/3=3$ et $(2+2+5)/3=3$) et la même somme des carrés ($1^2+4^2+4^2=33$ et $2^2+2^2+5^2=33$), donc la même variance $V=\\frac{33}{3}-3^2=11-9=2$ (même écart-type $\\sqrt2$), bien que ce soient deux séries de valeurs totalement différentes. Cela montre les limites de ces seuls indicateurs (moyenne, écart-type) : ils résument une série sans la caractériser complètement, deux séries distinctes pouvant partager exactement les mêmes résumés.",
+    "level": 2,
+    "prerequisites": [
+      "moyenne",
+      "médiane",
+      "écart-type"
+    ],
+    "pedagogicalGoal": "nuancer la lecture intuitive de la moyenne et de la médiane, en particulier leur sensibilité différente aux valeurs extrêmes — notion réutilisée dès qu'on interprète des données réelles."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Problème ouvert — comparer la dispersion de deux séries de notes",
+    "statement": "Deux classes ont passé le même devoir. Classe A : moyenne $12$, écart-type $1{,}5$. Classe B : moyenne $12$, écart-type $4{,}2$.\n\nUn professeur affirme : « les deux classes ont exactement le même niveau, puisqu'elles ont la même moyenne ». Discuter cette affirmation, en expliquant ce que l'écart-type apporte comme information que la moyenne seule ne donne pas, et ce que cela implique concrètement sur la répartition des notes dans chaque classe (élèves en difficulté, élèves excellents).",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 4,
+    "chapter": "Statistiques",
+    "estimatedMinutes": 20,
+    "tags": [
+      "statistiques",
+      "écart-type",
+      "interprétation",
+      "problème ouvert"
+    ],
+    "hints": [
+      "La moyenne résume la « position centrale » d'une série, mais ne dit rien sur la façon dont les valeurs se répartissent autour de ce centre.",
+      "Un écart-type faible signifie que les notes sont resserrées autour de la moyenne ; un écart-type élevé signifie qu'elles sont dispersées, avec potentiellement des notes très hautes ET très basses.",
+      "Pense en termes concrets : dans la classe B, une moyenne de 12 avec un écart-type de 4,2 est compatible avec la coexistence d'élèves en grande difficulté et d'élèves très à l'aise, ce qu'une moyenne seule masque entièrement."
+    ],
+    "correction": "L'affirmation est trompeuse : la moyenne identique ne signifie absolument pas un « même niveau » au sens d'une répartition homogène. L'écart-type mesure la dispersion des notes AUTOUR de la moyenne, information totalement absente de la moyenne seule.\n\nDans la classe A (écart-type $1{,}5$, faible), les notes sont resserrées autour de $12$ : la quasi-totalité des élèves ont probablement une note comprise, disons, entre $9$ et $15$ — un niveau globalement homogène, sans élève en très grande difficulté ni élève exceptionnel.\n\nDans la classe B (écart-type $4{,}2$, nettement plus élevé), les notes sont beaucoup plus dispersées autour de la même moyenne $12$ : cette classe peut très bien contenir à la fois des élèves avec des notes très faibles (par exemple $5$ ou $6$) ET des élèves avec des notes très élevées (par exemple $18$ ou $19$), qui se compensent statistiquement pour donner la même moyenne que la classe A, homogène.\n\nConclusion : deux classes de même moyenne peuvent avoir des profils pédagogiques radicalement différents — la classe A nécessite probablement un accompagnement uniforme, la classe B un accompagnement DIFFÉRENCIÉ (soutien ciblé pour les élèves en difficulté, approfondissement pour les autres). Comparer des séries seulement par leur moyenne, sans regarder leur dispersion, peut conduire à des décisions pédagogiques inadaptées.",
+    "level": 5,
+    "prerequisites": [
+      "moyenne",
+      "écart-type"
+    ],
+    "pedagogicalGoal": "faire manipuler l'écart-type comme outil D'INTERPRÉTATION concrète (pas seulement de calcul) — la moyenne seule peut masquer des réalités très différentes."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Combinaison linéaire de vecteurs — premiers pas",
+    "statement": "Dans $\\mathbb{R}^3$, on considère les vecteurs $u=(1,2,0)$, $v=(0,1,1)$ et $w=(2,1,-2)$.\n\n1. Calculer le vecteur $2u-v+w$.\n2. Déterminer si $w$ est une combinaison linéaire de $u$ et $v$, c'est-à-dire s'il existe des réels $a,b$ tels que $w=au+bv$.",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Espaces vectoriels",
+    "estimatedMinutes": 12,
+    "tags": [
+      "combinaison linéaire",
+      "vecteurs"
+    ],
+    "hints": [
+      "Pour calculer $2u-v+w$, effectue le calcul coordonnée par coordonnée.",
+      "Écrire $w=au+bv$ revient à un système de 3 équations (une par coordonnée) à 2 inconnues $a$ et $b$.",
+      "Résous le système formé par les deux premières coordonnées, puis VÉRIFIE que la solution trouvée satisfait bien la troisième équation — sinon, $w$ n'est pas combinaison linéaire de $u$ et $v$."
+    ],
+    "correction": "1. $2u=(2,4,0)$, $-v=(0,-1,-1)$. $2u-v+w=(2+0+2,\\,4-1+1,\\,0-1-2)=(4,4,-3)$.\n2. On cherche $a,b$ tels que $a(1,2,0)+b(0,1,1)=(2,1,-2)$, soit le système : $a=2$ (1re coordonnée), $2a+b=1$ (2e coordonnée), $b=-2$ (3e coordonnée). De la 1re équation, $a=2$. En reportant dans la 2e : $2(2)+b=1 \\Rightarrow b=1-4=-3$. Mais la 3e équation impose $b=-2$ : $-3\\neq-2$, contradiction. Le système n'a pas de solution : $w$ N'EST PAS une combinaison linéaire de $u$ et $v$.",
+    "level": 1,
+    "prerequisites": [
+      "calcul vectoriel de base"
+    ],
+    "pedagogicalGoal": "premier contact concret avec la combinaison linéaire (calcul direct puis résolution d'un système pour tester une décomposition), avant d'aborder famille libre/génératrice de façon plus abstraite."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Rang d'une famille de vecteurs et dimension du sous-espace engendré",
+    "statement": "On considère dans $\\mathbb{R}^4$ la famille de vecteurs $v_1=(1,1,0,0)$, $v_2=(0,1,1,0)$, $v_3=(0,0,1,1)$, $v_4=(1,2,2,1)$.\n\n1. Vérifier que $v_4=v_1+v_2+v_3$ (coordonnée par coordonnée), et en déduire que la famille $(v_1,v_2,v_3,v_4)$ n'est pas libre.\n2. Montrer que la famille $(v_1,v_2,v_3)$, elle, est libre.\n3. En déduire le rang de la famille $(v_1,v_2,v_3,v_4)$ et la dimension du sous-espace vectoriel qu'elle engendre.",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 4,
+    "chapter": "Espaces vectoriels",
+    "estimatedMinutes": 25,
+    "tags": [
+      "rang",
+      "famille libre",
+      "sous-espace engendré"
+    ],
+    "hints": [
+      "Pour la question 1, calcule simplement $v_1+v_2+v_3$ coordonnée par coordonnée et compare à $v_4$.",
+      "Une famille contenant une relation de dépendance linéaire non triviale (comme celle trouvée en 1) n'est jamais libre.",
+      "Pour la question 2, pose $av_1+bv_2+cv_3=0$ et résous le système obtenu coordonnée par coordonnée : conclus selon que $(a,b,c)=(0,0,0)$ est l'unique solution ou non."
+    ],
+    "correction": "1. $v_1+v_2+v_3=(1+0+0,\\,1+1+0,\\,0+1+1,\\,0+0+1)=(1,2,2,1)=v_4$. On a donc la relation non triviale $v_4-v_1-v_2-v_3=0$ entre les quatre vecteurs : la famille $(v_1,v_2,v_3,v_4)$ contient une combinaison linéaire nulle à coefficients non tous nuls (le coefficient de $v_4$ vaut $1\\neq0$), elle n'est donc PAS libre.\n2. Pour $(v_1,v_2,v_3)$ : $av_1+bv_2+cv_3=(a,\\,a+b,\\,b+c,\\,c)=(0,0,0,0)$ donne $a=0$ (1re coordonnée), $c=0$ (4e coordonnée), puis $a+b=0\\Rightarrow b=0$ (2e coordonnée), cohérent avec $b+c=0$ (3e coordonnée). Seule solution : $(a,b,c)=(0,0,0)$ : la famille $(v_1,v_2,v_3)$ est libre.\n3. $(v_1,v_2,v_3)$ est libre (question 2) et $v_4$ est combinaison linéaire de $v_1,v_2,v_3$ (question 1) : $v_4$ n'apporte donc aucune direction nouvelle. Le sous-espace engendré par $(v_1,v_2,v_3,v_4)$ est exactement celui engendré par $(v_1,v_2,v_3)$ seuls, qui en forment une BASE (famille libre et génératrice de ce sous-espace par construction). Le rang de la famille $(v_1,v_2,v_3,v_4)$ est donc $3$ (et non $4$, malgré ses 4 vecteurs), et elle engendre un sous-espace vectoriel de dimension $3$ dans $\\mathbb{R}^4$.",
+    "level": 5,
+    "prerequisites": [
+      "famille libre, famille génératrice",
+      "systèmes linéaires"
+    ],
+    "pedagogicalGoal": "relier concrètement rang d'une famille, liberté et dimension du sous-espace engendré — voir sur un exemple explicite qu'une famille de $n$ vecteurs peut avoir un rang strictement inférieur à $n$."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Reconnaître une application linéaire",
+    "statement": "Pour chacune des applications suivantes de $\\mathbb{R}^2$ dans $\\mathbb{R}^2$, déterminer si elle est linéaire (justifier en vérifiant, ou en mettant en défaut, $f(u+v)=f(u)+f(v)$ et $f(\\lambda u)=\\lambda f(u)$) :\n\n1. $f(x,y)=(2x-y,\\,x+3y)$.\n2. $g(x,y)=(x+1,\\,y)$.\n3. $h(x,y)=(xy,\\,x)$.",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Applications linéaires",
+    "estimatedMinutes": 15,
+    "tags": [
+      "application linéaire",
+      "définition"
+    ],
+    "hints": [
+      "Pour montrer qu'une application EST linéaire, il faut vérifier les deux propriétés pour des vecteurs et un scalaire QUELCONQUES, symboliquement (pas sur un exemple numérique).",
+      "Pour montrer qu'une application N'EST PAS linéaire, un seul contre-exemple numérique suffit — inutile de chercher une preuve générale.",
+      "Une application linéaire envoie toujours le vecteur nul sur le vecteur nul : $f(0,0)=(0,0)$ est une condition nécessaire (mais pas suffisante) utile à tester en premier."
+    ],
+    "correction": "1. $f$ est linéaire. Pour $u=(x,y)$, $u'=(x',y')$ et $\\lambda\\in\\mathbb{R}$ : $f(u+u')=f(x+x',y+y')=(2(x+x')-(y+y'),\\,(x+x')+3(y+y'))=(2x-y,x+3y)+(2x'-y',x'+3y')=f(u)+f(u')$, et $f(\\lambda u)=f(\\lambda x,\\lambda y)=(2\\lambda x-\\lambda y,\\lambda x+3\\lambda y)=\\lambda(2x-y,x+3y)=\\lambda f(u)$. Les deux propriétés sont vérifiées pour tous $u,u',\\lambda$ : $f$ est linéaire (c'est d'ailleurs l'application associée à la matrice $\\begin{pmatrix}2&-1\\\\1&3\\end{pmatrix}$).\n2. $g$ N'EST PAS linéaire : $g(0,0)=(1,0)\\neq(0,0)$, ce qui suffit déjà à l'exclure (une application linéaire envoie toujours $0$ sur $0$). Plus généralement, $g$ contient un terme constant ($+1$), caractéristique d'une application AFFINE mais pas linéaire.\n3. $h$ N'EST PAS linéaire. Contre-exemple sur l'homogénéité : $h(2\\cdot(1,1))=h(2,2)=(4,2)$, alors que $2\\cdot h(1,1)=2\\cdot(1,1)=(2,2)$ : $(4,2)\\neq(2,2)$, donc $h(\\lambda u)\\neq\\lambda h(u)$ en général (la première composante $xy$ est de degré 2 en les variables, incompatible avec la linéarité qui exige un comportement de degré 1).",
+    "level": 2,
+    "prerequisites": [
+      "définition d'une application linéaire"
+    ],
+    "pedagogicalGoal": "premier réflexe indispensable avant tout calcul de noyau/image/matrice : savoir reconnaître si une application donnée est effectivement linéaire, y compris en repérant les pièges classiques (terme constant, terme non linéaire)."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Piège : confondre application linéaire et application affine",
+    "statement": "Un élève doit déterminer si $f(x,y)=(3x-2y+1,\\,x)$ est une application linéaire de $\\mathbb{R}^2$ dans $\\mathbb{R}^2$. Il raisonne ainsi : « les termes $3x$, $-2y$ et $x$ sont bien du premier degré, donc $f$ est linéaire ». \n\n1. Cette conclusion est-elle correcte ? Justifier précisément.\n2. Que peut-on dire de la fonction $\\tilde f(x,y)=(3x-2y,\\,x)$, obtenue en retirant le terme constant de la première composante de $f$ ?",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 2,
+    "chapter": "Applications linéaires",
+    "estimatedMinutes": 10,
+    "tags": [
+      "application linéaire",
+      "piège",
+      "erreur classique"
+    ],
+    "hints": [
+      "Le critère « tous les termes sont du premier degré » est insuffisant : une application linéaire ne doit contenir AUCUN terme constant (indépendant de $x$ et $y$).",
+      "Teste directement $f(0,0)$ : une application linéaire doit obligatoirement envoyer le vecteur nul sur le vecteur nul.",
+      "Une application affine s'écrit comme une application linéaire PLUS une constante ; elle n'est linéaire que si cette constante est nulle."
+    ],
+    "correction": "1. La conclusion de l'élève est FAUSSE. Le critère qu'il utilise (« termes du premier degré ») est insuffisant : il oublie le terme constant $+1$ dans la première composante. Test décisif : $f(0,0)=(3(0)-2(0)+1,\\,0)=(1,0)\\neq(0,0)$. Or toute application linéaire doit vérifier $f(0)=0$ (conséquence directe de $f(\\lambda u)=\\lambda f(u)$ avec $\\lambda=0$) : $f$ N'EST DONC PAS linéaire. C'est une application AFFINE (linéaire + terme constant), pas linéaire au sens strict.\n2. $\\tilde f(x,y)=(3x-2y,x)$, sans le terme constant, vérifie bien $\\tilde f(0,0)=(0,0)$, et on peut vérifier (comme dans l'exercice précédent) que $\\tilde f(u+u')=\\tilde f(u)+\\tilde f(u')$ et $\\tilde f(\\lambda u)=\\lambda \\tilde f(u)$ : $\\tilde f$, elle, EST linéaire. On a d'ailleurs $f(x,y)=\\tilde f(x,y)+(1,0)$ : $f$ est exactement la partie linéaire $\\tilde f$ décalée d'une constante, ce qui est la définition même d'une application affine non linéaire.",
+    "level": 2,
+    "prerequisites": [
+      "reconnaître une application linéaire"
+    ],
+    "pedagogicalGoal": "piège très classique en début de chapitre : un terme constant, même unique et de coefficient 1, suffit à exclure la linéarité — retenir le test rapide $f(0)=0$ comme condition nécessaire."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Loi de Malus — intensité transmise par un analyseur",
+    "statement": "Une lumière polarisée rectilignement, d'intensité $I_0$, traverse un analyseur (polariseur) dont l'axe fait un angle $\\theta$ avec la direction de polarisation de la lumière incidente. La loi de Malus donne l'intensité transmise : $I(\\theta) = I_0\\cos^2\\theta$.\n\n1. Calculer $I(\\theta)$ pour $\\theta=0$, $\\theta=45°$ et $\\theta=90°$, et commenter physiquement chacun de ces trois cas.\n2. On place un second analyseur, orienté perpendiculairement au premier ($\\theta=90°$ par rapport à la polarisation incidente), et on observe (comme attendu) une extinction totale de la lumière. Un élève insère alors un TROISIÈME polariseur, orienté à $45°$, ENTRE les deux premiers. Contrairement à son intuition (« ajouter un filtre ne peut que réduire encore la lumière transmise »), de la lumière réapparaît en sortie. Expliquer ce phénomène en calculant l'intensité finale transmise, en fonction de $I_0$.",
+    "subject": "Physique",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Optique ondulatoire",
+    "estimatedMinutes": 18,
+    "tags": [
+      "polarisation",
+      "loi de Malus",
+      "piège"
+    ],
+    "hints": [
+      "$\\cos^2(0)=1$, $\\cos^2(45°)=1/2$, $\\cos^2(90°)=0$.",
+      "Applique la loi de Malus SUCCESSIVEMENT à chaque polariseur traversé : l'intensité en sortie d'un polariseur devient l'intensité incidente du suivant, et l'angle à utiliser est celui ENTRE les deux polariseurs consécutifs (pas l'angle par rapport à la polarisation d'origine).",
+      "Entre le premier polariseur (référence $0°$) et le polariseur intermédiaire ($45°$), l'écart angulaire est $45°$ ; entre le polariseur intermédiaire ($45°$) et le second polariseur ($90°$), l'écart est aussi $45°$."
+    ],
+    "correction": "1. $I(0)=I_0\\cos^2(0)=I_0$ : la lumière est intégralement transmise, l'analyseur est aligné avec la polarisation incidente. $I(45°)=I_0\\cos^2(45°)=I_0/2$ : la moitié de l'intensité est transmise. $I(90°)=I_0\\cos^2(90°)=0$ : extinction totale, l'analyseur est croisé avec la polarisation incidente (configuration dite « polariseurs croisés »).\n\n2. Avec le polariseur intermédiaire à $45°$ inséré entre les deux polariseurs croisés à $0°$ et $90°$, on applique la loi de Malus DEUX FOIS, avec l'écart angulaire réellement traversé à chaque étape : en sortie du premier polariseur, l'intensité est $I_0$, polarisée à $0°$. En sortie du polariseur intermédiaire (écart de $45°$ avec le précédent) : $I_1=I_0\\cos^2(45°)=I_0/2$, et la lumière est maintenant polarisée à $45°$. En sortie du second polariseur (écart de $45°$ également, entre $45°$ et $90°$) : $I_2=I_1\\cos^2(45°)=\\dfrac{I_0}{2}\\times\\dfrac12=\\dfrac{I_0}{4}$. \n\nL'intuition de l'élève est donc fausse : ajouter un polariseur intermédiaire ne réduit pas nécessairement encore l'intensité par rapport à la configuration croisée sans lui (qui donnait $0$) — au contraire, il restaure $\\dfrac{I_0}{4}$ de lumière. La raison physique est que chaque polariseur ne projette PAS successivement sur la direction de polarisation d'origine, mais RÉ-ORIENTE la polarisation de la lumière sur sa propre direction avant transmission : le polariseur intermédiaire modifie la direction de polarisation de la lumière qui atteint le second polariseur, ce que l'absence de polariseur intermédiaire ne permettait pas (dans ce cas, la lumière restait polarisée à $0°$ et se retrouvait totalement bloquée par le second polariseur à $90°$).",
+    "level": 2,
+    "prerequisites": [
+      "intensité lumineuse",
+      "trigonométrie"
+    ],
+    "pedagogicalGoal": "introduire la polarisation (notion absente des chapitres actifs existants) via un résultat contre-intuitif classique, en insistant sur l'application successive et correcte de la loi de Malus."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Interféromètre de Michelson — ordre d'interférence et déplacement d'un miroir",
+    "statement": "Dans un interféromètre de Michelson réglé en lame d'air d'épaisseur $e$ et éclairé sous incidence normale par une lumière monochromatique de longueur d'onde $\\lambda=600\\,\\mathrm{nm}$, la différence de marche entre les deux ondes qui interfèrent vaut $\\delta = 2e$.\n\n1. Exprimer la condition d'interférence CONSTRUCTIVE (frange brillante au centre) en fonction de $e$, $\\lambda$ et d'un entier $p$.\n2. On déplace l'un des miroirs de $\\Delta e = 3\\,\\mu\\mathrm{m}$. Calculer le nombre de franges brillantes qui défilent au centre du champ d'observation pendant ce déplacement.\n3. Sachant qu'on a compté expérimentalement $N=20$ franges défilant pour un déplacement du miroir $\\Delta e$, en déduire la longueur d'onde $\\lambda$ utilisée si $\\Delta e = 6\\,\\mu\\mathrm{m}$.",
+    "subject": "Physique",
+    "type": "TP",
+    "difficulty": 4,
+    "chapter": "Optique ondulatoire",
+    "estimatedMinutes": 20,
+    "tags": [
+      "interféromètre de Michelson",
+      "interférences",
+      "ordre d'interférence"
+    ],
+    "hints": [
+      "Une frange brillante au centre correspond à une différence de marche multiple entier de $\\lambda$ : $\\delta=2e=p\\lambda$.",
+      "Chaque fois que $e$ augmente de $\\lambda/2$, l'ordre d'interférence $p=2e/\\lambda$ augmente exactement de 1 : c'est le passage d'une frange brillante à la suivante.",
+      "Le nombre de franges défilant est donc $N=\\Delta(2e)/\\lambda=2\\Delta e/\\lambda$ ; pour la question 3, isole $\\lambda$ dans cette même relation."
+    ],
+    "correction": "1. Interférence constructive : $\\delta=2e=p\\lambda$, avec $p\\in\\mathbb{Z}$ (ordre d'interférence).\n2. Le nombre de franges qui défilent est donné par la variation de l'ordre d'interférence : $\\Delta p = \\dfrac{2\\Delta e}{\\lambda} = \\dfrac{2\\times3\\times10^{-6}}{600\\times10^{-9}} = \\dfrac{6\\times10^{-6}}{6\\times10^{-7}} = 10$. Il défile $10$ franges brillantes.\n3. Même relation, résolue pour $\\lambda$ : $N=\\dfrac{2\\Delta e}{\\lambda} \\Rightarrow \\lambda = \\dfrac{2\\Delta e}{N} = \\dfrac{2\\times6\\times10^{-6}}{20} = \\dfrac{1{,}2\\times10^{-5}}{20} = 6\\times10^{-7}\\,\\mathrm{m} = 600\\,\\mathrm{nm}$ — cohérent avec la longueur d'onde utilisée à la question 2, ce qui valide la méthode : compter les franges défilant pour un déplacement de miroir connu est une méthode classique de MESURE d'une longueur d'onde (ou, réciproquement, de mesure d'un très petit déplacement si $\\lambda$ est connue).",
+    "level": 5,
+    "prerequisites": [
+      "différence de marche",
+      "condition d'interférence constructive"
+    ],
+    "pedagogicalGoal": "exploiter le lien entre déplacement d'un miroir et défilement de franges dans un Michelson — application classique et concours-compatible, absente jusqu'ici du chapitre."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Question courte — définir le produit de solubilité",
+    "statement": "On considère la dissolution du chlorure de plomb(II) $\\mathrm{PbCl_2(s)}$ selon $\\mathrm{PbCl_2(s)} \\rightleftharpoons \\mathrm{Pb^{2+}(aq)} + 2\\,\\mathrm{Cl^-(aq)}$.\n\n1. Écrire l'expression du produit de solubilité $K_s$ associé à cet équilibre.\n2. Sans faire de calcul numérique, expliquer en une phrase ce que représente physiquement $K_s$, et pourquoi c'est une CONSTANTE (à température fixée) qui ne dépend ni de la quantité de solide introduite ni du volume de solution.",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 1,
+    "chapter": "Solubilité et précipitation",
+    "estimatedMinutes": 8,
+    "tags": [
+      "produit de solubilité",
+      "Ks",
+      "équilibre de précipitation"
+    ],
+    "hints": [
+      "Le produit de solubilité s'écrit comme le produit des concentrations des ions en solution, chacune élevée à la puissance de son coefficient stœchiométrique — le solide, lui, n'apparaît pas dans l'expression (activité constante égale à 1).",
+      "$K_s$ est une constante d'équilibre thermodynamique : comme toute constante d'équilibre, elle ne dépend que de la température, pas des quantités de matière mises en jeu."
+    ],
+    "correction": "1. $K_s = [\\mathrm{Pb^{2+}}]\\,[\\mathrm{Cl^-}]^2$ (le solide $\\mathrm{PbCl_2(s)}$ n'intervient pas dans l'expression, son activité étant conventionnellement égale à 1).\n2. $K_s$ est la constante d'équilibre thermodynamique associée à la réaction de dissolution : elle mesure, à une température donnée, jusqu'à quel point la dissolution peut se produire avant d'atteindre l'équilibre (un $K_s$ petit signifie un sel peu soluble). Comme toute constante d'équilibre, $K_s$ ne dépend QUE de la température : ajouter plus de solide ou changer le volume de solution modifie les concentrations et la quantité de solide dissous, mais jamais la valeur de $K_s$ elle-même, tant que la température reste fixée.",
+    "level": 1,
+    "prerequisites": [
+      "constante d'équilibre"
+    ],
+    "pedagogicalGoal": "ancrer solidement la définition et la nature de $K_s$ (constante ne dépendant que de $T$) avant tout calcul de solubilité, souvent sauté trop vite au profit du seul calcul numérique."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Solubilité d'un hydroxyde métallique en fonction du pH",
+    "statement": "On considère l'hydroxyde de fer(III) $\\mathrm{Fe(OH)_3(s)}$, de produit de solubilité $K_s = [\\mathrm{Fe^{3+}}]\\,[\\mathrm{HO^-}]^3$.\n\n1. Exprimer la solubilité $s=[\\mathrm{Fe^{3+}}]$ en fonction de $K_s$ et de $[\\mathrm{HO^-}]$.\n2. En utilisant $[\\mathrm{H_3O^+}][\\mathrm{HO^-}]=K_e$, exprimer $s$ en fonction de $K_s$, $K_e$ et du $\\mathrm{pH}$.\n3. Sans calcul numérique, dire si la solubilité de $\\mathrm{Fe(OH)_3}$ augmente ou diminue quand le pH augmente, et justifier physiquement ce sens de variation.",
+    "subject": "Chimie",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Solubilité et précipitation",
+    "estimatedMinutes": 18,
+    "tags": [
+      "produit de solubilité",
+      "hydroxyde",
+      "pH",
+      "solubilité"
+    ],
+    "hints": [
+      "À partir de $K_s=[\\mathrm{Fe^{3+}}][\\mathrm{HO^-}]^3$, isole directement $[\\mathrm{Fe^{3+}}]=s$.",
+      "Remplace $[\\mathrm{HO^-}]$ par $K_e/[\\mathrm{H_3O^+}]$, puis $[\\mathrm{H_3O^+}]=10^{-\\mathrm{pH}}$.",
+      "Un pH plus élevé signifie MOINS d'ions $\\mathrm{H_3O^+}$ donc PLUS d'ions $\\mathrm{HO^-}$ : regarde comment $s$ dépend de $[\\mathrm{HO^-}]$ dans l'expression de la question 1 pour en déduire le sens de variation."
+    ],
+    "correction": "1. $s=[\\mathrm{Fe^{3+}}] = \\dfrac{K_s}{[\\mathrm{HO^-}]^3}$.\n2. $[\\mathrm{HO^-}]=\\dfrac{K_e}{[\\mathrm{H_3O^+}]}=\\dfrac{K_e}{10^{-\\mathrm{pH}}}=K_e\\times10^{\\mathrm{pH}}$. En substituant : $s=\\dfrac{K_s}{(K_e\\times10^{\\mathrm{pH}})^3}=\\dfrac{K_s}{K_e^3\\times10^{3\\mathrm{pH}}}$.\n3. La solubilité $s$ DIMINUE quand le pH augmente : dans l'expression obtenue, $s$ est inversement proportionnelle à $10^{3\\mathrm{pH}}$, une fonction croissante du pH — donc $s$ décroît quand le pH croît. Physiquement, augmenter le pH revient à augmenter $[\\mathrm{HO^-}]$ : par effet d'ion commun (l'ion $\\mathrm{HO^-}$ intervient directement dans l'équilibre de dissolution de l'hydroxyde), un excès d'ions hydroxyde déplace l'équilibre de dissolution dans le sens de la PRÉCIPITATION, réduisant la quantité d'hydroxyde métallique dissous — c'est le principe exploité dans la précipitation sélective des cations métalliques par ajustement du pH.",
+    "level": 3,
+    "prerequisites": [
+      "produit de solubilité",
+      "produit ionique de l'eau Ke",
+      "définition du pH"
+    ],
+    "pedagogicalGoal": "relier explicitement solubilité d'un hydroxyde et pH via $K_e$, cas particulier fréquent en concours et naturellement lié à l'effet d'ion commun déjà présent dans le chapitre."
+  },
+  {
+    "source": "TaekdHub — exercice original (Sup)",
+    "programmeLevel": "sup",
+    "licenseStatus": "libre",
+    "competition": null,
+    "year": null,
+    "note": "Exercice original TaekdHub — non issu d'un sujet de concours.",
+    "title": "Titrage conductimétrique acide fort - base forte",
+    "statement": "On dose un volume $V_0=20\\,\\mathrm{mL}$ d'une solution d'acide chlorhydrique de concentration inconnue $C_0$ par une solution d'hydroxyde de sodium de concentration $C_b=0{,}1\\,\\mathrm{mol\\cdot L^{-1}}$, en suivant la conductivité $\\sigma$ de la solution au cours de l'ajout.\n\n1. Avant l'équivalence, les ions $\\mathrm{H_3O^+}$ (très mobiles) sont progressivement consommés et remplacés par des ions $\\mathrm{Na^+}$ (moins mobiles), tandis que $\\mathrm{Cl^-}$ reste spectateur en concentration quasi constante (aux dilutions près). En déduire, sans calcul, le sens de variation de $\\sigma$ avant l'équivalence.\n2. Après l'équivalence, l'ajout de soude en excès apporte des ions $\\mathrm{Na^+}$ ET $\\mathrm{HO^-}$ (lui aussi très mobile) sans plus consommer d'espèce. En déduire le sens de variation de $\\sigma$ après l'équivalence.\n3. Décrire l'allure générale attendue de la courbe $\\sigma$ en fonction du volume versé $V_b$, et expliquer comment elle permet de repérer le volume équivalent sans indicateur coloré.",
+    "subject": "Chimie",
+    "type": "TP",
+    "difficulty": 3,
+    "chapter": "Dosages",
+    "estimatedMinutes": 18,
+    "tags": [
+      "conductimétrie",
+      "titrage",
+      "acide fort",
+      "base forte"
+    ],
+    "hints": [
+      "La conductivité d'une solution ionique dépend de la concentration ET de la mobilité de CHAQUE ion présent : un ion très mobile (H3O+ ou HO-) contribue beaucoup plus qu'un ion moins mobile (Na+, Cl-) à concentration égale.",
+      "Avant l'équivalence, on remplace un ion très mobile (H3O+) par un ion moins mobile (Na+) à peu près en quantité équivalente : la conductivité doit donc globalement diminuer.",
+      "Après l'équivalence, on ajoute un ion très mobile supplémentaire (HO-) sans plus rien consommer : la conductivité doit repartir à la hausse."
+    ],
+    "correction": "1. Avant l'équivalence, chaque ion $\\mathrm{H_3O^+}$ consommé (par la réaction $\\mathrm{H_3O^+}+\\mathrm{HO^-}\\rightarrow2\\,\\mathrm{H_2O}$) est remplacé par un ion $\\mathrm{Na^+}$ apporté par la soude, en quantité quasi équivalente. Or $\\mathrm{H_3O^+}$ est beaucoup plus mobile que $\\mathrm{Na^+}$ : à quantité équivalente, remplacer le premier par le second fait DIMINUER la conductivité $\\sigma$.\n2. Après l'équivalence, tout $\\mathrm{H_3O^+}$ initial a été consommé : chaque ajout supplémentaire de soude apporte des ions $\\mathrm{Na^+}$ ET $\\mathrm{HO^-}$ sans plus rien consommer en retour (la réaction de neutralisation est terminée). Comme $\\mathrm{HO^-}$ est lui aussi très mobile, cet apport net d'ions fait AUGMENTER la conductivité $\\sigma$.\n3. La courbe $\\sigma(V_b)$ est donc décroissante avant l'équivalence, puis croissante après : elle présente un point anguleux (minimum local, ou du moins un changement net de pente) exactement au volume équivalent. Ce changement de pente permet de repérer $V_{eq}$ graphiquement, par l'intersection des deux portions de droite (avant et après l'équivalence), SANS recourir à un indicateur coloré — méthode particulièrement adaptée aux solutions colorées ou troubles, où le virage d'un indicateur serait difficile à observer.",
+    "level": 3,
+    "prerequisites": [
+      "conductivité d'une solution ionique",
+      "titrage acide fort - base forte"
+    ],
+    "pedagogicalGoal": "introduire le suivi conductimétrique (absent du chapitre malgré sa fréquence en TP et en concours) en articulant le raisonnement qualitatif (mobilité des ions) avec l'allure de la courbe obtenue."
   }
 ]

@@ -116,11 +116,23 @@ export function SessionRunner() {
     // Plan du jour (Sprint Plan de travail) : un plan déposé par le Dashboard
     // ("Commencer le plan") prime sur le calcul habituel ci-dessous — mêmes
     // exercices, même ordre, AUCUNE recommandation recalculée ici (voir
-    // lib/plan.ts#computeDailyPlan, qui a déjà tranché). Clé retirée dès
-    // lecture : c'est un transfert à usage unique, pas un état persistant.
+    // lib/plan.ts#computeDailyPlan, qui a déjà tranché).
+    //
+    // La clé N'EST PAS retirée ici, à la lecture — bug produit trouvé en
+    // rejouant "Démarrer la séance"/"Commencer le plan" de bout en bout :
+    // une navigation client vers /session monte ce composant deux fois de
+    // suite (comportement Next.js observé sur TOUTES les pages de l'app,
+    // pas propre à cet écran), et un retrait immédiat au premier montage
+    // faisait disparaître le plan avant que le second montage — celui qui
+    // survit et s'affiche réellement — ait pu le lire à son tour : l'élève
+    // atterrissait alors systématiquement sur l'aperçu générique par budget,
+    // sa sélection précise silencieusement perdue. La clé est désormais
+    // retirée dans `startSession` (clic sur "Commencer ma séance"), le seul
+    // moment qui correspond à une consommation réelle et définitive — voir
+    // sa doc plus bas pour le compromis assumé (page quittée sans démarrer :
+    // le plan reste disponible pour la prochaine visite de /session).
     const storedPlanRaw = sessionStorage.getItem(PLAN_STORAGE_KEY);
     if (storedPlanRaw) {
-      sessionStorage.removeItem(PLAN_STORAGE_KEY);
       try {
         const stored = JSON.parse(storedPlanRaw) as StoredPlan;
         const picks = stored.items
@@ -226,11 +238,19 @@ export function SessionRunner() {
   // Fige la sélection au moment du clic — l'aperçu peut continuer de changer
   // avant ça (ajustement du budget), la séance elle-même reste stable une
   // fois lancée, comme avant le Sprint 4.
+  //
+  // Retire ici, et seulement ici, le plan déposé en sessionStorage (voir la
+  // doc plus haut, dans l'effet de montage) : c'est le seul moment qui
+  // correspond à une consommation réelle et définitive du transfert — sans
+  // risque de le perdre à cause d'un double montage de la page, et sans
+  // laisser une visite ultérieure de /session réutiliser un plan déjà
+  // affiché puis explicitement lancé.
   const startSession = useCallback(() => {
+    if (planSelection) sessionStorage.removeItem(PLAN_STORAGE_KEY);
     setRecommendations(previewSelection);
     setCurrentIndex(0);
     setPhase("focus");
-  }, [previewSelection]);
+  }, [previewSelection, planSelection]);
 
   // Passé à FocusView en tant que `onClose` : FocusView a déjà proprement
   // arrêté le timer et sauvegardé la WorkSession avant d'appeler ceci (voir
