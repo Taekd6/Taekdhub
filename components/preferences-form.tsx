@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,9 +20,21 @@ export function PreferencesForm() {
   const { preferences, savePreferences } = usePrepahubData();
   const [prefs, setPrefs] = useState<Preferences>(preferences);
   const [saved, setSaved] = useState(false);
+  // Dernière valeur de `preferences` à laquelle ce formulaire était encore
+  // synchronisé (brouillon = valeur enregistrée, rien de saisi depuis).
+  const lastSyncedRef = useRef(preferences);
 
   useEffect(() => {
-    setPrefs(preferences);
+    // Une préférence peut désormais changer sous ce formulaire sans aucune
+    // action locale — restauration d'une sauvegarde (components/data-
+    // backup.tsx), ou tout autre écran ouvert dans un autre onglet. Ne
+    // resynchroniser QUE si rien n'a été saisi depuis le dernier
+    // rapprochement : sinon un import restauré pendant que l'élève tape son
+    // prénom effacerait sa saisie en cours sans qu'il ait rien demandé.
+    const draftUntouched = JSON.stringify(prefs) === JSON.stringify(lastSyncedRef.current);
+    lastSyncedRef.current = preferences;
+    if (draftUntouched) setPrefs(preferences);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preferences]);
 
   function save(event: React.FormEvent) {

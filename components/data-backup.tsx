@@ -5,10 +5,10 @@ import { AlertTriangle, Download, Upload } from "lucide-react";
 import { ChangeEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { exportBackup, localData, validateBackupPayload, type BackupPayload } from "@/lib/storage";
+import { exportBackup, validateBackupPayload, type BackupPayload } from "@/lib/storage";
 
 export function DataBackup() {
-  const { refresh } = usePrepahubData();
+  const { refresh, restoreBackup } = usePrepahubData();
   const input = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
   const [pendingImport, setPendingImport] = useState<BackupPayload | null>(null);
@@ -41,17 +41,13 @@ export function DataBackup() {
 
   function confirmImport() {
     if (!pendingImport) return;
-    localData.saveExercises(pendingImport.exercises);
-    localData.saveSessions(pendingImport.sessions);
-    localData.savePreferences(pendingImport.preferences);
-    // Chapitres : indispensables pour que les `chapter_id` des exercices
-    // pointent vers un catalogue réel. Absents d'une sauvegarde ancienne
-    // (exportée avant l'ajout des chapitres à l'export) → restaurés à [].
-    localData.saveChapters(pendingImport.chapters ?? []);
-    // Sauvegarde d'avant le Sprint 2.1 : pas de weekSnapshots dans le fichier, restaurés à [] proprement.
-    localData.saveWeekSnapshots(pendingImport.weekSnapshots ?? []);
+    // `restoreBackup` (hooks/use-prepahub-data.ts) écrit les cinq champs puis
+    // notifie toute l'app en une fois — Dashboard, sidebar (XP/niveau) et ce
+    // formulaire lui-même reflètent la sauvegarde restaurée immédiatement,
+    // plus besoin de recharger la page pour le voir.
+    restoreBackup(pendingImport);
     setPendingImport(null);
-    setMessage("Sauvegarde restaurée. Recharge la page.");
+    setMessage("Sauvegarde restaurée.");
   }
 
   function cancelImport() {

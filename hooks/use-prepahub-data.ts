@@ -173,5 +173,22 @@ export function usePrepahubData() {
     notifyAllInstances();
   }, []);
 
-  return { ...data, refresh, saveSessions, saveExercises, saveChapters, savePreferences };
+  /**
+   * Restauration d'une sauvegarde (components/data-backup.tsx) — cinq champs
+   * réécrits d'un coup. Volontairement une seule notification à la fin,
+   * jamais cinq `save*` séparés : chacun déclenche une resynchronisation de
+   * toutes les instances montées, et cinq notifications successives pour une
+   * seule action utilisateur ne feraient que multiplier les re-rendus sans
+   * rien changer au résultat final.
+   */
+  const restoreBackup = useCallback((payload: { exercises: Exercise[]; sessions: WorkSession[]; preferences: Preferences; chapters?: Chapter[]; weekSnapshots?: WeekSnapshot[] }) => {
+    localData.saveExercises(payload.exercises);
+    localData.saveSessions(payload.sessions);
+    localData.savePreferences(payload.preferences);
+    localData.saveChapters(payload.chapters ?? []);
+    localData.saveWeekSnapshots(payload.weekSnapshots ?? []);
+    notifyAllInstances();
+  }, []);
+
+  return { ...data, refresh, saveSessions, saveExercises, saveChapters, savePreferences, restoreBackup };
 }

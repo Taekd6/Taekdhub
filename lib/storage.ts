@@ -294,17 +294,43 @@ function normalizeWeekSnapshot(raw: unknown): WeekSnapshot | null {
   };
 }
 
+/** Nombre de minutes réellement exploitable (fini, strictement positif), ou le défaut — voir `normalizePreferences`. */
+function positiveMinutes(raw: unknown, fallback: number): number {
+  return typeof raw === "number" && Number.isFinite(raw) && raw > 0 ? raw : fallback;
+}
+
 /**
  * Fusionne une préférence potentiellement partielle/corrompue (import, ancienne
  * sauvegarde, édition manuelle du localStorage) avec `defaults` — même principe
  * que `normalizeExercise`/`normalizeChapter` : un champ absent ou invalide
- * retombe sur sa valeur par défaut plutôt que de propager une valeur incohérente
- * (notamment `themeMode`, posé tel quel en attribut DOM par `applyThemeMode`).
+ * retombe sur sa valeur par défaut plutôt que de propager une valeur incohérente.
+ *
+ * `dailyGoalMinutes`/`weeklyGoalMinutes` : un nombre négatif, nul ou NaN
+ * (localStorage édité à la main, sauvegarde bricolée) traversait auparavant
+ * cette fonction tel quel — le Dashboard affichait ensuite littéralement
+ * « 45 / -50 min » et un anneau à 0 %, ou pire, un `contestDate` illisible
+ * transformait le compte à rebours du concours en « NaN jours ». Trouvé en
+ * testant des valeurs volontairement absurdes (Phase 12 de l'audit) : ni
+ * l'un ni l'autre ne faisait planter l'app, mais tous deux affichaient un
+ * nombre incohérent à l'élève — même défaut de fond que les champs déjà
+ * validés ci-dessus, resté sans garde ici. `themeMode`, déjà protégé, garde
+ * son traitement dédié (posé tel quel en attribut DOM par `applyThemeMode`).
  */
 export function normalizePreferences(raw: unknown): Preferences {
   const item = isRecord(raw) ? raw : {};
   const merged = { ...defaults, ...item };
-  return { ...merged, themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE };
+  return {
+    ...merged,
+    displayName: typeof item.displayName === "string" ? item.displayName : defaults.displayName,
+    dailyGoalMinutes: positiveMinutes(item.dailyGoalMinutes, defaults.dailyGoalMinutes),
+    weeklyGoalMinutes: positiveMinutes(item.weeklyGoalMinutes, defaults.weeklyGoalMinutes),
+    // "" (aucun concours réglé) reste "" ; une chaîne présente mais
+    // illisible comme date retombe sur "" plutôt que de propager un NaN
+    // jusqu'au calcul des jours restants (voir components/dashboard-
+    // overview.tsx#contestDays).
+    contestDate: item.contestDate === "" ? "" : (isoDate(item.contestDate) ?? defaults.contestDate),
+    themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE,
+  };
 }
 
 /**

@@ -169,6 +169,36 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     expect(prefs.themeMode).toBe("system");
     expect(prefs.weeklyGoalMinutes).toBe(300);
   });
+
+  /**
+   * Bug réel trouvé en testant des valeurs volontairement absurdes (audit
+   * "edge cases produits") : un objectif négatif/NaN traversait cette
+   * fonction tel quel — le Dashboard affichait ensuite littéralement
+   * « 45 / -50 min », et un `contestDate` illisible transformait le compte à
+   * rebours du concours en « NaN jours ». Ni l'un ni l'autre ne faisait
+   * planter l'app, mais tous deux affichaient un nombre incohérent — même
+   * défaut de fond que les champs déjà validés dans ce fichier.
+   */
+  it("un objectif négatif, nul ou non numérique retombe sur le défaut", () => {
+    expect(normalizePreferences({ dailyGoalMinutes: -50 }).dailyGoalMinutes).toBe(60);
+    expect(normalizePreferences({ dailyGoalMinutes: 0 }).dailyGoalMinutes).toBe(60);
+    expect(normalizePreferences({ dailyGoalMinutes: NaN }).dailyGoalMinutes).toBe(60);
+    expect(normalizePreferences({ dailyGoalMinutes: "not-a-number" }).dailyGoalMinutes).toBe(60);
+    expect(normalizePreferences({ weeklyGoalMinutes: -300 }).weeklyGoalMinutes).toBe(300);
+    expect(normalizePreferences({ dailyGoalMinutes: 90 }).dailyGoalMinutes).toBe(90);
+  });
+
+  it("un contestDate illisible retombe sur \"\" plutôt que de produire un NaN en aval", () => {
+    expect(normalizePreferences({ contestDate: "" }).contestDate).toBe("");
+    expect(normalizePreferences({ contestDate: "pas-une-date" }).contestDate).toBe("");
+    expect(normalizePreferences({ contestDate: 42 }).contestDate).toBe("");
+    expect(normalizePreferences({ contestDate: "2026-06-15" }).contestDate).toBe("2026-06-15");
+  });
+
+  it("un displayName non textuel retombe sur le défaut", () => {
+    expect(normalizePreferences({ displayName: 42 }).displayName).toBe("");
+    expect(normalizePreferences({ displayName: "Camille" }).displayName).toBe("Camille");
+  });
 });
 
 /**
