@@ -184,22 +184,31 @@ export function DashboardOverview() {
         )}
       </Section>
 
-      {/* ══ NIVEAU 2 — OÙ J'EN SUIS, EN UNE LIGNE ════════════════════════
+      {/* ══ NIVEAU 2 — OÙ J'EN SUIS ═══════════════════════════════════════
           Quatre cartes de métriques, une carte « cette semaine », une carte
           « progression par matière », une carte « prêt pour le DS » et une
           carte « activité récente » occupaient la moitié de l'écran — toutes
           reprises à l'identique sur /progress, qui est faite pour ça. Il ne
-          reste ici que ce qui sert à décider AUJOURD'HUI. */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-1">
+          reste ici que ce qui sert à décider AUJOURD'HUI — présenté comme un
+          fait qu'on voit (un filet qui se remplit), pas comme un pourcentage
+          qu'on doit calculer soi-même en le lisant. */}
+      <div className="flex flex-wrap items-end gap-x-10 gap-y-4 px-1">
         <Stat label="Objectif du jour" value={`${objective.workedMinutes} / ${objective.goalMinutes} min`} percent={objective.percent} />
-        {streak > 0 && <Stat label="Série" value={`${streak} j`} icon={<Flame size={13} className="text-accent" />} />}
         <Stat label="Cette semaine" value={formatDuration(weeklySummary.totalSeconds)} percent={weeklySummary.progressPercent} />
+        {streak > 0 && (
+          <div className="min-w-0">
+            <p className="eyebrow">Série</p>
+            <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium tabular-nums text-ink">
+              <Flame size={13} className="text-accent" /> {streak} j
+            </p>
+          </div>
+        )}
         {/* `min-h-11` sous `lg` : un lien texte de 20 px de haut est une
             cible tactile inconfortable, même s'il n'a pas l'apparence d'un
             bouton — la règle vaut pour tout ce qu'on touche. */}
         <Link
           href="/progress"
-          className="focus-ring t-meta ml-auto inline-flex items-center rounded px-1 underline-offset-4 hover:text-ink hover:underline max-lg:min-h-11"
+          className="focus-ring t-meta mb-1 ml-auto inline-flex items-center rounded px-1 underline-offset-4 hover:text-ink hover:underline max-lg:min-h-11"
         >
           Voir ma progression
         </Link>
@@ -265,16 +274,26 @@ export function DashboardOverview() {
   );
 }
 
-/** Chiffre du bandeau « où j'en suis » — une ligne, pas une carte. La barre de progression n'apparaît que si le chiffre en a une. */
-function Stat({ label, value, percent, icon }: { label: string; value: string; percent?: number; icon?: React.ReactNode }) {
+/**
+ * Chiffre du bandeau « où j'en suis » — une ligne, pas une carte. Le filet
+ * sous la valeur (refonte design) montre la même progression que le
+ * pourcentage entre parenthèses, mais SE VOIT d'un regard, sans lire un
+ * nombre : deux façons de dire le même fait, une pour qui compare vite, une
+ * pour qui veut le chiffre exact.
+ */
+function Stat({ label, value, percent }: { label: string; value: string; percent?: number }) {
   return (
-    <div className="min-w-0">
+    <div className="min-w-[9rem]">
       <p className="eyebrow">{label}</p>
-      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium tabular-nums text-ink">
-        {icon}
+      <p className="mt-1.5 flex items-baseline gap-1.5 text-sm font-medium tabular-nums text-ink">
         {value}
-        {percent !== undefined && <span className="t-meta font-normal">({percent} %)</span>}
+        {percent !== undefined && <span className="t-meta font-normal">{percent} %</span>}
       </p>
+      {percent !== undefined && (
+        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-hairline/[0.08]">
+          <div className="h-full rounded-full bg-accent/70 transition-all duration-500" style={{ width: `${Math.min(100, percent)}%` }} />
+        </div>
+      )}
     </div>
   );
 }

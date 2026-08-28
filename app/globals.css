@@ -30,33 +30,45 @@
  */
 @layer base {
   :root {
-    --accent-rgb: 212 243 107;
+    /*
+     * DIRECTION VISUELLE — "précision calme" (refonte design, pas juste
+     * technique). L'accent lime d'origine se lisait comme un choix ludique/
+     * gadget ; un bleu-indigo maîtrisé porte mieux l'idée d'un outil de
+     * travail sérieux, tout en restant chaleureux. Le lime reste disponible
+     * comme préréglage (voir lib/theme.ts#ACCENT_PRESETS) pour qui le
+     * préfère — seule la valeur PAR DÉFAUT change, aucun utilisateur ayant
+     * déjà choisi une teinte n'est affecté (préférence lue depuis son
+     * stockage local, jamais recalculée).
+     */
+    --accent-rgb: 99 118 249;
     /* L'accent en tant qu'ENCRE (texte, icônes, teintes fines) — voir
        `accentInk` (lib/theme.ts), qui recalcule cette valeur dès que l'élève
        change d'accent. Valeur de repli pour l'accent par défaut, utilisée
        avant l'exécution du script anti-flash. */
-    --accent-ink-base-rgb: 104 119 52;
-    /* En thème sombre l'accent EST déjà lisible (15,95:1) : l'encre lui est
-       simplement égale. Les blocs "clair" plus bas basculent sur la version
-       assombrie — c'est le seul endroit où l'arbitrage se fait. */
+    --accent-ink-base-rgb: 85 102 215;
+    /* En thème sombre l'accent EST déjà lisible : l'encre lui est simplement
+       égale. Les blocs "clair" plus bas basculent sur la version assombrie —
+       c'est le seul endroit où l'arbitrage se fait. */
     --accent-ink-rgb: var(--accent-rgb);
-    --accent-fg-rgb: 0 0 0;
-    /* Remplissage du bouton principal. En SOMBRE, le maximum de contraste
-       contre la page est la couleur de marque elle-même. En CLAIR, c'est
-       l'inverse : un aplat fluo sur du blanc se lit comme un surligneur, pas
-       comme un bouton — le bloc « clair » plus bas bascule donc sur une
-       version profonde de la même teinte. */
+    --accent-fg-rgb: 255 255 255;
+    /* Remplissage du bouton principal en SOMBRE : la couleur de marque telle
+       quelle contraste déjà bien contre le canevas noir. En CLAIR, le bloc
+       plus bas bascule sur `--accent-deep-base-rgb` (même teinte, assombrie)
+       pour porter du texte blanc sans se lire comme un surligneur. */
     --accent-solid-rgb: var(--accent-rgb);
     --accent-solid-fg-rgb: var(--accent-fg-rgb);
-    --accent-deep-base-rgb: 47 55 22;
+    --accent-deep-base-rgb: 46 55 115;
 
-    /* Fond et ombre des surfaces. En sombre, une carte se détache par une
-       translucidité floutée et une ombre large ; en clair, ce même réglage
-       donne du blanc sur du blanc avec une tache grise. Les deux thèmes ont
-       donc leurs propres valeurs, au lieu d'un réglage unique pensé pour l'un
-       et subi par l'autre. */
-    --surface-bg: rgb(var(--elevated-rgb) / 0.7);
-    --shadow-surface: 0 12px 34px rgba(0, 0, 0, 0.16);
+    /* Fond des surfaces — plate, pas de flou ni de translucidité (voir
+       `.surface` plus bas : la séparation se fait par la bordure et l'écart
+       de teinte avec le canevas, jamais par l'ombre). */
+    --surface-bg: rgb(var(--elevated-rgb));
+    /* Quasi nulle par défaut (voir `.surface`) : un outil de travail se
+       détache par la valeur et la bordure, pas par une ombre qui simule un
+       objet physique. Réservée aux éléments réellement flottants
+       (`--shadow-float`, Sheet/menus) qui, eux, se posent au-dessus du reste. */
+    --shadow-surface: none;
+    --shadow-float: 0 16px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
     /* Fond « en creux » : champs, boutons secondaires, pistes de sélecteurs.
        C'était `bg-black/20` en dur, avec l'idée qu'un noir peu opaque
        assombrit légèrement n'importe quel fond. C'est faux : 20 % de noir sur
@@ -141,9 +153,10 @@
     --accent-solid-rgb: var(--accent-deep-base-rgb);
     --accent-solid-fg-rgb: 255 255 255;
     --surface-bg: rgb(var(--panel-rgb));
-    /* Deux couches courtes plutôt qu'un halo de 34 px : sur fond clair, une
-       ombre large et sombre salit au lieu de soulever. */
-    --shadow-surface: 0 1px 2px rgba(24, 24, 27, 0.05), 0 4px 14px rgba(24, 24, 27, 0.06);
+    /* Plate ici aussi — voir la note en thème sombre : la bordure et l'écart
+       avec `--canvas-rgb` suffisent à détacher une carte. */
+    --shadow-surface: none;
+    --shadow-float: 0 20px 44px rgba(24, 24, 27, 0.12), 0 2px 8px rgba(24, 24, 27, 0.06);
     --inset-rgb: 24 24 27;
     --inset-alpha: 0.045;
 
@@ -202,9 +215,8 @@
       --accent-solid-rgb: var(--accent-deep-base-rgb);
       --accent-solid-fg-rgb: 255 255 255;
       --surface-bg: rgb(var(--panel-rgb));
-      /* Deux couches courtes plutôt qu'un halo de 34 px : sur fond clair, une
-         ombre large et sombre salit au lieu de soulever. */
-      --shadow-surface: 0 1px 2px rgba(24, 24, 27, 0.05), 0 4px 14px rgba(24, 24, 27, 0.06);
+      --shadow-surface: none;
+      --shadow-float: 0 20px 44px rgba(24, 24, 27, 0.12), 0 2px 8px rgba(24, 24, 27, 0.06);
 
       --zinc-50-rgb: 9 9 11;
       --zinc-100-rgb: 24 24 27;
@@ -309,15 +321,21 @@
  */
 @layer components {
   /**
-   * SURFACE — une carte, et rien d'autre.
+   * SURFACE — une carte, et rien d'autre. Réservée à CE QUI EST RÉELLEMENT
+   * DISTINCT (l'action du jour, une fiche, un panneau) — pas au conteneur
+   * par défaut de tout bloc de contenu. Beaucoup de blocs qui portaient une
+   * `.surface` par réflexe (voir `Section` rank="secondary"/"quiet") n'en
+   * ont plus : un titre et de l'espace suffisent à séparer une idée de la
+   * suivante, sans empiler les cadres.
    *
-   * Plus de `backdrop-blur` : le flou d'arrière-plan coûte cher au rendu, ne
-   * se voyait que par-dessus les anciens dégradés, et appartient à une mode
-   * (le « verre dépoli ») plutôt qu'à une hiérarchie. Une carte se détache
-   * par sa valeur et sa bordure — c'est suffisant, et c'est net.
+   * Plate, sans ombre par défaut (`--shadow-surface: none`) : un outil de
+   * travail se détache par la bordure et l'écart de teinte avec le canevas,
+   * pas par une ombre qui simule un objet physique posé sur une table —
+   * c'est le geste qui distingue le plus une interface « précise » (Linear,
+   * Vercel, Raycast) d'un gabarit SaaS générique.
    */
   .surface {
-    @apply border border-hairline/[0.09];
+    @apply border border-hairline/[0.09] rounded-xl;
     background: var(--surface-bg);
     box-shadow: var(--shadow-surface);
   }
@@ -327,25 +345,37 @@
   }
 
   /**
+   * SURFACE FLOTTANTE — ce qui se pose littéralement AU-DESSUS du reste de
+   * la page (feuille mobile, menu, popover). C'est le seul cas où une vraie
+   * ombre a un sens : elle sépare deux plans, pas deux blocs d'un même plan.
+   */
+  .surface-float {
+    @apply border border-hairline/[0.09] rounded-xl;
+    background: var(--surface-bg);
+    box-shadow: var(--shadow-float);
+  }
+
+  /**
    * ZONE EN CREUX — un bloc posé DANS une carte (tuile de liste, encart).
    * Sans bordure ni ombre : deux cadres emboîtés font du bruit, pas de la
    * hiérarchie. C'est la valeur du fond qui dit « ceci est à l'intérieur ».
    */
   .well {
-    @apply rounded-xl bg-inset;
+    @apply rounded-lg bg-inset;
   }
 
   /**
-   * ÉCHELLE TYPOGRAPHIQUE — cinq rôles nommés, au lieu d'un choix ad hoc de
-   * `text-*` à chaque écran (on comptait `text-3xl`, `2xl`, `xl`, `lg`,
-   * `base`, `sm`, `xs`, `2xs` mélangés sans règle).
+   * ÉCHELLE TYPOGRAPHIQUE — rôles nommés, au lieu d'un choix ad hoc de
+   * `text-*` à chaque écran. Hiérarchie volontairement plus tranchée qu'avant
+   * (`t-display` gagne du poids et du serrage) : sur une page qui ne montre
+   * qu'UNE seule chose en gros, l'écart doit se voir sans effort.
    */
   .t-display {
-    @apply text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.02em] sm:text-[2rem];
+    @apply text-[1.875rem] font-semibold leading-[1.1] tracking-[-0.025em] sm:text-[2.25rem];
   }
 
   .t-title {
-    @apply text-lg font-semibold leading-snug tracking-[-0.01em];
+    @apply text-base font-semibold leading-snug tracking-[-0.01em];
   }
 
   .t-body {
@@ -353,11 +383,16 @@
   }
 
   .t-meta {
-    @apply text-xs leading-5 text-muted;
+    @apply text-[0.8125rem] leading-5 text-muted;
+  }
+
+  /** Grand chiffre isolé (une statistique qui compte plus que les autres) — chiffres tabulaires, serrage net, jamais gras au point de casser l'alignement optique avec le texte voisin. */
+  .t-figure {
+    @apply text-2xl font-semibold tabular-nums tracking-[-0.02em] text-ink;
   }
 
   .eyebrow {
-    @apply text-2xs font-semibold uppercase tracking-[0.14em] text-subtle;
+    @apply text-2xs font-medium uppercase tracking-[0.1em] text-subtle;
   }
 
   .focus-ring {

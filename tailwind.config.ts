@@ -90,20 +90,26 @@ export default {
         teal: { 200: "rgb(var(--teal-200-rgb) / <alpha-value>)", 400: "rgb(var(--teal-400-rgb) / <alpha-value>)" },
         orange: { 200: "rgb(var(--orange-200-rgb) / <alpha-value>)", 400: "rgb(var(--orange-400-rgb) / <alpha-value>)" },
       },
+      // Échelle resserrée (refonte design — direction "précision calme") :
+      // l'ancienne échelle (0.5 → 1.75rem) donnait un rendu "bulle
+      // consumer" à chaque carte. Une échelle plus courte (6 → 18px) est la
+      // signature visuelle des outils de travail pro (Linear, Vercel,
+      // Raycast) — net et intentionnel plutôt que doux par défaut.
       borderRadius: {
-        sm: "0.5rem",
-        md: "0.75rem",
-        lg: "1rem",
-        xl: "1.25rem",
-        "2xl": "1.5rem",
-        "3xl": "1.75rem",
+        sm: "0.375rem",
+        md: "0.5rem",
+        lg: "0.625rem",
+        xl: "0.75rem",
+        "2xl": "0.875rem",
+        "3xl": "1.125rem",
       },
       boxShadow: {
-        // Piloté par le thème (voir app/globals.css) : une ombre large et
-        // sombre soulève une carte sur fond noir et la salit sur fond blanc.
+        // Piloté par le thème (voir app/globals.css) — quasi nulle par
+        // défaut : une carte se détache par sa bordure, pas par une ombre.
         surface: "var(--shadow-surface)",
+        // Réservée à ce qui flotte réellement au-dessus du reste (Sheet, menu).
+        float: "var(--shadow-float)",
         glow: "0 0 22px rgb(var(--accent-rgb) / .18)",
-        card: "0 1px 0 rgba(255,255,255,.04) inset, 0 12px 34px rgba(0,0,0,.16)",
       },
       fontSize: {
         "2xs": ["0.6875rem", { lineHeight: "1rem" }],

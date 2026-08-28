@@ -3,18 +3,18 @@ import { cn } from "@/lib/cn";
 /**
  * SECTION — l'unité de composition des pages.
  *
- * Chaque écran réinventait son propre en-tête de bloc : un `eyebrow`, parfois
- * une icône d'accent, un `CardTitle` de taille variable (`text-lg`, `text-xl`,
- * ou rien), une description tantôt présente tantôt absente, le tout enveloppé
- * dans une `Card` — y compris pour des blocs qui n'avaient aucune raison
- * d'être des cartes. Résultat : dix blocs de même poids visuel sur un écran,
- * et aucune hiérarchie lisible.
+ * Refonte design : la version précédente encadrait `primary` ET `secondary`
+ * dans une carte bordée — sur une page à cinq sections, ça faisait cinq
+ * cadres empilés, du bruit visuel avant même de lire le contenu. Un produit
+ * qui paraît conçu (Linear, Notion, Vercel) réserve le cadre à CE QUI EST
+ * VRAIMENT UNE ACTION OU UN OBJET À PART : le reste se sépare par le titre et
+ * l'espace, jamais par une bordure supplémentaire.
  *
- * Une section porte donc un RANG explicite :
- *
- *   `primary`   ce que l'écran veut faire faire. Un seul par page.
- *   `secondary` ce qui aide à décider. Encadré, discret.
- *   `quiet`     le détail. Pas de cadre du tout : un titre et du contenu.
+ *   `primary`   ce que l'écran veut faire faire. Un seul par page. Encadré —
+ *               c'est la seule vraie « carte » de l'écran.
+ *   `secondary` ce qui aide à décider. PLUS de cadre : juste un titre et du
+ *               rythme vertical généreux, comme un paragraphe d'un document.
+ *   `quiet`     le détail, encore plus bas de ton (titre plus discret).
  *
  * Le rang décide de l'encadrement et de la taille du titre — jamais l'écran
  * appelant, qui n'a aucun moyen de savoir ce que font les autres.
@@ -40,21 +40,14 @@ export function Section({
   className?: string;
   children?: React.ReactNode;
 }) {
-  const framed = rank !== "quiet";
+  const framed = rank === "primary";
   return (
-    <section
-      className={cn(
-        framed && "surface rounded-2xl",
-        rank === "primary" && "p-5 sm:p-6",
-        rank === "secondary" && "p-4 sm:p-5",
-        className
-      )}
-    >
+    <section className={cn(framed && "surface p-5 sm:p-6", className)}>
       {(title || eyebrow || action) && (
         <header className={cn("flex flex-wrap items-start justify-between gap-x-4 gap-y-2", children && "mb-4")}>
           <div className="min-w-0">
             {eyebrow && <p className="eyebrow mb-1.5">{eyebrow}</p>}
-            {title && <h2 className={rank === "primary" ? "t-display" : "t-title"}>{title}</h2>}
+            {title && <h2 className={rank === "primary" ? "t-display" : rank === "secondary" ? "t-title" : "text-sm font-medium text-muted"}>{title}</h2>}
             {description && <p className="t-meta mt-1.5 max-w-prose">{description}</p>}
           </div>
           {action && <div className="shrink-0">{action}</div>}

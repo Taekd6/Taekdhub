@@ -7,7 +7,7 @@ export function Card({
   ...props
 }: React.HTMLAttributes<HTMLElement> & { hover?: boolean }) {
   return (
-    <article className={cn("surface rounded-2xl", hover && "surface-hover", className)} {...props}>
+    <article className={cn("surface", hover && "surface-hover", className)} {...props}>
       {children}
     </article>
   );

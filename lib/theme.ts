@@ -16,8 +16,18 @@ export interface AccentPreset {
   hex: string;
 }
 
-/** Teintes sobres, choisies pour un rendu premium/académique — jamais saturées au point de devenir "gadget". */
+/**
+ * Teintes sobres, choisies pour un rendu premium/académique — jamais saturées
+ * au point de devenir "gadget". "Indigo" (refonte design) remplace "Lime"
+ * comme PREMIER préréglage / valeur par défaut : le vert-citron se lisait
+ * comme un choix ludique plutôt que comme l'identité d'un outil de travail
+ * sérieux. Le lime reste disponible pour qui le préfère — un utilisateur
+ * ayant déjà choisi une teinte garde la sienne, seul le nouvel arrivant voit
+ * la nouvelle valeur par défaut (lue depuis son stockage local, jamais
+ * recalculée après coup).
+ */
 export const ACCENT_PRESETS: AccentPreset[] = [
+  { id: "indigo", label: "Indigo", hex: "#6376f9" },
   { id: "lime", label: "Lime", hex: "#d4f36b" },
   { id: "azur", label: "Azur", hex: "#8ecbff" },
   { id: "ambre", label: "Ambre", hex: "#f5c26b" },

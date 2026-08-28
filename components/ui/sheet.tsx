@@ -68,7 +68,7 @@ export function Sheet({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "tween", duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
-            className="relative flex max-h-[85vh] flex-col rounded-t-2xl border-t border-hairline/[0.09] bg-panel"
+            className="surface-float relative flex max-h-[85vh] flex-col rounded-t-[1.25rem] rounded-b-none border-b-0"
           >
             <header className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline/[0.07] px-4 py-3">
               <h2 className="t-title">{title}</h2>
