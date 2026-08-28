@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, PlayCircle, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle2, Sparkles, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -296,33 +296,39 @@ export function SessionRunner() {
       />
     );
   } else if (phase === "preview") {
+    // Composition asymétrique, sans carte ni icône décorative : la question
+    // EST le contenu, alignée à gauche comme le Dashboard, pas centrée dans
+    // un cadre flottant au milieu d'un désert. La durée choisie devient un
+    // grand chiffre — même vocabulaire que le « 45 » du Plan du jour — pour
+    // que l'écran ait une présence, même quand la séance est courte.
     content = (
-      <div className="space-y-5">
-        <Card className="p-8 text-center">
-          <PlayCircle className="mx-auto text-accent" size={28} />
-
+      <div className="lg:grid lg:grid-cols-[1fr_360px] lg:items-start lg:gap-12">
+        <div className="min-w-0">
           {planSelection ? (
             planSource === "libre" ? (
               <>
-                <h2 className="mt-4 text-xl font-semibold tracking-tight">Ta séance libre</h2>
-                <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-                  Exactement la sélection choisie dans la banque d&apos;exercices — matière, chapitre, sous-thème et difficulté filtrés à la main.
-                </p>
+                <p className="eyebrow">Ta séance libre</p>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
+                  Exactement la sélection choisie dans la banque d&apos;exercices.
+                </h2>
+                <p className="mt-3 max-w-xl text-[0.9375rem] leading-7 text-muted">Matière, chapitre, sous-thème et difficulté filtrés à la main.</p>
               </>
             ) : (
               <>
-                <h2 className="mt-4 text-xl font-semibold tracking-tight">Ton plan du jour</h2>
-                <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-                  Réparti sur tes matières prioritaires, dans le temps que tu as choisi depuis le tableau de bord.
-                </p>
+                <p className="eyebrow">Ton plan du jour</p>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
+                  Réparti sur tes matières prioritaires.
+                </h2>
+                <p className="mt-3 max-w-xl text-[0.9375rem] leading-7 text-muted">Dans le temps que tu as choisi depuis le tableau de bord.</p>
               </>
             )
           ) : (
             <>
-              <h2 className="mt-4 text-xl font-semibold tracking-tight">
+              <p className="eyebrow">Nouvelle séance</p>
+              <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
                 {sizingMode === "time" ? "Combien de temps as-tu devant toi ?" : "Combien d'exercices veux-tu travailler ?"}
               </h2>
-              <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+              <p className="mt-3 max-w-xl text-[0.9375rem] leading-7 text-muted">
                 {sizingMode === "time"
                   ? "La séance tient dans ce temps — aucun exercice trop long n'est jamais forcé dedans."
                   : "Une sélection de ce nombre exact, classée par urgence et répartie sur plusieurs chapitres."}
@@ -337,7 +343,7 @@ export function SessionRunner() {
               )}
 
               <SegmentedControl
-                className="mx-auto mt-5"
+                className="mt-6"
                 ariaLabel="Dimensionner la séance"
                 value={sizingMode}
                 onChange={setSizingMode}
@@ -347,58 +353,68 @@ export function SessionRunner() {
                 ]}
               />
 
-              {/* Sélecteur segmenté, pas des boutons pleins : le préréglage
-                  actif portait le style « action principale » — le même que
-                  « Commencer ma séance », deux lignes plus bas. Choisir une
-                  durée n'est pas agir, c'est régler. */}
+              {/* Le chiffre choisi, en grand — pas juste le préréglage actif
+                  surligné dans une rangée de boutons égaux. */}
               {sizingMode === "time" ? (
-                <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
-                  <SegmentedControl
-                    ariaLabel="Temps disponible"
-                    value={budgetMinutes}
-                    onChange={setBudgetMinutes}
-                    options={BUDGET_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
-                  />
-                  <div className="flex items-center gap-1.5">
-                    <Input
-                      type="number"
-                      min={0}
-                      step={5}
+                <>
+                  <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="text-[3.25rem] font-semibold leading-none tracking-[-0.04em] tabular-nums sm:text-[4rem]">{budgetMinutes}</span>
+                    <span className="text-lg font-medium text-muted">min disponibles</span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <SegmentedControl
+                      ariaLabel="Temps disponible"
                       value={budgetMinutes}
-                      onChange={(event) => setBudgetMinutes(Math.max(0, Math.round(Number(event.target.value) || 0)))}
-                      className="w-20 text-center"
-                      aria-label="Temps disponible, en minutes"
+                      onChange={setBudgetMinutes}
+                      options={BUDGET_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
                     />
-                    <span className="text-xs text-muted">min</span>
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        type="number"
+                        min={0}
+                        step={5}
+                        value={budgetMinutes}
+                        onChange={(event) => setBudgetMinutes(Math.max(0, Math.round(Number(event.target.value) || 0)))}
+                        className="w-20 text-center"
+                        aria-label="Temps disponible, en minutes"
+                      />
+                      <span className="text-xs text-muted">min</span>
+                    </div>
                   </div>
-                </div>
+                </>
               ) : (
-                <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
-                  <SegmentedControl
-                    ariaLabel="Nombre d'exercices"
-                    value={countTarget}
-                    onChange={setCountTarget}
-                    options={COUNT_PRESETS.map((preset) => ({ value: preset, label: String(preset) }))}
-                  />
-                  <div className="flex items-center gap-1.5">
-                    <Input
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={countTarget}
-                      onChange={(event) => setCountTarget(Math.max(1, Math.round(Number(event.target.value) || 0)))}
-                      className="w-20 text-center"
-                      aria-label="Nombre d'exercices"
-                    />
-                    <span className="text-xs text-muted">exercice{countTarget > 1 ? "s" : ""}</span>
+                <>
+                  <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="text-[3.25rem] font-semibold leading-none tracking-[-0.04em] tabular-nums sm:text-[4rem]">{countTarget}</span>
+                    <span className="text-lg font-medium text-muted">exercice{countTarget > 1 ? "s" : ""}</span>
                   </div>
-                </div>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <SegmentedControl
+                      ariaLabel="Nombre d'exercices"
+                      value={countTarget}
+                      onChange={setCountTarget}
+                      options={COUNT_PRESETS.map((preset) => ({ value: preset, label: String(preset) }))}
+                    />
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={countTarget}
+                        onChange={(event) => setCountTarget(Math.max(1, Math.round(Number(event.target.value) || 0)))}
+                        className="w-20 text-center"
+                        aria-label="Nombre d'exercices"
+                      />
+                      <span className="text-xs text-muted">exercice{countTarget > 1 ? "s" : ""}</span>
+                    </div>
+                  </div>
+                </>
               )}
             </>
           )}
 
           {previewSelection.length > 0 ? (
-            <p className="mx-auto mt-5 max-w-md text-sm text-muted">
+            <p className="mt-6 max-w-xl text-sm text-muted">
               {sizingMode === "time" ? (
                 <>
                   {previewSelection.length} exercice{previewSelection.length > 1 ? "s" : ""} sélectionné{previewSelection.length > 1 ? "s" : ""} — environ{" "}
@@ -412,7 +428,7 @@ export function SessionRunner() {
               )}
             </p>
           ) : (
-            <p className="mx-auto mt-5 max-w-md text-sm text-amber-300">
+            <p className="mt-6 max-w-xl text-sm text-amber-300">
               {sizingMode === "time" && budgetMinutes === 0
                 ? "Objectif du jour déjà atteint — choisis un temps si tu veux continuer."
                 : sizingMode === "time"
@@ -424,36 +440,38 @@ export function SessionRunner() {
           <Button size="lg" className="mt-6" onClick={startSession} disabled={previewSelection.length === 0}>
             Commencer ma séance <ArrowRight size={16} />
           </Button>
-        </Card>
+        </div>
 
         {previewSelection.length > 0 && (
-          <div className="surface divide-y divide-hairline/[0.07] rounded-2xl px-4 py-1 sm:columns-2 sm:gap-6 sm:divide-y-0 sm:[&>*]:break-inside-avoid">
-            {previewSelection.map(({ exercise, reasons }) => (
-              // `min-w-0` obligatoire ici : un élément de grille a
-              // `min-width: auto` par défaut, donc sa largeur minimale vaut
-              // celle de son contenu — et le titre en `truncate`
-              // (white-space: nowrap) réclame la ligne entière. Sans ça,
-              // l'aperçu de séance débordait horizontalement à TOUTES les
-              // largeurs mobiles (mesuré : 521 px de contenu dans 350 px
-              // disponibles à 390 px de viewport), le `truncate` ne servant
-              // alors jamais.
-              // Une ligne, pas une carte à badges : le sommaire de séance
-              // portait jusqu'à quatre étiquettes teintées par exercice, soit
-              // plus de signal d'emphase que de contenu. Durée et raisons
-              // tiennent sur une ligne secondaire, qui se lit d'un coup d'œil.
-              <div key={exercise.id} className="flex min-w-0 items-start gap-3 py-2 text-left">
-                <span className="mt-0.5 shrink-0">
-                  <SubjectAvatar subject={exercise.subject} size="sm" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-ink">{exercise.title}</p>
-                  <p className="t-meta mt-0.5 truncate">
-                    ≈ {estimatedDurationMinutes(exercise, sessions)} min{reasons.length > 0 && <> · {reasons.slice(0, 2).join(" · ")}</>}
-                  </p>
+          <aside className="mt-10 border-t border-hairline/[0.07] pt-6 lg:mt-0 lg:border-t-0 lg:border-l lg:pl-10 lg:pt-0">
+            <p className="eyebrow">Au programme</p>
+            <div className="mt-3 divide-y divide-hairline/[0.07]">
+              {previewSelection.map(({ exercise, reasons }) => (
+                // Une ligne, pas une carte à badges : le sommaire de séance
+                // portait jusqu'à quatre étiquettes teintées par exercice,
+                // soit plus de signal d'emphase que de contenu. Durée et
+                // raisons tiennent sur une ligne secondaire, lue d'un coup
+                // d'œil. `min-w-0` obligatoire : un élément flex a
+                // `min-width: auto` par défaut, donc sa largeur minimale vaut
+                // celle de son contenu — et le titre en `truncate`
+                // (white-space: nowrap) réclame la ligne entière. Sans ça,
+                // l'aperçu débordait horizontalement à TOUTES les largeurs
+                // mobiles (mesuré : 521 px de contenu dans 350 px
+                // disponibles à 390 px de viewport).
+                <div key={exercise.id} className="flex min-w-0 items-start gap-3 py-2.5 text-left">
+                  <span className="mt-0.5 shrink-0">
+                    <SubjectAvatar subject={exercise.subject} size="sm" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm text-ink">{exercise.title}</p>
+                    <p className="t-meta mt-0.5 truncate">
+                      ≈ {estimatedDurationMinutes(exercise, sessions)} min{reasons.length > 0 && <> · {reasons.slice(0, 2).join(" · ")}</>}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </aside>
         )}
       </div>
     );
