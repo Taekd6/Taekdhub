@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { MotionProvider } from "@/components/motion-provider";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { ThemeSync } from "@/components/theme-sync";
 import "katex/dist/katex.min.css";
 import "./globals.css";
@@ -88,6 +89,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <MotionProvider>
           {children}
           <ThemeSync />
+          <ServiceWorkerRegistration />
         </MotionProvider>
       </body>
     </html>

@@ -3,3 +3,7 @@ node_modules/
 .env.local
 .vercel/
 tsconfig.tsbuildinfo
+# Généré par scripts/generate-sw.mjs (postbuild) à partir de
+# service-worker/sw.template.js — jamais commité, la version de cache qu'il
+# embarque dépend du build.
+/public/sw.js

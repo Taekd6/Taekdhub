@@ -7,7 +7,11 @@ const compat = new FlatCompat({
 });
 
 const config = [
-  { ignores: [".next/**", "node_modules/**", "next-env.d.ts"] },
+  // `scripts/**` (outil de build Node, pas du code applicatif) et
+  // `service-worker/**` (tourne dans le contexte global d'un service worker
+  // — `self`, `caches`, `clients` — pas dans le navigateur ni React : les
+  // règles Next/React n'ont pas de sens ici).
+  { ignores: [".next/**", "node_modules/**", "next-env.d.ts", "scripts/**", "service-worker/**", "public/**"] },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
 ];
 

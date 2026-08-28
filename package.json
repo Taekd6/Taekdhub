@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/generate-sw.mjs",
     "lint": "eslint .",
     "test": "vitest run"
   },
