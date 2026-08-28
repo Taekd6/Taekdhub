@@ -27,7 +27,6 @@ import {
   PLAN_STORAGE_KEY,
   serializePlan,
 } from "@/lib/plan";
-import { computeProgressBySubject } from "@/lib/progress";
 import { formatDuration, formatMinutes } from "@/lib/utils";
 import { computeWeeklySummary } from "@/lib/week";
 import type { UpcomingItem } from "@/lib/next-action";
