@@ -27,6 +27,7 @@ import {
   PLAN_INTENT_META,
   PLAN_STORAGE_KEY,
   serializePlan,
+  type PlanBlock,
 } from "@/lib/plan";
 import { formatDuration, formatMinutes } from "@/lib/utils";
 import { computeWeeklySummary } from "@/lib/week";
@@ -163,22 +164,25 @@ export function DashboardOverview() {
       >
         {dailyPlan.blocks.length > 0 && (
           <ol className="space-y-1">
-            {dailyPlan.blocks.map((block, index) => (
-              <li key={block.intent} className={rowClass}>
-                <span className="mt-0.5 w-4 shrink-0 text-center text-xs tabular-nums text-subtle">{index + 1}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                    <p className="text-sm font-medium text-ink">
-                      {block.label} <span className="font-normal text-muted">— {PLAN_INTENT_META[block.intent].description}</span>
+            {dailyPlan.blocks.map((block, index) => {
+              const { label, description } = blockDisplayMeta(block);
+              return (
+                <li key={block.intent} className={rowClass}>
+                  <span className="mt-0.5 w-4 shrink-0 text-center text-xs tabular-nums text-subtle">{index + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <p className="text-sm font-medium text-ink">
+                        {label} <span className="font-normal text-muted">— {description}</span>
+                      </p>
+                      <span className="t-meta shrink-0 tabular-nums">{block.estimatedMinutes} min</span>
+                    </div>
+                    <p className="t-meta mt-0.5 truncate">
+                      {block.focus} · {block.picks.length} exercice{block.picks.length > 1 ? "s" : ""}
                     </p>
-                    <span className="t-meta shrink-0 tabular-nums">{block.estimatedMinutes} min</span>
                   </div>
-                  <p className="t-meta mt-0.5 truncate">
-                    {block.focus} · {block.picks.length} exercice{block.picks.length > 1 ? "s" : ""}
-                  </p>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ol>
         )}
       </Section>
@@ -291,6 +295,29 @@ export function DashboardOverview() {
       )}
     </div>
   );
+}
+
+/**
+ * Habillage d'un bloc du plan — présentationnel uniquement, ne touche à rien
+ * dans lib/plan.ts. `planIntent` (lib/plan.ts) range par défaut tout ce qui
+ * ne se distingue pas ailleurs dans "consolider" ("quand rien d'autre ne se
+ * distingue, il faut réparer avant d'avancer") — un choix juste pour un
+ * exercice réellement raté ou de maîtrise faible, mais faux pour un exercice
+ * JAMAIS travaillé : on ne "consolide" pas ce qu'on n'a jamais construit.
+ * Un élève tout juste arrivé (banque encore à 0% partout) verrait donc
+ * "Consolider — Ce qui résiste encore" comme tout premier message du
+ * produit, alors que rien n'a encore "résisté" à quoi que ce soit.
+ * Un bloc de consolidation dont CHAQUE exercice n'a que "Jamais travaillé"
+ * (+ "Maîtrise faible", qui l'accompagne toujours par défaut) pour seule
+ * raison — aucun signal d'échec ou de statut manuellement signalé — devient
+ * donc "Découvrir" à l'affichage.
+ */
+function blockDisplayMeta(block: PlanBlock): { label: string; description: string } {
+  const isPureDiscovery =
+    block.intent === "consolider" &&
+    block.picks.every(({ reasons }) => reasons.includes("Jamais travaillé") && !reasons.includes("Marqué à revoir") && !reasons.includes("En cours"));
+  if (isPureDiscovery) return { label: "Découvrir", description: "Terrain encore inexploré" };
+  return { label: block.label, description: PLAN_INTENT_META[block.intent].description };
 }
 
 /**
