@@ -12,12 +12,12 @@ export function GET() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#d4f36b",
+          background: "#6376f9",
           borderRadius: 106,
           fontSize: 300,
           fontWeight: 700,
           fontFamily: "sans-serif",
-          color: "#09090b",
+          color: "#ffffff",
         }}
       >
         T

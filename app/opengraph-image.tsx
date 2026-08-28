@@ -36,16 +36,16 @@ export default function OpengraphImage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: "#d4f36b",
+              background: "#6376f9",
               borderRadius: 14,
               fontSize: 34,
               fontWeight: 700,
-              color: "#09090b",
+              color: "#ffffff",
             }}
           >
             T
           </div>
-          <div style={{ fontSize: 30, fontWeight: 600, color: "#d4f36b", letterSpacing: 2 }}>TAEKDHUB</div>
+          <div style={{ fontSize: 30, fontWeight: 600, color: "#6376f9", letterSpacing: 2 }}>TAEKDHUB</div>
         </div>
         <div style={{ marginTop: 44, fontSize: 78, fontWeight: 700, color: "#fafafa", lineHeight: 1.05 }}>
           Chaque heure compte.
