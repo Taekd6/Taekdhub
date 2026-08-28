@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Select } from "@/components/ui/input";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { ArchivedExercises } from "@/components/exercises/archived-exercises";
 import { ExerciseBrowser } from "@/components/exercises/exercise-browser";
 import { ExerciseFiltersBar } from "@/components/exercises/exercise-filters-bar";
 import { ExerciseForm, type NewExerciseInput } from "@/components/exercises/exercise-form";
 import { ExerciseCard } from "@/components/exercises/exercise-card";
+import { ExerciseDetail } from "@/components/exercises/exercise-detail";
 import { ExerciseImport } from "@/components/exercises/exercise-import";
 import { ExerciseListRow } from "@/components/exercises/exercise-list-row";
 import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
@@ -32,6 +34,12 @@ type ViewMode = "cards" | "list";
 
 export function ExerciseManager() {
   const { exercises, saveExercises, sessions, saveSessions, chapters, saveChapters, ready } = usePrepahubData();
+  // Bibliothèque plutôt que tableau : sur un écran assez large pour ça, la
+  // vue Liste montre la fiche complète dans un panneau fixe à côté, jamais
+  // dans un accordéon qui pousse le reste de la liste vers le bas — comme un
+  // client mail ou une médiathèque, pas comme un tableau administratif. Sur
+  // mobile, l'accordéon (comportement historique) reste seul praticable.
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [filters, setFilters] = useState<ExerciseFilters>(defaultExerciseFilters);
   // Vrai tant que l'utilisateur parcourt la hiérarchie Matière → Chapitre
   // (ExerciseBrowser) sans avoir encore demandé de résultats précis : la
@@ -47,6 +55,7 @@ export function ExerciseManager() {
   // d'exercices, la vue cartes empile des cadres qui pèsent plus que le
   // titre qu'ils portent. "Cartes" reste un choix, pas la valeur par défaut.
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const masterDetail = isDesktop && viewMode === "list";
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -494,45 +503,75 @@ export function ExerciseManager() {
             <span className="hidden items-center gap-2 text-xs text-muted sm:flex">⌘K recherche · N nouvel exercice · Esc fermer</span>
           </div>
 
-          <div className={viewMode === "cards" ? "grid gap-3" : "grid gap-2"}>
-            {sorted.map((item, index) =>
-              viewMode === "cards" ? (
-                <ExerciseCard
-                  key={item.id}
-                  item={item}
-                  index={index}
-                  selected={selectedId === item.id}
-                  minutesSpent={minutesMap.get(item.id) ?? 0}
-                  chapters={chapters}
-                  sessions={sessions}
-                  onToggle={toggleSelected}
-                  onUpdate={update}
-                  onFocus={enterFocus}
-                  onArchive={archiveExercise}
-                  onCreateChapter={handleCreateChapter}
-                  onRenameChapter={handleRenameChapter}
-                  onRemoveChapter={handleRemoveChapter}
-                />
-              ) : (
-                <ExerciseListRow
-                  key={item.id}
-                  item={item}
-                  selected={selectedId === item.id}
-                  minutesSpent={minutesMap.get(item.id) ?? 0}
-                  chapters={chapters}
-                  sessions={sessions}
-                  onToggle={toggleSelected}
-                  onUpdate={update}
-                  onFocus={enterFocus}
-                  onArchive={archiveExercise}
-                  onCreateChapter={handleCreateChapter}
-                  onRenameChapter={handleRenameChapter}
-                  onRemoveChapter={handleRemoveChapter}
-                />
-              )
-            )}
-            {sorted.length === 0 && (
-              <EmptyState title="Aucun exercice ne correspond." description="Ajuste les filtres ou ajoute une nouvelle fiche." className="py-16" />
+          <div className={cn(masterDetail && "lg:grid lg:grid-cols-[1fr_400px] lg:items-start lg:gap-6")}>
+            <div className={viewMode === "cards" ? "grid gap-3" : "grid gap-2"}>
+              {sorted.map((item, index) =>
+                viewMode === "cards" ? (
+                  <ExerciseCard
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    selected={selectedId === item.id}
+                    minutesSpent={minutesMap.get(item.id) ?? 0}
+                    chapters={chapters}
+                    sessions={sessions}
+                    onToggle={toggleSelected}
+                    onUpdate={update}
+                    onFocus={enterFocus}
+                    onArchive={archiveExercise}
+                    onCreateChapter={handleCreateChapter}
+                    onRenameChapter={handleRenameChapter}
+                    onRemoveChapter={handleRemoveChapter}
+                  />
+                ) : (
+                  <ExerciseListRow
+                    key={item.id}
+                    item={item}
+                    selected={selectedId === item.id}
+                    minutesSpent={minutesMap.get(item.id) ?? 0}
+                    chapters={chapters}
+                    sessions={sessions}
+                    onToggle={toggleSelected}
+                    onUpdate={update}
+                    onFocus={enterFocus}
+                    onArchive={archiveExercise}
+                    onCreateChapter={handleCreateChapter}
+                    onRenameChapter={handleRenameChapter}
+                    onRemoveChapter={handleRemoveChapter}
+                    showInlineDetail={!masterDetail}
+                  />
+                )
+              )}
+              {sorted.length === 0 && (
+                <EmptyState title="Aucun exercice ne correspond." description="Ajuste les filtres ou ajoute une nouvelle fiche." className="py-16" />
+              )}
+            </div>
+            {/* Panneau de fiche persistant — la « bibliothèque » plutôt que le
+                tableau administratif : la fiche complète reste visible à côté
+                de la liste, jamais à sa place. */}
+            {masterDetail && (
+              <aside className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
+                {selected ? (
+                  <div className="surface p-5">
+                    <ExerciseDetail
+                      item={selected}
+                      update={update}
+                      minutesSpent={minutesMap.get(selected.id) ?? 0}
+                      chapters={chapters}
+                      sessions={sessions}
+                      onCreateChapter={handleCreateChapter}
+                      onRenameChapter={handleRenameChapter}
+                      onRemoveChapter={handleRemoveChapter}
+                    />
+                  </div>
+                ) : (
+                  <EmptyState
+                    title="Sélectionne un exercice"
+                    description="Sa fiche complète — énoncé, indices, correction, historique — s'ouvre ici."
+                    className="surface py-16"
+                  />
+                )}
+              </aside>
             )}
           </div>
         </>

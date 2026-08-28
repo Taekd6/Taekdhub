@@ -24,6 +24,8 @@ interface ExerciseListRowProps {
   onCreateChapter: (subject: Subject, label: string) => Chapter;
   onRenameChapter: (id: string, label: string) => void;
   onRemoveChapter: (id: string) => void;
+  /** `false` en composition liste + détail (desktop) : la fiche vit dans le panneau latéral, jamais deux fois sur la même page. Par défaut `true` (comportement accordéon historique, mobile). */
+  showInlineDetail?: boolean;
 }
 
 /**
@@ -45,6 +47,7 @@ function ExerciseListRowImpl({
   onCreateChapter,
   onRenameChapter,
   onRemoveChapter,
+  showInlineDetail = true,
 }: ExerciseListRowProps) {
   return (
     <motion.article id={`exercise-${item.id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={cn("overflow-hidden rounded-xl transition-colors", selected ? "surface" : "hover:bg-inset")}>
@@ -90,11 +93,11 @@ function ExerciseListRowImpl({
           <Button variant="ghost" size="icon" onClick={() => onArchive(item.id)} aria-label="Archiver" className="h-8 w-8">
             <Archive size={15} />
           </Button>
-          <ChevronDown size={14} className={cn("text-muted transition", selected && "rotate-180")} />
+          {showInlineDetail && <ChevronDown size={14} className={cn("text-muted transition", selected && "rotate-180")} />}
         </div>
       </div>
       <AnimatePresence>
-        {selected && (
+        {selected && showInlineDetail && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-hairline/[0.07]">
             <ExerciseDetail
               item={item}

@@ -1,11 +1,13 @@
 "use client";
 
-import { Plus, Search, SlidersHorizontal, Star, Upload } from "lucide-react";
+import { ChevronDown, Plus, Search, SlidersHorizontal, Star, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { Sheet } from "@/components/ui/sheet";
+import { SegmentedControl } from "@/components/ui/segmented";
+import { cn } from "@/lib/cn";
 import { useState } from "react";
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
 import { defaultExerciseFilters, type ExerciseFilters } from "@/lib/exercise-filters";
@@ -56,6 +58,23 @@ export function ExerciseFiltersBar({
     filters.favoritesOnly,
   ].filter(Boolean).length;
 
+  // Les deux facettes qu'on pose presque à chaque visite (matière, statut)
+  // restent posées, en pilules — pas dans un menu qu'il faut ouvrir. Le
+  // reste (chapitre, sous-thème, difficulté, maîtrise, année, favoris) ne
+  // sert qu'occasionnellement : replié par défaut, sauf si déjà posé (venir
+  // d'un lien qui filtre par chapitre, par exemple, doit montrer QUEL filtre
+  // est actif, pas le cacher).
+  const secondaryActiveCount = [
+    filters.chapter !== "Tous",
+    filters.tag !== "Toutes",
+    filters.difficulty !== "Toutes",
+    filters.mastery !== "Toutes",
+    filters.year !== "Toutes",
+    filters.type !== "Tous",
+    filters.favoritesOnly,
+  ].filter(Boolean).length;
+  const [advancedOpen, setAdvancedOpen] = useState(secondaryActiveCount > 0);
+
   return (
     <Card className="p-3 sm:p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -103,102 +122,113 @@ export function ExerciseFiltersBar({
         </Button>
       </div>
 
-      {/* flex-wrap plutôt que overflow-x-auto : un défilement horizontal
-          masqué (scrollbar-none) rendait certains filtres invisibles sans
-          aucun indice qu'ils existaient (maîtrise, année, favoris
-          systématiquement hors champ à largeur d'écran normale) — un filtre
-          qu'on ne peut pas découvrir équivaut, pour l'élève, à un filtre qui
-          n'existe pas.
-
-          Le filtre « priorité » a été retiré avec le champ lui-même : il
-          proposait 5 valeurs pour un champ qui en valait 3 partout. */}
-      <div className="mt-3 hidden flex-wrap gap-2 lg:flex">
-        <Select value={filters.subject} onChange={(event) => onChange({ subject: event.target.value as Subject | "Toutes", chapter: "Tous" })} className="w-auto min-w-[150px]">
-          {["Toutes", ...subjects].map((value) => (
-            <option key={value}>{value}</option>
-          ))}
-        </Select>
-        <Select value={filters.chapter} onChange={(event) => onChange({ chapter: event.target.value })} className="w-auto min-w-[130px]" disabled={chapterOptions.length === 0}>
-          <option value="Tous">Tous</option>
-          {chapterOptions.map((chapter) => (
-            <option key={chapter.id} value={chapter.id}>
-              {chapter.label}
-            </option>
-          ))}
-        </Select>
-        <Select
-          value={filters.tag}
-          onChange={(event) => onChange({ tag: event.target.value })}
-          className="w-auto min-w-[150px]"
-          disabled={tagOptions.length === 0}
-          aria-label="Sous-thème"
+      {/* Deux facettes toujours posées, en pilules — celles qu'on ajuste
+          presque à chaque visite. Le reste ne mérite pas la même place
+          permanente : voir « Plus de filtres » plus bas. */}
+      <div className="mt-3 hidden flex-wrap items-center gap-x-5 gap-y-2 lg:flex">
+        <SegmentedControl
+          ariaLabel="Matière"
+          value={filters.subject}
+          onChange={(value) => onChange({ subject: value as Subject | "Toutes", chapter: "Tous" })}
+          options={["Toutes", ...subjects].map((value) => ({ value, label: value }))}
+        />
+        <SegmentedControl
+          ariaLabel="Statut"
+          value={filters.status}
+          onChange={(value) => onChange({ status: value as ExerciseStatus | "Tous" })}
+          options={["Tous", ...exerciseStatuses].map((value) => ({ value, label: value }))}
+        />
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((v) => !v)}
+          aria-expanded={advancedOpen}
+          className="focus-ring flex items-center gap-1 rounded-lg px-1.5 py-1 text-xs font-medium text-muted transition hover:text-ink"
         >
-          <option value="Toutes">Tous sous-thèmes</option>
-          {tagOptions.map((tag) => (
-            <option key={tag} value={tag}>
-              {tag}
-            </option>
-          ))}
-        </Select>
-        <Select value={filters.type} onChange={(event) => onChange({ type: event.target.value as ExerciseType | "Tous" })} className="w-auto min-w-[110px]">
-          {["Tous", ...exerciseTypes].map((value) => (
-            <option key={value}>{value}</option>
-          ))}
-        </Select>
-        <Select value={filters.status} onChange={(event) => onChange({ status: event.target.value as ExerciseStatus | "Tous" })} className="w-auto min-w-[110px]">
-          {["Tous", ...exerciseStatuses].map((value) => (
-            <option key={value}>{value}</option>
-          ))}
-        </Select>
-        <Select
-          value={filters.difficulty}
-          onChange={(event) => onChange({ difficulty: event.target.value === "Toutes" ? "Toutes" : (Number(event.target.value) as Difficulty) })}
-          className="w-auto min-w-[130px]"
-          disabled={difficultyOptions.length === 0}
-        >
-          <option value="Toutes">Toutes difficultés</option>
-          {difficultyOptions.map((value) => (
-            <option value={value} key={value}>
-              Difficulté {value}/5
-            </option>
-          ))}
-        </Select>
-        <Select
-          value={filters.mastery}
-          onChange={(event) => onChange({ mastery: event.target.value === "Toutes" ? "Toutes" : (Number(event.target.value) as Mastery) })}
-          className="w-auto min-w-[130px]"
-        >
-          <option value="Toutes">Toutes maîtrises</option>
-          {MASTERY_VALUES.map((value) => (
-            <option value={value} key={value}>
-              Maîtrise {value}%
-            </option>
-          ))}
-        </Select>
-        <Select
-          value={filters.year}
-          onChange={(event) => onChange({ year: event.target.value === "Toutes" ? "Toutes" : Number(event.target.value) })}
-          className="w-auto min-w-[110px]"
-          disabled={yearOptions.length === 0}
-        >
-          <option value="Toutes">Toutes années</option>
-          {yearOptions.map((value) => (
-            <option value={value} key={value}>
-              {value}
-            </option>
-          ))}
-        </Select>
-        <Button
-          variant={filters.favoritesOnly ? "primary" : "secondary"}
-          size="icon"
-          onClick={() => onChange({ favoritesOnly: !filters.favoritesOnly })}
-          aria-pressed={filters.favoritesOnly}
-          aria-label="Favoris uniquement"
-          className="shrink-0"
-        >
-          <Star size={17} />
-        </Button>
+          Plus de filtres
+          {secondaryActiveCount > 0 && <span className="rounded bg-accent/15 px-1.5 text-2xs font-medium text-accent">{secondaryActiveCount}</span>}
+          <ChevronDown size={14} className={cn("transition-transform", advancedOpen && "rotate-180")} />
+        </button>
       </div>
+
+      {advancedOpen && (
+        <div className="mt-3 hidden flex-wrap gap-2 border-t border-hairline/[0.07] pt-3 lg:flex">
+          <Select value={filters.chapter} onChange={(event) => onChange({ chapter: event.target.value })} className="w-auto min-w-[130px]" disabled={chapterOptions.length === 0}>
+            <option value="Tous">Tous chapitres</option>
+            {chapterOptions.map((chapter) => (
+              <option key={chapter.id} value={chapter.id}>
+                {chapter.label}
+              </option>
+            ))}
+          </Select>
+          <Select
+            value={filters.tag}
+            onChange={(event) => onChange({ tag: event.target.value })}
+            className="w-auto min-w-[150px]"
+            disabled={tagOptions.length === 0}
+            aria-label="Sous-thème"
+          >
+            <option value="Toutes">Tous sous-thèmes</option>
+            {tagOptions.map((tag) => (
+              <option key={tag} value={tag}>
+                {tag}
+              </option>
+            ))}
+          </Select>
+          <Select value={filters.type} onChange={(event) => onChange({ type: event.target.value as ExerciseType | "Tous" })} className="w-auto min-w-[110px]">
+            {["Tous", ...exerciseTypes].map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </Select>
+          <Select
+            value={filters.difficulty}
+            onChange={(event) => onChange({ difficulty: event.target.value === "Toutes" ? "Toutes" : (Number(event.target.value) as Difficulty) })}
+            className="w-auto min-w-[130px]"
+            disabled={difficultyOptions.length === 0}
+          >
+            <option value="Toutes">Toutes difficultés</option>
+            {difficultyOptions.map((value) => (
+              <option value={value} key={value}>
+                Difficulté {value}/5
+              </option>
+            ))}
+          </Select>
+          <Select
+            value={filters.mastery}
+            onChange={(event) => onChange({ mastery: event.target.value === "Toutes" ? "Toutes" : (Number(event.target.value) as Mastery) })}
+            className="w-auto min-w-[130px]"
+          >
+            <option value="Toutes">Toutes maîtrises</option>
+            {MASTERY_VALUES.map((value) => (
+              <option value={value} key={value}>
+                Maîtrise {value}%
+              </option>
+            ))}
+          </Select>
+          <Select
+            value={filters.year}
+            onChange={(event) => onChange({ year: event.target.value === "Toutes" ? "Toutes" : Number(event.target.value) })}
+            className="w-auto min-w-[110px]"
+            disabled={yearOptions.length === 0}
+          >
+            <option value="Toutes">Toutes années</option>
+            {yearOptions.map((value) => (
+              <option value={value} key={value}>
+                {value}
+              </option>
+            ))}
+          </Select>
+          <Button
+            variant={filters.favoritesOnly ? "primary" : "secondary"}
+            size="icon"
+            onClick={() => onChange({ favoritesOnly: !filters.favoritesOnly })}
+            aria-pressed={filters.favoritesOnly}
+            aria-label="Favoris uniquement"
+            className="shrink-0"
+          >
+            <Star size={17} />
+          </Button>
+        </div>
+      )}
 
       <Sheet
         open={sheetOpen}
