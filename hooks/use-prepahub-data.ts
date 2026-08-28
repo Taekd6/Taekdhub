@@ -98,6 +98,25 @@ function readAll(): Omit<DataState, "ready"> {
   };
 }
 
+// Cette app appelle `usePrepahubData()` séparément dans une dizaine de
+// composants (Dashboard, SessionRunner, ExerciseManager, AppSidebar…),
+// chacun avec son PROPRE `useState` — aucun store partagé. L'évènement DOM
+// "storage" ne rattrapait que les AUTRES onglets : il ne se déclenche
+// jamais dans l'onglet qui vient d'écrire. Un composant qui reste monté
+// pendant toute la navigation interne (la sidebar, via le layout partagé)
+// ne se remonte donc jamais après une écriture faite ailleurs dans le même
+// onglet — bug réel trouvé en rejouant une séance de bout en bout : l'XP
+// gagnée s'affichait bien dans l'écran de fin de séance (qui tient sa
+// propre instance à jour), mais le total "Niveau / XP" de la sidebar
+// restait figé sur sa valeur du premier montage jusqu'au rechargement
+// complet de la page. Ce petit registre partagé au niveau du module
+// notifie TOUTES les instances montées, y compris celle qui vient
+// d'écrire, dès qu'une sauvegarde a lieu où que ce soit dans l'onglet.
+const instanceRefreshers = new Set<() => void>();
+function notifyAllInstances() {
+  instanceRefreshers.forEach((refresh) => refresh());
+}
+
 export function usePrepahubData() {
   const [data, setData] = useState<DataState>({
     sessions: [],
@@ -126,30 +145,32 @@ export function usePrepahubData() {
       if (event.key?.startsWith("prepahub:")) refresh();
     }
     window.addEventListener("storage", onStorage);
+    instanceRefreshers.add(refresh);
     return () => {
       cancelled = true;
       window.removeEventListener("storage", onStorage);
+      instanceRefreshers.delete(refresh);
     };
   }, [refresh]);
 
   const saveSessions = useCallback((sessions: WorkSession[]) => {
     localData.saveSessions(sessions);
-    setData((prev) => ({ ...prev, sessions }));
+    notifyAllInstances();
   }, []);
 
   const saveExercises = useCallback((exercises: Exercise[]) => {
     localData.saveExercises(exercises);
-    setData((prev) => ({ ...prev, exercises }));
+    notifyAllInstances();
   }, []);
 
   const saveChapters = useCallback((chapters: Chapter[]) => {
     localData.saveChapters(chapters);
-    setData((prev) => ({ ...prev, chapters }));
+    notifyAllInstances();
   }, []);
 
   const savePreferences = useCallback((preferences: Preferences) => {
     localData.savePreferences(preferences);
-    setData((prev) => ({ ...prev, preferences }));
+    notifyAllInstances();
   }, []);
 
   return { ...data, refresh, saveSessions, saveExercises, saveChapters, savePreferences };
