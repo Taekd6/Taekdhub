@@ -6,7 +6,7 @@ import { ArrowRight, BookOpenCheck, CalendarClock, ChevronRight, Flame, ListChec
 import { useCallback, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { Button } from "@/components/ui/button";
-import { rowClass, rowInteractiveClass, Section } from "@/components/ui/section";
+import { rowInteractiveClass, Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { CircularProgress } from "@/components/ui/progress";
 import { cn } from "@/lib/cn";
@@ -29,7 +29,7 @@ import {
   serializePlan,
   type PlanBlock,
 } from "@/lib/plan";
-import { formatDuration, formatMinutes } from "@/lib/utils";
+import { formatDuration } from "@/lib/utils";
 import { computeWeeklySummary } from "@/lib/week";
 import type { UpcomingItem } from "@/lib/next-action";
 
@@ -40,13 +40,21 @@ const UPCOMING_META: Record<UpcomingItem["key"], { label: string; icon: typeof B
 };
 
 /**
- * Centre de pilotage (Sprint Study OS) — le véritable point d'entrée de
- * TaekdHub : "où j'en suis, quoi faire maintenant, pourquoi, combien de
- * temps, ce que j'ai fait récemment, ce qui mérite attention". Chaque bloc
- * reste une simple vue sur des moteurs déjà existants (lib/recommendation.ts,
- * lib/progress.ts, lib/readiness.ts, lib/history.ts, lib/week.ts, composés
- * par lib/next-action.ts) — aucune nouvelle règle métier n'est introduite
- * dans ce composant, uniquement de la présentation et de la navigation.
+ * Centre de pilotage (refonte V2 — composition, pas seulement présentation).
+ *
+ * La V1 empilait des sections de même largeur, chacune sa propre carte : une
+ * colonne unique, lue de haut en bas comme un formulaire. Un vrai poste de
+ * pilotage se lit en DEUX ZONES à la fois — CE QUE JE FAIS (large, sans
+ * cadre, la typographie porte l'emphase) et OÙ J'EN SUIS EN CONTINU (une
+ * colonne étroite, toujours visible, jamais à faire défiler pour la
+ * retrouver). Sur desktop : deux colonnes asymétriques, la seconde fixée au
+ * défilement. Sur mobile : la même hiérarchie, simplement empilée dans
+ * l'ordre où elle compte (l'action d'abord, le contexte ensuite).
+ *
+ * Chaque bloc reste une simple vue sur des moteurs déjà existants
+ * (lib/recommendation.ts, lib/progress.ts, lib/readiness.ts, lib/history.ts,
+ * lib/week.ts, composés par lib/next-action.ts) — aucune nouvelle règle
+ * métier n'est introduite ici, uniquement la composition et la navigation.
  */
 export function DashboardOverview() {
   const { sessions, exercises, chapters, preferences, ready } = usePrepahubData();
@@ -87,10 +95,9 @@ export function DashboardOverview() {
 
   if (!ready) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="surface h-32 animate-pulse rounded-2xl" />
-        ))}
+      <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-12">
+        <div className="h-64 animate-pulse rounded-2xl bg-hairline/[0.025]" />
+        <div className="mt-8 h-64 animate-pulse rounded-2xl bg-hairline/[0.025] lg:mt-0" />
       </div>
     );
   }
@@ -102,72 +109,81 @@ export function DashboardOverview() {
   const planReason = explainReasons(dailyPlan.blocks[0]?.picks[0]?.reasons ?? []);
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
   const secondaryPicks = nextAction.picks.slice(1);
-  // "Revoir mes priorités" (Phase 8) : ouvre directement le premier exercice déjà signalé par le moteur de recommandation — même convention que computeUpcoming (lib/next-action.ts), aucune nouvelle route.
-  // "Prochainement" ne montre plus le chapitre le plus faible : la section "À consolider" ci-dessous couvre ce signal en mieux (plusieurs chapitres, raisons explicites) — computeUpcoming lui-même reste inchangé (voir lib/next-action.test.ts).
   const otherSignals = upcoming.filter((item) => item.key !== "chapter");
+  const hasPlan = dailyPlan.blocks.length > 0;
+  const heroLabel = hasPlan ? blockDisplayMeta(dailyPlan.blocks[0]).label : nextAction.title;
 
   return (
-    <div className="space-y-6">
-      {contestDays !== null && (
-        <p className="t-meta -mt-2 flex items-center gap-1.5 px-1">
-          <Trophy size={13} className="text-accent" /> {contestDays} jours avant le concours
-        </p>
-      )}
+    <div className="lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-12">
+      {/* ══ COLONNE PRINCIPALE — CE QUE JE FAIS ══════════════════════════ */}
+      <div className="min-w-0">
+        {contestDays !== null && (
+          <p className="t-meta -mt-2 mb-4 flex items-center gap-1.5">
+            <Trophy size={13} className="text-accent" /> {contestDays} jours avant le concours
+          </p>
+        )}
 
-      {/* ══ NIVEAU 1 — CE QUE JE FAIS MAINTENANT ═════════════════════════
-          Le Plan du jour PRIME désormais sur « À faire maintenant », qui
-          occupait le premier rang avec un seul exercice. Un plan répond à la
-          question complète (quoi, pourquoi, combien de temps, on commence) ;
-          un exercice isolé n'en répond qu'au quart. Les deux blocs sont donc
-          fusionnés : le plan porte la structure, et la raison du moteur — la
-          part la plus utile de l'ancien héros — coiffe le tout. */}
-      <Section
-        rank="primary"
-        eyebrow="Plan du jour"
-        title={dailyPlan.blocks.length > 0 ? "Ce que tu devrais travailler aujourd'hui" : nextAction.title}
-        description={planReason ?? nextAction.description}
-        action={
-          <SegmentedControl
-            ariaLabel="Durée du plan du jour"
-            value={planMinutes}
-            onChange={setPlanMinutes}
-            options={PLAN_DURATION_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
-          />
-        }
-        footer={
-          dailyPlan.blocks.length > 0 ? (
-            <>
-              <p className="t-meta">
-                <span className="font-medium text-ink">{formatMinutes(dailyPlan.totalMinutes)}</span> · {dailyPlan.totalExercises} exercice
-                {dailyPlan.totalExercises > 1 ? "s" : ""}
-                {objective.workedMinutes > 0 && <> · {objective.workedMinutes} min déjà faites aujourd&apos;hui</>}
-              </p>
-              <Button size="lg" onClick={startPlan}>
+        {/* HÉROS — volontairement SANS carte : sur l'écran le plus vu de
+            l'app, la confiance vient de la typographie et de l'espace, pas
+            d'un cadre de plus. Le chiffre géant (minutes) est ce qu'on
+            retient d'un coup d'œil ; le mot d'intention et la raison du
+            moteur suivent, dans cet ordre, avant même le bouton. */}
+        <div>
+          <p className="eyebrow">Plan du jour</p>
+          {hasPlan && (
+            <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <span className="text-[3.25rem] font-semibold leading-none tracking-[-0.04em] tabular-nums sm:text-[4.5rem]">
+                {dailyPlan.totalMinutes}
+              </span>
+              <span className="text-lg font-medium text-muted">
+                min · {dailyPlan.totalExercises} exercice{dailyPlan.totalExercises > 1 ? "s" : ""}
+              </span>
+            </div>
+          )}
+          <h1 className={cn("font-semibold tracking-tight", hasPlan ? "mt-3 text-xl sm:text-2xl" : "mt-3 text-[2rem] leading-[1.1] tracking-[-0.03em] sm:text-[2.5rem]")}>
+            {heroLabel}
+            {hasPlan && (
+              <span className="font-normal text-muted"> — {dailyPlan.blocks.map((block) => blockDisplayMeta(block).description).join(" · ")}</span>
+            )}
+          </h1>
+          <p className="mt-3 max-w-xl text-[0.9375rem] leading-7 text-muted">
+            {hasPlan
+              ? planReason
+              : nextAction.kind === "empty-bank"
+                ? "Ajoute des exercices pour que TaekdHub puisse te construire un plan."
+                : nextAction.description}
+          </p>
+
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            {hasPlan ? (
+              <Button size="lg" onClick={startPlan} className="px-7 text-[0.9375rem]">
                 Commencer <ArrowRight size={16} />
               </Button>
-            </>
-          ) : (
-            <>
-              <p className="t-meta">
-                {nextAction.kind === "empty-bank"
-                  ? "Ajoute des exercices pour que TaekdHub puisse te construire un plan."
-                  : "Rien à planifier pour l'instant — ta banque est à jour."}
-              </p>
+            ) : (
               <Link href={sessionHref}>
-                <Button size="lg">
+                <Button size="lg" className="px-7 text-[0.9375rem]">
                   {nextAction.ctaLabel} <ArrowRight size={16} />
                 </Button>
               </Link>
-            </>
-          )
-        }
-      >
-        {dailyPlan.blocks.length > 0 && (
-          <ol className="space-y-1">
+            )}
+            <SegmentedControl
+              ariaLabel="Durée du plan du jour"
+              value={planMinutes}
+              onChange={setPlanMinutes}
+              options={PLAN_DURATION_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
+            />
+          </div>
+        </div>
+
+        {/* Le détail du plan — une liste fine, sans fond ni bordure : elle
+            précise le héros juste au-dessus, elle n'a pas besoin d'un
+            second niveau d'emphase. */}
+        {hasPlan && dailyPlan.blocks.length > 1 && (
+          <ol className="mt-8 space-y-3 border-t border-hairline/[0.07] pt-6">
             {dailyPlan.blocks.map((block, index) => {
               const { label, description } = blockDisplayMeta(block);
               return (
-                <li key={block.intent} className={rowClass}>
+                <li key={block.intent} className="flex items-start gap-3">
                   <span className="mt-0.5 w-4 shrink-0 text-center text-xs tabular-nums text-subtle">{index + 1}</span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
@@ -185,114 +201,102 @@ export function DashboardOverview() {
             })}
           </ol>
         )}
-      </Section>
 
-      {/* ══ NIVEAU 2 — OÙ J'EN SUIS ═══════════════════════════════════════
-          Quatre cartes de métriques, une carte « cette semaine », une carte
-          « progression par matière », une carte « prêt pour le DS » et une
-          carte « activité récente » occupaient la moitié de l'écran — toutes
-          reprises à l'identique sur /progress, qui est faite pour ça. Il ne
-          reste ici que ce qui sert à décider AUJOURD'HUI — présenté comme un
-          fait qu'on voit (un filet qui se remplit), pas comme un pourcentage
-          qu'on doit calculer soi-même en le lisant. */}
-      <div className="flex flex-wrap items-center gap-x-10 gap-y-4 px-1">
-        {/* L'anneau — voir la doc de `CircularProgress` — est réservé à CE
-            chiffre : le seul qui répond à "où en suis-je là, maintenant",
-            pas à une comparaison entre plusieurs valeurs (ce que les barres
-            font très bien juste à côté). */}
-        <div className="flex items-center gap-3">
-          <CircularProgress value={objective.percent} size={52} strokeWidth={5} center={<span className="text-xs">{objective.percent}%</span>} />
+        {/* ══ CE QUI MÉRITE MON ATTENTION ═════════════════════════════════ */}
+        {toConsolidate.length > 0 && (
+          <Section rank="secondary" eyebrow="À consolider" title="Ces chapitres méritent ton attention" className="mt-12">
+            <ul className="-mx-1 mt-4 divide-y divide-hairline/[0.07]">
+              {toConsolidate.map(({ chapter, averageMastery, reasons, href }) => (
+                <li key={chapter.id}>
+                  <Link href={href} className={cn(rowInteractiveClass, "items-center")}>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-ink">{chapter.label}</p>
+                      <p className="t-meta mt-0.5 truncate">
+                        {chapter.subject} · {reasons.join(" · ")}
+                      </p>
+                    </div>
+                    <span className="t-meta shrink-0 tabular-nums">{averageMastery} %</span>
+                    <ChevronRight size={15} className="shrink-0 text-subtle" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+      </div>
+
+      {/* ══ COLONNE LATÉRALE — OÙ J'EN SUIS EN CONTINU ═══════════════════
+          Fixée au défilement sur desktop (`lg:sticky`) : ces chiffres
+          répondent à une question toujours valable pendant qu'on lit ou
+          choisit dans la colonne principale, ils n'ont pas à disparaître dès
+          qu'on descend d'un écran. */}
+      <aside className="mt-12 space-y-8 lg:sticky lg:top-8 lg:mt-0">
+        <div className="flex items-center gap-4">
+          <CircularProgress value={objective.percent} size={72} strokeWidth={6} center={<span className="text-base font-semibold">{objective.percent}%</span>} />
           <div className="min-w-0">
             <p className="eyebrow">Objectif du jour</p>
-            <p className="mt-1 text-sm font-medium tabular-nums text-ink">
+            <p className="mt-1 text-base font-semibold tabular-nums text-ink">
               {objective.workedMinutes} / {objective.goalMinutes} min
             </p>
           </div>
         </div>
-        <Stat label="Cette semaine" value={formatDuration(weeklySummary.totalSeconds)} percent={weeklySummary.progressPercent} />
-        {streak > 0 && (
-          <div className="min-w-0">
-            <p className="eyebrow">Série</p>
-            <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium tabular-nums text-ink">
-              <Flame size={13} className="text-accent" /> {streak} j
-            </p>
-          </div>
-        )}
-        {/* `min-h-11` sous `lg` : un lien texte de 20 px de haut est une
-            cible tactile inconfortable, même s'il n'a pas l'apparence d'un
-            bouton — la règle vaut pour tout ce qu'on touche. */}
-        <Link
-          href="/progress"
-          className="focus-ring t-meta ml-auto inline-flex items-center rounded px-1 underline-offset-4 hover:text-ink hover:underline max-lg:min-h-11"
-        >
-          Voir ma progression
-        </Link>
-      </div>
 
-      {/* Décalé après l'action principale (refonte design) : un avertissement
-          de sauvegarde ouvrait autrefois la page, avant même "quoi
-          travailler aujourd'hui" — la première chose vue en arrivant n'était
-          pas la priorité du jour mais une alerte administrative. Un vrai
-          risque (perte du travail), mais qui n'a pas besoin de passer devant
-          l'action qui fait revenir chaque jour. */}
-      <BackupReminder />
+        <div className="space-y-4 border-t border-hairline/[0.07] pt-5">
+          <Stat label="Cette semaine" value={formatDuration(weeklySummary.totalSeconds)} percent={weeklySummary.progressPercent} />
+          {streak > 0 && (
+            <div className="min-w-0">
+              <p className="eyebrow">Série</p>
+              <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium tabular-nums text-ink">
+                <Flame size={13} className="text-accent" /> {streak} j
+              </p>
+            </div>
+          )}
+          <Link href="/progress" className="focus-ring t-meta inline-flex min-h-11 items-center rounded px-0 underline-offset-4 hover:text-ink hover:underline lg:min-h-0">
+            Voir ma progression
+          </Link>
+        </div>
 
-      {/* ══ NIVEAU 3 — CE QUI MÉRITE MON ATTENTION ═══════════════════════ */}
-      {toConsolidate.length > 0 && (
-        <Section rank="secondary" eyebrow="À consolider" title="Ces chapitres méritent ton attention">
-          <ul className="-mx-1 divide-y divide-hairline/[0.07]">
-            {toConsolidate.map(({ chapter, averageMastery, reasons, href }) => (
-              <li key={chapter.id}>
-                <Link href={href} className={cn(rowInteractiveClass, "items-center")}>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-ink">{chapter.label}</p>
-                    <p className="t-meta mt-0.5 truncate">
-                      {chapter.subject} · {reasons.join(" · ")}
-                    </p>
-                  </div>
-                  <span className="t-meta shrink-0 tabular-nums">{averageMastery} %</span>
-                  <ChevronRight size={15} className="shrink-0 text-subtle" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      {(secondaryPicks.length > 0 || otherSignals.length > 0) && (
-        <Section rank="quiet" title="Aussi signalé" className="px-1">
-          <ul className="-mx-1 divide-y divide-hairline/[0.07]">
-            {secondaryPicks.map(({ exercise, reasons }) => (
-              <li key={exercise.id}>
-                <Link href={`/exercises?focus=${exercise.id}`} className={cn(rowInteractiveClass, "items-center")}>
-                  <SubjectAvatar subject={exercise.subject} size="sm" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-ink">{exercise.title}</p>
-                    <p className="t-meta mt-0.5 truncate">{reasons.slice(0, 2).join(" · ")}</p>
-                  </div>
-                  <ChevronRight size={15} className="shrink-0 text-subtle" />
-                </Link>
-              </li>
-            ))}
-            {otherSignals.map((item) => {
-              const meta = UPCOMING_META[item.key];
-              const Icon = meta.icon;
-              return (
-                <li key={item.key}>
-                  <Link href={item.href} className={cn(rowInteractiveClass, "items-center")}>
-                    <Icon size={15} className="mt-0.5 shrink-0 text-subtle" />
+        {(secondaryPicks.length > 0 || otherSignals.length > 0) && (
+          <div className="border-t border-hairline/[0.07] pt-5">
+            <p className="eyebrow">Aussi signalé</p>
+            <ul className="-mx-1 mt-3 divide-y divide-hairline/[0.07]">
+              {secondaryPicks.map(({ exercise, reasons }) => (
+                <li key={exercise.id}>
+                  <Link href={`/exercises?focus=${exercise.id}`} className={cn(rowInteractiveClass, "items-center")}>
+                    <SubjectAvatar subject={exercise.subject} size="sm" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-ink">{item.label}</p>
-                      <p className="t-meta mt-0.5 truncate">{item.detail}</p>
+                      <p className="truncate text-sm text-ink">{exercise.title}</p>
+                      <p className="t-meta mt-0.5 truncate">{reasons.slice(0, 2).join(" · ")}</p>
                     </div>
                     <ChevronRight size={15} className="shrink-0 text-subtle" />
                   </Link>
                 </li>
-              );
-            })}
-          </ul>
-        </Section>
-      )}
+              ))}
+              {otherSignals.map((item) => {
+                const meta = UPCOMING_META[item.key];
+                const Icon = meta.icon;
+                return (
+                  <li key={item.key}>
+                    <Link href={item.href} className={cn(rowInteractiveClass, "items-center")}>
+                      <Icon size={15} className="mt-0.5 shrink-0 text-subtle" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-ink">{item.label}</p>
+                        <p className="t-meta mt-0.5 truncate">{item.detail}</p>
+                      </div>
+                      <ChevronRight size={15} className="shrink-0 text-subtle" />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {/* Décalé en toute fin de colonne (refonte design) : un avertissement
+            de sauvegarde n'a pas à concurrencer l'action principale ni les
+            chiffres du jour — un vrai risque, mais qui reste secondaire. */}
+        <BackupReminder />
+      </aside>
     </div>
   );
 }
@@ -321,15 +325,13 @@ function blockDisplayMeta(block: PlanBlock): { label: string; description: strin
 }
 
 /**
- * Chiffre du bandeau « où j'en suis » — une ligne, pas une carte. Le filet
- * sous la valeur (refonte design) montre la même progression que le
- * pourcentage entre parenthèses, mais SE VOIT d'un regard, sans lire un
- * nombre : deux façons de dire le même fait, une pour qui compare vite, une
- * pour qui veut le chiffre exact.
+ * Chiffre de la colonne latérale — une ligne, pas une carte. Le filet sous
+ * la valeur montre la même progression que le pourcentage à côté, mais SE
+ * VOIT d'un regard, sans lire un nombre.
  */
 function Stat({ label, value, percent }: { label: string; value: string; percent?: number }) {
   return (
-    <div className="min-w-[9rem]">
+    <div className="min-w-0">
       <p className="eyebrow">{label}</p>
       <p className="mt-1.5 flex items-baseline gap-1.5 text-sm font-medium tabular-nums text-ink">
         {value}

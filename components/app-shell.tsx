@@ -4,13 +4,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-canvas">
       <AppSidebar />
-      {/* `max-w-[60rem]` (refonte design) : resserré depuis 72rem — une
-          colonne de contenu plus étroite lit comme un document qu'on
-          travaille (Linear, Notion) plutôt qu'un tableau de bord qui étale
-          l'information pour remplir l'écran. La barre de navigation mobile
-          est ancrée en bas, d'où le padding bas généreux uniquement sous `lg`. */}
+      {/* `max-w-[76rem]` (refonte V2) : élargi depuis 60rem pour donner aux
+          compositions asymétriques (Dashboard : colonne principale + rail
+          latéral, Exercices : navigateur + liste) la place de respirer sur
+          desktop. Les écrans à lecture linéaire (Réglages, Focus) gardent
+          leur propre largeur interne plus étroite — l'élargissement ne les
+          affecte pas. La barre de navigation mobile est ancrée en bas, d'où
+          le padding bas généreux uniquement sous `lg`. */}
       <main className="min-h-screen px-4 pb-28 pt-6 sm:px-6 lg:ml-[240px] lg:px-12 lg:pb-16 lg:pt-10">
-        <div className="mx-auto max-w-[60rem]">{children}</div>
+        <div className="mx-auto max-w-[76rem]">{children}</div>
       </main>
     </div>
   );
