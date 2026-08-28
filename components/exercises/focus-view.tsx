@@ -350,7 +350,7 @@ export function FocusView({
               même composant que partout ailleurs) dit « une valeur parmi
               quatre » sans hurler. La maîtrise le rejoint : les deux
               répondent à la même question, après l'exercice. */}
-          <div className="mt-10 flex flex-wrap items-end gap-x-8 gap-y-4 border-t border-hairline/[0.07] pt-6">
+          <div className="mt-10 flex flex-wrap items-start gap-x-8 gap-y-4 border-t border-hairline/[0.07] pt-6">
             <label className="block">
               <span className="eyebrow">Où j&apos;en suis</span>
               <SegmentedControl
