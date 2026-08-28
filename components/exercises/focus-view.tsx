@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Eye, EyeOff, Lightbulb, MinusCircle, Sparkles, X, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/cn";
 
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryPicker } from "@/components/exercises/exercise-badges";
@@ -85,6 +86,40 @@ export function FocusView({
   // `null` : soit le focus est toujours en cours, soit aucune séance n'a
   // jamais démarré (rien à qualifier).
   const [draftSession, setDraftSession] = useState<WorkSession | null>(null);
+
+  // « Presque une autre application » : le bandeau et le rappel clavier
+  // s'effacent après quelques secondes d'inactivité pendant le travail actif
+  // (chrono en marche), pour laisser l'énoncé occuper tout l'écran — comme un
+  // lecteur vidéo qui masque ses contrôles. Tout mouvement (souris, clavier,
+  // défilement, tactile) les fait réapparaître instantanément ; en pause ou
+  // sur l'écran de résultat, ils restent visibles en permanence, puisqu'il n'y
+  // a alors rien à laisser respirer. `focus-within` (dans le JSX) offre un
+  // filet indépendant de ce minuteur pour qui navigue au clavier.
+  const [idle, setIdle] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (draftSession) return;
+    let timeout: ReturnType<typeof setTimeout>;
+    function resetIdle() {
+      setIdle(false);
+      clearTimeout(timeout);
+      timeout = setTimeout(() => setIdle(true), 2800);
+    }
+    resetIdle();
+    const scrollArea = scrollAreaRef.current;
+    window.addEventListener("mousemove", resetIdle);
+    window.addEventListener("keydown", resetIdle);
+    window.addEventListener("touchstart", resetIdle);
+    scrollArea?.addEventListener("scroll", resetIdle);
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener("mousemove", resetIdle);
+      window.removeEventListener("keydown", resetIdle);
+      window.removeEventListener("touchstart", resetIdle);
+      scrollArea?.removeEventListener("scroll", resetIdle);
+    };
+  }, [draftSession]);
+  const chromeHidden = idle && running && !draftSession;
 
   // Arrête le timer et construit la WorkSession SANS la sauvegarder ni fermer
   // le focus — voir `commitResult`, seul endroit qui la sauvegarde vraiment,
@@ -171,11 +206,14 @@ export function FocusView({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [draftSession, commitResult, endSession, toggle]);
 
-  if (draftSession) {
-    return (
+  return (
+    <AnimatePresence mode="wait">
+      {draftSession ? (
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        key="result"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } }}
+        exit={{ opacity: 0, transition: { duration: 0.15 } }}
         className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-7 bg-canvas px-6 text-center"
       >
         <div>
@@ -222,29 +260,33 @@ export function FocusView({
           Passer <span className="no-underline">(Échap)</span>
         </button>
       </motion.div>
-    );
-  }
-
-  return (
-    <motion.div
-      // Un léger zoom-avant (0.99 → 1), pas un simple fondu : la différence
-      // se sent plutôt qu'elle ne se voit — l'idée d'ENTRER dans un espace
-      // plutôt que de le voir apparaître par-dessus l'écran précédent.
-      // `transform` reste sur cet élément lui-même (déjà `fixed`), jamais
-      // sur un parent : un ancêtre transformé casserait le positionnement
-      // fixe de tout ce qu'il contient.
-      initial={{ opacity: 0, scale: 0.99 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.25, ease: "easeOut" }}
-      className="fixed inset-0 z-50 flex flex-col bg-canvas"
-    >
-      {/* BANDEAU DE TRAVAIL — le strict nécessaire.
-          Il répétait le titre de l'exercice, affiché en entier dans le <h1>
-          trois centimètres plus bas, et portait DEUX boutons distincts
-          (réduire, fermer) appelant la même fonction. Ne restent que les
-          informations qu'on ne peut pas lire ailleurs : où j'en suis dans la
-          séance, depuis combien de temps, et comment sortir. */}
-      <header className="flex items-center justify-between gap-3 border-b border-hairline/[0.07] px-4 py-3 sm:px-6">
+      ) : (
+      <motion.div
+        key="work"
+        // Un léger zoom-avant depuis le bas (0.97 → 1, y: 10 → 0), pas un
+        // simple fondu : la différence se sent plutôt qu'elle ne se voit —
+        // l'idée d'ENTRER dans un espace plutôt que de le voir apparaître
+        // par-dessus l'écran précédent. La sortie est volontairement plus
+        // courte que l'entrée (0.16s contre 0.32s) : on s'installe avec soin,
+        // on repart vite — même asymétrie qu'ouvrir/fermer une porte.
+        // `transform` reste sur cet élément lui-même (déjà `fixed`), jamais
+        // sur un parent : un ancêtre transformé casserait le positionnement
+        // fixe de tout ce qu'il contient.
+        initial={{ opacity: 0, scale: 0.97, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } }}
+        exit={{ opacity: 0, scale: 0.98, y: 6, transition: { duration: 0.16, ease: "easeIn" } }}
+        className="fixed inset-0 z-50 flex flex-col bg-canvas"
+      >
+      {/* BANDEAU DE TRAVAIL — le strict nécessaire, et même ce strict
+          nécessaire s'efface après quelques secondes d'inactivité pendant le
+          travail actif (voir `chromeHidden`) : ne restent visibles en
+          permanence que l'énoncé et, en pause, les commandes. */}
+      <header
+        className={cn(
+          "flex items-center justify-between gap-3 border-b border-hairline/[0.07] px-4 py-3 transition-opacity duration-500 sm:px-6",
+          chromeHidden ? "pointer-events-none opacity-0 focus-within:pointer-events-auto focus-within:opacity-100" : "opacity-100"
+        )}
+      >
         <p className="t-meta tabular-nums">
           {progress ? `Exercice ${progress.index + 1} sur ${progress.total}` : item.subject}
         </p>
@@ -263,7 +305,7 @@ export function FocusView({
       </header>
 
       {/* Contenu défilable : l'énoncé (contenu principal) prime sur le chrono, resté dans le bandeau supérieur, secondaire dans la hiérarchie visuelle. */}
-      <div className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-10">
+      <div ref={scrollAreaRef} className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-10">
         <div className="mx-auto w-full max-w-[42rem] pb-16">
           {/* Le titre d'abord. Les métadonnées (difficulté, type) passaient
               AVANT lui, et la molette de maîtrise — cinq pastilles — pesait
@@ -391,9 +433,16 @@ export function FocusView({
         </div>
       </div>
 
-      <footer className="border-t border-hairline/[0.07] px-6 py-4 text-center text-xs text-subtle">
+      <footer
+        className={cn(
+          "border-t border-hairline/[0.07] px-6 py-4 text-center text-xs text-subtle transition-opacity duration-500",
+          chromeHidden ? "opacity-0" : "opacity-100"
+        )}
+      >
         Échap pour quitter · Barre d&apos;espace pour le timer
       </footer>
-    </motion.div>
+      </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

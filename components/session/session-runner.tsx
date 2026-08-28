@@ -261,26 +261,15 @@ export function SessionRunner() {
     );
   }
 
-  if (phase === "focus") {
-    const current = recommendations[currentIndex];
-    if (!current) return null;
-    return (
-      <FocusView
-        item={current.exercise}
-        update={update}
-        sessions={sessions}
-        saveSessions={saveSessions}
-        onClose={handleExerciseWorked}
-        reasons={current.reasons}
-        progress={{ index: currentIndex, total: recommendations.length }}
-      />
-    );
-  }
+  const currentFocusExercise = phase === "focus" ? recommendations[currentIndex] : undefined;
 
   // Contenu par phase, calculé (pas retourné directement) pour que chaque
   // transition entre phases passe par le même fondu ci-dessous (voir le
-  // `return` final) — la phase "focus" reste un early return, déjà gérée par
-  // sa propre transition plein écran (FocusView).
+  // `return` final) — la phase "focus" est rendue à part (voir plus bas) :
+  // FocusView gère sa propre transition plein écran, jamais enveloppée dans
+  // un ancêtre animé (un `transform` sur un ancêtre casserait son
+  // `position: fixed`), mais toujours dans sa propre `AnimatePresence` pour
+  // qu'entrer/sortir de Focus reste une vraie transition, pas une coupure.
   let content: React.ReactNode;
 
   if (phase === "empty") {
@@ -601,16 +590,34 @@ export function SessionRunner() {
   }
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={phase}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
-      >
-        {content}
-      </motion.div>
-    </AnimatePresence>
+    <>
+      <AnimatePresence>
+        {currentFocusExercise && (
+          <FocusView
+            key="focus-view"
+            item={currentFocusExercise.exercise}
+            update={update}
+            sessions={sessions}
+            saveSessions={saveSessions}
+            onClose={handleExerciseWorked}
+            reasons={currentFocusExercise.reasons}
+            progress={{ index: currentIndex, total: recommendations.length }}
+          />
+        )}
+      </AnimatePresence>
+      {phase !== "focus" && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={phase}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+            {content}
+          </motion.div>
+        </AnimatePresence>
+      )}
+    </>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence } from "framer-motion";
 import { Archive, ArrowLeft, LayoutGrid, List } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -353,37 +354,43 @@ export function ExerciseManager() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [focusMode, formOpen, importOpen, selectedId, showArchived]);
 
-  if (focusMode && selected) {
-    return (
-      <FocusView
-        item={selected}
-        update={update}
-        sessions={sessions}
-        saveSessions={saveSessions}
-        onClose={() => setFocusMode(false)}
-        reasons={recommendationReasons.get(selected.id)}
-      />
-    );
-  }
-
-  if (showArchived) {
-    return (
-      <div className="space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-          <Button variant="ghost" size="sm" onClick={() => setShowArchived(false)}>
-            <ArrowLeft size={15} /> Retour aux exercices
-          </Button>
-          <p className="text-sm text-muted">
-            <span className="font-semibold text-ink">{archivedExercises.length}</span> exercice
-            {archivedExercises.length > 1 ? "s" : ""} archivé{archivedExercises.length > 1 ? "s" : ""}
-          </p>
-        </div>
-        <ArchivedExercises exercises={archivedExercises} onRestore={restoreExercise} />
-      </div>
-    );
-  }
+  // Focus rendu à part, dans sa propre `AnimatePresence` : entrer/sortir de
+  // Focus doit être une vraie transition (voir focus-view.tsx), pas une
+  // coupure sèche entre deux arbres de composants complètement différents.
+  // `ExerciseManager` lui-même ne démonte jamais (même instance, même état
+  // de filtres/scroll) : seule la branche ci-dessous change.
+  const showFocus = focusMode && !!selected;
 
   return (
+    <>
+      <AnimatePresence>
+        {showFocus && (
+          <FocusView
+            key="focus-view"
+            item={selected!}
+            update={update}
+            sessions={sessions}
+            saveSessions={saveSessions}
+            onClose={() => setFocusMode(false)}
+            reasons={recommendationReasons.get(selected!.id)}
+          />
+        )}
+      </AnimatePresence>
+      {!showFocus &&
+        (showArchived ? (
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+              <Button variant="ghost" size="sm" onClick={() => setShowArchived(false)}>
+                <ArrowLeft size={15} /> Retour aux exercices
+              </Button>
+              <p className="text-sm text-muted">
+                <span className="font-semibold text-ink">{archivedExercises.length}</span> exercice
+                {archivedExercises.length > 1 ? "s" : ""} archivé{archivedExercises.length > 1 ? "s" : ""}
+              </p>
+            </div>
+            <ArchivedExercises exercises={archivedExercises} onRestore={restoreExercise} />
+          </div>
+        ) : (
     <div className="space-y-5">
       {/* `useSearchParams` exige une limite Suspense — isolée ici pour ne pas
           faire basculer toute la page en rendu dynamique. */}
@@ -531,6 +538,8 @@ export function ExerciseManager() {
         </>
       )}
     </div>
+        ))}
+    </>
   );
 }
 
