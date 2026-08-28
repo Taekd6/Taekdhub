@@ -83,7 +83,7 @@ function ExerciseListRowImpl({
           <Button variant="ghost" size="icon" onClick={() => onArchive(item.id)} aria-label="Archiver" className="h-8 w-8">
             <Archive size={15} />
           </Button>
-          <ChevronDown size={14} className={cn("text-zinc-500 transition", selected && "rotate-180")} />
+          <ChevronDown size={14} className={cn("text-muted transition", selected && "rotate-180")} />
         </div>
       </div>
       <AnimatePresence>

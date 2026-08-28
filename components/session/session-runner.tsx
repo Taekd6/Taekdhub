@@ -262,7 +262,7 @@ export function SessionRunner() {
         <p className="mt-4 font-medium">
           {contextSubject ? `Rien à travailler en ${contextSubject} pour l'instant.` : "Rien à travailler pour l'instant."}
         </p>
-        <p className="mt-2 text-sm text-zinc-500">
+        <p className="mt-2 text-sm text-muted">
           {contextSubject
             ? "Cette matière est à jour — reviens plus tard, ou explore tes exercices."
             : "Ta banque est à jour — reviens plus tard, ou explore tes exercices."}
@@ -289,14 +289,14 @@ export function SessionRunner() {
             planSource === "libre" ? (
               <>
                 <h2 className="mt-4 text-xl font-semibold tracking-tight">Ta séance libre</h2>
-                <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+                <p className="mx-auto mt-2 max-w-md text-sm text-muted">
                   Exactement la sélection choisie dans la banque d&apos;exercices — matière, chapitre, sous-thème et difficulté filtrés à la main.
                 </p>
               </>
             ) : (
               <>
                 <h2 className="mt-4 text-xl font-semibold tracking-tight">Ton plan du jour</h2>
-                <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+                <p className="mx-auto mt-2 max-w-md text-sm text-muted">
                   Réparti sur tes matières prioritaires, dans le temps que tu as choisi depuis le tableau de bord.
                 </p>
               </>
@@ -306,7 +306,7 @@ export function SessionRunner() {
               <h2 className="mt-4 text-xl font-semibold tracking-tight">
                 {sizingMode === "time" ? "Combien de temps as-tu devant toi ?" : "Combien d'exercices veux-tu travailler ?"}
               </h2>
-              <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+              <p className="mx-auto mt-2 max-w-md text-sm text-muted">
                 {sizingMode === "time"
                   ? "La séance tient dans ce temps — aucun exercice trop long n'est jamais forcé dedans."
                   : "Une sélection de ce nombre exact, classée par urgence et répartie sur plusieurs chapitres."}
@@ -353,7 +353,7 @@ export function SessionRunner() {
                       className="w-20 text-center"
                       aria-label="Temps disponible, en minutes"
                     />
-                    <span className="text-xs text-zinc-500">min</span>
+                    <span className="text-xs text-muted">min</span>
                   </div>
                 </div>
               ) : (
@@ -374,7 +374,7 @@ export function SessionRunner() {
                       className="w-20 text-center"
                       aria-label="Nombre d'exercices"
                     />
-                    <span className="text-xs text-zinc-500">exercice{countTarget > 1 ? "s" : ""}</span>
+                    <span className="text-xs text-muted">exercice{countTarget > 1 ? "s" : ""}</span>
                   </div>
                 </div>
               )}
@@ -382,7 +382,7 @@ export function SessionRunner() {
           )}
 
           {previewSelection.length > 0 ? (
-            <p className="mx-auto mt-5 max-w-md text-sm text-zinc-400">
+            <p className="mx-auto mt-5 max-w-md text-sm text-muted">
               {sizingMode === "time" ? (
                 <>
                   {previewSelection.length} exercice{previewSelection.length > 1 ? "s" : ""} sélectionné{previewSelection.length > 1 ? "s" : ""} — environ{" "}
@@ -451,8 +451,8 @@ export function SessionRunner() {
       <Card className="p-8 text-center">
         <CheckCircle2 className="mx-auto text-accent" size={28} />
         <h2 className="mt-4 text-xl font-semibold tracking-tight">Exercice travaillé</h2>
-        {done && <p className="mt-2 text-sm text-zinc-400">{done.title}</p>}
-        <p className="mt-1 text-xs text-zinc-500">
+        {done && <p className="mt-2 text-sm text-muted">{done.title}</p>}
+        <p className="mt-1 text-xs text-muted">
           {currentIndex + 1} / {recommendations.length}
           {nextPick && <> · Prochain : {nextPick.exercise.title}</>}
         </p>
@@ -475,7 +475,7 @@ export function SessionRunner() {
     content = (
       <Card className="p-10 text-center">
         <CardTitle className="text-xl">Séance terminée</CardTitle>
-        <p className="mt-2 text-sm text-zinc-400">
+        <p className="mt-2 text-sm text-muted">
           {visitedCount} exercice{visitedCount > 1 ? "s" : ""} travaillé{visitedCount > 1 ? "s" : ""} durant cette séance.
         </p>
         {runResults.length > 0 && (
@@ -501,8 +501,8 @@ export function SessionRunner() {
         {upcomingNextAction.kind === "start-session" && (
           <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-hairline/[0.09] bg-hairline/[0.025] p-5 text-left">
             <p className="eyebrow">Et maintenant ?</p>
-            <p className="mt-2 text-sm font-medium text-zinc-100">{upcomingNextAction.title}</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-500">{upcomingNextAction.description}</p>
+            <p className="mt-2 text-sm font-medium text-ink">{upcomingNextAction.title}</p>
+            <p className="mt-1 text-xs leading-5 text-muted">{upcomingNextAction.description}</p>
             <Button
               size="sm"
               className="mt-4 w-full"

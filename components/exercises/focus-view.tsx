@@ -179,8 +179,8 @@ export function FocusView({
         className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-7 bg-canvas px-6 text-center"
       >
         <div>
-          <p className="text-base font-semibold text-zinc-100">Comment s&apos;est passé l&apos;exercice ?</p>
-          <p className="mt-1.5 text-sm text-zinc-500">{item.title}</p>
+          <p className="text-base font-semibold text-ink">Comment s&apos;est passé l&apos;exercice ?</p>
+          <p className="mt-1.5 text-sm text-muted">{item.title}</p>
         </div>
         <div className="flex w-full max-w-xs flex-col gap-2.5">
           <Button
@@ -217,7 +217,7 @@ export function FocusView({
         <button
           type="button"
           onClick={() => commitResult(null)}
-          className="focus-ring rounded-lg px-2 py-1 text-xs text-zinc-600 underline underline-offset-2 transition hover:text-zinc-400"
+          className="focus-ring rounded-lg px-2 py-1 text-xs text-subtle underline underline-offset-2 transition hover:text-muted"
         >
           Passer <span className="no-underline">(Échap)</span>
         </button>
@@ -263,7 +263,7 @@ export function FocusView({
               plus lourd que l'exercice qu'elle qualifie. Elles rejoignent le
               pied de page, où l'élève va après avoir travaillé, pas avant. */}
           <h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem] sm:leading-[1.15]">{item.title}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-zinc-500">
+          <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-muted">
             <span>{item.subject}</span>
             <span aria-hidden>·</span>
             <span className="min-w-0 truncate">{item.source}</span>
@@ -295,7 +295,7 @@ export function FocusView({
             {item.statement.trim() ? (
               <RichMath text={item.statement} className="text-[1.0625rem] leading-[1.85] text-ink sm:text-lg" />
             ) : (
-              <p className="rounded-xl border border-dashed border-hairline/[0.14] px-4 py-6 text-center text-sm leading-7 text-zinc-500">
+              <p className="rounded-xl border border-dashed border-hairline/[0.14] px-4 py-6 text-center text-sm leading-7 text-muted">
                 Aucun énoncé renseigné pour cet exercice — ouvre sa fiche (hors mode focus) pour l&apos;ajouter.
               </p>
             )}
@@ -307,7 +307,7 @@ export function FocusView({
                 key={index}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-xl border border-accent/15 bg-accent/[0.055] p-4 text-sm leading-7 text-zinc-300"
+                className="rounded-xl border border-accent/15 bg-accent/[0.055] p-4 text-sm leading-7 text-ink"
               >
                 <RichMath text={`Indice ${index + 1} — ${hint}`} />
               </motion.div>
@@ -320,7 +320,7 @@ export function FocusView({
                 {hintCount < item.hints.length && (
                   <Button variant="secondary" size="sm" onClick={() => setHintCount((c) => c + 1)}>
                     <Lightbulb size={15} /> Indice {hintCount + 1}
-                    <span className="text-zinc-500">/ {item.hints.length}</span>
+                    <span className="text-muted">/ {item.hints.length}</span>
                   </Button>
                 )}
                 {item.correction && (
@@ -334,7 +334,7 @@ export function FocusView({
             {item.correction && (
               <div>
                 {correctionVisible && (
-                  <div className="rounded-2xl border border-hairline/[0.09] bg-hairline/[0.025] p-5 text-left text-sm leading-7 text-zinc-300">
+                  <div className="rounded-2xl border border-hairline/[0.09] bg-hairline/[0.025] p-5 text-left text-sm leading-7 text-ink">
                     <p className="eyebrow mb-2.5">Correction</p>
                     <RichMath text={item.correction} />
                   </div>
@@ -350,19 +350,22 @@ export function FocusView({
               même composant que partout ailleurs) dit « une valeur parmi
               quatre » sans hurler. La maîtrise le rejoint : les deux
               répondent à la même question, après l'exercice. */}
-          <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4 border-t border-hairline/[0.07] pt-6">
-            <label className="flex flex-wrap items-center gap-2.5 text-xs text-zinc-500">
-              Où j&apos;en suis
+          <div className="mt-10 flex flex-wrap items-end gap-x-8 gap-y-4 border-t border-hairline/[0.07] pt-6">
+            <label className="block">
+              <span className="eyebrow">Où j&apos;en suis</span>
               <SegmentedControl
+                className="mt-2"
                 ariaLabel="Statut de l'exercice"
                 value={item.status}
                 onChange={(status) => update(item.id, { status })}
                 options={(["à faire", "en cours", "à revoir", "maîtrisé"] as ExerciseStatus[]).map((s) => ({ value: s, label: s }))}
               />
             </label>
-            <label className="flex flex-wrap items-center gap-2.5 text-xs text-zinc-500">
-              Maîtrise
-              <MasteryPicker value={item.mastery} onChange={(mastery: Mastery) => update(item.id, { mastery })} />
+            <label className="block">
+              <span className="eyebrow">Maîtrise</span>
+              <div className="mt-2">
+                <MasteryPicker value={item.mastery} onChange={(mastery: Mastery) => update(item.id, { mastery })} />
+              </div>
             </label>
             <AnimatePresence>
               {justMastered && (
@@ -381,7 +384,7 @@ export function FocusView({
         </div>
       </div>
 
-      <footer className="border-t border-hairline/[0.07] px-6 py-4 text-center text-xs text-zinc-600">
+      <footer className="border-t border-hairline/[0.07] px-6 py-4 text-center text-xs text-subtle">
         Échap pour quitter · Barre d&apos;espace pour le timer
       </footer>
     </motion.div>

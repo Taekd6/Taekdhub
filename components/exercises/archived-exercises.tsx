@@ -20,7 +20,7 @@ export function ArchivedExercises({ exercises, onRestore }: { exercises: Exercis
       <Card className="px-6 py-16 text-center">
         <Archive className="mx-auto text-accent" />
         <p className="mt-4 font-semibold">Aucun exercice archivé.</p>
-        <p className="mt-1 text-sm text-zinc-500">Les exercices que tu archives depuis la banque apparaîtront ici.</p>
+        <p className="mt-1 text-sm text-muted">Les exercices que tu archives depuis la banque apparaîtront ici.</p>
       </Card>
     );
   }
@@ -32,10 +32,10 @@ export function ArchivedExercises({ exercises, onRestore }: { exercises: Exercis
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <SubjectAvatar subject={item.subject} />
-              <span className="text-xs text-zinc-500">{item.source}</span>
+              <span className="text-xs text-muted">{item.source}</span>
               <Badge>{item.type}</Badge>
             </div>
-            <h2 className="mt-2 truncate font-semibold tracking-tight text-zinc-100">{item.title}</h2>
+            <h2 className="mt-2 truncate font-semibold tracking-tight text-ink">{item.title}</h2>
             <div className="mt-2 flex flex-wrap items-center gap-2.5">
               <DifficultyDots value={item.difficulty} />
               <MasteryBar value={item.mastery} />

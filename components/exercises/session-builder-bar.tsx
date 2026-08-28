@@ -50,7 +50,7 @@ export function SessionBuilderBar({ exercises, sessions }: { exercises: Exercise
   return (
     <Card className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4">
       <div className="flex min-w-0 items-center gap-2 text-sm">
-        <span className="text-zinc-400">Séance libre sur cette sélection :</span>
+        <span className="text-muted">Séance libre sur cette sélection :</span>
         <Input
           type="number"
           min={1}
@@ -67,7 +67,7 @@ export function SessionBuilderBar({ exercises, sessions }: { exercises: Exercise
           className="h-8 w-16 px-2 py-0 text-center text-xs"
           aria-label="Nombre d'exercices pour la séance libre"
         />
-        <span className="text-xs text-zinc-500">
+        <span className="text-xs text-muted">
           sur {exercises.length} · ≈ {estimatedMinutes} min
         </span>
       </div>

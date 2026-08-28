@@ -54,8 +54,8 @@ export function ExerciseDetail({
           placeholder={"Énoncé complet — maths en LaTeX : $x^2$ inline, $$\\int_0^1 f$$ en bloc"}
         />
         {item.statement.trim() && (
-          <div className="mt-3 rounded-xl border border-hairline/[0.09] bg-hairline/[0.04] p-3 text-sm leading-6 text-zinc-300">
-            <p className="mb-1 text-2xs uppercase tracking-wide text-zinc-600">Aperçu</p>
+          <div className="mt-3 rounded-xl border border-hairline/[0.09] bg-hairline/[0.04] p-3 text-sm leading-6 text-ink">
+            <p className="mb-1 text-2xs uppercase tracking-wide text-subtle">Aperçu</p>
             <RichMath text={item.statement} />
           </div>
         )}
@@ -72,7 +72,7 @@ export function ExerciseDetail({
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="eyebrow">Mode résolution</p>
-          <div className="flex items-center gap-4 text-xs text-zinc-500">
+          <div className="flex items-center gap-4 text-xs text-muted">
             <span className="flex items-center gap-1">
               <Clock3 size={13} /> {minutesSpent} min passées
             </span>
@@ -90,18 +90,18 @@ export function ExerciseDetail({
             </label>
             {/* Sprint 2.5 : attempts est incrémenté automatiquement par le mode focus, plus de contrôle manuel — voir focus-view.tsx. */}
             <span className="flex items-center gap-1">
-              <span className="font-semibold text-zinc-300">{item.attempts}</span> tentative{item.attempts > 1 ? "s" : ""}
+              <span className="font-semibold text-ink">{item.attempts}</span> tentative{item.attempts > 1 ? "s" : ""}
             </span>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-5">
-          <label className="flex items-center gap-2 text-xs text-zinc-500">
+          <label className="flex items-center gap-2 text-xs text-muted">
             Maîtrise
             <MasteryPicker value={item.mastery} onChange={(mastery: Mastery) => update(item.id, { mastery })} />
           </label>
         </div>
         <div>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
             Chapitre
             <ChapterPicker
               subject={item.subject}
@@ -162,7 +162,7 @@ export function ExerciseDetail({
             </div>
           )}
           {confirmingDelete && currentChapter && (
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
               <span>
                 Supprimer « {currentChapter.label} » ? Les exercices restent, seul le lien est retiré.
               </span>
@@ -184,7 +184,7 @@ export function ExerciseDetail({
           )}
         </div>
         {item.hints.slice(0, hintCount).map((hint, index) => (
-          <div key={index} className="rounded-xl border border-accent/15 bg-accent/[0.055] p-3 text-sm leading-6 text-zinc-300">
+          <div key={index} className="rounded-xl border border-accent/15 bg-accent/[0.055] p-3 text-sm leading-6 text-ink">
             <RichMath text={`Indice ${index + 1} — ${hint}`} />
           </div>
         ))}
@@ -200,7 +200,7 @@ export function ExerciseDetail({
               {correctionVisible ? "Masquer la correction" : "Afficher la correction"}
             </Button>
             {correctionVisible && (
-              <div className="mt-3 rounded-xl border border-hairline/[0.09] bg-hairline/[0.04] p-3 text-sm leading-6 text-zinc-300">
+              <div className="mt-3 rounded-xl border border-hairline/[0.09] bg-hairline/[0.04] p-3 text-sm leading-6 text-ink">
                 <RichMath text={item.correction} />
               </div>
             )}
@@ -212,7 +212,7 @@ export function ExerciseDetail({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="eyebrow">Séances</p>
           {results.attempted > 0 && (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted">
               {results.success} réussite{results.success > 1 ? "s" : ""} · {results.partial} partielle{results.partial > 1 ? "s" : ""} ·{" "}
               {results.failure} échec{results.failure > 1 ? "s" : ""} · {results.successRate}% de réussite
             </p>
@@ -225,7 +225,7 @@ export function ExerciseDetail({
             ))}
           </div>
         ) : (
-          <p className="mt-2 text-sm text-zinc-500">Aucune séance enregistrée sur cet exercice pour l&apos;instant.</p>
+          <p className="mt-2 text-sm text-muted">Aucune séance enregistrée sur cet exercice pour l&apos;instant.</p>
         )}
       </div>
     </div>

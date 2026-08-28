@@ -59,11 +59,11 @@ function ExerciseCardImpl({
         <button onClick={() => onToggle(item.id)} className="focus-ring min-w-0 flex-1 text-left">
           <div className="flex flex-wrap items-center gap-2">
             <SubjectAvatar subject={item.subject} />
-            <span className="text-xs text-zinc-500">{item.source}</span>
+            <span className="text-xs text-muted">{item.source}</span>
             <Badge>{item.type}</Badge>
             {item.favorite && <Heart size={12} className="text-rose-300" fill="currentColor" />}
           </div>
-          <h2 className="mt-2 truncate font-semibold tracking-tight text-zinc-100">{item.title}</h2>
+          <h2 className="mt-2 truncate font-semibold tracking-tight text-ink">{item.title}</h2>
           <div className="mt-2 flex flex-wrap items-center gap-2.5">
             <DifficultyDots value={item.difficulty} />
             <MasteryBar value={item.mastery} />
@@ -87,7 +87,7 @@ function ExerciseCardImpl({
           <Button variant="ghost" size="icon" onClick={() => onArchive(item.id)} aria-label="Archiver" className="h-9 w-9">
             <Archive size={17} />
           </Button>
-          <ChevronDown size={16} className={cn("text-zinc-500 transition", selected && "rotate-180")} />
+          <ChevronDown size={16} className={cn("text-muted transition", selected && "rotate-180")} />
         </div>
       </div>
       <AnimatePresence>

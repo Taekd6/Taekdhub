@@ -62,7 +62,7 @@ export function ExerciseBrowser({
         {chapterEntries.length === 0 ? (
           <div className="surface rounded-2xl px-6 py-8 text-center">
             <p className="font-semibold">Aucun chapitre pour {filters.subject} pour l&apos;instant.</p>
-            <p className="mt-1 text-sm text-zinc-500">Les exercices sans chapitre assigné restent visibles ci-dessous, filtrables normalement.</p>
+            <p className="mt-1 text-sm text-muted">Les exercices sans chapitre assigné restent visibles ci-dessous, filtrables normalement.</p>
           </div>
         ) : (
           <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -84,7 +84,7 @@ export function ExerciseBrowser({
         <div className="surface flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4">
           <div>
             <h2 className="font-semibold tracking-tight">{current.chapter.label}</h2>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-muted">
               {current.total} exercice{current.total > 1 ? "s" : ""} · {current.completionRate}% maîtrisés · {current.averageMastery}% de maîtrise moyenne
             </p>
           </div>
@@ -117,12 +117,12 @@ function SubjectGrid({ exercises, onSelect }: { exercises: Exercise[]; onSelect:
               <SubjectAvatar subject={entry.subject} />
               <div className="min-w-0">
                 <p className="truncate font-semibold tracking-tight">{entry.subject}</p>
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-muted">
                   {entry.total} exercice{entry.total > 1 ? "s" : ""} · {entry.completionRate}% maîtrisés
                 </p>
               </div>
             </div>
-            <ChevronRight size={16} className="shrink-0 text-zinc-600" />
+            <ChevronRight size={16} className="shrink-0 text-subtle" />
           </motion.button>
         ))}
       </div>
@@ -142,9 +142,9 @@ function ChapterCard({ entry, index, onSelect }: { entry: ChapterProgress; index
     >
       <div className="flex items-center justify-between gap-2">
         <p className="min-w-0 truncate font-semibold tracking-tight">{entry.chapter.label}</p>
-        <ChevronRight size={15} className="shrink-0 text-zinc-600" />
+        <ChevronRight size={15} className="shrink-0 text-subtle" />
       </div>
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-muted">
         {entry.total} exercice{entry.total > 1 ? "s" : ""} · {entry.completionRate}% maîtrisés
       </p>
       <ProgressBar value={entry.completionRate} className="h-1.5" />
@@ -168,21 +168,21 @@ function Breadcrumb({
       <Button variant="ghost" size="sm" onClick={onHome} className="px-2">
         <ArrowLeft size={14} /> Matières
       </Button>
-      <ChevronRight size={13} className="shrink-0 text-zinc-700" />
+      <ChevronRight size={13} className="shrink-0 text-subtle" />
       {chapterLabel ? (
         <>
           <button
             type="button"
             onClick={onSubject}
-            className="focus-ring rounded-lg px-2 py-1 text-zinc-400 transition hover:bg-hairline/[0.04] hover:text-zinc-200"
+            className="focus-ring rounded-lg px-2 py-1 text-muted transition hover:bg-hairline/[0.04] hover:text-ink"
           >
             {subject}
           </button>
-          <ChevronRight size={13} className="shrink-0 text-zinc-700" />
-          <span className="truncate px-2 py-1 font-medium text-zinc-200">{chapterLabel}</span>
+          <ChevronRight size={13} className="shrink-0 text-subtle" />
+          <span className="truncate px-2 py-1 font-medium text-ink">{chapterLabel}</span>
         </>
       ) : (
-        <span className="truncate px-2 py-1 font-medium text-zinc-200">{subject}</span>
+        <span className="truncate px-2 py-1 font-medium text-ink">{subject}</span>
       )}
     </div>
   );

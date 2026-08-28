@@ -86,14 +86,14 @@ export function SessionHistory() {
           })
         ) : (
           <Card className="p-10 text-center">
-            <p className="text-sm text-zinc-500">Aucune séance ne correspond à ces filtres.</p>
+            <p className="text-sm text-muted">Aucune séance ne correspond à ces filtres.</p>
           </Card>
         )}
       </div>
 
       {sorted.length > visibleCount && (
         <div className="flex flex-col items-center gap-2">
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted">
             {visibleCount} séance{visibleCount > 1 ? "s" : ""} affichée{visibleCount > 1 ? "s" : ""} sur {sorted.length}
           </p>
           <Button variant="secondary" size="sm" onClick={() => setVisibleCount((count) => count + HISTORY_PAGE_SIZE)}>

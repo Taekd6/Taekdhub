@@ -29,7 +29,7 @@ export function ExerciseReviewPanel({
     return (
       <Card className="p-5 text-center">
         <Sparkles className="mx-auto text-accent" size={20} />
-        <p className="mt-3 text-sm text-zinc-400">Rien à revoir pour l&apos;instant — continue comme ça.</p>
+        <p className="mt-3 text-sm text-muted">Rien à revoir pour l&apos;instant — continue comme ça.</p>
       </Card>
     );
   }

@@ -109,7 +109,7 @@ export function Timer() {
         </Button>
       </div>
 
-      <p className="mt-6 text-xs text-zinc-600">Barre d&apos;espace pour démarrer / pause</p>
+      <p className="mt-6 text-xs text-subtle">Barre d&apos;espace pour démarrer / pause</p>
     </>
   );
 

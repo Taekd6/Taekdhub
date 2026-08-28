@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { ProgressBar } from "@/components/ui/progress";
 import type { HistorySummary as HistorySummaryData, ResultCounts } from "@/lib/history";
 import { subjectMeta } from "@/lib/study";
@@ -39,9 +39,7 @@ export function HistorySummary({ summary, results }: { summary: HistorySummaryDa
       )}
 
       {summary.bySubject.length > 0 && (
-        <Card className="p-5">
-          <p className="eyebrow">Répartition</p>
-          <CardTitle className="mt-2 text-base">Par matière</CardTitle>
+        <Section rank="secondary" eyebrow="Répartition" title="Par matière">
           <div className="mt-4 space-y-3">
             {summary.bySubject.map(({ subject, seconds }) => (
               <div key={subject}>
@@ -52,13 +50,13 @@ export function HistorySummary({ summary, results }: { summary: HistorySummaryDa
                     </span>
                     {subject}
                   </span>
-                  <span className="text-zinc-500">{formatDuration(seconds)}</span>
+                  <span className="text-muted">{formatDuration(seconds)}</span>
                 </div>
                 <ProgressBar value={(seconds / maxSeconds) * 100} animated={false} className="mt-2 h-1.5" />
               </div>
             ))}
           </div>
-        </Card>
+        </Section>
       )}
     </div>
   );

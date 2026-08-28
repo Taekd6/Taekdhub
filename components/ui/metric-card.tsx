@@ -1,42 +1,38 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { Card } from "@/components/ui/card";
 
+/**
+ * Refonte design : n'est plus une carte bordée avec une icône dans un badge
+ * (icône décorative — elle ne portait aucune information que le libellé ne
+ * donnait déjà). Un grand chiffre et son contexte suffisent, dans le même
+ * langage que `DeltaFigure` (progress-overview.tsx) et `Stat` (dashboard) —
+ * une seule façon de présenter "un chiffre qui compte" dans toute l'app.
+ */
 export function MetricCard({
   label,
   value,
   detail,
-  icon: Icon,
   className,
   delay = 0,
 }: {
   label: string;
   value: string;
   detail: string;
-  icon: LucideIcon;
   className?: string;
   delay?: number;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, ease: "easeOut" }}
-      whileHover={{ y: -3 }}
+      className={cn("min-w-0", className)}
     >
-      <Card hover className={cn("p-5", className)}>
-        <div className="flex items-start justify-between">
-          <p className="text-sm text-zinc-400">{label}</p>
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent/10">
-            <Icon size={16} className="text-accent" />
-          </div>
-        </div>
-        <p className="mt-6 text-2xl font-semibold tracking-tight">{value}</p>
-        <p className="mt-1 text-xs text-zinc-500">{detail}</p>
-      </Card>
+      <p className="t-meta">{label}</p>
+      <p className="mt-1.5 t-figure">{value}</p>
+      <p className="mt-0.5 text-xs text-muted">{detail}</p>
     </motion.div>
   );
 }

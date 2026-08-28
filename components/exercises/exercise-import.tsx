@@ -116,7 +116,7 @@ export function ExerciseImport({
         <div>
           <p className="eyebrow">Import en masse</p>
           <h2 className="mt-1 text-lg font-semibold">Ajoute plusieurs exercices à la fois.</h2>
-          <p className="mt-1 text-sm leading-6 text-zinc-500">
+          <p className="mt-1 text-sm leading-6 text-muted">
             Colle ou importe un fichier JSON (un tableau, un objet par exercice). Rien n&apos;est ajouté avant ta confirmation ci-dessous.
           </p>
         </div>
@@ -131,7 +131,7 @@ export function ExerciseImport({
         placeholder={'[\n  { "title": "…", "source": "…", "subject": "Mathématiques" }\n]'}
         rows={7}
         spellCheck={false}
-        className="focus-ring w-full rounded-xl border border-hairline/[0.09] bg-inset p-3 font-mono text-xs leading-6 text-zinc-200 placeholder:text-zinc-600"
+        className="focus-ring w-full rounded-xl border border-hairline/[0.09] bg-inset p-3 font-mono text-xs leading-6 text-ink placeholder:text-subtle"
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -140,7 +140,7 @@ export function ExerciseImport({
         </Button>
         <input ref={fileInput} type="file" accept="application/json" onChange={handleFile} className="hidden" />
         {parsed && (
-          <span className="text-xs text-zinc-500">
+          <span className="text-xs text-muted">
             {rows.length} exercice{rows.length > 1 ? "s" : ""} valide{rows.length > 1 ? "s" : ""}
             {errors.length > 0 && ` · ${errors.length} ligne${errors.length > 1 ? "s" : ""} en erreur`}
           </span>
@@ -152,7 +152,7 @@ export function ExerciseImport({
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-200">
             <AlertTriangle size={14} /> {errors.length} ligne{errors.length > 1 ? "s" : ""} ignorée{errors.length > 1 ? "s" : ""}
           </div>
-          <ul className="mt-2 space-y-1 text-xs leading-5 text-zinc-400">
+          <ul className="mt-2 space-y-1 text-xs leading-5 text-muted">
             {errors.slice(0, 8).map((error, index) => (
               <li key={index}>{error.message}</li>
             ))}
@@ -164,7 +164,7 @@ export function ExerciseImport({
       {rows.length > 0 && (
         <div className="space-y-2.5">
           {newChapters.size > 0 && (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted">
               {newChapters.size} nouveau{newChapters.size > 1 ? "x" : ""} chapitre{newChapters.size > 1 ? "s" : ""} sera{newChapters.size > 1 ? "ont" : ""}{" "}
               créé{newChapters.size > 1 ? "s" : ""} : {[...newChapters.values()].map((c) => c.label).join(", ")}.
             </p>
@@ -173,7 +173,7 @@ export function ExerciseImport({
             {rows.slice(0, 50).map((row) => (
               <div key={row.index} className="flex items-center gap-2.5 rounded-lg border border-hairline/[0.07] px-3 py-2 text-sm">
                 <CheckCircle2 size={14} className="shrink-0 text-accent" />
-                <span className="min-w-0 flex-1 truncate font-medium text-zinc-100">{row.input.title}</span>
+                <span className="min-w-0 flex-1 truncate font-medium text-ink">{row.input.title}</span>
                 <Badge className="shrink-0">{row.input.subject}</Badge>
                 {row.input.competition && (
                   <Badge variant="accent" className="shrink-0">
@@ -198,7 +198,7 @@ export function ExerciseImport({
                 )}
               </div>
             ))}
-            {rows.length > 50 && <p className="px-3 py-1 text-xs text-zinc-500">… et {rows.length - 50} de plus.</p>}
+            {rows.length > 50 && <p className="px-3 py-1 text-xs text-muted">… et {rows.length - 50} de plus.</p>}
           </div>
         </div>
       )}

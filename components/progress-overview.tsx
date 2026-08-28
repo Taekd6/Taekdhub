@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { ArrowRight, GraduationCap, Target, TrendingUp } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { ProgressBar } from "@/components/ui/progress";
 import { Heatmap } from "@/components/heatmap";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
@@ -31,12 +32,25 @@ function withSignMinutes(seconds: number): string {
   return withSign(Math.round(seconds / 60), " min");
 }
 
+/** Un chiffre + son delta — la même forme partout dans cette page pour comparer d'un coup d'œil. */
+function DeltaFigure({ label, value, delta }: { label: string; value: string; delta: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="t-meta">{label}</p>
+      <p className="mt-1 t-figure">{value}</p>
+      <p className="mt-0.5 text-2xs text-subtle">{delta}</p>
+    </div>
+  );
+}
+
 /**
- * Section "Évolution" (Sprint 5) — présentationnelle uniquement : toute la
+ * "Évolution" (Sprint 5) — présentationnelle uniquement : toute la
  * comparaison vient de `compareToPreviousWeek` (lib/week-snapshot.ts). Ne
  * montre rien tant qu'aucune semaine précédente n'a été figée, plutôt que
  * d'inventer une comparaison à partir de presque rien (même principe que
- * lib/week.ts#neglectedSubjects).
+ * lib/week.ts#neglectedSubjects). Refonte design : plus de carte bordée — un
+ * titre et des chiffres alignés suffisent, la comparaison EST déjà le
+ * contenu, pas besoin d'un cadre en plus pour le dire.
  */
 function WeekEvolution({ exercises, sessions, weekSnapshots }: { exercises: Exercise[]; sessions: WorkSession[]; weekSnapshots: WeekSnapshot[] }) {
   const comparison = useMemo(() => {
@@ -44,75 +58,50 @@ function WeekEvolution({ exercises, sessions, weekSnapshots }: { exercises: Exer
     return previous ? compareToPreviousWeek(exercises, sessions, previous) : null;
   }, [exercises, sessions, weekSnapshots]);
 
+  if (!comparison) {
+    return (
+      <Section rank="secondary" eyebrow="Mémoire" title="Évolution">
+        <p className="mt-3 text-sm text-muted">TaekdHub commence à mesurer ta progression cette semaine.</p>
+      </Section>
+    );
+  }
+
   return (
-    <Card className="p-6">
-      <div className="flex items-center gap-2">
-        <TrendingUp size={14} className="text-accent" />
-        <p className="eyebrow">Mémoire</p>
+    <Section rank="secondary" eyebrow="Mémoire" title="Évolution">
+      <div className="mt-4 flex flex-wrap gap-x-10 gap-y-4">
+        <DeltaFigure label="Temps travaillé" value={formatDuration(comparison.currentTotalSeconds)} delta={`${withSignMinutes(comparison.deltaTotalSeconds)} vs semaine précédente`} />
+        <DeltaFigure label="Exercices maîtrisés" value={String(comparison.currentMasteredCount)} delta={`${withSign(comparison.deltaMasteredCount)} vs semaine précédente`} />
+        <DeltaFigure label="Progression globale" value={`${comparison.currentCompletionRate}%`} delta={`${withSign(comparison.deltaCompletionRate, " pt")} vs semaine précédente`} />
       </div>
-      <CardTitle className="mt-2">Évolution</CardTitle>
 
-      {!comparison ? (
-        <p className="mt-4 text-sm text-zinc-500">TaekdHub commence à mesurer ta progression cette semaine.</p>
-      ) : (
-        <div className="mt-5 space-y-4">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-hairline/[0.07] p-3.5">
-              <p className="text-xs text-zinc-500">Temps travaillé</p>
-              <p className="mt-1.5 text-xl font-semibold tracking-tight">{formatDuration(comparison.currentTotalSeconds)}</p>
-              <p className="mt-0.5 text-xs text-zinc-500">{withSignMinutes(comparison.deltaTotalSeconds)} vs semaine précédente</p>
+      {(comparison.mostImprovedSubject || comparison.mostNeglectedSubject) && (
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {comparison.mostImprovedSubject && (
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] p-3.5 text-sm">
+              <p className="t-meta">A le plus progressé</p>
+              <p className="mt-1 font-medium text-emerald-200">{comparison.mostImprovedSubject.subject}</p>
+              <p className="mt-0.5 text-xs text-muted">{withSign(comparison.mostImprovedSubject.deltaCompletionRate, " pt")} de maîtrise</p>
             </div>
-            <div className="rounded-xl border border-hairline/[0.07] p-3.5">
-              <p className="text-xs text-zinc-500">Exercices maîtrisés</p>
-              <p className="mt-1.5 text-xl font-semibold tracking-tight">{comparison.currentMasteredCount}</p>
-              <p className="mt-0.5 text-xs text-zinc-500">{withSign(comparison.deltaMasteredCount)} vs semaine précédente</p>
-            </div>
-            <div className="rounded-xl border border-hairline/[0.07] p-3.5">
-              <p className="text-xs text-zinc-500">Progression globale</p>
-              <p className="mt-1.5 text-xl font-semibold tracking-tight">{comparison.currentCompletionRate}%</p>
-              <p className="mt-0.5 text-xs text-zinc-500">{withSign(comparison.deltaCompletionRate, " pt")} vs semaine précédente</p>
-            </div>
-          </div>
-
-          {(comparison.mostImprovedSubject || comparison.mostNeglectedSubject) && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {comparison.mostImprovedSubject && (
-                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-3.5 text-sm">
-                  <p className="text-xs text-zinc-500">A le plus progressé</p>
-                  <p className="mt-1 font-medium text-emerald-200">{comparison.mostImprovedSubject.subject}</p>
-                  <p className="mt-0.5 text-xs text-zinc-400">{withSign(comparison.mostImprovedSubject.deltaCompletionRate, " pt")} de maîtrise</p>
-                </div>
-              )}
-              {comparison.mostNeglectedSubject && (
-                <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3.5 text-sm">
-                  <p className="text-xs text-zinc-500">La moins travaillée</p>
-                  <p className="mt-1 font-medium text-amber-200">{comparison.mostNeglectedSubject.subject}</p>
-                  <p className="mt-0.5 text-xs text-zinc-400">{formatDuration(comparison.mostNeglectedSubject.currentSeconds)} cette semaine</p>
-                </div>
-              )}
+          )}
+          {comparison.mostNeglectedSubject && (
+            <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-3.5 text-sm">
+              <p className="t-meta">La moins travaillée</p>
+              <p className="mt-1 font-medium text-amber-200">{comparison.mostNeglectedSubject.subject}</p>
+              <p className="mt-0.5 text-xs text-muted">{formatDuration(comparison.mostNeglectedSubject.currentSeconds)} cette semaine</p>
             </div>
           )}
         </div>
       )}
-    </Card>
+    </Section>
   );
 }
 
 /**
  * « Où tu en es » — les deux faits que le moteur utilise pour décider, rendus
- * lisibles.
- *
- * Le niveau de difficulté visé (`comfortDifficulty`) et la part de réussites
- * obtenues sans aide décisive pilotaient déjà le classement des
- * recommandations, la formule d'XP et les raisons affichées — sans avoir
- * jamais été montrés nulle part. L'élève subissait donc des décisions dont il
- * ne pouvait ni voir ni contester la base ; un professeur devant l'écran ne
- * pouvait pas répondre à « à quel niveau travaille-t-il ? » ni « s'en sort-il
- * seul ? ». Aucun calcul nouveau : `computeWorkingLevel` et
- * `comfortDifficulty` lisent la même fenêtre de tentatives, dans le même
- * fichier que le moteur.
- *
- * Rien ne s'affiche tant que la fenêtre ne contient pas assez de tentatives
+ * lisibles. Voir la documentation complète dans l'historique du fichier :
+ * aucun calcul nouveau, `computeWorkingLevel`/`comfortDifficulty` lisent la
+ * même fenêtre de tentatives que le moteur de recommandation. Rien ne
+ * s'affiche tant que la fenêtre ne contient pas assez de tentatives
  * qualifiées : mieux vaut ne rien dire qu'un pourcentage sur deux séances.
  */
 function WorkingLevelCard({ exercises, sessions }: { exercises: Exercise[]; sessions: WorkSession[] }) {
@@ -123,55 +112,25 @@ function WorkingLevelCard({ exercises, sessions }: { exercises: Exercise[]; sess
   const autonomyPercent = level.successes > 0 ? Math.round((level.autonomousSuccesses / level.successes) * 100) : null;
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center gap-2">
-        <GraduationCap size={14} className="text-accent" />
-        <p className="eyebrow">Où tu en es</p>
+    <Section rank="secondary" eyebrow="Où tu en es" title="Ce sur quoi TaekdHub s'appuie pour te proposer des exercices">
+      <div className="mt-4 flex flex-wrap gap-x-10 gap-y-4">
+        <DeltaFigure
+          label="Niveau visé"
+          value={`${comfort.target.toFixed(1)} / 5`}
+          delta={comfort.steppedUp ? `Relevé après ${comfort.successStreak} réussites autonomes d'affilée` : `Difficulté moyenne de tes tentatives : ${level.averageDifficulty}`}
+        />
+        <DeltaFigure
+          label="Réussites sans aide"
+          value={autonomyPercent === null ? "—" : `${autonomyPercent}%`}
+          delta={level.successes === 0 ? "Aucune réussite sur la période" : `${level.autonomousSuccesses} sur ${level.successes} réussite${level.successes > 1 ? "s" : ""}`}
+        />
+        <DeltaFigure label="Mesuré sur" value={String(level.attempts)} delta="dernières tentatives qualifiées" />
       </div>
-      <CardTitle className="mt-2">Ce sur quoi TaekdHub s&apos;appuie pour te proposer des exercices</CardTitle>
-
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-hairline/[0.07] p-3.5">
-          <p className="text-xs text-zinc-500">Niveau visé</p>
-          <p className="mt-1.5 text-xl font-semibold tracking-tight">{comfort.target.toFixed(1)}<span className="text-sm font-normal text-zinc-500"> / 5</span></p>
-          <p className="mt-0.5 text-2xs text-zinc-500">
-            {comfort.steppedUp
-              ? `Relevé après ${comfort.successStreak} réussites autonomes d'affilée`
-              : `Difficulté moyenne de tes tentatives : ${level.averageDifficulty}`}
-          </p>
-        </div>
-        <div className="rounded-xl border border-hairline/[0.07] p-3.5">
-          <p className="text-xs text-zinc-500">Réussites sans aide</p>
-          <p className="mt-1.5 text-xl font-semibold tracking-tight">
-            {autonomyPercent === null ? "—" : `${autonomyPercent}%`}
-          </p>
-          <p className="mt-0.5 text-2xs text-zinc-500">
-            {level.successes === 0
-              ? "Aucune réussite sur la période"
-              : `${level.autonomousSuccesses} sur ${level.successes} réussite${level.successes > 1 ? "s" : ""}`}
-          </p>
-        </div>
-        <div className="rounded-xl border border-hairline/[0.07] p-3.5">
-          <p className="text-xs text-zinc-500">Mesuré sur</p>
-          <p className="mt-1.5 text-xl font-semibold tracking-tight">{level.attempts}</p>
-          <p className="mt-0.5 text-2xs text-zinc-500">dernières tentatives qualifiées</p>
-        </div>
-      </div>
-      <p className="mt-3 text-2xs text-zinc-500">
+      <p className="mt-4 text-2xs text-subtle">
         Une réussite obtenue en révélant deux indices ou plus n&apos;est pas comptée comme autonome — c&apos;est aussi la règle qu&apos;utilisent
         les recommandations et l&apos;XP.
       </p>
-    </Card>
-  );
-}
-
-/** Chiffre brut du bandeau de synthèse — une ligne, pas une carte : ces quatre valeurs ne se lisent qu'après les conclusions qui les précèdent. */
-function Figure({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="eyebrow">{label}</p>
-      <p className="mt-1 text-sm font-medium tabular-nums text-ink">{value}</p>
-    </div>
+    </Section>
   );
 }
 
@@ -191,19 +150,12 @@ function describeEvidence({ attempts, sinceDays }: ChapterConsolidation["evidenc
 /**
  * « Tes 3 priorités » — la réponse directe à la question que l'élève se pose
  * réellement en ouvrant cette page : « qu'est-ce que je dois retravailler ? »
- *
- * La page savait déjà tout montrer (maîtrise par matière, par chapitre, par
- * statut, constance, évolution) mais ne CONCLUAIT jamais : à l'élève de
- * croiser cinq graphiques pour deviner ses points faibles. C'est
- * précisément le travail que l'application est la mieux placée pour faire.
+ * C'est la SEULE section encadrée de la page (rank="primary") : tout le
+ * reste est du contexte qui aide à comprendre CE verdict, jamais un second
+ * verdict concurrent.
  *
  * Aucune logique nouvelle : `computeChaptersToConsolidate` (lib/next-action.ts)
- * est la MÊME fonction qui alimente déjà "À consolider" au Dashboard, et
- * elle s'appuie sur les mêmes champs que le moteur de recommandation. Créer
- * ici un second classement des faiblesses aurait garanti que les deux écrans
- * finissent par se contredire — le pire défaut possible pour un produit qui
- * promet de savoir quoi faire travailler. On n'en montre que les trois
- * premiers : une priorité, par définition, ne se compte pas par dix.
+ * est la MÊME fonction qui alimente déjà "À consolider" au Dashboard.
  */
 function TopWeaknesses({ exercises, sessions, chapters }: { exercises: Exercise[]; sessions: WorkSession[]; chapters: Chapter[] }) {
   const priorities = useMemo(
@@ -214,28 +166,26 @@ function TopWeaknesses({ exercises, sessions, chapters }: { exercises: Exercise[
   if (priorities.length === 0) return null;
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center gap-2">
-        <Target size={14} className="text-accent" />
-        <p className="eyebrow">Priorités</p>
-      </div>
-      <CardTitle className="mt-2">Ce que tu dois retravailler en premier</CardTitle>
-      <p className="mt-1 text-xs text-zinc-500">Classé par le même moteur que tes recommandations — donc cohérent avec ce que TaekdHub te propose.</p>
-
-      <ol className="mt-5 space-y-2.5">
+    <Section
+      rank="primary"
+      eyebrow="Priorités"
+      title="Ce que tu dois retravailler en premier"
+      description="Classé par le même moteur que tes recommandations — donc cohérent avec ce que TaekdHub te propose."
+    >
+      <ol className="mt-2 space-y-1">
         {priorities.map(({ chapter, averageMastery, reasons, href, evidence }, index) => (
           <li key={chapter.id}>
             <Link
               href={href}
-              className="focus-ring flex items-start gap-3 rounded-xl border border-hairline/[0.07] p-3.5 transition hover:border-hairline/[0.14] hover:bg-hairline/[0.025]"
+              className="focus-ring flex items-start gap-3 rounded-lg p-3 transition-colors hover:bg-inset"
             >
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/10 text-xs font-semibold text-accent">{index + 1}</span>
+              <span className="mt-0.5 w-4 shrink-0 text-center text-xs tabular-nums text-subtle">{index + 1}</span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                  <p className="truncate text-sm font-medium text-zinc-100">{chapter.label}</p>
-                  <span className="shrink-0 text-xs text-zinc-500">{averageMastery}% de maîtrise</span>
+                  <p className="truncate text-sm font-medium text-ink">{chapter.label}</p>
+                  <span className="shrink-0 text-xs text-muted">{averageMastery}% de maîtrise</span>
                 </div>
-                <p className="mt-0.5 text-2xs text-zinc-500">{chapter.subject}</p>
+                <p className="mt-0.5 text-2xs text-muted">{chapter.subject}</p>
                 {/* Les preuves, pas un score opaque : l'élève doit pouvoir contester le classement. */}
                 <div className="mt-2 flex flex-wrap gap-1">
                   {reasons.map((reason) => (
@@ -246,7 +196,7 @@ function TopWeaknesses({ exercises, sessions, chapters }: { exercises: Exercise[
                 </div>
                 {/* Sur quoi porte le verdict — « récents » depuis quand, mesurés sur combien.
                     Sans cette ligne, les badges ci-dessus étaient des affirmations sans assise. */}
-                <p className="mt-2 text-2xs text-zinc-500">{describeEvidence(evidence)}</p>
+                <p className="mt-2 text-2xs text-subtle">{describeEvidence(evidence)}</p>
                 <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent">
                   Travailler ce chapitre <ArrowRight size={11} />
                 </span>
@@ -255,7 +205,7 @@ function TopWeaknesses({ exercises, sessions, chapters }: { exercises: Exercise[
           </li>
         ))}
       </ol>
-    </Card>
+    </Section>
   );
 }
 
@@ -272,10 +222,9 @@ const READINESS_STYLE: Record<ReadinessLevel, { border: string; bg: string }> = 
 };
 
 /**
- * Section "Prêt pour le DS ?" (Sprint 6) — présentationnelle uniquement :
- * tout vient de `computeReadinessBySubject` (lib/readiness.ts), qui n'est
- * lui-même qu'un regroupement par matière de `recommendExercises`
- * (lib/recommendation.ts, seule source de vérité pour "quoi travailler").
+ * "Prêt pour le DS ?" (Sprint 6) — présentationnelle uniquement : tout vient
+ * de `computeReadinessBySubject` (lib/readiness.ts), qui n'est lui-même
+ * qu'un regroupement par matière de `recommendExercises`.
  */
 function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions: WorkSession[] }) {
   const readiness = useMemo(() => computeReadinessBySubject(exercises, sessions), [exercises, sessions]);
@@ -283,25 +232,18 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
   if (readiness.length === 0) return null;
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center gap-2">
-        <GraduationCap size={14} className="text-accent" />
-        <p className="eyebrow">Échéances</p>
-      </div>
-      <CardTitle className="mt-2">Prêt pour le DS ?</CardTitle>
-      <p className="mt-1 text-xs text-zinc-500">Par matière, à partir de ce que le moteur de recommandation signale déjà.</p>
-
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <Section rank="secondary" eyebrow="Échéances" title="Prêt pour le DS ?" description="Par matière, à partir de ce que le moteur de recommandation signale déjà.">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {readiness.map(({ subject, completionRate, flaggedCount, estimatedMinutes, level }) => {
           const meta = READINESS_META[level];
           const style = READINESS_STYLE[level];
           return (
-            <div key={subject} className={`rounded-xl border ${style.border} ${style.bg} p-3.5`}>
+            <div key={subject} className={`rounded-lg border ${style.border} ${style.bg} p-3.5`}>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium text-zinc-100">{subject}</p>
+                <p className="text-sm font-medium text-ink">{subject}</p>
                 <Badge variant={meta.badge}>{meta.label}</Badge>
               </div>
-              <p className="mt-2 text-xs text-zinc-400">
+              <p className="mt-2 text-xs text-muted">
                 {level === "pas commencé"
                   ? // "N exercices à retravailler" donnerait l'impression d'un retard déjà pris, alors qu'aucune séance n'a même commencé sur cette matière.
                     "Aucune séance enregistrée pour l'instant."
@@ -317,7 +259,7 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
           );
         })}
       </div>
-    </Card>
+    </Section>
   );
 }
 
@@ -328,6 +270,11 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
  * la constance, lib/week-snapshot.ts pour l'évolution, lib/readiness.ts
  * pour la préparation aux DS) : ce composant ne fait qu'assembler et
  * afficher, aucun calcul métier ici.
+ *
+ * Refonte design : la page enchaînait neuf cartes bordées de même poids —
+ * exactement le "mur de dashboards SaaS" à éviter. Une seule reste encadrée
+ * (les priorités, LA conclusion) ; tout le reste se sépare par un titre et
+ * du rythme vertical, comme les chapitres d'un même document.
  */
 export function ProgressOverview() {
   const { sessions, exercises, chapters, weekSnapshots, ready } = usePrepahubData();
@@ -349,14 +296,14 @@ export function ProgressOverview() {
     return (
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="surface h-32 animate-pulse rounded-2xl" />
+          <div key={i} className="surface h-32 animate-pulse" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* CE QUE LES DONNÉES SIGNIFIENT, D'ABORD.
           La page ouvrait sur quatre cartes de chiffres bruts — temps cumulé,
           exercices maîtrisés, progression, série — avant toute lecture. Or
@@ -365,23 +312,20 @@ export function ProgressOverview() {
           deviennent une ligne, et les répartitions détaillées forment la
           queue de page qu'on consulte quand on veut creuser. */}
       <TopWeaknesses exercises={exercises} sessions={sessions} chapters={chapters} />
-      <WorkingLevelCard exercises={exercises} sessions={sessions} />
 
       <div className="flex flex-wrap items-center gap-x-8 gap-y-3 px-1">
-        <Figure label="Temps cumulé" value={formatDuration(model.totalTime)} />
-        <Figure label="Exercices maîtrisés" value={`${model.global.masteredCount} / ${model.global.activeCount}`} />
-        <Figure label="Progression globale" value={`${model.global.completionRate} %`} />
-        <Figure label="Série actuelle" value={`${model.streak} j`} />
+        <DeltaFigure label="Temps cumulé" value={formatDuration(model.totalTime)} delta="depuis le début" />
+        <DeltaFigure label="Exercices maîtrisés" value={`${model.global.masteredCount} / ${model.global.activeCount}`} delta={`${model.global.completionRate}% de la banque`} />
+        <DeltaFigure label="Série actuelle" value={`${model.streak} j`} delta="de suite" />
       </div>
 
+      <WorkingLevelCard exercises={exercises} sessions={sessions} />
       <WeekEvolution exercises={exercises} sessions={sessions} weekSnapshots={weekSnapshots} />
       <DsReadiness exercises={exercises} sessions={sessions} />
 
-      <section className="grid gap-5 xl:grid-cols-2">
-        <Card className="p-6">
-          <p className="eyebrow">Répartition</p>
-          <CardTitle className="mt-2">Progression par matière</CardTitle>
-          <div className="mt-6 space-y-5">
+      <Section rank="secondary" eyebrow="Répartition" title="Progression par matière et par maîtrise">
+        <div className="mt-4 grid gap-x-10 gap-y-6 sm:grid-cols-2">
+          <div className="space-y-4">
             {model.bySubject.map(({ subject, total, mastered, completionRate }) => (
               <div key={subject} id={`subject-${subjectMeta[subject].short}`} className="scroll-mt-24">
                 <div className="flex items-center justify-between text-sm">
@@ -391,36 +335,30 @@ export function ProgressOverview() {
                     </span>
                     {subject}
                   </span>
-                  <span className="text-zinc-500">
+                  <span className="text-muted">
                     {mastered}/{total}
                   </span>
                 </div>
-                <ProgressBar value={completionRate} animated={false} className="mt-2 h-2" />
+                <ProgressBar value={completionRate} animated={false} className="mt-2 h-1.5" />
               </div>
             ))}
           </div>
-        </Card>
 
-        <Card className="p-6">
-          <p className="eyebrow">Répartition</p>
-          <CardTitle className="mt-2">Maîtrise de la banque</CardTitle>
-          <div className="mt-6 space-y-5">
+          <div className="space-y-4 sm:border-l sm:border-hairline/[0.07] sm:pl-10">
             {model.mastery.map(({ mastery, count, percentage }) => (
               <div key={mastery}>
                 <div className="flex items-center justify-between text-sm">
                   <span>{mastery}%</span>
-                  <span className="text-zinc-500">{count}</span>
+                  <span className="text-muted">{count}</span>
                 </div>
-                <ProgressBar value={percentage} animated={false} className="mt-2 h-2" />
+                <ProgressBar value={percentage} animated={false} className="mt-2 h-1.5" />
               </div>
             ))}
           </div>
-        </Card>
-      </section>
+        </div>
+      </Section>
 
-      <section>
-        <p className="eyebrow">Répartition</p>
-        <h3 className="mb-4 mt-2 font-semibold tracking-tight">Par chapitre</h3>
+      <Section rank="secondary" eyebrow="Répartition" title="Par chapitre">
         {model.byChapter.length ? (
           // Groupé par matière (dans l'ordre du programme, `subjects` de
           // lib/study.ts) plutôt qu'une seule grille plate de ~40 chapitres :
@@ -430,71 +368,67 @@ export function ProgressOverview() {
           // TAILLE DE CHAPITRE à l'intérieur de chaque matière (déjà décidé
           // par `progressByChapter`, lib/progress.ts) reste inchangé — seul
           // le regroupement visuel est ajouté ici, aucun recalcul.
-          subjects
-            .map((subject) => ({ subject, chapters: model.byChapter.filter((entry) => entry.chapter.subject === subject) }))
-            .filter((group) => group.chapters.length > 0)
-            .map(({ subject, chapters: subjectChapters }) => (
-              <div key={subject} className="mb-5 last:mb-0">
-                <div className="mb-2.5 flex items-center gap-2">
-                  <span className={`grid h-5 w-5 place-items-center rounded text-[9px] font-bold ${subjectMeta[subject].className}`}>
-                    {subjectMeta[subject].short}
-                  </span>
-                  <p className="text-xs font-medium text-zinc-400">
-                    {subject} <span className="text-zinc-600">· {subjectChapters.length} chapitre{subjectChapters.length > 1 ? "s" : ""}</span>
-                  </p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {subjectChapters.map(({ chapter, total, mastered, completionRate }) => (
-                    <div key={chapter.id} className="rounded-xl border border-hairline/[0.07] p-3.5">
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="min-w-0 truncate text-sm font-medium">{chapter.label}</p>
-                        <span className="whitespace-nowrap text-xs text-zinc-500">
-                          {mastered}/{total}
-                        </span>
+          <div className="mt-4 space-y-5">
+            {subjects
+              .map((subject) => ({ subject, chapters: model.byChapter.filter((entry) => entry.chapter.subject === subject) }))
+              .filter((group) => group.chapters.length > 0)
+              .map(({ subject, chapters: subjectChapters }) => (
+                <div key={subject}>
+                  <div className="mb-2.5 flex items-center gap-2">
+                    <span className={`grid h-5 w-5 place-items-center rounded text-[9px] font-bold ${subjectMeta[subject].className}`}>
+                      {subjectMeta[subject].short}
+                    </span>
+                    <p className="text-xs font-medium text-muted">
+                      {subject} <span className="text-subtle">· {subjectChapters.length} chapitre{subjectChapters.length > 1 ? "s" : ""}</span>
+                    </p>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    {subjectChapters.map(({ chapter, total, mastered, completionRate }) => (
+                      <div key={chapter.id} className="rounded-lg border border-hairline/[0.07] p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="min-w-0 truncate text-sm font-medium text-ink">{chapter.label}</p>
+                          <span className="whitespace-nowrap text-xs text-muted">
+                            {mastered}/{total}
+                          </span>
+                        </div>
+                        <ProgressBar value={completionRate} animated={false} barClassName="bg-accent/80" className="mt-3 h-1" />
                       </div>
-                      <ProgressBar value={completionRate} animated={false} barClassName="bg-accent/80" className="mt-3 h-1.5" />
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+          </div>
         ) : (
-          <Card className="p-8 text-center text-sm text-zinc-500">Crée des chapitres depuis un exercice pour voir leur progression ici.</Card>
+          <Card className="mt-4 p-8 text-center text-sm text-muted">Crée des chapitres depuis un exercice pour voir leur progression ici.</Card>
         )}
-      </section>
+      </Section>
 
-      <section className="grid gap-5 xl:grid-cols-2">
-        <Card className="p-6">
-          <p className="eyebrow">Répartition</p>
-          <CardTitle className="mt-2">Par statut</CardTitle>
-          <div className="mt-6 space-y-5">
+      <Section rank="secondary" eyebrow="Répartition" title="Par statut et constance">
+        <div className="mt-4 grid gap-x-10 gap-y-6 sm:grid-cols-2">
+          <div className="space-y-4">
             {model.status.map(({ status, count, percentage }) => (
               <div key={status}>
                 <div className="flex items-center justify-between text-sm">
                   <span className={`rounded-md px-2 py-0.5 text-xs font-medium capitalize ${statusMeta[status].className}`}>{status}</span>
-                  <span className="text-zinc-500">{count}</span>
+                  <span className="text-muted">{count}</span>
                 </div>
-                <ProgressBar value={percentage} animated={false} className="mt-2 h-2" />
+                <ProgressBar value={percentage} animated={false} className="mt-2 h-1.5" />
               </div>
             ))}
           </div>
-        </Card>
 
-        <Card className="p-6">
-          <p className="eyebrow">Constance</p>
-          <CardTitle className="mt-2">84 derniers jours</CardTitle>
-          <div className="mt-6">
+          <div className="sm:border-l sm:border-hairline/[0.07] sm:pl-10">
             <Heatmap workByDay={model.workByDay} />
-            <p className="mt-5 text-xs text-zinc-500">Chaque case représente une journée de travail enregistrée.</p>
+            <p className="mt-4 text-xs text-muted">Chaque case représente une journée de travail enregistrée, sur 84 jours.</p>
           </div>
-        </Card>
-      </section>
+        </div>
+      </Section>
 
-      <section>
-        <p className="eyebrow">Banque d&apos;exercices</p>
-        <h3 className="mb-4 mt-2 font-semibold tracking-tight">Ce qui mérite ton attention</h3>
-        <ExerciseBankStats exercises={exercises} sessions={sessions} />
-      </section>
+      <Section rank="secondary" eyebrow="Banque d'exercices" title="Ce qui mérite ton attention">
+        <div className="mt-4">
+          <ExerciseBankStats exercises={exercises} sessions={sessions} />
+        </div>
+      </Section>
     </div>
   );
 }

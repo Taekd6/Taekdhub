@@ -141,7 +141,7 @@ export function ExerciseForm({
               </option>
             ))}
           </Select>
-          <label className="flex items-center gap-2 text-xs text-zinc-500 sm:col-span-2">
+          <label className="flex items-center gap-2 text-xs text-muted sm:col-span-2">
             Chapitre
             <ChapterPicker
               subject={form.subject}

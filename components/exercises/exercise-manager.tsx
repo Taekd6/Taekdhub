@@ -41,7 +41,11 @@ export function ExerciseManager() {
   // utilisé, ou qu'on saute vers un exercice précis (ex. depuis "À revoir").
   const [browseMode, setBrowseMode] = useState(true);
   const [sort, setSort] = useState<ExerciseSort>(defaultExerciseSort);
-  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  // "list" par défaut (refonte design) : une rangée dense par exercice plutôt
+  // qu'une carte bordée pour chacun — sur une banque de centaines
+  // d'exercices, la vue cartes empile des cadres qui pèsent plus que le
+  // titre qu'ils portent. "Cartes" reste un choix, pas la valeur par défaut.
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -369,8 +373,8 @@ export function ExerciseManager() {
           <Button variant="ghost" size="sm" onClick={() => setShowArchived(false)}>
             <ArrowLeft size={15} /> Retour aux exercices
           </Button>
-          <p className="text-sm text-zinc-500">
-            <span className="font-semibold text-zinc-200">{archivedExercises.length}</span> exercice
+          <p className="text-sm text-muted">
+            <span className="font-semibold text-ink">{archivedExercises.length}</span> exercice
             {archivedExercises.length > 1 ? "s" : ""} archivé{archivedExercises.length > 1 ? "s" : ""}
           </p>
         </div>
@@ -439,8 +443,8 @@ export function ExerciseManager() {
           <SessionBuilderBar exercises={sorted} sessions={sessions} />
 
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-            <p className="text-sm text-zinc-500">
-              <span className="font-semibold text-zinc-200">{sorted.length}</span> exercice{sorted.length > 1 ? "s" : ""} affiché{sorted.length > 1 ? "s" : ""}
+            <p className="text-sm text-muted">
+              <span className="font-semibold text-ink">{sorted.length}</span> exercice{sorted.length > 1 ? "s" : ""} affiché{sorted.length > 1 ? "s" : ""}
             </p>
             <div className="flex items-center gap-2">
               <Select value={sort} onChange={(event) => setSort(event.target.value as ExerciseSort)} className="w-auto min-w-[150px] py-2 text-xs">
@@ -455,7 +459,7 @@ export function ExerciseManager() {
                   onClick={() => setViewMode("cards")}
                   aria-label="Vue cartes"
                   aria-pressed={viewMode === "cards"}
-                  className={cn("rounded-lg p-1.5 transition", viewMode === "cards" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
+                  className={cn("rounded-lg p-1.5 transition", viewMode === "cards" ? "bg-accent/15 text-accent" : "text-muted hover:text-ink")}
                 >
                   <LayoutGrid size={15} />
                 </button>
@@ -463,13 +467,13 @@ export function ExerciseManager() {
                   onClick={() => setViewMode("list")}
                   aria-label="Vue liste compacte"
                   aria-pressed={viewMode === "list"}
-                  className={cn("rounded-lg p-1.5 transition", viewMode === "list" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
+                  className={cn("rounded-lg p-1.5 transition", viewMode === "list" ? "bg-accent/15 text-accent" : "text-muted hover:text-ink")}
                 >
                   <List size={15} />
                 </button>
               </div>
             </div>
-            <span className="hidden items-center gap-2 text-xs text-zinc-500 sm:flex">⌘K recherche · N nouvel exercice · Esc fermer</span>
+            <span className="hidden items-center gap-2 text-xs text-muted sm:flex">⌘K recherche · N nouvel exercice · Esc fermer</span>
           </div>
 
           <div className={viewMode === "cards" ? "grid gap-3" : "grid gap-2"}>
@@ -513,7 +517,7 @@ export function ExerciseManager() {
               <Card className="px-6 py-16 text-center">
                 <BookOpenCheck className="mx-auto text-accent" />
                 <p className="mt-4 font-semibold">Aucun exercice ne correspond.</p>
-                <p className="mt-1 text-sm text-zinc-500">Ajuste les filtres ou ajoute une nouvelle fiche.</p>
+                <p className="mt-1 text-sm text-muted">Ajuste les filtres ou ajoute une nouvelle fiche.</p>
               </Card>
             )}
           </div>
