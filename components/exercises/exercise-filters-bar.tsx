@@ -4,6 +4,7 @@ import { Plus, Search, SlidersHorizontal, Star, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Field } from "@/components/ui/field";
 import { Sheet } from "@/components/ui/sheet";
 import { useState } from "react";
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
@@ -66,6 +67,7 @@ export function ExerciseFiltersBar({
             onChange={(event) => onChange({ query: event.target.value })}
             className="pl-10"
             placeholder="Rechercher un titre, une source, un tag, une année, un type…"
+            aria-label="Rechercher un exercice"
           />
         </div>
         {/* "Ajouter"/"Importer" en secondaire : sur une page dont tout l'objet
@@ -312,12 +314,3 @@ export function ExerciseFiltersBar({
   );
 }
 
-/** Étiquette + contrôle empilés — la forme lisible d'un réglage sur mobile. */
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="eyebrow">{label}</span>
-      <span className="mt-1.5 block">{children}</span>
-    </label>
-  );
-}

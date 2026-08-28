@@ -129,6 +129,7 @@ export function ExerciseImport({
         value={text}
         onChange={(event) => parse(event.target.value)}
         placeholder={'[\n  { "title": "…", "source": "…", "subject": "Mathématiques" }\n]'}
+        aria-label="Exercices au format JSON"
         rows={7}
         spellCheck={false}
         className="focus-ring w-full rounded-xl border border-hairline/[0.09] bg-inset p-3 font-mono text-xs leading-6 text-ink placeholder:text-subtle"

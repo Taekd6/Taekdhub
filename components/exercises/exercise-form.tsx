@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { ChapterPicker } from "@/components/exercises/chapter-picker";
 import { exerciseTypes, subjects } from "@/lib/study";
@@ -113,36 +114,49 @@ export function ExerciseForm({
           onSubmit={handleSubmit}
           className="surface grid gap-3 rounded-2xl p-5 sm:grid-cols-2"
         >
-          <Input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Intitulé de l'exercice" />
-          <Input required value={form.source} onChange={(event) => setForm({ ...form, source: event.target.value })} placeholder="Source (feuille, DM, livre…)" />
-          <Textarea
-            value={form.statement}
-            onChange={(event) => setForm({ ...form, statement: event.target.value })}
-            className="min-h-28 sm:col-span-2"
-            placeholder={"Énoncé complet — maths en LaTeX : $x^2$ inline, $$\\int_0^1 f$$ en bloc"}
-          />
-          <Select
-            value={form.subject}
-            onChange={(event) => setForm({ ...form, subject: event.target.value as Subject, chapterId: null })}
-          >
-            {subjects.map((value) => (
-              <option key={value}>{value}</option>
-            ))}
-          </Select>
-          <Select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as ExerciseType })}>
-            {exerciseTypes.map((value) => (
-              <option key={value}>{value}</option>
-            ))}
-          </Select>
-          <Select value={form.difficulty} onChange={(event) => setForm({ ...form, difficulty: Number(event.target.value) })}>
-            {[1, 2, 3, 4, 5].map((value) => (
-              <option value={value} key={value}>
-                Difficulté {value}/5
-              </option>
-            ))}
-          </Select>
-          <label className="flex items-center gap-2 text-xs text-muted sm:col-span-2">
-            Chapitre
+          {/* Chaque champ porte désormais une étiquette visible — un
+              placeholder disparaît dès la première frappe, et ne suffit pas
+              à un lecteur d'écran : sur un formulaire de cette longueur,
+              retrouver ce qu'on est en train de remplir ne doit pas exiger
+              d'effacer le champ pour relire l'indice. */}
+          <Field label="Intitulé">
+            <Input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Intitulé de l'exercice" />
+          </Field>
+          <Field label="Source">
+            <Input required value={form.source} onChange={(event) => setForm({ ...form, source: event.target.value })} placeholder="Source (feuille, DM, livre…)" />
+          </Field>
+          <Field label="Énoncé" className="sm:col-span-2">
+            <Textarea
+              value={form.statement}
+              onChange={(event) => setForm({ ...form, statement: event.target.value })}
+              className="min-h-28"
+              placeholder={"Énoncé complet — maths en LaTeX : $x^2$ inline, $$\\int_0^1 f$$ en bloc"}
+            />
+          </Field>
+          <Field label="Matière">
+            <Select value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value as Subject, chapterId: null })}>
+              {subjects.map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Type">
+            <Select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as ExerciseType })}>
+              {exerciseTypes.map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Difficulté">
+            <Select value={form.difficulty} onChange={(event) => setForm({ ...form, difficulty: Number(event.target.value) })}>
+              {[1, 2, 3, 4, 5].map((value) => (
+                <option value={value} key={value}>
+                  Difficulté {value}/5
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Chapitre" className="sm:col-span-2">
             <ChapterPicker
               subject={form.subject}
               chapters={chapters}
@@ -150,18 +164,32 @@ export function ExerciseForm({
               onChange={(chapterId) => setForm({ ...form, chapterId })}
               onCreateChapter={onCreateChapter}
             />
-          </label>
-          <Input
-            type="number"
-            min={0}
-            value={form.estimatedMinutes}
-            onChange={(event) => setForm({ ...form, estimatedMinutes: event.target.value })}
-            placeholder="Temps estimé (minutes)"
-          />
-          <Input value={form.tags} onChange={(event) => setForm({ ...form, tags: event.target.value })} className="sm:col-span-2" placeholder="Tags, séparés par des virgules" />
-          <Textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className="sm:col-span-2" placeholder="Note personnelle" />
-          <Textarea value={form.hints} onChange={(event) => setForm({ ...form, hints: event.target.value })} className="sm:col-span-2" placeholder="Indices progressifs — un indice par ligne" />
-          <Textarea value={form.correction} onChange={(event) => setForm({ ...form, correction: event.target.value })} className="sm:col-span-2" placeholder="Correction personnelle (restera masquée par défaut)" />
+          </Field>
+          <Field label="Temps estimé (minutes)">
+            <Input
+              type="number"
+              min={0}
+              value={form.estimatedMinutes}
+              onChange={(event) => setForm({ ...form, estimatedMinutes: event.target.value })}
+              placeholder="Ex. 30"
+            />
+          </Field>
+          <Field label="Tags" className="sm:col-span-2">
+            <Input value={form.tags} onChange={(event) => setForm({ ...form, tags: event.target.value })} placeholder="Séparés par des virgules" />
+          </Field>
+          <Field label="Note personnelle" className="sm:col-span-2">
+            <Textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} placeholder="Ce que tu veux retenir…" />
+          </Field>
+          <Field label="Indices progressifs" className="sm:col-span-2">
+            <Textarea value={form.hints} onChange={(event) => setForm({ ...form, hints: event.target.value })} placeholder="Un indice par ligne" />
+          </Field>
+          <Field label="Correction" className="sm:col-span-2">
+            <Textarea
+              value={form.correction}
+              onChange={(event) => setForm({ ...form, correction: event.target.value })}
+              placeholder="Restera masquée par défaut"
+            />
+          </Field>
           <div className="flex justify-end gap-2 sm:col-span-2">
             <Button type="button" variant="ghost" onClick={onCancel}>
               Annuler
