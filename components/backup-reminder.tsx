@@ -50,7 +50,7 @@ export function BackupReminder() {
           date de 9 jours » se lit comme une corvée administrative. Sans compte,
           une sauvegarde est la seule chose qui protège réellement l'année de
           travail de l'élève — il doit savoir pourquoi on l'embête. */}
-      <p className="text-zinc-300">
+      <p className="text-ink">
         {days === null
           ? "Ton travail n'existe que dans ce navigateur : une sauvegarde te permet de le retrouver ailleurs."
           : `Dernière sauvegarde il y a ${days} jours — ton travail n'existe que dans ce navigateur.`}

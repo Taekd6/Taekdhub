@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { PLAN_DURATION_PRESETS } from "@/lib/plan";
 import type { Preferences } from "@/lib/storage";
@@ -34,8 +33,9 @@ export function PreferencesForm() {
   }
 
   return (
-    <Card className="max-w-2xl p-6">
-      <form onSubmit={save} className="space-y-5">
+    <div>
+      <p className="eyebrow">Profil</p>
+      <form onSubmit={save} className="mt-4 space-y-5">
         <label className="block text-sm font-medium">
           Prénom
           <Input
@@ -114,6 +114,6 @@ export function PreferencesForm() {
           )}
         </Button>
       </form>
-    </Card>
+    </div>
   );
 }
