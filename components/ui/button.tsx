@@ -5,8 +5,11 @@ const buttonVariants = cva(
   // `transition-colors` et non `transition-all` : animer toutes les propriétés
   // fait bouger la taille au survol (padding, bordure) — un tremblement, pas
   // une réaction. `font-medium` plutôt que `semibold` : le gras appartient aux
-  // titres, pas à chaque contrôle.
-  "focus-ring inline-flex select-none items-center justify-center gap-2 rounded-lg font-medium transition-colors duration-150 disabled:pointer-events-none disabled:opacity-40",
+  // titres, pas à chaque contrôle. `active:scale-[0.97]` séparément (propriété
+  // `transform`, jamais couverte par `transition-colors`) : le retour tactile
+  // au clic — la seule micro-interaction qui dit "j'ai bien appuyé" avant même
+  // que l'action ne produise son effet.
+  "focus-ring inline-flex select-none items-center justify-center gap-2 rounded-lg font-medium transition-[color,background-color,border-color,transform] duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40 disabled:active:scale-100",
   {
     variants: {
       variant: {
