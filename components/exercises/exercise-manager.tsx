@@ -503,7 +503,7 @@ export function ExerciseManager() {
             <span className="hidden items-center gap-2 text-xs text-muted sm:flex">⌘K recherche · N nouvel exercice · Esc fermer</span>
           </div>
 
-          <div className={cn(masterDetail && "lg:grid lg:grid-cols-[1fr_400px] lg:items-start lg:gap-6")}>
+          <div className={cn(masterDetail && "lg:grid lg:grid-cols-[1fr_minmax(400px,460px)] lg:items-start lg:gap-6")}>
             <div className={viewMode === "cards" ? "grid gap-3" : "grid gap-2"}>
               {sorted.map((item, index) =>
                 viewMode === "cards" ? (
