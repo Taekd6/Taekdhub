@@ -11,6 +11,7 @@ const chaptersKey = "prepahub:chapters";
 const lastBackupKey = "prepahub:last-backup";
 const weekSnapshotsKey = "prepahub:week-snapshots";
 const goalsKey = "prepahub:goals";
+const contestProgressKey = "prepahub:contest-progress";
 
 /**
  * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
@@ -71,6 +72,115 @@ export interface Goal {
   priority: GoalPriority;
   status: GoalStatus;
   createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Concours reconnus pour le catalogue de sujets (lib/contests.ts) — mêmes
+ * libellés canoniques que `COMPETITION_ALIASES` (lib/exercise-import.ts,
+ * banque d'exercices), étendus à X et ENS. Ces deux derniers sont hors
+ * périmètre de la banque d'EXERCICES (`EXCLUDED_COMPETITIONS`, consigne
+ * produit) mais légitimes ici : un sujet de concours est une référence
+ * bibliographique (concours + année + épreuve + lien vers le portail
+ * officiel), jamais l'énoncé reproduit — voir `ContestPaper`. Rien n'oblige
+ * à peupler X/ENS immédiatement : `distinctContestCompetitions`
+ * (lib/contests.ts) ne propose au filtre que ce qui existe réellement dans
+ * le catalogue, jamais la liste complète du type.
+ */
+export type Competition = "CCINP" | "Mines-Ponts" | "Centrale" | "e3a" | "PT" | "X" | "ENS";
+
+/** Nature de l'épreuve — écrit (le cas de très loin le plus courant en MP) ou oral. */
+export type ContestPaperKind = "écrit" | "oral";
+
+/**
+ * Progression de l'élève sur un sujet — volontairement plus simple que
+ * `ExerciseStatus` (pas de "à revoir"/"maîtrisé" : un sujet de concours
+ * entier ne se "maîtrise" pas au sens gradué d'un exercice, voir la doc de
+ * `ContestPaper`). "fait" ne juge jamais la qualité du résultat, seulement
+ * que le sujet a été traité en entier.
+ */
+export type ContestPaperStatus = "à faire" | "en cours" | "fait";
+
+/**
+ * Un sujet de concours (chantier "Banque de sujets de concours") — un
+ * document d'épreuve ENTIER (Mathématiques 1 de Centrale 2024, par exemple),
+ * une granularité différente et complémentaire de `Exercise` (un problème
+ * isolé). Un sujet de concours n'est PAS transformé en `Exercise` : les deux
+ * cohabitent, jamais fusionnés (voir lib/contests.ts).
+ *
+ * RÉFÉRENCE BIBLIOGRAPHIQUE UNIQUEMENT — même politique que les entrées
+ * "Annale" de lib/exercise-import.ts : TaekdHub ne reproduit JAMAIS l'énoncé
+ * (droits d'auteur non levés), seulement des métadonnées publiques et un
+ * lien vers le PORTAIL OFFICIEL du concours (page d'archives, jamais un
+ * lien direct vers un PDF non vérifié — voir `resourceUrl`).
+ *
+ * Catalogue LIVRÉ avec l'app (`datasets/contest-papers.json`, importé par
+ * lib/contests.ts), jamais copié ni migré en `localStorage` : contrairement
+ * à `Exercise`/`Chapter`, ce catalogue n'est ni créé ni modifié par
+ * l'utilisateur, donc aucune logique de seed/reconciliation (lib/seed.ts)
+ * n'est nécessaire ici — un nouveau build livre simplement un catalogue à
+ * jour. Seule la PROGRESSION de l'élève (`ContestProgress`, ci-dessous) est
+ * réellement stockée, par `id` de sujet.
+ */
+export interface ContestPaper {
+  id: string;
+  competition: Competition;
+  year: number;
+  subject: Subject;
+  /** Nom de l'épreuve, ex. "Mathématiques 1", "Physique-Chimie" — distinct du thème. */
+  title: string;
+  /** Thème public identifié de l'épreuve (ex. "fonction de Wallis"), ou `null` si non identifiable sans lire l'énoncé complet — jamais déduit ni inventé. */
+  theme: string | null;
+  kind: ContestPaperKind;
+  /** Difficulté intrinsèque, ou `null` si non évaluée (nécessiterait de lire l'énoncé complet, non reproduit). */
+  difficulty: Difficulty | null;
+  /** Durée officielle de l'épreuve en minutes, ou `null` si non vérifiée. */
+  durationMinutes: number | null;
+  /**
+   * Chapitres évoqués, par LIBELLÉ (pas par id) : le catalogue de chapitres
+   * de l'utilisateur (lib/chapters.ts) n'a pas d'id stable connu à l'avance
+   * (créé au fil des exercices, propre à chaque installation) — voir
+   * `resolveContestChapters` (lib/contests.ts) qui fait la résolution
+   * libellé → chapitre réel au moment de l'affichage, avec repli silencieux
+   * si le chapitre n'existe pas (déjà supprimé/renommé). `[]` si le thème
+   * n'a pas été identifié ou ne correspond à aucun chapitre de la banque
+   * TaekdHub — jamais une couverture exhaustive inventée : l'épreuve entière
+   * couvre presque toujours largement plus de notions que ce thème public.
+   */
+  chapterLabels: string[];
+  tags: string[];
+  /** Libellé source complet, ex. "Centrale-Supélec Maths 1 MP-MPI 2024". */
+  source: string;
+  /** Portail officiel du concours (page d'archives), jamais un lien direct vers un PDF non vérifié. `null` si aucune source fiable identifiée — voir `contestResourceAvailable` (lib/contests.ts), qui pilote l'affichage honnête "ressource à ajouter". */
+  resourceUrl: string | null;
+  /** Lien vers un corrigé, si une source fiable existe. `null` sinon — jamais deviné. */
+  correctionUrl: string | null;
+  /** Statut de réutilisation — voir `LicenseStatus` (lib/supabase/types.ts), même sémantique que pour un exercice importé d'un concours. */
+  licenseStatus: LicenseStatus;
+  /** Précision destinée à l'élève (ex. pourquoi l'énoncé n'est pas reproduit, ce qui est identifié ou non) — `null` si non renseigné. */
+  note: string | null;
+}
+
+/**
+ * Progression de l'élève sur UN sujet — la SEULE chose que TaekdHub stocke
+ * réellement pour les sujets de concours (voir `ContestPaper`). Une entrée
+ * par sujet touché ; l'absence d'entrée pour un `paperId` donné vaut "à
+ * faire, jamais favori, jamais commencé" — jamais stockée explicitement,
+ * exactement comme un `Exercise` nouvellement créé n'a pas besoin d'un
+ * enregistrement séparé pour dire "non commencé" (voir `withContestProgress`,
+ * lib/contests.ts).
+ *
+ * Ne duplique JAMAIS `WorkSession`/`Exercise` : un sujet de concours garde sa
+ * propre notion de progression, plus simple, sans transformer le sujet en
+ * exercice ni créer un second système de séances chronométrées (consigne
+ * produit du chantier — voir lib/contests.ts).
+ */
+export interface ContestProgress {
+  paperId: string;
+  status: ContestPaperStatus;
+  favorite: boolean;
+  startedAt: string | null;
+  completedAt: string | null;
   updatedAt: string;
 }
 
@@ -334,6 +444,23 @@ function normalizeGoal(raw: unknown): Goal | null {
   };
 }
 
+const CONTEST_PAPER_STATUSES: readonly ContestPaperStatus[] = ["à faire", "en cours", "fait"];
+
+/** Ramène une progression de sujet potentiellement corrompue (édition manuelle du localStorage, ancienne sauvegarde) vers une forme valide, ou l'écarte — même principe que `normalizeGoal`. Une entrée sans `paperId` exploitable ne référence rien : écartée plutôt que conservée orpheline. */
+function normalizeContestProgress(raw: unknown): ContestProgress | null {
+  const item = isRecord(raw) ? raw : {};
+  if (typeof item.paperId !== "string" || !item.paperId.trim()) return null;
+  const updatedAt = isoDate(item.updatedAt) ?? new Date().toISOString();
+  return {
+    paperId: item.paperId,
+    status: (CONTEST_PAPER_STATUSES as string[]).includes(item.status as string) ? (item.status as ContestPaperStatus) : "à faire",
+    favorite: Boolean(item.favorite),
+    startedAt: isoDate(item.startedAt),
+    completedAt: isoDate(item.completedAt),
+    updatedAt,
+  };
+}
+
 function isNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
@@ -457,6 +584,9 @@ export const localData = {
   saveWeekSnapshots: (items: WeekSnapshot[]) => localStorage.setItem(weekSnapshotsKey, JSON.stringify(items)),
   goals: (): Goal[] => (typeof window === "undefined" ? [] : readList(goalsKey).map(normalizeGoal).filter((item): item is Goal => item !== null)),
   saveGoals: (items: Goal[]) => localStorage.setItem(goalsKey, JSON.stringify(items)),
+  contestProgress: (): ContestProgress[] =>
+    typeof window === "undefined" ? [] : readList(contestProgressKey).map(normalizeContestProgress).filter((item): item is ContestProgress => item !== null),
+  saveContestProgress: (items: ContestProgress[]) => localStorage.setItem(contestProgressKey, JSON.stringify(items)),
 };
 
 /**
@@ -498,6 +628,11 @@ export function exportBackup(): void {
       chapters: localData.chapters(),
       weekSnapshots: localData.weekSnapshots(),
       goals: localData.goals(),
+      // Progression des sujets de concours (chantier banque de sujets) —
+      // indispensable dans la sauvegarde : le catalogue lui-même est livré
+      // avec l'app (jamais stocké), donc SEULE cette progression serait
+      // perdue sans elle lors d'un changement d'appareil.
+      contestProgress: localData.contestProgress(),
     },
     null,
     2
@@ -528,6 +663,8 @@ export interface BackupPayload {
   weekSnapshots?: WeekSnapshot[];
   /** Optionnel : une sauvegarde exportée avant l'introduction des objectifs (Adaptive Planning Engine) n'a pas ce champ ; restauré à `[]` dans ce cas — même principe que `chapters`/`weekSnapshots`. */
   goals?: Goal[];
+  /** Optionnel : une sauvegarde exportée avant le chantier banque de sujets de concours n'a pas ce champ ; restauré à `[]` dans ce cas — même principe que `goals`. */
+  contestProgress?: ContestProgress[];
 }
 
 /**
@@ -581,5 +718,9 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   // Idem : absent d'une sauvegarde exportée avant l'introduction des
   // objectifs ; chaque entrée est revalidée par `normalizeGoal` à la lecture.
   if (data.goals !== undefined && !Array.isArray(data.goals)) return false;
+  // Idem : absent d'une sauvegarde exportée avant le chantier banque de
+  // sujets de concours ; chaque entrée est revalidée par
+  // `normalizeContestProgress` à la lecture.
+  if (data.contestProgress !== undefined && !Array.isArray(data.contestProgress)) return false;
   return true;
 }

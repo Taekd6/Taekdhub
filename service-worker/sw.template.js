@@ -14,7 +14,7 @@ const CACHE_VERSION = "__CACHE_VERSION__";
 // Les six écrans de l'app + l'accueil public — préchargés à l'installation
 // pour qu'un rechargement hors ligne fonctionne dès la première visite, sans
 // attendre d'avoir déjà ouvert chaque page une fois en ligne.
-const APP_SHELL_ROUTES = ["/", "/dashboard", "/session", "/timer", "/exercises", "/history", "/progress", "/settings"];
+const APP_SHELL_ROUTES = ["/", "/dashboard", "/session", "/timer", "/exercises", "/contests", "/history", "/progress", "/settings"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

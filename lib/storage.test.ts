@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { localData, normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
+import { localData, normalizePreferences, normalizeSession, validateBackupPayload, type ContestProgress } from "@/lib/storage";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -246,5 +246,89 @@ describe("localData — lecture blindée d'un stockage corrompu", () => {
     const preferences = withStorage({ "prepahub:preferences": "nope" }, () => localData.preferences());
     expect(preferences.dailyGoalMinutes).toBeGreaterThan(0);
     expect(preferences.themeMode).toBeTruthy();
+  });
+});
+
+/**
+ * Progression des sujets de concours (chantier banque de sujets) — même
+ * frontière de confiance que le reste de `localData` : un `localStorage`
+ * corrompu ne doit jamais faire planter /contests, et une progression
+ * valide doit survivre à un cycle export → JSON → import (Phase 6/8 du
+ * chantier : "persistance après reload").
+ */
+describe("localData.contestProgress — robustesse et persistance", () => {
+  const store: Record<string, string> = {};
+  const stub = {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = value; },
+  };
+
+  function withStorage<T>(entries: Record<string, string>, read: () => T): T {
+    Object.keys(store).forEach((key) => delete store[key]);
+    Object.assign(store, entries);
+    const globals = globalThis as unknown as { window?: unknown; localStorage?: unknown };
+    const previousWindow = globals.window;
+    const previousStorage = globals.localStorage;
+    globals.window = globals.window ?? {};
+    globals.localStorage = stub;
+    try {
+      return read();
+    } finally {
+      globals.window = previousWindow;
+      globals.localStorage = previousStorage;
+    }
+  }
+
+  it("du JSON illisible ne lève pas — la liste est simplement vide", () => {
+    expect(withStorage({ "prepahub:contest-progress": "{{{cassé" }, () => localData.contestProgress())).toEqual([]);
+  });
+
+  it("une entrée sans paperId exploitable est écartée plutôt que conservée orpheline", () => {
+    const raw = JSON.stringify([{ status: "fait" }, { paperId: "", status: "fait" }]);
+    expect(withStorage({ "prepahub:contest-progress": raw }, () => localData.contestProgress())).toEqual([]);
+  });
+
+  it("un statut invalide/corrompu retombe sur « à faire » plutôt que de propager une valeur inconnue", () => {
+    const raw = JSON.stringify([{ paperId: "p-1", status: "inventé" }]);
+    const [entry] = withStorage({ "prepahub:contest-progress": raw }, () => localData.contestProgress());
+    expect(entry.status).toBe("à faire");
+  });
+
+  it("une progression valide survit intacte à un cycle stringify/parse (export puis import)", () => {
+    const original: ContestProgress = {
+      paperId: "ccinp-2024-maths1",
+      status: "en cours",
+      favorite: true,
+      startedAt: "2026-02-01T10:00:00.000Z",
+      completedAt: null,
+      updatedAt: "2026-02-01T10:00:00.000Z",
+    };
+    const roundTripped = withStorage({ "prepahub:contest-progress": JSON.stringify([original]) }, () => localData.contestProgress());
+    expect(roundTripped).toEqual([original]);
+  });
+});
+
+describe("validateBackupPayload — contestProgress optionnel (rétrocompatibilité)", () => {
+  function makeValidPayload(extra: Record<string, unknown> = {}) {
+    return {
+      version: 1,
+      exportedAt: "2026-01-01T00:00:00.000Z",
+      exercises: [],
+      sessions: [],
+      preferences: {},
+      ...extra,
+    };
+  }
+
+  it("accepte une sauvegarde sans contestProgress (exportée avant ce chantier)", () => {
+    expect(validateBackupPayload(makeValidPayload())).toBe(true);
+  });
+
+  it("accepte une sauvegarde avec contestProgress", () => {
+    expect(validateBackupPayload(makeValidPayload({ contestProgress: [{ paperId: "p-1", status: "fait" }] }))).toBe(true);
+  });
+
+  it("rejette une sauvegarde où contestProgress n'est pas un tableau", () => {
+    expect(validateBackupPayload(makeValidPayload({ contestProgress: "pas-un-tableau" }))).toBe(false);
   });
 });

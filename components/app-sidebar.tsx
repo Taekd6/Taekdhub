@@ -7,6 +7,7 @@ import {
   BarChart3,
   BookOpenCheck,
   Clock3,
+  GraduationCap,
   History,
   LayoutDashboard,
   PlayCircle,
@@ -39,6 +40,7 @@ const groups = [
   {
     items: [
       { href: "/exercises", label: "Exercices", icon: BookOpenCheck },
+      { href: "/contests", label: "Concours", icon: GraduationCap },
       { href: "/history", label: "Historique", icon: History },
       { href: "/progress", label: "Progression", icon: BarChart3 },
       { href: "/goals", label: "Objectifs", icon: Target },
@@ -49,12 +51,13 @@ const settingsItem = { href: "/settings", label: "Réglages", icon: Settings };
 /**
  * La barre du bas (mobile) reste volontairement à SEPT entrées, pas huit :
  * à 44 px de cible tactile chacune (voir `NavLink`), une huitième icône
- * dépasserait la largeur confortable d'un écran de téléphone. "Objectifs"
- * reste donc desktop-only dans la navigation — atteignable sur mobile via le
- * Dashboard et la page Progression (mêmes liens que "Voir ma progression"),
- * pas absent, juste pas dans CETTE barre précise.
+ * dépasserait la largeur confortable d'un écran de téléphone. "Objectifs" et
+ * "Concours" restent donc desktop-only dans la navigation — "Objectifs"
+ * atteignable sur mobile via le Dashboard et la page Progression, "Concours"
+ * via un lien depuis la page Exercices (voir app/(app)/exercises/page.tsx) —
+ * ni l'un ni l'autre absent, juste pas dans CETTE barre précise.
  */
-const compactItems = [...groups.flatMap((group) => group.items.filter((item) => item.href !== "/goals")), settingsItem];
+const compactItems = [...groups.flatMap((group) => group.items.filter((item) => item.href !== "/goals" && item.href !== "/contests")), settingsItem];
 
 function NavLink({ href, label, icon: Icon, compact }: { href: string; label: string; icon: typeof LayoutDashboard; compact: boolean }) {
   const path = usePathname();

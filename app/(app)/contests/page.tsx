@@ -1,0 +1,1 @@
+import { ContestManager } from "@/components/contests/contest-manager"; import { PageHeader } from "@/components/page-header"; export default function ContestsPage(){return <><PageHeader eyebrow="Annales" title="Concours" description="Des sujets réels — CCINP, Mines-Ponts, Centrale, e3a — pour t'entraîner sur l'épreuve, pas juste sur l'exercice."/><ContestManager/></>}
