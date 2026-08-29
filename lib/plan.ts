@@ -1,4 +1,5 @@
 import { diversifyByChapter, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import { computeSubjectCoverage, coverageSlotsFor, findNeglectedSubjects, COVERAGE_REASON_PREFIX, type SubjectCoverage } from "@/lib/coverage";
 import { computeChaptersToConsolidate } from "@/lib/next-action";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -71,6 +72,20 @@ export interface DailyPlan {
   /** Somme de `estimatedMinutes` sur les blocs retenus — peut être < `requestedMinutes`. */
   totalMinutes: number;
   totalExercises: number;
+  /**
+   * État de contact de chaque matière au moment du calcul (lib/coverage.ts) —
+   * calculé ICI, à partir des mêmes candidats que le plan, pour qu'il n'existe
+   * jamais deux réponses différentes à « où en est ma couverture ? ». Les
+   * écrans le lisent, ils ne le recalculent pas.
+   */
+  coverage: SubjectCoverage[];
+  /**
+   * Les matières que ce plan ne touchera PAS aujourd'hui alors qu'elles
+   * attendent depuis plus de `SUBJECT_DEBT_DAYS`. C'est la promesse la plus
+   * inhabituelle du produit : dire ce qu'il ne fait pas. Vide quand tout ce
+   * qui est en retard a effectivement reçu une place.
+   */
+  deferred: SubjectCoverage[];
 }
 
 /**
@@ -175,13 +190,17 @@ function describeFocus(picks: ExerciseRecommendation[], chapterById: Map<string,
 export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[], chapters: Chapter[], totalMinutes: number, now: Date = new Date()): DailyPlan {
   const active = exercises.filter((exercise) => !exercise.archived);
   const chapterById = new Map(chapters.map((chapter) => [chapter.id, chapter]));
-  const empty: DailyPlan = { blocks: [], requestedMinutes: totalMinutes, totalMinutes: 0, totalExercises: 0 };
+  const empty: DailyPlan = { blocks: [], requestedMinutes: totalMinutes, totalMinutes: 0, totalExercises: 0, coverage: [], deferred: [] };
   if (totalMinutes <= 0 || active.length === 0) return empty;
 
   // UN SEUL appel au moteur, sur toute la banque : même ordre, même
   // diversification, même arbitrage de difficulté que partout ailleurs.
   const all = recommendExercises(active, sessions, active.length, { now });
   if (all.length === 0) return empty;
+
+  // La couverture est dérivée de CES candidats-là : « reste à faire » n'a
+  // qu'une seule définition dans tout le produit, celle du moteur.
+  const coverage = computeSubjectCoverage(all, exercises, sessions, now);
 
   // Rang du chapitre dans les priorités de l'élève — exactement celles
   // affichées par le Dashboard et /progress.
@@ -246,8 +265,61 @@ export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[],
   const shares = intentSharesFor(totalMinutes);
   const taken = new Set<string>();
   if (reserveUrgent) taken.add(mostUrgent!.exercise.id);
+
+  // ══ SECONDE RÉSERVATION : LA ZONE DÉLAISSÉE ═══════════════════════════
+  //
+  // Le symétrique exact de la réservation ci-dessus, et pour la même raison
+  // mécanique. `urgencyScore` additionne onze termes dont AUCUN ne compte les
+  // jours de silence d'une matière : un exercice de chimie oublié depuis
+  // vingt jours mais correctement maîtrisé sort loin derrière un exercice de
+  // maths échoué deux fois — tous les jours, systématiquement. Ce n'est pas
+  // de la variance, c'est un biais : sans réservation, la chimie ne revient
+  // jamais d'elle-même.
+  //
+  // UNE PLACE, JAMAIS UNE ENVELOPPE. C'est la leçon des deux régressions déjà
+  // corrigées plus haut : réserver « 15 minutes de chimie » est une promesse
+  // invérifiable (aucun exercice ne dure 15 min garanties), réserver « CET
+  // exercice de chimie » est un fait testable. La couverture choisit une
+  // MATIÈRE ; c'est `recommendExercises` — toujours l'unique décideur — qui
+  // fournit quel exercice, en tête de sa propre liste déjà classée.
+  //
+  // Prise sur ce qui reste APRÈS l'urgence, jamais avant : un point faible
+  // avéré passe toujours devant une matière simplement silencieuse.
+  const coverageSlots = coverageSlotsFor(totalMinutes);
+  const coveragePicks: ExerciseRecommendation[] = [];
+  const coveredSubjects = new Set<string>();
+  let coverageMinutes = 0;
+  let coverageBudget = totalMinutes - (reserveUrgent ? mostUrgentMinutes : 0);
+  for (const neglected of findNeglectedSubjects(coverage)) {
+    if (coveragePicks.length >= coverageSlots) break;
+    const candidate = all.find((item) => item.exercise.subject === neglected.subject && !taken.has(item.exercise.id));
+    if (!candidate) continue;
+    const duration = estimatedDurationMinutes(candidate.exercise, sessions);
+    // Aucune place forcée : si le meilleur candidat de la matière ne tient
+    // pas, on passe. Geler du budget pour une promesse intenable serait pire
+    // que de ne rien promettre.
+    if (duration > coverageBudget) continue;
+    coveragePicks.push({
+      ...candidate,
+      reasons: [...candidate.reasons, `${COVERAGE_REASON_PREFIX}${neglected.subject} (${neglected.daysSinceContact} j)`],
+    });
+    taken.add(candidate.exercise.id);
+    coveredSubjects.add(neglected.subject);
+    coverageBudget -= duration;
+    coverageMinutes += duration;
+  }
+
   const blocks: PlanBlock[] = [];
-  let spent = reserveUrgent ? mostUrgentMinutes : 0;
+  const reservedMinutes = (reserveUrgent ? mostUrgentMinutes : 0) + coverageMinutes;
+  let spent = reservedMinutes;
+  // Les parts d'intention s'appliquent à ce qui RESTE après les réservations.
+  // Auparavant seule la part « consolider » était amputée de l'exercice
+  // urgent : quand cet exercice dépassait sa part (35 min pour une part de
+  // 32), la part était écrêtée à zéro mais les autres intentions gardaient
+  // la leur entière — et le plan pouvait rendre 49 minutes sur un budget de
+  // 45. Amputer le budget commun, une fois, ferme ce dépassement pour les
+  // deux réservations à la fois.
+  const shareBudget = Math.max(0, totalMinutes - reservedMinutes);
 
   // Premier passage : chaque intention dans la limite de sa part — la part
   // de "consolider" est réduite de la réservation ci-dessus (jamais en
@@ -255,8 +327,7 @@ export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[],
   for (const intent of INTENT_ORDER) {
     const share = shares[intent];
     if (!share) continue;
-    const rawBudget = Math.round(totalMinutes * share);
-    const budget = intent === "consolider" && reserveUrgent ? Math.max(0, rawBudget - mostUrgentMinutes) : rawBudget;
+    const budget = Math.round(shareBudget * share);
     const { picks, used } = fillBudget(byIntent.get(intent)!, sessions, budget, taken);
     const blockPicks = intent === "consolider" && reserveUrgent ? [mostUrgent!, ...picks] : picks;
     if (blockPicks.length === 0) continue;
@@ -322,6 +393,33 @@ export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[],
     leftover -= addTo(intent, leftover);
   }
 
+  // Chaque réservation de couverture rejoint, EN TÊTE, le bloc de SON
+  // intention — jamais un quatrième bloc « couverture ». La structure
+  // annoncée à l'élève reste réparer / entretenir / pousser : la couverture
+  // est une RAISON de choisir un exercice, pas une quatrième façon de
+  // travailler. C'est aussi ce qui garantit que `planIntent` continue de
+  // décider seul du classement (le préfixe « Zone délaissée : » est
+  // volontairement distinct de « Non retravaillé depuis », que `planIntent`
+  // interprète, lui, comme de la révision).
+  for (const pick of coveragePicks) {
+    const intent = planIntent(pick.reasons);
+    const minutes = estimatedDurationMinutes(pick.exercise, sessions);
+    const existing = blocks.find((block) => block.intent === intent);
+    if (existing) {
+      existing.picks.unshift(pick);
+      existing.estimatedMinutes += minutes;
+      existing.focus = describeFocus(existing.picks, chapterById);
+    } else {
+      blocks.push({
+        intent,
+        label: PLAN_INTENT_META[intent].label,
+        focus: describeFocus([pick], chapterById),
+        estimatedMinutes: minutes,
+        picks: [pick],
+      });
+    }
+  }
+
   // Les blocs ajoutés au (a) l'ont été après coup : on rétablit l'ordre de
   // service (réparer, puis entretenir, puis pousser).
   blocks.sort((a, b) => INTENT_ORDER.indexOf(a.intent) - INTENT_ORDER.indexOf(b.intent));
@@ -331,6 +429,11 @@ export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[],
     requestedMinutes: totalMinutes,
     totalMinutes: blocks.reduce((sum, block) => sum + block.estimatedMinutes, 0),
     totalExercises: blocks.reduce((sum, block) => sum + block.picks.length, 0),
+    coverage,
+    // Ce que le plan laisse volontairement de côté : les matières en retard
+    // qui n'ont PAS obtenu de place (budget trop court, ou plus de places de
+    // couverture disponibles). Le produit le dit plutôt que de le taire.
+    deferred: findNeglectedSubjects(coverage).filter((entry) => !coveredSubjects.has(entry.subject)),
   };
 }
 

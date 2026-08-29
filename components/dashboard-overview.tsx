@@ -7,6 +7,7 @@ import { ArrowRight, BookOpenCheck, CalendarClock, CheckCircle2, ChevronRight, F
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { NotionInsight } from "@/components/notions/notion-insight";
+import { CoveragePanel } from "@/components/coverage/coverage-panel";
 import { Button } from "@/components/ui/button";
 import { rowInteractiveClass, Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
@@ -99,6 +100,16 @@ export function DashboardOverview() {
     [goals, exercises, sessions, chapters, planMinutes, preferences.dailyGoalMinutes]
   );
   const hasGoalPlan = goalPlans.length > 0;
+
+  // Les matières que la séance du jour va RÉELLEMENT toucher — lues dans le
+  // plan qui sera effectivement lancé (celui des objectifs quand il en pilote
+  // un, sinon celui de la banque entière), jamais déduites d'une règle
+  // parallèle. C'est ce qui permet au panneau de couverture d'affirmer « ce
+  // plan laisse X de côté » sans jamais se tromper.
+  const touchedSubjects = useMemo(() => {
+    const blocks = hasGoalPlan ? goalPlans.flatMap(({ plan }) => plan.blocks) : dailyPlan.blocks;
+    return [...new Set(blocks.flatMap((block) => block.picks.map(({ exercise }) => exercise.subject)))];
+  }, [hasGoalPlan, goalPlans, dailyPlan]);
 
   // Dépose le plan dans sessionStorage puis navigue vers /session, qui le lit
   // au montage et construit la séance avec exactement ces exercices, dans cet
@@ -315,6 +326,16 @@ export function DashboardOverview() {
               );
             })}
           </ol>
+        )}
+
+        {/* ══ CE QUE CE PLAN NE FAIT PAS ══════════════════════════════════
+            Placé juste après le plan, délibérément : la promesse et sa limite
+            se lisent ensemble. Les matières réellement touchées sont déduites
+            du plan qui sera lancé (objectifs compris), jamais supposées. */}
+        {dailyPlan.coverage.length > 0 && (
+          <Section rank="secondary" eyebrow="Couverture" title="Ce que tu risques de délaisser" className="mt-12">
+            <CoveragePanel coverage={dailyPlan.coverage} touchedSubjects={touchedSubjects} />
+          </Section>
         )}
 
         {/* ══ LE GRAIN EN DESSOUS DU CHAPITRE ═════════════════════════════
