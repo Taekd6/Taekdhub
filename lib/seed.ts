@@ -36,7 +36,7 @@ export const SEED_FLAG_KEY = "prepahub:seeded";
  * À INCRÉMENTER à chaque évolution significative de
  * `datasets/exercices-banque-complete.json`.
  */
-export const SEED_CONTENT_VERSION = 4;
+export const SEED_CONTENT_VERSION = 5;
 export const SEED_VERSION_KEY = "prepahub:seeded:version";
 
 /**

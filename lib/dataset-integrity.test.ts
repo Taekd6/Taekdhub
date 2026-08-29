@@ -91,6 +91,28 @@ describe("datasets/exercices-banque-complete.json — intégrité de la banque l
       .map(([key, variants]) => `${key} → ${[...variants].map((v) => `"${v}"`).join(" / ")}`);
     expect(collisions).toEqual([]);
   });
+
+  it("ne contient pas deux graphies d'une même notion dans une même matière", () => {
+    // Même défaut que pour les tags ci-dessus, sur `prerequisites` — devenu
+    // visible le jour où la Radiographie (lib/notions.ts) a commencé à lire ce
+    // champ : deux graphies produisent deux tuiles distinctes sur la carte
+    // pour une seule et même notion, et scindent les preuves de l'élève en
+    // deux. Cas réel corrigé : « pKa » et « pKA » coexistaient sur trois
+    // exercices du même chapitre.
+    const byNormalized = new Map<string, Set<string>>();
+    for (const entry of entries) {
+      if (entry.archived === true || !Array.isArray(entry.prerequisites)) continue;
+      for (const notion of entry.prerequisites as string[]) {
+        const key = `${String(entry.subject)}::${notion.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")}`;
+        if (!byNormalized.has(key)) byNormalized.set(key, new Set());
+        byNormalized.get(key)!.add(notion);
+      }
+    }
+    const collisions = [...byNormalized]
+      .filter(([, variants]) => variants.size > 1)
+      .map(([key, variants]) => `${key} → ${[...variants].map((v) => `"${v}"`).join(" / ")}`);
+    expect(collisions).toEqual([]);
+  });
 });
 
 describe("amorçage réel (loadSeedBank) — ce que le moteur reçoit vraiment", () => {

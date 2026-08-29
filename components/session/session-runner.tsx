@@ -73,7 +73,9 @@ export function SessionRunner() {
   /** Sélection déposée par le Dashboard ("Commencer le plan") ou par la banque d'exercices ("Séance libre", voir lib/plan.ts) — remplace `computedSelection` tel quel quand elle est présente, jamais recalculée ici. `null` : comportement normal, inchangé. */
   const [planSelection, setPlanSelection] = useState<ExerciseRecommendation[] | null>(null);
   /** D'où vient `planSelection` — distingue uniquement le texte affiché à l'écran d'aperçu (voir StoredPlan.source, lib/plan.ts) ; la mécanique de séance est identique dans les deux cas. */
-  const [planSource, setPlanSource] = useState<"plan-du-jour" | "libre">("plan-du-jour");
+  const [planSource, setPlanSource] = useState<"plan-du-jour" | "libre" | "notion">("plan-du-jour");
+  /** Notion visée quand `planSource === "notion"` — nommée telle quelle dans l'aperçu, jamais reformulée. */
+  const [planLabel, setPlanLabel] = useState<string | null>(null);
   const initialized = useRef(false);
   /** XP au tout premier rendu prêt de cette séance — jamais recalculé ensuite,
       pour que l'écran de fin puisse montrer "+N XP" (et un passage de niveau)
@@ -139,6 +141,7 @@ export function SessionRunner() {
         if (picks.length > 0) {
           setPlanSelection(picks);
           setPlanSource(stored.source ?? "plan-du-jour");
+          setPlanLabel(stored.label ?? null);
           setBudgetMinutes(stored.requestedMinutes);
           setPhase("preview");
           return;
@@ -321,7 +324,17 @@ export function SessionRunner() {
       <div className="lg:grid lg:grid-cols-[1fr_360px] lg:items-start lg:gap-12">
         <div className="min-w-0">
           {planSelection ? (
-            planSource === "libre" ? (
+            planSource === "notion" ? (
+              <>
+                <p className="eyebrow">Séance ciblée</p>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
+                  On reconstruit {planLabel ? <span className="text-accent">{planLabel}</span> : "cette notion"}.
+                </h2>
+                <p className="mt-3 max-w-xl text-[0.9375rem] leading-7 text-muted">
+                  Les exercices qui demandent cette notion, du plus abordable au plus exigeant.
+                </p>
+              </>
+            ) : planSource === "libre" ? (
               <>
                 <p className="eyebrow">Ta séance libre</p>
                 <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-[1.75rem]">

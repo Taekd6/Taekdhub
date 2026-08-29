@@ -358,17 +358,27 @@ export interface StoredPlan {
   items: StoredPlanItem[];
   requestedMinutes: number;
   /**
-   * D'où vient cette sélection déposée dans `PLAN_STORAGE_KEY` — deux origines
-   * partagent aujourd'hui ce même mécanisme de transfert : le "Plan du jour"
-   * du Dashboard (`computeDailyPlan`/`serializePlan`) et la "Séance libre"
-   * depuis les filtres de la banque (`buildFreeSessionPlan`). SessionRunner
-   * en a besoin uniquement pour adapter le texte de l'écran d'aperçu (titre,
+   * D'où vient cette sélection déposée dans `PLAN_STORAGE_KEY` — trois
+   * origines partagent aujourd'hui ce même mécanisme de transfert : le "Plan
+   * du jour" du Dashboard (`computeDailyPlan`/`serializePlan`), la "Séance
+   * libre" depuis les filtres de la banque (`buildFreeSessionPlan`) et la
+   * séance ciblée sur une notion depuis la Radiographie
+   * (`buildNotionSessionPlan`, lib/notions.ts). SessionRunner en a besoin
+   * uniquement pour adapter le texte de l'écran d'aperçu (titre,
    * description) — la mécanique de lecture/lancement de la séance est
-   * strictement identique dans les deux cas. Optionnel et par défaut
+   * strictement identique dans les trois cas. Optionnel et par défaut
    * `"plan-du-jour"` pour rester compatible avec d'éventuelles entrées
    * sessionStorage écrites avant l'introduction de ce champ.
    */
-  source?: "plan-du-jour" | "libre";
+  source?: "plan-du-jour" | "libre" | "notion";
+  /**
+   * Ce sur quoi la sélection est centrée, quand elle l'est réellement — le
+   * nom de la notion pour `source: "notion"`. Sert uniquement à l'écran
+   * d'aperçu, pour nommer la cible plutôt que d'afficher un titre générique.
+   * `undefined` partout ailleurs : ni le Plan du jour ni la Séance libre ne
+   * portent sur une cible unique nommable.
+   */
+  label?: string;
 }
 
 /**

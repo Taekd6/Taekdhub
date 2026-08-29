@@ -5133,7 +5133,7 @@
       "diagramme de prédominance"
     ],
     "prerequisites": [
-      "pKa",
+      "pKA",
       "relation de Henderson-Hasselbalch"
     ],
     "pedagogicalGoal": "classique : construire et lire un diagramme de prédominance pour identifier immédiatement l'espèce majoritaire (acide ou base conjuguée) à un pH donné.",

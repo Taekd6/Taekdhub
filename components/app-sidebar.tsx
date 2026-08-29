@@ -11,6 +11,7 @@ import {
   History,
   LayoutDashboard,
   PlayCircle,
+  ScanLine,
   Settings,
   Target,
 } from "lucide-react";
@@ -40,6 +41,7 @@ const groups = [
   {
     items: [
       { href: "/exercises", label: "Exercices", icon: BookOpenCheck },
+      { href: "/notions", label: "Radiographie", icon: ScanLine },
       { href: "/contests", label: "Concours", icon: GraduationCap },
       { href: "/history", label: "Historique", icon: History },
       { href: "/progress", label: "Progression", icon: BarChart3 },
@@ -51,13 +53,21 @@ const settingsItem = { href: "/settings", label: "Réglages", icon: Settings };
 /**
  * La barre du bas (mobile) reste volontairement à SEPT entrées, pas huit :
  * à 44 px de cible tactile chacune (voir `NavLink`), une huitième icône
- * dépasserait la largeur confortable d'un écran de téléphone. "Objectifs" et
- * "Concours" restent donc desktop-only dans la navigation — "Objectifs"
- * atteignable sur mobile via le Dashboard et la page Progression, "Concours"
- * via un lien depuis la page Exercices (voir app/(app)/exercises/page.tsx) —
- * ni l'un ni l'autre absent, juste pas dans CETTE barre précise.
+ * dépasserait la largeur confortable d'un écran de téléphone. "Objectifs",
+ * "Concours" et "Radiographie" restent donc desktop-only dans la navigation —
+ * "Objectifs" atteignable sur mobile via le Dashboard et la page Progression,
+ * "Concours" via un lien depuis la page Exercices (voir
+ * app/(app)/exercises/page.tsx), "Radiographie" via le bloc qui lui est
+ * consacré sur le Dashboard (components/notions/notion-insight.tsx, rendu à
+ * chaque visite dès que la banque déclare des notions) — aucun des trois
+ * absent, juste pas dans CETTE barre précise.
+ *
+ * Cette règle prime sur l'envie d'y pousser la nouveauté : ajouter une
+ * huitième cible tactile dégraderait les sept autres, tous les jours, pour un
+ * écran qui a déjà son point d'entrée le plus visible ailleurs.
  */
-const compactItems = [...groups.flatMap((group) => group.items.filter((item) => item.href !== "/goals" && item.href !== "/contests")), settingsItem];
+const MOBILE_NAV_EXCLUDED = ["/goals", "/contests", "/notions"];
+const compactItems = [...groups.flatMap((group) => group.items.filter((item) => !MOBILE_NAV_EXCLUDED.includes(item.href))), settingsItem];
 
 function NavLink({ href, label, icon: Icon, compact }: { href: string; label: string; icon: typeof LayoutDashboard; compact: boolean }) {
   const path = usePathname();

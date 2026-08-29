@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, BookOpenCheck, CalendarClock, CheckCircle2, ChevronRight, Flame, ListChecks, Trophy } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
+import { NotionInsight } from "@/components/notions/notion-insight";
 import { Button } from "@/components/ui/button";
 import { rowInteractiveClass, Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
@@ -316,9 +317,17 @@ export function DashboardOverview() {
           </ol>
         )}
 
+        {/* ══ LE GRAIN EN DESSOUS DU CHAPITRE ═════════════════════════════
+            Placé JUSTE AVANT la liste de chapitres, délibérément : quand
+            plusieurs échecs récents partagent une notion, cette liste reste
+            vraie mais cesse d'être la dernière réponse — le problème n'est
+            pas réparti sur trois chapitres, il est concentré sur une notion.
+            Voir components/notions/notion-insight.tsx et lib/notions.ts. */}
+        <NotionInsight exercises={exercises} sessions={sessions} chapters={chapters} className="mt-12" />
+
         {/* ══ CE QUI MÉRITE MON ATTENTION ═════════════════════════════════ */}
         {toConsolidate.length > 0 && (
-          <Section rank="secondary" eyebrow="À consolider" title="Ces chapitres méritent ton attention" className="mt-12">
+          <Section rank="secondary" eyebrow="À consolider" title="Ces chapitres méritent ton attention" className="mt-10">
             <ul className="-mx-1 mt-4 divide-y divide-hairline/[0.07]">
               {toConsolidate.map(({ chapter, averageMastery, reasons, href }) => (
                 <li key={chapter.id}>
