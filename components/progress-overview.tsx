@@ -350,6 +350,13 @@ export function ProgressOverview() {
           queue de page qu'on consulte quand on veut creuser. */}
       <TopWeaknesses exercises={exercises} sessions={sessions} chapters={chapters} />
 
+      {/* "Objectifs" n'a pas d'entrée dans la barre du bas mobile (voir
+          components/app-sidebar.tsx) — ce lien est, avec celui du Dashboard,
+          le point d'accès mobile à la page. */}
+      <Link href="/goals" className="focus-ring t-meta -mt-4 inline-flex min-h-11 items-center gap-1 px-1 underline-offset-4 hover:text-ink hover:underline lg:min-h-0">
+        Voir mes objectifs <ArrowRight size={12} />
+      </Link>
+
       {/* L'HISTOIRE, PAS LE TABLEAU. Le pourcentage global devient un anneau
           (même composant que l'objectif du jour du Dashboard — un seul
           vocabulaire visuel pour "où j'en suis" dans toute l'app), la phrase

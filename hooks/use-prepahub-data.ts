@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { localData, type Chapter, type Preferences, type WeekSnapshot } from "@/lib/storage";
+import { localData, type Chapter, type Goal, type Preferences, type WeekSnapshot } from "@/lib/storage";
 import { loadSeedBank, reconcileSeedBank, SEED_CONTENT_VERSION, SEED_FLAG_KEY, SEED_VERSION_KEY } from "@/lib/seed";
 import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -63,6 +63,7 @@ type DataState = {
   exercises: Exercise[];
   chapters: Chapter[];
   weekSnapshots: WeekSnapshot[];
+  goals: Goal[];
   lastBackupAt: string | null;
   preferences: Preferences;
   ready: boolean;
@@ -93,6 +94,7 @@ function readAll(): Omit<DataState, "ready"> {
     exercises,
     chapters: localData.chapters(),
     weekSnapshots,
+    goals: localData.goals(),
     lastBackupAt: localData.lastBackupAt(),
     preferences: localData.preferences(),
   };
@@ -123,6 +125,7 @@ export function usePrepahubData() {
     exercises: [],
     chapters: [],
     weekSnapshots: [],
+    goals: [],
     lastBackupAt: null,
     preferences: localData.preferences(),
     ready: false,
@@ -168,6 +171,11 @@ export function usePrepahubData() {
     notifyAllInstances();
   }, []);
 
+  const saveGoals = useCallback((goals: Goal[]) => {
+    localData.saveGoals(goals);
+    notifyAllInstances();
+  }, []);
+
   const savePreferences = useCallback((preferences: Preferences) => {
     localData.savePreferences(preferences);
     notifyAllInstances();
@@ -181,14 +189,18 @@ export function usePrepahubData() {
    * seule action utilisateur ne feraient que multiplier les re-rendus sans
    * rien changer au résultat final.
    */
-  const restoreBackup = useCallback((payload: { exercises: Exercise[]; sessions: WorkSession[]; preferences: Preferences; chapters?: Chapter[]; weekSnapshots?: WeekSnapshot[] }) => {
-    localData.saveExercises(payload.exercises);
-    localData.saveSessions(payload.sessions);
-    localData.savePreferences(payload.preferences);
-    localData.saveChapters(payload.chapters ?? []);
-    localData.saveWeekSnapshots(payload.weekSnapshots ?? []);
-    notifyAllInstances();
-  }, []);
+  const restoreBackup = useCallback(
+    (payload: { exercises: Exercise[]; sessions: WorkSession[]; preferences: Preferences; chapters?: Chapter[]; weekSnapshots?: WeekSnapshot[]; goals?: Goal[] }) => {
+      localData.saveExercises(payload.exercises);
+      localData.saveSessions(payload.sessions);
+      localData.savePreferences(payload.preferences);
+      localData.saveChapters(payload.chapters ?? []);
+      localData.saveWeekSnapshots(payload.weekSnapshots ?? []);
+      localData.saveGoals(payload.goals ?? []);
+      notifyAllInstances();
+    },
+    []
+  );
 
-  return { ...data, refresh, saveSessions, saveExercises, saveChapters, savePreferences, restoreBackup };
+  return { ...data, refresh, saveSessions, saveExercises, saveChapters, saveGoals, savePreferences, restoreBackup };
 }

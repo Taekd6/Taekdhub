@@ -22,6 +22,7 @@ import {
   computeUpcoming,
 } from "@/lib/next-action";
 import { explainReasons, isPureDiscovery } from "@/lib/recommendation";
+import { computeGoalsDailyPlan, describeGoalScope, explainGoalPlan, serializeGoalsDailyPlan } from "@/lib/goals";
 import {
   computeDailyPlan,
   DEFAULT_PLAN_MINUTES,
@@ -59,7 +60,7 @@ const UPCOMING_META: Record<UpcomingItem["key"], { label: string; icon: typeof B
  * métier n'est introduite ici, uniquement la composition et la navigation.
  */
 export function DashboardOverview() {
-  const { sessions, exercises, chapters, preferences, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, goals, preferences, ready } = usePrepahubData();
   const router = useRouter();
   /** Durée choisie pour "Plan du jour" — état purement local à cette page, jamais persisté (voir Phase 3 du sprint : pas de système de calendrier). */
   const [planMinutes, setPlanMinutes] = useState<number>(DEFAULT_PLAN_MINUTES);
@@ -86,14 +87,27 @@ export function DashboardOverview() {
     [exercises, sessions, chapters, planMinutes]
   );
 
+  // Adaptive Planning Engine (lib/goals.ts) : quand au moins un objectif
+  // actif a encore du travail à proposer, IL devient la source du plan du
+  // jour — pas `dailyPlan` (banque entière). Repose entièrement sur
+  // `computeDailyPlan` en coulisses (voir `computeGoalsDailyPlan`), donc
+  // aucune régression pour un élève sans objectif : `goalPlans` vaut alors
+  // `[]` et tout le reste de ce composant se comporte exactement comme avant.
+  const goalPlans = useMemo(
+    () => computeGoalsDailyPlan(goals, exercises, sessions, chapters, planMinutes, preferences.dailyGoalMinutes, new Date()),
+    [goals, exercises, sessions, chapters, planMinutes, preferences.dailyGoalMinutes]
+  );
+  const hasGoalPlan = goalPlans.length > 0;
+
   // Dépose le plan dans sessionStorage puis navigue vers /session, qui le lit
   // au montage et construit la séance avec exactement ces exercices, dans cet
   // ordre — voir components/session/session-runner.tsx et lib/plan.ts. Aucune
   // sélection n'est recalculée côté /session.
   const startPlan = useCallback(() => {
-    sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(serializePlan(dailyPlan)));
+    const stored = hasGoalPlan ? serializeGoalsDailyPlan(goalPlans) : serializePlan(dailyPlan);
+    sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(stored));
     router.push("/session");
-  }, [dailyPlan, router]);
+  }, [hasGoalPlan, goalPlans, dailyPlan, router]);
 
   // Objectif du jour franchi À L'INSTANT (pas déjà atteint au chargement) :
   // seul ce cas précis mérite le petit rebond — sinon rouvrir le Dashboard
@@ -123,15 +137,31 @@ export function DashboardOverview() {
   }
 
   const { nextAction, objective, upcoming, toConsolidate, weeklySummary, streak, contestDays } = model;
-  // La raison du moteur, reprise du premier exercice réellement planifié :
-  // c'est la part utile de l'ancien bloc « À faire maintenant », conservée au
-  // sommet de la page plutôt que dupliquée dans une carte à elle seule.
-  const planReason = explainReasons(dailyPlan.blocks[0]?.picks[0]?.reasons ?? []);
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
   const secondaryPicks = nextAction.picks.slice(1);
   const otherSignals = upcoming.filter((item) => item.key !== "chapter");
-  const hasPlan = dailyPlan.blocks.length > 0;
-  const heroLabel = hasPlan ? blockDisplayMeta(dailyPlan.blocks[0]).label : nextAction.title;
+  const hasPlan = hasGoalPlan || dailyPlan.blocks.length > 0;
+
+  // Un seul objectif actif : son propre plan (déjà des `PlanBlock` réels —
+  // voir `computeGoalsDailyPlan`) s'affiche tel quel, dans la liste de
+  // détail déjà existante ci-dessous — aucun nouveau balisage. Plusieurs
+  // objectifs actifs : un intitulé générique en tête, une ligne par objectif
+  // dans un bloc dédié (voir plus bas), la liste de détail par intention
+  // n'a alors plus de sens (elle mélangerait des objectifs différents).
+  const heroBlocks: PlanBlock[] = hasGoalPlan && goalPlans.length === 1 ? goalPlans[0].plan.blocks : !hasGoalPlan ? dailyPlan.blocks : [];
+  const heroMinutes = hasGoalPlan ? goalPlans.reduce((sum, { plan }) => sum + plan.totalMinutes, 0) : dailyPlan.totalMinutes;
+  const heroExerciseCount = hasGoalPlan ? goalPlans.reduce((sum, { plan }) => sum + plan.totalExercises, 0) : dailyPlan.totalExercises;
+  const heroLabel = hasGoalPlan
+    ? goalPlans.length === 1
+      ? goalPlans[0].goal.title
+      : "Tes objectifs actifs"
+    : hasPlan
+      ? blockDisplayMeta(dailyPlan.blocks[0]).label
+      : nextAction.title;
+  // La raison du moteur (objectif, ou premier exercice réellement planifié) :
+  // c'est la part utile de l'ancien bloc « À faire maintenant », conservée au
+  // sommet de la page plutôt que dupliquée dans une carte à elle seule.
+  const planReason = hasGoalPlan ? explainGoalPlan(goalPlans[0].readiness) : explainReasons(dailyPlan.blocks[0]?.picks[0]?.reasons ?? []);
 
   return (
     <div className="lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-12">
@@ -149,21 +179,26 @@ export function DashboardOverview() {
             retient d'un coup d'œil ; le mot d'intention et la raison du
             moteur suivent, dans cet ordre, avant même le bouton. */}
         <div>
-          <p className="eyebrow">Plan du jour</p>
+          {/* PAS "Objectif du jour" : la colonne latérale porte déjà ce
+              libellé pour l'objectif de TEMPS quotidien (`preferences.
+              dailyGoalMinutes`) — un concept entièrement différent d'un
+              `Goal` (lib/storage.ts). Les confondre sous le même intitulé,
+              affichés qui plus est sur le même écran, aurait été trompeur. */}
+          <p className="eyebrow">{hasGoalPlan ? "Vers ton objectif" : "Plan du jour"}</p>
           {hasPlan && (
             <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
               <span className="text-[3.25rem] font-semibold leading-none tracking-[-0.04em] tabular-nums sm:text-[4.5rem]">
-                <AnimatedNumber value={dailyPlan.totalMinutes} />
+                <AnimatedNumber value={heroMinutes} />
               </span>
               <span className="text-lg font-medium text-muted">
-                min · {dailyPlan.totalExercises} exercice{dailyPlan.totalExercises > 1 ? "s" : ""}
+                min · {heroExerciseCount} exercice{heroExerciseCount > 1 ? "s" : ""}
               </span>
             </div>
           )}
           <h1 className={cn("font-semibold tracking-tight", hasPlan ? "mt-3 text-xl sm:text-2xl" : "mt-3 text-[2rem] leading-[1.1] tracking-[-0.03em] sm:text-[2.5rem]")}>
             {heroLabel}
-            {hasPlan && (
-              <span className="font-normal text-muted"> — {dailyPlan.blocks.map((block) => blockDisplayMeta(block).description).join(" · ")}</span>
+            {heroBlocks.length > 0 && (
+              <span className="font-normal text-muted"> — {heroBlocks.map((block) => blockDisplayMeta(block).description).join(" · ")}</span>
             )}
           </h1>
           <p className="mt-3 max-w-xl text-[0.9375rem] leading-7 text-muted">
@@ -195,12 +230,38 @@ export function DashboardOverview() {
           </div>
         </div>
 
+        {/* Plusieurs objectifs actifs à la fois : une ligne par objectif —
+            le détail par intention (consolider/réviser/progresser) de
+            CHAQUE objectif reste consultable sur /goals, mélanger les deux
+            niveaux ici serait illisible. */}
+        {hasGoalPlan && goalPlans.length > 1 && (
+          <ol className="mt-8 space-y-3 border-t border-hairline/[0.07] pt-6">
+            {goalPlans.map(({ goal, plan }, index) => (
+              <li key={goal.id} className="flex items-start gap-3">
+                <span className="mt-0.5 w-4 shrink-0 text-center text-xs tabular-nums text-subtle">{index + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                    <p className="truncate text-sm font-medium text-ink">{goal.title}</p>
+                    <span className="t-meta shrink-0 tabular-nums">{plan.totalMinutes} min</span>
+                  </div>
+                  <p className="t-meta mt-0.5 truncate">
+                    {describeGoalScope(goal)} · {plan.totalExercises} exercice{plan.totalExercises > 1 ? "s" : ""}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+
         {/* Le détail du plan — une liste fine, sans fond ni bordure : elle
             précise le héros juste au-dessus, elle n'a pas besoin d'un
-            second niveau d'emphase. */}
-        {hasPlan && dailyPlan.blocks.length > 1 && (
+            second niveau d'emphase. Un seul objectif actif partage cette
+            liste avec le plan classique (banque entière) : dans les deux
+            cas, `heroBlocks` est un vrai `PlanBlock[]` (voir plus haut), pas
+            une structure différente à gérer ici. */}
+        {!(hasGoalPlan && goalPlans.length > 1) && hasPlan && heroBlocks.length > 1 && (
           <ol className="mt-8 space-y-3 border-t border-hairline/[0.07] pt-6">
-            {dailyPlan.blocks.map((block, index) => {
+            {heroBlocks.map((block, index) => {
               const { label, description } = blockDisplayMeta(block);
               return (
                 <li key={block.intent} className="flex items-start gap-3">
@@ -292,6 +353,12 @@ export function DashboardOverview() {
           )}
           <Link href="/progress" className="focus-ring t-meta inline-flex min-h-11 items-center rounded px-0 underline-offset-4 hover:text-ink hover:underline lg:min-h-0">
             Voir ma progression
+          </Link>
+          {/* "Objectifs" n'a pas d'entrée dans la barre du bas mobile (voir
+              components/app-sidebar.tsx) — ce lien, comme celui de
+              /progress juste au-dessus, est le point d'accès mobile. */}
+          <Link href="/goals" className="focus-ring t-meta mt-2 inline-flex min-h-11 items-center rounded px-0 underline-offset-4 hover:text-ink hover:underline lg:mt-1 lg:min-h-0">
+            {goals.length > 0 ? "Voir mes objectifs" : "Créer un objectif"}
           </Link>
         </div>
 

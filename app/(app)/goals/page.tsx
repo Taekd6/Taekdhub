@@ -1,0 +1,1 @@
+import { PageHeader } from "@/components/page-header"; import { GoalsView } from "@/components/goals/goals-view"; export default function GoalsPage(){return <><PageHeader eyebrow="Trajectoire" title="Objectifs" description="Ce que tu prépares, et comment TaekdHub organise ton travail pour y arriver."/><GoalsView/></>}

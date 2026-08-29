@@ -10,6 +10,7 @@ const preferencesKey = "prepahub:preferences";
 const chaptersKey = "prepahub:chapters";
 const lastBackupKey = "prepahub:last-backup";
 const weekSnapshotsKey = "prepahub:week-snapshots";
+const goalsKey = "prepahub:goals";
 
 /**
  * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
@@ -34,6 +35,44 @@ const defaults: Preferences = { displayName: "", dailyGoalMinutes: 60, weeklyGoa
  * `Preferences`, ce concept n'existe qu'en local pour l'instant.
  */
 export type Chapter = { id: string; subject: Subject; label: string };
+
+/**
+ * Objectif (Adaptive Planning Engine) — créé et géré par l'utilisateur, comme
+ * `Chapter` : pas de miroir Supabase, purement local. Volontairement simple
+ * (pas de "quantité de travail" séparée du système existant) :
+ * `lib/goals.ts` calcule tout ce qui est nécessaire (préparation, plan,
+ * urgence) à partir de ce périmètre et des données déjà présentes
+ * (exercices, séances) — un objectif ne PORTE aucune donnée de progression
+ * lui-même, il ne fait que la DÉLIMITER.
+ *
+ * `subjects` non vide en pratique (voir `normalizeGoal`) : un objectif sans
+ * matière valide retombe sur `subjects` de lib/study.ts (toutes les
+ * matières), pour représenter honnêtement les objectifs du type "préparer la
+ * semaine de rentrée" plutôt que d'inventer une restriction qui n'a pas de
+ * sens.
+ *
+ * `chapterIds` vide = tout le périmètre des `subjects` ciblées, pas de
+ * restriction supplémentaire. Une référence vers un chapitre supprimé ou
+ * archivé depuis n'est jamais une erreur : voir `lib/goals.ts#scopeToGoal`,
+ * qui filtre simplement sans rien trouver — même principe que `chapter_id`
+ * sur `Exercise`.
+ */
+export type GoalStatus = "active" | "completed" | "abandoned";
+/** 1 = basse, 2 = normale (défaut), 3 = haute — échelle volontairement grossière, jamais un score continu à calibrer. */
+export type GoalPriority = 1 | 2 | 3;
+
+export interface Goal {
+  id: string;
+  title: string;
+  subjects: Subject[];
+  chapterIds: string[];
+  /** Date cible (jour), ISO — `null` : objectif sans échéance (voir lib/goals.ts, qui traite ce cas explicitement, jamais comme "urgent par défaut"). */
+  targetDate: string | null;
+  priority: GoalPriority;
+  status: GoalStatus;
+  createdAt: string;
+  updatedAt: string;
+}
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
 export interface WeekSnapshotSubjectTime {
@@ -259,6 +298,42 @@ function normalizeChapter(raw: unknown): Chapter | null {
   return { id: item.id, subject: migrateSubject(item.subject), label: item.label };
 }
 
+const GOAL_STATUSES: readonly GoalStatus[] = ["active", "completed", "abandoned"];
+const GOAL_PRIORITIES: readonly GoalPriority[] = [1, 2, 3];
+
+function goalSubjects(raw: unknown): Subject[] {
+  const valid = stringArray(raw).filter((value): value is Subject => (subjects as string[]).includes(value));
+  // Aucune matière valide (absente, corrompue, ou toutes invalides) : plutôt
+  // que d'écarter l'objectif ou d'inventer une matière arbitraire, il porte
+  // sur la banque entière — représente honnêtement un objectif du type
+  // "préparer la semaine de rentrée" (voir la doc de `Goal`).
+  return valid.length > 0 ? [...new Set(valid)] : [...subjects];
+}
+
+/**
+ * Ramène un objectif potentiellement corrompu (édition manuelle du
+ * localStorage, sauvegarde d'une version antérieure à ce champ) vers une
+ * forme valide, ou l'écarte — même principe que `normalizeChapter`. Un
+ * objectif sans titre n'a aucun sens à afficher : écarté plutôt que montré
+ * vide.
+ */
+function normalizeGoal(raw: unknown): Goal | null {
+  const item = isRecord(raw) ? raw : {};
+  if (typeof item.id !== "string" || typeof item.title !== "string" || !item.title.trim()) return null;
+  const createdAt = isoDate(item.createdAt) ?? new Date().toISOString();
+  return {
+    id: item.id,
+    title: item.title.trim(),
+    subjects: goalSubjects(item.subjects),
+    chapterIds: stringArray(item.chapterIds),
+    targetDate: item.targetDate === null ? null : (isoDate(item.targetDate) ?? null),
+    priority: (GOAL_PRIORITIES as number[]).includes(item.priority as number) ? (item.priority as GoalPriority) : 2,
+    status: (GOAL_STATUSES as string[]).includes(item.status as string) ? (item.status as GoalStatus) : "active",
+    createdAt,
+    updatedAt: isoDate(item.updatedAt) ?? createdAt,
+  };
+}
+
 function isNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
@@ -380,6 +455,8 @@ export const localData = {
   weekSnapshots: (): WeekSnapshot[] =>
     typeof window === "undefined" ? [] : readList(weekSnapshotsKey).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
   saveWeekSnapshots: (items: WeekSnapshot[]) => localStorage.setItem(weekSnapshotsKey, JSON.stringify(items)),
+  goals: (): Goal[] => (typeof window === "undefined" ? [] : readList(goalsKey).map(normalizeGoal).filter((item): item is Goal => item !== null)),
+  saveGoals: (items: Goal[]) => localStorage.setItem(goalsKey, JSON.stringify(items)),
 };
 
 /**
@@ -420,6 +497,7 @@ export function exportBackup(): void {
       // fantômes (chapter_id pointant vers un catalogue vide).
       chapters: localData.chapters(),
       weekSnapshots: localData.weekSnapshots(),
+      goals: localData.goals(),
     },
     null,
     2
@@ -448,6 +526,8 @@ export interface BackupPayload {
   /** Optionnel : une sauvegarde exportée avant l'ajout des chapitres à l'export n'a pas ce champ ; restauré à `[]` dans ce cas (voir components/data-backup.tsx#confirmImport). */
   chapters?: Chapter[];
   weekSnapshots?: WeekSnapshot[];
+  /** Optionnel : une sauvegarde exportée avant l'introduction des objectifs (Adaptive Planning Engine) n'a pas ce champ ; restauré à `[]` dans ce cas — même principe que `chapters`/`weekSnapshots`. */
+  goals?: Goal[];
 }
 
 /**
@@ -498,5 +578,8 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   // Idem : absent d'une sauvegarde exportée avant l'ajout des chapitres à
   // l'export ; chaque entrée est revalidée par `normalizeChapter` à la lecture.
   if (data.chapters !== undefined && !Array.isArray(data.chapters)) return false;
+  // Idem : absent d'une sauvegarde exportée avant l'introduction des
+  // objectifs ; chaque entrée est revalidée par `normalizeGoal` à la lecture.
+  if (data.goals !== undefined && !Array.isArray(data.goals)) return false;
   return true;
 }
