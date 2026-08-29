@@ -138,9 +138,29 @@ export function DashboardOverview() {
 
   const { nextAction, objective, upcoming, toConsolidate, weeklySummary, streak, contestDays } = model;
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
-  const secondaryPicks = nextAction.picks.slice(1);
   const otherSignals = upcoming.filter((item) => item.key !== "chapter");
   const hasPlan = hasGoalPlan || dailyPlan.blocks.length > 0;
+
+  // "Aussi signalé" (colonne latérale) doit montrer des exercices RÉELLEMENT
+  // présents dans le plan affiché juste au-dessus — jamais une seconde liste
+  // indépendante. Avant ce correctif (audit transversal — voir
+  // lib/__audit_chain.test.ts), cette liste provenait d'un second appel à
+  // `recommendExercises` (via `computeNextAction`, SANS le réordonnancement
+  // par priorité de chapitre ni la réservation de l'exercice le plus urgent
+  // que fait `computeDailyPlan`) : sur le même écran, au même instant, la
+  // sidebar pouvait donc mettre en avant un exercice différent de celui
+  // réellement en tête du plan à démarrer — mesuré : un exercice avec deux
+  // échecs récents (score brut le plus haut) passait devant le chapitre
+  // réellement prioritaire (`computeChaptersToConsolidate`) dans
+  // `nextAction.picks`, sans jamais apparaître à la même place dans le plan
+  // du jour affiché. Dérivée maintenant du(des) MÊME(S) plan(s) que ceux
+  // réellement proposés : plus aucune divergence possible par construction.
+  // `nextAction.picks` ne reste utile que pour le cas SANS plan (banque vide
+  // / à jour), où il pilote déjà le héros lui-même.
+  const planPicks = hasGoalPlan
+    ? goalPlans.flatMap(({ plan }) => plan.blocks.flatMap((block) => block.picks))
+    : dailyPlan.blocks.flatMap((block) => block.picks);
+  const secondaryPicks = hasPlan ? planPicks.slice(1, 3) : nextAction.picks.slice(1);
 
   // Un seul objectif actif : son propre plan (déjà des `PlanBlock` réels —
   // voir `computeGoalsDailyPlan`) s'affiche tel quel, dans la liste de

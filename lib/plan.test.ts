@@ -430,3 +430,33 @@ describe("resolveStoredPlan — reconstruction du plan transporté vers /session
     expect(second).toHaveLength(1);
   });
 });
+
+describe("Performance (audit transversal) — centaines d'exercices, milliers de séances", () => {
+  it("computeDailyPlan reste rapide à une échelle réaliste (plusieurs années d'historique simulées)", () => {
+    const chapters: Chapter[] = Array.from({ length: 40 }, (_, i) => ({ id: `chap-${i}`, subject: "Mathématiques", label: `Chapitre ${i}` }));
+    const exercises = Array.from({ length: 600 }, (_, i) =>
+      makeExercise({
+        chapter_id: chapters[i % chapters.length].id,
+        mastery: ([0, 25, 50, 75, 100] as const)[i % 5] as Mastery,
+        status: (["à faire", "en cours", "à revoir", "maîtrisé"] as const)[i % 4],
+      })
+    );
+    const sessions: WorkSession[] = [];
+    for (let i = 0; i < 8000; i++) {
+      const exercise = exercises[i % exercises.length];
+      sessions.push(
+        makeSession(exercise.id, exercise.subject, {
+          started_at: new Date(NOW.getTime() - (i % 900) * 86400000).toISOString(),
+          result: (["réussi", "partiel", "échoué"] as const)[i % 3],
+        })
+      );
+    }
+    const start = performance.now();
+    const plan = computeDailyPlan(exercises, sessions, chapters, 60, NOW);
+    const elapsed = performance.now() - start;
+    console.log(`computeDailyPlan — 600 exercices × 8000 séances : ${elapsed.toFixed(1)} ms, ${plan.totalExercises} exercices retenus`);
+    // Marge généreuse (dix fois ce qui serait déjà perceptible) — voir
+    // lib/recommendation.test.ts pour l'équivalent côté `recommendExercises`.
+    expect(elapsed).toBeLessThan(1500);
+  });
+});

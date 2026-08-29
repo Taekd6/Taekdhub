@@ -19,6 +19,32 @@ import type { Difficulty, Subject } from "@/lib/supabase/types";
  * Catalogue LIVRÉ avec l'app (`datasets/contest-papers.json`), jamais copié
  * en `localStorage` : voir la doc de `ContestPaper`. Seule `ContestProgress`
  * (une entrée par sujet touché) est réellement persistée.
+ *
+ * ## Pourquoi aucune connexion à `recommendExercises`/`computeDailyPlan` (audit transversal)
+ * Examiné explicitement lors de l'audit de la boucle pédagogique complète —
+ * conclusion documentée ici plutôt qu'implémentée, faute de pertinence
+ * pédagogique démontrée à ce stade :
+ * - Un `ContestPaper` est un document ENTIER (plusieurs heures, plusieurs
+ *   notions mélangées), pas une unité atomique comme un `Exercise` — le
+ *   moteur de recommandation raisonne à la granularité d'UNE notion/chapitre
+ *   par candidat (`Exercise.chapter_id`, `Exercise.difficulty`). Un sujet
+ *   "réussi" ou "échoué" en bloc ne dit RIEN de quelles parties ont posé
+ *   problème : l'intégrer au score d'urgence obligerait soit à inventer une
+ *   ventilation par chapitre qui n'existe pas (un signal fabriqué, contraire
+ *   à la consigne "ne pas inventer une nouvelle IA"), soit à traiter tout le
+ *   sujet comme un unique "exercice" géant — ce que la Phase 6 du chantier
+ *   précédent interdisait déjà explicitement.
+ * - `ContestProgress` (à faire/en cours/fait) est volontairement plus pauvre
+ *   qu'`Exercise` (pas de `mastery`, pas de `difficulty` par notion) —
+ *   précisément pour ne jamais suggérer une précision qu'aucune donnée réelle
+ *   ne soutient.
+ * - Si un jour un sujet est décomposé en parties notées séparément (une
+ *   vraie donnée par notion), le rattacher au moteur redeviendrait légitime
+ *   — mais ce serait alors un nouveau signal explicite, pas un détournement
+ *   de celui-ci.
+ * Un sujet de concours reste donc, par choix, une activité de SYNTHÈSE que
+ * l'élève choisit lui-même sur /contests — jamais une recommandation ni un
+ * élément du plan du jour.
  */
 export const contestPapers: ContestPaper[] = contestPapersData as ContestPaper[];
 

@@ -641,3 +641,85 @@ describe("Départage par difficulté à score égal — un débutant voit le plu
     expect(order[0]).toBe(urgentButHard.id);
   });
 });
+
+/**
+ * Audit transversal (chantier "boucle pédagogique complète") — robustesse
+ * numérique du score. `normalizeExercise` (lib/storage.ts) garantit qu'aucune
+ * date invalide ne sort jamais du stockage réel, mais `recommendExercises`
+ * elle-même doit rester robuste : un seul exercice avec une date illisible ne
+ * doit jamais transformer `NaN` en résultat de `.sort()` pour TOUTE la
+ * banque (comparateur `(a,b) => b.score - a.score`, indéfini dès qu'un score
+ * vaut `NaN`) — trouvé en audit avant correction de `daysSinceLastWorked`.
+ */
+describe("Robustesse — last_worked_at illisible (audit transversal)", () => {
+  it("un last_worked_at qui n'est pas une date valide ne produit jamais un score NaN", () => {
+    const corrupted = makeExercise({ status: "maîtrisé", mastery: 100, last_worked_at: "pas-une-date" });
+    const score = recommendExercises([corrupted], [], 1, { now: NOW })[0]?.score;
+    expect(Number.isNaN(score)).toBe(false);
+  });
+
+  it("un exercice à date illisible ne contamine pas le classement des autres exercices de la banque", () => {
+    const corrupted = makeExercise({ status: "maîtrisé", mastery: 100, last_worked_at: "pas-une-date" });
+    const healthy = makeExercise({ status: "à revoir", mastery: 25 });
+    const result = recommendExercises([corrupted, healthy], [], 2, { now: NOW });
+    for (const { score } of result) expect(Number.isNaN(score)).toBe(false);
+  });
+});
+
+describe("Cas limites numériques — budget et durée (audit transversal)", () => {
+  it("un budget de temps négatif ne sélectionne rien et ne lève jamais d'exception", () => {
+    const exercise = makeExercise();
+    expect(recommendExercises([exercise], [], 5, { now: NOW, availableMinutes: -10 })).toEqual([]);
+  });
+
+  it("une durée estimée nulle (estimated_minutes: 0) ne casse pas le calcul de durée — retombe sur une estimation dérivée, jamais 0 ni NaN", () => {
+    const zero = makeExercise({ estimated_minutes: 0 });
+    const [result] = recommendExercises([zero], [], 1, { now: NOW, availableMinutes: 30 });
+    expect(result).toBeDefined();
+    expect(Number.isNaN(result.score)).toBe(false);
+  });
+
+  it("une durée estimée énorme n'entre simplement jamais dans un budget réaliste, sans planter", () => {
+    const huge = makeExercise({ estimated_minutes: 100000 });
+    expect(recommendExercises([huge], [], 5, { now: NOW, availableMinutes: 60 })).toEqual([]);
+  });
+
+  it("toute la banque déjà maîtrisée et fraîche : liste vide, jamais une erreur", () => {
+    const done = Array.from({ length: 10 }, () => makeExercise({ status: "maîtrisé", mastery: 100, attempts: 3, last_worked_at: NOW.toISOString() }));
+    expect(recommendExercises(done, [], 10, { now: NOW })).toEqual([]);
+  });
+
+  it("un seul exercice signalé au milieu d'une banque autrement à jour : remonte seul, sans erreur", () => {
+    const target = makeExercise({ status: "à revoir", mastery: 25 });
+    const done = Array.from({ length: 15 }, () => makeExercise({ status: "maîtrisé", mastery: 100, attempts: 2, last_worked_at: NOW.toISOString() }));
+    const result = recommendExercises([target, ...done], [], 6, { now: NOW });
+    expect(result.map((r) => r.exercise.id)).toEqual([target.id]);
+  });
+});
+
+describe("Performance (audit transversal) — centaines d'exercices, milliers de séances", () => {
+  it("reste rapide à une échelle réaliste (plusieurs années d'historique simulées)", () => {
+    const exercises = Array.from({ length: 600 }, (_, i) =>
+      makeExercise({ mastery: ([0, 25, 50, 75, 100] as const)[i % 5], status: (["à faire", "en cours", "à revoir", "maîtrisé"] as const)[i % 4] })
+    );
+    const sessions: WorkSession[] = [];
+    for (let i = 0; i < 8000; i++) {
+      const exercise = exercises[i % exercises.length];
+      sessions.push(
+        makeSession(exercise.id, {
+          started_at: new Date(NOW.getTime() - (i % 900) * 86400000).toISOString(),
+          result: (["réussi", "partiel", "échoué"] as const)[i % 3],
+          hints_used: i % 4,
+        })
+      );
+    }
+    const start = performance.now();
+    recommendExercises(exercises, sessions, 6, { now: NOW, availableMinutes: 45 });
+    const elapsed = performance.now() - start;
+    // Marge généreuse (dix fois ce qui serait déjà perceptible) : ce test ne
+    // doit échouer qu'en cas de vraie régression de complexité algorithmique,
+    // jamais au moindre bruit de machine — voir lib/plan.test.ts pour
+    // l'équivalent côté `computeDailyPlan`.
+    expect(elapsed).toBeLessThan(1000);
+  });
+});

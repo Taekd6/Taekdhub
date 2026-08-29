@@ -60,10 +60,29 @@ export function isNeverWorked(exercise: Exercise, minutesSpent: number): boolean
  */
 export const MASTERY_STALE_DAYS = 21;
 
-/** `null` si l'exercice n'a jamais eu de séance focus achevée dessus (voir `Exercise.last_worked_at`). */
+/**
+ * `null` si l'exercice n'a jamais eu de séance focus achevée dessus (voir
+ * `Exercise.last_worked_at`) — OU si la date stockée est illisible.
+ *
+ * `normalizeExercise` (lib/storage.ts) garantit qu'aucune date invalide ne
+ * sort jamais du stockage réel, exactement pour cette raison (voir sa doc :
+ * "une seule chaîne quelconque... faisait lever RangeError... contaminant
+ * tout le rendu"). Cette garde ici est une SECONDE ligne de défense, pas une
+ * redite inutile : `recommendExercises` est appelée directement dans les
+ * tests et pourrait un jour recevoir un `Exercise` construit à la main plutôt
+ * que passé par `normalizeExercise`. Sans elle, `new Date("invalide").getTime()`
+ * vaut `NaN`, qui se propage silencieusement à travers `isStaleMastery`,
+ * `staleMasteryBonus` et `recentAttemptPenalty` jusqu'au score final — un
+ * SEUL exercice corrompu suffit alors à rendre `NaN` le résultat de
+ * `.sort()` pour TOUTE la banque (le comparateur `(a,b) => b.score - a.score`
+ * renvoie `NaN`, un ordre indéfini par la spec JS), pas seulement le
+ * classement de cet exercice précis.
+ */
 function daysSinceLastWorked(exercise: Exercise, now: Date): number | null {
   if (!exercise.last_worked_at) return null;
-  return Math.floor((now.getTime() - new Date(exercise.last_worked_at).getTime()) / 86400000);
+  const time = new Date(exercise.last_worked_at).getTime();
+  if (Number.isNaN(time)) return null;
+  return Math.floor((now.getTime() - time) / 86400000);
 }
 
 /**
