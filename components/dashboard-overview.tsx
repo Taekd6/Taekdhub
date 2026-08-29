@@ -181,7 +181,20 @@ export function DashboardOverview() {
   // La raison du moteur (objectif, ou premier exercice réellement planifié) :
   // c'est la part utile de l'ancien bloc « À faire maintenant », conservée au
   // sommet de la page plutôt que dupliquée dans une carte à elle seule.
-  const planReason = hasGoalPlan ? explainGoalPlan(goalPlans[0].readiness) : explainReasons(dailyPlan.blocks[0]?.picks[0]?.reasons ?? []);
+  //
+  // Plusieurs objectifs actifs (audit de restitution UI) : `explainGoalPlan`
+  // ne parle QUE de `goalPlans[0]` (le plus urgent — `goalPlans` est déjà
+  // trié par urgence, voir `computeGoalsDailyPlan`), mais rien ne le disait
+  // à l'élève : sous le titre générique "Tes objectifs actifs" (pluriel),
+  // la phrase nommait un seul objectif par son titre sans jamais préciser
+  // lequel des deux (ou plus) elle concernait — trouvé en rejouant un
+  // scénario à deux objectifs actifs (Playwright). Un simple préfixe suffit
+  // à lever l'ambiguïté, sans changer `explainGoalPlan` (qui reste correct
+  // et inchangé pour son autre appelant, `GoalCard`, où le contexte — une
+  // carte par objectif — ne laisse déjà planer aucun doute).
+  const planReasonSentence = hasGoalPlan ? explainGoalPlan(goalPlans[0].readiness) : explainReasons(dailyPlan.blocks[0]?.picks[0]?.reasons ?? []);
+  const planReason =
+    hasGoalPlan && goalPlans.length > 1 && planReasonSentence ? `Le plus urgent aujourd'hui : ${planReasonSentence}` : planReasonSentence;
 
   return (
     <div className="lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-12">

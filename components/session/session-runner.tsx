@@ -481,7 +481,15 @@ export function SessionRunner() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm text-ink">{exercise.title}</p>
                     <p className="t-meta mt-0.5 truncate">
-                      ≈ {estimatedDurationMinutes(exercise, sessions)} min{reasons.length > 0 && <> · {reasons.slice(0, 2).join(" · ")}</>}
+                      {/* `explainReasons`, pas les raisons brutes tronquées à deux (ancien
+                          comportement) : avec 3+ raisons, `slice(0, 2)` pouvait couper avant
+                          la plus décisive — un "Échec récent" par exemple, poussé en dernier
+                          par `evaluateExercise` mais prioritaire pour `explainReasons` — et
+                          l'aperçu de séance affichait alors une raison différente de celle
+                          montrée juste après en Focus pour le même exercice (audit de
+                          restitution UI). Même fonction que `nextReason` juste en dessous,
+                          pour la même raison de cohérence. */}
+                      ≈ {estimatedDurationMinutes(exercise, sessions)} min{explainReasons(reasons) && <> · {explainReasons(reasons)}</>}
                     </p>
                   </div>
                 </div>
