@@ -219,23 +219,54 @@ export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[],
   });
   byIntent.set("consolider", diversifyByChapter(byPriority));
 
+  // GARANTIE (audit moteur — mesuré sur un profil réel, pas seulement
+  // théorique) : l'exercice le plus urgent du bloc de consolidation —
+  // `byPriority[0]`, donc du chapitre le plus prioritaire, à score égal le
+  // plus élevé — ne doit jamais disparaître du plan à cause d'une pure
+  // fragmentation de budget entre intentions.
+  //
+  // Avant cette garantie : un élève qui venait d'échouer deux fois sur son
+  // chapitre le plus faible (Nombres complexes) voyait son exercice le plus
+  // urgent (score 110, 35 min — un exercice réellement plus long que la
+  // moyenne) totalement absent d'un plan de 45 min, remplacé par trois
+  // exercices "jamais travaillé" sans aucun rapport (Physique, Chimie,
+  // Informatique TC, score ~96 chacun). Cause : la part réservée à
+  // "consolider" (≈70 % de 45 min, soit 32 min) ne suffisait pas à elle
+  // seule pour ces 35 min ; le reliquat qui la complète ensuite (lignes
+  // plus bas) ne recevait plus, à son tour, que quelques minutes — jamais
+  // les 35 d'un coup. Deux fragments trop petits pris séparément, alors que
+  // le budget TOTAL du jour, lui, aurait très bien accueilli l'exercice.
+  //
+  // Réservé ICI, avant toute répartition par intention, avec sa propre
+  // durée déduite du budget total disponible — jamais en plus.
+  const mostUrgent = byPriority[0];
+  const mostUrgentMinutes = mostUrgent ? estimatedDurationMinutes(mostUrgent.exercise, sessions) : 0;
+  const reserveUrgent = mostUrgent !== undefined && mostUrgentMinutes > 0 && mostUrgentMinutes <= totalMinutes;
+
   const shares = intentSharesFor(totalMinutes);
   const taken = new Set<string>();
+  if (reserveUrgent) taken.add(mostUrgent!.exercise.id);
   const blocks: PlanBlock[] = [];
-  let spent = 0;
+  let spent = reserveUrgent ? mostUrgentMinutes : 0;
 
-  // Premier passage : chaque intention dans la limite de sa part.
+  // Premier passage : chaque intention dans la limite de sa part — la part
+  // de "consolider" est réduite de la réservation ci-dessus (jamais en
+  // plus, jamais négative).
   for (const intent of INTENT_ORDER) {
     const share = shares[intent];
     if (!share) continue;
-    const { picks, used } = fillBudget(byIntent.get(intent)!, sessions, Math.round(totalMinutes * share), taken);
-    if (picks.length === 0) continue;
+    const rawBudget = Math.round(totalMinutes * share);
+    const budget = intent === "consolider" && reserveUrgent ? Math.max(0, rawBudget - mostUrgentMinutes) : rawBudget;
+    const { picks, used } = fillBudget(byIntent.get(intent)!, sessions, budget, taken);
+    const blockPicks = intent === "consolider" && reserveUrgent ? [mostUrgent!, ...picks] : picks;
+    if (blockPicks.length === 0) continue;
+    const blockMinutes = intent === "consolider" && reserveUrgent ? used + mostUrgentMinutes : used;
     blocks.push({
       intent,
       label: PLAN_INTENT_META[intent].label,
-      focus: describeFocus(picks, chapterById),
-      estimatedMinutes: used,
-      picks,
+      focus: describeFocus(blockPicks, chapterById),
+      estimatedMinutes: blockMinutes,
+      picks: blockPicks,
     });
     spent += used;
   }

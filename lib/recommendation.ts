@@ -129,6 +129,28 @@ function recentSuccessStreak(attempts: WorkSession[]): number {
 }
 
 /**
+ * Longueur de la série de réussites AUTONOMES (sans aide décisive — voir
+ * `ASSISTED_HINTS_THRESHOLD`) la plus récente sur CET exercice — s'arrête à
+ * la première tentative non réussie OU à la première réussite assistée.
+ *
+ * Distinct de `recentSuccessStreak` (qui compte toute réussite, aidée ou
+ * non) : sert uniquement à détecter une maîtrise réelle jamais déclarée —
+ * voir `urgencyScore`, où ce signal corrige `mastery`/`status` à la baisse
+ * de priorité, le pendant exact de ce que `lastAttemptWasAssisted` fait déjà
+ * dans l'autre sens (une réussite assistée contredit une maîtrise déclarée
+ * trop haute ; une série autonome contredit une maîtrise déclarée trop basse).
+ */
+function autonomousSuccessStreak(attempts: WorkSession[]): number {
+  let streak = 0;
+  for (const attempt of attempts) {
+    if (attempt.result !== "réussi") break;
+    if (attempt.hints_used === null || attempt.hints_used >= ASSISTED_HINTS_THRESHOLD) break;
+    streak++;
+  }
+  return streak;
+}
+
+/**
  * NIVEAU DE CONFORT — à quelle difficulté l'élève travaille réellement en ce
  * moment, déduit de ses résultats passés.
  *
@@ -349,6 +371,36 @@ const STATUS_WEIGHT: Record<ExerciseStatus, number> = {
 const ASSISTED_MASTERY_CAP = 50;
 
 /**
+ * MAÎTRISE SILENCIEUSE — le pendant exact de la correction ci-dessus, dans
+ * l'autre sens.
+ *
+ * Trouvé en auditant le moteur avec des scénarios réels rejoués (pas
+ * seulement lus) : `mastery`/`status` sont des champs saisis À LA MAIN par
+ * l'élève (voir components/exercises/focus-view.tsx) — rien ne les met à
+ * jour automatiquement après une séance. Un élève qui enchaîne plusieurs
+ * réussites AUTONOMES sur un exercice sans jamais revenir cocher « maîtrisé »
+ * (cas réel et probablement fréquent : la séance recommandée n'impose pas de
+ * repasser par la fiche) voit cet exercice rester DÉCLARÉ à mastery=0,
+ * status="à faire" indéfiniment — alors que le même historique, correctement
+ * déclaré, l'aurait fait disparaître des recommandations (`evaluateExercise`
+ * n'a alors plus aucune raison de l'inclure).
+ *
+ * Mesuré avant ce correctif : un exercice réussi seul 5 fois d'affilée,
+ * jamais déclaré, obtenait un score de classement de 68 — au-dessus de
+ * nombreux exercices réellement faibles ou en échec — quand la même
+ * performance correctement déclarée l'aurait exclu purement et simplement.
+ * `masteryGap` (jusqu'à 60 points, le plus gros terme du score) ignorait
+ * entièrement ce signal pourtant déjà disponible.
+ *
+ * Seuil identique à `COMFORT_STEP_UP_STREAK` (cohérence : c'est déjà, dans ce
+ * module, le seuil qui fait foi d'une maîtrise réelle). Plancher choisi
+ * symétrique à `ASSISTED_MASTERY_CAP` : une réussite autonome répétée mérite
+ * au moins autant de crédit qu'une réussite assistée en perd.
+ */
+const SILENT_MASTERY_STREAK = 3;
+const SILENT_MASTERY_FLOOR = 75;
+
+/**
  * REPOS APRÈS UNE TENTATIVE — le pendant de `staleMasteryBonus`.
  *
  * Le moteur n'avait aucune notion de « je viens de le faire ». Un exercice
@@ -415,9 +467,24 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
   // ASSISTED_MASTERY_CAP, ni celui du statut « maîtrisé » — l'exercice est
   // traité comme « à revoir », ce qu'il est en réalité.
   const assisted = lastAttemptWasAssisted(attempts);
-  const effectiveMastery = assisted ? Math.min(exercise.mastery, ASSISTED_MASTERY_CAP) : exercise.mastery;
+  // Symétrique de la correction ci-dessus : une série de réussites AUTONOMES
+  // contredit une maîtrise déclarée trop basse, tout comme une réussite
+  // assistée contredit une maîtrise déclarée trop haute — voir la doc de
+  // `SILENT_MASTERY_STREAK`. Ne s'applique jamais en même temps que `assisted`
+  // (la dernière tentative ne peut pas être À LA FOIS assistée et compter
+  // dans une série autonome, `autonomousSuccessStreak` s'arrête déjà dessus).
+  const silentlyMastered = autonomousSuccessStreak(attempts) >= SILENT_MASTERY_STREAK;
+  const effectiveMastery = assisted
+    ? Math.min(exercise.mastery, ASSISTED_MASTERY_CAP)
+    : silentlyMastered
+      ? Math.max(exercise.mastery, SILENT_MASTERY_FLOOR)
+      : exercise.mastery;
   const masteryGap = (100 - effectiveMastery) * 0.6; // 0 (maîtrisé à 100%) à 60 (maîtrisé à 0%)
-  const statusWeight = assisted && exercise.status === "maîtrisé" ? STATUS_WEIGHT["à revoir"] : STATUS_WEIGHT[exercise.status]; // -30 à 40
+  const statusWeight = assisted && exercise.status === "maîtrisé"
+    ? STATUS_WEIGHT["à revoir"]
+    : silentlyMastered && exercise.status !== "maîtrisé"
+      ? STATUS_WEIGHT["maîtrisé"]
+      : STATUS_WEIGHT[exercise.status]; // -30 à 40
   const neverWorkedBonus = isNeverWorked(exercise, minutesSpent) ? 15 : 0;
   // Temps déjà investi : léger bonus, plafonné pour ne jamais dominer les
   // autres termes — un exercice presque fini mérite d'être terminé, mais pas
@@ -660,7 +727,21 @@ export function recommendExercises(
     if (reasons.length === 0) continue;
     candidates.push({ exercise, score: urgencyScore(exercise, minutesSpent, attempts, now, comfort), reasons });
   }
-  candidates.sort((a, b) => b.score - a.score);
+  // À score strictement égal, la difficulté la plus basse passe devant —
+  // jamais l'inverse, jamais un troisième critère. Sans ce départage, deux
+  // exercices "jamais travaillé" du même chapitre ont EXACTEMENT le même
+  // score tant que `comfort` n'existe pas (moins de 3 tentatives qualifiées
+  // dans toute la banque — le cas de tout nouvel élève), et l'ordre ne
+  // dépend alors que de la position dans le fichier source. Mesuré sur la
+  // vraie banque : 27 des 51 chapitres n'ont PAS leur exercice le plus
+  // facile en premier (ex. "Suites numériques" commence par 2, 4, 5) — un
+  // élève découvrant un chapitre pouvait donc se voir proposer une
+  // difficulté 5 avant toute difficulté 1, sans aucune justification
+  // pédagogique, uniquement par artefact d'ordre de fichier. Une fois
+  // `comfort` établi, `difficultyFitBonus` différencie déjà la plupart des
+  // égalités : ce départage ne joue alors presque jamais, et ne contredit
+  // jamais un score réellement différent (comparé EN PREMIER, toujours).
+  candidates.sort((a, b) => b.score - a.score || a.exercise.difficulty - b.exercise.difficulty);
   const diversified = diversifyByChapter(candidates);
 
   if (options.availableMinutes === undefined) return diversified.slice(0, limit);

@@ -192,6 +192,69 @@ describe("computeDailyPlan — projection temporelle des priorités", () => {
 });
 
 /**
+ * Garantie anti-fragmentation (audit moteur — reproduit un cas réel, pas
+ * seulement théorique) : l'exercice le plus urgent du bloc de consolidation
+ * ne doit jamais disparaître du plan à cause d'un pur phénomène de
+ * fragmentation de budget entre intentions.
+ *
+ * Mesuré sur un profil réaliste (échecs répétés sur le chapitre le plus
+ * faible) : un exercice à la fois le PLUS URGENT (score le plus élevé,
+ * chapitre n°1 des priorités) et réellement long (35 min) était totalement
+ * absent d'un plan de 45 min, remplacé par trois exercices "jamais
+ * travaillé" sans aucun rapport (Physique, Chimie, Informatique TC) —
+ * parce que la part réservée à "consolider" (≈70 %, 32 min) ne suffisait
+ * pas à elle seule, et le reliquat qui la complète ensuite ne recevait à
+ * son tour que quelques minutes, jamais les 35 d'un coup — alors que le
+ * budget TOTAL du jour, lui, aurait très bien accueilli l'exercice.
+ */
+describe("computeDailyPlan — garantie anti-fragmentation : le plus urgent ne disparaît jamais", () => {
+  it("un exercice prioritaire mais long n'est jamais exclu au profit de contenu 'jamais travaillé' sans rapport", () => {
+    const chapter: Chapter = { id: "chap-urgent", subject: "Mathématiques", label: "Chapitre urgent" };
+    const urgent = makeExercise({
+      chapter_id: chapter.id,
+      status: "à revoir",
+      mastery: 0,
+      attempts: 2,
+      estimated_minutes: 35,
+      last_worked_at: "2026-08-05T00:00:00.000Z", // hors repos de 3 jours (voir lib/recommendation.ts#RECENT_ATTEMPT_COOLDOWN_DAYS)
+    });
+    const session = makeSession(urgent.id, "Mathématiques", { result: "échoué", started_at: "2026-08-05T08:00:00.000Z" });
+    // Assez de "jamais travaillé" dans d'autres matières pour, à eux seuls,
+    // remplir la part réservée à "consolider" (~70 % de 45 min) avant que
+    // `urgent` (35 min) n'ait jamais sa chance.
+    const filler = (["Physique", "Chimie", "Informatique TC"] as Subject[]).map((subject) => makeExercise({ subject, estimated_minutes: 15 }));
+
+    const plan = computeDailyPlan([urgent, ...filler], [session], [chapter], 45, NOW);
+    const pickedIds = plan.blocks.flatMap((block) => block.picks.map((pick) => pick.exercise.id));
+    expect(pickedIds).toContain(urgent.id);
+  });
+
+  it("l'exercice réservé n'est jamais compté deux fois, et le budget du plan reste dans la limite demandée", () => {
+    const chapter: Chapter = { id: "chap-urgent", subject: "Mathématiques", label: "Chapitre urgent" };
+    const urgent = makeExercise({ chapter_id: chapter.id, status: "à revoir", mastery: 0, attempts: 2, estimated_minutes: 35, last_worked_at: "2026-08-05T00:00:00.000Z" });
+    const session = makeSession(urgent.id, "Mathématiques", { result: "échoué", started_at: "2026-08-05T08:00:00.000Z" });
+    const filler = (["Physique", "Chimie"] as Subject[]).map((subject) => makeExercise({ subject, estimated_minutes: 15 }));
+
+    const plan = computeDailyPlan([urgent, ...filler], [session], [chapter], 45, NOW);
+    const pickedIds = plan.blocks.flatMap((block) => block.picks.map((pick) => pick.exercise.id));
+    expect(new Set(pickedIds).size).toBe(pickedIds.length);
+    expect(plan.totalMinutes).toBeLessThanOrEqual(45);
+  });
+
+  it("un exercice prioritaire trop long pour le budget TOTAL du jour n'est jamais forcé dedans", () => {
+    const chapter: Chapter = { id: "chap-urgent", subject: "Mathématiques", label: "Chapitre urgent" };
+    const tooLong = makeExercise({ chapter_id: chapter.id, status: "à revoir", mastery: 0, attempts: 2, estimated_minutes: 90, last_worked_at: "2026-08-05T00:00:00.000Z" });
+    const session = makeSession(tooLong.id, "Mathématiques", { result: "échoué", started_at: "2026-08-05T08:00:00.000Z" });
+    const filler = makeExercise({ subject: "Physique", estimated_minutes: 15 });
+
+    const plan = computeDailyPlan([tooLong, filler], [session], [chapter], 20, NOW);
+    const pickedIds = plan.blocks.flatMap((block) => block.picks.map((pick) => pick.exercise.id));
+    expect(pickedIds).not.toContain(tooLong.id);
+    expect(plan.totalMinutes).toBeLessThanOrEqual(20);
+  });
+});
+
+/**
  * Les parts d'`INTENT_MIX` sont proportionnelles, les exercices non : un
  * exercice dure 15 à 30 minutes, et 25 % de 60 minutes ne suffit pas à en
  * loger un seul. Sans rattrapage, l'intention concernée ne perdait pas

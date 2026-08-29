@@ -545,3 +545,99 @@ describe("Repos après une tentative — le produit ne se répète pas d'un jour
     expect(order[0]).toBe(older.exercise.id);
   });
 });
+
+/**
+ * Maîtrise silencieuse (audit moteur) — le pendant exact de "Réussite
+ * assistée" ci-dessus, dans l'autre sens. `mastery`/`status` sont saisis à
+ * la main (components/exercises/focus-view.tsx) ; rien ne les met à jour
+ * après une séance. Un élève qui enchaîne des réussites AUTONOMES sans
+ * jamais revenir déclarer l'exercice maîtrisé le voyait rester recommandé
+ * indéfiniment à un score élevé — `masteryGap` (le plus gros terme du
+ * score) ignorait ce signal pourtant déjà disponible dans l'historique.
+ */
+describe("Maîtrise silencieuse — un historique de réussites autonomes doit primer sur mastery/status jamais mis à jour", () => {
+  // `last_worked_at` volontairement hors du repos de 3 jours (voir "Repos
+  // après une tentative" ci-dessus) : sans ce recul, `recentAttemptPenalty`
+  // masquerait à lui seul l'effet mesuré ici, sans rapport avec la
+  // correction testée.
+  function autonomousSuccesses(count: number, exerciseOverrides: Partial<Exercise> = {}) {
+    const exercise = makeExercise({ status: "à faire", mastery: 0, attempts: count, last_worked_at: new Date(NOW.getTime() - 5 * 86400000).toISOString(), ...exerciseOverrides });
+    const sessions = Array.from({ length: count }, (_, i) =>
+      makeSession(exercise.id, { result: "réussi", hints_used: 0, started_at: new Date(NOW.getTime() - (5 + i) * 86400000).toISOString() })
+    );
+    return { exercise, sessions };
+  }
+
+  it("3 réussites autonomes d'affilée, jamais déclarées : passe DERRIÈRE un exercice jamais travaillé", () => {
+    const { exercise, sessions } = autonomousSuccesses(3);
+    const fresh = makeExercise();
+    const order = recommendExercises([exercise, fresh], sessions, 2, { now: NOW }).map((r) => r.exercise.id);
+    expect(order[0]).toBe(fresh.id);
+  });
+
+  it("moins de 3 réussites autonomes : la correction ne s'applique pas encore, comportement inchangé", () => {
+    const { exercise, sessions } = autonomousSuccesses(2);
+    const fresh = makeExercise();
+    const order = recommendExercises([exercise, fresh], sessions, 2, { now: NOW }).map((r) => r.exercise.id);
+    // Toujours derrière un exercice jamais travaillé (successPenalty existant), mais sans la correction de maîtrise silencieuse en plus.
+    expect(order[0]).toBe(fresh.id);
+  });
+
+  it("une réussite AIDÉE dans la série interrompt le streak autonome — la correction ne s'applique pas", () => {
+    const exercise = makeExercise({ status: "à faire", mastery: 0, attempts: 3, last_worked_at: NOW.toISOString() });
+    const sessions = [
+      makeSession(exercise.id, { result: "réussi", hints_used: 0, started_at: new Date(NOW.getTime() - 0 * 86400000).toISOString() }),
+      makeSession(exercise.id, { result: "réussi", hints_used: 3, started_at: new Date(NOW.getTime() - 1 * 86400000).toISOString() }),
+      makeSession(exercise.id, { result: "réussi", hints_used: 0, started_at: new Date(NOW.getTime() - 2 * 86400000).toISOString() }),
+    ];
+    // Un seul résultat récent autonome (le plus récent) : le streak vaut 1, sous le seuil.
+    const result = recommendExercises([exercise], sessions, 5, { now: NOW });
+    expect(result.map((r) => r.exercise.id)).toContain(exercise.id);
+  });
+
+  it("un échec après la série de réussites autonomes annule immédiatement la correction — l'exercice redevient prioritaire", () => {
+    // Échec à J-4 (hors repos de 3 jours, voir "Repos après une tentative" ci-dessus — sans quoi le repos masquerait la mesure) précédé de 3 réussites autonomes plus anciennes.
+    const exercise = makeExercise({ status: "à faire", mastery: 0, attempts: 4, last_worked_at: new Date(NOW.getTime() - 4 * 86400000).toISOString() });
+    const sessions = [
+      makeSession(exercise.id, { result: "échoué", started_at: new Date(NOW.getTime() - 4 * 86400000).toISOString() }),
+      makeSession(exercise.id, { result: "réussi", hints_used: 0, started_at: new Date(NOW.getTime() - 5 * 86400000).toISOString() }),
+      makeSession(exercise.id, { result: "réussi", hints_used: 0, started_at: new Date(NOW.getTime() - 6 * 86400000).toISOString() }),
+      makeSession(exercise.id, { result: "réussi", hints_used: 0, started_at: new Date(NOW.getTime() - 7 * 86400000).toISOString() }),
+    ];
+    const fresh = makeExercise();
+    const order = recommendExercises([exercise, fresh], sessions, 2, { now: NOW }).map((r) => r.exercise.id);
+    expect(order[0]).toBe(exercise.id);
+  });
+
+  it("ne modifie jamais mastery/status réels de l'élève — correction de classement uniquement", () => {
+    const { exercise, sessions } = autonomousSuccesses(5);
+    recommendExercises([exercise], sessions, 5, { now: NOW });
+    expect(exercise.mastery).toBe(0);
+    expect(exercise.status).toBe("à faire");
+  });
+});
+
+/**
+ * Départage par difficulté (audit moteur) — sans lui, deux exercices "jamais
+ * travaillé" du même chapitre ont un score RIGOUREUSEMENT identique tant que
+ * `comfort` n'existe pas (moins de 3 tentatives qualifiées dans toute la
+ * banque — le cas de tout nouvel élève) : l'ordre ne dépendait alors que de
+ * la position dans le tableau source, pas de la difficulté. Mesuré sur la
+ * vraie banque : 27 des 51 chapitres n'ont pas leur exercice le plus facile
+ * en premier.
+ */
+describe("Départage par difficulté à score égal — un débutant voit le plus facile d'abord", () => {
+  it("à score identique (cold start), le plus facile passe devant, quel que soit l'ordre du tableau source", () => {
+    const hard = makeExercise({ difficulty: 5 });
+    const easy = makeExercise({ difficulty: 1 });
+    expect(recommendExercises([hard, easy], [], 2, { now: NOW }).map((r) => r.exercise.id)[0]).toBe(easy.id);
+    expect(recommendExercises([easy, hard], [], 2, { now: NOW }).map((r) => r.exercise.id)[0]).toBe(easy.id);
+  });
+
+  it("un score réellement différent prime toujours sur la difficulté — jamais l'inverse", () => {
+    const urgentButHard = makeExercise({ difficulty: 5, status: "à revoir", mastery: 0 });
+    const freshButEasy = makeExercise({ difficulty: 1 });
+    const order = recommendExercises([urgentButHard, freshButEasy], [], 2, { now: NOW }).map((r) => r.exercise.id);
+    expect(order[0]).toBe(urgentButHard.id);
+  });
+});
