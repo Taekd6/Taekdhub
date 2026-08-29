@@ -8303,7 +8303,6 @@
     "type": "TD",
     "difficulty": 2,
     "chapter": "Optique géométrique",
-    "estimatedMinutel": 20,
     "estimatedMinutes": 20,
     "tags": [
       "classique",
@@ -9847,8 +9846,8 @@
     "archived": false
   },
   {
-    "title": "Effet de la température sur une constante d'équilibre — loi de Van't Hoff",
-    "statement": "On considère une réaction chimique en phase gazeuse d'enthalpie standard de réaction $\\Delta_rH°=-92\\ \\text{kJ}\\cdot\\text{mol}^{-1}$ (réaction exothermique), supposée indépendante de la température sur le domaine considéré. On rappelle la relation de Van't Hoff : $\\dfrac{d\\ln K°}{dT}=\\dfrac{\\Delta_rH°}{RT^2}$.\n1. À partir du signe de $\\Delta_rH°$, déterminer si $K°(T)$ est une fonction croissante ou décroissante de la température.\n2. En intégrant la relation de Van't Hoff entre deux températures $T_1$ et $T_2$ (avec $\\Delta_rH°$ constant), exprimer $\\ln\\dfrac{K°(T_2)}{K°(T_1)}$ en fonction de $\\Delta_rH°$, $R$, $T_1$, $T_2$.\n3. Sachant que $K°(298\\ \\text{K})=6{,}0\\times10^5$, calculer $K°(500\\ \\text{K})$, et vérifier que cette évolution est cohérente avec la loi de Le Chatelier appliquée à une élévation de température sur une réaction exothermique.",
+    "title": "Effet de la température sur une constante d'équilibre — loi de van't Hoff",
+    "statement": "On considère une réaction chimique en phase gazeuse d'enthalpie standard de réaction $\\Delta_rH°=-92\\ \\text{kJ}\\cdot\\text{mol}^{-1}$ (réaction exothermique), supposée indépendante de la température sur le domaine considéré. On rappelle la relation de van't Hoff : $\\dfrac{d\\ln K°}{dT}=\\dfrac{\\Delta_rH°}{RT^2}$.\n1. À partir du signe de $\\Delta_rH°$, déterminer si $K°(T)$ est une fonction croissante ou décroissante de la température.\n2. En intégrant la relation de van't Hoff entre deux températures $T_1$ et $T_2$ (avec $\\Delta_rH°$ constant), exprimer $\\ln\\dfrac{K°(T_2)}{K°(T_1)}$ en fonction de $\\Delta_rH°$, $R$, $T_1$, $T_2$.\n3. Sachant que $K°(298\\ \\text{K})=6{,}0\\times10^5$, calculer $K°(500\\ \\text{K})$, et vérifier que cette évolution est cohérente avec la loi de Le Chatelier appliquée à une élévation de température sur une réaction exothermique.",
     "source": "TaekdHub — exercice original (Sup)",
     "subject": "Chimie",
     "type": "DM",
@@ -9857,7 +9856,7 @@
     "estimatedMinutes": 30,
     "tags": [
       "transition spé",
-      "loi de Van't Hoff",
+      "loi de van't Hoff",
       "constante d'équilibre",
       "enthalpie de réaction"
     ],
@@ -9874,11 +9873,11 @@
     "licenseStatus": "libre",
     "level": 5,
     "prerequisites": [
-      "loi de Van't Hoff",
+      "loi de van't Hoff",
       "intégration",
       "loi de Le Chatelier"
     ],
-    "pedagogicalGoal": "établir et exploiter quantitativement la loi de Van't Hoff (intégration explicite), puis vérifier sa cohérence avec la loi de Le Chatelier déjà connue qualitativement — synthèse thermodynamique/équilibre.",
+    "pedagogicalGoal": "établir et exploiter quantitativement la loi de van't Hoff (intégration explicite), puis vérifier sa cohérence avec la loi de Le Chatelier déjà connue qualitativement — synthèse thermodynamique/équilibre.",
     "archived": false
   },
   {

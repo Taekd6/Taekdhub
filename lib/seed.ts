@@ -36,7 +36,7 @@ export const SEED_FLAG_KEY = "prepahub:seeded";
  * À INCRÉMENTER à chaque évolution significative de
  * `datasets/exercices-banque-complete.json`.
  */
-export const SEED_CONTENT_VERSION = 3;
+export const SEED_CONTENT_VERSION = 4;
 export const SEED_VERSION_KEY = "prepahub:seeded:version";
 
 /**
@@ -87,8 +87,9 @@ export async function loadSeedBank(): Promise<{ exercises: Exercise[]; chapters:
  * Clé de rapprochement entre un exercice déjà stocké et une fiche de la banque
  * embarquée. Les identifiants sont tirés au sort localement à l'amorçage
  * (`crypto.randomUUID`) : ils ne peuvent donc PAS servir de repère d'une
- * version à l'autre. `matière + titre` est unique sur les 435 fiches de la
- * banque (vérifié), et c'est la seule paire stable dans le temps.
+ * version à l'autre. `matière + titre` est la seule paire stable dans le
+ * temps ; son unicité sur la banque livrée n'est plus une vérification
+ * manuelle datée mais un invariant testé (voir lib/dataset-integrity.test.ts).
  */
 function bankKey(subject: string, title: string): string {
   return `${subject}::${title.trim().toLowerCase()}`;
