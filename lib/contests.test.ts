@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   contestChapterOptions,
+  contestCorrectionAvailability,
+  contestCorrectionHref,
+  contestDocumentAvailability,
+  contestDocumentHref,
   contestPapers,
   contestPaperKinds,
   contestPaperStatuses,
   contestProgressCounts,
-  contestResourceAvailable,
   defaultContestFilters,
   distinctContestCompetitions,
   distinctContestDifficulties,
@@ -79,6 +82,23 @@ describe("datasets/contest-papers.json — qualité des données (Phase 7 du cha
     for (const paper of contestPapers) {
       expect(paper.note).toBeTruthy();
     }
+  });
+
+  it("un PDF local n'est déclaré QUE si la redistribution est établie (licenseStatus « libre ») — invariant re-vérifié ici en plus de scripts/validate-contests.mjs", () => {
+    for (const paper of contestPapers) {
+      if (paper.localDocumentPath !== null) expect(paper.licenseStatus).toBe("libre");
+    }
+  });
+
+  it("documentSizeBytes/correctionSizeBytes ne sont renseignés QUE si le chemin local correspondant l'est aussi (pas de métadonnée orpheline)", () => {
+    for (const paper of contestPapers) {
+      expect(paper.documentSizeBytes === null).toBe(paper.localDocumentPath === null);
+      expect(paper.correctionSizeBytes === null).toBe(paper.localCorrectionPath === null);
+    }
+  });
+
+  it("aucun sujet réel n'est aujourd'hui marqué PDF embarqué (audit honnête : aucun accès réseau sortant disponible pour vérifier/récupérer un PDF depuis cet environnement)", () => {
+    expect(contestPapers.every((paper) => paper.localDocumentPath === null)).toBe(true);
   });
 });
 
@@ -268,10 +288,56 @@ describe("Options de filtre — dérivées des données réelles, jamais un cata
   });
 });
 
-describe("contestResourceAvailable — honnêteté de l'affichage « ressource à ajouter »", () => {
-  it("vrai seulement si une ressource officielle est réellement renseignée", () => {
-    expect(contestResourceAvailable({ ...contestPapers[0], resourceUrl: "https://example.fr" })).toBe(true);
-    expect(contestResourceAvailable({ ...contestPapers[0], resourceUrl: null })).toBe(false);
+describe("contestDocumentAvailability/contestCorrectionAvailability — toujours dérivées, jamais un statut dénormalisé (chantier bibliothèque PDF)", () => {
+  const base = contestPapers[0];
+
+  it("« bundled » dès qu'un PDF local est renseigné, même si un lien officiel existe aussi (priorité au local)", () => {
+    const paper: ContestPaper = { ...base, localDocumentPath: "/contest-papers/x.pdf", documentSizeBytes: 100, resourceUrl: "https://example.fr" };
+    expect(contestDocumentAvailability(paper)).toBe("bundled");
+  });
+
+  it("« official-link » quand seul un lien officiel existe (aucun PDF local)", () => {
+    const paper: ContestPaper = { ...base, localDocumentPath: null, resourceUrl: "https://example.fr" };
+    expect(contestDocumentAvailability(paper)).toBe("official-link");
+  });
+
+  it("« unavailable » quand ni PDF local ni lien officiel n'existent", () => {
+    const paper: ContestPaper = { ...base, localDocumentPath: null, resourceUrl: null };
+    expect(contestDocumentAvailability(paper)).toBe("unavailable");
+  });
+
+  it("le corrigé a sa propre disponibilité, indépendante de celle du sujet", () => {
+    const paper: ContestPaper = { ...base, localDocumentPath: null, resourceUrl: null, localCorrectionPath: "/contest-papers/corr.pdf", correctionUrl: null };
+    expect(contestDocumentAvailability(paper)).toBe("unavailable");
+    expect(contestCorrectionAvailability(paper)).toBe("bundled");
+  });
+
+  it("toutes les entrées réelles du catalogue sont aujourd'hui « official-link » (aucun PDF embarqué vérifié à ce jour)", () => {
+    for (const paper of contestPapers) expect(contestDocumentAvailability(paper)).toBe("official-link");
+  });
+});
+
+describe("contestDocumentHref/contestCorrectionHref — lien à ouvrir, priorité au PDF local", () => {
+  const base = contestPapers[0];
+
+  it("pointe vers le PDF local quand il existe", () => {
+    const paper: ContestPaper = { ...base, localDocumentPath: "/contest-papers/x.pdf", documentSizeBytes: 100, resourceUrl: "https://example.fr" };
+    expect(contestDocumentHref(paper)).toBe("/contest-papers/x.pdf");
+  });
+
+  it("retombe sur le lien officiel en l'absence de PDF local", () => {
+    const paper: ContestPaper = { ...base, localDocumentPath: null, resourceUrl: "https://example.fr" };
+    expect(contestDocumentHref(paper)).toBe("https://example.fr");
+  });
+
+  it("retourne null si aucune des deux sources n'existe — jamais un lien inventé", () => {
+    const paper: ContestPaper = { ...base, localDocumentPath: null, resourceUrl: null };
+    expect(contestDocumentHref(paper)).toBeNull();
+  });
+
+  it("même comportement pour le corrigé, indépendamment du sujet", () => {
+    const paper: ContestPaper = { ...base, correctionUrl: "https://example.fr/corrige", localCorrectionPath: null };
+    expect(contestCorrectionHref(paper)).toBe("https://example.fr/corrige");
   });
 });
 

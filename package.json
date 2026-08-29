@@ -7,7 +7,8 @@
     "build": "next build",
     "postbuild": "node scripts/generate-sw.mjs",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "contests:validate": "node scripts/validate-contests.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

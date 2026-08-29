@@ -2,13 +2,20 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { memo } from "react";
-import { ChevronDown, ExternalLink, Heart } from "lucide-react";
+import { ChevronDown, ExternalLink, FileText, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { ContestStatusBadge } from "@/components/contests/contest-badges";
-import { contestResourceAvailable, resolveContestChapters, type ContestPaperView } from "@/lib/contests";
+import {
+  contestCorrectionAvailability,
+  contestCorrectionHref,
+  contestDocumentAvailability,
+  contestDocumentHref,
+  resolveContestChapters,
+  type ContestPaperView,
+} from "@/lib/contests";
 import { cn } from "@/lib/cn";
 import type { Chapter, ContestPaperStatus } from "@/lib/storage";
 
@@ -31,7 +38,10 @@ interface ContestCardProps {
 
 function ContestCardImpl({ paper, selected, chapters, onToggle, onStart, onComplete, onReopen, onToggleFavorite }: ContestCardProps) {
   const paperChapters = resolveContestChapters(paper, chapters);
-  const hasResource = contestResourceAvailable(paper);
+  const documentAvailability = contestDocumentAvailability(paper);
+  const documentHref = contestDocumentHref(paper);
+  const correctionAvailability = contestCorrectionAvailability(paper);
+  const correctionHref = contestCorrectionHref(paper);
 
   return (
     <motion.article
@@ -60,9 +70,8 @@ function ContestCardImpl({ paper, selected, chapters, onToggle, onStart, onCompl
                 {chapter.label}
               </Badge>
             ))}
-            {!hasResource && (
-              <Badge variant="warning">Ressource à ajouter</Badge>
-            )}
+            {documentAvailability === "bundled" && <Badge variant="success">PDF disponible hors ligne</Badge>}
+            {documentAvailability === "unavailable" && <Badge variant="warning">Ressource à ajouter</Badge>}
           </div>
         </button>
         <div className="flex items-center justify-between gap-3 sm:justify-end">
@@ -100,17 +109,28 @@ function ContestCardImpl({ paper, selected, chapters, onToggle, onStart, onCompl
               )}
               {paper.note && <p className="text-sm leading-6 text-muted">{paper.note}</p>}
               <div className="flex flex-wrap items-center gap-2">
-                {hasResource ? (
-                  <a href={paper.resourceUrl!} target="_blank" rel="noreferrer noopener" className={buttonVariants({ variant: "secondary" })}>
-                    <ExternalLink size={16} /> Ouvrir le portail officiel
+                {documentAvailability === "bundled" && (
+                  <a href={documentHref!} target="_blank" rel="noreferrer noopener" className={buttonVariants({ variant: "primary" })}>
+                    <FileText size={16} /> Lire le sujet (PDF)
                   </a>
-                ) : (
+                )}
+                {documentAvailability === "official-link" && (
+                  <a href={documentHref!} target="_blank" rel="noreferrer noopener" className={buttonVariants({ variant: "secondary" })}>
+                    <ExternalLink size={16} /> Voir le sujet officiel
+                  </a>
+                )}
+                {documentAvailability === "unavailable" && (
                   <p className="text-sm text-muted">
                     Aucune ressource vérifiée n&apos;est encore rattachée à ce sujet — l&apos;énoncé n&apos;est pas reproduit dans TaekdHub (droits d&apos;auteur).
                   </p>
                 )}
-                {paper.correctionUrl && (
-                  <a href={paper.correctionUrl} target="_blank" rel="noreferrer noopener" className={buttonVariants({ variant: "secondary" })}>
+                {correctionAvailability === "bundled" && (
+                  <a href={correctionHref!} target="_blank" rel="noreferrer noopener" className={buttonVariants({ variant: "secondary" })}>
+                    <FileText size={16} /> Corrigé (PDF)
+                  </a>
+                )}
+                {correctionAvailability === "official-link" && (
+                  <a href={correctionHref!} target="_blank" rel="noreferrer noopener" className={buttonVariants({ variant: "secondary" })}>
                     <ExternalLink size={16} /> Corrigé
                   </a>
                 )}

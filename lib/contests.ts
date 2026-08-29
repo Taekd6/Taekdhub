@@ -1,7 +1,7 @@
 import contestPapersData from "@/datasets/contest-papers.json";
 import { getChaptersForSubject } from "@/lib/chapters";
 import { subjects } from "@/lib/study";
-import type { Chapter, Competition, ContestPaper, ContestPaperKind, ContestPaperStatus, ContestProgress } from "@/lib/storage";
+import type { Chapter, Competition, ContestDocumentAvailability, ContestPaper, ContestPaperKind, ContestPaperStatus, ContestProgress } from "@/lib/storage";
 import type { Difficulty, Subject } from "@/lib/supabase/types";
 
 /**
@@ -97,9 +97,41 @@ export function resolveContestChapters(paper: ContestPaper, chapters: Chapter[])
     .filter((chapter): chapter is Chapter => chapter !== undefined);
 }
 
-/** `true` si une ressource officielle est réellement disponible — pilote l'affichage honnête "ressource à ajouter" plutôt qu'un lien mort ou un PDF non vérifié (voir la doc de `ContestPaper.resourceUrl`). */
-export function contestResourceAvailable(paper: ContestPaper): boolean {
-  return paper.resourceUrl !== null;
+/**
+ * Disponibilité RÉELLE du sujet — toujours dérivée de `localDocumentPath`/
+ * `resourceUrl`, jamais d'un champ dénormalisé (voir la doc de
+ * `ContestDocumentAvailability`, lib/storage.ts). C'est la SEULE source de
+ * vérité que l'UI doit interroger pour décider quel CTA afficher — jamais
+ * `paper.resourceUrl`/`localDocumentPath` directement, pour ne jamais
+ * dupliquer cette logique de priorité (bundled avant official-link).
+ */
+export function contestDocumentAvailability(paper: ContestPaper): ContestDocumentAvailability {
+  if (paper.localDocumentPath) return "bundled";
+  if (paper.resourceUrl) return "official-link";
+  return "unavailable";
+}
+
+/** Même principe que `contestDocumentAvailability`, pour le CORRIGÉ (`localCorrectionPath`/`correctionUrl`) — un sujet et son corrigé ont chacun leur propre disponibilité, jamais couplée. */
+export function contestCorrectionAvailability(paper: ContestPaper): ContestDocumentAvailability {
+  if (paper.localCorrectionPath) return "bundled";
+  if (paper.correctionUrl) return "official-link";
+  return "unavailable";
+}
+
+/** Lien à ouvrir pour LIRE le sujet — le PDF embarqué en priorité, sinon le portail officiel, `null` si aucun des deux n'existe. Centralise l'ordre de priorité pour que l'UI n'ait jamais à le recalculer elle-même. */
+export function contestDocumentHref(paper: ContestPaper): string | null {
+  const availability = contestDocumentAvailability(paper);
+  if (availability === "bundled") return paper.localDocumentPath;
+  if (availability === "official-link") return paper.resourceUrl;
+  return null;
+}
+
+/** Même principe que `contestDocumentHref`, pour le corrigé. */
+export function contestCorrectionHref(paper: ContestPaper): string | null {
+  const availability = contestCorrectionAvailability(paper);
+  if (availability === "bundled") return paper.localCorrectionPath;
+  if (availability === "official-link") return paper.correctionUrl;
+  return null;
 }
 
 /** État complet des filtres + recherche de la banque de sujets — même convention que `ExerciseFilters` (lib/exercise-filters.ts). */
@@ -145,7 +177,7 @@ export function filterContestPapers(papers: ContestPaperView[], filters: Contest
     .filter((paper) => filters.difficulty === "Toutes" || paper.difficulty === filters.difficulty)
     .filter((paper) => filters.chapter === "Tous" || resolveContestChapters(paper, chapters).some((chapter) => chapter.id === filters.chapter))
     .filter((paper) => filters.status === "Tous" || paper.status === filters.status)
-    .filter((paper) => !filters.withCorrectionOnly || paper.correctionUrl !== null)
+    .filter((paper) => !filters.withCorrectionOnly || contestCorrectionAvailability(paper) !== "unavailable")
     .filter((paper) => !filters.favoritesOnly || paper.favorite)
     .filter((paper) => matchesContestSearch(paper, filters.query));
 }

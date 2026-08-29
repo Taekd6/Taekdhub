@@ -93,6 +93,31 @@ export type Competition = "CCINP" | "Mines-Ponts" | "Centrale" | "e3a" | "PT" | 
 export type ContestPaperKind = "écrit" | "oral";
 
 /**
+ * Disponibilité RÉELLE d'un document (sujet ou corrigé) — chantier "bibliothèque
+ * de sujets PDF". Toujours DÉRIVÉE (voir `contestDocumentAvailability`/
+ * `contestCorrectionAvailability`, lib/contests.ts), jamais stockée telle
+ * quelle dans le dataset : un champ dénormalisé pourrait diverger des chemins
+ * réels (fichier renommé/supprimé) sans qu'aucun code ne le détecte, alors
+ * qu'une fonction pure calculée à partir de `localDocumentPath`/`resourceUrl`
+ * ne peut structurellement jamais mentir.
+ *
+ * - "bundled" : le PDF est un asset statique livré avec l'app
+ *   (`public/contest-papers/<id>.pdf`), lisible et fonctionnel hors ligne dès
+ *   qu'il a été ouvert une première fois en ligne (mis en cache par le
+ *   service worker comme toute ressource statique du même domaine — voir
+ *   service-worker/sw.template.js, `staleWhileRevalidate`). Réservé aux
+ *   documents dont la redistribution est explicitement établie
+ *   (`ContestPaper.licenseStatus === "libre"` — voir
+ *   scripts/validate-contests.mjs, qui refuse tout `localDocumentPath` sans
+ *   cette condition).
+ * - "official-link" : aucun fichier embarqué, mais un lien vers le PORTAIL
+ *   OFFICIEL du concours existe (`resourceUrl`/`correctionUrl`) — jamais
+ *   disponible hors ligne, TaekdHub ne le prétend jamais.
+ * - "unavailable" : ni fichier embarqué, ni source officielle identifiée.
+ */
+export type ContestDocumentAvailability = "bundled" | "official-link" | "unavailable";
+
+/**
  * Progression de l'élève sur un sujet — volontairement plus simple que
  * `ExerciseStatus` (pas de "à revoir"/"maîtrisé" : un sujet de concours
  * entier ne se "maîtrise" pas au sens gradué d'un exercice, voir la doc de
@@ -151,11 +176,27 @@ export interface ContestPaper {
   tags: string[];
   /** Libellé source complet, ex. "Centrale-Supélec Maths 1 MP-MPI 2024". */
   source: string;
-  /** Portail officiel du concours (page d'archives), jamais un lien direct vers un PDF non vérifié. `null` si aucune source fiable identifiée — voir `contestResourceAvailable` (lib/contests.ts), qui pilote l'affichage honnête "ressource à ajouter". */
+  /** Portail officiel du concours (page d'archives), jamais un lien direct vers un PDF non vérifié. `null` si aucune source fiable identifiée — voir `contestDocumentAvailability` (lib/contests.ts), qui pilote l'affichage honnête du CTA (PDF embarqué / portail officiel / indisponible). */
   resourceUrl: string | null;
   /** Lien vers un corrigé, si une source fiable existe. `null` sinon — jamais deviné. */
   correctionUrl: string | null;
-  /** Statut de réutilisation — voir `LicenseStatus` (lib/supabase/types.ts), même sémantique que pour un exercice importé d'un concours. */
+  /**
+   * Chemin de l'asset PDF du SUJET embarqué sous `public/contest-papers/`
+   * (ex. "/contest-papers/ccinp-2024-maths1.pdf"), servi statiquement par
+   * Next.js et mis en cache par le service worker dès la première ouverture
+   * en ligne — donc lisible hors ligne ensuite. `null` tant qu'aucun fichier
+   * vérifié n'est embarqué (voir la doc de `ContestDocumentAvailability`).
+   * Un `localDocumentPath` non nul EXIGE `licenseStatus === "libre"` — imposé
+   * par `scripts/validate-contests.mjs`, jamais une simple convention.
+   */
+  localDocumentPath: string | null;
+  /** Taille en octets du PDF embarqué — uniquement quand `localDocumentPath` est renseigné, pour affichage et pour que le script de validation détecte un fichier substitué/tronqué. `null` sinon. */
+  documentSizeBytes: number | null;
+  /** Même principe que `localDocumentPath`, pour un CORRIGÉ embarqué séparément du sujet — un corrigé peut être disponible (ou non) indépendamment de l'énoncé. `null` tant qu'aucun corrigé n'est embarqué. */
+  localCorrectionPath: string | null;
+  /** Taille en octets du corrigé embarqué — même rôle que `documentSizeBytes`, pour `localCorrectionPath`. `null` sinon. */
+  correctionSizeBytes: number | null;
+  /** Statut de réutilisation du SUJET — voir `LicenseStatus` (lib/supabase/types.ts), même sémantique que pour un exercice importé d'un concours. Condition nécessaire (mais pas suffisante à elle seule : voir `scripts/validate-contests.mjs`) pour embarquer `localDocumentPath`. */
   licenseStatus: LicenseStatus;
   /** Précision destinée à l'élève (ex. pourquoi l'énoncé n'est pas reproduit, ce qui est identifié ou non) — `null` si non renseigné. */
   note: string | null;

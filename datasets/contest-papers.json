@@ -10,12 +10,18 @@
     "difficulty": null,
     "durationMinutes": 240,
     "chapterLabels": [],
-    "tags": ["annale-réelle"],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "CCINP Maths 1 MP-MPI 2024",
     "resourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "ccinp-2024-maths2",
@@ -28,12 +34,18 @@
     "difficulty": null,
     "durationMinutes": 240,
     "chapterLabels": [],
-    "tags": ["annale-réelle"],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "CCINP Maths 2 MP-MPI 2024",
     "resourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "ccinp-2023-maths1",
@@ -46,12 +58,18 @@
     "difficulty": null,
     "durationMinutes": 240,
     "chapterLabels": [],
-    "tags": ["annale-réelle"],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "CCINP Maths 1 MP-MPI 2023",
     "resourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "ccinp-2023-physique-chimie",
@@ -64,12 +82,18 @@
     "difficulty": null,
     "durationMinutes": 240,
     "chapterLabels": [],
-    "tags": ["annale-réelle"],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "CCINP Physique-Chimie MP 2023",
     "resourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "mines-ponts-2024-maths1",
@@ -82,12 +106,18 @@
     "difficulty": null,
     "durationMinutes": 240,
     "chapterLabels": [],
-    "tags": ["annale-réelle"],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "Mines-Ponts Maths 1 MP-MPI 2024",
     "resourceUrl": "https://concoursminesponts.fr/",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "mines-ponts-2024-maths2",
@@ -100,12 +130,18 @@
     "difficulty": null,
     "durationMinutes": 240,
     "chapterLabels": [],
-    "tags": ["annale-réelle"],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "Mines-Ponts Maths 2 MP-MPI 2024",
     "resourceUrl": "https://concoursminesponts.fr/",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "mines-ponts-2023-maths2",
@@ -117,13 +153,21 @@
     "kind": "écrit",
     "difficulty": null,
     "durationMinutes": 240,
-    "chapterLabels": ["Intégration"],
-    "tags": ["annale-réelle"],
+    "chapterLabels": [
+      "Intégration"
+    ],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "Mines-Ponts Maths 2 MP-MPI 2023",
     "resourceUrl": "https://concoursminesponts.fr/",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (fonction de Wallis). Le chapitre indiqué reflète ce thème, pas une lecture exhaustive de l'énoncé. Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (fonction de Wallis). Le chapitre indiqué reflète ce thème, pas une lecture exhaustive de l'énoncé. Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "mines-ponts-2024-physique1",
@@ -136,12 +180,18 @@
     "difficulty": null,
     "durationMinutes": 240,
     "chapterLabels": [],
-    "tags": ["annale-réelle"],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "Mines-Ponts Physique 1 MP-MPI 2024",
     "resourceUrl": "https://concoursminesponts.fr/",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "mines-ponts-2023-chimie",
@@ -154,12 +204,18 @@
     "difficulty": null,
     "durationMinutes": 180,
     "chapterLabels": [],
-    "tags": ["annale-réelle"],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "Mines-Ponts Chimie MP 2023",
     "resourceUrl": "https://concoursminesponts.fr/",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (chimie de coordination). Aucun chapitre de la banque TaekdHub ne couvre la chimie de coordination à ce jour : non rattaché. Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (chimie de coordination). Aucun chapitre de la banque TaekdHub ne couvre la chimie de coordination à ce jour : non rattaché. Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "e3a-2024-maths",
@@ -172,12 +228,18 @@
     "difficulty": null,
     "durationMinutes": 240,
     "chapterLabels": [],
-    "tags": ["annale-réelle"],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "e3a Mathématiques MP-MPI 2024",
     "resourceUrl": "https://www.e3a-polytech.fr/annales-et-rapport/",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "e3a-2023-maths",
@@ -189,13 +251,21 @@
     "kind": "écrit",
     "difficulty": null,
     "durationMinutes": 240,
-    "chapterLabels": ["Polynômes"],
-    "tags": ["annale-réelle"],
+    "chapterLabels": [
+      "Polynômes"
+    ],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "e3a Mathématiques MP-MPI 2023",
     "resourceUrl": "https://www.e3a-polytech.fr/annales-et-rapport/",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (polynômes, intégrales à paramètre). Le chapitre indiqué reflète ce thème, pas une lecture exhaustive de l'énoncé. Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (polynômes, intégrales à paramètre). Le chapitre indiqué reflète ce thème, pas une lecture exhaustive de l'énoncé. Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "e3a-2024-physique-chimie",
@@ -208,12 +278,18 @@
     "difficulty": null,
     "durationMinutes": 240,
     "chapterLabels": [],
-    "tags": ["annale-réelle"],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "e3a Physique-Chimie MP 2024",
     "resourceUrl": "https://www.e3a-polytech.fr/annales-et-rapport/",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème non identifié sans lecture de l'énoncé complet. Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "centrale-2024-maths1",
@@ -225,13 +301,21 @@
     "kind": "écrit",
     "difficulty": null,
     "durationMinutes": 240,
-    "chapterLabels": ["Polynômes"],
-    "tags": ["annale-réelle"],
+    "chapterLabels": [
+      "Polynômes"
+    ],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "Centrale-Supélec Maths 1 MP-MPI 2024",
     "resourceUrl": "https://www.concours-centrale-supelec.fr/",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (calcul ombral, suites de polynômes de type binomial). Le chapitre indiqué reflète ce thème, pas une lecture exhaustive de l'énoncé. Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (calcul ombral, suites de polynômes de type binomial). Le chapitre indiqué reflète ce thème, pas une lecture exhaustive de l'énoncé. Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "centrale-2024-maths2",
@@ -244,12 +328,18 @@
     "difficulty": null,
     "durationMinutes": 240,
     "chapterLabels": [],
-    "tags": ["annale-réelle"],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "Centrale-Supélec Maths 2 MP-MPI 2024",
     "resourceUrl": "https://www.concours-centrale-supelec.fr/",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (applications de la fonction gaussienne). Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (applications de la fonction gaussienne). Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "centrale-2023-physique-chimie1",
@@ -262,12 +352,18 @@
     "difficulty": null,
     "durationMinutes": 240,
     "chapterLabels": [],
-    "tags": ["annale-réelle"],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "Centrale-Supélec Physique-Chimie 1 MP 2023",
     "resourceUrl": "https://www.concours-centrale-supelec.fr/",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (contexte climatique). Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (contexte climatique). Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   },
   {
     "id": "centrale-2024-informatique",
@@ -280,11 +376,17 @@
     "difficulty": null,
     "durationMinutes": 180,
     "chapterLabels": [],
-    "tags": ["annale-réelle"],
+    "tags": [
+      "annale-réelle"
+    ],
     "source": "Centrale-Supélec Informatique optionnelle MP 2024",
     "resourceUrl": "https://www.concours-centrale-supelec.fr/",
     "correctionUrl": null,
     "licenseStatus": "à vérifier",
-    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (langages formels, automates). Consulte l'énoncé et le corrigé officiel via le portail du concours."
+    "note": "Sujet non reproduit dans TaekdHub (droits d'auteur) — thème public connu (langages formels, automates). Consulte l'énoncé et le corrigé officiel via le portail du concours.",
+    "localDocumentPath": null,
+    "documentSizeBytes": null,
+    "localCorrectionPath": null,
+    "correctionSizeBytes": null
   }
 ]
