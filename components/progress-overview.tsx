@@ -10,6 +10,7 @@ import { Section } from "@/components/ui/section";
 import { CircularProgress, ProgressBar } from "@/components/ui/progress";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Heatmap } from "@/components/heatmap";
+import { cn } from "@/lib/cn";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
@@ -143,6 +144,21 @@ function WorkingLevelCard({ exercises, sessions }: { exercises: Exercise[]; sess
       </p>
     </Section>
   );
+}
+
+/**
+ * "Dernière activité" d'un chapitre, pour la vue Chapitres — dérivée
+ * directement de `ChapterProgress.lastWorkedAt` (lib/progress.ts), jamais un
+ * second calcul de date. `null` veut dire "aucun exercice du chapitre n'a
+ * jamais été travaillé en focus", pas "il y a longtemps" : on le dit
+ * clairement plutôt que d'afficher une ancienneté inventée.
+ */
+function describeLastActivity(lastWorkedAt: string | null, now: Date): string {
+  if (!lastWorkedAt) return "Pas encore commencé";
+  const days = Math.floor((now.getTime() - new Date(lastWorkedAt).getTime()) / 86400000);
+  if (days <= 0) return "Travaillé aujourd'hui";
+  if (days === 1) return "Travaillé hier";
+  return `Travaillé il y a ${days} j`;
 }
 
 /**
@@ -292,10 +308,18 @@ export function ProgressOverview() {
 
   const model = useMemo(() => {
     const previousWeek = findPreviousWeekSnapshot(weekSnapshots);
+    // Même fonction que "Tes 3 priorités" (TopWeaknesses) ci-dessous, non
+    // tronquée cette fois : sert uniquement à savoir QUELS chapitres, parmi
+    // TOUS ceux de "Par chapitre", figurent déjà parmi les priorités du
+    // moteur — pas un second calcul de la notion de consolidation.
+    const consolidationByChapterId = new Map(
+      computeChaptersToConsolidate(exercises, sessions, chapters).map((entry) => [entry.chapter.id, entry])
+    );
     return {
       global: computeGlobalProgress(exercises),
       bySubject: computeProgressBySubject(exercises),
       byChapter: progressByChapter(exercises, chapters),
+      consolidationByChapterId,
       mastery: masteryDistribution(exercises),
       status: statusDistribution(exercises),
       totalTime: totalSeconds(sessions),
@@ -408,7 +432,12 @@ export function ProgressOverview() {
         </div>
       </Section>
 
-      <Section rank="secondary" eyebrow="Répartition" title="Par chapitre">
+      <Section
+        rank="secondary"
+        eyebrow="Répartition"
+        title="Par chapitre"
+        description="Ouvre directement sur le prochain exercice utile de chaque chapitre — la même sélection que le moteur de recommandation."
+      >
         {model.byChapter.length ? (
           // Groupé par matière (dans l'ordre du programme, `subjects` de
           // lib/study.ts) plutôt qu'une seule grille plate de ~40 chapitres :
@@ -433,17 +462,48 @@ export function ProgressOverview() {
                     </p>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                    {subjectChapters.map(({ chapter, total, mastered, completionRate }) => (
-                      <div key={chapter.id} className="rounded-lg border border-hairline/[0.07] p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="min-w-0 truncate text-sm font-medium text-ink">{chapter.label}</p>
-                          <span className="whitespace-nowrap text-xs text-muted">
-                            {mastered}/{total}
-                          </span>
+                    {subjectChapters.map(({ chapter, total, mastered, completionRate, workedCount, lastWorkedAt, maxDifficultyMastered, nextExerciseId }) => {
+                      const needsConsolidation = model.consolidationByChapterId.has(chapter.id);
+                      const content = (
+                        <>
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="min-w-0 truncate text-sm font-medium text-ink">{chapter.label}</p>
+                            <span className="whitespace-nowrap text-xs text-muted">
+                              {mastered}/{total}
+                            </span>
+                          </div>
+                          <ProgressBar value={completionRate} animated={false} barClassName="bg-accent/80" className="mt-3 h-1" />
+                          <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-2xs text-subtle">
+                            <span>{describeLastActivity(lastWorkedAt, new Date())}</span>
+                            {workedCount > 0 && (
+                              <span>
+                                · {workedCount} travaillé{workedCount > 1 ? "s" : ""}
+                              </span>
+                            )}
+                            {maxDifficultyMastered !== null && <span>· difficulté {maxDifficultyMastered}/5 atteinte</span>}
+                          </div>
+                          {needsConsolidation && (
+                            <span className="mt-2 inline-flex">
+                              <Badge variant="warning">À consolider</Badge>
+                            </span>
+                          )}
+                        </>
+                      );
+                      const tileClassName = "block rounded-lg border border-hairline/[0.07] p-3";
+                      return nextExerciseId ? (
+                        <Link
+                          key={chapter.id}
+                          href={`/exercises?focus=${nextExerciseId}`}
+                          className={cn(tileClassName, "focus-ring transition-colors hover:bg-inset")}
+                        >
+                          {content}
+                        </Link>
+                      ) : (
+                        <div key={chapter.id} className={tileClassName}>
+                          {content}
                         </div>
-                        <ProgressBar value={completionRate} animated={false} barClassName="bg-accent/80" className="mt-3 h-1" />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}

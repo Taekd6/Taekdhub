@@ -109,6 +109,20 @@ export function statusDistribution(exercises: Exercise[]): StatusBucket[] {
   });
 }
 
+/**
+ * Un exercice sur lequel l'élève est déjà réellement intervenu — tenté
+ * (`attempts > 0`), sorti de "à faire", ou déjà travaillé en focus
+ * (`last_worked_at`). Prédicat UNIQUE, jusqu'ici recopié à l'identique dans
+ * `lib/next-action.ts` (`hasChapterEngagement`) et `lib/readiness.ts`
+ * (`hasSubjectEngagement`) — les trois commentaires se renvoyaient déjà l'un
+ * à l'autre en affirmant "même critère, jamais un second calcul", sans que
+ * ce soit vrai en pratique. Centralisé ici (le module le plus bas de cette
+ * chaîne d'imports) pour que ce soit enfin le cas.
+ */
+export function isExerciseEngaged(exercise: Exercise): boolean {
+  return exercise.attempts > 0 || exercise.status !== "à faire" || exercise.last_worked_at !== null;
+}
+
 export interface ChapterProgress {
   chapter: Chapter;
   total: number;
@@ -117,13 +131,28 @@ export interface ChapterProgress {
   completionRate: number;
   /** Moyenne de `Exercise.mastery` (0-100) sur les exercices actifs du chapitre, arrondie à l'entier — même calcul que `computeExerciseBankStats` (lib/recommendation.ts), à l'échelle du chapitre. 0 si `total` est nul. */
   averageMastery: number;
+  /** Nombre d'exercices du chapitre réellement engagés (voir `isExerciseEngaged`) — distinct de `mastered` : un exercice tenté et raté compte ici, pas dans `mastered`. */
+  workedCount: number;
+  /** Le plus récent `Exercise.last_worked_at` du chapitre — `null` si aucun exercice n'a jamais été travaillé en focus. */
+  lastWorkedAt: string | null;
+  /** Plus haute `Exercise.difficulty` (1-5) parmi les exercices déjà maîtrisés du chapitre — `null` tant qu'aucun n'est maîtrisé : "jusqu'où" l'élève est vraiment allé, pas seulement "combien". */
+  maxDifficultyMastered: number | null;
+  /**
+   * Prochain exercice à travailler dans ce chapitre — le premier non
+   * maîtrisé, sinon le premier tout court (même règle que
+   * `computeChaptersToConsolidate`, lib/next-action.ts, qui la reprend
+   * désormais d'ici plutôt que de la recalculer). `null` si le chapitre est
+   * vide (ne devrait pas arriver, `progressByChapter` filtre déjà `total > 0`).
+   */
+  nextExerciseId: string | null;
 }
 
 /**
- * Progression par chapitre (Sprint 3D) — uniquement les chapitres qui ont au
- * moins un exercice actif assigné : un chapitre créé mais encore vide n'a
- * rien à montrer ici (pas de bruit administratif sur la page Progression).
- * Triés par nombre d'exercices décroissant.
+ * Progression par chapitre (Sprint 3D, enrichi pour la vue Chapitres) —
+ * uniquement les chapitres qui ont au moins un exercice actif assigné : un
+ * chapitre créé mais encore vide n'a rien à montrer ici (pas de bruit
+ * administratif sur la page Progression). Triés par nombre d'exercices
+ * décroissant.
  */
 export function progressByChapter(exercises: Exercise[], chapters: Chapter[]): ChapterProgress[] {
   const active = exercises.filter((exercise) => !exercise.archived);
@@ -131,6 +160,11 @@ export function progressByChapter(exercises: Exercise[], chapters: Chapter[]): C
     .map((chapter) => {
       const chapterExercises = active.filter((exercise) => exercise.chapter_id === chapter.id);
       const mastered = chapterExercises.filter((exercise) => exercise.status === "maîtrisé").length;
+      const lastWorkedTimestamps = chapterExercises
+        .map((exercise) => exercise.last_worked_at)
+        .filter((value): value is string => value !== null);
+      const masteredDifficulties = chapterExercises.filter((exercise) => exercise.status === "maîtrisé").map((exercise) => exercise.difficulty);
+      const nextExercise = chapterExercises.find((exercise) => exercise.status !== "maîtrisé") ?? chapterExercises[0];
       return {
         chapter,
         total: chapterExercises.length,
@@ -139,6 +173,12 @@ export function progressByChapter(exercises: Exercise[], chapters: Chapter[]): C
         averageMastery: chapterExercises.length
           ? Math.round(chapterExercises.reduce((sum, exercise) => sum + exercise.mastery, 0) / chapterExercises.length)
           : 0,
+        workedCount: chapterExercises.filter(isExerciseEngaged).length,
+        lastWorkedAt: lastWorkedTimestamps.length
+          ? new Date(Math.max(...lastWorkedTimestamps.map((value) => new Date(value).getTime()))).toISOString()
+          : null,
+        maxDifficultyMastered: masteredDifficulties.length ? Math.max(...masteredDifficulties) : null,
+        nextExerciseId: nextExercise?.id ?? null,
       };
     })
     .filter((entry) => entry.total > 0)

@@ -1,4 +1,4 @@
-import { computeProgressBySubject } from "@/lib/progress";
+import { computeProgressBySubject, isExerciseEngaged } from "@/lib/progress";
 import { estimatedDurationMinutes, recommendExercises } from "@/lib/recommendation";
 import { subjects } from "@/lib/study";
 import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
@@ -57,11 +57,6 @@ function readinessLevel(flaggedCount: number, completionRate: number, hasEngagem
   return completionRate >= 50 ? "à consolider" : "pas prêt";
 }
 
-/** Au moins un exercice de la matière a déjà été engagé — même critère que `hasChapterEngagement` (lib/next-action.ts), jamais un second calcul de la même notion. */
-function hasSubjectEngagement(subjectExercises: Exercise[]): boolean {
-  return subjectExercises.some((exercise) => exercise.attempts > 0 || exercise.status !== "à faire" || exercise.last_worked_at !== null);
-}
-
 /** Uniquement les matières avec au moins un exercice actif — une matière vide n'a rien à évaluer. */
 export function computeReadinessBySubject(exercises: Exercise[], sessions: WorkSession[], now: Date = new Date()): SubjectReadiness[] {
   const active = exercises.filter((exercise) => !exercise.archived);
@@ -82,7 +77,7 @@ export function computeReadinessBySubject(exercises: Exercise[], sessions: WorkS
       const total = entry?.total ?? 0;
       const completionRate = entry?.completionRate ?? 0;
       const flaggedEntry = flaggedBySubject.get(subject);
-      const engaged = hasSubjectEngagement(active.filter((exercise) => exercise.subject === subject));
+      const engaged = active.filter((exercise) => exercise.subject === subject).some(isExerciseEngaged);
       return {
         subject,
         total,

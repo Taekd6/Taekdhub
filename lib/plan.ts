@@ -340,6 +340,35 @@ export interface StoredPlan {
   source?: "plan-du-jour" | "libre";
 }
 
+/**
+ * Reconstruit une sélection utilisable (`ExerciseRecommendation[]`) à partir
+ * d'un `StoredPlan` déposé en sessionStorage — l'opération inverse de
+ * `serializePlan`/`buildFreeSessionPlan`. Un exercice supprimé ou archivé
+ * depuis le dépôt du plan est silencieusement ignoré, jamais une erreur : le
+ * plan a pu être déposé il y a un moment, la banque a pu changer entre-temps.
+ *
+ * Fonction PURE, volontairement séparée de la lecture/suppression de
+ * `sessionStorage` (qui reste la responsabilité de `SessionRunner`) — un même
+ * `StoredPlan` redonne toujours exactement la même sélection, quel que soit
+ * le nombre de fois où cette fonction est appelée. C'est précisément cette
+ * propriété qui a permis de corriger, sans risque de régression, un bug
+ * produit réel : une navigation client vers /session pouvait monter
+ * `SessionRunner` deux fois de suite (comportement Next.js général de cette
+ * app), et un retrait de la clé sessionStorage dès la première lecture
+ * faisait perdre le plan avant que le second montage — celui qui s'affiche
+ * réellement — ait pu le lire à son tour. La clé n'est désormais retirée
+ * qu'au moment réel de consommation (clic sur "Commencer ma séance"), jamais
+ * à la lecture — voir `SessionRunner`.
+ */
+export function resolveStoredPlan(stored: StoredPlan, exercises: Exercise[]): ExerciseRecommendation[] {
+  return stored.items
+    .map(({ exerciseId, reasons }) => {
+      const exercise = exercises.find((item) => item.id === exerciseId && !item.archived);
+      return exercise ? { exercise, score: 0, reasons } : null;
+    })
+    .filter((item): item is ExerciseRecommendation => item !== null);
+}
+
 /** Sérialise un `DailyPlan` pour la traversée Dashboard → /session — voir `PLAN_STORAGE_KEY`. */
 export function serializePlan(plan: DailyPlan): StoredPlan {
   return {

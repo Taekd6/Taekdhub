@@ -1,5 +1,5 @@
 import { resultCounts, type ResultCounts } from "@/lib/history";
-import { progressByChapter, type ChapterProgress } from "@/lib/progress";
+import { isExerciseEngaged, progressByChapter, type ChapterProgress } from "@/lib/progress";
 import { ASSISTED_HINTS_THRESHOLD, computeExerciseBankStats, explainReasons, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import type { Chapter } from "@/lib/storage";
 import { todaySeconds } from "@/lib/study";
@@ -232,20 +232,6 @@ const CHAPTER_STALE_DAYS = 7;
 const CHAPTER_RECENT_ATTEMPTS_WINDOW = 5;
 
 /**
- * Un chapitre où au moins un exercice a déjà été engagé — tenté (`attempts > 0`),
- * sorti de "à faire", ou déjà travaillé en focus (`last_worked_at`). "À
- * consolider" signifie renforcer quelque chose déjà abordé, pas signaler un
- * chapitre simplement pas encore commencé (ça, c'est le rôle de `computeNextAction`
- * / de la recommandation générale) — sans cette condition, sur une grosse
- * banque fraîchement amorcée où tout est à 0% par défaut, la quasi-totalité
- * des chapitres qualifierait pour une raison aussi peu actionnable que
- * "jamais travaillé", rendant la section inutile.
- */
-function hasChapterEngagement(chapterExercises: Exercise[]): boolean {
-  return chapterExercises.some((exercise) => exercise.attempts > 0 || exercise.status !== "à faire" || exercise.last_worked_at !== null);
-}
-
-/**
  * "À consolider" — jusqu'à 5 chapitres déjà engagés qui méritent le plus
  * d'attention, chacun avec au moins une raison lisible ("Pourquoi ce
  * chapitre ?"). Réutilise `progressByChapter` (lib/progress.ts) pour la
@@ -267,7 +253,13 @@ export function computeChaptersToConsolidate(
     .filter((entry) => entry.completionRate < 100)
     .map((entry) => {
       const chapterExercises = active.filter((exercise) => exercise.chapter_id === entry.chapter.id);
-      if (!hasChapterEngagement(chapterExercises)) return null;
+      // "À consolider" signifie renforcer quelque chose déjà abordé, pas
+      // signaler un chapitre simplement pas encore commencé (ça, c'est le
+      // rôle de `computeNextAction` / de la recommandation générale) — sans
+      // cette condition, sur une grosse banque fraîchement amorcée où tout
+      // est à 0% par défaut, la quasi-totalité des chapitres qualifierait
+      // pour une raison aussi peu actionnable que "jamais travaillé".
+      if (!chapterExercises.some(isExerciseEngaged)) return null;
 
       const reasons: string[] = [];
       if (entry.averageMastery < 50) reasons.push("Maîtrise faible");
@@ -292,23 +284,21 @@ export function computeChaptersToConsolidate(
       ).length;
       if (assistedCount >= 2) reasons.push(`${assistedCount} réussites avec indices`);
 
-      const lastWorkedTimestamps = chapterExercises
-        .map((exercise) => exercise.last_worked_at)
-        .filter((value): value is string => value !== null)
-        .map((value) => new Date(value).getTime());
-      if (lastWorkedTimestamps.length > 0) {
-        const days = Math.floor((now.getTime() - Math.max(...lastWorkedTimestamps)) / 86400000);
+      // `entry.lastWorkedAt`/`entry.nextExerciseId` viennent déjà de
+      // `progressByChapter` (lib/progress.ts) — jamais recalculés une
+      // seconde fois ici.
+      if (entry.lastWorkedAt) {
+        const days = Math.floor((now.getTime() - new Date(entry.lastWorkedAt).getTime()) / 86400000);
         if (days >= CHAPTER_STALE_DAYS) reasons.push(`Non travaillé depuis ${days} j`);
       }
 
-      const candidate = chapterExercises.find((exercise) => exercise.status !== "maîtrisé") ?? chapterExercises[0];
       const oldestAttempt = recentAttempts[recentAttempts.length - 1];
 
       return {
         chapter: entry.chapter,
         averageMastery: entry.averageMastery,
         reasons,
-        href: candidate ? `/exercises?focus=${candidate.id}` : "/exercises",
+        href: entry.nextExerciseId ? `/exercises?focus=${entry.nextExerciseId}` : "/exercises",
         evidence: {
           attempts: recentAttempts.length,
           sinceDays: oldestAttempt ? Math.floor((now.getTime() - new Date(oldestAttempt.started_at).getTime()) / 86400000) : null,

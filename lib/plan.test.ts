@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFreeSessionPlan, computeDailyPlan, planIntent, serializePlan } from "@/lib/plan";
+import { buildFreeSessionPlan, computeDailyPlan, planIntent, resolveStoredPlan, serializePlan, type StoredPlan } from "@/lib/plan";
 import { computeChaptersToConsolidate } from "@/lib/next-action";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, Mastery, Subject, WorkSession } from "@/lib/supabase/types";
@@ -334,5 +334,36 @@ describe("buildFreeSessionPlan", () => {
     const a = makeExercise();
     const stored = buildFreeSessionPlan([a], [], 50);
     expect(stored.items).toHaveLength(1);
+  });
+});
+
+describe("resolveStoredPlan — reconstruction du plan transporté vers /session", () => {
+  it("reconstruit la sélection dans l'ordre du plan stocké, avec les raisons d'origine", () => {
+    const a = makeExercise();
+    const b = makeExercise();
+    const stored: StoredPlan = { items: [{ exerciseId: b.id, reasons: ["Séance libre"] }, { exerciseId: a.id, reasons: ["Échec récent"] }], requestedMinutes: 20 };
+    const picks = resolveStoredPlan(stored, [a, b]);
+    expect(picks.map((pick) => pick.exercise.id)).toEqual([b.id, a.id]);
+    expect(picks[1].reasons).toEqual(["Échec récent"]);
+  });
+
+  it("ignore silencieusement un exercice supprimé depuis le dépôt du plan (banque changée entre-temps)", () => {
+    const stored: StoredPlan = { items: [{ exerciseId: "ex-disparu", reasons: [] }], requestedMinutes: 10 };
+    expect(resolveStoredPlan(stored, [])).toEqual([]);
+  });
+
+  it("ignore un exercice archivé depuis le dépôt du plan, même si son id existe toujours", () => {
+    const archived = makeExercise({ archived: true });
+    const stored: StoredPlan = { items: [{ exerciseId: archived.id, reasons: [] }], requestedMinutes: 10 };
+    expect(resolveStoredPlan(stored, [archived])).toEqual([]);
+  });
+
+  it("RÉGRESSION (fix double-montage /session) : appeler deux fois avec le même StoredPlan renvoie exactement le même résultat — la lecture ne dépend d'aucun effet de bord ni d'aucun état mutable, elle est donc sûre à rejouer sur un second montage sans perdre le plan", () => {
+    const a = makeExercise();
+    const stored: StoredPlan = { items: [{ exerciseId: a.id, reasons: ["Jamais travaillé"] }], requestedMinutes: 15 };
+    const first = resolveStoredPlan(stored, [a]);
+    const second = resolveStoredPlan(stored, [a]);
+    expect(second).toEqual(first);
+    expect(second).toHaveLength(1);
   });
 });

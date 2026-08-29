@@ -18,7 +18,7 @@ import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { levelFromXp, totalXp } from "@/lib/gamification";
 import { computeExerciseBankStats, estimatedDurationMinutes, explainReasons, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import { computeNextAction } from "@/lib/next-action";
-import { PLAN_STORAGE_KEY, type StoredPlan } from "@/lib/plan";
+import { PLAN_STORAGE_KEY, resolveStoredPlan, type StoredPlan } from "@/lib/plan";
 import { subjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
 import type { AttemptResult, Exercise, Subject } from "@/lib/supabase/types";
@@ -135,12 +135,7 @@ export function SessionRunner() {
     if (storedPlanRaw) {
       try {
         const stored = JSON.parse(storedPlanRaw) as StoredPlan;
-        const picks = stored.items
-          .map(({ exerciseId, reasons }) => {
-            const exercise = exercises.find((item) => item.id === exerciseId && !item.archived);
-            return exercise ? { exercise, score: 0, reasons } : null;
-          })
-          .filter((item): item is ExerciseRecommendation => item !== null);
+        const picks = resolveStoredPlan(stored, exercises);
         if (picks.length > 0) {
           setPlanSelection(picks);
           setPlanSource(stored.source ?? "plan-du-jour");
