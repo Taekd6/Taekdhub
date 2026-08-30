@@ -187,7 +187,69 @@ describe("recommendExercises — signaux échec/réussite (Sprint 5)", () => {
     expect(singleResult.reasons).toContain("Échec récent");
     expect(repeatedResult.reasons).toContain("Plusieurs échecs");
     expect(repeatedResult.reasons).not.toContain("Échec récent");
-    expect(repeatedResult.score).toBeGreaterThan(singleResult.score);
+
+    // UNE FOIS LE REPOS PASSÉ, plusieurs échecs pèsent bien plus qu'un seul :
+    // c'est le sens du signal, et il est intact.
+    //
+    // La comparaison se fait volontairement APRÈS la période de repos. Tant
+    // qu'on est dedans, l'ordre est désormais l'inverse — et c'est délibéré :
+    // le repos imposé grandit avec l'enlisement (voir `recentAttemptPenalty`),
+    // donc un exercice raté deux fois de suite hier passe TEMPORAIREMENT
+    // derrière un exercice raté une seule fois. Sans cette inversion, un
+    // rejeu de 90 jours sur la vraie banque proposait le même exercice
+    // quatre-vingt-dix fois d'affilée à un élève qui échoue.
+    const AFTER_REST = new Date("2026-08-25T12:00:00.000Z");
+    const [singleRested] = recommendExercises([single], singleSessions, 10, { now: AFTER_REST });
+    const [repeatedRested] = recommendExercises([repeated], repeatedSessions, 10, { now: AFTER_REST });
+    expect(repeatedRested.score).toBeGreaterThan(singleRested.score);
+  });
+
+  it("un exercice raté plusieurs fois de suite cède temporairement sa place — le repos grandit avec l'enlisement", () => {
+    // La contrepartie explicite du test ci-dessus. Le premier échec dit
+    // « retente » ; le quatrième dit « ce n'est pas cet exercice le problème ».
+    const once = makeExercise({ status: "à revoir", mastery: 0, attempts: 1, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const onceSessions = [makeSession(once.id, { started_at: "2026-08-09T00:00:00.000Z", result: "échoué" })];
+
+    const stuck = makeExercise({ status: "à revoir", mastery: 0, attempts: 4, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const stuckSessions = [
+      makeSession(stuck.id, { started_at: "2026-08-09T00:00:00.000Z", result: "échoué" }),
+      makeSession(stuck.id, { started_at: "2026-08-08T00:00:00.000Z", result: "échoué" }),
+      makeSession(stuck.id, { started_at: "2026-08-07T00:00:00.000Z", result: "échoué" }),
+      makeSession(stuck.id, { started_at: "2026-08-06T00:00:00.000Z", result: "échoué" }),
+    ];
+
+    const [onceResult] = recommendExercises([once], onceSessions, 10, { now: NOW });
+    const [stuckResult] = recommendExercises([stuck], stuckSessions, 10, { now: NOW });
+    expect(stuckResult.score).toBeLessThan(onceResult.score);
+
+    // Et il revient de lui-même : le repos décroît, il n'exclut jamais.
+    const LATER = new Date("2026-08-25T12:00:00.000Z");
+    const [stuckLater] = recommendExercises([stuck], stuckSessions, 10, { now: LATER });
+    expect(stuckLater.score).toBeGreaterThan(stuckResult.score);
+  });
+
+  it("une réussite remet le compteur d'enlisement à zéro", () => {
+    // `consecutiveFailureCount` s'arrête à la première tentative non échouée :
+    // un élève qui débloque un exercice ne doit pas traîner la pénalité de ses
+    // échecs précédents.
+    const recovered = makeExercise({ status: "à revoir", mastery: 0, attempts: 4, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const recoveredSessions = [
+      makeSession(recovered.id, { started_at: "2026-08-09T00:00:00.000Z", result: "réussi", hints_used: 0 }),
+      makeSession(recovered.id, { started_at: "2026-08-08T00:00:00.000Z", result: "échoué" }),
+      makeSession(recovered.id, { started_at: "2026-08-07T00:00:00.000Z", result: "échoué" }),
+      makeSession(recovered.id, { started_at: "2026-08-06T00:00:00.000Z", result: "échoué" }),
+    ];
+    const stillStuck = makeExercise({ status: "à revoir", mastery: 0, attempts: 4, last_worked_at: "2026-08-09T00:00:00.000Z" });
+    const stillStuckSessions = [
+      makeSession(stillStuck.id, { started_at: "2026-08-09T00:00:00.000Z", result: "échoué" }),
+      makeSession(stillStuck.id, { started_at: "2026-08-08T00:00:00.000Z", result: "échoué" }),
+      makeSession(stillStuck.id, { started_at: "2026-08-07T00:00:00.000Z", result: "échoué" }),
+      makeSession(stillStuck.id, { started_at: "2026-08-06T00:00:00.000Z", result: "échoué" }),
+    ];
+
+    const [recoveredResult] = recommendExercises([recovered], recoveredSessions, 10, { now: NOW });
+    const [stuckResult] = recommendExercises([stillStuck], stillStuckSessions, 10, { now: NOW });
+    expect(recoveredResult.score).toBeGreaterThan(stuckResult.score);
   });
 
   it("une réussite récente n'inclut jamais un exercice à elle seule (même logique que Favori)", () => {
@@ -721,5 +783,69 @@ describe("Performance (audit transversal) — centaines d'exercices, milliers de
     // jamais au moindre bruit de machine — voir lib/plan.test.ts pour
     // l'équivalent côté `computeDailyPlan`.
     expect(elapsed).toBeLessThan(1000);
+  });
+});
+
+describe("recommendExercises — un élève qui échoue ne s'enlise jamais sur un seul exercice", () => {
+  /**
+   * Régression mesurée sur la banque livrée avant correctif : en rejouant
+   * 90 jours avec un élève qui rate ce qu'on lui propose, le moteur
+   * proposait UN SEUL exercice distinct, quatre-vingt-dix fois de suite (et
+   * 2 seulement à 30 min, 7 à 90 min). Le même élève, s'il réussit, en voyait
+   * 57 à 303 : le moteur était sain, il ne savait simplement pas voir
+   * l'enlisement.
+   *
+   * Cause : le repos après tentative était forfaitaire (3 jours, 50 points)
+   * quel que soit le nombre d'échecs, alors que l'exercice bloqué menait de
+   * 45 points APRÈS pénalité. Il revenait donc en tête chaque lendemain.
+   */
+  function replay(days: number, outcome: "échoué" | "réussi"): string[] {
+    const exercises = Array.from({ length: 12 }, (unused, index) =>
+      makeExercise({ id: `rep-${index}`, difficulty: 3, estimated_minutes: 20 })
+    );
+    const sessions: WorkSession[] = [];
+    const seen: string[] = [];
+
+    for (let day = days; day >= 1; day--) {
+      const today = new Date(NOW.getTime() - day * 86400000);
+      const [top] = recommendExercises(exercises, sessions, 1, { now: today });
+      if (!top) break;
+      seen.push(top.exercise.id);
+      sessions.push(
+        makeSession(top.exercise.id, {
+          started_at: today.toISOString(),
+          result: outcome,
+          hints_used: outcome === "réussi" ? 0 : 3,
+        })
+      );
+      const live = exercises.find((item) => item.id === top.exercise.id)!;
+      live.attempts += 1;
+      live.last_worked_at = today.toISOString();
+      live.status = outcome === "réussi" ? "maîtrisé" : "à revoir";
+      if (outcome === "réussi") live.mastery = 100;
+    }
+    return seen;
+  }
+
+  it("21 jours d'échecs ne produisent jamais un seul et même exercice", () => {
+    const seen = replay(21, "échoué");
+    expect(seen.length).toBe(21);
+    expect(new Set(seen).size).toBeGreaterThan(1);
+  });
+
+  it("le même exercice n'est jamais proposé plus de trois jours de suite", () => {
+    const seen = replay(21, "échoué");
+    let run = 1;
+    let worst = 1;
+    for (let index = 1; index < seen.length; index++) {
+      run = seen[index] === seen[index - 1] ? run + 1 : 1;
+      worst = Math.max(worst, run);
+    }
+    expect(worst).toBeLessThanOrEqual(3);
+  });
+
+  it("le chemin de l'élève qui réussit reste intact : un exercice différent chaque jour", () => {
+    const seen = replay(12, "réussi");
+    expect(new Set(seen).size).toBe(seen.length);
   });
 });

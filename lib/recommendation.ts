@@ -470,10 +470,63 @@ const SILENT_MASTERY_FLOOR = 75;
 const RECENT_ATTEMPT_PENALTY = 50;
 const RECENT_ATTEMPT_COOLDOWN_DAYS = 3;
 
-function recentAttemptPenalty(exercise: Exercise, now: Date): number {
+/**
+ * REPOS PROPORTIONNÉ À L'ENLISEMENT — le premier échec dit « retente », le
+ * cinquième dit « ce n'est pas cet exercice le problème ».
+ *
+ * Le repos ci-dessus était FORFAITAIRE : trois jours et 50 points, que
+ * l'exercice ait été raté une fois ou quinze. Or 50 points ne suffisent pas.
+ * Mesuré sur la vraie banque, un exercice échoué dix fois d'affilée et tenté
+ * la veille score 144 quand ses poursuivants sont à 99 : la pénalité déjà
+ * appliquée (33 au jour 1) le laisse mener de 45 points. Il revient donc en
+ * tête le lendemain, indéfiniment.
+ *
+ * Conséquence mesurée par rejeu de 90 jours sur la banque livrée, avec un
+ * élève qui échoue ce qu'on lui propose :
+ *
+ *   budget 20 min →   1 exercice distinct pour  90 propositions
+ *   budget 30 min →   2 exercices  pour 180 propositions
+ *   budget 90 min →   7 exercices  pour 630 propositions
+ *
+ * (le même élève, s'il réussit, en voit 57 à 303 — le moteur est sain, c'est
+ * l'enlisement qu'il ne savait pas voir.)
+ *
+ * La correction garde EXACTEMENT le comportement d'avant pour un échec isolé
+ * — un seul échec consécutif donne toujours 3 jours et 50 points — et ne fait
+ * croître le repos, en durée comme en profondeur, que sur des échecs qui se
+ * répètent. Ce n'est pas un nouveau terme dans `urgencyScore` : c'est le même
+ * mécanisme, enfin dimensionné sur ce qu'il prétendait traiter.
+ *
+ * Pédagogiquement, c'est aussi la seule lecture honnête : refaire demain, avec
+ * la même fatigue mentale, un exercice raté cinq fois n'apprend rien. Ce qui
+ * manque est en dessous — et c'est la Radiographie (lib/notions.ts) qui sait
+ * nommer la notion commune à ces échecs.
+ */
+const MAX_CONSECUTIVE_FAILURES_CONSIDERED = 4;
+/** Points ajoutés au repos par échec consécutif au-delà du premier. */
+const REPEATED_FAILURE_PENALTY_STEP = 30;
+
+/** Échecs consécutifs les plus récents — s'arrête à la première tentative non échouée (une réussite, même assistée, remet le compteur à zéro). */
+function consecutiveFailureCount(attempts: WorkSession[]): number {
+  let count = 0;
+  for (const attempt of attempts) {
+    if (attempt.result !== "échoué") break;
+    count++;
+  }
+  return count;
+}
+
+function recentAttemptPenalty(exercise: Exercise, attempts: WorkSession[], now: Date): number {
   const days = daysSinceLastWorked(exercise, now);
-  if (days === null || days >= RECENT_ATTEMPT_COOLDOWN_DAYS) return 0;
-  return RECENT_ATTEMPT_PENALTY * (1 - Math.max(0, days) / RECENT_ATTEMPT_COOLDOWN_DAYS);
+  if (days === null) return 0;
+  const streak = Math.min(consecutiveFailureCount(attempts), MAX_CONSECUTIVE_FAILURES_CONSIDERED);
+  // 1 échec (ou une simple tentative réussie) → 3 jours / 50 points, comme
+  // avant. 2 → 6 j / 80. 3 → 9 j / 110. 4 et au-delà → 12 j / 140, plafonné :
+  // au-delà l'exercice reviendrait trop tard pour être encore utile.
+  const cooldownDays = RECENT_ATTEMPT_COOLDOWN_DAYS * Math.max(1, streak);
+  const penalty = RECENT_ATTEMPT_PENALTY + Math.max(0, streak - 1) * REPEATED_FAILURE_PENALTY_STEP;
+  if (days >= cooldownDays) return 0;
+  return penalty * (1 - Math.max(0, days) / cooldownDays);
 }
 
 /** Plafond du bonus de décroissance (voir `staleMasteryBonus`) — comparable en amplitude à `momentumBonus`, jamais dominant. */
@@ -537,7 +590,7 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
   // au point d'éclipser une maîtrise très faible ou un échec récent.
   const momentumBonus = Math.min(minutesSpent, 60) * 0.3; // 0 à 18
   const staleBonus = staleMasteryBonus(exercise, now); // 0 à 30, voir staleMasteryBonus
-  const restPenalty = recentAttemptPenalty(exercise, now); // 0 à 50, voir recentAttemptPenalty
+  const restPenalty = recentAttemptPenalty(exercise, attempts, now); // 0 à 140 selon l'enlisement, voir recentAttemptPenalty
   // SEUL levier manuel de l'élève depuis la suppression de `priority` : une
   // étoile vaut désormais 20, à mi-chemin de l'ancienne échelle 8-40 qu'elle
   // remplace. Volontairement en dessous de `failureBonus` (jusqu'à 45) : un
