@@ -79,6 +79,19 @@ export function ContestManager() {
         )}
       </div>
 
+      {/* Le format, dit une fois, parce que rien d'autre ne le dit.
+          Un sujet dure 180 ou 240 minutes (les seules valeurs du catalogue) ;
+          le plus long préréglage du plan du jour est 90 (PLAN_DURATION_PRESETS).
+          Un sujet ne peut donc structurellement JAMAIS entrer dans une séance :
+          `fillBudget` (lib/plan.ts) saute tout ce qui dépasse le budget. Ce
+          n'est pas un arbitrage à afficher, c'est une conséquence mécanique —
+          autant l'énoncer plutôt que de laisser l'élève la découvrir en
+          cherchant ses sujets dans le plan du jour. */}
+      <p className="px-1 text-2xs leading-5 text-subtle">
+        Un sujet complet dure 3 à 4 h : il remplace la séance du jour, il ne s&apos;y ajoute pas. Ces sujets restent à part, choisis par
+        toi — ils n&apos;entrent jamais dans le plan du jour ni dans les recommandations.
+      </p>
+
       <ContestFiltersBar
         filters={filters}
         onChange={updateFilters}
