@@ -1,4 +1,4 @@
-import { ASSISTED_HINTS_THRESHOLD } from "@/lib/recommendation";
+import { countsAsAttempt, isAutonomousSuccess, wasAssistedSuccess } from "@/lib/recommendation";
 import { completedExercises, dayKey } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -38,14 +38,9 @@ import type { Exercise, WorkSession } from "@/lib/supabase/types";
  * existait déjà ailleurs dans le produit.
  */
 
-/** Une réussite autonome enregistrée — la seule preuve de maîtrise que le produit possède. Même définition que le moteur (voir `ASSISTED_HINTS_THRESHOLD`). */
+/** Une réussite autonome enregistrée — la seule preuve de maîtrise que le produit possède. Exactement la définition du moteur (voir `isAutonomousSuccess`), plus le seuil d'une minute qui décide déjà si une tentative compte (`countsAsAttempt`). */
 function isProvenSuccess(session: WorkSession): boolean {
-  return (
-    session.result === "réussi" &&
-    session.hints_used !== null &&
-    session.hints_used < ASSISTED_HINTS_THRESHOLD &&
-    secondsToWholeMinutes(session.duration_seconds) > 0
-  );
+  return isAutonomousSuccess(session) && countsAsAttempt(session);
 }
 
 /**
@@ -65,12 +60,12 @@ export function xpFromExercise(exercise: Exercise, proven: boolean): number {
 /**
  * XP d'une tentative, à partir de son résultat réel.
  *
- * Une réussite obtenue avec plusieurs indices vaut MOINS qu'une réussite
- * autonome : c'est une vraie progression, mais pas la même preuve — et
- * c'est exactement la distinction qu'utilise déjà le moteur de
- * recommandation (voir `ASSISTED_HINTS_THRESHOLD`, lib/recommendation.ts).
- * Les deux systèmes récompensent donc la même chose, au lieu de se
- * contredire.
+ * Une réussite obtenue avec une aide décisive — plusieurs indices, ou la
+ * correction révélée — vaut MOINS qu'une réussite autonome : c'est une vraie
+ * progression, mais pas la même preuve, et c'est exactement la distinction
+ * qu'utilise déjà le moteur de recommandation (voir `wasAssistedSuccess`,
+ * lib/recommendation.ts). Les deux systèmes récompensent donc la même chose,
+ * au lieu de se contredire.
  *
  * Un échec ne rapporte rien mais ne retire rien : se tromper fait partie du
  * travail, le produit n'a pas à le sanctionner.
@@ -88,8 +83,17 @@ export function xpFromExercise(exercise: Exercise, proven: boolean): number {
 export function xpFromSession(session: WorkSession, difficulty = 3): number {
   if (secondsToWholeMinutes(session.duration_seconds) <= 0) return 0;
   if (session.result === "réussi") {
-    const assisted = session.hints_used !== null && session.hints_used >= 2;
-    return difficulty * (assisted ? 5 : 10);
+    // Demi-tarif dès qu'une aide DÉCISIVE est prouvée : plusieurs indices, ou
+    // la correction lue (voir `wasAssistedSuccess`).
+    //
+    // Volontairement `wasAssistedSuccess` et NON `isAutonomousSuccess` : une
+    // séance antérieure au suivi des indices (`hints_used === null`) n'est
+    // prouvée assistée par rien, et garde donc le plein tarif qu'elle a
+    // toujours eu. Prendre ici la définition stricte de l'autonomie aurait
+    // divisé par deux, rétroactivement et sans que l'élève ait rien fait,
+    // toute l'XP acquise avant ce champ. L'absence de preuve ne sanctionne
+    // pas plus qu'elle ne crédite.
+    return difficulty * (wasAssistedSuccess(session) ? 5 : 10);
   }
   if (session.result === "partiel") return difficulty * 3;
   return 0;

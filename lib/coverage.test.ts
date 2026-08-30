@@ -73,6 +73,7 @@ function makeSession(exercise: Exercise, days: number, result: AttemptResult | n
     created_at: daysAgo(days),
     result,
     hints_used: hintsUsed,
+    correction_viewed: null,
   };
 }
 
@@ -456,6 +457,7 @@ describe("computeDailyPlan — pas de famine sur la durée", () => {
             created_at: today.toISOString(),
             result: "réussi",
             hints_used: 0,
+            correction_viewed: null,
           });
           const live = exercises.find((item) => item.id === exercise.id)!;
           live.attempts += 1;

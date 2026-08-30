@@ -1,6 +1,13 @@
 import { resultCounts, type ResultCounts } from "@/lib/history";
 import { isExerciseEngaged, progressByChapter, type ChapterProgress } from "@/lib/progress";
-import { ASSISTED_HINTS_THRESHOLD, computeExerciseBankStats, explainReasons, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
+import {
+  computeExerciseBankStats,
+  countsAsAttempt,
+  explainReasons,
+  recommendExercises,
+  wasAssistedSuccess,
+  type ExerciseRecommendation,
+} from "@/lib/recommendation";
 import type { Chapter } from "@/lib/storage";
 import { todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
@@ -282,22 +289,21 @@ export function computeChaptersToConsolidate(
 
       const exerciseIds = new Set(chapterExercises.map((exercise) => exercise.id));
       const recentAttempts = sessions
-        .filter((session) => session.exercise_id && exerciseIds.has(session.exercise_id) && session.result)
+        .filter((session) => countsAsAttempt(session) && exerciseIds.has(session.exercise_id!))
         .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
         .slice(0, CHAPTER_RECENT_ATTEMPTS_WINDOW);
       const failureCount = recentAttempts.filter((attempt) => attempt.result === "échoué").length;
       if (failureCount >= 2) reasons.push(`${failureCount} échecs récents`);
       else if (recentAttempts[0]?.result === "échoué") reasons.push("Échec récent");
 
-      // Recours répété aux indices SUR L'ENSEMBLE du chapitre : un élève qui
+      // Recours répété à l'AIDE (indices nombreux ou correction lue) SUR
+      // L'ENSEMBLE du chapitre : un élève qui
       // ne s'en sort qu'aidé, exercice après exercice, révèle une fragilité
       // que ni `result` (il a « réussi ») ni `mastery` (qu'il a pu monter
       // lui-même) ne montrent. C'est le seul endroit où ce signal se lit à
       // l'échelle d'un chapitre — au niveau d'un exercice isolé, il est trop
       // ponctuel pour conclure.
-      const assistedCount = recentAttempts.filter(
-        (attempt) => attempt.result === "réussi" && attempt.hints_used !== null && attempt.hints_used >= ASSISTED_HINTS_THRESHOLD
-      ).length;
+      const assistedCount = recentAttempts.filter(wasAssistedSuccess).length;
       if (assistedCount >= 2) reasons.push(`${assistedCount} réussites avec indices`);
 
       // `entry.lastWorkedAt`/`entry.nextExerciseId` viennent déjà de

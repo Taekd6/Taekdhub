@@ -53,6 +53,7 @@ function makeSession(exerciseId: string, overrides: Partial<WorkSession> = {}): 
     created_at: "2026-01-01T00:10:00.000Z",
     result: null,
     hints_used: null,
+    correction_viewed: null,
     ...overrides,
   };
 }
@@ -772,6 +773,7 @@ describe("Performance (audit transversal) — centaines d'exercices, milliers de
           started_at: new Date(NOW.getTime() - (i % 900) * 86400000).toISOString(),
           result: (["réussi", "partiel", "échoué"] as const)[i % 3],
           hints_used: i % 4,
+          correction_viewed: null,
         })
       );
     }
@@ -816,6 +818,7 @@ describe("recommendExercises — un élève qui échoue ne s'enlise jamais sur u
           started_at: today.toISOString(),
           result: outcome,
           hints_used: outcome === "réussi" ? 0 : 3,
+          correction_viewed: null,
         })
       );
       const live = exercises.find((item) => item.id === top.exercise.id)!;

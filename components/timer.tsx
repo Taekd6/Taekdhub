@@ -54,6 +54,9 @@ export function Timer() {
         // un résultat est demandé) — pas davantage celle des indices.
         result: null,
         hints_used: null,
+        // Idem : sans exercice, il n'y a aucune correction à révéler. `null`
+        // (« on ne sait pas »), jamais `false` (« il ne l'a pas lue »).
+        correction_viewed: null,
       };
       saveSessions([session, ...sessions]);
     });

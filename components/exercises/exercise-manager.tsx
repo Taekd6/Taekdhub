@@ -20,6 +20,7 @@ import { ExerciseImport } from "@/components/exercises/exercise-import";
 import { ExerciseListRow } from "@/components/exercises/exercise-list-row";
 import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
+import { PENDING_ATTEMPT_PREFIX } from "@/lib/attempt";
 import { addChapter, removeChapter, renameChapter } from "@/lib/chapters";
 import { chapterOptionsForSubject, defaultExerciseFilters, difficultyOptionsForFilters, distinctYears, filterExercises, tagOptionsForFilters, type ExerciseFilters } from "@/lib/exercise-filters";
 import { defaultExerciseSort, exerciseSortOptions, sortExercises, type ExerciseSort } from "@/lib/exercise-sort";
@@ -71,7 +72,10 @@ export function ExerciseManager() {
   useEffect(() => {
     if (!ready || resumeChecked.current) return;
     resumeChecked.current = true;
-    const pendingExerciseId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX);
+    // Le chrono tourne encore, OU le travail est fini et la tentative attend
+    // son verdict — dans ce second cas la clé du chrono est déjà effacée
+    // (voir lib/attempt.ts, et la même reprise dans session-runner.tsx).
+    const pendingExerciseId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX) ?? findPersistedSessionSuffix(PENDING_ATTEMPT_PREFIX);
     if (pendingExerciseId && exercises.some((item) => item.id === pendingExerciseId && !item.archived)) {
       setSelectedId(pendingExerciseId);
       setFocusMode(true);

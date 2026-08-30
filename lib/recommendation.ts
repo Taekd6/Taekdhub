@@ -1,7 +1,7 @@
 import { COVERAGE_REASON_PREFIX } from "@/lib/coverage";
 import { minutesByExerciseMap, totalSeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
-import type { AttemptResult, Exercise, ExerciseStatus, WorkSession } from "@/lib/supabase/types";
+import type { Exercise, ExerciseStatus, WorkSession } from "@/lib/supabase/types";
 
 /**
  * Moteur de révision — Sprint 3A, étendu au Sprint 4 (décroissance de
@@ -132,10 +132,14 @@ function isStaleMastery(exercise: Exercise, now: Date): boolean {
 function attemptsByExercise(sessions: WorkSession[]): Map<string, WorkSession[]> {
   const byExercise = new Map<string, WorkSession[]>();
   for (const session of sessions) {
-    if (!session.exercise_id || !session.result) continue;
-    const bucket = byExercise.get(session.exercise_id);
+    // `exercise_id` est extrait avant le prédicat pour que TypeScript le
+    // rétrécisse : `countsAsAttempt` le vérifie aussi, mais un prédicat
+    // partagé ne peut pas restreindre le type de l'appelant.
+    const exerciseId = session.exercise_id;
+    if (!exerciseId || !countsAsAttempt(session)) continue;
+    const bucket = byExercise.get(exerciseId);
     if (bucket) bucket.push(session);
-    else byExercise.set(session.exercise_id, [session]);
+    else byExercise.set(exerciseId, [session]);
   }
   for (const bucket of byExercise.values()) {
     bucket.sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
@@ -161,7 +165,7 @@ function recentFailureCount(attempts: WorkSession[]): number {
  */
 function lastAttemptWasAssisted(attempts: WorkSession[]): boolean {
   const last = attempts[0];
-  return last?.result === "réussi" && last.hints_used !== null && last.hints_used >= ASSISTED_HINTS_THRESHOLD;
+  return last !== undefined && wasAssistedSuccess(last);
 }
 
 /** Longueur de la série de réussites consécutives la plus récente (s'arrête à la première tentative non réussie). */
@@ -189,8 +193,7 @@ function recentSuccessStreak(attempts: WorkSession[]): number {
 function autonomousSuccessStreak(attempts: WorkSession[]): number {
   let streak = 0;
   for (const attempt of attempts) {
-    if (attempt.result !== "réussi") break;
-    if (attempt.hints_used === null || attempt.hints_used >= ASSISTED_HINTS_THRESHOLD) break;
+    if (!isAutonomousSuccess(attempt)) break;
     streak++;
   }
   return streak;
@@ -225,21 +228,79 @@ const COMFORT_STEP_UP_STREAK = 3;
  */
 export const ASSISTED_HINTS_THRESHOLD = 2;
 
-/** Difficulté et niveau d'aide de chaque tentative qualifiée, les plus récentes d'abord — l'exercice disparu (archivé/supprimé) est ignoré. */
-function attemptsWithDifficulty(
-  exercises: Exercise[],
-  sessions: WorkSession[]
-): { result: AttemptResult; difficulty: number; hintsUsed: number | null }[] {
+/**
+ * CE QUI COMPTE COMME UNE TENTATIVE — une seule définition, partagée.
+ *
+ * Le produit tranchait déjà cette question à trois endroits (`attempts` et
+ * `last_worked_at` dans components/exercises/focus-view.tsx, l'XP et la série
+ * dans lib/gamification.ts) : en dessous d'une minute, il ne s'est rien passé.
+ * Ce seuil n'était PAS appliqué au signal pédagogique. Une séance de quarante
+ * secondes cochée « Réussi » ne rapportait donc ni XP, ni tentative, ni jour
+ * de série — mais alimentait à plein poids la Radiographie, le palier de
+ * difficulté visé et le classement des exercices. Deux définitions
+ * contradictoires de « tentative » cohabitaient dans le même produit.
+ *
+ * Vérifié en parcours réel avant correctif (42 s + « Réussi ») : `attempts`
+ * inchangé sur la fiche, `WorkSession.result` pourtant consommé tel quel par
+ * lib/notions.ts, lib/next-action.ts et ce moteur.
+ *
+ * Ce n'est pas un nouveau seuil : c'est celui qui existait déjà, appliqué
+ * enfin partout.
+ */
+export function countsAsAttempt(session: Pick<WorkSession, "result" | "exercise_id" | "duration_seconds">): boolean {
+  return Boolean(session.result) && Boolean(session.exercise_id) && secondsToWholeMinutes(session.duration_seconds) > 0;
+}
+
+/**
+ * Une réussite obtenue SANS aide décisive — la seule preuve d'autonomie que
+ * le produit possède, et donc le signal le plus fort dont disposent l'XP
+ * (lib/gamification.ts), la Radiographie (lib/notions.ts) et le palier de
+ * difficulté visé (`comfortDifficulty`).
+ *
+ * Trois conditions, chacune reprenant une règle déjà écrite ailleurs :
+ * - la tentative a réussi ;
+ * - moins de `ASSISTED_HINTS_THRESHOLD` indices, et `hints_used` CONNU —
+ *   `null` n'est pas « zéro indice » (voir lib/supabase/types.ts) ;
+ * - la correction n'a pas été révélée — `correction_viewed === true` disqualifie,
+ *   `null` (séance antérieure au champ) ne disqualifie pas : on ne réécrit
+ *   pas l'historique, on cesse simplement de créditer ce qu'on n'a pas mesuré.
+ *
+ * Cette dernière condition ferme le trou mesuré en parcours réel : correction
+ * entière révélée puis « Réussi » produisait `hints_used: 0`, c'est-à-dire la
+ * preuve d'autonomie MAXIMALE, pour un élève qui venait de lire la solution.
+ */
+export function isAutonomousSuccess(session: Pick<WorkSession, "result" | "hints_used" | "correction_viewed">): boolean {
+  return (
+    session.result === "réussi" &&
+    session.hints_used !== null &&
+    session.hints_used < ASSISTED_HINTS_THRESHOLD &&
+    session.correction_viewed !== true
+  );
+}
+
+/**
+ * Une réussite obtenue AVEC une aide décisive : plusieurs indices, ou la
+ * correction lue. L'élève a trouvé, mais guidé — l'exercice n'est pas acquis.
+ *
+ * Volontairement NON symétrique de `isAutonomousSuccess` : une réussite dont
+ * `hints_used` vaut `null` n'est ni autonome (rien ne le prouve) ni assistée
+ * (rien ne le prouve non plus). Les deux prédicats renvoient donc `false`,
+ * et c'est correct : l'absence de preuve n'est une preuve dans aucun sens.
+ */
+export function wasAssistedSuccess(session: Pick<WorkSession, "result" | "hints_used" | "correction_viewed">): boolean {
+  if (session.result !== "réussi") return false;
+  if (session.correction_viewed === true) return true;
+  return session.hints_used !== null && session.hints_used >= ASSISTED_HINTS_THRESHOLD;
+}
+
+/** Difficulté de chaque tentative qualifiée, les plus récentes d'abord — l'exercice disparu (archivé/supprimé) est ignoré. La séance est transportée telle quelle : c'est elle qui porte le niveau d'aide, lu par les prédicats partagés. */
+function attemptsWithDifficulty(exercises: Exercise[], sessions: WorkSession[]): { session: WorkSession; difficulty: number }[] {
   const difficultyById = new Map(exercises.map((exercise) => [exercise.id, exercise.difficulty]));
   return sessions
-    .filter((session) => session.result && session.exercise_id && difficultyById.has(session.exercise_id))
+    .filter((session) => countsAsAttempt(session) && difficultyById.has(session.exercise_id!))
     .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
     .slice(0, COMFORT_WINDOW)
-    .map((session) => ({
-      result: session.result!,
-      difficulty: difficultyById.get(session.exercise_id!)!,
-      hintsUsed: session.hints_used,
-    }));
+    .map((session) => ({ session, difficulty: difficultyById.get(session.exercise_id!)! }));
 }
 
 /**
@@ -269,12 +330,12 @@ export interface WorkingLevel {
 export function computeWorkingLevel(exercises: Exercise[], sessions: WorkSession[]): WorkingLevel | null {
   const recent = attemptsWithDifficulty(exercises, sessions);
   if (recent.length < COMFORT_MIN_ATTEMPTS) return null;
-  const successes = recent.filter((attempt) => attempt.result === "réussi");
+  const successes = recent.filter((attempt) => attempt.session.result === "réussi");
   return {
     attempts: recent.length,
     averageDifficulty: Math.round((recent.reduce((sum, a) => sum + a.difficulty, 0) / recent.length) * 10) / 10,
     successes: successes.length,
-    autonomousSuccesses: successes.filter((a) => a.hintsUsed !== null && a.hintsUsed < ASSISTED_HINTS_THRESHOLD).length,
+    autonomousSuccesses: successes.filter((a) => isAutonomousSuccess(a.session)).length,
   };
 }
 
@@ -296,8 +357,8 @@ export function comfortDifficulty(exercises: Exercise[], sessions: WorkSession[]
   const recent = attemptsWithDifficulty(exercises, sessions);
   if (recent.length < COMFORT_MIN_ATTEMPTS) return null;
 
-  const succeeded = recent.filter((attempt) => attempt.result === "réussi");
-  const failed = recent.filter((attempt) => attempt.result === "échoué");
+  const succeeded = recent.filter((attempt) => attempt.session.result === "réussi");
+  const failed = recent.filter((attempt) => attempt.session.result === "échoué");
   const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
 
   // Socle : la difficulté que l'élève RÉUSSIT. À défaut de toute réussite,
@@ -306,19 +367,20 @@ export function comfortDifficulty(exercises: Exercise[], sessions: WorkSession[]
 
   // La série de réussites qui autorise une montée ne compte QUE les
   // réussites autonomes : réussir trois exercices en révélant tous les
-  // indices ne prouve pas qu'on est prêt pour le cran au-dessus — c'est même
-  // le contraire. Une réussite assistée n'interrompt pas la série (ce n'est
-  // pas un échec), elle ne la fait simplement pas progresser.
+  // indices — ou en lisant la correction — ne prouve pas qu'on est prêt pour
+  // le cran au-dessus, c'est même le contraire. Une réussite assistée
+  // n'interrompt pas la série (ce n'est pas un échec), elle ne la fait
+  // simplement pas progresser. Voir `isAutonomousSuccess`, la définition
+  // partagée par tous les moteurs.
   //
   // `hintsUsed === null` (séance antérieure au champ) n'est jamais traité
   // comme "0 indice" : sans preuve d'autonomie, on ne crédite rien.
   let streak = 0;
   for (const attempt of recent) {
-    if (attempt.result !== "réussi") break;
-    if (attempt.hintsUsed === null || attempt.hintsUsed >= ASSISTED_HINTS_THRESHOLD) break;
+    if (!isAutonomousSuccess(attempt.session)) break;
     streak++;
   }
-  const recentFailures = recent.slice(0, RECENT_ATTEMPTS_WINDOW).filter((a) => a.result === "échoué").length;
+  const recentFailures = recent.slice(0, RECENT_ATTEMPTS_WINDOW).filter((a) => a.session.result === "échoué").length;
 
   // Un seul cran à la fois, jamais un saut : on accompagne la progression,
   // on ne la devance pas.

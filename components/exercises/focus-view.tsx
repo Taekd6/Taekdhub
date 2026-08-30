@@ -11,6 +11,7 @@ import { MasteryPicker } from "@/components/exercises/exercise-badges";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { RichMath } from "@/components/rich-math";
 import { useWorkTimer } from "@/hooks/use-work-timer";
+import { appendAttempt, clearPendingAttempt, readPendingAttempt, writePendingAttempt } from "@/lib/attempt";
 import { explainReasons } from "@/lib/recommendation";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
 import type { AttemptResult, Exercise, ExerciseStatus, Mastery, WorkSession } from "@/lib/supabase/types";
@@ -50,6 +51,18 @@ export function FocusView({
   progress?: { index: number; total: number };
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
+  /**
+   * La correction a-t-elle été révélée AU MOINS UNE FOIS durant cette
+   * tentative ? Distinct de `correctionVisible`, qui est une bascule
+   * d'affichage : la masquer ne défait pas le fait de l'avoir lue.
+   *
+   * Sans ce fait, révéler la correction entière puis cocher « Réussi »
+   * enregistrait `hints_used: 0` — c'est-à-dire la preuve d'autonomie
+   * MAXIMALE dont dispose le moteur (voir lib/supabase/types.ts#hints_used),
+   * émise par un élève qui venait de lire la solution. Le produit dégradait
+   * le signal pour un seul indice sur trois, et ignorait l'aide totale.
+   */
+  const [correctionRevealed, setCorrectionRevealed] = useState(false);
   const [hintCount, setHintCount] = useState(0);
   const { seconds, running, start, toggle, stop } = useWorkTimer<{ exerciseId: string }>(focusTimerKey(item.id), {
     exerciseId: item.id,
@@ -64,7 +77,12 @@ export function FocusView({
   // rongeant la fiabilité de tout ce qui en dépend (maîtrise, recommandation,
   // objectif du jour). `start()` est idempotent (voir hooks/use-work-timer.ts) :
   // sans effet si une séance persistée était déjà en cours après reprise.
+  //
+  // Sauf si une tentative attend déjà son verdict (reprise après
+  // rechargement) : le travail est terminé, redémarrer le chrono
+  // recommencerait à compter du temps que l'élève ne passe pas à travailler.
   useEffect(() => {
+    if (readPendingAttempt(item.id)) return;
     start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -85,7 +103,10 @@ export function FocusView({
   // attente d'un résultat — voir `endSession`/`commitResult` ci-dessous.
   // `null` : soit le focus est toujours en cours, soit aucune séance n'a
   // jamais démarré (rien à qualifier).
-  const [draftSession, setDraftSession] = useState<WorkSession | null>(null);
+  // Restauré au montage s'il en existe un pour CET exercice : un
+  // rechargement survenu à l'écran de résultat ne perd plus la séance, il
+  // repose la question (voir lib/attempt.ts).
+  const [draftSession, setDraftSession] = useState<WorkSession | null>(() => readPendingAttempt(item.id));
 
   // « Presque une autre application » : le bandeau et le rappel clavier
   // s'effacent après quelques secondes d'inactivité pendant le travail actif
@@ -139,7 +160,7 @@ export function FocusView({
       return;
     }
     const { startedAt, seconds: finalSeconds } = captured;
-    setDraftSession({
+    const draft: WorkSession = {
       id: crypto.randomUUID(),
       subject: item.subject,
       // Sprint 2.5 : lien réel vers l'exercice (avant, seul `note` le référençait en texte).
@@ -155,14 +176,25 @@ export function FocusView({
       // 0 est une information à part entière (il s'en est sorti seul), pas
       // une absence de donnée — voir lib/supabase/types.ts#hints_used.
       hints_used: hintCount,
-    });
-    // `hintCount` DOIT figurer ici : sans lui, `endSession` capture la valeur
-    // du premier rendu (0) et l'enregistre telle quelle, quels que soient les
-    // indices réellement révélés ensuite — la séance était systématiquement
-    // sauvegardée comme autonome. Bug trouvé en test bout-en-bout (3 indices
-    // révélés, `hints_used: 0` persisté), invisible au typecheck comme aux
-    // tests unitaires : seul le parcours réel le montrait.
-  }, [stop, item, onClose, hintCount]);
+      // Même nature de fait que `hints_used`, capturé au même instant : une
+      // correction lue durant CETTE tentative. `false` est une information à
+      // part entière (il a conclu sans lire la solution), pas une absence de
+      // donnée — voir lib/supabase/types.ts#correction_viewed.
+      correction_viewed: correctionRevealed,
+    };
+    // Écrit AVANT d'afficher l'écran de résultat : à partir d'ici la séance
+    // survit à un rechargement, alors que la clé du chrono vient d'être
+    // effacée par `stop()`. C'est tout l'objet de lib/attempt.ts.
+    writePendingAttempt(draft);
+    setDraftSession(draft);
+    // `hintCount` et `correctionRevealed` DOIVENT figurer ici : sans eux,
+    // `endSession` capture la valeur du premier rendu (0 / false) et
+    // l'enregistre telle quelle, quelle que soit l'aide réellement utilisée
+    // ensuite — la séance était systématiquement sauvegardée comme autonome.
+    // Bug trouvé en test bout-en-bout (3 indices révélés, `hints_used: 0`
+    // persisté), invisible au typecheck comme aux tests unitaires : seul le
+    // parcours réel le montrait.
+  }, [stop, item, onClose, hintCount, correctionRevealed]);
 
   // Sauvegarde réellement la séance — avec le résultat choisi, ou `null` si
   // l'utilisateur a préféré passer cette étape (Échap depuis l'écran de
@@ -173,7 +205,13 @@ export function FocusView({
     (result: AttemptResult | null) => {
       if (draftSession) {
         const finalSession: WorkSession = { ...draftSession, result };
-        saveSessions([finalSession, ...sessions]);
+        // Le brouillon disparaît AVANT la sauvegarde : plus rien à reprendre
+        // au prochain montage, la tentative est désormais dans l'historique.
+        clearPendingAttempt(item.id);
+        // `appendAttempt` plutôt qu'un ajout en tête : une même tentative
+        // (même identifiant) n'entre jamais deux fois dans l'historique,
+        // maintenant qu'un brouillon peut être relu par plusieurs montages.
+        saveSessions(appendAttempt(finalSession, sessions));
         if (secondsToWholeMinutes(finalSession.duration_seconds) > 0) {
           update(item.id, { attempts: item.attempts + 1, last_worked_at: new Date().toISOString() });
         }
@@ -373,7 +411,14 @@ export function FocusView({
                   </Button>
                 )}
                 {item.correction && (
-                  <Button variant="ghost" size="sm" onClick={() => setCorrectionVisible((v) => !v)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setCorrectionVisible((v) => !v);
+                      setCorrectionRevealed(true);
+                    }}
+                  >
                     {correctionVisible ? <EyeOff size={15} /> : <Eye size={15} />}
                     {correctionVisible ? "Masquer la correction" : "Voir la correction"}
                   </Button>

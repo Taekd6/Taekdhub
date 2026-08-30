@@ -383,6 +383,12 @@ export function normalizeSession(raw: unknown): WorkSession {
       typeof item.hints_used === "number" && Number.isFinite(item.hints_used) && item.hints_used >= 0
         ? Math.round(item.hints_used)
         : null,
+    // `null` (et non `false`) quand le champ est absent : une séance
+    // enregistrée avant l'introduction de ce champ n'a PAS prouvé que l'élève
+    // s'est passé de la correction — voir la doc du champ dans
+    // lib/supabase/types.ts. Traiter l'absence comme `false` créditerait
+    // rétroactivement tout l'historique d'une autonomie jamais observée.
+    correction_viewed: typeof item.correction_viewed === "boolean" ? item.correction_viewed : null,
   };
 }
 

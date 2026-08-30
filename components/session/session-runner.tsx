@@ -14,6 +14,7 @@ import { AnimatedNumber } from "@/components/ui/animated-number";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { PENDING_ATTEMPT_PREFIX } from "@/lib/attempt";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { levelFromXp, totalXp } from "@/lib/gamification";
 import { computeExerciseBankStats, estimatedDurationMinutes, explainReasons, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
@@ -105,7 +106,14 @@ export function SessionRunner() {
     const minutesParam = Number(params.get("minutes"));
     const requestedMinutes = Number.isFinite(minutesParam) && minutesParam > 0 ? Math.round(minutesParam) : null;
 
-    const pendingId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX);
+    // Deux façons pour une séance focus d'être encore ouverte après un
+    // rechargement, et il faut les regarder toutes les deux : le chrono
+    // tourne encore (clé du timer), OU le travail est fini et la tentative
+    // attend son verdict (clé du brouillon, voir lib/attempt.ts). Dans ce
+    // second cas la clé du chrono a DÉJÀ été effacée par `stop()` : ne
+    // chercher que celle-là revenait à ne jamais rouvrir l'écran de
+    // résultat, donc à abandonner le brouillon qu'on vient de sauver.
+    const pendingId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX) ?? findPersistedSessionSuffix(PENDING_ATTEMPT_PREFIX);
     const pending = pendingId ? exercises.find((item) => item.id === pendingId && !item.archived) : undefined;
 
     if (pending) {

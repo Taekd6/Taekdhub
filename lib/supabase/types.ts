@@ -150,6 +150,31 @@ export interface WorkSession {
    * comme pour `result`.
    */
   hints_used: number | null;
+  /**
+   * L'élève a-t-il révélé la CORRECTION durant cette tentative ? `null`
+   * quand l'information n'a jamais été enregistrée — séance antérieure à ce
+   * champ, ou séance libre depuis le Timer (aucun exercice, donc aucune
+   * correction à révéler).
+   *
+   * Même doctrine que `hints_used` : `null` et `false` ne veulent PAS dire
+   * la même chose. `false` est une preuve positive que l'élève a conclu sans
+   * lire la solution ; `null` signifie qu'on ne sait pas.
+   *
+   * Pourquoi ce champ existe : sans lui, révéler la correction entière puis
+   * cocher « Réussi » produisait `result: "réussi"` avec `hints_used: 0` —
+   * c'est-à-dire exactement le signal le plus FORT dont dispose le moteur,
+   * émis par un élève qui venait de lire la réponse. Le produit dégradait
+   * donc le signal pour un seul indice sur trois (voir
+   * `ASSISTED_HINTS_THRESHOLD`) mais ignorait l'aide totale. Mesuré en
+   * parcours réel avant correctif : correction révélée puis « Réussi »
+   * →`hints_used: 0`, réussite comptée comme autonome par l'XP, la
+   * Radiographie et le palier de difficulté visé.
+   *
+   * Comme `result` et `hints_used`, c'est un FAIT brut de la tentative,
+   * jamais une interprétation : toute la lecture pédagogique vit dans
+   * lib/recommendation.ts (voir `isAutonomousSuccess`).
+   */
+  correction_viewed: boolean | null;
 }
 
 /** Résultat d'une tentative de travail sur un exercice — voir `WorkSession.result`. */

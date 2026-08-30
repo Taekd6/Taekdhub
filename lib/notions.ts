@@ -1,5 +1,4 @@
-import { ASSISTED_HINTS_THRESHOLD } from "@/lib/recommendation";
-import { estimatedDurationMinutes } from "@/lib/recommendation";
+import { countsAsAttempt, estimatedDurationMinutes, isAutonomousSuccess } from "@/lib/recommendation";
 import type { StoredPlan } from "@/lib/plan";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
@@ -110,16 +109,16 @@ interface QualifiedAttempt {
 }
 
 /**
- * Tentatives réellement exploitables : une séance avec un résultat, rattachée
- * à un exercice encore présent dans la banque, les plus récentes d'abord.
- * Même filtre que `attemptsWithDifficulty` (lib/recommendation.ts) — une
- * séance libre sans exercice, ou pointant un exercice supprimé, n'apprend
- * rien sur une notion.
+ * Tentatives réellement exploitables : une séance qui COMPTE comme tentative
+ * (voir `countsAsAttempt`, la définition partagée), rattachée à un exercice
+ * encore présent dans la banque, les plus récentes d'abord. Une séance libre
+ * sans exercice, une séance pointant un exercice supprimé, ou une séance de
+ * moins d'une minute n'apprennent rien sur une notion.
  */
 function qualifiedAttempts(exercises: Exercise[], sessions: WorkSession[]): QualifiedAttempt[] {
   const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]));
   return sessions
-    .filter((session) => session.result && session.exercise_id && byId.has(session.exercise_id))
+    .filter((session) => countsAsAttempt(session) && byId.has(session.exercise_id!))
     .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
     .map((session) => ({ session, exercise: byId.get(session.exercise_id!)! }));
 }
@@ -207,9 +206,10 @@ export function computeNotionEvidence(exercises: Exercise[], sessions: WorkSessi
       entry.attempts++;
       if (session.result === "échoué") entry.failures++;
       else if (session.result === "réussi") {
-        // `hints_used === null` n'est pas « zéro indice » : sans mesure, pas
-        // d'autonomie créditée (voir la doc du champ, lib/supabase/types.ts).
-        if (session.hints_used !== null && session.hints_used < ASSISTED_HINTS_THRESHOLD) entry.autonomousSuccesses++;
+        // `hints_used === null` n'est pas « zéro indice », et une correction
+        // révélée n'est pas une réussite autonome : une seule définition,
+        // partagée par tous les moteurs (voir `isAutonomousSuccess`).
+        if (isAutonomousSuccess(session)) entry.autonomousSuccesses++;
         else entry.assistedSuccesses++;
       }
     }

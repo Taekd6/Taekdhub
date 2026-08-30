@@ -14,6 +14,7 @@ function makeSession(overrides: Partial<WorkSession> = {}): WorkSession {
     created_at: "2026-08-10T09:10:00.000Z",
     result: null,
     hints_used: null,
+    correction_viewed: null,
     ...overrides,
   };
 }

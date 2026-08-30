@@ -65,6 +65,7 @@ function makeSession(exerciseId: string, result: AttemptResult, hintsUsed: numbe
     created_at: startedAt,
     result,
     hints_used: hintsUsed,
+    correction_viewed: null,
   };
 }
 

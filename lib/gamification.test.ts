@@ -22,6 +22,7 @@ function makeSession(overrides: Partial<WorkSession> = {}): WorkSession {
     id: `s-${Math.random()}`, subject: "Mathématiques", exercise_id: null,
     started_at: "2026-01-01T00:00:00.000Z", ended_at: null, duration_seconds: 600,
     note: null, created_at: "2026-01-01T00:00:00.000Z", result: null, hints_used: null,
+    correction_viewed: null,
     ...overrides,
   };
 }
@@ -120,6 +121,7 @@ describe("XP — failles d'exploitation", () => {
         exercise_id: exercise.id,
         result: "réussi",
         hints_used: 0,
+        correction_viewed: null,
         duration_seconds: 900,
         started_at: new Date(Date.UTC(2026, 0, index + 1)).toISOString(),
       })

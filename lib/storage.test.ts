@@ -20,6 +20,7 @@ function makeRawSession(overrides: Record<string, unknown> = {}): Record<string,
     note: null,
     created_at: "2026-01-01T00:10:00.000Z",
     hints_used: null,
+    correction_viewed: null,
     ...overrides,
   };
 }
