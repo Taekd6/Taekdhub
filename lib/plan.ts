@@ -1,5 +1,5 @@
 import { diversifyByChapter, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
-import { computeSubjectCoverage, coverageSlotsFor, deferredSubjects, findNeglectedSubjects, COVERAGE_REASON_PREFIX, type SubjectCoverage } from "@/lib/coverage";
+import { computeSubjectCoverage, coverageDebtThresholdFor, coverageSlotsFor, deferredSubjects, findNeglectedSubjects, SHORT_SESSION_MINUTES, COVERAGE_REASON_PREFIX, type SubjectCoverage } from "@/lib/coverage";
 import { computeChaptersToConsolidate } from "@/lib/next-action";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -288,7 +288,31 @@ export function computeDailyPlan(
   // durée déduite du budget total disponible — jamais en plus.
   const mostUrgent = byPriority[0];
   const mostUrgentMinutes = mostUrgent ? estimatedDurationMinutes(mostUrgent.exercise, sessions) : 0;
-  const reserveUrgent = mostUrgent !== undefined && mostUrgentMinutes > 0 && mostUrgentMinutes <= totalMinutes;
+
+  // Matières dont le silence justifie une place à CETTE durée de séance : le
+  // seuil ordinaire pour une séance normale, une barre bien plus haute pour
+  // une séance courte (voir `coverageDebtThresholdFor`).
+  const debtThreshold = coverageDebtThresholdFor(totalMinutes);
+  const claimants = findNeglectedSubjects(coverage).filter((entry) => (entry.daysSinceContact ?? 0) >= debtThreshold);
+
+  // ══ QUI PREND L'UNIQUE PLACE D'UNE SÉANCE COURTE ══════════════════════
+  //
+  // Sous 45 minutes, la séance ne contient en pratique qu'un exercice, et la
+  // réservation d'urgence consomme tout le budget : la couverture ne pouvait
+  // alors JAMAIS obtenir de place, quel que soit son seuil. Mesuré sur 90
+  // jours de rejeu, un élève à 20 min/jour qui échoue ne voyait que des
+  // mathématiques — les trois autres matières jamais proposées, pas une fois.
+  //
+  // Passé `SHORT_SESSION_DEBT_DAYS` (trois semaines), une matière ne « dort »
+  // plus : elle décroche. Ce jour-là, et ce jour-là seulement, elle passe
+  // devant le point faible — qui, lui, a été servi tous les jours précédents.
+  //
+  // L'exercice urgent n'est pas perdu pour autant : il reste `byPriority[0]`,
+  // donc en tête du bloc de consolidation, et `fillBudget` le reprend dès
+  // qu'il reste de la place. On lui retire sa RÉSERVATION, pas sa priorité.
+  const coverageOutranksUrgent = totalMinutes < SHORT_SESSION_MINUTES && claimants.length > 0;
+  const reserveUrgent =
+    !coverageOutranksUrgent && mostUrgent !== undefined && mostUrgentMinutes > 0 && mostUrgentMinutes <= totalMinutes;
 
   const shares = intentSharesFor(totalMinutes);
   const taken = new Set<string>();
@@ -365,18 +389,9 @@ export function computeDailyPlan(
     return coverageBudget - duration < needed;
   };
 
-  for (const neglected of findNeglectedSubjects(coverage)) {
+  for (const neglected of claimants) {
     if (coveragePicks.length >= coverageSlots) break;
-    // Le candidat doit relever d'une intention que le mix ANNONCE à cette
-    // durée. Sans ce filtre, un exercice de couverture classé « progresser »
-    // faisait apparaître un bloc « Progresser » à 45 min — une durée où le
-    // mix ne prévoit que consolider et réviser. La couverture choisit une
-    // matière ; elle n'a jamais eu le droit d'inventer une façon de
-    // travailler que la séance n'annonce pas.
-    const candidate = all.find(
-      (item) =>
-        item.exercise.subject === neglected.subject && !taken.has(item.exercise.id) && Boolean(shares[planIntent(item.reasons)])
-    );
+    const candidate = all.find((item) => item.exercise.subject === neglected.subject && !taken.has(item.exercise.id));
     if (!candidate) continue;
     const duration = estimatedDurationMinutes(candidate.exercise, sessions);
     // Aucune place forcée : si le meilleur candidat de la matière ne tient
@@ -487,7 +502,17 @@ export function computeDailyPlan(
   // volontairement distinct de « Non retravaillé depuis », que `planIntent`
   // interprète, lui, comme de la révision).
   for (const pick of coveragePicks) {
-    const intent = planIntent(pick.reasons);
+    // L'intention du pick décide de SON bloc — sauf si le mix ne la déclare
+    // pas à cette durée : il rejoint alors « consolider », présent à tous les
+    // paliers. Sans cette retombée, deux défauts opposés apparaissaient :
+    // soit un bloc « Progresser » surgissait à 45 min, une durée où le mix ne
+    // prévoit que réparer et entretenir ; soit — en filtrant les candidats en
+    // amont — une matière dont tout le reste à faire relève de la révision ne
+    // pouvait JAMAIS obtenir de place dans une séance courte, où « consolider »
+    // est la seule intention déclarée. Mesuré : un silence de 77 jours chez un
+    // élève à 20 min/jour qui réussit tout.
+    const natural = planIntent(pick.reasons);
+    const intent: PlanIntent = shares[natural] ? natural : "consolider";
     const minutes = estimatedDurationMinutes(pick.exercise, sessions);
     const existing = blocks.find((block) => block.intent === intent);
     if (existing) {

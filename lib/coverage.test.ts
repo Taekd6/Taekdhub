@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   computeSubjectCoverage,
+  coverageDebtThresholdFor,
   coverageSlotsFor,
+  SHORT_SESSION_DEBT_DAYS,
+  SHORT_SESSION_MINUTES,
   longestSilence,
   COVERAGE_REASON_PREFIX,
   SUBJECT_DEBT_DAYS,
@@ -184,20 +187,32 @@ describe("longestSilence — un maximum, jamais une moyenne", () => {
 });
 
 describe("coverageSlotsFor — une place, jamais une enveloppe", () => {
-  it("n'accorde AUCUNE place de couverture en dessous de 45 minutes", () => {
-    // Le choix le plus important du module : avec un seul exercice au
-    // programme, sacrifier le point faible du jour pour de la couverture est
-    // un mauvais échange. Le produit le dit à l'écran plutôt que de le forcer.
-    expect(coverageSlotsFor(20)).toBe(0);
-    expect(coverageSlotsFor(30)).toBe(0);
-    expect(coverageSlotsFor(44)).toBe(0);
-  });
-
-  it("accorde une place à partir de 45 min, deux à partir de 2 h", () => {
+  it("une place jusqu'à 2 h, deux au-delà — quelle que soit la durée", () => {
+    expect(coverageSlotsFor(20)).toBe(1);
     expect(coverageSlotsFor(45)).toBe(1);
     expect(coverageSlotsFor(90)).toBe(1);
     expect(coverageSlotsFor(120)).toBe(2);
     expect(coverageSlotsFor(360)).toBe(2);
+  });
+
+  it("une séance courte exige une preuve BEAUCOUP plus forte pour céder sa seule place", () => {
+    // Le module a d'abord refusé toute couverture sous 45 min. Le rejeu de
+    // 90 jours a montré que l'arbitrage réel n'était pas « point faible
+    // aujourd'hui contre couverture aujourd'hui » mais « point faible tous
+    // les jours pendant trois mois contre toucher la chimie une seule fois ».
+    // La place existe donc, sous une barre rarement atteinte.
+    expect(coverageDebtThresholdFor(20)).toBe(SHORT_SESSION_DEBT_DAYS);
+    expect(coverageDebtThresholdFor(SHORT_SESSION_MINUTES - 1)).toBe(SHORT_SESSION_DEBT_DAYS);
+    expect(coverageDebtThresholdFor(SHORT_SESSION_MINUTES)).toBe(SUBJECT_DEBT_DAYS);
+    expect(coverageDebtThresholdFor(90)).toBe(SUBJECT_DEBT_DAYS);
+    expect(SHORT_SESSION_DEBT_DAYS).toBeGreaterThan(SUBJECT_DEBT_DAYS);
+  });
+
+  it("la barre des séances courtes ne dérive jamais de la plus longue horloge du produit", () => {
+    // Au-delà de MASTERY_STALE_DAYS, le produit considère déjà qu'un exercice
+    // maîtrisé redevient éligible. Une matière entièrement silencieuse au-delà
+    // ne dort plus, elle décroche — c'est le même fait, à une autre échelle.
+    expect(SHORT_SESSION_DEBT_DAYS).toBe(MASTERY_STALE_DAYS);
   });
 });
 
@@ -295,10 +310,13 @@ describe("computeDailyPlan — la couverture ne prend jamais le pas sur la faibl
     expect(withCoverage.blocks.flatMap((b) => b.picks).some((p) => p.exercise.id === firstOf(withoutCoverage))).toBe(true);
   });
 
-  it("I6 — AUCUNE place de couverture en dessous de 45 min, même avec une matière abandonnée", () => {
+  it("I6 — sous 45 min, un silence ordinaire ne prend pas la seule place de la séance", () => {
     const { exercises, chapters, sessions } = neglectedChemistryProfile();
     for (const budget of [20, 30, 44]) {
       const plan = computeDailyPlan(exercises, sessions, chapters, budget, NOW);
+      // La dette de ce profil (SUBJECT_DEBT_DAYS + 8 = 18 j) dépasse le seuil
+      // ordinaire mais reste sous la barre des séances courtes : le point
+      // faible du jour garde sa place.
       const coveragePicks = plan.blocks
         .flatMap((block) => block.picks)
         .filter((pick) => pick.reasons.some((reason) => reason.startsWith(COVERAGE_REASON_PREFIX)));
@@ -697,5 +715,72 @@ describe("computeDailyPlan — robustesse d'entrée", () => {
 
     const future: WorkSession = { ...makeSession(chimie, 0), started_at: daysAgo(-30) };
     expect(coverageFor(exercises, [vieille, future]).find((e) => e.subject === "Chimie")!.state).toBe("délaissée");
+  });
+});
+
+describe("computeDailyPlan — le régime des séances courtes", () => {
+  /** Un profil à une seule place : point faible avéré en maths, une autre matière engagée puis silencieuse. */
+  function shortSessionProfile(silenceDays: number) {
+    const chapters: Chapter[] = [
+      { id: "cm", subject: "Mathématiques", label: "Suites" },
+      { id: "cc", subject: "Chimie", label: "Équilibres" },
+    ];
+    const maths = Array.from({ length: 4 }, () => makeExercise({ subject: "Mathématiques", chapter_id: "cm", estimated_minutes: 20 }));
+    const chim = Array.from({ length: 3 }, () => makeExercise({ subject: "Chimie", chapter_id: "cc", estimated_minutes: 20 }));
+    // Échecs répétés en maths → point faible incontestable.
+    maths.slice(0, 2).forEach((exercise, index) => {
+      exercise.attempts = 1;
+      exercise.status = "à revoir";
+      exercise.last_worked_at = daysAgo(index + 1);
+    });
+    chim[0].attempts = 1;
+    chim[0].last_worked_at = daysAgo(silenceDays);
+    const sessions = [
+      makeSession(maths[0], 1, "échoué", 3),
+      makeSession(maths[1], 2, "échoué", 3),
+      makeSession(chim[0], silenceDays),
+    ];
+    return { exercises: [...maths, ...chim], chapters, sessions };
+  }
+
+  const coveragePicksOf = (plan: ReturnType<typeof computeDailyPlan>) =>
+    plan.blocks.flatMap((block) => block.picks).filter((pick) => pick.reasons.some((r) => r.startsWith(COVERAGE_REASON_PREFIX)));
+
+  it("un silence ordinaire ne prend pas la seule place d'une séance de 20 min", () => {
+    // 15 jours : au-dessus du seuil normal (10), sous la barre des séances
+    // courtes (21). Le point faible du jour garde sa place.
+    const { exercises, chapters, sessions } = shortSessionProfile(15);
+    const plan = computeDailyPlan(exercises, sessions, chapters, 20, NOW);
+    expect(coveragePicksOf(plan)).toHaveLength(0);
+    // …et le produit le DIT plutôt que de le taire.
+    expect(plan.deferred.map((entry) => entry.subject)).toContain("Chimie");
+  });
+
+  it("passé trois semaines de silence, la matière obtient l'unique place — même à 20 min", () => {
+    // C'est le correctif : avant, la réservation d'urgence consommait tout le
+    // budget d'une séance courte, et la couverture ne pouvait JAMAIS y obtenir
+    // de place. Un élève à 20 min/jour ne voyait qu'une seule matière.
+    const { exercises, chapters, sessions } = shortSessionProfile(SHORT_SESSION_DEBT_DAYS + 3);
+    const plan = computeDailyPlan(exercises, sessions, chapters, 20, NOW);
+    const covered = coveragePicksOf(plan);
+    expect(covered).toHaveLength(1);
+    expect(covered[0].exercise.subject).toBe("Chimie");
+    expect(plan.deferred).toEqual([]);
+  });
+
+  it("une matière JAMAIS ouverte ne réclame jamais de place, quelle que soit la durée", () => {
+    // L'absence de preuve n'est pas une preuve : on ne reproche pas à l'élève
+    // une matière qu'il n'a pas commencée — elle n'est peut-être pas encore au
+    // programme. C'est une limite assumée, pas un oubli.
+    const { exercises, chapters } = shortSessionProfile(30);
+    const chimieOnly = exercises.filter((exercise) => exercise.subject === "Chimie");
+    chimieOnly.forEach((exercise) => {
+      exercise.attempts = 0;
+      exercise.last_worked_at = null;
+    });
+    const sessions = [makeSession(exercises[0], 1, "échoué", 3)];
+    const plan = computeDailyPlan(exercises, sessions, chapters, 20, NOW);
+    expect(coveragePicksOf(plan)).toHaveLength(0);
+    expect(plan.coverage.find((entry) => entry.subject === "Chimie")?.state).toBe("jamais ouverte");
   });
 });

@@ -81,6 +81,21 @@ export interface SubjectCoverage {
   debtDays: number;
 }
 
+/** En dessous de cette durée, une séance ne contient en pratique qu'un seul exercice — le régime de couverture y est différent (voir `coverageDebtThresholdFor`). */
+export const SHORT_SESSION_MINUTES = 45;
+
+/**
+ * Ancienneté qu'une matière doit atteindre pour mériter l'unique place d'une
+ * SÉANCE COURTE.
+ *
+ * Volontairement égal à `MASTERY_STALE_DAYS` (lib/recommendation.ts) : au-delà
+ * de trois semaines, le produit considère déjà qu'un exercice maîtrisé
+ * redevient éligible. C'est la plus longue horloge qu'il tolère ; une matière
+ * entièrement silencieuse au-delà ne « dort » plus, elle décroche. L'égalité
+ * est testée, pour que les deux ne dérivent pas l'une de l'autre.
+ */
+export const SHORT_SESSION_DEBT_DAYS = 21;
+
 /**
  * Nombre de places réservées à la couverture selon le budget.
  *
@@ -90,16 +105,33 @@ export interface SubjectCoverage {
  * « 15 minutes de chimie » est une promesse invérifiable ; réserver « cet
  * exercice de chimie » est un fait testable.
  *
- * ZÉRO en dessous de 45 minutes, et c'est le choix le plus important de ce
- * module : avec un seul exercice au programme, sacrifier le point faible du
- * jour pour de la couverture est un mauvais échange. Le produit le dit alors
- * à l'écran au lieu de le forcer dans le plan — une information honnête vaut
- * mieux qu'un algorithme qui ment sur un budget qu'il n'a pas.
+ * ## Pourquoi les séances courtes ont fini par obtenir une place
+ * Ce module a d'abord refusé toute couverture sous 45 minutes, au motif
+ * qu'avec un seul exercice au programme, sacrifier le point faible du jour
+ * était un mauvais échange. Le rejeu de 90 jours a montré que l'arbitrage
+ * n'était pas celui-là : un élève à 20 min/jour qui échoue ne voyait QUE des
+ * mathématiques sur trois mois. Le vrai choix n'était pas « point faible
+ * aujourd'hui contre couverture aujourd'hui », mais « point faible tous les
+ * jours pendant trois mois contre toucher la chimie une seule fois ».
+ *
+ * Une séance courte reçoit donc une place — mais sous une barre bien plus
+ * haute (`SHORT_SESSION_DEBT_DAYS`), atteinte rarement. Concrètement, la
+ * matière la plus silencieuse récupère environ une séance toutes les trois
+ * semaines ; tout le reste continue d'aller au point faible.
  */
 export function coverageSlotsFor(budgetMinutes: number): number {
-  if (budgetMinutes < 45) return 0;
   if (budgetMinutes < 120) return 1;
   return 2;
+}
+
+/**
+ * Ancienneté minimale pour qu'une matière mérite une place, selon le budget.
+ *
+ * Deux régimes, un seul principe : plus la séance est courte, plus la preuve
+ * doit être forte pour lui prendre sa seule place.
+ */
+export function coverageDebtThresholdFor(budgetMinutes: number): number {
+  return budgetMinutes < SHORT_SESSION_MINUTES ? SHORT_SESSION_DEBT_DAYS : SUBJECT_DEBT_DAYS;
 }
 
 /** Préfixe de la raison portée par un exercice retenu au titre de la couverture.

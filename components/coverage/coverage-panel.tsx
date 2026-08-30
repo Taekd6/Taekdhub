@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { cn } from "@/lib/cn";
-import { deferredSubjects, longestSilence, SUBJECT_DEBT_DAYS, type SubjectCoverage } from "@/lib/coverage";
+import { deferredSubjects, longestSilence, SHORT_SESSION_DEBT_DAYS, SUBJECT_DEBT_DAYS, type SubjectCoverage } from "@/lib/coverage";
 import type { Subject } from "@/lib/supabase/types";
 
 /**
@@ -168,7 +168,7 @@ export function CoveragePanel({
           <p className="mt-1 text-2xs leading-5 text-subtle">
             {scopedByGoals
               ? "Tes objectifs pilotent ce plan : chacun reçoit une part du temps et travaille dans son propre périmètre. Une matière hors de tes objectifs peut donc rester silencieuse tant qu'ils sont actifs."
-              : "À partir de 45 minutes, TaekdHub réserve une place à ta matière la plus en retard — sauf si cette place devait supprimer une partie annoncée de ta séance. En dessous, il sert ton point faible du jour plutôt que d'étaler le peu de temps disponible."}
+              : `TaekdHub réserve une place à ta matière la plus en retard — sauf si cette place devait supprimer une partie annoncée de ta séance. Sur une séance courte, où il n'y a qu'un exercice, il faut ${SHORT_SESSION_DEBT_DAYS} jours de silence pour qu'une matière passe devant ton point faible du jour, contre ${SUBJECT_DEBT_DAYS} sur une séance plus longue.`}
           </p>
         </div>
       )}
