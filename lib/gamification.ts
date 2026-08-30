@@ -81,7 +81,14 @@ export function xpFromExercise(exercise: Exercise, proven: boolean): number {
  * moyen le plus rapide de gagner des niveaux.
  */
 export function xpFromSession(session: WorkSession, difficulty = 3): number {
-  if (secondsToWholeMinutes(session.duration_seconds) <= 0) return 0;
+  // `!( > 0)` et non `<= 0` : une durée `NaN` rendait les deux comparaisons
+  // fausses, laissait passer le garde, et créditait le plein tarif — pendant
+  // que `countsAsAttempt` refusait la même séance. Deux définitions du même
+  // seuil qui se contredisaient. Seconde ligne de défense : `normalizeSession`
+  // ramène déjà toute durée non finie à 0 à la lecture du stockage, donc le
+  // cas n'est pas atteignable aujourd'hui — même principe que les dates
+  // écartées dans lib/coverage.ts.
+  if (!(secondsToWholeMinutes(session.duration_seconds) > 0)) return 0;
   if (session.result === "réussi") {
     // Demi-tarif dès qu'une aide DÉCISIVE est prouvée : plusieurs indices, ou
     // la correction lue (voir `wasAssistedSuccess`).

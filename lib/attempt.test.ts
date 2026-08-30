@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appendAttempt, parsePendingAttempt, pendingAttemptKey, PENDING_ATTEMPT_PREFIX } from "@/lib/attempt";
+import { appendAttempt, parsePendingAttempt, pendingAttemptKey, resumeAid, PENDING_ATTEMPT_PREFIX } from "@/lib/attempt";
 import type { WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -107,5 +107,42 @@ describe("appendAttempt", () => {
     const lundi = makeSession({ id: "lundi", result: "échoué" });
     const mardi = makeSession({ id: "mardi", result: "réussi", started_at: "2026-08-31T17:00:00.000Z" });
     expect(appendAttempt(mardi, appendAttempt(lundi, []))).toHaveLength(2);
+  });
+});
+
+describe("resumeAid — l'aide utilisée survit à un rechargement", () => {
+  it("restitue les indices et la correction d'une séance interrompue", () => {
+    expect(resumeAid({ hintCount: 3, correctionRevealed: true })).toEqual({ hintCount: 3, correctionRevealed: true });
+  });
+
+  it("REPRODUIT LE DÉFAUT CORRIGÉ : sans ces champs, l'aide repartait à zéro", () => {
+    // C'est exactement ce que produisait un rechargement en cours de séance
+    // quand `hintCount` et `correctionRevealed` étaient de simples états
+    // React : trois indices révélés et la correction lue réapparaissaient en
+    // 0 / false — non pas « on ne sait pas », mais la PREUVE POSITIVE que
+    // l'élève s'en est sorti seul. Ils vivent désormais dans le contexte
+    // persisté du chrono ; ce test fixe le comportement de repli.
+    expect(resumeAid({})).toEqual({ hintCount: 0, correctionRevealed: false });
+  });
+
+  it("MIGRATION : un chrono d'une version antérieure ne porte que `exerciseId`", () => {
+    // Il retombe sur 0 / false, exactement le comportement d'avant — jamais
+    // `undefined`, qui filtrerait jusque dans la séance enregistrée.
+    const { hintCount, correctionRevealed } = resumeAid({ exerciseId: "ex-1" } as { hintCount?: number });
+    expect(hintCount).toBe(0);
+    expect(correctionRevealed).toBe(false);
+    expect(hintCount).not.toBeUndefined();
+  });
+
+  it("refuse les valeurs impossibles plutôt que de les propager", () => {
+    expect(resumeAid({ hintCount: -4 }).hintCount).toBe(0);
+    expect(resumeAid({ hintCount: NaN }).hintCount).toBe(0);
+    expect(resumeAid({ hintCount: Infinity }).hintCount).toBe(0);
+    expect(resumeAid({ hintCount: 2.7 }).hintCount).toBe(2);
+    expect(resumeAid(null).correctionRevealed).toBe(false);
+  });
+
+  it("seul `true` vaut correction lue — une valeur douteuse ne condamne pas l'élève", () => {
+    expect(resumeAid({ correctionRevealed: undefined }).correctionRevealed).toBe(false);
   });
 });

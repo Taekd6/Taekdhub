@@ -11,7 +11,7 @@ import { MasteryPicker } from "@/components/exercises/exercise-badges";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { RichMath } from "@/components/rich-math";
 import { useWorkTimer } from "@/hooks/use-work-timer";
-import { appendAttempt, clearPendingAttempt, readPendingAttempt, writePendingAttempt } from "@/lib/attempt";
+import { appendAttempt, clearPendingAttempt, readPendingAttempt, resumeAid, writePendingAttempt } from "@/lib/attempt";
 import { explainReasons } from "@/lib/recommendation";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
 import type { AttemptResult, Exercise, ExerciseStatus, Mastery, WorkSession } from "@/lib/supabase/types";
@@ -19,6 +19,14 @@ import type { AttemptResult, Exercise, ExerciseStatus, Mastery, WorkSession } fr
 /** Une seule séance focus à la fois : la clé encode l'exercice concerné, ce qui permet de retrouver après un rechargement lequel reprendre automatiquement. */
 export const FOCUS_TIMER_PREFIX = "prepahub:timer:focus:";
 const focusTimerKey = (exerciseId: string) => `${FOCUS_TIMER_PREFIX}${exerciseId}`;
+
+/**
+ * Ce qu'une séance focus interrompue doit pouvoir restituer : l'exercice
+ * concerné, et l'AIDE déjà utilisée. Ces deux derniers champs sont optionnels
+ * pour rester compatibles avec un chrono déjà en cours au moment de la mise à
+ * jour — voir la note dans `FocusView`.
+ */
+type FocusTimerContext = { exerciseId: string; hintCount?: number; correctionRevealed?: boolean };
 
 export function FocusView({
   item,
@@ -51,22 +59,39 @@ export function FocusView({
   progress?: { index: number; total: number };
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
+
   /**
-   * La correction a-t-elle été révélée AU MOINS UNE FOIS durant cette
-   * tentative ? Distinct de `correctionVisible`, qui est une bascule
-   * d'affichage : la masquer ne défait pas le fait de l'avoir lue.
+   * L'AIDE UTILISÉE VIT DANS LE CHRONO, PAS DANS UN useState.
    *
-   * Sans ce fait, révéler la correction entière puis cocher « Réussi »
-   * enregistrait `hints_used: 0` — c'est-à-dire la preuve d'autonomie
-   * MAXIMALE dont dispose le moteur (voir lib/supabase/types.ts#hints_used),
-   * émise par un élève qui venait de lire la solution. Le produit dégradait
-   * le signal pour un seul indice sur trois, et ignorait l'aide totale.
+   * `hintCount` et `correctionRevealed` étaient deux états React ordinaires.
+   * Le chrono, lui, est persisté en sessionStorage et restauré au montage
+   * (hooks/use-work-timer.ts) — donc un rechargement en cours de séance
+   * rendait le temps mais REMETTAIT L'AIDE À ZÉRO. Reproduit en navigateur :
+   * trois indices révélés + correction lue, rechargement, « Réussi » →
+   * `hints_used: 0, correction_viewed: false` enregistrés.
+   *
+   * C'est le pire signal possible, et pire que le bug qu'il remplaçait : `0`
+   * et `false` ne sont pas des trous, ce sont des PREUVES POSITIVES
+   * d'autonomie (voir lib/supabase/types.ts). Le produit affirmait donc « il
+   * s'en est sorti seul » d'un élève qui venait d'épuiser toute l'aide
+   * disponible — plein tarif d'XP, notion « solide », palier de difficulté
+   * relevé d'un cran.
+   *
+   * L'aide utilisée est un fait de la MÊME séance que le temps écoulé : elle
+   * est donc rangée au même endroit, dans le contexte déjà persisté du
+   * chrono. Aucune troisième clé de stockage, aucun mécanisme de plus — et
+   * la restauration devient automatique.
+   *
+   * `?? ` : un chrono repris d'une version antérieure ne porte que
+   * `exerciseId`. On lit alors 0 / false, exactement le comportement d'avant.
    */
-  const [correctionRevealed, setCorrectionRevealed] = useState(false);
-  const [hintCount, setHintCount] = useState(0);
-  const { seconds, running, start, toggle, stop } = useWorkTimer<{ exerciseId: string }>(focusTimerKey(item.id), {
-    exerciseId: item.id,
-  });
+  const { seconds, running, start, toggle, stop, context, setContext } = useWorkTimer<FocusTimerContext>(
+    focusTimerKey(item.id),
+    { exerciseId: item.id, hintCount: 0, correctionRevealed: false }
+  );
+  const { hintCount, correctionRevealed } = resumeAid(context);
+  // `correctionRevealed` est distinct de `correctionVisible`, simple bascule
+  // d'affichage : masquer la correction ne défait pas le fait de l'avoir lue.
 
   // Démarre le chrono dès l'entrée en mode focus : ouvrir un exercice EST déjà
   // la décision de s'y mettre, exactement comme pour une séance reprise après
@@ -107,6 +132,8 @@ export function FocusView({
   // rechargement survenu à l'écran de résultat ne perd plus la séance, il
   // repose la question (voir lib/attempt.ts).
   const [draftSession, setDraftSession] = useState<WorkSession | null>(() => readPendingAttempt(item.id));
+  /** Le stockage a refusé la dernière tentative de sauvegarde — voir `commitResult`. Remis à faux dès qu'un nouvel essai est lancé. */
+  const [saveFailed, setSaveFailed] = useState(false);
 
   // « Presque une autre application » : le bandeau et le rappel clavier
   // s'effacent après quelques secondes d'inactivité pendant le travail actif
@@ -203,17 +230,39 @@ export function FocusView({
   // `attempts`/`last_worked_at` mis à jour si ≥ 1 minute), rien n'est perdu.
   const commitResult = useCallback(
     (result: AttemptResult | null) => {
+      setSaveFailed(false);
       if (draftSession) {
         const finalSession: WorkSession = { ...draftSession, result };
-        // Le brouillon disparaît AVANT la sauvegarde : plus rien à reprendre
-        // au prochain montage, la tentative est désormais dans l'historique.
+        try {
+          // `appendAttempt` plutôt qu'un ajout en tête : une même tentative
+          // (même identifiant) n'entre jamais deux fois dans l'historique,
+          // maintenant qu'un brouillon peut être relu par plusieurs montages.
+          saveSessions(appendAttempt(finalSession, sessions));
+        } catch {
+          // Le stockage a refusé (quota dépassé, mode privé, disque plein).
+          // Le brouillon N'EST PAS effacé : c'est la seule copie du travail,
+          // et l'écran reste ouvert pour réessayer. On ne ferme pas, on ne
+          // prévient pas les moteurs, on ne prétend pas.
+          //
+          // C'est aussi pourquoi l'effacement du brouillon a lieu APRÈS la
+          // sauvegarde et non avant : dans l'ordre inverse, un échec
+          // d'écriture détruisait la dernière trace de la séance. Reproduit
+          // en navigateur (quota forcé) : 35 minutes perdues, sans message,
+          // sans brouillon. L'idempotence ne dépend pas de cet ordre — elle
+          // est garantie par l'identifiant, dans `appendAttempt`.
+          setSaveFailed(true);
+          return;
+        }
+        // Sauvegarde acquise : le brouillon n'a plus de raison d'être.
         clearPendingAttempt(item.id);
-        // `appendAttempt` plutôt qu'un ajout en tête : une même tentative
-        // (même identifiant) n'entre jamais deux fois dans l'historique,
-        // maintenant qu'un brouillon peut être relu par plusieurs montages.
-        saveSessions(appendAttempt(finalSession, sessions));
         if (secondsToWholeMinutes(finalSession.duration_seconds) > 0) {
-          update(item.id, { attempts: item.attempts + 1, last_worked_at: new Date().toISOString() });
+          try {
+            update(item.id, { attempts: item.attempts + 1, last_worked_at: new Date().toISOString() });
+          } catch {
+            // Compteurs de confort seulement : la vérité du travail est dans
+            // l'historique, déjà enregistré ci-dessus. Un échec ici ne doit
+            // pas faire croire à l'élève qu'il a perdu sa séance.
+          }
         }
       }
       onClose(result);
@@ -257,7 +306,22 @@ export function FocusView({
         <div>
           <p className="text-base font-semibold text-ink">Comment s&apos;est passé l&apos;exercice ?</p>
           <p className="mt-1.5 text-sm text-muted">{item.title}</p>
+          {/* Le temps travaillé est annoncé ici, et pas seulement pendant la
+              séance : après un rechargement, c'est la seule chose qui dit à
+              l'élève que son travail a bien été retrouvé. Sobre, factuel,
+              affiché une fois — pas une notification. */}
+          <p className="mt-3 text-2xs tabular-nums text-subtle">{formatDuration(draftSession.duration_seconds)} enregistrées</p>
         </div>
+
+        {/* Le stockage a refusé d'écrire. On le dit, on garde le travail, et
+            on laisse l'élève réessayer — plutôt que de fermer l'écran en
+            faisant croire que tout s'est bien passé. */}
+        {saveFailed && (
+          <p className="max-w-xs rounded-lg border border-hairline/[0.14] px-3.5 py-3 text-xs leading-5 text-rose-300">
+            Ta séance n&apos;a pas pu être enregistrée — le stockage de ton navigateur a refusé l&apos;écriture. Ton travail est
+            conservé : réessaie, ou libère de l&apos;espace avant de recommencer.
+          </p>
+        )}
         <div className="flex w-full max-w-xs flex-col gap-2.5">
           <Button
             size="lg"
@@ -405,7 +469,7 @@ export function FocusView({
             {(hintCount < item.hints.length || item.correction) && (
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 {hintCount < item.hints.length && (
-                  <Button variant="secondary" size="sm" onClick={() => setHintCount((c) => c + 1)}>
+                  <Button variant="secondary" size="sm" onClick={() => setContext({ ...context, hintCount: hintCount + 1 })}>
                     <Lightbulb size={15} /> Indice {hintCount + 1}
                     <span className="text-muted">/ {item.hints.length}</span>
                   </Button>
@@ -416,7 +480,7 @@ export function FocusView({
                     size="sm"
                     onClick={() => {
                       setCorrectionVisible((v) => !v);
-                      setCorrectionRevealed(true);
+                      if (!correctionRevealed) setContext({ ...context, correctionRevealed: true });
                     }}
                   >
                     {correctionVisible ? <EyeOff size={15} /> : <Eye size={15} />}

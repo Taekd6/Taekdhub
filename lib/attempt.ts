@@ -35,6 +35,32 @@ import type { WorkSession } from "@/lib/supabase/types";
  * on lui repose simplement la question au lieu de jeter son travail.
  */
 
+/**
+ * L'AIDE DÉJÀ UTILISÉE, telle qu'un chrono interrompu la restitue.
+ *
+ * `hintCount` et `correctionRevealed` voyagent dans le contexte persisté du
+ * chrono (voir `FocusTimerContext`, components/exercises/focus-view.tsx) et
+ * non dans un état React, sans quoi un rechargement en cours de séance les
+ * remettait à zéro : trois indices révélés et la correction lue
+ * réapparaissaient en `0` / `false`, c'est-à-dire en PREUVES POSITIVES
+ * d'autonomie (voir lib/supabase/types.ts) — le produit affirmait alors que
+ * l'élève s'en était sorti seul.
+ *
+ * Les deux champs sont optionnels : un chrono déjà en cours au moment de la
+ * mise à jour ne porte que `exerciseId`. Il retombe alors sur 0 / false,
+ * exactement le comportement d'avant — jamais une valeur inventée, et jamais
+ * `undefined` qui filtrerait jusque dans la séance enregistrée.
+ */
+export function resumeAid(context: { hintCount?: number; correctionRevealed?: boolean } | null | undefined): {
+  hintCount: number;
+  correctionRevealed: boolean;
+} {
+  return {
+    hintCount: typeof context?.hintCount === "number" && Number.isFinite(context.hintCount) && context.hintCount >= 0 ? Math.floor(context.hintCount) : 0,
+    correctionRevealed: context?.correctionRevealed === true,
+  };
+}
+
 /** Une seule tentative en attente par exercice : la clé encode l'exercice concerné, comme celle du chrono (voir `FOCUS_TIMER_PREFIX`). */
 export const PENDING_ATTEMPT_PREFIX = "prepahub:attempt:pending:";
 

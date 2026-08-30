@@ -176,11 +176,31 @@ describe("scénario 4 — tentative de moins d'une minute", () => {
   });
 });
 
-describe("scénario 5 — la tentative d'une minute pile", () => {
-  it("compte, elle : le seuil exclut ce qui est en dessous, pas ce qui l'atteint", () => {
-    const juste = makeAttempt({ duration_seconds: 60 });
-    expect(countsAsAttempt(juste)).toBe(true);
-    expect(xpFromSession(juste, 3)).toBe(30);
+describe("scénario 5 — les trois bords du seuil d'une minute", () => {
+  it("59 s ne compte pas, 60 s et 61 s comptent : le seuil exclut ce qui est en dessous, pas ce qui l'atteint", () => {
+    expect(countsAsAttempt(makeAttempt({ duration_seconds: 59 }))).toBe(false);
+    expect(countsAsAttempt(makeAttempt({ duration_seconds: 60 }))).toBe(true);
+    expect(countsAsAttempt(makeAttempt({ duration_seconds: 61 }))).toBe(true);
+  });
+
+  it("l'XP franchit le seuil au même endroit exactement", () => {
+    // Deux définitions du même seuil qui divergeraient d'une seconde
+    // suffiraient à recréer l'incohérence que ce chantier ferme.
+    expect(xpFromSession(makeAttempt({ duration_seconds: 59 }), 3)).toBe(0);
+    expect(xpFromSession(makeAttempt({ duration_seconds: 60 }), 3)).toBe(30);
+    expect(xpFromSession(makeAttempt({ duration_seconds: 61 }), 3)).toBe(30);
+  });
+
+  it("une durée impossible ne crédite rien, et les deux moteurs sont d'accord", () => {
+    // `NaN` rendait `<= 0` faux, traversait le garde et créditait le plein
+    // tarif — pendant que `countsAsAttempt` refusait la même séance.
+    // `normalizeSession` ramène déjà toute durée non finie à 0 à la lecture,
+    // donc le cas n'est pas atteignable : seconde ligne de défense.
+    for (const impossible of [NaN, -30, Number.NEGATIVE_INFINITY]) {
+      const session = makeAttempt({ duration_seconds: impossible });
+      expect(xpFromSession(session, 3)).toBe(0);
+      expect(countsAsAttempt(session)).toBe(false);
+    }
   });
 });
 
