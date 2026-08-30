@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { cn } from "@/lib/cn";
-import { longestSilence, SUBJECT_DEBT_DAYS, type SubjectCoverage } from "@/lib/coverage";
+import { deferredSubjects, longestSilence, SUBJECT_DEBT_DAYS, type SubjectCoverage } from "@/lib/coverage";
 import type { Subject } from "@/lib/supabase/types";
 
 /**
@@ -99,18 +99,25 @@ function SilenceRow({ entry, willBeTouched }: { entry: SubjectCoverage; willBeTo
 export function CoveragePanel({
   coverage,
   touchedSubjects,
+  scopedByGoals = false,
   className,
 }: {
   coverage: SubjectCoverage[];
   /** Matières réellement présentes dans le plan qui va être lancé — permet de dire, sans le déduire, ce qui sera laissé de côté. */
   touchedSubjects: Subject[];
+  /** `true` quand ce sont les objectifs qui pilotent la séance : la règle de réservation ne s'applique alors plus telle quelle (voir la note du bas). */
+  scopedByGoals?: boolean;
   className?: string;
 }) {
-  if (coverage.length === 0) return null;
+  // Tant qu'aucune séance n'a eu lieu, il n'y a rien à dire : quatre rails
+  // vides sous un titre qui annonce un délaissement seraient un reproche
+  // avant même la première séance — exactement ce que ce module refuse pour
+  // les matières « jamais ouvertes ».
+  if (coverage.length === 0 || !coverage.some((entry) => entry.engaged)) return null;
 
   const touched = new Set(touchedSubjects);
   const worst = longestSilence(coverage);
-  const deferred = coverage.filter((entry) => entry.state === "délaissée" && !touched.has(entry.subject));
+  const deferred = deferredSubjects(coverage, touchedSubjects);
 
   return (
     <div className={className}>
@@ -159,8 +166,9 @@ export function CoveragePanel({
             <span className="font-medium">{deferred.map((entry) => entry.subject).join(", ")}</span>.
           </p>
           <p className="mt-1 text-2xs leading-5 text-subtle">
-            Une séance plus longue réserve une place à la matière la plus en retard — en dessous de 45 minutes, TaekdHub préfère
-            servir ton point faible du jour plutôt que d&apos;étaler le peu de temps disponible.
+            {scopedByGoals
+              ? "Tes objectifs pilotent ce plan : chacun reçoit une part du temps et travaille dans son propre périmètre. Une matière hors de tes objectifs peut donc rester silencieuse tant qu'ils sont actifs."
+              : "À partir de 45 minutes, TaekdHub réserve une place à ta matière la plus en retard — sauf si cette place devait supprimer une partie annoncée de ta séance. En dessous, il sert ton point faible du jour plutôt que d'étaler le peu de temps disponible."}
           </p>
         </div>
       )}

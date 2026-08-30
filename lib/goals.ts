@@ -203,7 +203,10 @@ export function computeGoalsDailyPlan(goals: Goal[], exercises: Exercise[], sess
     const share = Math.round(totalMinutes * (weight / totalWeight));
     if (share <= 0) continue;
     const scoped = scopeToGoal(goal, exercises).filter((exercise) => !usedIds.has(exercise.id));
-    const plan = computeDailyPlan(scoped, sessions, chapters, share, now);
+    // `null` : la couverture ne se mesure jamais sur un périmètre scopé —
+    // elle y verrait un silence là où l'élève a travaillé hier (voir la doc
+    // du paramètre `coverageBank`, lib/plan.ts).
+    const plan = computeDailyPlan(scoped, sessions, chapters, share, now, null);
     if (plan.blocks.length === 0) continue;
     plan.blocks.forEach((block) => block.picks.forEach(({ exercise }) => usedIds.add(exercise.id)));
     results.push({ goal, readiness, plan });
@@ -254,7 +257,7 @@ export function computeUpcomingGoalSessions(
   const plans: DailyPlan[] = [];
   for (let i = 0; i < count; i++) {
     const remaining = scoped.filter((exercise) => !usedIds.has(exercise.id));
-    const plan = computeDailyPlan(remaining, sessions, chapters, sessionMinutes, now);
+    const plan = computeDailyPlan(remaining, sessions, chapters, sessionMinutes, now, null);
     if (plan.blocks.length === 0) break;
     plan.blocks.forEach((block) => block.picks.forEach(({ exercise }) => usedIds.add(exercise.id)));
     plans.push(plan);

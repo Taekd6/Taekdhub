@@ -7,7 +7,10 @@ import {
   SUBJECT_DEBT_DAYS,
 } from "@/lib/coverage";
 import { computeDailyPlan, planIntent, PLAN_DURATION_PRESETS } from "@/lib/plan";
+import { computeGoalsDailyPlan, scopeToGoal } from "@/lib/goals";
+import type { Goal } from "@/lib/storage";
 import { explainReasons, recommendExercises, MASTERY_STALE_DAYS } from "@/lib/recommendation";
+import { CHAPTER_STALE_DAYS } from "@/lib/next-action";
 import type { Chapter } from "@/lib/storage";
 import type { AttemptResult, Exercise, Mastery, Subject, WorkSession } from "@/lib/supabase/types";
 
@@ -204,7 +207,11 @@ describe("cohérence des trois horloges du produit", () => {
     // exercice maîtrisé : son seuil se place entre les deux. Ce test empêche
     // les trois notions d'oubli du produit de dériver l'une par rapport aux
     // autres au fil des sprints.
-    const CHAPTER_STALE_DAYS = 7; // lib/next-action.ts — constante privée, valeur documentée
+    //
+    // Les trois constantes sont IMPORTÉES. Une version précédente recopiait
+    // `CHAPTER_STALE_DAYS = 7` en dur avec la mention « constante privée » :
+    // le test passait quoi qu'il arrive, et la garantie annoncée dans la doc
+    // de SUBJECT_DEBT_DAYS était purement cosmétique.
     expect(CHAPTER_STALE_DAYS).toBeLessThan(SUBJECT_DEBT_DAYS);
     expect(SUBJECT_DEBT_DAYS).toBeLessThan(MASTERY_STALE_DAYS);
   });
@@ -235,6 +242,16 @@ function neglectedChemistryProfile() {
   chimie[0].attempts = 1;
   chimie[0].last_worked_at = daysAgo(SUBJECT_DEBT_DAYS + 8);
   return { exercises, chapters, sessions };
+}
+
+/**
+ * Ce que `deferred` DOIT valoir : les matières en retard qu'aucun exercice du
+ * plan ne touche. Recalculé ici à partir des seuls blocs, pour que le test
+ * vérifie la propriété et non la ligne de code qui la produit.
+ */
+function expectedDeferred(plan: ReturnType<typeof computeDailyPlan>) {
+  const touched = new Set(plan.blocks.flatMap((block) => block.picks.map((pick) => pick.exercise.subject)));
+  return plan.coverage.filter((entry) => entry.state === "délaissée" && !touched.has(entry.subject));
 }
 
 describe("computeDailyPlan — invariants de budget (inchangés)", () => {
@@ -286,8 +303,14 @@ describe("computeDailyPlan — la couverture ne prend jamais le pas sur la faibl
         .flatMap((block) => block.picks)
         .filter((pick) => pick.reasons.some((reason) => reason.startsWith(COVERAGE_REASON_PREFIX)));
       expect(coveragePicks, `budget ${budget}`).toHaveLength(0);
-      // …mais le plan le DIT, au lieu de le taire.
-      expect(plan.deferred.map((entry) => entry.subject)).toContain("Chimie");
+      // …et `deferred` dit exactement ce qui n'est pas touché — que la
+      // matière soit entrée par une place de couverture ou par le tout-venant
+      // de la consolidation. C'est l'invariant, pas un résultat particulier :
+      // une matière en retard servie par un pick ordinaire EST travaillée,
+      // donc elle n'est pas laissée de côté.
+      expect(plan.deferred.map((entry) => entry.subject), `budget ${budget}`).toEqual(
+        expectedDeferred(plan).map((entry) => entry.subject)
+      );
     }
   });
 
@@ -318,7 +341,7 @@ describe("computeDailyPlan — la couverture ne prend jamais le pas sur la faibl
       .flatMap((block) => block.picks)
       .filter((pick) => pick.reasons.some((reason) => reason.startsWith(COVERAGE_REASON_PREFIX)));
     expect(covered.length).toBeLessThanOrEqual(coverageSlotsFor(90));
-    expect(plan.deferred.length).toBeGreaterThan(0);
+    expect(plan.deferred.map((entry) => entry.subject)).toEqual(expectedDeferred(plan).map((entry) => entry.subject));
   });
 
   it("I8 — une matière sans rien en attente ne déclenche jamais de réservation", () => {
@@ -474,5 +497,205 @@ describe("computeDailyPlan — cas limites", () => {
     expect(plan.totalMinutes).toBeLessThanOrEqual(60);
     // Impossible à caser : le produit le déclare différé plutôt que de mentir.
     expect(plan.deferred.map((entry) => entry.subject)).toContain("Chimie");
+  });
+});
+
+describe("computeDailyPlan — la couverture ne démantèle jamais la structure annoncée", () => {
+  /**
+   * Deux mondes strictement identiques SAUF la dette de couverture. La
+   * composition par intention doit être la même : une matière silencieuse ne
+   * doit jamais faire disparaître un bloc que le mix annonce.
+   *
+   * Ce test manquait, et son absence a laissé passer une vraie régression :
+   * à 45 min avec des exercices de 20 min, urgent (20) + couverture (20)
+   * laissaient 5 minutes, la part « réviser » tombait à 2 et le rattrapage à
+   * 5 — le plan devenait 100 % consolidation, exactement le défaut que le
+   * rattrapage avait été écrit pour corriger. La fixture des tests de
+   * structure existants était aveugle : ses exercices « à réviser » n'ont
+   * aucune WorkSession, donc leur matière est « jamais ouverte », donc jamais
+   * délaissée, donc aucune réservation ne s'y déclenche.
+   */
+  function twoWorlds() {
+    const chapters: Chapter[] = [
+      { id: "cm", subject: "Mathématiques", label: "Suites" },
+      { id: "cp", subject: "Physique", label: "Ondes" },
+      { id: "cc", subject: "Chimie", label: "Équilibres" },
+    ];
+    // Consolidation : jamais travaillés — fournit l'exercice urgent.
+    const maths = Array.from({ length: 4 }, () => makeExercise({ subject: "Mathématiques", chapter_id: "cm" }));
+    // Révision : maîtrisés et anciens (isStaleMastery les retient).
+    const phys = Array.from({ length: 3 }, () =>
+      makeExercise({ subject: "Physique", chapter_id: "cp", status: "maîtrisé", mastery: 100 as Mastery, attempts: 2, last_worked_at: daysAgo(60) })
+    );
+    // Chimie : ses candidats relèvent de la consolidation — c'est le cas qui
+    // fait mal, la place de couverture ne crée alors aucun bloc par elle-même.
+    const chim = Array.from({ length: 3 }, () => makeExercise({ subject: "Chimie", chapter_id: "cc" }));
+    chim[0].attempts = 1;
+    chim[0].last_worked_at = daysAgo(25);
+
+    const exercises = [...maths, ...phys, ...chim];
+    // Une séance récente sur la physique la garde fraîche côté couverture,
+    // sans toucher `last_worked_at` (donc sans la sortir de la révision).
+    const base = [makeSession(phys[0], 1)];
+    return {
+      exercises,
+      chapters,
+      withDebt: [...base, makeSession(chim[0], 25)],
+      withoutDebt: [...base, makeSession(chim[0], 1)],
+    };
+  }
+
+  it("la composition par intention est identique avec et sans matière délaissée", () => {
+    const { exercises, chapters, withDebt, withoutDebt } = twoWorlds();
+    for (const budget of [45, 60, 90]) {
+      const intents = (sessions: WorkSession[]) =>
+        computeDailyPlan(exercises, sessions, chapters, budget, NOW).blocks.map((block) => block.intent);
+      expect(intents(withDebt), `budget ${budget}`).toEqual(intents(withoutDebt));
+    }
+  });
+
+  it("plutôt que de supprimer une intention, la place de couverture est déclinée", () => {
+    const { exercises, chapters, withDebt } = twoWorlds();
+    // À 45 min la place ne tient pas sans sacrifier « réviser » : elle est
+    // abandonnée, et la matière est déclarée différée au lieu d'être servie
+    // au prix de la structure.
+    const tight = computeDailyPlan(exercises, withDebt, chapters, 45, NOW);
+    expect(tight.blocks.map((block) => block.intent)).toContain("réviser");
+    expect(tight.blocks.flatMap((block) => block.picks).filter((p) => p.reasons.some((r) => r.startsWith(COVERAGE_REASON_PREFIX)))).toHaveLength(0);
+    // `deferred` reste l'invariant, pas un résultat attendu : décliner la
+    // PLACE de couverture ne veut pas dire abandonner la matière — ici la
+    // chimie entre quand même par la consolidation ordinaire, donc elle
+    // n'est pas laissée de côté, et le produit ne doit pas prétendre le
+    // contraire.
+    expect(tight.deferred.map((entry) => entry.subject)).toEqual(expectedDeferred(tight).map((entry) => entry.subject));
+
+    // À 60 min elle tient : elle est prise, et « réviser » existe toujours.
+    const roomy = computeDailyPlan(exercises, withDebt, chapters, 60, NOW);
+    expect(roomy.blocks.map((block) => block.intent)).toContain("réviser");
+    expect(roomy.blocks.flatMap((block) => block.picks).filter((p) => p.reasons.some((r) => r.startsWith(COVERAGE_REASON_PREFIX)))).toHaveLength(1);
+    expect(roomy.deferred).toEqual([]);
+  });
+});
+
+describe("computeDailyPlan — la couverture est une propriété de la BANQUE, pas du périmètre", () => {
+  /**
+   * Le défaut le plus grave trouvé sur cette livraison, et le seul dont la
+   * conséquence atteignait l'élève en toutes lettres.
+   *
+   * `computeGoalsDailyPlan` et la carte d'objectif appellent le plan sur un
+   * périmètre déjà restreint (`scopeToGoal`). `computeSubjectCoverage` n'y
+   * voyait alors que les exercices du périmètre : une séance faite hier sur
+   * un exercice de la MÊME matière mais d'un autre chapitre devenait
+   * invisible, et le plan produisait « Zone délaissée : Mathématiques (30 j) »
+   * — une phrase datée, fausse, qui remontait jusqu'à l'écran de séance via
+   * `explainReasons`.
+   */
+  function scopedProfile() {
+    const chapters: Chapter[] = [
+      { id: "ch-a", subject: "Mathématiques", label: "Chapitre A" },
+      { id: "ch-b", subject: "Mathématiques", label: "Chapitre B" },
+    ];
+    const inA = Array.from({ length: 3 }, () => makeExercise({ subject: "Mathématiques", chapter_id: "ch-a" }));
+    const inB = Array.from({ length: 3 }, () => makeExercise({ subject: "Mathématiques", chapter_id: "ch-b" }));
+    inA[0].attempts = 1;
+    inA[0].last_worked_at = daysAgo(1);
+    const exercises = [...inA, ...inB];
+    // Travaillé HIER, dans le chapitre A. La matière est manifestement fraîche.
+    const sessions = [makeSession(inA[0], 1)];
+    const goal: Goal = {
+      id: "g1",
+      title: "Chapitre B",
+      subjects: ["Mathématiques"],
+      chapterIds: ["ch-b"],
+      targetDate: null,
+      priority: 2,
+      status: "active",
+      createdAt: daysAgo(30),
+      updatedAt: daysAgo(30),
+    };
+    return { exercises, chapters, sessions, goal };
+  }
+
+  it("un plan scopé ne prétend jamais qu'une matière travaillée hier est délaissée", () => {
+    const { exercises, chapters, sessions, goal } = scopedProfile();
+    const scoped = computeDailyPlan(scopeToGoal(goal, exercises), sessions, chapters, 90, NOW, null);
+
+    const claims = scoped.blocks
+      .flatMap((block) => block.picks)
+      .flatMap((pick) => pick.reasons)
+      .filter((reason) => reason.startsWith(COVERAGE_REASON_PREFIX));
+    expect(claims).toEqual([]);
+    expect(scoped.coverage).toEqual([]);
+    expect(scoped.deferred).toEqual([]);
+  });
+
+  it("aucune raison de couverture ne survit dans un plan multi-objectifs", () => {
+    const { exercises, chapters, sessions, goal } = scopedProfile();
+    const plans = computeGoalsDailyPlan([goal], exercises, sessions, chapters, 90, 60, NOW);
+    const claims = plans
+      .flatMap(({ plan }) => plan.blocks)
+      .flatMap((block) => block.picks)
+      .flatMap((pick) => pick.reasons)
+      .filter((reason) => reason.startsWith(COVERAGE_REASON_PREFIX));
+    expect(claims).toEqual([]);
+  });
+
+  it("sur la banque entière, la même matière est correctement vue comme à jour", () => {
+    const { exercises, chapters, sessions } = scopedProfile();
+    const full = computeDailyPlan(exercises, sessions, chapters, 90, NOW);
+    expect(full.coverage.find((entry) => entry.subject === "Mathématiques")?.state).toBe("à jour");
+  });
+});
+
+describe("computeDailyPlan — la couverture n'invente jamais une intention", () => {
+  it("aucun bloc ne porte une intention que le mix n'annonce pas à cette durée", () => {
+    // À 45-59 min le mix ne déclare que « consolider » et « réviser ». Un
+    // candidat de couverture classé « progresser » créait pourtant son bloc.
+    const chapters: Chapter[] = [
+      { id: "cm", subject: "Mathématiques", label: "Suites" },
+      { id: "cc", subject: "Chimie", label: "Équilibres" },
+    ];
+    const maths = Array.from({ length: 6 }, () => makeExercise({ subject: "Mathématiques", chapter_id: "cm", difficulty: 3 }));
+    const chim = Array.from({ length: 3 }, () => makeExercise({ subject: "Chimie", chapter_id: "cc", difficulty: 5 }));
+    chim[0].attempts = 1;
+    chim[0].last_worked_at = daysAgo(35);
+
+    // Série de réussites autonomes → comfortDifficulty.steppedUp, donc des
+    // candidats « Palier suivant » (intention « progresser »).
+    const sessions = [
+      ...maths.slice(0, 5).map((exercise, index) => makeSession(exercise, index + 2, "réussi", 0)),
+      makeSession(chim[0], 35, "réussi", 0),
+    ];
+    maths.slice(0, 5).forEach((exercise, index) => {
+      exercise.attempts = 1;
+      exercise.last_worked_at = daysAgo(index + 2);
+    });
+
+    for (let budget = 45; budget <= 59; budget++) {
+      const plan = computeDailyPlan([...maths, ...chim], sessions, chapters, budget, NOW);
+      expect(plan.blocks.map((block) => block.intent), `budget ${budget}`).not.toContain("progresser");
+    }
+  });
+});
+
+describe("computeDailyPlan — robustesse d'entrée", () => {
+  it("ne lève jamais sur un budget NaN ou infini", () => {
+    const { exercises, chapters } = bank();
+    for (const budget of [NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      expect(() => computeDailyPlan(exercises, [], chapters, budget, NOW)).not.toThrow();
+      expect(computeDailyPlan(exercises, [], chapters, budget, NOW).blocks).toEqual([]);
+    }
+  });
+
+  it("une séance à la date illisible ou future ne rend jamais une matière « à jour »", () => {
+    const { exercises } = bank();
+    const chimie = exercises.find((exercise) => exercise.subject === "Chimie")!;
+    const vieille = makeSession(chimie, SUBJECT_DEBT_DAYS + 15);
+
+    const illisible: WorkSession = { ...makeSession(chimie, 0), started_at: "pas-une-date" };
+    expect(coverageFor(exercises, [vieille, illisible]).find((e) => e.subject === "Chimie")!.state).toBe("délaissée");
+
+    const future: WorkSession = { ...makeSession(chimie, 0), started_at: daysAgo(-30) };
+    expect(coverageFor(exercises, [vieille, future]).find((e) => e.subject === "Chimie")!.state).toBe("délaissée");
   });
 });

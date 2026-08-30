@@ -4,7 +4,6 @@ import { ASSISTED_HINTS_THRESHOLD, computeExerciseBankStats, explainReasons, rec
 import type { Chapter } from "@/lib/storage";
 import { todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
-import { neglectedSubjects } from "@/lib/week";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -125,7 +124,8 @@ export function computeNextAction(exercises: Exercise[], sessions: WorkSession[]
 }
 
 export interface UpcomingItem {
-  key: "chapter" | "subject" | "review";
+  /** Plus de clé « subject » : le grain matière appartient à lib/coverage.ts (voir `computeUpcoming`). */
+  key: "chapter" | "review";
   label: string;
   detail: string;
   href: string;
@@ -160,15 +160,31 @@ export function computeUpcoming(exercises: Exercise[], sessions: WorkSession[], 
     });
   }
 
-  const neglected = neglectedSubjects(exercises, sessions, now)[0];
-  if (neglected) {
-    items.push({
-      key: "subject",
-      label: neglected.subject,
-      detail: `${neglected.pendingCount} exercice${neglected.pendingCount > 1 ? "s" : ""} en attente, rien cette semaine`,
-      href: `/session?subject=${encodeURIComponent(neglected.subject)}`,
-    });
-  }
+  // PLUS DE "matière délaissée" ICI. Ce grain appartient désormais à
+  // lib/coverage.ts, et il ne peut pas appartenir aux deux.
+  //
+  // `neglectedSubjects` (lib/week.ts) et `findNeglectedSubjects`
+  // (lib/coverage.ts) ne partageaient AUCUNE entrée : semaine civile remise à
+  // zéro chaque lundi contre ancienneté absolue de 10 jours ; n'importe quelle
+  // séance (y compris libre, y compris sur un exercice archivé) contre une
+  // séance rattachée à un exercice actif ; `total - mastered` (statut saisi à
+  // la main) contre le nombre de candidats réellement retenus par le moteur ;
+  // aucune condition d'engagement contre un état « jamais ouverte » explicite.
+  //
+  // Les deux s'affichaient simultanément sur le Dashboard, à quelques
+  // centimètres : la colonne latérale pouvait dire « Matière délaissée —
+  // Chimie » pendant que le panneau de couverture disait « aucune matière ne
+  // décroche, le plus long silence est de 5 jours ». Même matière, même
+  // instant, deux verdicts opposés — exactement la divergence que
+  // lib/plan.ts refuse depuis la suppression de `subjectWeight` : « deux
+  // définitions concurrentes finissent toujours par diverger, et c'est à
+  // l'élève que la contradiction coûte. »
+  //
+  // La couverture gagne parce que sa définition est meilleure sur les trois
+  // points qui comptent : elle exige un contact RÉEL, elle n'accuse jamais une
+  // matière jamais ouverte, et son seuil est explicite et testé contre les
+  // autres horloges du produit. `neglectedSubjects` reste utilisée par le
+  // bilan hebdomadaire (lib/week.ts), où la semaine civile est la bonne unité.
 
   const stale = recommendExercises(active, sessions, active.length, { now }).find((recommendation) =>
     recommendation.reasons.some((reason) => reason.startsWith("Non retravaillé") || reason === "Maîtrisé, jamais retravaillé")
@@ -227,7 +243,7 @@ export interface ChapterConsolidation {
 /** Nombre maximum de chapitres montrés dans "À consolider" — voir Sprint Study OS. */
 const CHAPTERS_TO_CONSOLIDATE_LIMIT = 5;
 /** Seuil (jours) au-delà duquel un chapitre non retravaillé mérite d'être signalé — plus court que `MASTERY_STALE_DAYS` (qui concerne un exercice individuel déjà maîtrisé) : ici on regarde tout un chapitre encore incomplet, un oubli s'y voit plus vite. */
-const CHAPTER_STALE_DAYS = 7;
+export const CHAPTER_STALE_DAYS = 7;
 /** Fenêtre d'analyse pour les échecs récents à l'échelle d'un chapitre — même principe que `RECENT_ATTEMPTS_WINDOW` dans lib/recommendation.ts, élargie car répartie sur plusieurs exercices. */
 const CHAPTER_RECENT_ATTEMPTS_WINDOW = 5;
 

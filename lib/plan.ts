@@ -1,5 +1,5 @@
 import { diversifyByChapter, estimatedDurationMinutes, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
-import { computeSubjectCoverage, coverageSlotsFor, findNeglectedSubjects, COVERAGE_REASON_PREFIX, type SubjectCoverage } from "@/lib/coverage";
+import { computeSubjectCoverage, coverageSlotsFor, deferredSubjects, findNeglectedSubjects, COVERAGE_REASON_PREFIX, type SubjectCoverage } from "@/lib/coverage";
 import { computeChaptersToConsolidate } from "@/lib/next-action";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -187,11 +187,38 @@ function describeFocus(picks: ExerciseRecommendation[], chapterById: Map<string,
  * Le plan n'invente donc aucune priorité : il décide seulement COMBIEN DE
  * TEMPS accorder à chaque intention, ce qu'aucun autre module ne fait.
  */
-export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[], chapters: Chapter[], totalMinutes: number, now: Date = new Date()): DailyPlan {
+export function computeDailyPlan(
+  exercises: Exercise[],
+  sessions: WorkSession[],
+  chapters: Chapter[],
+  totalMinutes: number,
+  now: Date = new Date(),
+  /**
+   * Banque sur laquelle mesurer la COUVERTURE, ou `null` pour la désactiver.
+   *
+   * La couverture est une propriété de la banque ENTIÈRE, jamais du périmètre
+   * qu'on lui passe. Quand `exercises` est déjà restreint — un objectif scopé
+   * à une matière ou à un chapitre (`scopeToGoal`) —, `computeSubjectCoverage`
+   * ne voit plus les séances portant sur les exercices hors périmètre et
+   * conclut au silence d'une matière travaillée hier.
+   *
+   * Ce n'était pas un champ interne : la raison « Zone délaissée : X (30 j) »
+   * voyage jusqu'à l'écran de séance via `serializeGoalsDailyPlan` et
+   * `explainReasons`. L'élève lisait une affirmation datée et FAUSSE sur son
+   * propre travail de la veille.
+   *
+   * Les appelants scopés passent donc `null` : un plan d'objectif n'a de
+   * toute façon aucune légitimité à arbitrer la couverture entre matières —
+   * c'est le rôle du plan de la banque entière.
+   */
+  coverageBank: Exercise[] | null = exercises
+): DailyPlan {
   const active = exercises.filter((exercise) => !exercise.archived);
   const chapterById = new Map(chapters.map((chapter) => [chapter.id, chapter]));
   const empty: DailyPlan = { blocks: [], requestedMinutes: totalMinutes, totalMinutes: 0, totalExercises: 0, coverage: [], deferred: [] };
-  if (totalMinutes <= 0 || active.length === 0) return empty;
+  // `NaN`/`Infinity` : `totalMinutes <= 0` est faux pour NaN, et
+  // `intentSharesFor` levait alors sur un `find` sans résultat.
+  if (!Number.isFinite(totalMinutes) || totalMinutes <= 0 || active.length === 0) return empty;
 
   // UN SEUL appel au moteur, sur toute la banque : même ordre, même
   // diversification, même arbitrage de difficulté que partout ailleurs.
@@ -199,8 +226,9 @@ export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[],
   if (all.length === 0) return empty;
 
   // La couverture est dérivée de CES candidats-là : « reste à faire » n'a
-  // qu'une seule définition dans tout le produit, celle du moteur.
-  const coverage = computeSubjectCoverage(all, exercises, sessions, now);
+  // qu'une seule définition dans tout le produit, celle du moteur. Mesurée
+  // sur `coverageBank` (la banque entière), jamais sur un périmètre réduit.
+  const coverage = coverageBank === null ? [] : computeSubjectCoverage(all, coverageBank, sessions, now);
 
   // Rang du chapitre dans les priorités de l'élève — exactement celles
   // affichées par le Dashboard et /progress.
@@ -290,19 +318,74 @@ export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[],
   const coveredSubjects = new Set<string>();
   let coverageMinutes = 0;
   let coverageBudget = totalMinutes - (reserveUrgent ? mostUrgentMinutes : 0);
+
+  /**
+   * Durée du candidat le moins cher encore disponible pour une intention —
+   * `null` si elle n'a plus rien à proposer.
+   */
+  const cheapestFor = (intent: PlanIntent): number | null => {
+    let cheapest: number | null = null;
+    for (const candidate of byIntent.get(intent)!) {
+      if (taken.has(candidate.exercise.id)) continue;
+      const duration = estimatedDurationMinutes(candidate.exercise, sessions);
+      if (cheapest === null || duration < cheapest) cheapest = duration;
+    }
+    return cheapest;
+  };
+
+  /**
+   * LA COUVERTURE NE DÉMANTÈLE JAMAIS LA STRUCTURE ANNONCÉE.
+   *
+   * Sans cette garde, une place de couverture pouvait supprimer une intention
+   * entière du plan — le défaut exact que le rattrapage plus bas avait été
+   * écrit pour corriger. Mesuré : budget 45 min, exercices de 20 min, une
+   * matière délaissée. Urgent (20) + couverture (20) = 40 réservés, il reste
+   * 5 minutes : la part « réviser » tombe à 2 min, le reliquat du rattrapage
+   * à 5, et le plan devient 100 % consolidation — alors que le même profil
+   * SANS dette de couverture produisait bien « consolider + réviser ».
+   *
+   * La règle est donc explicite et hiérarchisée : la structure d'abord, la
+   * couverture ensuite. Une place n'est prise que s'il reste, après elle, de
+   * quoi faire exister chaque intention que le mix annonce et qui a encore
+   * un candidat. C'est le prix honnête de la promesse « la structure porte
+   * le sens » — mieux vaut renoncer à une place de couverture que de rendre
+   * fausse la composition affichée à l'élève.
+   */
+  const wouldStarveAnIntent = (pickIntent: PlanIntent, duration: number): boolean => {
+    const served = new Set<PlanIntent>([pickIntent]);
+    if (reserveUrgent) served.add(planIntent(mostUrgent!.reasons));
+    for (const pick of coveragePicks) served.add(planIntent(pick.reasons));
+
+    let needed = 0;
+    for (const intent of INTENT_ORDER) {
+      if (!shares[intent] || served.has(intent)) continue;
+      const cheapest = cheapestFor(intent);
+      if (cheapest !== null) needed += cheapest;
+    }
+    return coverageBudget - duration < needed;
+  };
+
   for (const neglected of findNeglectedSubjects(coverage)) {
     if (coveragePicks.length >= coverageSlots) break;
-    const candidate = all.find((item) => item.exercise.subject === neglected.subject && !taken.has(item.exercise.id));
+    // Le candidat doit relever d'une intention que le mix ANNONCE à cette
+    // durée. Sans ce filtre, un exercice de couverture classé « progresser »
+    // faisait apparaître un bloc « Progresser » à 45 min — une durée où le
+    // mix ne prévoit que consolider et réviser. La couverture choisit une
+    // matière ; elle n'a jamais eu le droit d'inventer une façon de
+    // travailler que la séance n'annonce pas.
+    const candidate = all.find(
+      (item) =>
+        item.exercise.subject === neglected.subject && !taken.has(item.exercise.id) && Boolean(shares[planIntent(item.reasons)])
+    );
     if (!candidate) continue;
     const duration = estimatedDurationMinutes(candidate.exercise, sessions);
     // Aucune place forcée : si le meilleur candidat de la matière ne tient
     // pas, on passe. Geler du budget pour une promesse intenable serait pire
     // que de ne rien promettre.
     if (duration > coverageBudget) continue;
-    coveragePicks.push({
-      ...candidate,
-      reasons: [...candidate.reasons, `${COVERAGE_REASON_PREFIX}${neglected.subject} (${neglected.daysSinceContact} j)`],
-    });
+    const reasons = [...candidate.reasons, `${COVERAGE_REASON_PREFIX}${neglected.subject} (${neglected.daysSinceContact} j)`];
+    if (wouldStarveAnIntent(planIntent(reasons), duration)) continue;
+    coveragePicks.push({ ...candidate, reasons });
     taken.add(candidate.exercise.id);
     coveredSubjects.add(neglected.subject);
     coverageBudget -= duration;
@@ -321,9 +404,11 @@ export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[],
   // deux réservations à la fois.
   const shareBudget = Math.max(0, totalMinutes - reservedMinutes);
 
-  // Premier passage : chaque intention dans la limite de sa part — la part
-  // de "consolider" est réduite de la réservation ci-dessus (jamais en
-  // plus, jamais négative).
+  // Premier passage : chaque intention dans la limite de sa part, calculée
+  // sur `shareBudget` — c'est-à-dire sur le budget DÉJÀ amputé des deux
+  // réservations, une fois pour toutes (voir plus haut). Auparavant seule la
+  // part « consolider » était amputée, ce qui laissait les autres intentions
+  // puiser dans un budget déjà dépensé.
   for (const intent of INTENT_ORDER) {
     const share = shares[intent];
     if (!share) continue;
@@ -430,10 +515,12 @@ export function computeDailyPlan(exercises: Exercise[], sessions: WorkSession[],
     totalMinutes: blocks.reduce((sum, block) => sum + block.estimatedMinutes, 0),
     totalExercises: blocks.reduce((sum, block) => sum + block.picks.length, 0),
     coverage,
-    // Ce que le plan laisse volontairement de côté : les matières en retard
-    // qui n'ont PAS obtenu de place (budget trop court, ou plus de places de
-    // couverture disponibles). Le produit le dit plutôt que de le taire.
-    deferred: findNeglectedSubjects(coverage).filter((entry) => !coveredSubjects.has(entry.subject)),
+    // Ce que le plan laisse volontairement de côté — mesuré sur les
+    // exercices RÉELLEMENT retenus, pas sur les seules places de couverture :
+    // une matière en retard servie par la consolidation ordinaire est
+    // travaillée, donc elle n'est pas laissée de côté. Même fonction que
+    // l'écran (`deferredSubjects`), pour qu'il n'existe qu'une réponse.
+    deferred: deferredSubjects(coverage, [...new Set(blocks.flatMap((block) => block.picks.map((pick) => pick.exercise.subject)))]),
   };
 }
 

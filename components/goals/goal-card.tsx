@@ -55,7 +55,8 @@ export function GoalCard({
   const canStart = goal.status === "active" && readiness.flaggedCount > 0;
 
   function startSessionForGoal() {
-    const plan = computeDailyPlan(scopeToGoal(goal, exercises), sessions, chapters, dailyGoalMinutes);
+    // Périmètre scopé : pas de couverture ici (voir `coverageBank`, lib/plan.ts).
+    const plan = computeDailyPlan(scopeToGoal(goal, exercises), sessions, chapters, dailyGoalMinutes, new Date(), null);
     const stored = serializeGoalsDailyPlan([{ goal, readiness, plan }]);
     if (stored.items.length === 0) return;
     sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(stored));

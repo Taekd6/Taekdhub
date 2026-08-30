@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpenCheck, CalendarClock, CheckCircle2, ChevronRight, Flame, ListChecks, Trophy } from "lucide-react";
+import { ArrowRight, BookOpenCheck, CheckCircle2, ChevronRight, Flame, ListChecks, Trophy } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { NotionInsight } from "@/components/notions/notion-insight";
@@ -40,7 +40,6 @@ import type { UpcomingItem } from "@/lib/next-action";
 
 const UPCOMING_META: Record<UpcomingItem["key"], { label: string; icon: typeof BookOpenCheck }> = {
   chapter: { label: "Chapitre à consolider", icon: BookOpenCheck },
-  subject: { label: "Matière délaissée", icon: CalendarClock },
   review: { label: "Révision due", icon: ListChecks },
 };
 
@@ -334,7 +333,7 @@ export function DashboardOverview() {
             du plan qui sera lancé (objectifs compris), jamais supposées. */}
         {dailyPlan.coverage.length > 0 && (
           <Section rank="secondary" eyebrow="Couverture" title="Ce que tu risques de délaisser" className="mt-12">
-            <CoveragePanel coverage={dailyPlan.coverage} touchedSubjects={touchedSubjects} />
+            <CoveragePanel coverage={dailyPlan.coverage} touchedSubjects={touchedSubjects} scopedByGoals={hasGoalPlan} />
           </Section>
         )}
 

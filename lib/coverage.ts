@@ -152,8 +152,15 @@ export function computeSubjectCoverage(
     if (!session.exercise_id) continue;
     const exercise = activeById.get(session.exercise_id);
     if (!exercise) continue;
+    // Une date illisible ou postérieure à maintenant est ÉCARTÉE, jamais
+    // ramenée à zéro : les deux cas masquaient une matière réellement
+    // délaissée en la déclarant « à jour », et la chaîne brute remontait
+    // jusqu'à l'objet rendu. Même principe de seconde ligne de défense que
+    // `daysSinceLastWorked` (lib/recommendation.ts).
+    const startedAt = new Date(session.started_at).getTime();
+    if (Number.isNaN(startedAt) || startedAt > now.getTime()) continue;
     const current = lastContactBySubject.get(exercise.subject);
-    if (!current || new Date(session.started_at).getTime() > new Date(current).getTime()) {
+    if (!current || startedAt > new Date(current).getTime()) {
       lastContactBySubject.set(exercise.subject, session.started_at);
     }
   }
@@ -197,6 +204,24 @@ export function findNeglectedSubjects(coverage: SubjectCoverage[]): SubjectCover
   return coverage
     .filter((entry) => entry.state === "délaissée")
     .sort((a, b) => b.debtDays - a.debtDays || a.subject.localeCompare(b.subject, "fr"));
+}
+
+/**
+ * Les matières en retard que le plan ne touchera PAS — quel que soit le
+ * chemin par lequel un exercice y serait entré.
+ *
+ * Définition UNIQUE, partagée par le moteur (`DailyPlan.deferred`) et par
+ * l'écran. Elles ont divergé une fois : le plan filtrait sur les matières
+ * n'ayant pas obtenu de PLACE DE COUVERTURE, l'écran sur celles qu'aucun
+ * exercice ne touchait. Une matière servie par la consolidation ordinaire
+ * était donc « laissée de côté » pour l'un et servie pour l'autre — deux
+ * réponses à une même phrase affichée. C'est la seconde qui est juste : ce
+ * qui compte pour l'élève, c'est que sa matière soit travaillée, pas par
+ * quel mécanisme elle a été retenue.
+ */
+export function deferredSubjects(coverage: SubjectCoverage[], touchedSubjects: Subject[]): SubjectCoverage[] {
+  const touched = new Set(touchedSubjects);
+  return findNeglectedSubjects(coverage).filter((entry) => !touched.has(entry.subject));
 }
 
 /**
