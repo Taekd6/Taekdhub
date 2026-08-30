@@ -77,8 +77,13 @@ export function NotionDetail({
         ) : (
           <ul className="divide-y divide-hairline/[0.07]">
             <EvidenceRow label="Tentatives" value={evidence.attempts} />
-            <EvidenceRow label="Réussies seul (moins de 2 indices)" value={evidence.autonomousSuccesses} tone="success" />
-            <EvidenceRow label="Réussies avec les indices" value={evidence.assistedSuccesses} />
+            {/* Les deux libellés nomment la RÈGLE appliquée, pas un geste
+                supposé : une réussite cesse d'être autonome pour deux indices
+                OU pour la correction lue (voir `isAutonomousSuccess`). Dire
+                « avec les indices » affirmait à l'élève un geste qu'il
+                n'avait pas forcément fait. */}
+            <EvidenceRow label="Réussies seul (sans aide décisive)" value={evidence.autonomousSuccesses} tone="success" />
+            <EvidenceRow label="Réussies avec de l'aide" value={evidence.assistedSuccesses} />
             <EvidenceRow label="Échouées" value={evidence.failures} tone="danger" />
           </ul>
         )}

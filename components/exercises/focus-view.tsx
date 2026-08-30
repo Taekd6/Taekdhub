@@ -469,7 +469,7 @@ export function FocusView({
             {(hintCount < item.hints.length || item.correction) && (
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 {hintCount < item.hints.length && (
-                  <Button variant="secondary" size="sm" onClick={() => setContext({ ...context, hintCount: hintCount + 1 })}>
+                  <Button variant="secondary" size="sm" onClick={() => setContext((previous) => ({ ...previous, hintCount: resumeAid(previous).hintCount + 1 }))}>
                     <Lightbulb size={15} /> Indice {hintCount + 1}
                     <span className="text-muted">/ {item.hints.length}</span>
                   </Button>
@@ -480,7 +480,7 @@ export function FocusView({
                     size="sm"
                     onClick={() => {
                       setCorrectionVisible((v) => !v);
-                      if (!correctionRevealed) setContext({ ...context, correctionRevealed: true });
+                      if (!correctionRevealed) setContext((previous) => ({ ...previous, correctionRevealed: true }));
                     }}
                   >
                     {correctionVisible ? <EyeOff size={15} /> : <Eye size={15} />}

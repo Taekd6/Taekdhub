@@ -24,7 +24,8 @@ import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
  *
  * Ce module lit cette donnée, et rien d'autre. Il n'invente aucun signal :
  * - la STRUCTURE vient de `Exercise.prerequisites` (ce que la banque déclare) ;
- * - la PREUVE vient de `WorkSession.result` et `WorkSession.hints_used` (ce
+ * - la PREUVE vient de `WorkSession.result`, `WorkSession.hints_used` et
+ *   `WorkSession.correction_viewed` (ce
  *   que l'élève a réellement fait), exactement les deux mêmes champs que
  *   `lib/recommendation.ts` utilise déjà pour son niveau de confort.
  *
@@ -33,6 +34,11 @@ import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
  * « faible », jamais « à revoir ». L'absence de preuve n'est pas une preuve :
  * c'est le même principe que `comfortDifficulty`, qui renvoie `null` tant
  * qu'il n'a pas assez d'historique plutôt que d'inventer un niveau. Et
+ * Une réussite n'est autonome que si elle satisfait `isAutonomousSuccess` —
+ * assez peu d'indices ET la correction non révélée. Lire la solution entière
+ * disqualifie donc l'autonomie exactement comme le ferait un recours massif
+ * aux indices.
+ *
  * `hints_used === null` (séance antérieure au champ) n'est JAMAIS compté
  * comme une réussite autonome, pour la raison déjà documentée sur le champ
  * lui-même : cela créditerait rétroactivement une autonomie jamais observée.
@@ -92,7 +98,7 @@ export interface NotionReach {
 export interface NotionEvidence extends NotionReach {
   /** Tentatives avec résultat sur les exercices de cette notion (toutes périodes). */
   attempts: number;
-  /** Réussites sans aide décisive — `hints_used` connu ET sous le seuil (voir `ASSISTED_HINTS_THRESHOLD`). */
+  /** Réussites sans aide décisive — voir `isAutonomousSuccess` : `hints_used` connu et sous le seuil, ET correction non révélée. */
   autonomousSuccesses: number;
   /** Réussites obtenues avec au moins `ASSISTED_HINTS_THRESHOLD` indices, ou dont l'aide est inconnue. */
   assistedSuccesses: number;

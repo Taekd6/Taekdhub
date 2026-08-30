@@ -81,7 +81,23 @@ function ensureWeekSnapshot(exercises: Exercise[], sessions: WorkSession[], week
   if (!missingWeekStart) return weekSnapshots;
   const snapshot = captureWeekSnapshot(exercises, sessions, missingWeekStart);
   const next = [...weekSnapshots, snapshot];
-  localData.saveWeekSnapshots(next);
+  try {
+    localData.saveWeekSnapshots(next);
+  } catch {
+    // ÉCRITURE AU MILIEU D'UNE LECTURE : `readAll` est appelé par `refresh`,
+    // donc par CHAQUE sauvegarde (via `notifyAllInstances`). Si ce cache
+    // dérivé ne peut pas s'écrire (quota dépassé, mode privé), l'exception
+    // remontait jusqu'à l'appelant de `saveSessions` — qui concluait que LA
+    // SÉANCE avait échoué, alors qu'elle venait d'être écrite. L'élève lisait
+    // « ton travail n'a pas pu être enregistré » sur un travail bel et bien
+    // enregistré, et l'écran restait bloqué (défaut trouvé en revue
+    // indépendante, reproduit en refusant l'écriture de cette seule clé).
+    //
+    // Le figeage de semaine est reconstructible à tout moment à partir des
+    // séances : son échec dégrade un confort, jamais une donnée. On rend donc
+    // la valeur calculée — correcte en mémoire — et on retentera au prochain
+    // appel, qui est idempotent par construction (voir la doc ci-dessus).
+  }
   return next;
 }
 

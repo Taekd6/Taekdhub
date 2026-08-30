@@ -403,7 +403,7 @@ describe("indices — un signal pédagogique à part entière", () => {
     const [pick] = recommendExercises([exercise], sessions, 10, { now: NOW });
     expect(pick).toBeDefined();
     expect(pick.reasons).toContain("Réussi avec aide");
-    expect(explainReasons(pick.reasons)).toBe("Tu l'avais réussi, mais avec les indices — on vérifie que c'est acquis.");
+    expect(explainReasons(pick.reasons)).toBe("Tu l'avais réussi, mais avec de l'aide — on vérifie que c'est acquis.");
   });
 
   it("une réussite autonome (0 indice) laisse l'exercice tranquille", () => {

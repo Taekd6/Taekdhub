@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { totalXp, xpFromSession } from "@/lib/gamification";
+import { computeChaptersToConsolidate } from "@/lib/next-action";
 import { computeNotionEvidence } from "@/lib/notions";
 import {
   comfortDifficulty,
@@ -209,6 +210,14 @@ describe("scénario 6 — séance libre du chronomètre", () => {
     const libre = makeAttempt({ exercise_id: null, result: null, hints_used: null, correction_viewed: null });
     expect(countsAsAttempt(libre)).toBe(false);
   });
+
+  it("et c'est bien l'ABSENCE D'EXERCICE qui la disqualifie, pas l'absence de résultat", () => {
+    // La fixture ci-dessus ne prouvait rien : `result: null` court-circuitait
+    // le prédicat avant même qu'il regarde `exercise_id`. Retirer la
+    // condition sur l'exercice ne faisait donc échouer aucun test. Ici les
+    // deux autres conditions sont satisfaites, la branche est atteinte.
+    expect(countsAsAttempt({ result: "réussi", exercise_id: null, duration_seconds: 1800 })).toBe(false);
+  });
 });
 
 describe("scénario 7 — un historique entièrement antérieur à ces champs", () => {
@@ -225,5 +234,95 @@ describe("scénario 7 — un historique entièrement antérieur à ces champs", 
     // 3 réussites sur le même exercice : plein tarif, puis moitié, puis rien
     // (REPEAT_SHARES) — 30 + 15 + 0.
     expect(totalXp(exercises, legacy)).toBe(45);
+  });
+});
+
+
+/**
+ * COHÉRENCE INTER-MOTEURS — les règles que ce chantier a réellement changées.
+ *
+ * Une revue indépendante a montré que six de ces changements pouvaient être
+ * annulés un par un sans faire rougir un seul test : les moteurs consommaient
+ * bien les prédicats partagés, mais rien ne vérifiait qu'ils continuent à le
+ * faire. Chaque test ci-dessous annule exactement une de ces régressions.
+ */
+describe("cohérence inter-moteurs", () => {
+  const exercises = [makeExercise()];
+  const chapitre = [{ id: "ch-1", subject: "Mathématiques" as const, label: "Intégration" }];
+
+  function courtes(result: "réussi" | "échoué", combien: number) {
+    return Array.from({ length: combien }, (_, i) =>
+      makeAttempt({
+        id: `court-${i}`,
+        result,
+        duration_seconds: 42,
+        started_at: new Date(NOW.getTime() - i * 3600_000).toISOString(),
+      })
+    );
+  }
+
+  it("le classement des exercices ignore des échecs trop courts pour prouver quoi que ce soit", () => {
+    // `attemptsByExercise` filtre par `countsAsAttempt`. Sans lui, trois
+    // abandons de 42 secondes déclenchaient « Plusieurs échecs ».
+    const [top] = recommendExercises(exercises, courtes("échoué", 3), 60, { now: NOW });
+    expect(top.reasons).not.toContain("Plusieurs échecs");
+    expect(top.reasons).not.toContain("Échec récent");
+  });
+
+  it("la consolidation de chapitre les ignore aussi", () => {
+    const items = computeChaptersToConsolidate(
+      [makeExercise({ chapter_id: "ch-1", mastery: 25 })],
+      courtes("échoué", 3),
+      chapitre,
+      NOW
+    );
+    expect(items[0]?.reasons ?? []).not.toContain("3 échecs récents");
+  });
+
+  it("la consolidation compte la correction lue comme une aide, sans exiger un seul indice", () => {
+    // `assistedCount` passe par `wasAssistedSuccess`. La règle recopiée qu'il
+    // remplace ne regardait que `hints_used` et laissait donc passer deux
+    // réussites obtenues en lisant la solution.
+    const sessions = [0, 1].map((i) =>
+      makeAttempt({
+        id: `lue-${i}`,
+        exercise_id: "ex-1",
+        hints_used: 0,
+        correction_viewed: true,
+        started_at: new Date(NOW.getTime() - i * 3600_000).toISOString(),
+      })
+    );
+    const items = computeChaptersToConsolidate([makeExercise({ chapter_id: "ch-1", mastery: 25 })], sessions, chapitre, NOW);
+    expect(items[0]?.reasons ?? []).toContain("2 réussites avec aide");
+  });
+
+  it("l'XP de maîtrise exige une preuve qui dure plus d'une minute", () => {
+    // `isProvenSuccess` combine autonomie ET `countsAsAttempt`. Sans le
+    // second, cocher « maîtrisé » puis valider une réussite de 42 secondes
+    // débloquait `difficulty × 25`.
+    const maitrise = makeExercise({ status: "maîtrisé" });
+    expect(totalXp([maitrise], courtes("réussi", 1))).toBe(0);
+    // La même preuve, mais réelle, débloque bien l'XP de maîtrise.
+    expect(totalXp([maitrise], [makeAttempt()])).toBeGreaterThan(0);
+  });
+
+  it("le niveau de travail publié ne compte pas une réussite obtenue en lisant la correction", () => {
+    const lues = [0, 1, 2].map((i) =>
+      makeAttempt({ id: `n-${i}`, correction_viewed: true, started_at: new Date(NOW.getTime() - i * 86400000).toISOString() })
+    );
+    const niveau = computeWorkingLevel(exercises, lues);
+    expect(niveau?.successes).toBe(3);
+    expect(niveau?.autonomousSuccesses).toBe(0);
+  });
+
+  it("une série de réussites obtenues avec la correction ne vaut pas une maîtrise silencieuse", () => {
+    // `autonomousSuccessStreak` alimente `silentlyMastered` : trois réussites
+    // autonomes font redescendre l'exercice dans le classement. Les mêmes
+    // réussites, correction lue, ne le doivent pas.
+    const lues = [0, 1, 2].map((i) =>
+      makeAttempt({ id: `s-${i}`, correction_viewed: true, started_at: new Date(NOW.getTime() - (i + 4) * 86400000).toISOString() })
+    );
+    const [top] = recommendExercises(exercises, lues, 60, { now: NOW });
+    expect(top.reasons).toContain("Réussi avec aide");
   });
 });

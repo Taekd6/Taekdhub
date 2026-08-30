@@ -108,10 +108,12 @@ function isStaleMastery(exercise: Exercise, now: Date): boolean {
  * Tentatives QUALIFIÉES par exercice, les plus récentes d'abord — calculées
  * UNE fois pour toute la banque.
  *
- * Les séances sans résultat (`result === null` : séance libre, ou antérieure
- * à ce champ) sont ignorées — on ne sait rien de leur issue, elles ne doivent
- * donc influencer ni les raisons ni le score (voir la doc de
- * `WorkSession.result`).
+ * « Qualifiées » au sens de `countsAsAttempt` : un résultat, un exercice, et
+ * au moins une minute. Les séances sans résultat (`result === null` : séance
+ * libre, ou antérieure à ce champ) sont ignorées — on ne sait rien de leur
+ * issue ; celles de moins d'une minute aussi — le produit a déjà décidé
+ * ailleurs qu'il ne s'y passe rien (voir `countsAsAttempt`). Ni les unes ni
+ * les autres ne doivent influencer les raisons ou le score.
  *
  * La version précédente refiltrait et retriait l'historique ENTIER pour
  * chaque exercice : sur une banque de 434 fiches, un historique de 5 000
@@ -936,7 +938,11 @@ const REASON_RULES: ReasonRule[] = [
   { test: (r) => r.includes("Séance reprise"), sentence: () => "Tu avais laissé cette séance en cours — on reprend là où tu t'étais arrêté." },
   { test: (r) => r.includes("Plusieurs échecs"), sentence: () => "Tu as échoué plusieurs fois récemment dessus — ça mérite une nouvelle tentative." },
   { test: (r) => r.includes("Échec récent"), sentence: () => "Ta dernière tentative n'a pas abouti — on retente." },
-  { test: (r) => r.includes("Réussi avec aide"), sentence: () => "Tu l'avais réussi, mais avec les indices — on vérifie que c'est acquis." },
+  // « avec de l'aide » et non « avec les indices » : depuis que la correction
+  // révélée compte aussi (voir `wasAssistedSuccess`), citer les indices
+  // affirmait à l'élève un geste qu'il n'avait pas forcément fait. Le produit
+  // ne nomme donc que ce qu'il sait : il y a eu aide, sans prétendre laquelle.
+  { test: (r) => r.includes("Réussi avec aide"), sentence: () => "Tu l'avais réussi, mais avec de l'aide — on vérifie que c'est acquis." },
   // Avant les raisons "difficulté/maîtrise" : quand l'élève vient
   // d'enchaîner des réussites, la montée de palier est LE fait nouveau qui
   // explique le choix — et c'est la seule justification qui cite un chiffre

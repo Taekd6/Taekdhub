@@ -304,7 +304,9 @@ export function computeChaptersToConsolidate(
       // l'échelle d'un chapitre — au niveau d'un exercice isolé, il est trop
       // ponctuel pour conclure.
       const assistedCount = recentAttempts.filter(wasAssistedSuccess).length;
-      if (assistedCount >= 2) reasons.push(`${assistedCount} réussites avec indices`);
+      // « avec de l'aide » : `wasAssistedSuccess` compte aussi la correction
+      // révélée, citer les indices serait une affirmation invérifiable.
+      if (assistedCount >= 2) reasons.push(`${assistedCount} réussites avec aide`);
 
       // `entry.lastWorkedAt`/`entry.nextExerciseId` viennent déjà de
       // `progressByChapter` (lib/progress.ts) — jamais recalculés une

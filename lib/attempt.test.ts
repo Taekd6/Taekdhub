@@ -50,7 +50,14 @@ describe("parsePendingAttempt", () => {
     // C'était l'état du produit à l'écran de résultat : la clé du chrono
     // venait d'être effacée par `stop()`, la séance n'existait que dans un
     // `useState`, et un rechargement l'emportait sans un message.
-    expect(parsePendingAttempt(null, "ex-1")).toBeNull();
+    //
+    // Une absence de brouillon doit produire `null` SANS jamais lever : le
+    // résultat est lu dans l'initialiseur d'état du mode focus, où une
+    // exception empêcherait l'écran de se monter du tout.
+    for (const absent of [null, ""]) {
+      expect(() => parsePendingAttempt(absent, "ex-1")).not.toThrow();
+      expect(parsePendingAttempt(absent, "ex-1")).toBeNull();
+    }
   });
 
   it("refuse un brouillon illisible plutôt que de faire échouer le montage", () => {
@@ -143,6 +150,13 @@ describe("resumeAid — l'aide utilisée survit à un rechargement", () => {
   });
 
   it("seul `true` vaut correction lue — une valeur douteuse ne condamne pas l'élève", () => {
+    // `undefined` seul ne prouvait rien : TOUTE coercition le ramène à
+    // `false`, y compris un `Boolean(...)` qui déclarerait « correction lue »
+    // sur une chaîne quelconque. Les valeurs qui mordent sont celles qui sont
+    // vraies par coercition mais ne sont pas `true`.
     expect(resumeAid({ correctionRevealed: undefined }).correctionRevealed).toBe(false);
+    for (const douteux of ["non", "false", 1, {}, []] as unknown[]) {
+      expect(resumeAid({ correctionRevealed: douteux } as { correctionRevealed?: boolean }).correctionRevealed).toBe(false);
+    }
   });
 });

@@ -257,7 +257,7 @@ describe("computeChaptersToConsolidate", () => {
     expect(items.map((item) => item.chapter.id)).toEqual(["chap-failing", "chap-stale"]);
   });
 
-  it("détecte une fragilité de chapitre masquée par des réussites : plusieurs succès obtenus avec les indices", () => {
+  it("détecte une fragilité de chapitre masquée par des réussites : plusieurs succès obtenus avec de l'aide", () => {
     // Cas que ni `result` ni `mastery` ne savaient exprimer : l'élève réussit
     // (donc rien ne l'alerte) mais ne s'en sort qu'en se faisant guider.
     const chapters: Chapter[] = [{ id: "chap-1", subject: "Mathématiques", label: "Intégration" }];
@@ -267,7 +267,7 @@ describe("computeChaptersToConsolidate", () => {
       makeSession(exercise.id, { result: "réussi", hints_used: 2, started_at: "2026-08-08T10:00:00.000Z" }),
     ];
     const items = computeChaptersToConsolidate([exercise], sessions, chapters, NOW);
-    expect(items[0].reasons).toContain("2 réussites avec indices");
+    expect(items[0].reasons).toContain("2 réussites avec aide");
   });
 
   it("des réussites autonomes ne déclenchent jamais ce signal", () => {

@@ -30,7 +30,8 @@ export interface WorkTimerResult<TContext> {
   /** ISO du début de séance, ou null si aucune séance n'est en cours. */
   startedAt: string | null;
   context: TContext;
-  setContext: (context: TContext) => void;
+  /** Met à jour le contexte persisté — accepte une valeur ou une fonction de mise à jour (voir l'implémentation). */
+  setContext: (context: TContext | ((previous: TContext) => TContext)) => void;
   start: () => void;
   pause: () => void;
   toggle: () => void;
@@ -116,9 +117,26 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
     return () => clearInterval(id);
   }, [snapshot, storageKey]);
 
-  const setContext = useCallback((next: TContext) => {
-    setContextState(next);
-    setSnapshot((prev) => (prev ? { ...prev, context: next } : prev));
+  /**
+   * Accepte une valeur OU une fonction de mise à jour, comme `useState`.
+   *
+   * Sans la forme fonctionnelle, deux appels dans le même tour de boucle se
+   * reconstruisaient tous deux depuis le contexte du rendu courant, et le
+   * second écrasait le premier : révéler un indice puis la correction dans la
+   * même tâche enregistrait `{hintCount: 0, correctionRevealed: true}` — le
+   * clic sur l'indice était avalé (défaut trouvé en revue indépendante).
+   * L'interface restait cohérente avec l'enregistrement, donc aucun signal
+   * n'était falsifié, mais un geste réel de l'élève disparaissait.
+   *
+   * Les deux états dérivent chacun de LEUR propre valeur précédente, jamais
+   * l'un de l'autre : `snapshot.context` et `context` restent en phase parce
+   * qu'ils reçoivent la même transformation, pas parce que l'un recopie
+   * l'autre.
+   */
+  const setContext = useCallback((next: TContext | ((previous: TContext) => TContext)) => {
+    const apply = (previous: TContext) => (typeof next === "function" ? (next as (p: TContext) => TContext)(previous) : next);
+    setContextState(apply);
+    setSnapshot((prev) => (prev ? { ...prev, context: apply(prev.context) } : prev));
   }, []);
 
   const start = useCallback(() => {
