@@ -84,7 +84,17 @@
     --line-rgb: 39 39 42;
     --ink-rgb: 244 244 245;
     --muted-rgb: 161 161 170;
-    --subtle-rgb: 113 113 122;
+    /* `--subtle` (texte de troisième rang : `.eyebrow`, légendes, rappels de
+       raccourcis) est la SEULE encre du système à ne pas avoir été calibrée.
+       Mesuré au navigateur sur les deux thèmes : 3,67:1 en sombre sur une
+       carte (`--elevated`) et 4,43:1 en clair sur le canevas — sous les
+       4,5:1 exigés pour du texte normal, et ce texte-là est justement le
+       plus petit de l'application (`text-2xs`, 10 px, en capitales).
+       Le pas avec `--muted` reste net (134 vs 161 en sombre, 105 vs 82 en
+       clair) : c'est le contraste avec le FOND qui monte, pas la hiérarchie
+       qui s'aplatit. Les deux thèmes divergent parce que leurs fonds
+       divergent — une valeur unique ne peut pas satisfaire les deux. */
+    --subtle-rgb: 134 134 143;
     --hairline-rgb: 255 255 255;
 
     /* Échelle "zinc" — reprend exactement la palette Tailwind par défaut en sombre (aucune classe text-zinc-N/bg-zinc-N existante ne change de valeur ici). */
@@ -143,8 +153,15 @@
     --elevated-rgb: 255 255 255;
     --line-rgb: 226 229 234;
     --ink-rgb: 24 24 27;
-    --muted-rgb: 82 82 91;
-    --subtle-rgb: 113 113 122;
+    /* Mesuré à 4,43:1 — sous les 4,5 exigés — pour le texte de 12 px des
+       segments INACTIFS du sélecteur de durée, posés sur la piste
+       translucide `--inset` qui éclaircit le fond effectif. Un cran plus
+       sombre suffit, et ne peut qu'améliorer le contraste partout ailleurs
+       en thème clair. L'écart avec `--ink` (24) reste franc : la hiérarchie
+       ne s'aplatit pas. */
+    --muted-rgb: 71 71 80;
+    /* Voir la note en thème sombre : mesuré à 4,43:1 sur `--canvas`. */
+    --subtle-rgb: 105 105 114;
     --hairline-rgb: 0 0 0;
     --accent-ink-rgb: var(--accent-ink-base-rgb);
     /* Aplat principal : une teinte profonde de la couleur de marque, texte
@@ -178,7 +195,13 @@
     --emerald-300-rgb: 4 120 87;
     --emerald-400-rgb: 52 211 153;
     --emerald-500-rgb: 16 185 129;
-    --amber-200-rgb: 180 83 9;
+    /* Un cran plus sombre que `--amber-300` (et que ses homologues emerald /
+       rose, qui s'arrêtent au 700) : posé sur son propre lavis `amber-400/12`
+       — les trois boutons de « Comment s'est passé l'exercice ? » —, le 700
+       tombait à 4,37:1. L'ambre est, à clarté nominale égale, la plus
+       lumineuse des trois teintes de statut : elle a besoin de la marche
+       supplémentaire, les deux autres non (4,66:1 et 5,17:1 mesurés). */
+    --amber-200-rgb: 146 64 14;
     --amber-300-rgb: 180 83 9;
     --amber-400-rgb: 251 191 36;
     --amber-500-rgb: 245 158 11;
@@ -205,8 +228,9 @@
       --elevated-rgb: 255 255 255;
       --line-rgb: 226 229 234;
       --ink-rgb: 24 24 27;
-      --muted-rgb: 82 82 91;
-      --subtle-rgb: 113 113 122;
+      /* Voir la note du bloc `[data-theme="light"]`. */
+      --muted-rgb: 71 71 80;
+      --subtle-rgb: 105 105 114;
       --hairline-rgb: 0 0 0;
     --accent-ink-rgb: var(--accent-ink-base-rgb);
       /* Aplat principal : une teinte profonde de la couleur de marque, texte
@@ -234,7 +258,7 @@
       --emerald-300-rgb: 4 120 87;
       --emerald-400-rgb: 52 211 153;
       --emerald-500-rgb: 16 185 129;
-      --amber-200-rgb: 180 83 9;
+      --amber-200-rgb: 146 64 14;
       --amber-300-rgb: 180 83 9;
       --amber-400-rgb: 251 191 36;
       --amber-500-rgb: 245 158 11;

@@ -104,10 +104,25 @@ export function accentInk(hex: string): [number, number, number] {
   return darkenTo(hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]), INK_MAX_LUMINANCE);
 }
 
+/**
+ * Luminance au-delà de laquelle le NOIR contraste mieux que le blanc.
+ *
+ * C'est le point de croisement exact des deux formules WCAG :
+ * (L + 0,05) / 0,05 = 1,05 / (L + 0,05), soit L = √(1,05 × 0,05) − 0,05.
+ * Le seuil valait 0,45 — une estimation de « clarté perçue », pas ce
+ * croisement — et trois des sept préréglages tombaient donc du mauvais côté.
+ * Mesuré au navigateur sur le bouton « Commencer ma séance » avec l'accent
+ * PAR DÉFAUT (indigo, L = 0,2245) : blanc sur indigo = 3,83:1, sous les
+ * 4,5:1 exigés, là où le noir donne 5,49:1. Corail (2,23:1) et lavande
+ * (2,14:1) étaient bien pires. Les quatre autres préréglages recevaient déjà
+ * du noir et ne bougent pas.
+ */
+const BLACK_OVER_WHITE_LUMINANCE = Math.sqrt(1.05 * 0.05) - 0.05;
+
 /** Noir ou blanc — jamais une autre teinte — selon ce qui contraste le mieux avec `hex`. Retombe sur l'accent par défaut si `hex` n'est pas un hex valide. */
 export function accentForeground(hex: string): [number, number, number] {
   const rgb = hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]);
-  return relativeLuminance(rgb) > 0.45 ? [0, 0, 0] : [255, 255, 255];
+  return relativeLuminance(rgb) > BLACK_OVER_WHITE_LUMINANCE ? [0, 0, 0] : [255, 255, 255];
 }
 
 export function accentForegroundCss(hex: string): string {

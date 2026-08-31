@@ -279,6 +279,29 @@ export function SessionRunner() {
 
   const endSessionEarly = useCallback(() => setPhase("summary"), []);
 
+  /**
+   * LE FOCUS SUIT L'ÉCRAN, IL NE RESTE PAS SUR CELUI QUI VIENT DE DISPARAÎTRE.
+   *
+   * Sortir du mode focus démonte un panneau plein écran : le focus clavier
+   * retombait alors sur `<body>` (mesuré au navigateur), donc plus d'anneau
+   * visible, plus rien d'annoncé, et un Tab qui repartait du haut du
+   * document — les onze liens de la barre latérale avant d'atteindre
+   * « Continuer ». Porter le focus sur la carte qui vient de s'afficher fait
+   * d'une pierre deux coups : un lecteur d'écran énonce « Exercice
+   * travaillé » / « Séance terminée », et le Tab suivant tombe sur le bouton.
+   *
+   * Le délai couvre l'`AnimatePresence mode="wait"` ci-dessous : entre
+   * « Exercice travaillé » et « Séance terminée », la nouvelle carte n'est
+   * montée qu'une fois l'ancienne sortie.
+   */
+  const phaseCardRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (phase !== "between" && phase !== "summary") return;
+    phaseCardRef.current?.focus();
+    const retry = setTimeout(() => phaseCardRef.current?.focus(), 320);
+    return () => clearTimeout(retry);
+  }, [phase]);
+
   if (phase === "loading") {
     return (
       <div className="grid gap-4 sm:grid-cols-2">
@@ -701,6 +724,9 @@ export function SessionRunner() {
         <AnimatePresence mode="wait">
           <motion.div
             key={phase}
+            ref={phaseCardRef}
+            tabIndex={-1}
+            className="focus:outline-none"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}

@@ -59,7 +59,11 @@ export function MasteryPicker({ value, onChange }: { value: Mastery; onChange: (
             // fini — `max-lg:` ne change rien à la densité du bureau. La
             // HAUTEUR seulement : cinq largeurs de 44 px ne tiennent pas dans
             // les 246 px de la fiche à 320 px (essayé, la rangée débordait).
-            "rounded-md px-2 py-1 text-2xs font-semibold tabular-nums transition max-lg:min-h-11",
+            // `focus-ring` : cinq boutons qui étaient les SEULS du mode focus
+            // à retomber sur l'anneau par défaut du navigateur (mesuré au
+            // clavier — même oubli que celui qui a donné naissance à
+            // `SegmentedControl`, voir components/ui/segmented.tsx).
+            "focus-ring rounded-md px-2 py-1 text-2xs font-semibold tabular-nums transition max-lg:min-h-11",
             value === option ? "bg-sky-400/20 text-sky-200" : "bg-hairline/[0.04] text-muted hover:bg-hairline/[0.08] hover:text-ink"
           )}
         >

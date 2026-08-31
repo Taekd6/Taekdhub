@@ -37,6 +37,76 @@ const focusTimerKey = (exerciseId: string) => `${FOCUS_TIMER_PREFIX}${exerciseId
  */
 type FocusTimerContext = { exerciseId: string; hintCount?: number; correctionRevealed?: boolean };
 
+/**
+ * UN PANNEAU PLEIN ÉCRAN EST UN DIALOGUE, PAS UNE SECTION DE PLUS.
+ *
+ * Les deux écrans du mode focus (le travail, puis « Comment s'est passé
+ * l'exercice ? ») sont des `fixed inset-0` opaques : ils RECOUVRENT la
+ * barre latérale et la page. Ils n'en étaient pourtant ni annoncés ni
+ * refermés du point de vue du clavier. Mesuré au navigateur :
+ *
+ *   — après « Commencer ma séance », `document.activeElement` retombait sur
+ *     `<body>` : rien n'était annoncé, et le lecteur d'écran restait sur la
+ *     page précédente, désormais invisible ;
+ *   — depuis l'écran de résultat, quatre Tab suffisaient à sortir du panneau
+ *     et à parcourir « TaekdHub », « Tableau de bord », « Séance »… la
+ *     barre latérale CACHÉE DERRIÈRE. Le focus disparaissait de l'écran, et
+ *     rien n'empêchait de naviguer ailleurs en abandonnant la tentative en
+ *     attente de verdict.
+ *
+ * D'où, ici et seulement ici : `role="dialog"` + `aria-modal` (le reste de
+ * l'application est réellement inatteignable), focus initial porté sur le
+ * panneau — un lecteur d'écran énonce alors son nom et son rôle — et Tab
+ * ramené dans le panneau. Échap est déjà géré par l'écran lui-même : chacun
+ * en fait quelque chose de différent (terminer / passer), ce n'est donc pas
+ * au conteneur de le décider.
+ *
+ * Le filet de sécurité est en CAPTURE sur le document : quand le focus a
+ * déjà quitté le panneau (retour depuis la barre d'adresse, par exemple),
+ * un écouteur posé sur le panneau ne verrait jamais la touche.
+ */
+function useModalPanel(active: boolean) {
+  // Une ref CALLBACK, pas un `useRef` : les deux panneaux sont échangés par
+  // `AnimatePresence mode="wait"`, qui ne monte le suivant qu'une fois le
+  // précédent sorti. Un effet dépendant du seul booléen s'exécutait donc
+  // AVANT que le nœud existe, et ne se rejouait jamais — mesuré : l'écran de
+  // résultat repartait sur `<body>`, focus perdu et Tab qui s'échappait vers
+  // la barre latérale. Passer le nœud par un état force l'effet à attendre
+  // son arrivée réelle.
+  const [panel, setPanel] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!active || !panel) return;
+    panel.focus();
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Tab" || !panel) return;
+      const stops = Array.from(
+        panel.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')
+      ).filter((element) => element.getClientRects().length > 0);
+      const current = document.activeElement;
+      const first = stops[0];
+      const last = stops[stops.length - 1];
+      if (!first) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+      if (!panel.contains(current)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && (current === first || current === panel)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && current === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
+  }, [active, panel]);
+  return setPanel;
+}
+
 export function FocusView({
   item,
   update,
@@ -152,6 +222,25 @@ export function FocusView({
   /** Le stockage a refusé la dernière tentative de sauvegarde — voir `commitResult`. Remis à faux dès qu'un nouvel essai est lancé. */
   const [saveFailed, setSaveFailed] = useState(false);
 
+  /**
+   * Ce qu'un lecteur d'écran doit entendre quand l'AIDE change — et rien
+   * d'autre. Les indices apparaissent un par un dans le flux : à l'œil c'est
+   * évident, au clavier et à l'oreille rien ne se passait, le bouton se
+   * contentait de changer de libellé (« Indice 2 » après « Indice 1 »).
+   *
+   * Renseigné uniquement par un geste de l'élève, jamais au montage : une
+   * région live remplie dès sa création se fait lire à l'arrivée sur
+   * l'écran, ce qui rendrait une séance REPRISE (deux indices déjà révélés)
+   * bavarde sans raison. Volontairement laconique — la position, pas le
+   * contenu : l'indice lui-même est juste au-dessus, à lire au rythme
+   * choisi, pas à subir d'un bloc.
+   *
+   * `polite` et pas `assertive` : rien ici n'interrompt une lecture en cours.
+   * Le chrono, lui, n'est dans AUCUNE région live — il change chaque seconde,
+   * l'annoncer rendrait l'écran inutilisable.
+   */
+  const [aidAnnouncement, setAidAnnouncement] = useState("");
+
   // « Presque une autre application » : le bandeau et le rappel clavier
   // s'effacent après quelques secondes d'inactivité pendant le travail actif
   // (chrono en marche), pour laisser l'énoncé occuper tout l'écran — comme un
@@ -199,6 +288,11 @@ export function FocusView({
     };
   }, [draftSession, pointerFine]);
   const chromeHidden = pointerFine && idle && running && !draftSession;
+
+  // Un seul des deux panneaux est monté à la fois (voir l'`AnimatePresence`
+  // plus bas) : chacun prend le focus à son tour, et le rend au suivant.
+  const workPanelRef = useModalPanel(!draftSession);
+  const resultPanelRef = useModalPanel(Boolean(draftSession));
 
   // Arrête le timer et construit la WorkSession SANS la sauvegarder ni fermer
   // le focus — voir `commitResult`, seul endroit qui la sauvegarde vraiment,
@@ -349,11 +443,18 @@ export function FocusView({
            pour l'atteindre — précisément l'écran où l'élève doit agir. Le
            `min-h-full` de l'enveloppe intérieure garde le centrage tant que
            tout tient, et bascule en défilement normal sinon. */
-        className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-canvas"
+        className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-canvas focus:outline-none"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="focus-result-title"
+        tabIndex={-1}
+        ref={resultPanelRef}
       >
       <div className="flex min-h-full flex-col items-center justify-center gap-7 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 text-center">
         <div>
-          <p className="text-base font-semibold text-ink">Comment s&apos;est passé l&apos;exercice ?</p>
+          <p id="focus-result-title" className="text-base font-semibold text-ink">
+            Comment s&apos;est passé l&apos;exercice ?
+          </p>
           <p className="mt-1.5 text-sm text-muted">{item.title}</p>
           {/* Le temps travaillé est annoncé ici, et pas seulement pendant la
               séance : après un rechargement, c'est la seule chose qui dit à
@@ -366,7 +467,14 @@ export function FocusView({
             on laisse l'élève réessayer — plutôt que de fermer l'écran en
             faisant croire que tout s'est bien passé. */}
         {saveFailed && (
-          <p className="max-w-xs rounded-lg border border-hairline/[0.14] px-3.5 py-3 text-xs leading-5 text-rose-300">
+          /* `role="alert"` : ce message apparaît APRÈS coup, en réponse à un
+             clic dont l'effet attendu était la fermeture de l'écran. Sans
+             lui, l'élève qui n'a pas les yeux sur l'écran (ou qui vient
+             d'appuyer sur « 1 » au clavier) reste devant un écran qui n'a
+             tout simplement pas bougé, sans savoir que sa séance n'est pas
+             enregistrée. C'est le seul endroit du mode focus où une
+             interruption est justifiée. */
+          <p role="alert" className="max-w-xs rounded-lg border border-hairline/[0.14] px-3.5 py-3 text-xs leading-5 text-rose-300">
             Ta séance n&apos;a pas pu être enregistrée — le stockage de ton navigateur a refusé l&apos;écriture. Ton travail est
             conservé : réessaie, ou libère de l&apos;espace avant de recommencer.
           </p>
@@ -375,40 +483,67 @@ export function FocusView({
           <Button
             size="lg"
             onClick={() => commitResult("réussi")}
+            aria-keyshortcuts="1"
             className="justify-between gap-3 border border-emerald-400/20 bg-emerald-400/[0.12] text-emerald-200 hover:bg-emerald-400/20"
           >
             <span className="flex items-center gap-3">
               <CheckCircle2 size={18} /> Réussi
             </span>
-            {pointerFine && <kbd className="rounded border border-emerald-400/25 px-1.5 py-0.5 text-2xs">1</kbd>}
+            {pointerFine && (
+              <kbd aria-hidden className="rounded border border-emerald-400/25 px-1.5 py-0.5 text-2xs">
+                1
+              </kbd>
+            )}
           </Button>
           <Button
             size="lg"
             onClick={() => commitResult("partiel")}
+            aria-keyshortcuts="2"
             className="justify-between gap-3 border border-amber-400/20 bg-amber-400/[0.12] text-amber-200 hover:bg-amber-400/20"
           >
             <span className="flex items-center gap-3">
               <MinusCircle size={18} /> Partiellement réussi
             </span>
-            {pointerFine && <kbd className="rounded border border-amber-400/25 px-1.5 py-0.5 text-2xs">2</kbd>}
+            {pointerFine && (
+              <kbd aria-hidden className="rounded border border-amber-400/25 px-1.5 py-0.5 text-2xs">
+                2
+              </kbd>
+            )}
           </Button>
           <Button
             size="lg"
             onClick={() => commitResult("échoué")}
+            aria-keyshortcuts="3"
             className="justify-between gap-3 border border-rose-400/20 bg-rose-400/[0.12] text-rose-200 hover:bg-rose-400/20"
           >
             <span className="flex items-center gap-3">
               <XCircle size={18} /> Échoué
             </span>
-            {pointerFine && <kbd className="rounded border border-rose-400/25 px-1.5 py-0.5 text-2xs">3</kbd>}
+            {pointerFine && (
+              <kbd aria-hidden className="rounded border border-rose-400/25 px-1.5 py-0.5 text-2xs">
+                3
+              </kbd>
+            )}
           </Button>
         </div>
+        {/* Les raccourcis 1/2/3 et Échap sont posés sur `window` : les
+            pastilles les rendent découvrables à l'œil, `aria-keyshortcuts`
+            les rend découvrables à l'oreille. Les pastilles elles-mêmes
+            sortent du nom accessible (`aria-hidden`) : « Réussi 1 » n'est pas
+            un intitulé de bouton. */}
         <button
           type="button"
           onClick={() => commitResult(null)}
+          aria-keyshortcuts="Escape"
           className="focus-ring min-h-11 rounded-lg px-4 text-xs text-subtle underline underline-offset-2 transition hover:text-muted"
         >
-          Passer{pointerFine && <span className="no-underline"> (Échap)</span>}
+          Passer
+          {pointerFine && (
+            <span aria-hidden className="no-underline">
+              {" "}
+              (Échap)
+            </span>
+          )}
         </button>
       </div>
       </motion.div>
@@ -427,7 +562,12 @@ export function FocusView({
         initial={{ opacity: 0, scale: 0.97, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } }}
         exit={{ opacity: 0, scale: 0.98, y: 6, transition: { duration: 0.16, ease: "easeIn" } }}
-        className="fixed inset-0 z-50 flex flex-col bg-canvas"
+        className="fixed inset-0 z-50 flex flex-col bg-canvas focus:outline-none"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Exercice en cours : ${item.title}`}
+        tabIndex={-1}
+        ref={workPanelRef}
       >
       {/* BANDEAU DE TRAVAIL — le strict nécessaire, et même ce strict
           nécessaire s'efface après quelques secondes d'inactivité pendant le
@@ -502,6 +642,10 @@ export function FocusView({
             )}
           </div>
 
+          <p aria-live="polite" className="sr-only">
+            {aidAnnouncement}
+          </p>
+
           <div className="mt-6 space-y-3">
             {item.hints.slice(0, hintCount).map((hint, index) => (
               <motion.div
@@ -519,7 +663,14 @@ export function FocusView({
             {(hintCount < item.hints.length || item.correction) && (
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 {hintCount < item.hints.length && (
-                  <Button variant="secondary" size="sm" onClick={() => setContext((previous) => ({ ...previous, hintCount: resumeAid(previous).hintCount + 1 }))}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setContext((previous) => ({ ...previous, hintCount: resumeAid(previous).hintCount + 1 }));
+                      setAidAnnouncement(`Indice ${hintCount + 1} sur ${item.hints.length} affiché.`);
+                    }}
+                  >
                     <Lightbulb size={15} /> Indice {hintCount + 1}
                     <span className="text-muted">/ {item.hints.length}</span>
                   </Button>
@@ -530,6 +681,7 @@ export function FocusView({
                     size="sm"
                     onClick={() => {
                       setCorrectionVisible((v) => !v);
+                      setAidAnnouncement(correctionVisible ? "Correction masquée." : "Correction affichée.");
                       if (!correctionRevealed) setContext((previous) => ({ ...previous, correctionRevealed: true }));
                     }}
                   >
@@ -559,7 +711,12 @@ export function FocusView({
               quatre » sans hurler. La maîtrise le rejoint : les deux
               répondent à la même question, après l'exercice. */}
           <div className="mt-10 flex flex-wrap items-start gap-x-8 gap-y-4 border-t border-hairline/[0.07] pt-6">
-            <label className="block">
+            {/* `<div>` et non `<label>` : un `<label>` n'étiquette QUE des
+                contrôles de formulaire natifs. Autour d'un groupe de boutons
+                il n'associe rien, mais rend tout de même son texte cliquable
+                — un clic sur « Où j'en suis » activait le premier statut.
+                Les deux groupes portent déjà leur propre nom (`aria-label`). */}
+            <div className="block">
               <span className="eyebrow">Où j&apos;en suis</span>
               <SegmentedControl
                 className="mt-2"
@@ -568,13 +725,13 @@ export function FocusView({
                 onChange={(status) => update(item.id, { status })}
                 options={(["à faire", "en cours", "à revoir", "maîtrisé"] as ExerciseStatus[]).map((s) => ({ value: s, label: s }))}
               />
-            </label>
-            <label className="block">
+            </div>
+            <div className="block">
               <span className="eyebrow">Maîtrise</span>
               <div className="mt-2">
                 <MasteryPicker value={item.mastery} onChange={(mastery: Mastery) => update(item.id, { mastery })} />
               </div>
-            </label>
+            </div>
             <AnimatePresence>
               {justMastered && (
                 <motion.span
