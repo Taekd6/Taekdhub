@@ -326,3 +326,93 @@ describe("cohérence inter-moteurs", () => {
     expect(top.reasons).toContain("Réussi avec aide");
   });
 });
+
+
+/**
+ * « PARTIEL » — le résultat que ni la réussite ni l'échec ne décrivent.
+ *
+ * Il n'apparaît littéralement que dans quatre modules ; partout ailleurs il
+ * n'existe que par défaut. Deux conséquences graves en découlaient, l'une
+ * dans le classement, l'autre dans l'XP.
+ */
+describe("scénario 8 — une fenêtre entièrement « partiel »", () => {
+  function partiels(combien: number, difficulty = 3) {
+    const exercises = Array.from({ length: combien }, (_, i) => makeExercise({ id: `p${i}`, difficulty: difficulty as never }));
+    const sessions = exercises.map((exercise, i) =>
+      makeAttempt({
+        id: `sp${i}`,
+        exercise_id: exercise.id,
+        result: "partiel",
+        started_at: new Date(NOW.getTime() - (i + 1) * 86400000).toISOString(),
+      })
+    );
+    return { exercises, sessions };
+  }
+
+  it("REPRODUIT LE DÉFAUT CORRIGÉ : la cible de difficulté était NaN", () => {
+    // « Partiel » n'est ni dans `succeeded` ni dans `failed` : les deux
+    // moyennes portaient sur des tableaux vides, et `0/0` vaut `NaN`.
+    const { exercises, sessions } = partiels(3);
+    const comfort = comfortDifficulty(exercises, sessions);
+    expect(comfort).not.toBeNull();
+    expect(Number.isNaN(comfort!.target)).toBe(false);
+    expect(comfort!.target).toBe(3);
+  });
+
+  it("ne propage AUCUN score NaN — sans quoi le moteur entier dégénère", () => {
+    // `NaN` étant falsy, le comparateur de `recommendExercises` retombait sur
+    // son second membre : le classement devenait « du plus facile au plus
+    // difficile », maîtrise, échecs, repos et statut ignorés. Mesuré avant
+    // correctif : 5 scores sur 5 à NaN, ordre inversé.
+    const { exercises, sessions } = partiels(3);
+    const banque = [...exercises, makeExercise({ id: "facile", difficulty: 1 as never }), makeExercise({ id: "dur", difficulty: 5 as never })];
+    const recos = recommendExercises(banque, sessions, 20, { now: NOW });
+    expect(recos.length).toBeGreaterThan(0);
+    expect(recos.every((r) => Number.isFinite(r.score))).toBe(true);
+  });
+
+  it("n'offre jamais de montée de palier : un partiel ne prouve aucune autonomie", () => {
+    const { exercises, sessions } = partiels(6);
+    const comfort = comfortDifficulty(exercises, sessions)!;
+    expect(comfort.steppedUp).toBe(false);
+    expect(comfort.successStreak).toBe(0);
+  });
+
+  it("reste sain quand un historique ancien et sain précède les partiels", () => {
+    // La fenêtre ne fait que douze tentatives : douze partiels récents
+    // suffisaient à faire basculer un élève par ailleurs irréprochable.
+    const { exercises, sessions } = partiels(12, 4);
+    const comfort = comfortDifficulty(exercises, sessions)!;
+    expect(Number.isFinite(comfort.target)).toBe(true);
+    expect(comfort.target).toBe(4);
+  });
+});
+
+describe("scénario 9 — répéter le même exercice en « partiel »", () => {
+  const exercise = makeExercise({ id: "unique", difficulty: 5 as never });
+  const repete = (result: "réussi" | "partiel", combien: number) =>
+    Array.from({ length: combien }, (_, i) =>
+      makeAttempt({ id: `r${i}`, exercise_id: "unique", result, started_at: new Date(NOW.getTime() - (i + 1) * 86400000).toISOString() })
+    );
+
+  it("REPRODUIT LE DÉFAUT CORRIGÉ : « partiel » échappait à la décote anti-répétition", () => {
+    // Mesuré avant correctif : 20 séances « partiel » valaient 300 XP quand
+    // 20 séances « réussi » en valaient 75. Dès la 6ᵉ répétition, se déclarer
+    // à moitié en difficulté rapportait PLUS que réussir.
+    expect(totalXp([exercise], repete("partiel", 20))).toBeLessThanOrEqual(totalXp([exercise], repete("réussi", 20)));
+  });
+
+  it("applique la même échelle qu'à une réussite : plein tarif, moitié, puis rien", () => {
+    // difficulté 5 × 3 = 15 XP de base ; 15 + 7,5 = 22,5 arrondi à 23.
+    expect(totalXp([exercise], repete("partiel", 1))).toBe(15);
+    expect(totalXp([exercise], repete("partiel", 2))).toBe(23);
+    expect(totalXp([exercise], repete("partiel", 5))).toBe(23);
+  });
+
+  it("NON-RÉGRESSION : les deux échelles restent indépendantes", () => {
+    // Un partiel ne doit pas consommer un barreau de l'échelle des
+    // réussites, ni l'inverse : ce sont deux preuves de nature différente.
+    const melange = [...repete("réussi", 1), ...repete("partiel", 1).map((s) => ({ ...s, id: "autre" }))];
+    expect(totalXp([exercise], melange)).toBe(50 + 15);
+  });
+});

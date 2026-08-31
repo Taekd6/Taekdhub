@@ -122,17 +122,31 @@ export function totalXp(exercises: Exercise[], sessions: WorkSession[]): number 
   // le précèdent, donc combien la suivante vaut encore.
   const ordered = [...sessions].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime());
   const successCount = new Map<string, number>();
+  // Compteur DISTINCT pour les réussites partielles : refaire le même
+  // exercice n'apprend plus rien à la troisième fois, que l'élève s'en sorte
+  // entièrement ou à moitié. Séparé pour qu'un partiel ne consomme pas un
+  // barreau de l'échelle des réussites, et réciproquement — les deux échelles
+  // restent exactement celles d'avant.
+  //
+  // Sans cela, « partiel » échappait entièrement à `REPEAT_SHARES` et
+  // rouvrait la faille nº 3 documentée en tête de ce module. Mesuré sur le
+  // même exercice de difficulté 5 : 20 séances « réussi » valent 75 XP,
+  // 20 séances « partiel » en valaient 300. Dès la 6ᵉ répétition, se déclarer
+  // à moitié en difficulté rapportait PLUS que réussir — le produit payait
+  // l'élève pour se déclarer moins bon.
+  const partialCount = new Map<string, number>();
   let sessionXp = 0;
   for (const session of ordered) {
     const base = xpFromSession(session, session.exercise_id ? difficultyById.get(session.exercise_id) : undefined);
     if (base === 0) continue;
-    if (!session.exercise_id || session.result !== "réussi") {
+    if (!session.exercise_id || (session.result !== "réussi" && session.result !== "partiel")) {
       sessionXp += base;
       continue;
     }
-    const already = successCount.get(session.exercise_id) ?? 0;
+    const counter = session.result === "réussi" ? successCount : partialCount;
+    const already = counter.get(session.exercise_id) ?? 0;
     sessionXp += base * (REPEAT_SHARES[already] ?? 0);
-    successCount.set(session.exercise_id, already + 1);
+    counter.set(session.exercise_id, already + 1);
   }
 
   const provenExercises = new Set(

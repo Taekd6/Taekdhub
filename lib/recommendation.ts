@@ -364,8 +364,25 @@ export function comfortDifficulty(exercises: Exercise[], sessions: WorkSession[]
   const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
 
   // Socle : la difficulté que l'élève RÉUSSIT. À défaut de toute réussite,
-  // celle où il échoue — auquel cas on visera en dessous, juste après.
-  const base = succeeded.length > 0 ? average(succeeded.map((a) => a.difficulty)) : average(failed.map((a) => a.difficulty));
+  // celle où il échoue — auquel cas on visera en dessous, juste après. À
+  // défaut des DEUX, la difficulté à laquelle il travaille : on ne monte ni
+  // ne descend, on reste où il en est.
+  //
+  // Ce troisième barreau n'est pas une précaution théorique. « Partiel »
+  // n'est ni une réussite ni un échec : une fenêtre entièrement partielle —
+  // trois clics suffisent — laissait `average([])` valoir `NaN`.
+  // `difficultyFitBonus` le propageait alors à TOUS les scores, et comme
+  // `NaN` est falsy, le comparateur de `recommendExercises` retombait sur
+  // son second membre : le moteur entier était remplacé par un tri « du plus
+  // facile au plus difficile », ignorant maîtrise, échecs, repos et statut.
+  // Mesuré : 5 exercices sur 5 à `NaN`, ordre inversé (1,3,3,3,5 au lieu de
+  // 5,3,3,3,1). L'élève lisait de surcroît « Niveau visé : NaN / 5 ».
+  const base =
+    succeeded.length > 0
+      ? average(succeeded.map((a) => a.difficulty))
+      : failed.length > 0
+        ? average(failed.map((a) => a.difficulty))
+        : average(recent.map((a) => a.difficulty));
 
   // La série de réussites qui autorise une montée ne compte QUE les
   // réussites autonomes : réussir trois exercices en révélant tous les
