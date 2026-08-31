@@ -11,7 +11,15 @@ import { MasteryPicker } from "@/components/exercises/exercise-badges";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { RichMath } from "@/components/rich-math";
 import { useWorkTimer } from "@/hooks/use-work-timer";
-import { appendAttempt, clearPendingAttempt, readPendingAttempt, resumeAid, writePendingAttempt } from "@/lib/attempt";
+import {
+  appendAttempt,
+  clearPendingAttempt,
+  readAidSeen,
+  readPendingAttempt,
+  resolveAttemptAid,
+  resumeAid,
+  writePendingAttempt,
+} from "@/lib/attempt";
 import { explainReasons } from "@/lib/recommendation";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
 import type { AttemptResult, Exercise, ExerciseStatus, Mastery, WorkSession } from "@/lib/supabase/types";
@@ -202,12 +210,11 @@ export function FocusView({
       // moment où la séance se ferme, donc reflète bien CETTE tentative.
       // 0 est une information à part entière (il s'en est sorti seul), pas
       // une absence de donnée — voir lib/supabase/types.ts#hints_used.
-      hints_used: hintCount,
-      // Même nature de fait que `hints_used`, capturé au même instant : une
-      // correction lue durant CETTE tentative. `false` est une information à
-      // part entière (il a conclu sans lire la solution), pas une absence de
-      // donnée — voir lib/supabase/types.ts#correction_viewed.
-      correction_viewed: correctionRevealed,
+      // `0` et `false` ne sont affirmés que si l'aide n'a été consultée NULLE
+      // PART — ni ici, ni sur la fiche de l'exercice, qui a ses propres
+      // boutons. Sinon `null` : on ne sait pas, donc on ne crédite pas une
+      // autonomie qu'on ne peut pas vouloir prouver (voir `resolveAttemptAid`).
+      ...resolveAttemptAid({ hintCount, correctionRevealed }, readAidSeen(item.id)),
     };
     // Écrit AVANT d'afficher l'écran de résultat : à partir d'ici la séance
     // survit à un rechargement, alors que la clé du chrono vient d'être

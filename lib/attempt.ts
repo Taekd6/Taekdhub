@@ -61,6 +61,99 @@ export function resumeAid(context: { hintCount?: number; correctionRevealed?: bo
   };
 }
 
+/**
+ * L'AIDE CONSULTÉE AILLEURS QUE DANS LA SÉANCE.
+ *
+ * La fiche d'un exercice (components/exercises/exercise-detail.tsx) offre ses
+ * propres boutons « Afficher l'indice N » et « Afficher la correction ». Un
+ * élève pouvait donc y lire la solution entière, ouvrir ensuite le mode
+ * Focus sur le MÊME exercice, travailler, et déclarer « Réussi » : la séance
+ * enregistrait `hints_used: 0, correction_viewed: false`. Reproduit en
+ * navigateur — correction et trois indices lus sur la fiche, puis 30 minutes
+ * de Focus et « Réussi ».
+ *
+ * Or `0` et `false` ne sont pas des trous : ce sont les preuves POSITIVES
+ * d'autonomie du produit (voir lib/supabase/types.ts), celles qui débloquent
+ * le plein tarif d'XP, l'état « solide » d'une notion et la montée d'un
+ * palier de difficulté. Le mode Focus avait été rendu honnête ; c'était la
+ * porte de derrière.
+ *
+ * ## Ce que ce marqueur fait — et ce qu'il se refuse à faire
+ * Il ne prétend PAS que l'élève a triché, et n'enregistre donc pas `true` :
+ * lire une correction sur la fiche n'est pas la lire PENDANT la tentative.
+ * On ne peut ni affirmer l'autonomie, ni affirmer l'aide. La séance
+ * enregistre alors `null` — « on ne sait pas » —, qui par construction ne
+ * crédite ni ne sanctionne (voir `isAutonomousSuccess` et
+ * `wasAssistedSuccess`, lib/recommendation.ts). Le produit cesse d'affirmer
+ * ce qu'il ne sait pas, sans inventer une faute.
+ *
+ * ## Pourquoi sessionStorage, et pourquoi ce n'est pas une base parallèle
+ * Ce marqueur ne duplique aucune donnée du domaine : c'est un fait
+ * d'interface, de la même famille que le chrono et le brouillon de séance,
+ * et il vit exactement aussi longtemps qu'eux — le temps de l'onglet. Une
+ * correction lue il y a trois semaines n'a aucune raison de peser sur la
+ * séance d'aujourd'hui ; celle qu'on vient de lire, si.
+ */
+export const AID_SEEN_PREFIX = "prepahub:aid-seen:";
+
+export function aidSeenKey(exerciseId: string): string {
+  return `${AID_SEEN_PREFIX}${exerciseId}`;
+}
+
+/** Ce qui a été consulté hors séance pour un exercice donné. */
+export interface AidSeenElsewhere {
+  hint: boolean;
+  correction: boolean;
+}
+
+/** Lecture tolérante : une clé absente, illisible ou d'une forme inattendue vaut « rien vu », jamais une exception — cette valeur est lue au montage du mode focus. */
+export function parseAidSeen(raw: string | null): AidSeenElsewhere {
+  if (!raw) return { hint: false, correction: false };
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return { hint: false, correction: false };
+    const record = parsed as Record<string, unknown>;
+    return { hint: record.hint === true, correction: record.correction === true };
+  } catch {
+    return { hint: false, correction: false };
+  }
+}
+
+export function readAidSeen(exerciseId: string): AidSeenElsewhere {
+  if (typeof window === "undefined") return { hint: false, correction: false };
+  return parseAidSeen(sessionStorage.getItem(aidSeenKey(exerciseId)));
+}
+
+/** Note qu'une aide a été consultée hors séance. Cumulatif : un indice affiché n'efface pas une correction déjà lue. */
+export function markAidSeen(exerciseId: string, kind: keyof AidSeenElsewhere): void {
+  if (typeof window === "undefined") return;
+  const current = readAidSeen(exerciseId);
+  if (current[kind]) return;
+  sessionStorage.setItem(aidSeenKey(exerciseId), JSON.stringify({ ...current, [kind]: true }));
+}
+
+/**
+ * L'aide à ENREGISTRER pour une tentative, à partir de ce qui a été mesuré
+ * pendant la séance et de ce qui avait été consulté ailleurs.
+ *
+ * Trois règles, dans cet ordre :
+ * 1. Une mesure prise pendant la séance prime toujours — trois indices
+ *    révélés en Focus valent 3, quoi qu'il se soit passé sur la fiche.
+ * 2. À défaut de mesure, une consultation ailleurs rend le verdict inconnu
+ *    (`null`) : on ne peut plus affirmer l'autonomie.
+ * 3. Sinon seulement, on affirme `0` / `false` — la preuve positive que
+ *    l'élève a conclu seul.
+ */
+export function resolveAttemptAid(
+  measured: { hintCount: number; correctionRevealed: boolean },
+  seenElsewhere: AidSeenElsewhere
+): { hints_used: number | null; correction_viewed: boolean | null } {
+  return {
+    hints_used: measured.hintCount > 0 ? measured.hintCount : seenElsewhere.hint ? null : 0,
+    correction_viewed: measured.correctionRevealed ? true : seenElsewhere.correction ? null : false,
+  };
+}
+
 /** Une seule tentative en attente par exercice : la clé encode l'exercice concerné, comme celle du chrono (voir `FOCUS_TIMER_PREFIX`). */
 export const PENDING_ATTEMPT_PREFIX = "prepahub:attempt:pending:";
 

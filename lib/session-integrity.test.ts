@@ -36,6 +36,7 @@ const FOCUS_VIEW = "components/exercises/focus-view.tsx";
 const SESSION_RUNNER = "components/session/session-runner.tsx";
 const EXERCISE_MANAGER = "components/exercises/exercise-manager.tsx";
 const TIMER = "components/timer.tsx";
+const EXERCISE_DETAIL = "components/exercises/exercise-detail.tsx";
 
 describe("l'aide utilisée doit survivre à un rechargement", () => {
   it("le mode focus lit l'aide depuis le contexte PERSISTÉ du chrono", () => {
@@ -97,6 +98,21 @@ describe("une séance ne peut pas disparaître entre l'arrêt du chrono et la sa
 });
 
 describe("aucun moteur ne doit recevoir une aide inventée", () => {
+  it("la fiche d'un exercice signale les aides qu'elle révèle", () => {
+    // `components/exercises/exercise-detail.tsx` a ses PROPRES boutons
+    // « Afficher l'indice N » et « Afficher la correction ». Sans ce
+    // signalement, y lire la solution puis déclarer « Réussi » en Focus
+    // enregistrait `hints_used: 0, correction_viewed: false` — la preuve
+    // d'autonomie maximale, pour un élève qui venait de tout lire.
+    const source = read(EXERCISE_DETAIL);
+    expect(source).toContain('markAidSeen(item.id, "hint")');
+    expect(source).toContain('markAidSeen(item.id, "correction")');
+  });
+
+  it("le mode focus n'affirme `0` / `false` qu'après avoir consulté ce marqueur", () => {
+    expect(read(FOCUS_VIEW)).toContain("resolveAttemptAid({ hintCount, correctionRevealed }, readAidSeen(item.id))");
+  });
+
   it("une séance libre du chronomètre déclare `null`, jamais `false`", () => {
     // Sans exercice il n'y a aucune correction à révéler : `false`
     // affirmerait que l'élève a conclu sans la lire.

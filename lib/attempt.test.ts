@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { appendAttempt, parsePendingAttempt, pendingAttemptKey, resumeAid, PENDING_ATTEMPT_PREFIX } from "@/lib/attempt";
+import {
+  appendAttempt,
+  parseAidSeen,
+  parsePendingAttempt,
+  pendingAttemptKey,
+  resolveAttemptAid,
+  resumeAid,
+  PENDING_ATTEMPT_PREFIX,
+} from "@/lib/attempt";
 import type { WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -158,5 +166,64 @@ describe("resumeAid — l'aide utilisée survit à un rechargement", () => {
     for (const douteux of ["non", "false", 1, {}, []] as unknown[]) {
       expect(resumeAid({ correctionRevealed: douteux } as { correctionRevealed?: boolean }).correctionRevealed).toBe(false);
     }
+  });
+});
+
+describe("l'aide consultée AILLEURS que dans la séance", () => {
+  const rien = { hint: false, correction: false };
+
+  it("REPRODUIT LE DÉFAUT CORRIGÉ : sans ce marqueur, lire la solution sur la fiche laissait la séance affirmer l'autonomie", () => {
+    // Reproduit en navigateur : correction entière et trois indices lus sur la
+    // fiche de l'exercice, puis 30 minutes de Focus et « Réussi » →
+    // `hints_used: 0, correction_viewed: false`, soit la preuve POSITIVE la
+    // plus forte du produit. C'était la porte de derrière du mode Focus.
+    const aveugle = resolveAttemptAid({ hintCount: 0, correctionRevealed: false }, rien);
+    expect(aveugle).toEqual({ hints_used: 0, correction_viewed: false });
+
+    const informé = resolveAttemptAid({ hintCount: 0, correctionRevealed: false }, { hint: true, correction: true });
+    expect(informé).toEqual({ hints_used: null, correction_viewed: null });
+  });
+
+  it("dit « on ne sait pas », jamais « il a triché »", () => {
+    // Lire une correction sur la fiche n'est pas la lire PENDANT la
+    // tentative : `true` serait une accusation invérifiable. `null` ne
+    // crédite ni ne sanctionne — c'est la doctrine du dépôt.
+    expect(resolveAttemptAid({ hintCount: 0, correctionRevealed: false }, { hint: false, correction: true }).correction_viewed).toBeNull();
+    expect(resolveAttemptAid({ hintCount: 0, correctionRevealed: false }, { hint: true, correction: false }).hints_used).toBeNull();
+  });
+
+  it("une mesure prise PENDANT la séance prime toujours sur ce qui a été vu ailleurs", () => {
+    const mesuré = resolveAttemptAid({ hintCount: 3, correctionRevealed: true }, { hint: true, correction: true });
+    expect(mesuré).toEqual({ hints_used: 3, correction_viewed: true });
+  });
+
+  it("NON-RÉGRESSION : sans aide nulle part, la preuve d'autonomie reste affirmée", () => {
+    // Sur-corriger serait aussi faux que le trou : ouvrir la fiche sans rien
+    // révéler ne doit pas priver l'élève de son autonomie prouvée.
+    expect(resolveAttemptAid({ hintCount: 0, correctionRevealed: false }, rien)).toEqual({
+      hints_used: 0,
+      correction_viewed: false,
+    });
+  });
+
+  it("les indices et la correction sont deux faits indépendants", () => {
+    expect(resolveAttemptAid({ hintCount: 2, correctionRevealed: false }, { hint: false, correction: true })).toEqual({
+      hints_used: 2,
+      correction_viewed: null,
+    });
+  });
+
+  it("un marqueur absent, illisible ou d'une forme inattendue vaut « rien vu »", () => {
+    // Lu au montage du mode focus : une exception y empêcherait l'écran de
+    // s'afficher du tout.
+    for (const brut of [null, "", "{pas du json", "[]", "42", "null", '{"hint":"oui"}']) {
+      expect(() => parseAidSeen(brut)).not.toThrow();
+      expect(parseAidSeen(brut)).toEqual(rien);
+    }
+  });
+
+  it("seul `true` compte comme consultation — une valeur douteuse n'accuse personne", () => {
+    expect(parseAidSeen('{"hint":1,"correction":"true"}')).toEqual(rien);
+    expect(parseAidSeen('{"hint":true,"correction":true}')).toEqual({ hint: true, correction: true });
   });
 });

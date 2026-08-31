@@ -8,6 +8,7 @@ import { ChapterPicker } from "@/components/exercises/chapter-picker";
 import { MasteryPicker } from "@/components/exercises/exercise-badges";
 import { SessionRow } from "@/components/history/session-row";
 import { RichMath } from "@/components/rich-math";
+import { markAidSeen } from "@/lib/attempt";
 import { resultCounts, sessionsForExercise } from "@/lib/history";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, Mastery, Subject, WorkSession } from "@/lib/supabase/types";
@@ -188,14 +189,33 @@ export function ExerciseDetail({
             <RichMath text={`Indice ${index + 1} — ${hint}`} />
           </div>
         ))}
+        {/* Une aide révélée ICI est notée pour la séance à venir : sans cela,
+            lire la solution sur la fiche puis déclarer « Réussi » en Focus
+            enregistrait `hints_used: 0` / `correction_viewed: false`,
+            c'est-à-dire la preuve d'autonomie MAXIMALE du produit. Le
+            marqueur ne dit pas « il a triché » — il dit « on ne peut plus
+            affirmer qu'il s'en est sorti seul » (voir lib/attempt.ts). */}
         {hintCount < item.hints.length && (
-          <Button variant="ghost" onClick={() => setHintCount((count) => count + 1)} className="text-accent">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setHintCount((count) => count + 1);
+              markAidSeen(item.id, "hint");
+            }}
+            className="text-accent"
+          >
             Afficher l&apos;indice {hintCount + 1}
           </Button>
         )}
         {item.correction && (
           <div>
-            <Button variant="ghost" onClick={() => setCorrectionVisible((value) => !value)}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setCorrectionVisible((value) => !value);
+                markAidSeen(item.id, "correction");
+              }}
+            >
               {correctionVisible ? <EyeOff size={16} /> : <Eye size={16} />}
               {correctionVisible ? "Masquer la correction" : "Afficher la correction"}
             </Button>
