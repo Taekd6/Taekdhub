@@ -13,7 +13,7 @@ import { sessionKeys, sessionRead, sessionRemove, sessionWrite } from "@/lib/sto
  * le temps réellement passé est restauré fidèlement, y compris le temps
  * écoulé pendant le rechargement lui-même.
  */
-interface WorkTimerSnapshot<TContext> {
+export interface WorkTimerSnapshot<TContext> {
   /** ISO — instant du tout premier démarrage de cette séance. Devient `WorkSession.started_at`. */
   startedAt: string;
   /** Secondes entières déjà comptabilisées lors des intervalles précédents (hors intervalle en cours). */
@@ -22,6 +22,36 @@ interface WorkTimerSnapshot<TContext> {
   runningSince: string | null;
   /** Données propres à l'appelant (ex. matière choisie, exercice en focus…), restaurées avec le timer. */
   context: TContext;
+}
+
+/**
+ * L'INSTANTANÉ QUI DOIT SUCCÉDER À UNE OUVERTURE D'ÉCRAN.
+ *
+ * Ouvrir le mode focus démarre le chrono (voir focus-view.tsx) : ouvrir un
+ * exercice EST la décision de s'y mettre. Mais ROUVRIR un écran après un
+ * rechargement n'est pas la même décision — l'état persisté a déjà tranché,
+ * et il peut dire « en pause ».
+ *
+ * Défaut réel corrigé ici, reproduit en navigateur : chrono mis en pause
+ * (l'élève s'interrompt), rechargement de la page, et le chrono REPARTAIT
+ * tout seul. `start()` ne se protégeait que du cas « déjà en train de
+ * tourner » (`if (prev.runningSince) return prev`) ; sur une séance en
+ * pause il posait un nouveau `runningSince`. Du temps que l'élève n'a pas
+ * passé à travailler entrait alors dans `duration_seconds`, donc dans
+ * l'objectif du jour, la heatmap, le temps passé sur l'exercice et
+ * l'estimation de durée qui borne les séances suivantes — sans un geste de
+ * sa part, et sans que rien ne le signale.
+ *
+ * La règle : une séance persistée, EN COURS OU EN PAUSE, est rendue telle
+ * quelle. Seule l'absence de séance en démarre une.
+ */
+export function snapshotOnOpen<TContext>(
+  previous: WorkTimerSnapshot<TContext> | null,
+  context: TContext,
+  now: string
+): WorkTimerSnapshot<TContext> {
+  if (previous) return previous;
+  return { startedAt: now, accumulatedSeconds: 0, runningSince: now, context };
 }
 
 export interface WorkTimerResult<TContext> {
@@ -34,6 +64,12 @@ export interface WorkTimerResult<TContext> {
   /** Met à jour le contexte persisté — accepte une valeur ou une fonction de mise à jour (voir l'implémentation). */
   setContext: (context: TContext | ((previous: TContext) => TContext)) => void;
   start: () => void;
+  /**
+   * Ouvre l'écran : reprend la séance persistée si elle existe — y compris
+   * MISE EN PAUSE, qu'on ne relance jamais à la place de l'élève — et n'en
+   * démarre une nouvelle que s'il n'y en a aucune. Voir `snapshotOnOpen`.
+   */
+  resumeOrStart: () => void;
   pause: () => void;
   toggle: () => void;
   /**
@@ -148,6 +184,16 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
     });
   }, [context]);
 
+  /**
+   * Voir `snapshotOnOpen` : contrairement à `start`, ne relance JAMAIS une
+   * séance mise en pause avant le rechargement. La forme fonctionnelle est
+   * indispensable — l'effet de restauration au montage a déjà mis sa mise à
+   * jour en file, et c'est SON instantané que `prev` doit rendre ici.
+   */
+  const resumeOrStart = useCallback(() => {
+    setSnapshot((prev) => snapshotOnOpen(prev, context, new Date().toISOString()));
+  }, [context]);
+
   const pause = useCallback(() => {
     setSnapshot((prev) => {
       if (!prev || !prev.runningSince) return prev;
@@ -187,6 +233,7 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
     context,
     setContext,
     start,
+    resumeOrStart,
     pause,
     toggle,
     stop,

@@ -93,7 +93,7 @@ export function FocusView({
    * `?? ` : un chrono repris d'une version antérieure ne porte que
    * `exerciseId`. On lit alors 0 / false, exactement le comportement d'avant.
    */
-  const { seconds, running, start, toggle, stop, context, setContext } = useWorkTimer<FocusTimerContext>(
+  const { seconds, running, resumeOrStart, toggle, stop, context, setContext } = useWorkTimer<FocusTimerContext>(
     focusTimerKey(item.id),
     { exerciseId: item.id, hintCount: 0, correctionRevealed: false }
   );
@@ -108,15 +108,23 @@ export function FocusView({
   // pensait pas à cliquer sur "Timer" — un oubli fréquent qui faisait
   // disparaître silencieusement du temps de travail pourtant bien réel,
   // rongeant la fiabilité de tout ce qui en dépend (maîtrise, recommandation,
-  // objectif du jour). `start()` est idempotent (voir hooks/use-work-timer.ts) :
-  // sans effet si une séance persistée était déjà en cours après reprise.
+  // objectif du jour).
   //
-  // Sauf si une tentative attend déjà son verdict (reprise après
-  // rechargement) : le travail est terminé, redémarrer le chrono
+  // `resumeOrStart()` et NON `start()` : ouvrir n'est une décision que
+  // lorsqu'il n'y a rien à reprendre. `start()` ne se gardait que du cas
+  // « déjà en train de tourner », si bien qu'un rechargement pendant une
+  // PAUSE relançait le chrono tout seul — reproduit en navigateur : pause à
+  // 0:02, rechargement, le chrono repart et affiche 0:07 cinq secondes plus
+  // tard. L'élève venait pourtant de dire qu'il s'arrêtait, et ce temps-là
+  // entrait ensuite dans `duration_seconds` (voir hooks/use-work-timer.ts,
+  // `snapshotOnOpen`).
+  //
+  // Et pas de chrono du tout si une tentative attend déjà son verdict
+  // (reprise après rechargement) : le travail est terminé, redémarrer
   // recommencerait à compter du temps que l'élève ne passe pas à travailler.
   useEffect(() => {
     if (readPendingAttempt(item.id)) return;
-    start();
+    resumeOrStart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

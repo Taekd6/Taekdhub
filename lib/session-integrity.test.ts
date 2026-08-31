@@ -2,8 +2,10 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { snapshotOnOpen } from "@/hooks/use-work-timer";
+
 /**
- * LES HUIT COUTURES QUI NE TIENNENT À AUCUN TEST.
+ * LES COUTURES DE SÉANCE QUI NE TIENNENT À AUCUN AUTRE TEST.
  *
  * Une revue indépendante a produit le constat le plus utile de ce chantier :
  * les deux correctifs les plus graves pouvaient être intégralement dévissés
@@ -18,12 +20,16 @@ import { describe, expect, it } from "vitest";
  * et testing-library pour huit assertions coûterait plus que ça ne rapporte.
  *
  * ## Ce que ce fichier est, et n'est pas
- * Ce sont des gardes STRUCTURELS, pas des tests de comportement : ils
- * prouvent que le câblage est en place, pas qu'il fonctionne. Ce qu'il fait
- * réellement est vérifié en navigateur (rechargement pendant et après la
+ * L'essentiel est ici des gardes STRUCTURELS, pas des tests de comportement :
+ * ils prouvent que le câblage est en place, pas qu'il fonctionne. Ce qu'il
+ * fait réellement est vérifié en navigateur (rechargement pendant et après la
  * séance, quota de stockage refusé, isolation entre exercices). Leur valeur
  * est d'échouer le jour où quelqu'un défait une couture par inadvertance —
  * ce qui est déjà arrivé une fois entre deux commits de ce même chantier.
+ *
+ * Une exception assumée : `snapshotOnOpen` (hooks/use-work-timer.ts) est une
+ * transition PURE, donc vérifiable pour de vrai — elle l'est ci-dessous, avec
+ * en plus le garde structurel qui prouve que le mode focus l'emprunte bien.
  *
  * Un garde structurel se périme s'il vérifie une orthographe plutôt qu'une
  * intention : chacun ci-dessous cite donc le défaut réel qu'il empêche de
@@ -94,6 +100,67 @@ describe("une séance ne peut pas disparaître entre l'arrêt du chrono et la sa
     for (const file of [SESSION_RUNNER, EXERCISE_MANAGER]) {
       expect(read(file)).toContain("PENDING_ATTEMPT_PREFIX");
     }
+  });
+});
+
+describe("rouvrir un écran ne relance pas un chrono mis en pause", () => {
+  /**
+   * Les trois cas ci-dessous sont de VRAIS tests de comportement, pas des
+   * gardes structurels : `snapshotOnOpen` est la transition pure extraite de
+   * `useWorkTimer` précisément pour être vérifiable ici. Le garde structurel
+   * qui les accompagne (« le mode focus ouvre avec `resumeOrStart` ») est
+   * juste en dessous — il faut les deux, sinon le correctif se dévisse en
+   * rebranchant `start()` sans qu'aucune de ces assertions ne bouge.
+   */
+  const pausee = { startedAt: "2026-01-01T08:00:00.000Z", accumulatedSeconds: 1200, runningSince: null, context: { exerciseId: "ex-1" } };
+
+  it("une séance EN PAUSE est rendue telle quelle", () => {
+    // Défaut réel : pause à 0:02, rechargement, le chrono repartait tout
+    // seul et affichait 0:07 cinq secondes plus tard. `start()` ne se gardait
+    // que du cas « déjà en train de tourner ». Le temps que l'élève venait
+    // d'annoncer ne pas passer à travailler entrait dans `duration_seconds`.
+    const next = snapshotOnOpen(pausee, { exerciseId: "ex-1" }, "2026-01-01T09:00:00.000Z");
+    expect(next.runningSince).toBeNull();
+    expect(next.accumulatedSeconds).toBe(1200);
+    expect(next.startedAt).toBe("2026-01-01T08:00:00.000Z");
+  });
+
+  it("une séance EN COURS garde son intervalle, jamais réarmé à l'ouverture", () => {
+    // Réarmer `runningSince` à l'ouverture perdrait le temps écoulé depuis le
+    // début de l'intervalle en cours — y compris celui du rechargement.
+    const enCours = { ...pausee, runningSince: "2026-01-01T08:20:00.000Z" };
+    expect(snapshotOnOpen(enCours, { exerciseId: "ex-1" }, "2026-01-01T09:00:00.000Z").runningSince).toBe("2026-01-01T08:20:00.000Z");
+  });
+
+  it("sans séance persistée, ouvrir EST la décision de s'y mettre", () => {
+    // L'autre moitié de la règle : le chrono ne doit pas rester à l'arrêt
+    // tant que l'élève ne pense pas à le lancer (du temps de travail réel
+    // disparaissait silencieusement).
+    const next = snapshotOnOpen(null, { exerciseId: "ex-1" }, "2026-01-01T09:00:00.000Z");
+    expect(next.runningSince).toBe("2026-01-01T09:00:00.000Z");
+    expect(next.accumulatedSeconds).toBe(0);
+  });
+
+  it("le mode focus ouvre avec `resumeOrStart`, jamais avec `start`", () => {
+    // Le garde qui empêche de rebrancher l'ancien appel : `start()` reste
+    // légitime pour le chronomètre libre (components/timer.tsx), où il est
+    // déclenché par un bouton, mais pas pour une ouverture d'écran.
+    const source = read(FOCUS_VIEW);
+    expect(source).toContain("resumeOrStart();");
+    expect(source).not.toMatch(/^\s*start\(\);/m);
+  });
+});
+
+describe("l'écran ne doit pas montrer un exercice périmé", () => {
+  it("la séance relit l'exercice en focus dans la banque à jour", () => {
+    // `recommendations` est figé au démarrage de la séance : passer sa copie
+    // à FocusView faisait revenir le sélecteur de statut sur l'ancienne
+    // valeur juste après un clic — reproduit en navigateur, « maîtrisé »
+    // écrit dans `prepahub:exercises` mais « à faire » affiché à l'écran.
+    // ExerciseManager, lui, a toujours relu la banque (`exercises.find`).
+    const source = read(SESSION_RUNNER);
+    expect(source).toContain("exercises.find((item) => item.id === currentFocusExercise.exercise.id)");
+    expect(source).not.toContain("item={currentFocusExercise.exercise}");
   });
 });
 

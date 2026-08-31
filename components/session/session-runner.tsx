@@ -291,6 +291,25 @@ export function SessionRunner() {
 
   const currentFocusExercise = phase === "focus" ? recommendations[currentIndex] : undefined;
 
+  // L'EXERCICE TEL QU'IL EST MAINTENANT, PAS TEL QU'IL ÉTAIT AU DÉPART.
+  //
+  // `recommendations` est figé au démarrage de la séance (voir
+  // `startSession`) : ses `Exercise` sont des copies datant de ce moment-là.
+  // Passer cette copie à `FocusView` faisait diverger l'écran de la vérité —
+  // reproduit en navigateur : en séance, cliquer « maîtrisé » écrivait bien
+  // `status: "maîtrisé"` dans `prepahub:exercises`, mais le sélecteur
+  // revenait aussitôt sur « à faire », puisqu'il relisait la copie figée.
+  // L'élève reclique, encore, et conclut que le réglage ne prend pas.
+  //
+  // `ExerciseManager` n'a jamais eu le défaut (il fait `exercises.find`) :
+  // c'est bien un oubli ici, pas une règle. On relit donc la banque à jour,
+  // en retombant sur la copie figée si l'exercice a disparu entre-temps —
+  // jamais un écran vide au milieu d'une séance, et surtout jamais un focus
+  // démonté sans que le chrono ait pu enregistrer son travail.
+  const liveFocusExercise = currentFocusExercise
+    ? exercises.find((item) => item.id === currentFocusExercise.exercise.id) ?? currentFocusExercise.exercise
+    : undefined;
+
   // Contenu par phase, calculé (pas retourné directement) pour que chaque
   // transition entre phases passe par le même fondu ci-dessous (voir le
   // `return` final) — la phase "focus" est rendue à part (voir plus bas) :
@@ -668,7 +687,7 @@ export function SessionRunner() {
         {currentFocusExercise && (
           <FocusView
             key="focus-view"
-            item={currentFocusExercise.exercise}
+            item={liveFocusExercise ?? currentFocusExercise.exercise}
             update={update}
             sessions={sessions}
             saveSessions={saveSessions}
