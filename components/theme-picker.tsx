@@ -55,7 +55,7 @@ export function ThemePicker() {
                 onClick={() => chooseMode(option)}
                 aria-pressed={active}
                 className={cn(
-                  "focus-ring flex items-center gap-2 rounded-lg border px-3.5 py-2.5 text-sm font-medium transition-colors",
+                  "focus-ring flex min-h-9 items-center gap-2 rounded-lg border px-3.5 py-2.5 text-sm font-medium transition-colors max-lg:min-h-11",
                   active ? "border-accent/40 bg-accent/10 text-accent" : "border-hairline/[0.09] text-muted hover:border-hairline/[0.14] hover:text-ink"
                 )}
               >

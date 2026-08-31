@@ -477,8 +477,13 @@ export function ExerciseManager() {
             <p className="text-sm text-muted">
               <span className="font-semibold text-ink">{sorted.length}</span> exercice{sorted.length > 1 ? "s" : ""} affiché{sorted.length > 1 ? "s" : ""}
             </p>
-            <div className="flex items-center gap-2">
-              <Select value={sort} onChange={(event) => setSort(event.target.value as ExerciseSort)} className="w-auto min-w-[150px] py-2 text-xs">
+            {/* `min-w-0` + un plancher de largeur réservé à `sm` : le tri
+                garde sa largeur confortable dès qu'il y a la place, mais
+                accepte de se resserrer à 320 px, où le menu et les deux
+                bascules de vue (44 px de côté chacune, au doigt) dépassaient
+                l'écran de 3 px. */}
+            <div className="flex min-w-0 items-center gap-2">
+              <Select value={sort} onChange={(event) => setSort(event.target.value as ExerciseSort)} className="w-auto min-w-0 py-2 text-xs sm:min-w-[150px]">
                 {exerciseSortOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -490,7 +495,7 @@ export function ExerciseManager() {
                   onClick={() => setViewMode("cards")}
                   aria-label="Vue cartes"
                   aria-pressed={viewMode === "cards"}
-                  className={cn("rounded-lg p-1.5 transition", viewMode === "cards" ? "bg-accent/15 text-accent" : "text-muted hover:text-ink")}
+                  className={cn("rounded-lg p-1.5 transition max-lg:min-h-11 max-lg:min-w-11 max-lg:grid max-lg:place-items-center", viewMode === "cards" ? "bg-accent/15 text-accent" : "text-muted hover:text-ink")}
                 >
                   <LayoutGrid size={15} />
                 </button>
@@ -498,7 +503,7 @@ export function ExerciseManager() {
                   onClick={() => setViewMode("list")}
                   aria-label="Vue liste compacte"
                   aria-pressed={viewMode === "list"}
-                  className={cn("rounded-lg p-1.5 transition", viewMode === "list" ? "bg-accent/15 text-accent" : "text-muted hover:text-ink")}
+                  className={cn("rounded-lg p-1.5 transition max-lg:min-h-11 max-lg:min-w-11 max-lg:grid max-lg:place-items-center", viewMode === "list" ? "bg-accent/15 text-accent" : "text-muted hover:text-ink")}
                 >
                   <List size={15} />
                 </button>

@@ -53,7 +53,12 @@ export function ExerciseReviewPanel({
                 <SubjectAvatar subject={exercise.subject} size="sm" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm text-ink">{exercise.title}</span>
+                {/* Deux lignes sous `sm` : à 320 px la rangée n'accorde que
+                    171 px au titre, et six recommandations d'affilée se
+                    lisaient « Résolution d'un systèm... », « Construction
+                    d'image p... » — c'est pourtant sur ce titre qu'on choisit.
+                    Au-delà de `sm`, la rangée reste sur une ligne. */}
+                <span className="block text-sm text-ink max-sm:line-clamp-2 sm:truncate">{exercise.title}</span>
                 <span className="t-meta mt-0.5 block truncate">{reasons.join(" · ")}</span>
               </span>
               <ArrowRight size={15} className="shrink-0 text-subtle" />

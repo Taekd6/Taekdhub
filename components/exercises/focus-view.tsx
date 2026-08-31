@@ -10,6 +10,7 @@ import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryPicker } from "@/components/exercises/exercise-badges";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { RichMath } from "@/components/rich-math";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useWorkTimer } from "@/hooks/use-work-timer";
 import {
   appendAttempt,
@@ -160,9 +161,23 @@ export function FocusView({
   // a alors rien à laisser respirer. `focus-within` (dans le JSX) offre un
   // filet indépendant de ce minuteur pour qui navigue au clavier.
   const [idle, setIdle] = useState(false);
+  /**
+   * … MAIS SEULEMENT LÀ OÙ IL Y A UN POINTEUR À BOUGER.
+   *
+   * Au doigt, « tout mouvement les fait réapparaître » n'existe pas : il n'y
+   * a pas de survol, seulement des appuis. Une fois le bandeau effacé, il
+   * fallait donc taper une première fois DANS LE VIDE (pour le rappeler) puis
+   * une seconde sur le bouton — sans que rien à l'écran ne le laisse deviner,
+   * puisque le seul rappel affiché parle d'Échap et de barre d'espace. En
+   * clair : au bout de 2,8 s, un élève dans le métro n'avait plus aucun moyen
+   * VISIBLE de mettre en pause ni de terminer sa séance. Le chrono continuait.
+   *
+   * Le geste garde tout son sens à la souris — il y reste inchangé.
+   */
+  const pointerFine = useMediaQuery("(pointer: fine)");
   const scrollAreaRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (draftSession) return;
+    if (draftSession || !pointerFine) return;
     let timeout: ReturnType<typeof setTimeout>;
     function resetIdle() {
       setIdle(false);
@@ -182,8 +197,8 @@ export function FocusView({
       window.removeEventListener("touchstart", resetIdle);
       scrollArea?.removeEventListener("scroll", resetIdle);
     };
-  }, [draftSession]);
-  const chromeHidden = idle && running && !draftSession;
+  }, [draftSession, pointerFine]);
+  const chromeHidden = pointerFine && idle && running && !draftSession;
 
   // Arrête le timer et construit la WorkSession SANS la sauvegarder ni fermer
   // le focus — voir `commitResult`, seul endroit qui la sauvegarde vraiment,
@@ -326,8 +341,17 @@ export function FocusView({
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } }}
         exit={{ opacity: 0, transition: { duration: 0.15 } }}
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-7 bg-canvas px-6 text-center"
+        /* DÉFILABLE, et centré seulement s'il reste de la place.
+           `justify-center` seul sur un `inset-0` non défilable rogne le
+           contenu des DEUX côtés dès qu'il dépasse. Mesuré à 320 × 480 avec
+           le message d'échec de sauvegarde affiché : le titre touchait le
+           bord haut et « Passer » était coupé en bas, sans aucun défilement
+           pour l'atteindre — précisément l'écran où l'élève doit agir. Le
+           `min-h-full` de l'enveloppe intérieure garde le centrage tant que
+           tout tient, et bascule en défilement normal sinon. */
+        className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-canvas"
       >
+      <div className="flex min-h-full flex-col items-center justify-center gap-7 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 text-center">
         <div>
           <p className="text-base font-semibold text-ink">Comment s&apos;est passé l&apos;exercice ?</p>
           <p className="mt-1.5 text-sm text-muted">{item.title}</p>
@@ -356,7 +380,7 @@ export function FocusView({
             <span className="flex items-center gap-3">
               <CheckCircle2 size={18} /> Réussi
             </span>
-            <kbd className="rounded border border-emerald-400/25 px-1.5 py-0.5 text-2xs">1</kbd>
+            {pointerFine && <kbd className="rounded border border-emerald-400/25 px-1.5 py-0.5 text-2xs">1</kbd>}
           </Button>
           <Button
             size="lg"
@@ -366,7 +390,7 @@ export function FocusView({
             <span className="flex items-center gap-3">
               <MinusCircle size={18} /> Partiellement réussi
             </span>
-            <kbd className="rounded border border-amber-400/25 px-1.5 py-0.5 text-2xs">2</kbd>
+            {pointerFine && <kbd className="rounded border border-amber-400/25 px-1.5 py-0.5 text-2xs">2</kbd>}
           </Button>
           <Button
             size="lg"
@@ -376,16 +400,17 @@ export function FocusView({
             <span className="flex items-center gap-3">
               <XCircle size={18} /> Échoué
             </span>
-            <kbd className="rounded border border-rose-400/25 px-1.5 py-0.5 text-2xs">3</kbd>
+            {pointerFine && <kbd className="rounded border border-rose-400/25 px-1.5 py-0.5 text-2xs">3</kbd>}
           </Button>
         </div>
         <button
           type="button"
           onClick={() => commitResult(null)}
-          className="focus-ring rounded-lg px-2 py-1 text-xs text-subtle underline underline-offset-2 transition hover:text-muted"
+          className="focus-ring min-h-11 rounded-lg px-4 text-xs text-subtle underline underline-offset-2 transition hover:text-muted"
         >
-          Passer <span className="no-underline">(Échap)</span>
+          Passer{pointerFine && <span className="no-underline"> (Échap)</span>}
         </button>
+      </div>
       </motion.div>
       ) : (
       <motion.div
@@ -567,14 +592,21 @@ export function FocusView({
         </div>
       </div>
 
-      <footer
-        className={cn(
-          "border-t border-hairline/[0.07] px-6 py-4 text-center text-xs text-subtle transition-opacity duration-500",
-          chromeHidden ? "opacity-0" : "opacity-100"
-        )}
-      >
-        Échap pour quitter · Barre d&apos;espace pour le timer
-      </footer>
+      {/* Rappel de raccourcis — donc rien à dire à qui n'a pas de clavier :
+          au doigt, cette bande ne faisait que retirer 45 px d'énoncé pour
+          nommer deux touches introuvables. Les commandes équivalentes
+          (Pause, Terminer) sont dans le bandeau du haut, qui reste affiché
+          en permanence sur ces appareils (voir `pointerFine`). */}
+      {pointerFine && (
+        <footer
+          className={cn(
+            "border-t border-hairline/[0.07] px-6 py-4 text-center text-xs text-subtle transition-opacity duration-500",
+            chromeHidden ? "opacity-0" : "opacity-100"
+          )}
+        >
+          Échap pour quitter · Barre d&apos;espace pour le timer
+        </footer>
+      )}
       </motion.div>
       )}
     </AnimatePresence>

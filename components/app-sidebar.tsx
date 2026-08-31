@@ -79,9 +79,13 @@ function NavLink({ href, label, icon: Icon, compact }: { href: string; label: st
       className={cn(
         "focus-ring group relative flex items-center gap-3 rounded-lg px-2.5 py-[0.4375rem] text-sm transition-colors duration-150",
         active ? "font-medium text-ink" : "text-muted hover:text-ink",
-        // 44 px de côté en mode compact : c'est la barre du BAS sur mobile,
-        // donc le contrôle le plus touché de toute l'application.
-        compact ? "min-h-11 min-w-11 justify-center px-2" : ""
+        // 44 px de HAUT en mode compact : c'est la barre du BAS sur mobile,
+        // donc le contrôle le plus touché de toute l'application. La largeur,
+        // elle, n'est plus un minimum fixe mais la colonne entière (voir la
+        // grille de la barre ci-dessous) : à 320 px, sept minimums de 44 px
+        // plus les gouttières demandaient 348 px — la septième entrée
+        // (Réglages) sortait de l'écran, à moitié coupée et intouchable.
+        compact ? "min-h-11 w-full justify-center px-0" : ""
       )}
       title={compact ? label : undefined}
     >
@@ -160,7 +164,15 @@ export function AppSidebar() {
 
       <nav
         aria-label="Navigation principale"
-        className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-around gap-1 border-t border-hairline/[0.09] bg-panel px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 lg:hidden"
+        // Grille d'autant de colonnes égales qu'il y a d'entrées, plutôt
+        // qu'une rangée flex de largeurs minimales : la barre s'ajuste à
+        // l'écran au lieu de le déborder, et chaque entrée occupe SA colonne
+        // entière — plus aucune gouttière morte entre deux cibles. Le nombre
+        // vient de la liste elle-même : ajouter une entrée resserre la barre
+        // au lieu de la faire déborder (ce qui ne dispense pas de la règle
+        // des sept, documentée plus haut).
+        style={{ gridTemplateColumns: `repeat(${compactItems.length}, minmax(0, 1fr))` }}
+        className="fixed inset-x-0 bottom-0 z-40 grid items-center border-t border-hairline/[0.09] bg-panel px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 lg:hidden"
       >
         {compactItems.map((item) => (
           <NavLink key={item.href} {...item} compact />

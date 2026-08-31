@@ -47,10 +47,12 @@ export function SegmentedControl<T extends string | number>({
             onClick={() => onChange(option.value)}
             aria-pressed={active}
             className={cn(
-              // `min-h-9`/`max-lg:min-h-10` : même raison que les tailles de
+              // `min-h-8`/`max-lg:min-h-11` : même raison que les tailles de
               // `Button` (voir components/ui/button.tsx) — mesuré à 28 px de
-              // haut avant correction, bien trop court au doigt.
-              "focus-ring min-h-8 rounded-[0.4rem] px-2.5 text-xs font-medium transition-colors max-lg:min-h-10",
+              // haut à l'origine, puis 40, toujours sous les 44 px que ce
+              // même dépôt s'impose ailleurs. C'est le contrôle qui règle la
+              // durée de la séance du jour : il se touche debout.
+              "focus-ring min-h-8 rounded-[0.4rem] px-2.5 text-xs font-medium transition-colors max-lg:min-h-11",
               // Pastille SURÉLEVÉE plutôt que teintée : une teinte d'accent à
               // 15 % se distinguait à peine de la piste en thème clair (deux
               // gris pâles côte à côte). Un fond de panneau plus une ombre

@@ -68,7 +68,13 @@ function ExerciseListRowImpl({
           <SubjectAvatar subject={item.subject} size="sm" />
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5">
-              <span className="min-w-0 truncate text-sm text-ink">{item.title}</span>
+              {/* Deux lignes plutôt qu'une coupe sèche sous `sm` : à 320 px il
+                  ne reste que 171 px pour le titre une fois l'avatar, les
+                  actions et le chevron placés — « Résolution d'... », « Ce
+                  que... », soit une liste où l'on ne peut plus choisir. Au
+                  delà de `sm`, la rangée garde exactement sa densité d'une
+                  ligne. */}
+              <span className="min-w-0 text-sm text-ink max-sm:line-clamp-2 sm:truncate">{item.title}</span>
               {item.favorite && <Heart size={11} className="shrink-0 text-rose-300" fill="currentColor" />}
             </span>
             {/* La matière n'est pas répétée en texte : l'avatar coloré à

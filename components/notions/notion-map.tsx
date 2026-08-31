@@ -131,6 +131,12 @@ export function NotionSubjectBand({
             // des premières tuiles le délai est constant — sur 600 notions,
             // un délai proportionnel finirait à la minute.
             transition={{ duration: 0.18, delay: Math.min(index, 24) * 0.008 }}
+            // Le `max-w-full` de la tuile se mesure sur CE conteneur : sans
+            // contrainte ici, un nom de notion long (« équations
+            // différentielles linéaires… ») poussait l'élément flex au-delà
+            // de l'écran — 12 px de débordement horizontal à 320 px, sur
+            // toute la page.
+            className="min-w-0 max-w-full"
           >
             <NotionTile evidence={item} selected={selectedNotion === item.notion} onSelect={() => onSelect(item)} />
           </motion.div>

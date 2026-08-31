@@ -236,7 +236,7 @@ export function NotionRadiography() {
                     onClick={() => setSubjectFilter(option as Subject | "Toutes")}
                     aria-pressed={subjectFilter === option}
                     className={cn(
-                      "focus-ring inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors max-lg:min-h-10",
+                      "focus-ring inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors max-lg:min-h-11",
                       subjectFilter === option
                         ? "border-accent/40 bg-accent/10 text-accent"
                         : "border-hairline/[0.09] text-muted hover:bg-inset hover:text-ink"

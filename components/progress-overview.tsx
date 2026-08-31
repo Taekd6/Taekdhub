@@ -496,7 +496,12 @@ export function ProgressOverview() {
                           )}
                         </>
                       );
-                      const tileClassName = "block rounded-lg border border-hairline/[0.07] p-3";
+                      // `min-w-0` : sans lui, la tuile vaut `min-width: auto`
+                      // et refuse de descendre sous sa largeur intrinsèque —
+                      // mesuré à 320 px, la grille faisait 315 px pour 288 px
+                      // disponibles, et TOUTE la page partait en défilement
+                      // horizontal.
+                      const tileClassName = "block min-w-0 rounded-lg border border-hairline/[0.07] p-3";
                       return nextExerciseId ? (
                         <Link
                           key={chapter.id}

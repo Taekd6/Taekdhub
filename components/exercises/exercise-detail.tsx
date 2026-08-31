@@ -45,8 +45,15 @@ export function ExerciseDetail({
   const results = resultCounts(pastSessions);
 
   return (
+    /* `min-w-0` sur CHAQUE cellule, pas seulement sur la grille : une cellule
+       de grille vaut `min-width: auto` par défaut, donc elle refuse de
+       descendre sous la largeur intrinsèque de son contenu — ici l'aperçu
+       LaTeX de l'énoncé. Mesuré à 320 px : la colonne faisait 342 px dans une
+       carte de 286 px, et `overflow-hidden` (components/exercises/exercise-card.tsx)
+       coupait net les 56 px du bord droit — le champ d'énoncé continuait
+       hors de l'écran, sans le moindre défilement pour aller le chercher. */
     <div className="grid gap-5 bg-inset p-5 md:grid-cols-2">
-      <div className="md:col-span-2">
+      <div className="min-w-0 md:col-span-2">
         <p className="eyebrow">Énoncé</p>
         <Textarea
           value={item.statement || ""}
@@ -61,7 +68,7 @@ export function ExerciseDetail({
           </div>
         )}
       </div>
-      <div>
+      <div className="min-w-0">
         <p className="eyebrow">Notes</p>
         <Textarea
           value={item.note || ""}
@@ -70,7 +77,7 @@ export function ExerciseDetail({
           placeholder="Ce que tu veux retenir, les erreurs à éviter…"
         />
       </div>
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="eyebrow">Mode résolution</p>
           <div className="flex items-center gap-4 text-xs text-muted">
@@ -228,7 +235,7 @@ export function ExerciseDetail({
         )}
       </div>
 
-      <div className="md:col-span-2">
+      <div className="min-w-0 md:col-span-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="eyebrow">Séances</p>
           {results.attempted > 0 && (

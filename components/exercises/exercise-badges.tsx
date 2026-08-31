@@ -45,7 +45,7 @@ export function MasteryBar({ value }: { value: Mastery }) {
 export function MasteryPicker({ value, onChange }: { value: Mastery; onChange: (value: Mastery) => void }) {
   const options: Mastery[] = [0, 25, 50, 75, 100];
   return (
-    <div className="inline-flex gap-1" role="group" aria-label="Maîtrise">
+    <div className="inline-flex flex-wrap gap-1" role="group" aria-label="Maîtrise">
       {options.map((option) => (
         <motion.button
           key={option}
@@ -54,7 +54,12 @@ export function MasteryPicker({ value, onChange }: { value: Mastery; onChange: (
           onClick={() => onChange(option)}
           aria-pressed={value === option}
           className={cn(
-            "rounded-md px-2 py-1 text-2xs font-semibold tabular-nums transition",
+            // 24 px de haut au doigt (mesuré) pour cinq cibles collées :
+            // c'est le réglage de maîtrise, on le touche une fois l'exercice
+            // fini — `max-lg:` ne change rien à la densité du bureau. La
+            // HAUTEUR seulement : cinq largeurs de 44 px ne tiennent pas dans
+            // les 246 px de la fiche à 320 px (essayé, la rangée débordait).
+            "rounded-md px-2 py-1 text-2xs font-semibold tabular-nums transition max-lg:min-h-11",
             value === option ? "bg-sky-400/20 text-sky-200" : "bg-hairline/[0.04] text-muted hover:bg-hairline/[0.08] hover:text-ink"
           )}
         >
