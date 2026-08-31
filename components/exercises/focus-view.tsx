@@ -240,11 +240,16 @@ export function FocusView({
       setSaveFailed(false);
       if (draftSession) {
         const finalSession: WorkSession = { ...draftSession, result };
+        // `appendAttempt` plutôt qu'un ajout en tête : une même tentative
+        // (même identifiant) n'entre jamais deux fois dans l'historique,
+        // maintenant qu'un brouillon peut être relu par plusieurs montages.
+        // Il rend le tableau REÇU à l'identique quand la tentative y est
+        // déjà : c'est ce qui permet, plus bas, de ne pas recompter la
+        // tentative sur la fiche.
+        const withAttempt = appendAttempt(finalSession, sessions);
+        const alreadyRecorded = withAttempt === sessions;
         try {
-          // `appendAttempt` plutôt qu'un ajout en tête : une même tentative
-          // (même identifiant) n'entre jamais deux fois dans l'historique,
-          // maintenant qu'un brouillon peut être relu par plusieurs montages.
-          saveSessions(appendAttempt(finalSession, sessions));
+          saveSessions(withAttempt);
         } catch {
           // Le stockage a refusé (quota dépassé, mode privé, disque plein).
           // Le brouillon N'EST PAS effacé : c'est la seule copie du travail,
@@ -262,7 +267,12 @@ export function FocusView({
         }
         // Sauvegarde acquise : le brouillon n'a plus de raison d'être.
         clearPendingAttempt(item.id);
-        if (secondsToWholeMinutes(finalSession.duration_seconds) > 0) {
+        // `alreadyRecorded` : si le stockage refuse d'effacer le brouillon
+        // (mode privé, quota), l'écran de résultat peut revenir pour une
+        // séance DÉJÀ enregistrée. `appendAttempt` empêche le doublon de
+        // séance, mais rien n'empêchait ce compteur de monter une seconde
+        // fois — reproduit : `attempts: 2` pour une seule tentative réelle.
+        if (!alreadyRecorded && secondsToWholeMinutes(finalSession.duration_seconds) > 0) {
           try {
             update(item.id, { attempts: item.attempts + 1, last_worked_at: new Date().toISOString() });
           } catch {

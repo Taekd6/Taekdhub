@@ -595,6 +595,72 @@ export function normalizePreferences(raw: unknown): Preferences {
  * Une valeur qui n'est pas un tableau est traitée comme absente pour la même
  * raison : `JSON.parse("42").map` lèverait tout autant.
  */
+/**
+ * ACCÈS À sessionStorage QUI NE LÈVE JAMAIS.
+ *
+ * `localStorage` était déjà protégé : tout passe par `readList`/`readRecord`,
+ * qui attrapent. `sessionStorage`, lui, était accédé brut en dix-sept
+ * endroits — chrono, brouillon de séance, aide consultée, plan du jour.
+ *
+ * Or un navigateur a parfaitement le droit de REFUSER : Safari en navigation
+ * privée, un réglage « bloquer les données de site », un profil d'entreprise.
+ * `getItem` lève alors une `SecurityError`. Comme ces appels ont lieu pendant
+ * le rendu et dans les effets, l'exception remontait l'arbre React entier.
+ * Reproduit : `/session` et `/timer` — les deux pages les plus importantes du
+ * produit — s'affichaient ENTIÈREMENT BLANCHES, sans un message.
+ *
+ * Les trois opérations sont volontairement silencieuses, et pour trois
+ * raisons distinctes :
+ * - LIRE : un stockage qui refuse ne contient rien d'exploitable. « Rien en
+ *   attente » est la réponse honnête, et c'est exactement l'état par défaut.
+ * - EFFACER : c'est du nettoyage. Son échec ne doit jamais interrompre ce qui
+ *   l'a déclenché — sans quoi un refus d'effacement empêchait l'élève de
+ *   TERMINER sa séance (reproduit : Échap sans effet, chrono figé à 42:05).
+ * - ÉCRIRE : ce que sessionStorage porte est du confort de reprise, jamais
+ *   une donnée irremplaçable. Son échec fait retomber le produit sur le
+ *   comportement d'avant ces mécanismes, pas sur une perte. La seule donnée
+ *   qui compte vraiment, l'historique des séances, vit dans localStorage et
+ *   signale bruyamment ses échecs (voir `commitResult`, focus-view.tsx).
+ */
+export function sessionRead(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function sessionWrite(key: string, value: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // Voir la doc ci-dessus : reprise dégradée, jamais perte.
+  }
+}
+
+export function sessionRemove(key: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Nettoyage best-effort : ne doit jamais bloquer l'appelant.
+  }
+}
+
+/** Clés présentes en sessionStorage — `[]` si le stockage refuse d'être énuméré. */
+export function sessionKeys(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return Array.from({ length: sessionStorage.length }, (_, index) => sessionStorage.key(index)).filter(
+      (key): key is string => key !== null
+    );
+  } catch {
+    return [];
+  }
+}
+
 function readList(key: string): unknown[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(key) || "[]");

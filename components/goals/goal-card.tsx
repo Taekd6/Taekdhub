@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { sessionWrite } from "@/lib/storage";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarClock, CheckCircle2, PlayCircle, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -59,7 +60,7 @@ export function GoalCard({
     const plan = computeDailyPlan(scopeToGoal(goal, exercises), sessions, chapters, dailyGoalMinutes, new Date(), null);
     const stored = serializeGoalsDailyPlan([{ goal, readiness, plan }]);
     if (stored.items.length === 0) return;
-    sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(stored));
+    sessionWrite(PLAN_STORAGE_KEY, JSON.stringify(stored));
     router.push("/session");
   }
 

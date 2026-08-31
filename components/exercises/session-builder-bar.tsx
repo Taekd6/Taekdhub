@@ -1,6 +1,7 @@
 "use client";
 
 import { PlayCircle } from "lucide-react";
+import { sessionWrite } from "@/lib/storage";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,7 @@ export function SessionBuilderBar({ exercises, sessions }: { exercises: Exercise
 
   const start = () => {
     const plan = buildFreeSessionPlan(exercises, sessions, effectiveCount);
-    sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(plan));
+    sessionWrite(PLAN_STORAGE_KEY, JSON.stringify(plan));
     router.push("/session");
   };
 

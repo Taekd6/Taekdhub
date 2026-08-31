@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { sessionWrite } from "@/lib/storage";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight, BookOpenCheck, CheckCircle2, ChevronRight, Flame, ListChecks, Trophy } from "lucide-react";
@@ -116,7 +117,7 @@ export function DashboardOverview() {
   // sélection n'est recalculée côté /session.
   const startPlan = useCallback(() => {
     const stored = hasGoalPlan ? serializeGoalsDailyPlan(goalPlans) : serializePlan(dailyPlan);
-    sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(stored));
+    sessionWrite(PLAN_STORAGE_KEY, JSON.stringify(stored));
     router.push("/session");
   }, [hasGoalPlan, goalPlans, dailyPlan, router]);
 

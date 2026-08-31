@@ -80,7 +80,7 @@ describe("une séance ne peut pas disparaître entre l'arrêt du chrono et la sa
     // la dernière trace de la séance. L'idempotence ne dépend pas de cet
     // ordre : elle vient de l'identifiant, dans `appendAttempt`.
     const source = read(FOCUS_VIEW);
-    const sauvegarde = source.indexOf("saveSessions(appendAttempt(");
+    const sauvegarde = source.indexOf("saveSessions(withAttempt)");
     const effacement = source.indexOf("clearPendingAttempt(item.id)");
     expect(sauvegarde).toBeGreaterThan(-1);
     expect(effacement).toBeGreaterThan(-1);
@@ -118,6 +118,26 @@ describe("aucun moteur ne doit recevoir une aide inventée", () => {
     // affirmerait que l'élève a conclu sans la lire.
     expect(read(TIMER)).toContain("correction_viewed: null");
     expect(read(TIMER)).not.toContain("correction_viewed: false");
+  });
+
+  it("la tentative n'est comptée sur la fiche que si elle vient d'ENTRER dans l'historique", () => {
+    // Si le stockage refuse d'effacer le brouillon (mode privé, quota),
+    // l'écran de résultat peut revenir pour une séance DÉJÀ enregistrée.
+    // `appendAttempt` empêche le doublon de séance — il rend le tableau reçu
+    // à l'identique — mais rien n'empêchait `attempts` de monter une seconde
+    // fois. Reproduit en navigateur : `attempts: 2` pour une seule tentative.
+    const source = read(FOCUS_VIEW);
+    expect(source).toContain("const alreadyRecorded = withAttempt === sessions;");
+    expect(source).toContain("if (!alreadyRecorded &&");
+  });
+
+  it("aucun accès brut à sessionStorage : tout passe par les accès gardés", () => {
+    // Un `getItem` qui lève (Safari privé, données de site bloquées)
+    // remontait tout l'arbre React : `/session` et `/timer` s'affichaient
+    // entièrement blanches. Les accès gardés vivent dans lib/storage.ts.
+    for (const file of [FOCUS_VIEW, SESSION_RUNNER, EXERCISE_MANAGER, TIMER, EXERCISE_DETAIL, "hooks/use-work-timer.ts", "lib/attempt.ts"]) {
+      expect(read(file)).not.toMatch(/\bsessionStorage\.(getItem|setItem|removeItem|key|length)/);
+    }
   });
 
   it("le seuil d'une minute reste attaché aux compteurs de la fiche", () => {

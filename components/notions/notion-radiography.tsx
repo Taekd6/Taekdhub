@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { sessionWrite } from "@/lib/storage";
 import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Crosshair } from "lucide-react";
@@ -103,7 +104,7 @@ export function NotionRadiography() {
    */
   const startNotionSession = useCallback(
     (evidence: NotionEvidence) => {
-      sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(buildNotionSessionPlan(evidence, sessions)));
+      sessionWrite(PLAN_STORAGE_KEY, JSON.stringify(buildNotionSessionPlan(evidence, sessions)));
       router.push("/session");
     },
     [sessions, router]

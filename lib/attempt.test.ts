@@ -1,11 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   appendAttempt,
+  clearPendingAttempt,
+  markAidSeen,
   parseAidSeen,
   parsePendingAttempt,
   pendingAttemptKey,
+  readAidSeen,
+  readPendingAttempt,
   resolveAttemptAid,
   resumeAid,
+  writePendingAttempt,
   PENDING_ATTEMPT_PREFIX,
 } from "@/lib/attempt";
 import type { WorkSession } from "@/lib/supabase/types";
@@ -225,5 +230,72 @@ describe("l'aide consultée AILLEURS que dans la séance", () => {
   it("seul `true` compte comme consultation — une valeur douteuse n'accuse personne", () => {
     expect(parseAidSeen('{"hint":1,"correction":"true"}')).toEqual(rien);
     expect(parseAidSeen('{"hint":true,"correction":true}')).toEqual({ hint: true, correction: true });
+  });
+});
+
+describe("un stockage qui REFUSE ne doit jamais faire tomber l'écran", () => {
+  /**
+   * Safari en navigation privée, un réglage « bloquer les données de site »,
+   * un profil d'entreprise : `getItem` lève alors une `SecurityError`. Ces
+   * appels ayant lieu pendant le rendu et dans les effets, l'exception
+   * remontait tout l'arbre React. Reproduit en navigateur : `/session` et
+   * `/timer` — les deux pages les plus importantes — s'affichaient
+   * ENTIÈREMENT BLANCHES, sans un message.
+   */
+  const vraiWindow = (globalThis as { window?: unknown }).window;
+  const vraiSession = (globalThis as { sessionStorage?: unknown }).sessionStorage;
+
+  function stockageQuiRefuse() {
+    const refuser = () => {
+      const erreur = new Error("SecurityError");
+      erreur.name = "SecurityError";
+      throw erreur;
+    };
+    (globalThis as { window?: unknown }).window = {};
+    (globalThis as { sessionStorage?: unknown }).sessionStorage = {
+      getItem: refuser,
+      setItem: refuser,
+      removeItem: refuser,
+      key: refuser,
+      get length(): number {
+        return refuser() as never;
+      },
+    };
+  }
+
+  afterEach(() => {
+    (globalThis as { window?: unknown }).window = vraiWindow;
+    (globalThis as { sessionStorage?: unknown }).sessionStorage = vraiSession;
+  });
+
+  it("lire une tentative en attente rend `null` au lieu de lever", () => {
+    stockageQuiRefuse();
+    expect(() => readPendingAttempt("ex-1")).not.toThrow();
+    expect(readPendingAttempt("ex-1")).toBeNull();
+  });
+
+  it("lire l'aide consultée rend « rien vu » au lieu de lever", () => {
+    stockageQuiRefuse();
+    expect(() => readAidSeen("ex-1")).not.toThrow();
+    expect(readAidSeen("ex-1")).toEqual({ hint: false, correction: false });
+  });
+
+  it("écrire un brouillon échoue en silence : c'est du confort de reprise, pas une donnée irremplaçable", () => {
+    stockageQuiRefuse();
+    expect(() =>
+      writePendingAttempt({ ...makeSession(), exercise_id: "ex-1" })
+    ).not.toThrow();
+  });
+
+  it("effacer un brouillon ne bloque JAMAIS l'appelant", () => {
+    // Un refus d'effacement empêchait l'élève de TERMINER sa séance :
+    // Échap restait sans effet, le chrono figé à 42:05.
+    stockageQuiRefuse();
+    expect(() => clearPendingAttempt("ex-1")).not.toThrow();
+  });
+
+  it("noter une aide consultée échoue en silence", () => {
+    stockageQuiRefuse();
+    expect(() => markAidSeen("ex-1", "correction")).not.toThrow();
   });
 });

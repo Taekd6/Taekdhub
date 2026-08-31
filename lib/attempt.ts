@@ -1,4 +1,4 @@
-import { normalizeSession } from "@/lib/storage";
+import { normalizeSession, sessionRead, sessionRemove, sessionWrite } from "@/lib/storage";
 import type { WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -120,16 +120,14 @@ export function parseAidSeen(raw: string | null): AidSeenElsewhere {
 }
 
 export function readAidSeen(exerciseId: string): AidSeenElsewhere {
-  if (typeof window === "undefined") return { hint: false, correction: false };
-  return parseAidSeen(sessionStorage.getItem(aidSeenKey(exerciseId)));
+  return parseAidSeen(sessionRead(aidSeenKey(exerciseId)));
 }
 
 /** Note qu'une aide a été consultée hors séance. Cumulatif : un indice affiché n'efface pas une correction déjà lue. */
 export function markAidSeen(exerciseId: string, kind: keyof AidSeenElsewhere): void {
-  if (typeof window === "undefined") return;
   const current = readAidSeen(exerciseId);
   if (current[kind]) return;
-  sessionStorage.setItem(aidSeenKey(exerciseId), JSON.stringify({ ...current, [kind]: true }));
+  sessionWrite(aidSeenKey(exerciseId), JSON.stringify({ ...current, [kind]: true }));
 }
 
 /**
@@ -187,18 +185,16 @@ export function parsePendingAttempt(raw: string | null, exerciseId: string): Wor
 }
 
 export function readPendingAttempt(exerciseId: string): WorkSession | null {
-  if (typeof window === "undefined") return null;
-  return parsePendingAttempt(sessionStorage.getItem(pendingAttemptKey(exerciseId)), exerciseId);
+  return parsePendingAttempt(sessionRead(pendingAttemptKey(exerciseId)), exerciseId);
 }
 
 export function writePendingAttempt(draft: WorkSession): void {
-  if (typeof window === "undefined" || !draft.exercise_id) return;
-  sessionStorage.setItem(pendingAttemptKey(draft.exercise_id), JSON.stringify(draft));
+  if (!draft.exercise_id) return;
+  sessionWrite(pendingAttemptKey(draft.exercise_id), JSON.stringify(draft));
 }
 
 export function clearPendingAttempt(exerciseId: string): void {
-  if (typeof window === "undefined") return;
-  sessionStorage.removeItem(pendingAttemptKey(exerciseId));
+  sessionRemove(pendingAttemptKey(exerciseId));
 }
 
 /**

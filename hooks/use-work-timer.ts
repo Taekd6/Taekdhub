@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { sessionKeys, sessionRead, sessionRemove, sessionWrite } from "@/lib/storage";
 
 /**
  * État persisté d'une séance chronométrée (Timer plein écran ou FocusView).
@@ -46,12 +47,12 @@ export interface WorkTimerResult<TContext> {
 
 function readSnapshot<TContext>(storageKey: string): WorkTimerSnapshot<TContext> | null {
   if (typeof window === "undefined") return null;
-  const raw = sessionStorage.getItem(storageKey);
+  const raw = sessionRead(storageKey);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as WorkTimerSnapshot<TContext>;
   } catch {
-    sessionStorage.removeItem(storageKey);
+    sessionRemove(storageKey);
     return null;
   }
 }
@@ -72,9 +73,8 @@ function computeElapsedSeconds(snapshot: WorkTimerSnapshot<unknown> | null): num
  */
 export function findPersistedSessionSuffix(prefix: string): string | null {
   if (typeof window === "undefined") return null;
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const key = sessionStorage.key(i);
-    if (key?.startsWith(prefix)) return key.slice(prefix.length);
+  for (const key of sessionKeys()) {
+    if (key.startsWith(prefix)) return key.slice(prefix.length);
   }
   return null;
 }
@@ -108,10 +108,10 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!snapshot) {
-      sessionStorage.removeItem(storageKey);
+      sessionRemove(storageKey);
       return;
     }
-    sessionStorage.setItem(storageKey, JSON.stringify(snapshot));
+    sessionWrite(storageKey, JSON.stringify(snapshot));
     if (!snapshot.runningSince) return;
     const id = setInterval(() => setSeconds(computeElapsedSeconds(snapshot)), 1000);
     return () => clearInterval(id);
@@ -173,7 +173,7 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
       // de persistance pour réagir à `snapshot === null`, car l'appelant
       // (ex. FocusView) démonte souvent le composant dans la même mise à
       // jour (onClose juste après stop()), avant que cet effet ne rejoue.
-      if (typeof window !== "undefined") sessionStorage.removeItem(storageKey);
+      sessionRemove(storageKey);
       setSnapshot(null);
       setSeconds(0);
     },

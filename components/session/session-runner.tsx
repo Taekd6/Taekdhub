@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { sessionRead, sessionRemove } from "@/lib/storage";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Sparkles, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -141,7 +142,7 @@ export function SessionRunner() {
     // moment qui correspond à une consommation réelle et définitive — voir
     // sa doc plus bas pour le compromis assumé (page quittée sans démarrer :
     // le plan reste disponible pour la prochaine visite de /session).
-    const storedPlanRaw = sessionStorage.getItem(PLAN_STORAGE_KEY);
+    const storedPlanRaw = sessionRead(PLAN_STORAGE_KEY);
     if (storedPlanRaw) {
       try {
         const stored = JSON.parse(storedPlanRaw) as StoredPlan;
@@ -252,7 +253,7 @@ export function SessionRunner() {
   // laisser une visite ultérieure de /session réutiliser un plan déjà
   // affiché puis explicitement lancé.
   const startSession = useCallback(() => {
-    if (planSelection) sessionStorage.removeItem(PLAN_STORAGE_KEY);
+    if (planSelection) sessionRemove(PLAN_STORAGE_KEY);
     setRecommendations(previewSelection);
     setCurrentIndex(0);
     setPhase("focus");
