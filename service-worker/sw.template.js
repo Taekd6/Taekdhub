@@ -11,10 +11,33 @@
 // version affiché.
 const CACHE_VERSION = "__CACHE_VERSION__";
 
-// Les six écrans de l'app + l'accueil public — préchargés à l'installation
-// pour qu'un rechargement hors ligne fonctionne dès la première visite, sans
-// attendre d'avoir déjà ouvert chaque page une fois en ligne.
-const APP_SHELL_ROUTES = ["/", "/dashboard", "/session", "/timer", "/exercises", "/contests", "/history", "/progress", "/settings"];
+// TOUTES les pages de l'app + l'accueil public — préchargées à
+// l'installation pour qu'un rechargement hors ligne fonctionne dès la
+// première visite, sans attendre d'avoir déjà ouvert chaque page en ligne.
+//
+// Cette liste avait DÉRIVÉ : son commentaire annonçait « les six écrans » en
+// en listant neuf, et deux destinations de la barre de navigation —
+// Radiographie (`/notions`) et Objectifs (`/goals`) — n'y figuraient pas.
+// Hors ligne, un élève qui ne les avait jamais ouvertes en ligne tombait sur
+// une erreur réseau : `networkFirst` n'a alors ni réseau ni entrée en cache.
+// Sur un produit local-first destiné aux transports, c'est deux écrans sur
+// dix simplement absents.
+//
+// `lib/pwa-routes.test.ts` compare désormais cette liste au contenu réel de
+// `app/` : ajouter une page sans l'inscrire ici fait échouer la suite.
+const APP_SHELL_ROUTES = [
+  "/",
+  "/dashboard",
+  "/session",
+  "/timer",
+  "/exercises",
+  "/notions",
+  "/contests",
+  "/goals",
+  "/history",
+  "/progress",
+  "/settings",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
