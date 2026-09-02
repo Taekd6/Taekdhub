@@ -7,25 +7,18 @@ import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-sn
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 
 /**
- * Amorce la banque au tout premier lancement (voir lib/seed.ts). Idempotent
- * et non destructif :
- * - marqueur déjà posé → ne fait rien (même si l'utilisateur a vidé sa banque
- *   depuis : sa décision est respectée) ;
- * - données déjà présentes (utilisateur existant / import manuel / sauvegarde
- *   restaurée) → pose juste le marqueur, sans rien écraser ;
- * - stockage vide → charge la banque groupée, puis pose le marqueur.
- *   En cas d'échec (réseau/chunk), le marqueur n'est PAS posé → nouvel essai
- *   au prochain montage.
+ * Amorce et met à jour la banque locale sans écraser la progression de l'élève.
+ * Une banque existante sans version (cas des anciennes installations) doit
+ * passer par la réconciliation : poser directement la version courante ici
+ * ferait croire que les nouveaux exercices ont déjà été appliqués.
  */
 async function maybeSeedBank(): Promise<void> {
   if (typeof window === "undefined") return;
 
-  if (!localStorage.getItem(SEED_FLAG_KEY)) {
-    if (localData.exercises().length > 0) {
-      localStorage.setItem(SEED_FLAG_KEY, new Date().toISOString());
-      localStorage.setItem(SEED_VERSION_KEY, String(SEED_CONTENT_VERSION));
-      return;
-    }
+  const hasSeedFlag = Boolean(localStorage.getItem(SEED_FLAG_KEY));
+  const localExercises = localData.exercises();
+
+  if (!hasSeedFlag && localExercises.length === 0) {
     try {
       const { exercises, chapters } = await loadSeedBank();
       if (exercises.length === 0) return;
@@ -39,20 +32,20 @@ async function maybeSeedBank(): Promise<void> {
     return;
   }
 
-  // Banque déjà amorcée, mais à une version antérieure du contenu : on la
-  // rattrape. Sans cela, la banque d'un élève restait figée sur la version du
-  // jour de sa première visite — un élève arrivé quand elle comptait 176
-  // fiches SANS énoncé n'a jamais vu les 404 énoncés ajoutés depuis, et sa
-  // séance affichait « aucun énoncé renseigné », définitivement.
+  // Banque existante (y compris une ancienne installation sans version) :
+  // on applique réellement toute version de contenu manquante. La
+  // réconciliation préserve la progression, les favoris, les notes et les IDs.
   const applied = Number(localStorage.getItem(SEED_VERSION_KEY) ?? 0);
   if (applied >= SEED_CONTENT_VERSION) return;
+
   try {
     const seed = await loadSeedBank();
     if (seed.exercises.length === 0) return;
-    const merged = reconcileSeedBank(localData.exercises(), localData.chapters(), seed);
+    const merged = reconcileSeedBank(localExercises, localData.chapters(), seed);
     localData.saveChapters(merged.chapters);
     localData.saveExercises(merged.exercises);
     localStorage.setItem(SEED_VERSION_KEY, String(SEED_CONTENT_VERSION));
+    if (!hasSeedFlag) localStorage.setItem(SEED_FLAG_KEY, new Date().toISOString());
   } catch {
     // Même règle que l'amorçage : en cas d'échec, on retentera au prochain montage.
   }
@@ -115,9 +108,8 @@ export function usePrepahubData() {
 
   useEffect(() => {
     let cancelled = false;
-    // Amorçage éventuel AVANT le premier `refresh` : `ready` ne passe à vrai
-    // qu'une fois la banque chargée, pour éviter un flash de page vide au
-    // tout premier lancement.
+    // Amorçage/migration AVANT le premier `refresh` : `ready` ne passe à vrai
+    // qu'une fois la banque chargée ou réconciliée.
     maybeSeedBank().finally(() => {
       if (!cancelled) refresh();
     });
