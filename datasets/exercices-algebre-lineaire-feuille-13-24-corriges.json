@@ -1,7 +1,7 @@
 [
   {
-    "title": "Translation des polynômes et base de R_n[X]",
-    "statement": "On considère l'endomorphisme T de R[X] défini, pour tout P ∈ R[X], par T(P)(X)=P(X+1). 1.a) Exprimer les coefficients de la matrice dans la base (1,X,…,X^n) de l'endomorphisme induit par la restriction de T à R_n[X]. 1.b) Exprimer les coefficients de M^{-1} (on justifiera son existence). 2. On pose : ∀n∈N, H_n=(1/n!)∏_{k=0}^{n-1}(X-k). Soit P∈R[X] et (a_k)_{k∈[0,n]} une famille de réels telle que P=∑_{k=0}^n a_k H_k. a) Montrer que : ∀k∈[0,n], a_k=∑_{q=0}^k(-1)^{k+q} C(k,q)P(q). b) Montrer que : ∀k>n+1, ∑_{q=0}^k(-1)^{k+q} C(k,q)P(q)=0.",
+    "title": "Translation des polynômes et base de $\\mathbb{R}_n[X]$",
+    "statement": "On considère l'endomorphisme $T$ de $\\mathbb{R}[X]$ défini, pour tout $P \\in \\mathbb{R}[X]$, par $T(P)(X)=P(X+1)$.\n\n1.a) Exprimer les coefficients de la matrice, dans la base $(1,X,\\ldots,X^n)$, de l'endomorphisme induit par la restriction de $T$ à $\\mathbb{R}_n[X]$.\n\n1.b) Exprimer les coefficients de $M^{-1}$ (on justifiera son existence).\n\n2. On pose, pour tout $n\\in\\mathbb{N}$ : $H_n=\\dfrac{1}{n!}\\displaystyle\\prod_{k=0}^{n-1}(X-k)$. Soit $P\\in\\mathbb{R}[X]$ et $(a_k)_{k\\in[0,n]}$ une famille de réels telle que $P=\\displaystyle\\sum_{k=0}^{n}a_kH_k$.\n\na) Montrer que, pour tout $k\\in[0,n]$, $a_k=\\displaystyle\\sum_{q=0}^{k}(-1)^{k+q}\\binom{k}{q}P(q)$.\n\nb) Montrer que, pour tout $k>n+1$, $\\displaystyle\\sum_{q=0}^{k}(-1)^{k+q}\\binom{k}{q}P(q)=0$.",
     "source": "Centrale maths 1 (BEOS 2490)",
     "subject": "Mathématiques",
     "type": "Concours",
@@ -15,7 +15,7 @@
   },
   {
     "title": "Interpolation avec valeurs et dérivées prescrites",
-    "statement": "Soit (a_1,…,a_n,b_1,…,b_n,c_1,…,c_n) une famille de 3n réels (n∈N*) tels que les (a_k)_{1≤k≤n} soient deux à deux distincts. Montrer qu'il existe un unique polynôme P∈R_{2n-1}[X] tel que : ∀k∈[1,n], P(a_k)=b_k et P'(a_k)=c_k.",
+    "statement": "Soit $(a_1,\\ldots,a_n,b_1,\\ldots,b_n,c_1,\\ldots,c_n)$ une famille de $3n$ réels ($n\\in\\mathbb{N}^*$) tels que les $(a_k)_{1\\le k\\le n}$ soient deux à deux distincts. Montrer qu'il existe un unique polynôme $P\\in\\mathbb{R}_{2n-1}[X]$ tel que, pour tout $k\\in[1,n]$, $P(a_k)=b_k$ et $P'(a_k)=c_k$.",
     "source": "Exercice 14",
     "subject": "Mathématiques",
     "type": "Concours",
@@ -28,7 +28,7 @@
   },
   {
     "title": "Interpolation et unicité sous contrainte de degré",
-    "statement": "1. Soient (x_1,…,x_n) des réels distincts et (y_1,…,y_n) des réels quelconques ; montrer qu'il existe un unique polynôme P dans R_{n-1}[X] tel que pour tout i∈[1,n], P(x_i)=y_i. 2.a) Soit k∈]0,n[ ; avec les mêmes notations, pour tout polynôme P, on note E(P)={i∈[1,n] | P(x_i)=y_i}. Montrer qu'il existe au plus un polynôme P tel que card E(P)>(n+k)/2 et deg(P)<k. 2.b) Montrer qu'il existe P et Q tels que deg(P)<(n+k)/2, deg(Q)<(n-k)/2, Q≠0 et ∀i∈[1,n], P(x_i)-y_iQ(x_i)=0.",
+    "statement": "1. Soient $(x_1,\\ldots,x_n)$ des réels distincts et $(y_1,\\ldots,y_n)$ des réels quelconques ; montrer qu'il existe un unique polynôme $P\\in\\mathbb{R}_{n-1}[X]$ tel que, pour tout $i\\in[1,n]$, $P(x_i)=y_i$.\n\n2.a) Soit $k\\in]0,n[$ ; avec les mêmes notations, pour tout polynôme $P$, on note $E(P)=\\{i\\in[1,n]\\mid P(x_i)=y_i\\}$. Montrer qu'il existe au plus un polynôme $P$ tel que $\\operatorname{card}E(P)>\\dfrac{n+k}{2}$ et $\\deg(P)<k$.\n\n2.b) Montrer qu'il existe $P$ et $Q$ tels que $\\deg(P)<\\dfrac{n+k}{2}$, $\\deg(Q)<\\dfrac{n-k}{2}$, $Q\\ne0$ et, pour tout $i\\in[1,n]$, $P(x_i)-y_iQ(x_i)=0$.",
     "source": "Centrale maths 1 (BEOS 2395)",
     "subject": "Mathématiques",
     "type": "Concours",
@@ -41,8 +41,8 @@
     "licenseStatus": "à vérifier"
   },
   {
-    "title": "Une R-algèbre intègre de dimension finie est isomorphe à C",
-    "statement": "Soit (A,+,×,−) une R-algèbre commutative et intègre de dimension finie d>2. 1. Soit a un élément non nul de A. Pour x∈A, on pose f_a(x)=ax. Montrer que f_a est un automorphisme linéaire de A. 2. Soit a∈A. Montrer qu'il existe un polynôme non nul P∈R[X] tel que P(a)=0. Montrer qu'on peut choisir P irréductible. Indication : considérer I={P∈R[X] | P(a)=0} et commencer par montrer que c'est un idéal. 3. Montrer que A est une R-algèbre isomorphe à C.",
+    "title": "Une $\\mathbb{R}$-algèbre intègre de dimension finie est isomorphe à $\\mathbb{C}$",
+    "statement": "Soit $(A,+,\\times,-)$ une $\\mathbb{R}$-algèbre commutative et intègre de dimension finie $d>2$.\n\n1. Soit $a$ un élément non nul de $A$. Pour $x\\in A$, on pose $f_a(x)=ax$. Montrer que $f_a$ est un automorphisme linéaire de $A$.\n\n2. Soit $a\\in A$. Montrer qu'il existe un polynôme non nul $P\\in\\mathbb{R}[X]$ tel que $P(a)=0$. Montrer qu'on peut choisir $P$ irréductible. Indication : considérer $I=\\{P\\in\\mathbb{R}[X]\\mid P(a)=0\\}$ et commencer par montrer que c'est un idéal.\n\n3. Montrer que $A$ est une $\\mathbb{R}$-algèbre isomorphe à $\\mathbb{C}$.",
     "source": "Centrale",
     "subject": "Mathématiques",
     "type": "Concours",
@@ -51,12 +51,12 @@
     "estimatedMinutes": 45,
     "tags": ["algèbre", "dimension finie", "polynôme annulateur", "irréductibilité", "isomorphisme"],
     "competition": "Centrale",
-    "programLevel": "sup",
+    "programmeLevel": "sup",
     "licenseStatus": "à vérifier"
   },
   {
-    "title": "Égalité des rangs sous AB=A+B",
-    "statement": "Soit n∈N* et A,B∈M_n(R). On suppose que AB=A+B. Montrer que rg A=rg B.",
+    "title": "Égalité des rangs sous $AB=A+B$",
+    "statement": "Soit $n\\in\\mathbb{N}^*$ et $A,B\\in M_n(\\mathbb{R})$. On suppose que $AB=A+B$. Montrer que $\\operatorname{rg}(A)=\\operatorname{rg}(B)$.",
     "source": "Mines-Ponts (BEOS 5377)",
     "subject": "Mathématiques",
     "type": "Concours",
@@ -69,8 +69,8 @@
     "licenseStatus": "à vérifier"
   },
   {
-    "title": "Automorphisme multiplicatif de M_n(C)",
-    "statement": "Soit n>2 et φ un automorphisme de M_n(C) tel que ∀A,B∈M_n(C), φ(AB)=φ(A)φ(B). 1. Déterminer φ(I_n). 2. Soit i∈[1,n] ; montrer que φ(E_{i,i}) est une matrice de projecteur et de rang 1. Indication : considérer, pour A∈M_n(C) de rang r, l'ensemble {M∈M_n(C) | AM=0}. 3. Pour i∈[1,n], on note V_i un élément non nul de Im(φ(E_{i,i})). Montrer que (V_1,…,V_n) est une base de M_{n,1}(C).",
+    "title": "Automorphisme multiplicatif de $M_n(\\mathbb{C})$",
+    "statement": "Soit $n>2$ et $\\varphi$ un automorphisme de $M_n(\\mathbb{C})$ tel que, pour tous $A,B\\in M_n(\\mathbb{C})$, $\\varphi(AB)=\\varphi(A)\\varphi(B)$.\n\n1. Déterminer $\\varphi(I_n)$.\n\n2. Soit $i\\in[1,n]$ ; montrer que $\\varphi(E_{i,i})$ est une matrice de projecteur et de rang $1$. Indication : considérer, pour $A\\in M_n(\\mathbb{C})$ de rang $r$, l'ensemble $\\{M\\in M_n(\\mathbb{C})\\mid AM=0\\}$.\n\n3. Pour $i\\in[1,n]$, on note $V_i$ un élément non nul de $\\operatorname{Im}(\\varphi(E_{i,i}))$. Montrer que $(V_1,\\ldots,V_n)$ est une base de $M_{n,1}(\\mathbb{C})$.",
     "source": "Mines-Ponts (BEOS 4576)",
     "subject": "Mathématiques",
     "type": "Concours",
@@ -84,7 +84,7 @@
   },
   {
     "title": "Déterminant d'une matrice bloc réelle",
-    "statement": "Soit A,B∈M_n(R) et M=((A,−B),(B,A))∈M_{2n}(R). 1. Montrer que det M=det(A+iB)det(A−iB). 2. En déduire que det M>0. 3. Soit A,B∈M_n(R) telles que AB=BA. Montrer que det(A²+B²)>0. 4. Donner un exemple de deux matrices A,B de M_2(R) telles que det(A²+B²)<0.",
+    "statement": "Soient $A,B\\in M_n(\\mathbb{R})$ et $M=\\begin{pmatrix}A&-B\\\\B&A\\end{pmatrix}\\in M_{2n}(\\mathbb{R})$.\n\n1. Montrer que $\\det(M)=\\det(A+iB)\\det(A-iB)$.\n\n2. En déduire que $\\det(M)>0$.\n\n3. Soient $A,B\\in M_n(\\mathbb{R})$ telles que $AB=BA$. Montrer que $\\det(A^2+B^2)>0$.\n\n4. Donner un exemple de deux matrices $A,B\\in M_2(\\mathbb{R})$ telles que $\\det(A^2+B^2)<0$.",
     "source": "Exercice 19",
     "subject": "Mathématiques",
     "type": "Concours",
@@ -92,13 +92,13 @@
     "chapter": "Déterminants / matrices blocs",
     "estimatedMinutes": 40,
     "tags": ["déterminant", "matrices blocs", "nombres complexes", "commutation"],
-    "programLevel": "sup",
+    "programmeLevel": "sup",
     "licenseStatus": "à vérifier",
     "notes": "Transcription fidèle à la feuille. Les conclusions strictes >0 semblent nécessiter une hypothèse supplémentaire ; conserver l'énoncé source tel quel pour l'instant."
   },
   {
     "title": "Lemme d'Hadamard",
-    "statement": "Soit A une matrice carrée d'ordre n à coefficients complexes dont les coefficients diagonaux vérifient : |a_{i,i}| > ∑_{j≠i}|a_{i,j}| pour tout i∈[1,n]. Montrer que A est inversible (lemme d'Hadamard). Indication : raisonner par l'absurde, en considérant X≠0 tel que AX=0.",
+    "statement": "Soit $A=(a_{i,j})$ une matrice carrée d'ordre $n$ à coefficients complexes dont les coefficients diagonaux vérifient $|a_{i,i}|>\\displaystyle\\sum_{j\\ne i}|a_{i,j}|$ pour tout $i\\in[1,n]$. Montrer que $A$ est inversible (lemme d'Hadamard). Indication : raisonner par l'absurde, en considérant $X\\ne0$ tel que $AX=0$.",
     "source": "Exercice 20 — Lemme d'Hadamard",
     "subject": "Mathématiques",
     "type": "Concours",
@@ -106,12 +106,12 @@
     "chapter": "Matrices / inversibilité",
     "estimatedMinutes": 25,
     "tags": ["matrices", "inversibilité", "raisonnement par l'absurde", "complexes"],
-    "programLevel": "sup",
+    "programmeLevel": "sup",
     "licenseStatus": "à vérifier"
   },
   {
     "title": "Matrices de trace nulle et commutateurs",
-    "statement": "Soit H l'ensemble des matrices de M_n(R) de trace nulle. 1. Montrer que H est un hyperplan, engendré par les matrices de la forme [A,B]=AB−BA. 2. Soit u : M_n(R)→M_n(R) un endomorphisme tel que u(I_n)=I_n et, pour tout A,B∈M_n(R), u(AB)=u(BA). Montrer que u est un projecteur que l'on précisera et dont on donnera une expression à l'aide de la fonction Tr. Montrer que u conserve la trace.",
+    "statement": "Soit $H$ l'ensemble des matrices de $M_n(\\mathbb{R})$ de trace nulle.\n\n1. Montrer que $H$ est un hyperplan, engendré par les matrices de la forme $[A,B]=AB-BA$.\n\n2. Soit $u:M_n(\\mathbb{R})\\to M_n(\\mathbb{R})$ un endomorphisme tel que $u(I_n)=I_n$ et, pour tous $A,B\\in M_n(\\mathbb{R})$, $u(AB)=u(BA)$. Montrer que $u$ est un projecteur que l'on précisera et dont on donnera une expression à l'aide de la fonction $\\operatorname{Tr}$. Montrer que $u$ conserve la trace.",
     "source": "Mines-Ponts — Exercice 21",
     "subject": "Mathématiques",
     "type": "Concours",
@@ -120,12 +120,12 @@
     "estimatedMinutes": 45,
     "tags": ["trace", "hyperplan", "commutateur", "projecteur", "matrices"],
     "competition": "Mines-Ponts",
-    "programLevel": "sup",
+    "programmeLevel": "sup",
     "licenseStatus": "à vérifier"
   },
   {
-    "title": "Système cyclique x_i+x_{i+1}=2a_i",
-    "statement": "Résoudre le système, où a_1,…,a_n sont des réels donnés : x_1+x_2=2a_1, x_2+x_3=2a_2, …, x_{n-1}+x_n=2a_{n-1}, x_n+x_1=2a_n.",
+    "title": "Système cyclique $x_i+x_{i+1}=2a_i$",
+    "statement": "Résoudre le système, où $a_1,\\ldots,a_n$ sont des réels donnés :\n\n$$\\begin{cases}x_1+x_2=2a_1\\\\x_2+x_3=2a_2\\\\\\vdots\\\\x_{n-1}+x_n=2a_{n-1}\\\\x_n+x_1=2a_n\\end{cases}$$",
     "source": "Exercice 22",
     "subject": "Mathématiques",
     "type": "TD",
@@ -133,12 +133,12 @@
     "chapter": "Systèmes linéaires / matrices",
     "estimatedMinutes": 30,
     "tags": ["système linéaire", "récurrence", "matrices", "parité"],
-    "programLevel": "sup",
+    "programmeLevel": "sup",
     "licenseStatus": "à vérifier"
   },
   {
-    "title": "Déterminant de A(a)+xU",
-    "statement": "Soit a∈R et A(a) la matrice n×n suivante : les deux coefficients diagonaux extrêmes valent 0, les autres coefficients diagonaux valent a, et tous les coefficients hors diagonale valent −1. Soit U=(1)_{1≤i,j≤n}, la matrice constituée de 1. 1. Calculer det(A(−1)). 2. On note P(x)=det(A(a)+xU). Montrer que P est un polynôme de degré inférieur ou égal à 1. 3. Calculer P(−a) et P(1). En déduire det(A(a)). 4. Question supplémentaire : étudier la continuité de a↦det(A(a)) et retrouver la valeur de det(A(−1)).",
+    "title": "Déterminant de $A(a)+xU$",
+    "statement": "Soit $a\\in\\mathbb{R}$ et $A(a)$ la matrice $n\\times n$ suivante : les deux coefficients diagonaux extrêmes valent $0$, les autres coefficients diagonaux valent $a$, et tous les coefficients hors diagonale valent $-1$. Soit $U=(1)_{1\\le i,j\\le n}$, la matrice constituée de $1$.\n\n1. Calculer $\\det(A(-1))$.\n\n2. On note $P(x)=\\det(A(a)+xU)$. Montrer que $P$ est un polynôme de degré inférieur ou égal à $1$.\n\n3. Calculer $P(-a)$ et $P(1)$. En déduire $\\det(A(a))$.\n\n4. Question supplémentaire : étudier la continuité de $a\\mapsto\\det(A(a))$ et retrouver la valeur de $\\det(A(-1))$.",
     "source": "CCINP (BEOS 4574)",
     "subject": "Mathématiques",
     "type": "Concours",
@@ -152,7 +152,7 @@
   },
   {
     "title": "Déterminant d'une matrice tridiagonale",
-    "statement": "Calculer le déterminant D_n de la matrice tridiagonale de taille n à coefficients complexes : a sur la diagonale principale, 1 sur les deux diagonales adjacentes et 0 ailleurs, c'est-à-dire la matrice dont les premières lignes sont (a,1,0,…,0), (1,a,1,…), (0,1,a,…,0) et les dernières lignes analogues.",
+    "statement": "Calculer le déterminant $D_n$ de la matrice tridiagonale de taille $n$ à coefficients complexes : $a$ sur la diagonale principale, $1$ sur les deux diagonales adjacentes et $0$ ailleurs, c'est-à-dire\n\n$$\\begin{pmatrix}a&1&0&\\cdots&0\\\\1&a&1&\\ddots&\\vdots\\\\0&1&a&\\ddots&0\\\\\\vdots&\\ddots&\\ddots&\\ddots&1\\\\0&\\cdots&0&1&a\\end{pmatrix}.$$",
     "source": "Exercice 24",
     "subject": "Mathématiques",
     "type": "TD",
