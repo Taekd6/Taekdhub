@@ -51,7 +51,7 @@
     "estimatedMinutes": 45,
     "tags": ["algèbre", "dimension finie", "polynôme annulateur", "irréductibilité", "isomorphisme"],
     "competition": "Centrale",
-    "programmeLevel": "sup",
+    "programLevel": "sup",
     "licenseStatus": "à vérifier"
   },
   {
@@ -92,7 +92,7 @@
     "chapter": "Déterminants / matrices blocs",
     "estimatedMinutes": 40,
     "tags": ["déterminant", "matrices blocs", "nombres complexes", "commutation"],
-    "programmeLevel": "sup",
+    "programLevel": "sup",
     "licenseStatus": "à vérifier",
     "notes": "Transcription fidèle à la feuille. Les conclusions strictes >0 semblent nécessiter une hypothèse supplémentaire ; conserver l'énoncé source tel quel pour l'instant."
   },
@@ -106,7 +106,7 @@
     "chapter": "Matrices / inversibilité",
     "estimatedMinutes": 25,
     "tags": ["matrices", "inversibilité", "raisonnement par l'absurde", "complexes"],
-    "programmeLevel": "sup",
+    "programLevel": "sup",
     "licenseStatus": "à vérifier"
   },
   {
@@ -120,7 +120,7 @@
     "estimatedMinutes": 45,
     "tags": ["trace", "hyperplan", "commutateur", "projecteur", "matrices"],
     "competition": "Mines-Ponts",
-    "programmeLevel": "sup",
+    "programLevel": "sup",
     "licenseStatus": "à vérifier"
   },
   {
@@ -133,12 +133,12 @@
     "chapter": "Systèmes linéaires / matrices",
     "estimatedMinutes": 30,
     "tags": ["système linéaire", "récurrence", "matrices", "parité"],
-    "programmeLevel": "sup",
+    "programLevel": "sup",
     "licenseStatus": "à vérifier"
   },
   {
     "title": "Déterminant de A(a)+xU",
-    "statement": "Soit a∈R et A(a) la matrice n×n suivante : les deux coefficients diagonaux extrêmes valent 0, les autres coefficients diagonaux valent a, et tous les coefficients hors diagonale valent −1. Soit U=(1)_{1≤i,j≤n}, la matrice constituée de 1, deux éléments de M_n(R). 1. Calculer det(A(−1)). 2. On note P(x)=det(A(a)+xU). Montrer que P est un polynôme de degré inférieur ou égal à 1. 3. Calculer P(−a) et P(1). En déduire det(A(a)). 4. Question supplémentaire : étudier la continuité de a↦det(A(a)) et retrouver la valeur de det(A(−1)).",
+    "statement": "Soit a∈R et A(a) la matrice n×n suivante : les deux coefficients diagonaux extrêmes valent 0, les autres coefficients diagonaux valent a, et tous les coefficients hors diagonale valent −1. Soit U=(1)_{1≤i,j≤n}, la matrice constituée de 1. 1. Calculer det(A(−1)). 2. On note P(x)=det(A(a)+xU). Montrer que P est un polynôme de degré inférieur ou égal à 1. 3. Calculer P(−a) et P(1). En déduire det(A(a)). 4. Question supplémentaire : étudier la continuité de a↦det(A(a)) et retrouver la valeur de det(A(−1)).",
     "source": "CCINP (BEOS 4574)",
     "subject": "Mathématiques",
     "type": "Concours",
@@ -160,7 +160,7 @@
     "chapter": "Déterminants / récurrences",
     "estimatedMinutes": 30,
     "tags": ["déterminant", "matrice tridiagonale", "récurrence"],
-    "programLevel": "sup",
+    "programmeLevel": "sup",
     "licenseStatus": "à vérifier"
   }
 ]
