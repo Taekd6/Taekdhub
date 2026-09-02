@@ -4,7 +4,7 @@ import type { Chapter } from "@/lib/storage";
 import type { Exercise } from "@/lib/supabase/types";
 
 export const SEED_FLAG_KEY = "prepahub:seeded";
-export const SEED_CONTENT_VERSION = 4;
+export const SEED_CONTENT_VERSION = 5;
 export const SEED_VERSION_KEY = "prepahub:seeded:version";
 
 function buildSeed(bank: unknown): { exercises: Exercise[]; chapters: Chapter[] } {
