@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { ThemeSync } from "@/components/theme-sync";
 import "katex/dist/katex.min.css";
 import "./globals.css";
+import "./ui-redesign.css";
 
 /**
  * Applique l'accent ET le mode d'apparence persistés AVANT l'hydratation
@@ -47,9 +48,6 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   applicationName: "TaekdHub",
-  // Un lien de prépa se partage en message privé (WhatsApp, Discord, iMessage) :
-  // sans Open Graph, il n'apparaît que comme une URL nue, sans titre ni
-  // aperçu — le produit a l'air inachevé avant même d'être ouvert.
   openGraph: {
     type: "website",
     locale: "fr_FR",
