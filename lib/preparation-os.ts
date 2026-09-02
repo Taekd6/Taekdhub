@@ -4,6 +4,7 @@ import { subjects } from "@/lib/study";
 import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 import type { Chapter } from "@/lib/storage";
 
+// Preparation engine deliberately relies only on existing progress/recommendation modules.
 export interface PreparationSubjectState { subject: Subject; total: number; mastered: number; completionRate: number; pending: number; minutesToWork: number; lastWorkedAt: string | null; }
 export interface PreparationGap { subject: Subject; kind: "jamais commencé" | "délaissée" | "fragile" | "en difficulté"; reason: string; urgency: number; }
 export interface PreparationSnapshot { subjects: PreparationSubjectState[]; gaps: PreparationGap[]; testedNotions: number; solidNotions: number; untestedNotions: number; }
