@@ -219,12 +219,31 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
 
     const archived = entry.archived === true;
 
-    // Niveau de programme : pour un exercice de concours ACTIF (non archivé),
-    // strictement "sup" (contrainte pédagogique produit — jamais déduit du
-    // concours d'origine ni de la difficulté). Un exercice de concours "spe"
-    // reste importable s'il est explicitement archivé (Sprint 4 : catalogue
-    // de références réelles, quarantaine tant que la Spé n'est pas commencée
-    // — voir la même logique appliquée à `level` 4/6 plus bas).
+    /**
+     * Niveau de programme — désormais une simple ÉTIQUETTE, plus une mise en
+     * quarantaine.
+     *
+     * Ce pipeline a été écrit quand l'élève était en Sup. Il imposait alors
+     * trois règles cohérentes entre elles : un exercice de concours actif
+     * devait être "sup", un exercice "spe" devait être importé archivé, et
+     * les paliers 4 (transition Spé) et 6 (expert) aussi. Objectif de
+     * l'époque : que rien de deuxième année ne se glisse dans les
+     * recommandations d'un élève qui n'avait pas encore vu le cours.
+     *
+     * L'élève est maintenant en MP. Ces trois règles disent donc exactement
+     * l'inverse de ce qu'il faut : elles archivent — c'est-à-dire rendent
+     * invisibles à la liste ET au moteur de recommandation — précisément le
+     * contenu qu'il doit travailler. Sur les 440 exercices amorcés, les 18
+     * classés "spe" étaient tous archivés, ce qui ne laissait aucun exercice
+     * actif sur la réduction des endomorphismes, les séries entières, les
+     * préhilbertiens ou les intégrales généralisées.
+     *
+     * Les trois gardes sont donc retirées. `programme_level` reste stocké et
+     * reste utile (savoir ce qui est révision de Sup et ce qui est programme
+     * de Spé), mais il ne décide plus de la visibilité. `archived` redevient
+     * ce qu'il devrait toujours être : un choix de l'élève, pas une déduction
+     * du pipeline d'import.
+     */
     const programmeLevelRaw = asTrimmedString(entry.programmeLevel ?? entry.programme_level);
     let programmeLevel: ProgrammeLevel | null = null;
     if (programmeLevelRaw) {
@@ -234,32 +253,11 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
       }
       programmeLevel = programmeLevelRaw as ProgrammeLevel;
     }
-    if (competition && !archived && programmeLevel !== "sup") {
-      errors.push({
-        index,
-        message: `${label} ("${title}") — un exercice de concours actif (non archivé) doit avoir programmeLevel "sup" (fourni : ${programmeLevelRaw ?? "absent"}). Pour référencer un sujet réel de niveau Spé, importe-le avec archived: true.`,
-      });
-      return;
-    }
 
-    // Contrainte pédagogique absolue (consigne produit) : un exercice "spe"
-    // ne doit JAMAIS apparaître dans les recommandations/la liste active tant
-    // que l'utilisateur n'a pas commencé la Spé — appliqué ici en exigeant
-    // `archived: true` plutôt qu'en modifiant recommendExercises (voir
-    // components/exercises/exercise-manager.tsx#ArchivedExercises, déjà
-    // masqué de la liste et des recommandations, restaurable manuellement).
-    if (programmeLevel === "spe" && !archived) {
-      errors.push({
-        index,
-        message: `${label} ("${title}") — programmeLevel "spe" doit obligatoirement être importé avec archived: true (jamais dans les recommandations actives tant que la Spé n'est pas commencée).`,
-      });
-      return;
-    }
-
-    // Palier pédagogique (Sprint 4) — même garde-fou que programmeLevel "spe"
-    // ci-dessus : les paliers "transition Spé" (4) et "expert" (6) sont par
-    // nature hors du "faisable maintenant" et doivent être archivés, sinon le
-    // moteur de recommandation les mélangerait aux niveaux actifs.
+    // Palier pédagogique — voir la note sur `programmeLevel` ci-dessus : le
+    // palier décrit où l'exercice se situe dans la progression, il ne décide
+    // plus de sa visibilité. Un exercice de palier « concours » a toute sa
+    // place dans les recommandations d'un élève de MP.
     const levelRaw = entry.level;
     let level: ExerciseLevel | null = null;
     if (levelRaw !== undefined && levelRaw !== null) {
@@ -268,13 +266,6 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
         return;
       }
       level = levelRaw as ExerciseLevel;
-      if ((level === 4 || level === 6) && !archived) {
-        errors.push({
-          index,
-          message: `${label} ("${title}") — level ${level} (${level === 4 ? "transition Spé" : "expert"}) doit obligatoirement être importé avec archived: true.`,
-        });
-        return;
-      }
     }
 
     const licenseStatusRaw = asTrimmedString(entry.licenseStatus ?? entry.license_status);

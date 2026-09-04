@@ -17,7 +17,7 @@ export const SEED_FLAG_KEY = "prepahub:seeded";
  * ajoutés, libellés de chapitres de Mathématiques consolidés (60 → 20, plus
  * aucun chapitre à une seule fiche). 477 → 440 exercices.
  */
-export const SEED_CONTENT_VERSION = 6;
+export const SEED_CONTENT_VERSION = 7;
 export const SEED_VERSION_KEY = "prepahub:seeded:version";
 
 function buildSeed(bank: unknown): { exercises: Exercise[]; chapters: Chapter[] } {
@@ -81,17 +81,28 @@ function dedupeBank(items: unknown[]): unknown[] {
 }
 
 export async function loadSeedBank(): Promise<{ exercises: Exercise[]; chapters: Chapter[] }> {
-  const [base, algebra, corrected] = await Promise.all([
+  const [base, algebra, corrected, reduction, vectorSpaces] = await Promise.all([
     import("@/datasets/exercices-banque-complete.json"),
     import("@/datasets/exercices-algebre-lineaire-hors-reduction-septembre-2026.json"),
     import("@/datasets/exercices-algebre-lineaire-feuille-13-24-corriges.json"),
+    // Contenu de programme MP (2e année). Jusqu'ici la banque était
+    // exclusivement de Sup : aucun exercice actif n'existait sur la réduction
+    // des endomorphismes, alors que c'est le premier gros chapitre de l'année.
+    import("@/datasets/mp-reduction-endomorphismes.json"),
+    import("@/datasets/mp-espaces-vectoriels.json"),
   ]);
   const baseBank = (base as { default: unknown }).default;
   const algebraBank = (algebra as { default: unknown }).default;
   const correctedBank = (corrected as { default: unknown }).default;
+  const reductionBank = (reduction as { default: unknown }).default;
+  const vectorSpacesBank = (vectorSpaces as { default: unknown }).default;
+  // Les jeux les plus soignés en premier : `dedupeBank` garde la PREMIÈRE
+  // occurrence d'un même couple (matière, titre).
   const all = [
     ...(Array.isArray(correctedBank) ? correctedBank : []),
     ...(Array.isArray(algebraBank) ? algebraBank : []),
+    ...(Array.isArray(reductionBank) ? reductionBank : []),
+    ...(Array.isArray(vectorSpacesBank) ? vectorSpacesBank : []),
     ...(Array.isArray(baseBank) ? baseBank : []),
   ];
   return buildSeed(dedupeBank(all));

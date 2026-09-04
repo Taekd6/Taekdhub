@@ -55,16 +55,19 @@ export type LicenseStatus = "libre" | "à vérifier" | "restreint";
  * et inversement.
  *
  * 1 = Automatismes (très courts, réflexe/rapidité)
- * 2 = Classiques Sup (méthodes fondamentales à maîtriser)
+ * 2 = Classiques (méthodes fondamentales à maîtriser)
  * 3 = Consolidation (combine ou approfondit plusieurs classiques)
- * 4 = Transition Spé (prépare l'entrée en 2e année — voir contrainte ci-dessous)
- * 5 = Concours (plus long/subtil, mais reste accessible avec le programme actuel)
- * 6 = Expert (à débloquer beaucoup plus tard)
+ * 4 = Transition (fait le pont entre deux années/chapitres)
+ * 5 = Concours (plus long/subtil, format épreuve)
+ * 6 = Expert (nettement au-dessus de l'attendu courant)
  *
- * Contrainte produit (Sprint 4) : les niveaux 4 et 6 doivent TOUJOURS être
- * importés avec `archived: true` — jamais mélangés aux recommandations
- * actuelles (voir lib/exercise-import.ts, qui l'impose au niveau du pipeline,
- * pas seulement par convention).
+ * Ces paliers sont désormais une simple ÉTIQUETTE PÉDAGOGIQUE : ils ne
+ * décident plus de la visibilité d'un exercice. Les paliers 4 et 6 étaient
+ * jusqu'ici archivés d'office à l'import, parce que l'élève était en Sup et
+ * que rien de deuxième année ne devait entrer dans ses recommandations. Il
+ * est maintenant en MP : cette règle masquait exactement le contenu à
+ * travailler, elle a donc été retirée de lib/exercise-import.ts. `archived`
+ * redevient un choix de l'élève.
  */
 export type ExerciseLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -251,7 +254,11 @@ export interface Exercise {
    * X/ENS n'apparaissent jamais ici dans le dataset principal — voir `ProgrammeLevel`.
    */
   competition: string | null;
-  /** Niveau de programme réellement requis — voir `ProgrammeLevel`. `null` = non classifié. */
+  /**
+   * Niveau de programme réellement requis — voir `ProgrammeLevel`. `null` =
+   * non classifié. Étiquette informative (distinguer une révision de Sup d'un
+   * chapitre de Spé) : elle ne conditionne plus l'archivage à l'import.
+   */
   programme_level: ProgrammeLevel | null;
   /** Statut de réutilisation vérifié — voir `LicenseStatus`. `null` = non renseigné (exercice non issu d'une source externe, typiquement). */
   license_status: LicenseStatus | null;

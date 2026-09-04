@@ -8,10 +8,26 @@
     "difficulty": 5,
     "chapter": "Applications linéaires",
     "estimatedMinutes": 50,
-    "tags": ["polynômes", "application linéaire", "matrice", "base", "interpolation"],
+    "tags": [
+      "polynômes",
+      "application linéaire",
+      "matrice",
+      "base",
+      "interpolation",
+      "DS espaces vectoriels"
+    ],
     "competition": "Centrale",
     "programmeLevel": "sup",
-    "licenseStatus": "à vérifier"
+    "licenseStatus": "à vérifier",
+    "hints": [
+      "1.a) Développez $(X+1)^j$ par la formule du binôme : la matrice est triangulaire supérieure.",
+      "1.b) $T$ est bijective d'inverse $P\\mapsto P(X-1)$ : lisez $M^{-1}$ sur cet inverse.",
+      "2) Posez $\\Delta P=P(X+1)-P(X)$ et calculez $\\Delta H_k$ — vous devriez trouver $H_{k-1}$.",
+      "Il en découle $a_k=(\\Delta^kP)(0)$, puis développez $\\Delta^k=(T-\\mathrm{id})^k$ par le binôme.",
+      "2.b) $\\Delta$ fait chuter le degré de $1$ : au-delà de $\\deg P$, les itérées s'annulent."
+    ],
+    "correction": "**1.a)** Pour $0\\leq j\\leq n$, $T(X^j)=(X+1)^j=\\sum_{i=0}^{j}\\binom{j}{i}X^i$. Donc, en indexant lignes et colonnes de $0$ à $n$,\n$$m_{i,j}=\\begin{cases}\\dbinom{j}{i} & \\text{si } i\\leq j,\\\\[2mm] 0 & \\text{sinon.}\\end{cases}$$\n$M$ est triangulaire supérieure, de diagonale $\\binom{j}{j}=1$.\n\n**1.b)** $M$ est triangulaire de diagonale constante égale à $1$, donc $\\det M=1\\neq 0$ : $M$ est inversible.\nPour l'expliciter, remarquons que $T$ est bijective sur $\\mathbb{R}_n[X]$, d'inverse $T^{-1}(P)(X)=P(X-1)$ (les deux composées redonnent bien $P$). Or $T^{-1}(X^j)=(X-1)^j=\\sum_{i=0}^{j}\\binom{j}{i}(-1)^{j-i}X^i$, d'où\n$$\\left(M^{-1}\\right)_{i,j}=(-1)^{j-i}\\dbinom{j}{i}\\quad\\text{si } i\\leq j,\\qquad 0 \\text{ sinon.}$$\n\n**2.a)** Posons $\\Delta=T-\\mathrm{id}$, c'est-à-dire $\\Delta P=P(X+1)-P(X)$. Calculons $\\Delta H_k$ pour $k\\geq 1$ :\n$$k!\\,\\Delta H_k=(X+1)X\\cdots(X-k+2)-X(X-1)\\cdots(X-k+1)=X(X-1)\\cdots(X-k+2)\\Big[(X+1)-(X-k+1)\\Big],$$\nle crochet valant $k$. Donc $\\Delta H_k=\\dfrac{X(X-1)\\cdots(X-k+2)}{(k-1)!}=H_{k-1}$. (Et $\\Delta H_0=\\Delta 1=0$.)\n\nAppliquons $\\Delta^k$ à $P=\\sum_{m=0}^{n}a_mH_m$ : par ce qui précède $\\Delta^kH_m=H_{m-k}$ si $m\\geq k$, et $0$ sinon. Donc\n$$\\Delta^kP=\\sum_{m\\geq k}a_mH_{m-k}.$$\nEn évaluant en $0$ et en notant que $H_0(0)=1$ tandis que $H_r(0)=0$ pour $r\\geq 1$ (le produit $\\prod_{j=0}^{r-1}(X-j)$ contient le facteur $X$), il ne survit que le terme $m=k$ :\n$$\\left(\\Delta^kP\\right)(0)=a_k.$$\n\nReste à développer $\\Delta^k=(T-\\mathrm{id})^k$. Les endomorphismes $T$ et $\\mathrm{id}$ commutent, donc la formule du binôme s'applique :\n$$\\Delta^k=\\sum_{q=0}^{k}\\binom{k}{q}(-1)^{k-q}T^{q}.$$\nOr $T^q(P)(X)=P(X+q)$, donc en évaluant en $0$ :\n$$a_k=\\left(\\Delta^kP\\right)(0)=\\sum_{q=0}^{k}(-1)^{k-q}\\binom{k}{q}P(q)=\\sum_{q=0}^{k}(-1)^{k+q}\\binom{k}{q}P(q),$$\nles deux écritures coïncidant car $(-1)^{k-q}=(-1)^{k+q}$. $\\square$\n\n**2.b)** $\\Delta$ fait chuter le degré d'exactement $1$ sur les polynômes non constants (le terme dominant $a_dX^d$ produit $d\\,a_dX^{d-1}$). Comme $\\deg P\\leq n$, on a donc $\\Delta^{n+1}P=0$, et a fortiori $\\Delta^{k}P=0$ pour tout $k\\geq n+1$. En évaluant en $0$ et en utilisant le développement ci-dessus :\n$$\\forall k\\geq n+1,\\qquad \\sum_{q=0}^{k}(-1)^{k+q}\\binom{k}{q}P(q)=0.$$\nC'est bien le résultat demandé (l'énoncé le formule pour $k>n+1$, il est en fait vrai dès $k\\geq n+1$).\n\n*Les $H_k$ sont les polynômes binomiaux $\\binom{X}{k}$ ; ils forment la base dans laquelle l'opérateur de différence finie $\\Delta$ agit exactement comme la dérivation agit sur $\\frac{X^k}{k!}$. Toute la question 2 est la version discrète de la formule de Taylor.*",
+    "level": 6
   },
   {
     "title": "Interpolation avec valeurs et dérivées prescrites",
@@ -22,7 +38,13 @@
     "difficulty": 5,
     "chapter": "Polynômes",
     "estimatedMinutes": 40,
-    "tags": ["polynômes", "interpolation", "existence", "unicité", "dimension"],
+    "tags": [
+      "polynômes",
+      "interpolation",
+      "existence",
+      "unicité",
+      "dimension"
+    ],
     "programmeLevel": "sup",
     "licenseStatus": "à vérifier"
   },
@@ -35,24 +57,47 @@
     "difficulty": 5,
     "chapter": "Polynômes",
     "estimatedMinutes": 50,
-    "tags": ["interpolation", "unicité", "degré", "polynômes", "raisonnement"],
+    "tags": [
+      "interpolation",
+      "unicité",
+      "degré",
+      "polynômes",
+      "raisonnement"
+    ],
     "competition": "Centrale",
     "programmeLevel": "sup",
     "licenseStatus": "à vérifier"
   },
   {
     "title": "Une $\\mathbb{R}$-algèbre intègre de dimension finie est isomorphe à $\\mathbb{C}$",
-    "statement": "Soit $(A,+,\\times,-)$ une $\\mathbb{R}$-algèbre commutative et intègre de dimension finie $d>2$.\n\n1. Soit $a$ un élément non nul de $A$. Pour $x\\in A$, on pose $f_a(x)=ax$. Montrer que $f_a$ est un automorphisme linéaire de $A$.\n\n2. Soit $a\\in A$. Montrer qu'il existe un polynôme non nul $P\\in\\mathbb{R}[X]$ tel que $P(a)=0$. Montrer qu'on peut choisir $P$ irréductible. Indication : considérer $I=\\{P\\in\\mathbb{R}[X]\\mid P(a)=0\\}$ et commencer par montrer que c'est un idéal.\n\n3. Montrer que $A$ est une $\\mathbb{R}$-algèbre isomorphe à $\\mathbb{C}$.",
-    "source": "Centrale",
+    "statement": "Soit $(A,+,\\times)$ une $\\mathbb{R}$-algèbre commutative, intègre, unitaire, de dimension finie $d\\geq 2$.\n\n1. Soit $a$ un élément non nul de $A$. Pour $x\\in A$, on pose $f_a(x)=ax$. Montrer que $f_a$ est un automorphisme de l'espace vectoriel $A$. En déduire que $A$ est un corps.\n2. Soit $a\\in A$. Montrer qu'il existe un polynôme non nul $P\\in\\mathbb{R}[X]$ tel que $P(a)=0$, puis qu'on peut le choisir irréductible. *Indication : considérer $I=\\{P\\in\\mathbb{R}[X]\\mid P(a)=0\\}$ et montrer d'abord que c'est un idéal de $\\mathbb{R}[X]$.*\n3. En déduire que $A$ est isomorphe, en tant que $\\mathbb{R}$-algèbre, à $\\mathbb{C}$ — et donc que $d=2$.",
+    "source": "D'après Centrale — feuille d'algèbre linéaire",
     "subject": "Mathématiques",
     "type": "Concours",
     "difficulty": 5,
     "chapter": "Espaces vectoriels",
     "estimatedMinutes": 45,
-    "tags": ["algèbre", "dimension finie", "polynôme annulateur", "irréductibilité", "isomorphisme"],
+    "tags": [
+      "algèbre",
+      "dimension finie",
+      "polynôme annulateur",
+      "irréductibilité",
+      "isomorphisme",
+      "DS espaces vectoriels"
+    ],
     "competition": "Centrale",
     "programmeLevel": "sup",
-    "licenseStatus": "à vérifier"
+    "licenseStatus": "à vérifier",
+    "note": "Énoncé rectifié : la feuille supposait $d>2$, ce qui est contradictoire avec la conclusion (une telle algèbre est isomorphe à $\\mathbb{C}$, donc de dimension exactement $2$). L'hypothèse correcte est $d\\geq 2$, et l'exercice démontre au passage que $d=2$.",
+    "hints": [
+      "$f_a$ est linéaire ; son injectivité vient directement de l'intégrité de $A$.",
+      "En dimension FINIE, un endomorphisme injectif est bijectif — c'est tout l'intérêt de l'hypothèse.",
+      "Pour la question 2 : la famille $(1,a,a^2,\\dots,a^d)$ compte $d+1$ éléments dans un espace de dimension $d$.",
+      "$\\mathbb{R}[X]$ est principal : tout idéal est engendré par un unique polynôme unitaire.",
+      "Les polynômes irréductibles de $\\mathbb{R}[X]$ sont de degré $1$ ou $2$ — c'est la clé de la question 3."
+    ],
+    "correction": "**1.** $f_a$ est linéaire car le produit est bilinéaire. Si $f_a(x)=ax=0$ avec $a\\neq 0$, l'intégrité de $A$ donne $x=0$ : $f_a$ est injective. $A$ étant de dimension FINIE, $f_a$ est donc bijective.\nEn particulier il existe $b\\in A$ tel que $ab=1$ : tout élément non nul est inversible, $A$ est un corps (commutatif par hypothèse).\n\n**2.** Soit $a\\in A$. La famille $\\left(1,a,a^2,\\dots,a^{d}\\right)$ compte $d+1$ éléments dans un espace de dimension $d$ : elle est liée. Une relation non triviale $\\sum_{k=0}^{d}\\lambda_ka^k=0$ fournit un polynôme non nul $P=\\sum\\lambda_kX^k$ tel que $P(a)=0$.\nL'ensemble $I=\\{P\\in\\mathbb{R}[X]\\mid P(a)=0\\}$ est le noyau du morphisme d'algèbres $P\\mapsto P(a)$, c'est donc un idéal de $\\mathbb{R}[X]$, non réduit à $\\{0\\}$ d'après ce qui précède. $\\mathbb{R}[X]$ étant principal, $I=(\\pi_a)$ avec $\\pi_a$ unitaire non constant.\n$\\pi_a$ est irréductible : si $\\pi_a=QR$ avec $\\deg Q,\\deg R<\\deg\\pi_a$, alors $Q(a)R(a)=\\pi_a(a)=0$, et $A$ étant intègre, $Q(a)=0$ ou $R(a)=0$ — ce qui contredit la minimalité du degré de $\\pi_a$.\n\n**3.** Comme $d\\geq 2$, choisissons $a\\in A\\setminus\\mathbb{R}\\cdot 1$. Son polynôme minimal $\\pi_a$ est irréductible sur $\\mathbb{R}$, donc de degré $1$ ou $2$. Le degré $1$ donnerait $a\\in\\mathbb{R}\\cdot 1$, exclu : $\\deg\\pi_a=2$.\nÉcrivons $\\pi_a=X^2+\\alpha X+\\beta$ avec $\\alpha^2-4\\beta<0$ (irréductible sur $\\mathbb{R}$). Posons\n$$j=\\frac{2a+\\alpha\\cdot 1}{\\sqrt{4\\beta-\\alpha^2}}.$$\nUn calcul direct donne $j^2=-1$. Donc $\\mathbb{R}\\cdot 1\\oplus\\mathbb{R}\\cdot j$ est une sous-algèbre de $A$ isomorphe à $\\mathbb{C}$ (l'isomorphisme envoyant $j$ sur $i$).\nMontrons que $A$ s'y réduit. Via $j$, $A$ devient une $\\mathbb{C}$-algèbre commutative intègre de dimension finie sur $\\mathbb{C}$. Soit $x\\in A$ : le même raisonnement qu'en 2, mené sur $\\mathbb{C}$, fournit un polynôme minimal de $x$ irréductible dans $\\mathbb{C}[X]$ — donc de degré $1$, puisque $\\mathbb{C}$ est algébriquement clos. Ainsi $x\\in\\mathbb{C}\\cdot 1=\\mathbb{R}\\cdot 1\\oplus\\mathbb{R}\\cdot j$.\nDonc $A=\\mathbb{R}\\cdot 1\\oplus\\mathbb{R}\\cdot j\\simeq\\mathbb{C}$, et $d=2$. $\\square$\n\n*C'est un cas particulier du théorème de Frobenius. À retenir surtout : le mécanisme « dimension finie + intégrité $\\Rightarrow$ corps », qui se ressert très souvent.*",
+    "level": 6
   },
   {
     "title": "Égalité des rangs sous $AB=A+B$",
@@ -60,13 +105,27 @@
     "source": "Mines-Ponts (BEOS 5377)",
     "subject": "Mathématiques",
     "type": "Concours",
-    "difficulty": 4,
+    "difficulty": 3,
     "chapter": "Matrices et systèmes",
     "estimatedMinutes": 25,
-    "tags": ["matrices", "rang", "noyau", "image"],
+    "tags": [
+      "matrices",
+      "rang",
+      "noyau",
+      "image",
+      "DS espaces vectoriels"
+    ],
     "competition": "Mines-Ponts",
     "programmeLevel": "sup",
-    "licenseStatus": "à vérifier"
+    "licenseStatus": "à vérifier",
+    "hints": [
+      "Faites apparaître un produit : que vaut $(A-I_n)(B-I_n)$ ?",
+      "Développez : $(A-I_n)(B-I_n)=AB-A-B+I_n$.",
+      "L'hypothèse donne $AB-A-B=0$, donc $(A-I_n)(B-I_n)=I_n$ : $A-I_n$ est inversible.",
+      "Écrivez ensuite $A$ comme un produit faisant intervenir $A-I_n$ et $B$ — multiplier par une matrice inversible ne change pas le rang."
+    ],
+    "correction": "**Étape 1 — factoriser.** On calcule\n$$(A-I_n)(B-I_n)=AB-A-B+I_n.$$\nOr l'hypothèse $AB=A+B$ s'écrit $AB-A-B=0$. Donc\n$$(A-I_n)(B-I_n)=I_n.$$\nEn dimension finie, cela suffit à affirmer que $A-I_n$ et $B-I_n$ sont inversibles, inverses l'une de l'autre (et donc qu'elles commutent : $(B-I_n)(A-I_n)=I_n$, d'où $BA=A+B=AB$).\n\n**Étape 2 — écrire $A$ et $B$ comme produits.** Toujours à partir de $AB=A+B$ :\n$$A=AB-B=(A-I_n)\\,B \\qquad\\text{et}\\qquad B=AB-A=A\\,(B-I_n).$$\n\n**Étape 3 — conclure.** Multiplier par une matrice INVERSIBLE ne change pas le rang. Comme $A-I_n$ est inversible,\n$$\\mathrm{rg}(A)=\\mathrm{rg}\\left((A-I_n)B\\right)=\\mathrm{rg}(B).$$\n$\\square$\n\n*Tout l'exercice tient dans la factorisation de la première ligne. Le réflexe à installer : devant une relation du type $AB=A+B$, on cherche systématiquement à faire apparaître $(A-I)(B-I)$ — exactement comme on factorise $xy-x-y+1=(x-1)(y-1)$ dans $\\mathbb{R}$.*",
+    "level": 3
   },
   {
     "title": "Automorphisme multiplicatif de $M_n(\\mathbb{C})$",
@@ -77,7 +136,13 @@
     "difficulty": 5,
     "chapter": "Matrices et systèmes",
     "estimatedMinutes": 50,
-    "tags": ["matrices", "automorphisme", "projecteur", "rang", "base"],
+    "tags": [
+      "matrices",
+      "automorphisme",
+      "projecteur",
+      "rang",
+      "base"
+    ],
     "competition": "Mines-Ponts",
     "programmeLevel": "sup",
     "licenseStatus": "à vérifier"
@@ -91,7 +156,12 @@
     "difficulty": 5,
     "chapter": "Déterminants",
     "estimatedMinutes": 40,
-    "tags": ["déterminant", "matrices blocs", "nombres complexes", "commutation"],
+    "tags": [
+      "déterminant",
+      "matrices blocs",
+      "nombres complexes",
+      "commutation"
+    ],
     "programmeLevel": "sup",
     "licenseStatus": "à vérifier",
     "notes": "Transcription fidèle à la feuille. Les conclusions strictes >0 semblent nécessiter une hypothèse supplémentaire ; conserver l'énoncé source tel quel pour l'instant."
@@ -102,12 +172,26 @@
     "source": "Exercice 20 — Lemme d'Hadamard",
     "subject": "Mathématiques",
     "type": "Concours",
-    "difficulty": 4,
+    "difficulty": 3,
     "chapter": "Matrices et systèmes",
     "estimatedMinutes": 25,
-    "tags": ["matrices", "inversibilité", "raisonnement par l'absurde", "complexes"],
+    "tags": [
+      "matrices",
+      "inversibilité",
+      "raisonnement par l'absurde",
+      "complexes",
+      "DS espaces vectoriels"
+    ],
     "programmeLevel": "sup",
-    "licenseStatus": "à vérifier"
+    "licenseStatus": "à vérifier",
+    "hints": [
+      "Par l'absurde : supposons $A$ non inversible, il existe $X\\neq 0$ avec $AX=0$.",
+      "Choisissez l'indice $i$ pour lequel $|x_i|$ est MAXIMAL — c'est tout l'exercice.",
+      "Écrivez la $i$-ième ligne du système : $a_{i,i}x_i=-\\sum_{j\\neq i}a_{i,j}x_j$.",
+      "Majorez $|x_j|$ par $|x_i|$, puis simplifiez par $|x_i|>0$."
+    ],
+    "correction": "Raisonnons par l'absurde : supposons $A$ non inversible. Alors $\\ker A\\neq\\{0\\}$, donc il existe $X={}^{t}(x_1,\\dots,x_n)\\neq 0$ tel que $AX=0$.\n\n**Le choix décisif.** Soit $i$ un indice tel que $|x_i|=\\max_{1\\leq j\\leq n}|x_j|$. Comme $X\\neq 0$, on a $|x_i|>0$.\n\n**La $i$-ième ligne.** $AX=0$ donne $\\sum_{j=1}^{n}a_{i,j}x_j=0$, c'est-à-dire\n$$a_{i,i}\\,x_i=-\\sum_{j\\neq i}a_{i,j}x_j.$$\nEn passant aux modules et par inégalité triangulaire :\n$$|a_{i,i}|\\,|x_i|\\ \\leq\\ \\sum_{j\\neq i}|a_{i,j}|\\,|x_j|\\ \\leq\\ \\sum_{j\\neq i}|a_{i,j}|\\,|x_i|\\ =\\ |x_i|\\sum_{j\\neq i}|a_{i,j}|,$$\noù la deuxième inégalité utilise la maximalité de $|x_i|$.\n\n**Conclusion.** En simplifiant par $|x_i|>0$ :\n$$|a_{i,i}|\\ \\leq\\ \\sum_{j\\neq i}|a_{i,j}|,$$\nce qui contredit frontalement l'hypothèse de dominance diagonale stricte $|a_{i,i}|>\\sum_{j\\neq i}|a_{i,j}|$.\nDonc $\\ker A=\\{0\\}$ et, en dimension finie, $A$ est inversible. $\\square$\n\n*Le ressort de la preuve est le choix de l'indice où $|x_j|$ est maximal : c'est ce qui permet de sortir $|x_i|$ de la somme. On retrouve exactement ce procédé dans la localisation des valeurs propres (disques de Gershgorin) : toute valeur propre de $A$ appartient à l'un des disques de centre $a_{i,i}$ et de rayon $\\sum_{j\\neq i}|a_{i,j}|$.*",
+    "level": 3
   },
   {
     "title": "Matrices de trace nulle et commutateurs",
@@ -115,13 +199,28 @@
     "source": "Mines-Ponts — Exercice 21",
     "subject": "Mathématiques",
     "type": "Concours",
-    "difficulty": 5,
+    "difficulty": 4,
     "chapter": "Matrices et systèmes",
     "estimatedMinutes": 45,
-    "tags": ["trace", "hyperplan", "commutateur", "projecteur", "matrices"],
+    "tags": [
+      "trace",
+      "hyperplan",
+      "commutateur",
+      "projecteur",
+      "matrices",
+      "DS espaces vectoriels"
+    ],
     "competition": "Mines-Ponts",
     "programmeLevel": "sup",
-    "licenseStatus": "à vérifier"
+    "licenseStatus": "à vérifier",
+    "hints": [
+      "$H=\\ker(\\mathrm{Tr})$ et $\\mathrm{Tr}$ est une forme linéaire NON NULLE sur $M_n(\\mathbb{R})$.",
+      "Un commutateur est toujours de trace nulle, car $\\mathrm{Tr}(AB)=\\mathrm{Tr}(BA)$.",
+      "Pour la réciproque, calculez $[E_{i,j},E_{j,j}]$ pour $i\\neq j$, puis $[E_{i,j},E_{j,i}]$.",
+      "Question 2 : montrez que $H\\subset\\ker u$, puis utilisez $M_n(\\mathbb{R})=H\\oplus\\mathbb{R}I_n$."
+    ],
+    "correction": "**1a. $H$ est un hyperplan.**\n$\\mathrm{Tr}$ est une forme linéaire sur $M_n(\\mathbb{R})$, non nulle puisque $\\mathrm{Tr}(I_n)=n\\neq 0$. Son noyau $H$ est donc un hyperplan : $\\dim H=n^2-1$.\n\n**1b. $H$ est engendré par les commutateurs.**\n($\\subset$ facile) Pour tous $A,B$, $\\mathrm{Tr}([A,B])=\\mathrm{Tr}(AB)-\\mathrm{Tr}(BA)=0$, donc $\\mathrm{Vect}\\left\\{[A,B]\\right\\}\\subset H$.\n($\\supset$) Exhibons assez de commutateurs. Pour $i\\neq j$, en utilisant $E_{i,j}E_{k,l}=\\delta_{jk}E_{i,l}$ :\n$$[E_{i,j},E_{j,j}]=E_{i,j}E_{j,j}-E_{j,j}E_{i,j}=E_{i,j}-0=E_{i,j},$$\n$$[E_{i,j},E_{j,i}]=E_{i,i}-E_{j,j}.$$\nOr la famille $\\left\\{E_{i,j}\\ (i\\neq j)\\right\\}\\cup\\left\\{E_{i,i}-E_{1,1}\\ (2\\leq i\\leq n)\\right\\}$ compte $n(n-1)+(n-1)=n^2-1$ éléments, elle est libre, et tous ses éléments sont des commutateurs appartenant à $H$. Elle engendre donc $H$ tout entier, par égalité des dimensions. $\\square$\n\n**2. Identification de $u$.**\nPar hypothèse $u(AB)=u(BA)$, donc par linéarité $u([A,B])=u(AB)-u(BA)=0$ : tout commutateur est dans $\\ker u$. D'après la question 1, $H\\subset\\ker u$.\nComme $u(I_n)=I_n\\neq 0$, on a $I_n\\notin\\ker u$, donc $\\ker u\\neq M_n(\\mathbb{R})$. $H$ étant un hyperplan et $H\\subset\\ker u\\subsetneq M_n(\\mathbb{R})$, on conclut $\\ker u=H$.\n\nDécomposons maintenant $M_n(\\mathbb{R})=H\\oplus\\mathbb{R}I_n$ : toute matrice $M$ s'écrit\n$$M=\\underbrace{\\left(M-\\frac{\\mathrm{Tr}(M)}{n}I_n\\right)}_{\\in\\,H}+\\frac{\\mathrm{Tr}(M)}{n}I_n.$$\nEn appliquant $u$ et en utilisant $\\ker u=H$ puis $u(I_n)=I_n$ :\n$$\\boxed{\\;u(M)=\\frac{\\mathrm{Tr}(M)}{n}\\,I_n\\;}$$\n\n**$u$ est un projecteur.** $u^2(M)=u\\left(\\tfrac{\\mathrm{Tr}(M)}{n}I_n\\right)=\\tfrac{\\mathrm{Tr}(M)}{n}u(I_n)=u(M)$. C'est le projecteur sur la droite $\\mathbb{R}I_n$ parallèlement à $H$.\n\n**$u$ conserve la trace.** $\\mathrm{Tr}\\left(u(M)\\right)=\\tfrac{\\mathrm{Tr}(M)}{n}\\,\\mathrm{Tr}(I_n)=\\tfrac{\\mathrm{Tr}(M)}{n}\\cdot n=\\mathrm{Tr}(M)$. $\\square$",
+    "level": 5
   },
   {
     "title": "Système cyclique $x_i+x_{i+1}=2a_i$",
@@ -129,12 +228,26 @@
     "source": "Exercice 22",
     "subject": "Mathématiques",
     "type": "TD",
-    "difficulty": 4,
+    "difficulty": 3,
     "chapter": "Matrices et systèmes",
     "estimatedMinutes": 30,
-    "tags": ["système linéaire", "récurrence", "matrices", "parité"],
+    "tags": [
+      "système linéaire",
+      "récurrence",
+      "matrices",
+      "parité",
+      "DS espaces vectoriels"
+    ],
     "programmeLevel": "sup",
-    "licenseStatus": "à vérifier"
+    "licenseStatus": "à vérifier",
+    "hints": [
+      "Exprimez de proche en proche $x_2,x_3,\\dots$ en fonction de $x_1$ : les signes alternent.",
+      "Vous obtiendrez $x_{k+1}=2\\sum_{j=1}^{k}(-1)^{k-j}a_j+(-1)^kx_1$.",
+      "Reportez dans la DERNIÈRE équation $x_n+x_1=2a_n$ : le coefficient de $x_1$ vaut $1+(-1)^{n-1}$.",
+      "Ce coefficient vaut $2$ si $n$ est impair, et $0$ si $n$ est pair — d'où la discussion."
+    ],
+    "correction": "**Mise en cascade.** Les $n-1$ premières équations donnent $x_{k+1}=2a_k-x_k$, d'où par récurrence immédiate\n$$x_{k+1}=2\\sum_{j=1}^{k}(-1)^{k-j}a_j+(-1)^{k}x_1\\qquad(0\\leq k\\leq n-1).$$\nEn particulier, pour $k=n-1$ :\n$$x_n=2\\sum_{j=1}^{n-1}(-1)^{n-1-j}a_j+(-1)^{n-1}x_1.$$\n\n**La dernière équation.** En reportant dans $x_n+x_1=2a_n$ :\n$$\\left(1+(-1)^{n-1}\\right)x_1=2a_n-2\\sum_{j=1}^{n-1}(-1)^{n-1-j}a_j.$$\nTout se joue sur le coefficient $1+(-1)^{n-1}$.\n\n**Cas $n$ IMPAIR.** Alors $(-1)^{n-1}=1$ et le coefficient vaut $2\\neq 0$ : $x_1$ est déterminé de façon unique,\n$$x_1=a_n-\\sum_{j=1}^{n-1}(-1)^{n-1-j}a_j,$$\npuis tous les $x_k$ par la cascade. **Le système admet une unique solution**, quels que soient les $a_i$ : la matrice du système est inversible.\n\n**Cas $n$ PAIR.** Alors $(-1)^{n-1}=-1$ et le coefficient vaut $0$ : $x_1$ disparaît. L'équation devient une CONDITION DE COMPATIBILITÉ portant sur les seuls $a_j$. En remarquant que $(-1)^{n-1-j}=(-1)^{j+1}$ lorsque $n$ est pair, elle s'écrit\n$$a_1-a_2+a_3-\\dots+a_{n-1}=a_n,\\qquad\\text{c'est-à-dire}\\qquad \\sum_{j=1}^{n}(-1)^{j+1}a_j=0.$$\n— si cette condition est vérifiée, $x_1$ est libre et le système admet une infinité de solutions, décrites par la cascade : l'ensemble des solutions est une droite affine ;\n— sinon, le système n'a aucune solution.\n\n**Vérifications.** Pour $n=2$ : le système est $x_1+x_2=2a_1$ et $x_2+x_1=2a_2$, compatible si et seulement si $a_1=a_2$ — ce que donne bien la condition $a_1-a_2=0$. $\\checkmark$\nPour $n=3$ : en sommant les trois équations, $2(x_1+x_2+x_3)=2(a_1+a_2+a_3)$, puis $x_3=(a_1+a_2+a_3)-2a_1=a_2+a_3-a_1$, solution unique. $\\checkmark$\n\n*La parité de $n$ change la nature du système : c'est exactement le genre de discussion qu'un DS attend, et qu'on rate en oubliant de traiter la dernière équation à part.*",
+    "level": 3
   },
   {
     "title": "Déterminant de $A(a)+xU$",
@@ -145,7 +258,12 @@
     "difficulty": 5,
     "chapter": "Déterminants",
     "estimatedMinutes": 45,
-    "tags": ["déterminant", "matrices", "polynôme", "continuité"],
+    "tags": [
+      "déterminant",
+      "matrices",
+      "polynôme",
+      "continuité"
+    ],
     "competition": "CCINP",
     "programmeLevel": "sup",
     "licenseStatus": "à vérifier"
@@ -159,7 +277,11 @@
     "difficulty": 4,
     "chapter": "Déterminants",
     "estimatedMinutes": 30,
-    "tags": ["déterminant", "matrice tridiagonale", "récurrence"],
+    "tags": [
+      "déterminant",
+      "matrice tridiagonale",
+      "récurrence"
+    ],
     "programmeLevel": "sup",
     "licenseStatus": "à vérifier"
   }
