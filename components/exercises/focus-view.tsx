@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryPicker } from "@/components/exercises/exercise-badges";
 import { SegmentedControl } from "@/components/ui/segmented";
-import { RichMath } from "@/components/rich-math";
+import { MathInline, RichMath } from "@/components/rich-math";
 import { useWorkTimer } from "@/hooks/use-work-timer";
 import { explainReasons } from "@/lib/recommendation";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
@@ -131,15 +131,29 @@ export function FocusView({
 
   // Sauvegarde réellement la séance — avec le résultat choisi, ou `null` si
   // l'utilisateur a préféré passer cette étape (Échap depuis l'écran de
-  // résultat, ou bouton "Passer") : dans les deux cas, exactement le même
-  // comportement qu'avant l'introduction du résultat (temps enregistré,
-  // `attempts`/`last_worked_at` mis à jour si ≥ 1 minute), rien n'est perdu.
+  // résultat, ou bouton "Passer") : dans les deux cas le temps est enregistré,
+  // rien n'est perdu.
+  //
+  // `attempts`/`last_worked_at` suivent DEUX signaux, pas un seul :
+  //
+  //  - une durée d'au moins une minute (l'élève a visiblement travaillé), ou
+  //  - un résultat explicitement DÉCLARÉ (réussi/partiel/échoué).
+  //
+  // Le second est nouveau, et il corrige une incohérence trouvée en parcours
+  // réel : la condition ne portait que sur la durée, donc déclarer « échoué »
+  // sur un exercice bouclé en moins de 60 secondes enregistrait bien la
+  // `WorkSession`… sans jamais toucher à `last_worked_at`. Résultat : l'app
+  // continuait d'annoncer « Jamais travaillé » à côté d'un exercice que
+  // l'élève venait de rater sous ses yeux, et le moteur de recommandation
+  // n'avait aucune trace de récence pour l'espacer. Déclarer un résultat EST
+  // la preuve qu'une tentative a eu lieu — sa durée ne change rien à ce fait.
+  // Passer l'étape (`result === null`) garde exactement l'ancien seuil.
   const commitResult = useCallback(
     (result: AttemptResult | null) => {
       if (draftSession) {
         const finalSession: WorkSession = { ...draftSession, result };
         saveSessions([finalSession, ...sessions]);
-        if (secondsToWholeMinutes(finalSession.duration_seconds) > 0) {
+        if (result !== null || secondsToWholeMinutes(finalSession.duration_seconds) > 0) {
           update(item.id, { attempts: item.attempts + 1, last_worked_at: new Date().toISOString() });
         }
       }
@@ -180,7 +194,7 @@ export function FocusView({
       >
         <div>
           <p className="text-base font-semibold text-zinc-100">Comment s&apos;est passé l&apos;exercice ?</p>
-          <p className="mt-1.5 text-sm text-zinc-500">{item.title}</p>
+          <p className="mt-1.5 text-sm text-zinc-500"><MathInline text={item.title} /></p>
         </div>
         <div className="flex w-full max-w-xs flex-col gap-2.5">
           <Button
@@ -262,7 +276,7 @@ export function FocusView({
               AVANT lui, et la molette de maîtrise — cinq pastilles — pesait
               plus lourd que l'exercice qu'elle qualifie. Elles rejoignent le
               pied de page, où l'élève va après avoir travaillé, pas avant. */}
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem] sm:leading-[1.15]">{item.title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem] sm:leading-[1.15]"><MathInline text={item.title} /></h1>
           <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-zinc-500">
             <span>{item.subject}</span>
             <span aria-hidden>·</span>

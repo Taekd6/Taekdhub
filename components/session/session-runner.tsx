@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input, Select } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
@@ -19,6 +19,7 @@ import { PLAN_STORAGE_KEY, type StoredPlan } from "@/lib/plan";
 import { subjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
 import type { AttemptResult, Exercise, Subject } from "@/lib/supabase/types";
+import { MathInline } from "@/components/rich-math";
 
 type Phase = "loading" | "empty" | "preview" | "focus" | "between" | "summary";
 
@@ -148,6 +149,21 @@ export function SessionRunner() {
     () => (contextSubject ? exercises.filter((item) => item.subject === contextSubject) : exercises),
     [exercises, contextSubject]
   );
+
+  /**
+   * Matières RÉELLEMENT présentes dans la banque active, dans l'ordre
+   * canonique de `subjects` (lib/study.ts).
+   *
+   * Filtrer sur ce qui existe, plutôt que lister les sept matières du modèle,
+   * évite de proposer un choix qui ne mène nulle part : la banque livrée ne
+   * couvre pas toutes les matières, et un élève qui choisit « Anglais » pour
+   * s'entendre répondre « rien à travailler » conclut que l'app est cassée,
+   * pas qu'elle est vide sur ce point.
+   */
+  const availableSubjects = useMemo(() => {
+    const present = new Set(exercises.filter((item) => !item.archived).map((item) => item.subject));
+    return subjects.filter((subject) => present.has(subject));
+  }, [exercises]);
 
   // Aperçu recalculé en direct à chaque changement de budget/mode — c'est la
   // même fonction `recommendExercises` qui produira la sélection réelle au
@@ -311,17 +327,44 @@ export function SessionRunner() {
                   ? "La séance tient dans ce temps — aucun exercice trop long n'est jamais forcé dedans."
                   : "Une sélection de ce nombre exact, classée par urgence et répartie sur plusieurs chapitres."}
               </p>
-              {contextSubject && (
-                <p className="mt-2 text-xs text-accent">
-                  Ciblée sur {contextSubject} ·{" "}
-                  <Link href="/session" className="underline underline-offset-2">
-                    voir la séance complète
-                  </Link>
-                </p>
+
+              {/* CHOISIR LA MATIÈRE — l'étape qui manquait.
+                  L'aperçu de séance ne demandait que « combien de temps ». Or
+                  la première décision d'un élève n'est presque jamais une
+                  durée : c'est « je bosse les maths ce soir ». Ce choix
+                  n'existait que sous forme de paramètre d'URL (`?subject=`),
+                  posé depuis « Prêt pour le DS ? » — donc inatteignable
+                  depuis la page Séance elle-même. Il fallait passer par la
+                  banque d'exercices et ses huit filtres pour faire ce que le
+                  moteur savait déjà faire.
+
+                  Aucune règle de sélection n'est ajoutée ici : ce sélecteur
+                  ne fait que renseigner `contextSubject`, exactement la même
+                  variable que `?subject=` alimentait déjà, et
+                  `scopedExercises` s'occupe du reste. */}
+              {availableSubjects.length > 1 && (
+                <div className="mx-auto mt-5 flex max-w-xs items-center justify-center gap-2">
+                  <label htmlFor="session-subject" className="text-xs text-zinc-500">
+                    Matière
+                  </label>
+                  <Select
+                    id="session-subject"
+                    value={contextSubject ?? "Toutes"}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setContextSubject(value === "Toutes" ? null : (value as Subject));
+                    }}
+                    className="w-auto min-w-[150px]"
+                  >
+                    {["Toutes", ...availableSubjects].map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                  </Select>
+                </div>
               )}
 
               <SegmentedControl
-                className="mx-auto mt-5"
+                className="mx-auto mt-4"
                 ariaLabel="Dimensionner la séance"
                 value={sizingMode}
                 onChange={setSizingMode}
@@ -430,7 +473,7 @@ export function SessionRunner() {
                   <SubjectAvatar subject={exercise.subject} size="sm" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-ink">{exercise.title}</p>
+                  <p className="truncate text-sm text-ink"><MathInline text={exercise.title} /></p>
                   <p className="t-meta mt-0.5 truncate">
                     ≈ {estimatedDurationMinutes(exercise, sessions)} min{reasons.length > 0 && <> · {reasons.slice(0, 2).join(" · ")}</>}
                   </p>
@@ -451,10 +494,10 @@ export function SessionRunner() {
       <Card className="p-8 text-center">
         <CheckCircle2 className="mx-auto text-accent" size={28} />
         <h2 className="mt-4 text-xl font-semibold tracking-tight">Exercice travaillé</h2>
-        {done && <p className="mt-2 text-sm text-zinc-400">{done.title}</p>}
+        {done && <p className="mt-2 text-sm text-zinc-400"><MathInline text={done.title} /></p>}
         <p className="mt-1 text-xs text-zinc-500">
           {currentIndex + 1} / {recommendations.length}
-          {nextPick && <> · Prochain : {nextPick.exercise.title}</>}
+          {nextPick && <> · Prochain : <MathInline text={nextPick.exercise.title} /></>}
         </p>
         {nextReason && <p className="mx-auto mt-2 max-w-sm text-xs text-accent/90">{nextReason}</p>}
         <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -501,7 +544,7 @@ export function SessionRunner() {
         {upcomingNextAction.kind === "start-session" && (
           <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-hairline/[0.09] bg-hairline/[0.025] p-5 text-left">
             <p className="eyebrow">Et maintenant ?</p>
-            <p className="mt-2 text-sm font-medium text-zinc-100">{upcomingNextAction.title}</p>
+            <p className="mt-2 text-sm font-medium text-zinc-100"><MathInline text={upcomingNextAction.title} /></p>
             <p className="mt-1 text-xs leading-5 text-zinc-500">{upcomingNextAction.description}</p>
             <Button
               size="sm"

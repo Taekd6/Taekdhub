@@ -51,7 +51,7 @@ export default function OpengraphImage() {
           Chaque heure compte.
         </div>
         <div style={{ marginTop: 30, fontSize: 33, color: "#a1a1aa", lineHeight: 1.4, maxWidth: 940 }}>
-          Il te dit quoi travailler maintenant — et pourquoi. 402 exercices de prépa scientifique, classés selon tes résultats réels.
+          Il te dit quoi travailler maintenant — et pourquoi. Une banque d’exercices de prépa scientifique, classée selon tes résultats réels.
         </div>
       </div>
     ),

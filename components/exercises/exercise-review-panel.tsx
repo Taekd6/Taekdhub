@@ -8,6 +8,7 @@ import { cn } from "@/lib/cn";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { recommendExercises } from "@/lib/recommendation";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
+import { MathInline } from "@/components/rich-math";
 
 /**
  * Tableau "À revoir" (Sprint 3A) — présentationnel uniquement : tout le
@@ -51,7 +52,7 @@ export function ExerciseReviewPanel({
                 <SubjectAvatar subject={exercise.subject} size="sm" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm text-ink">{exercise.title}</span>
+                <span className="block truncate text-sm text-ink"><MathInline text={exercise.title} /></span>
                 <span className="t-meta mt-0.5 block truncate">{reasons.join(" · ")}</span>
               </span>
               <ArrowRight size={15} className="shrink-0 text-subtle" />
