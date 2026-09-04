@@ -1,7 +1,7 @@
 "use client";
 
 import { Clock3, Eye, EyeOff, Pencil, Target, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { ChapterPicker } from "@/components/exercises/chapter-picker";
@@ -39,6 +39,30 @@ export function ExerciseDetail({
   const [renameValue, setRenameValue] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
+  /**
+   * Énoncé et notes : édités LOCALEMENT, enregistrés à la sortie du champ.
+   *
+   * Ces deux zones de texte appelaient `update` à chaque frappe, et `update`
+   * réécrit la banque entière — 440 exercices, plus de deux mégaoctets — dans
+   * `localStorage`. Recopier l'énoncé d'une feuille de TD, ce sont plusieurs
+   * centaines de frappes, donc autant de sérialisations complètes de la
+   * banque : la saisie devient poussive, et chaque frappe est une occasion
+   * de plus de heurter le quota du navigateur. Une écriture par champ quitté
+   * suffit largement, et l'aperçu LaTeX juste en dessous reste vivant puisque
+   * il lit désormais l'état local.
+   *
+   * Resynchronisé quand la fiche affichée change (`item.id`), jamais sur le
+   * contenu : se recaler sur `item.statement` pendant la frappe ferait
+   * reculer le curseur.
+   */
+  const [statementDraft, setStatementDraft] = useState(item.statement || "");
+  const [noteDraft, setNoteDraft] = useState(item.note || "");
+  useEffect(() => {
+    setStatementDraft(item.statement || "");
+    setNoteDraft(item.note || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id]);
+
   const currentChapter = chapters.find((chapter) => chapter.id === item.chapter_id) ?? null;
   const pastSessions = sessionsForExercise(sessions, item.id);
   const results = resultCounts(pastSessions);
@@ -48,23 +72,29 @@ export function ExerciseDetail({
       <div className="md:col-span-2">
         <p className="eyebrow">Énoncé</p>
         <Textarea
-          value={item.statement || ""}
-          onChange={(event) => update(item.id, { statement: event.target.value })}
+          value={statementDraft}
+          onChange={(event) => setStatementDraft(event.target.value)}
+          onBlur={() => {
+            if (statementDraft !== (item.statement || "")) update(item.id, { statement: statementDraft });
+          }}
           className="mt-2 min-h-32"
           placeholder={"Énoncé complet — maths en LaTeX : $x^2$ inline, $$\\int_0^1 f$$ en bloc"}
         />
-        {item.statement.trim() && (
+        {statementDraft.trim() && (
           <div className="mt-3 rounded-xl border border-hairline/[0.09] bg-hairline/[0.04] p-3 text-sm leading-6 text-zinc-300">
             <p className="mb-1 text-2xs uppercase tracking-wide text-zinc-600">Aperçu</p>
-            <RichMath text={item.statement} />
+            <RichMath text={statementDraft} />
           </div>
         )}
       </div>
       <div>
         <p className="eyebrow">Notes</p>
         <Textarea
-          value={item.note || ""}
-          onChange={(event) => update(item.id, { note: event.target.value || null })}
+          value={noteDraft}
+          onChange={(event) => setNoteDraft(event.target.value)}
+          onBlur={() => {
+            if (noteDraft !== (item.note || "")) update(item.id, { note: noteDraft || null });
+          }}
           className="mt-2 min-h-24"
           placeholder="Ce que tu veux retenir, les erreurs à éviter…"
         />

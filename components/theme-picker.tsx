@@ -3,6 +3,7 @@
 import { Check, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { localData } from "@/lib/storage";
 import { ACCENT_PRESETS, DEFAULT_ACCENT, accentForegroundCss, applyAccent, applyThemeMode, THEME_MODES, type ThemeMode, hexToRgb } from "@/lib/theme";
 import { cn } from "@/lib/cn";
 
@@ -23,19 +24,25 @@ export function ThemePicker() {
   const isPreset = ACCENT_PRESETS.some((preset) => sameHex(preset.hex, accent));
   const mode = ready ? preferences.themeMode : "system";
 
+  // `usePrepahubData` n'est pas un contexte partagé : chaque composant monté a
+  // sa propre instance, et `preferences` n'est donc qu'un INSTANTANÉ pris au
+  // montage de celui-ci. Repartir de cet instantané pour sauvegarder écrasait
+  // silencieusement les réglages faits entre-temps ailleurs sur la page :
+  // choisir une couleur d'accent ici, puis changer l'objectif quotidien dans
+  // le formulaire juste au-dessus, et la couleur revenait à sa valeur
+  // précédente. On relit donc le disque au moment d'écrire, et on n'y modifie
+  // que le champ que ce composant possède réellement.
   function choose(hex: string) {
     // Applique la variable CSS directement ici (en plus de la persistance) :
-    // `usePrepahubData` n'est pas un contexte partagé, chaque composant monté
-    // (ex. le logo de la sidebar) a sa propre instance qui ne "verrait" pas
-    // ce changement avant un rechargement — `applyAccent` agit sur le DOM,
-    // donc immédiatement visible partout, sans dépendre d'un re-rendu React.
+    // aucune autre instance ne "verrait" ce changement avant un rechargement —
+    // `applyAccent` agit sur le DOM, donc immédiatement visible partout.
     applyAccent(hex);
-    savePreferences({ ...preferences, accent: hex });
+    savePreferences({ ...localData.preferences(), accent: hex });
   }
 
   function chooseMode(next: ThemeMode) {
     applyThemeMode(next);
-    savePreferences({ ...preferences, themeMode: next });
+    savePreferences({ ...localData.preferences(), themeMode: next });
   }
 
   return (

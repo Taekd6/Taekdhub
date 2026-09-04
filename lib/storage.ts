@@ -115,6 +115,27 @@ function isoDate(value: unknown): string | null {
 }
 
 /**
+ * Un compteur RÉELLEMENT exploitable (durée, tentatives, minutes estimées),
+ * ou `null`.
+ *
+ * `typeof === "number" && Number.isFinite(...)` ne suffisait pas : un nombre
+ * NÉGATIF traversait la normalisation. Or ces trois champs n'ont aucun sens
+ * en négatif, et une seule valeur négative suffit à fausser durablement tout
+ * ce qui s'additionne — `totalSeconds`/`todaySeconds` (lib/study.ts),
+ * l'objectif du jour, le bilan hebdomadaire, l'XP. Concrètement : une
+ * sauvegarde éditée à la main (ou fusionnée depuis un autre appareil) avec
+ * `duration_seconds: -3600` faisait DIMINUER le temps de travail du jour à
+ * chaque lecture, sans qu'aucune erreur ne soit levée nulle part.
+ *
+ * Même frontière de confiance que `isoDate` : rien d'aberrant ne ressort de
+ * `normalize*`, quitte à retomber sur un défaut sûr.
+ */
+function nonNegativeInteger(raw: unknown): number | null {
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) return null;
+  return Math.round(raw);
+}
+
+/**
  * Correspondances des anciennes valeurs vers le modèle actuel — appliquées
  * une seule fois, à la lecture, pour que les données locales et les
  * sauvegardes déjà exportées continuent de fonctionner sans conversion
@@ -179,7 +200,7 @@ export function normalizeSession(raw: unknown): WorkSession {
     exercise_id: typeof item.exercise_id === "string" ? item.exercise_id : null,
     started_at: startedAt,
     ended_at: isoDate(item.ended_at),
-    duration_seconds: typeof item.duration_seconds === "number" && Number.isFinite(item.duration_seconds) ? item.duration_seconds : 0,
+    duration_seconds: nonNegativeInteger(item.duration_seconds) ?? 0,
     note: typeof item.note === "string" ? item.note : null,
     created_at: isoDate(item.created_at) ?? startedAt,
     // Absent de toute séance antérieure à ce champ (et de toute séance libre,
@@ -238,8 +259,8 @@ function normalizeExercise(raw: unknown): Exercise {
     // calcule à la demande via `minutesSpentOnExercise` (lib/study.ts). Un
     // éventuel `duration_minutes` présent dans d'anciennes données (Sprint 1
     // à 2.5) est simplement ignoré ici, pas migré.
-    estimated_minutes: typeof item.estimated_minutes === "number" ? item.estimated_minutes : null,
-    attempts: typeof item.attempts === "number" ? item.attempts : 0,
+    estimated_minutes: nonNegativeInteger(item.estimated_minutes),
+    attempts: nonNegativeInteger(item.attempts) ?? 0,
     note: typeof item.note === "string" ? item.note : null,
     created_at: createdAt,
     updated_at: isoDate(item.updated_at) ?? createdAt,
@@ -338,22 +359,123 @@ function readRecord(key: string): unknown {
   }
 }
 
+/**
+ * Dernière écriture REFUSÉE par le navigateur, ou `null` si la dernière
+ * écriture de cette clé est bien passée — voir `writeKey`.
+ */
+let lastWriteFailure: { key: string; at: string } | null = null;
+
+/** Voir `writeKey` — consommé par hooks/use-prepahub-data.ts pour que l'échec cesse d'être invisible. */
+export function lastStorageWriteFailure(): { key: string; at: string } | null {
+  return lastWriteFailure;
+}
+
+/**
+ * Écriture BLINDÉE — pendant de `readList` côté écriture.
+ *
+ * `localStorage.setItem` LÈVE (`QuotaExceededError`, ou `SecurityError` quand
+ * le stockage est désactivé/bloqué). Aucun appel n'était protégé : l'erreur
+ * remontait telle quelle depuis un gestionnaire de clic React, ce qui
+ * annulait la SUITE du gestionnaire. Concrètement, dans
+ * components/exercises/focus-view.tsx#commitResult : `saveSessions(...)`
+ * lève → `update(...)` (attempts/last_worked_at) et `onClose(...)` ne
+ * s'exécutent jamais → l'écran « Comment s'est passé l'exercice ? » reste
+ * affiché, la séance ET le résultat sont perdus, sans le moindre message.
+ * Chaque nouveau clic reproduisait exactement le même échec.
+ *
+ * Ce n'est pas une hypothèse d'école : la banque amorcée sérialise à elle
+ * seule ~1,20 million de caractères, soit ~2,3 Mo en UTF-16 — l'unité que
+ * les navigateurs facturent réellement — sur un quota de 5 Mo par origine.
+ * Presque la moitié du budget est consommée avant la première séance.
+ *
+ * Renvoie `false` au lieu de lever : la valeur déjà stockée reste intacte
+ * (setItem est atomique), l'appelant décide quoi faire, et
+ * `lastStorageWriteFailure` permet de le dire à l'élève plutôt que de lui
+ * laisser croire que c'est enregistré.
+ */
+function writeKey(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value);
+    if (lastWriteFailure?.key === key) lastWriteFailure = null;
+    return true;
+  } catch {
+    lastWriteFailure = { key, at: new Date().toISOString() };
+    return false;
+  }
+}
+
+/**
+ * Fusion par `id` d'une liste ENTRANTE avec celle réellement présente sur le
+ * disque au moment de l'écriture — l'entrante fait foi pour les `id` qu'elle
+ * contient, les autres sont conservés tels quels.
+ *
+ * Pourquoi c'est indispensable : chaque appel à `usePrepahubData()` crée sa
+ * PROPRE copie React des données (ce n'est pas un contexte partagé — voir la
+ * note dans components/theme-picker.tsx), et plusieurs composants montés en
+ * même temps en ont donc chacun une. Les écritures incrémentales étant des
+ * REMPLACEMENTS intégraux de la clé (`saveSessions([nouvelle, ...sessions])`),
+ * il suffit qu'une copie soit périmée — ou pas encore chargée — pour effacer
+ * tout le reste. Cas réel reproductible : components/timer.tsx n'attend pas
+ * `ready`, donc tant que `maybeSeedBank()` n'a pas résolu (import dynamique
+ * de 1,35 Mo de JSON + reconstruction de 477 exercices), `sessions` vaut
+ * encore `[]` ; or `useWorkTimer` restaure un chrono persisté dès le premier
+ * effet, donc le bouton « Terminer » est cliquable immédiatement. Un
+ * rechargement en pleine séance suivi de « Terminer » écrivait
+ * `[la séance en cours]` — TOUT l'historique effacé, sans erreur ni retour
+ * en arrière possible.
+ *
+ * La fusion est correcte ici parce que RIEN, dans toute l'application, ne
+ * supprime jamais une séance ni un exercice (archivage seulement) : une
+ * entrée présente sur le disque et absente de la liste entrante ne peut donc
+ * être qu'une entrée que l'appelant n'avait pas encore vue.
+ *
+ * Réservée aux écritures INCRÉMENTALES : la restauration d'une sauvegarde
+ * (components/data-backup.tsx) doit remplacer, et continue d'utiliser
+ * `saveSessions`/`saveExercises`.
+ *
+ * Les entrées du disque sont comparées à l'état BRUT (pas de `normalize*` sur
+ * toute la liste) : `update` est appelé à chaque frappe dans le champ énoncé
+ * (components/exercises/exercise-detail.tsx), et normaliser 477 exercices à
+ * chaque touche coûtait trois fois le prix de l'écriture elle-même. Seules
+ * les entrées réellement absentes de la liste entrante — zéro dans le cas
+ * courant — sont normalisées.
+ */
+function mergeStored<T extends { id: string }>(key: string, incoming: T[], normalize: (raw: unknown) => T): T[] {
+  const incomingIds = new Set(incoming.map((item) => item.id));
+  const unseen = readList(key).filter((raw) => !(isRecord(raw) && typeof raw.id === "string" && incomingIds.has(raw.id)));
+  return unseen.length === 0 ? incoming : [...incoming, ...unseen.map(normalize)];
+}
+
 export const localData = {
   sessions: (): WorkSession[] => (typeof window === "undefined" ? [] : readList(sessionsKey).map(normalizeSession)),
-  saveSessions: (items: WorkSession[]) => localStorage.setItem(sessionsKey, JSON.stringify(items)),
+  /** REMPLACE intégralement les séances stockées — restauration d'une sauvegarde uniquement, voir `mergeSessions` pour une écriture incrémentale. */
+  saveSessions: (items: WorkSession[]): boolean => writeKey(sessionsKey, JSON.stringify(items)),
+  /** Écriture incrémentale sûre : fusionne avec le disque (voir `mergeById`) et renvoie la liste réellement enregistrée. */
+  mergeSessions: (items: WorkSession[]): WorkSession[] => {
+    const merged = mergeStored(sessionsKey, items, normalizeSession);
+    writeKey(sessionsKey, JSON.stringify(merged));
+    return merged;
+  },
   exercises: (): Exercise[] => (typeof window === "undefined" ? [] : readList(exercisesKey).map(normalizeExercise)),
-  saveExercises: (items: Exercise[]) => localStorage.setItem(exercisesKey, JSON.stringify(items)),
+  /** REMPLACE intégralement la banque stockée — amorçage/réconciliation/restauration, voir `mergeExercises` pour une écriture incrémentale. */
+  saveExercises: (items: Exercise[]): boolean => writeKey(exercisesKey, JSON.stringify(items)),
+  /** Écriture incrémentale sûre : fusionne avec le disque (voir `mergeById`) et renvoie la liste réellement enregistrée. */
+  mergeExercises: (items: Exercise[]): Exercise[] => {
+    const merged = mergeStored(exercisesKey, items, normalizeExercise);
+    writeKey(exercisesKey, JSON.stringify(merged));
+    return merged;
+  },
   chapters: (): Chapter[] =>
     typeof window === "undefined" ? [] : readList(chaptersKey).map(normalizeChapter).filter((item): item is Chapter => item !== null),
-  saveChapters: (items: Chapter[]) => localStorage.setItem(chaptersKey, JSON.stringify(items)),
+  saveChapters: (items: Chapter[]): boolean => writeKey(chaptersKey, JSON.stringify(items)),
   preferences: (): Preferences => (typeof window === "undefined" ? defaults : normalizePreferences(readRecord(preferencesKey))),
-  savePreferences: (preferences: Preferences) => localStorage.setItem(preferencesKey, JSON.stringify(preferences)),
+  savePreferences: (preferences: Preferences): boolean => writeKey(preferencesKey, JSON.stringify(preferences)),
   /** Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`), ou `null` si aucune n'a jamais été faite. */
   lastBackupAt: (): string | null => (typeof window === "undefined" ? null : localStorage.getItem(lastBackupKey)),
-  saveLastBackupAt: (iso: string) => localStorage.setItem(lastBackupKey, iso),
+  saveLastBackupAt: (iso: string): boolean => writeKey(lastBackupKey, iso),
   weekSnapshots: (): WeekSnapshot[] =>
     typeof window === "undefined" ? [] : readList(weekSnapshotsKey).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
-  saveWeekSnapshots: (items: WeekSnapshot[]) => localStorage.setItem(weekSnapshotsKey, JSON.stringify(items)),
+  saveWeekSnapshots: (items: WeekSnapshot[]): boolean => writeKey(weekSnapshotsKey, JSON.stringify(items)),
 };
 
 /**
@@ -402,8 +524,18 @@ export function exportBackup(): void {
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = `taekdhub-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
+  // L'ancre DOIT être dans le document, et l'URL objet ne doit PAS être
+  // révoquée dans la foulée de `click()`. Révoquer immédiatement est une
+  // course : le téléchargement n'a pas forcément commencé de lire le Blob
+  // (Firefox, Safari), et l'URL révoquée le fait échouer — silencieusement,
+  // puisque rien n'est levé. Le rappel de sauvegarde, lui, était quand même
+  // remis à zéro juste en dessous : l'élève repartait pour SEPT jours en
+  // croyant avoir une copie de son année qui n'existait pas. C'est
+  // exactement le scénario que ce rappel existe pour éviter.
+  document.body.appendChild(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
   localData.saveLastBackupAt(new Date().toISOString());
 }
 

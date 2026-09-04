@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { PLAN_DURATION_PRESETS } from "@/lib/plan";
-import type { Preferences } from "@/lib/storage";
+import { localData, type Preferences } from "@/lib/storage";
 
 /** Préréglages "objectif hebdomadaire" (Sprint Plan de travail), en minutes — 3h/5h/7h, plus une valeur libre déjà couverte par le champ nombre ci-dessous. */
 const WEEKLY_GOAL_PRESETS = [180, 300, 420];
@@ -26,9 +26,22 @@ export function PreferencesForm() {
     setPrefs(preferences);
   }, [preferences]);
 
+  // N'écrit QUE les quatre champs de ce formulaire, par-dessus ce qui est
+  // réellement enregistré à cet instant. `prefs` est un instantané pris au
+  // montage, et `usePrepahubData` n'est pas un contexte partagé : envoyer
+  // l'objet complet renvoyait aussi `accent` et `themeMode` tels qu'ils
+  // étaient à l'ouverture de la page, annulant la couleur ou le mode que le
+  // sélecteur d'apparence — juste en dessous, sur cette même page Réglages —
+  // venait d'enregistrer.
   function save(event: React.FormEvent) {
     event.preventDefault();
-    savePreferences(prefs);
+    savePreferences({
+      ...localData.preferences(),
+      displayName: prefs.displayName,
+      dailyGoalMinutes: prefs.dailyGoalMinutes,
+      weeklyGoalMinutes: prefs.weeklyGoalMinutes,
+      contestDate: prefs.contestDate,
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }

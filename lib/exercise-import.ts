@@ -156,6 +156,19 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
       return;
     }
 
+    // Un exercice SANS énoncé est un cul-de-sac : le mode focus n'affiche
+    // rien à chercher ("Aucun énoncé renseigné pour cet exercice", voir
+    // components/exercises/focus-view.tsx) et renvoie l'élève éditer la fiche
+    // lui-même — impossible pour du contenu de banque dont il n'a pas la
+    // source papier. Quinze fiches de ce type avaient traversé l'import et
+    // s'étaient installées durablement dans la banque de l'élève. La porte se
+    // ferme ICI, à la frontière, plutôt que d'être rattrapée en aval.
+    const statement = typeof entry.statement === "string" ? entry.statement.trim() : "";
+    if (!statement) {
+      errors.push({ index, message: `${label} ("${title}") — champ "statement" manquant ou vide : un exercice sans énoncé n'est pas travaillable.` });
+      return;
+    }
+
     const subjectRaw = asTrimmedString(entry.subject);
     const subject = subjectRaw && (subjects as string[]).includes(subjectRaw) ? (subjectRaw as Subject) : null;
     if (!subject) {
@@ -290,13 +303,6 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
     }
     const year = typeof yearRaw === "number" ? yearRaw : null;
 
-    // `statement` peut être multi-lignes (énoncé complet) : on ne veut pas le
-    // réduire à `null` s'il ne contient que des espaces en début/fin, mais on
-    // ne le rejette jamais non plus — contrairement aux champs stricts
-    // ci-dessus, absent ou invalide vaut simplement "" (voir la doc du champ
-    // dans lib/supabase/types.ts).
-    const statement = typeof entry.statement === "string" ? entry.statement.trim() : "";
-
     const externalId = asTrimmedString(entry.externalId ?? entry.external_id);
     const sourceUrl = asTrimmedString(entry.sourceUrl ?? entry.source_url);
     const prerequisites = parseListField(entry.prerequisites, ",");
@@ -353,6 +359,8 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
  * autres champs sont optionnels. `programmeLevel: "sup"` est obligatoire dès
  * que `competition` est renseigné (dataset filtré sur le programme de Sup) —
  * X/ENS sont rejetés à l'import, quel que soit `programmeLevel`.
+ * `statement` est obligatoire lui aussi : un exercice sans énoncé n'est pas
+ * travaillable dans l'app (voir `parseExerciseImportPayload`).
  */
 export const EXERCISE_IMPORT_TEMPLATE = [
   {
@@ -373,6 +381,7 @@ export const EXERCISE_IMPORT_TEMPLATE = [
   },
   {
     title: "Exemple à remplacer — sans les champs optionnels",
+    statement: "Énoncé à remplacer — seuls title, statement, source et subject sont obligatoires.",
     source: "Modèle d'import TaekdHub",
     subject: "Physique",
     type: "DM",
@@ -380,6 +389,7 @@ export const EXERCISE_IMPORT_TEMPLATE = [
   },
   {
     title: "Exemple à remplacer — exercice de concours (champs infra)",
+    statement: "Énoncé à remplacer par celui du sujet réel.",
     source: "Modèle d'import TaekdHub — remplace par la vraie référence (ex. \"CCINP 2022 MP Maths 1\")",
     subject: "Mathématiques",
     type: "Concours",
@@ -395,6 +405,7 @@ export const EXERCISE_IMPORT_TEMPLATE = [
   },
   {
     title: "Exemple à remplacer — pilier de Spé (hors recommandations actives)",
+    statement: "Énoncé à remplacer — une notion de 2e année, à débloquer une fois le cours vu.",
     source: "Modèle d'import TaekdHub",
     subject: "Mathématiques",
     type: "TD",
