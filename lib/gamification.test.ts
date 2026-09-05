@@ -11,7 +11,7 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     chapter_id: null, source: "Test", year: null, competition: null, programme_level: null,
     license_status: null, external_id: null,
   epreuve: null,
-  filiere: null,
+  filieres: [],
   exercise_number: null,
   provenance: "originale", source_url: null, prerequisites: [],
     pedagogical_goal: null, level: null, type: "TD", difficulty: 3,

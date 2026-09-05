@@ -30,53 +30,51 @@ from pathlib import Path
 
 try:
     from pdfminer.high_level import extract_pages
-    from pdfminer.layout import LAParams, LTTextContainer
+    from pdfminer.layout import LAParams, LTChar, LTLine, LTRect, LTTextLine
 except ImportError:
     sys.exit("pdfminer.six est requis :  pip install pdfminer.six")
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from pdf_glyphs import resolve  # noqa: E402
+
 # --------------------------------------------------------------------------
-# 1. Décodage des glyphes
+# 1. Décodage des glyphes, POLICE PAR POLICE
 #
-# Ces PDF utilisent les polices Computer Modern avec un encodage que
-# l'extraction ne sait pas résoudre : les accents ressortent en « Ø », les
-# ligatures et les symboles mathématiques en « (cid:NN) ». Chaque entrée
-# ci-dessous a été établie en lisant le contexte réel dans les fichiers
-# (« vØri(cid:28)ant » → « vérifiant »), jamais devinée.
+# Un même code interne ne veut pas dire la même chose selon la police qui l'a
+# dessiné : 20 est « ⩽ » en CMSY10 et « [ » en CMEX10. La table globale qu'on
+# utilisait au début se trompait donc nécessairement sur l'un des deux. Le
+# module pdf_glyphs résout chaque code en fonction de sa police réelle, et
+# laisse « (cid:N) » visible quand il ne sait pas — ce qui fait échouer le
+# contrôle qualité plutôt que de livrer un symbole faux.
 # --------------------------------------------------------------------------
-CID_MAP = {
-    # délimiteurs extensibles (grandes parenthèses, accolades, crochets)
-    0: "(", 1: ")", 8: "{", 9: "}", 18: "(", 19: ")",
-    26: "{", 32: "(", 33: ")", 40: "{", 74: "⟦", 75: "⟧",
-    110: "{", 111: "}",
-    # barres et normes
-    12: "|", 13: "‖", 107: "‖",
-    # ligatures
-    27: "ff", 28: "fi", 30: "ffi",
-    # opérateurs et relations (tables cmsy/cmex)
-    20: "≤", 21: "≥", 48: "′", 54: "≠", 55: "↦",
-    80: "∑", 88: "∑", 81: "∏", 89: "∏", 82: "∫", 90: "∫",
-    96: "ℓ", 98: "⌊", 99: "⌋", 104: "⟨", 105: "⟩",
-    112: "√", 114: "√", 115: "√",
-    126: "",  # accent vecteur : la flèche est dessinée à part, on la retire
-    # lettres accentuées majuscules et cédilles
-    192: "À", 201: "É", 224: "à", 231: "ç", 238: "î", 239: "ï", 244: "ô",
-}
-CHAR_MAP = {"Ø": "é", "ß": "û", "Ł": "è", "Œ": "ê", "ø": "ù", "": "", "": "", "": ""}
+CHAR_MAP = {"Ø": "é", "ß": "û", "Ł": "è", "Œ": "ê", "ø": "ù"}
+CID_RE = re.compile(r"^\(cid:(\d+)\)$")
 
 
 def decode(text: str) -> str:
-    for cid, repl in CID_MAP.items():
-        text = text.replace(f"(cid:{cid})", repl)
-    # « ≠ » et « ↦ » sont composés de deux glyphes dans la source : on les
-    # recolle AVANT la substitution générale, sinon on obtient « ≠= » ou « ↦→ ».
+    """Nettoyage des caractères mal transcodés qui ne dépendent pas d'une police."""
     text = text.replace("(cid:54)=", "≠").replace("(cid:55)→", "↦")
-    text = text.replace("≠=", "≠").replace("↦→", "↦")
+    text = text.replace("≠=", "≠").replace("↦→", "↦").replace("↦−→", "↦")
     for bad, good in CHAR_MAP.items():
         text = text.replace(bad, good)
-    # Les délimiteurs extensibles (grandes parenthèses/accolades dessinées)
-    # occupent la zone Private Use : ils n'ont aucun sens hors mise en page.
+    # Faux-gras : LaTeX simule le gras en redessinant le glyphe avec un
+    # léger décalage, et l'extraction rend « α ⩽⩽⩽ 0 ». On ramène toute
+    # répétition d'un même symbole de relation à une seule occurrence.
+    text = re.sub(r"([⩽⩾≤≥<>=≠∈⊂⇒⇔])\1{2,}", r"\1", text)
+    # Les délimiteurs extensibles occupent la zone à usage privé d'Unicode :
+    # ils n'ont de sens que pour la mise en page.
     text = "".join(ch for ch in text if not (0xE000 <= ord(ch) <= 0xF8FF))
     return unicodedata.normalize("NFC", text)
+
+
+def char_text(ch) -> str:
+    """Le caractère réellement dessiné, résolu via sa police si nécessaire."""
+    raw = ch.get_text()
+    match = CID_RE.match(raw)
+    if not match:
+        return raw
+    resolved = resolve(ch.fontname, int(match.group(1)))
+    return resolved if resolved is not None else raw
 
 
 # --------------------------------------------------------------------------
@@ -87,19 +85,98 @@ def decode(text: str) -> str:
 # celui de l'exercice 5. On regroupe donc les blocs par colonne avant de les
 # ordonner de haut en bas.
 # --------------------------------------------------------------------------
-def page_text(page) -> str:
-    blocks = [b for b in page if isinstance(b, LTTextContainer)]
-    if not blocks:
+# Marqueur injecté là où un SURLIGNAGE a été détecté — voir _overline_marks.
+OVERLINE_MARK = "⟪surlignage⟫"
+
+
+def _lines_and_rules(page):
+    lines, rules, chars, stack = [], [], [], [page]
+    while stack:
+        obj = stack.pop()
+        if isinstance(obj, LTTextLine):
+            lines.append(obj)
+            chars.extend(c for c in obj if isinstance(c, LTChar))
+        elif isinstance(obj, (LTRect, LTLine)):
+            rules.append(obj)
+        elif hasattr(obj, "__iter__"):
+            try:
+                stack.extend(list(obj))
+            except TypeError:
+                pass
+    return lines, rules, chars
+
+
+def _overline_marks(lines, rules, chars):
+    """
+    Repère les lignes portant un SURLIGNAGE, et elles seules.
+
+    Un surlignage — adhérence d'une partie, conjugué d'un complexe, événement
+    contraire — est tracé comme un TRAIT, pas comme un caractère : il
+    s'évapore à l'extraction. « A ⊂ B ⟹ Ā ⊂ B̄ » devient alors
+    « A ⊂ B ⟹ A ⊂ B », c'est-à-dire un énoncé trivial et FAUX. Rien dans le
+    texte obtenu ne permet de s'en apercevoir : c'est le pire cas possible,
+    une corruption silencieuse.
+    
+    On distingue le surlignage de la barre de fraction par ce qui l'entoure :
+    une fraction a du texte au-dessus ET au-dessous, un surlignage seulement
+    au-dessous. Sur le document CCINP, 1330 barres de fraction pour 65
+    surlignages — c'est bien une minorité identifiable, pas un rejet massif.
+    """
+    marked = set()
+    for rule in rules:
+        height, width = rule.y1 - rule.y0, rule.x1 - rule.x0
+        if height > 2.5 or width < 4:
+            continue
+        overlaps = lambda c: c.x1 > rule.x0 and c.x0 < rule.x1
+        # La fenêtre « au-dessus » doit rester PLUS SERRÉE que l'interligne
+        # (environ 13,7 pt ici) : trop large, elle prenait la ligne de texte
+        # précédente pour un numérateur et classait tous les surlignages en
+        # barres de fraction. Un numérateur, lui, colle à sa barre.
+        above = any(rule.y1 - 0.5 <= c.y0 <= rule.y1 + 4.5 and overlaps(c) for c in chars)
+        below = any(rule.y0 - 9 <= c.y1 <= rule.y0 + 1.5 and overlaps(c) for c in chars)
+        if above or not below:
+            continue
+        for index, line in enumerate(lines):
+            # Le trait se pose juste au-dessus des lettres qu'il surligne :
+            # sa hauteur dépasse donc légèrement le sommet de la ligne.
+            if line.y0 - 9 <= rule.y0 <= line.y1 + 5 and line.x1 > rule.x0 and line.x0 < rule.x1:
+                marked.add(index)
+                break
+    return marked
+
+
+def page_text(page, two_columns: bool) -> str:
+    """
+    Texte d'une page, dans l'ordre de LECTURE.
+
+    Les recueils d'oraux sont composés sur deux colonnes en paysage : lues
+    linéairement, elles entrelacent les exercices (le texte de l'exercice 1
+    se retrouve coupé par celui de l'exercice 5). Le document officiel du
+    CCINP, lui, est sur une seule colonne. D'où le paramètre.
+    """
+    lines, rules, chars = _lines_and_rules(page)
+    if not lines:
         return ""
+    marked = _overline_marks(lines, rules, chars)
+    # Les espaces d'une ligne sont des LTAnno, pas des LTChar : les filtrer
+    # collerait tous les mots entre eux (« EXERCICE1analyse »).
+    render = lambda line: "".join(
+        char_text(c) if isinstance(c, LTChar) else c.get_text() for c in line
+    ).rstrip()
+    tag = lambda index, line: render(line) + (OVERLINE_MARK if index in marked else "")
+    numbered = list(enumerate(lines))
+    if not two_columns:
+        numbered.sort(key=lambda p: (-round(p[1].y1, 1), p[1].x0))
+        return "\n".join(tag(i, l) for i, l in numbered)
     split = page.width / 2
-    left = sorted((b for b in blocks if b.x0 < split), key=lambda b: -b.y1)
-    right = sorted((b for b in blocks if b.x0 >= split), key=lambda b: -b.y1)
-    return "\n".join(b.get_text() for b in left + right)
+    left = sorted((p for p in numbered if p[1].x0 < split), key=lambda p: -p[1].y1)
+    right = sorted((p for p in numbered if p[1].x0 >= split), key=lambda p: -p[1].y1)
+    return "\n".join(tag(i, l) for i, l in left + right)
 
 
-def pdf_text(path: Path) -> str:
+def pdf_text(path: Path, two_columns: bool = True) -> str:
     pages = extract_pages(str(path), laparams=LAParams(line_margin=0.3))
-    return decode("\n".join(page_text(p) for p in pages))
+    return decode("\n".join(page_text(p, two_columns) for p in pages))
 
 
 def strip_noise(text: str) -> str:
@@ -113,9 +190,17 @@ def strip_noise(text: str) -> str:
 # --------------------------------------------------------------------------
 # En-têtes, pieds de page et mentions de diffusion réinjectés au fil du texte
 # par les sauts de page : ils n'appartiennent à aucun énoncé.
+# Une ligne réduite à des délimiteurs ou à un grand opérateur, sans rien
+# d'autre : la formule qu'elle structurait a perdu son contenu.
+ORPHAN_DELIM_RE = re.compile(r"^[()\[\]{}√∑∏∫|‖⟦⟧⌊⌋⟨⟩]+$")
+
 NOISE_RE = re.compile(
     r"^\s*(?:\[http[^\]]*\]\s*édité le .*"
     r"|Diffusion autorisée[^\n]*"
+    r"|Banque épreuve orale de mathématiques session \d{4}, CCINP[^\n]*"
+    r"|Mise à jour\s*:\s*\d{2}/\d{2}/\d{4}\s*"
+    r"|CC BY-NC-SA[^\n]*"
+    r"|Page\s+\d+\s*"
     r"|Énoncés\s*|Enoncés\s*|Corrections\s*"
     r"|\d{1,3}\s*)$", re.M)
 
@@ -163,41 +248,55 @@ def split_corrections(text: str):
 # motifs ci-dessous signalent une extraction abîmée : glyphe non résolu,
 # reste de matrice éclatée en fragments, ligne réduite à un nombre isolé.
 # --------------------------------------------------------------------------
-def quality_issue(text: str) -> str | None:
+def quality_issue(text: str, *, strict_end: bool = True, max_len: int = 2500) -> str | None:
+    """
+    `strict_end` n'a de sens que lorsque la fin de l'énoncé est DEVINÉE. Dans
+    un recueil à deux colonnes, on découpe au marqueur de l'exercice suivant
+    et une phrase inachevée trahit une troncature. Le document officiel du
+    CCINP, lui, délimite explicitement énoncé et corrigé : un énoncé peut donc
+    parfaitement se terminer par une formule, et l'exiger ponctué écartait
+    quatorze exercices intacts.
+    """
     if len(text) < 70:
         return "trop court (extraction probablement tronquée)"
-    if len(text) > 2500:
+    if len(text) > max_len:
         return "trop long (exercices probablement fusionnés)"
     if "(cid:" in text:
         return "glyphe non résolu"
+    if OVERLINE_MARK in text:
+        return "surlignage perdu (adhérence, conjugué ou événement contraire)"
     lines = [l.strip() for l in text.split("\n") if l.strip()]
     if not lines:
         return "vide"
-    # Une formule affichée ressort en fragments minuscules empilés : plusieurs
-    # lignes de 1 à 3 caractères d'affilée trahissent une matrice démontée.
-    tiny = sum(1 for l in lines if len(l) <= 3)
-    if tiny >= 3:
-        return "formule affichée éclatée (matrice/somme démontée)"
-    if tiny / len(lines) > 0.30:
-        return "mise en page fragmentée"
+    # SIGNAL DÉCISIF : un délimiteur orphelin.
+    #
+    # Une formule affichée est dessinée en deux dimensions ; l'extraction la
+    # met à plat. Deux cas très différents en résultent. Une BORNE déplacée
+    # (« ∑ » puis « n=1 » puis « n » sur trois lignes) reste parfaitement
+    # lisible : l'élève reconstitue la somme sans effort. Une PARENTHÈSE ou un
+    # opérateur seul sur sa ligne, en revanche, signale que la structure de
+    # l'expression est perdue — on ne sait plus ce qu'elle enferme.
+    #
+    # Le seuil de trois a été calibré sur le document CCINP : à zéro, un ou
+    # deux orphelins les 85 énoncés restent lisibles ; au-delà, les
+    # expressions sont réellement disloquées. Compter les lignes courtes, ce
+    # qu'on faisait avant, rejetait au contraire des énoncés parfaits dont la
+    # seule faute était une somme indexée.
+    # On mesure une DENSITÉ, pas un total : un corrigé de deux pages contient
+    # naturellement plus de formules qu'un énoncé de dix lignes, et un seuil
+    # absolu le condamnait pour sa seule longueur. Trois orphelins restent le
+    # plancher — en dessous, l'énoncé se lit toujours.
+    orphans = sum(1 for l in lines if ORPHAN_DELIM_RE.match(l))
+    if orphans >= 3 and orphans / len(lines) >= 0.08:
+        return f"formule affichée disloquée ({orphans} délimiteurs orphelins sur {len(lines)} lignes)"
+    # Une matrice éclatée : plusieurs lignes ne contenant que des entrées
+    # séparées par des espaces, sans un mot de français.
+    matrix_rows = sum(1 for l in lines if re.fullmatch(r"[-−\d\s.,a-z]{2,40}", l) and len(l.split()) >= 3)
+    if matrix_rows >= 3:
+        return "matrice éclatée en fragments"
     if re.search(r"\.\.\.\s*\n\s*\.\.\.", text):
         return "points de suspension de matrice"
-    # Une accolade d'ensemble « { x | P(x) } » dessinée en 2D ressort avec ses
-    # barres détachées, sur leur propre ligne ou en tête de ligne. L'énoncé
-    # reste lisible en apparence mais l'ordre des membres est faux.
-    if re.search(r"^\s*\|", text, re.M) or re.search(r"^\s*\|\s*$", text, re.M):
-        return "barres d'ensemble détachées (ordre des lignes non fiable)"
-    if text.count(" | ") >= 3:
-        return "barres d'ensemble dispersées"
-    # Une intégrale, une somme ou une fraction affichée est dessinée en
-    # plusieurs morceaux empilés : bornes, numérateur, dénominateur. Quand un
-    # gros opérateur voisine des fragments très courts, l'ordre de lecture
-    # restitué n'a plus rien à voir avec la formule d'origine.
-    if re.search(r"[∫∑∏√]", text):
-        short = sum(1 for l in lines if len(l) <= 14)
-        if short >= 2:
-            return "formule affichée en morceaux (intégrale/somme/fraction)"
-    if not re.search(r"[.?]\s*$", text.strip()) and not text.strip().endswith(("]", ")", "$")):
+    if strict_end and not re.search(r"[.?]\s*$", text.strip()) and not text.strip().endswith(("]", ")", "$")):
         return "énoncé sans fin de phrase (probablement coupé)"
     return None
 
@@ -316,6 +415,90 @@ def build_row(concours, epreuve, filiere, chapitre, num, ident, statement, corre
     }
 
 
+# --------------------------------------------------------------------------
+# 5 bis. Banque officielle CCINP — provenance COMPLÈTE
+#
+# Contrairement à un recueil d'oraux, ce document dit tout : le concours, la
+# session, l'épreuve, le numéro de chaque exercice et le domaine. C'est donc
+# la seule source rencontrée jusqu'ici qui puisse prétendre à
+# « concours-verifie ». Le document est publié sous licence CC BY-NC-SA 3.0
+# FR, ce qui autorise sa réutilisation avec attribution.
+#
+# Une précision qui compte : le PDF est publié « filière MP et filière MPI ».
+# Rien n'y rattache un exercice donné à l'une plutôt qu'à l'autre, donc les
+# deux filières sont enregistrées. Choisir MP seul serait inventer.
+# --------------------------------------------------------------------------
+CCINP_HEADER_RE = re.compile(r"EXERCICE\s+(\d+)\s+(analyse|alg[èe]bre|probabilit[ée]s)", re.I)
+CCINP_ENONCE_RE = re.compile(r"[ÉE]nonc[ée]\s+[Ee]xercice\s+(\d+)")
+CCINP_CORRIGE_RE = re.compile(r"Corrig[ée]\s+[Ee]xercice\s+(\d+)")
+
+# Domaine annoncé par le document → chapitre de repli, utilisé seulement si
+# l'analyse du contenu ne reconnaît rien de plus précis.
+CCINP_DOMAINE = {"analyse": "Analyse", "algèbre": "Algèbre", "algebre": "Algèbre",
+                 "probabilités": "Probabilités", "probabilites": "Probabilités"}
+
+
+def parse_ccinp(paths, session: str, stats):
+    text = strip_noise("\n".join(pdf_text(p, two_columns=False) for p in paths))
+    heads = list(CCINP_HEADER_RE.finditer(text))
+    rows = []
+    for i, head in enumerate(heads):
+        number = int(head.group(1))
+        domaine = head.group(2).lower()
+        end = heads[i + 1].start() if i + 1 < len(heads) else len(text)
+        block = text[head.end():end]
+
+        enonce = CCINP_ENONCE_RE.search(block)
+        corrige = CCINP_CORRIGE_RE.search(block)
+        stats["vus"] += 1
+        if not enonce:
+            stats["rejets"].setdefault("énoncé introuvable", []).append(number)
+            continue
+        statement = strip_noise(block[enonce.end(): corrige.start() if corrige else len(block)])
+        correction = strip_noise(block[corrige.end():]) if corrige else ""
+
+        # Les bornes sont explicites dans ce document, donc pas de contrôle de
+        # fin de phrase ; un corrigé est légitimement long, d'où un plafond
+        # nettement plus haut que pour un énoncé.
+        issue = quality_issue(statement, strict_end=False, max_len=4500)
+        if issue:
+            stats["rejets"].setdefault(issue, []).append(number)
+            continue
+        if correction and quality_issue(correction, strict_end=False, max_len=20000):
+            correction = ""
+            stats["corr_rejetees"] += 1
+
+        chapitre = classify(statement, CCINP_DOMAINE.get(domaine, "Oral de concours"))
+        rows.append({
+            "title": make_title(statement, str(number)),
+            "statement": statement,
+            "correction": correction,
+            "source": f"CCINP — banque de l'épreuve orale de mathématiques, session {session}, "
+                      f"exercice {number} (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+            "subject": "Mathématiques",
+            "type": "Concours",
+            "chapter": chapitre,
+            "tags": [domaine, "oral CCINP"],
+            "difficulty": difficulty_for("CCINP", statement),
+            "estimatedMinutes": 25,
+            "competition": "CCINP",
+            "epreuve": "Oral de mathématiques",
+            # Le document ne distingue pas MP de MPI : on garde les deux.
+            "filieres": ["MP", "MPI"],
+            "exerciseNumber": str(number),
+            "year": int(session),
+            "provenance": "concours-verifie",
+            "programmeLevel": "spe",
+            "licenseStatus": "libre",
+            "externalId": f"ccinp-{session}-{number}",
+            "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+            "note": f"Banque officielle CCINP, session {session}, exercice {number}, "
+                    f"filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR.",
+        })
+        stats["gardes"] += 1
+    return rows
+
+
 def process(pdf_path: Path, concours, epreuve, filiere, chapitre, stats):
     text = pdf_text(pdf_path)
     corrections = split_corrections(text)
@@ -324,7 +507,7 @@ def process(pdf_path: Path, concours, epreuve, filiere, chapitre, stats):
         stats["vus"] += 1
         issue = quality_issue(statement)
         if issue:
-            stats["rejets"][issue] = stats["rejets"].get(issue, 0) + 1
+            stats["rejets"].setdefault(issue, []).append(ident)
             continue
         corr = corrections.get(num, "")
         if corr and quality_issue(corr):
@@ -341,10 +524,16 @@ def main():
     ap.add_argument("--pdf", type=Path, help="un seul PDF")
     ap.add_argument("--concours"); ap.add_argument("--epreuve", default="Oral")
     ap.add_argument("--filiere", default="MP"); ap.add_argument("--chapitre")
+    ap.add_argument("--ccinp", type=Path, nargs="+", help="PDF(s) de la banque officielle CCINP")
+    ap.add_argument("--session", default="2025", help="session de la banque CCINP (défaut : 2025)")
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args()
 
     stats = {"vus": 0, "gardes": 0, "corr_rejetees": 0, "rejets": {}}
+    if a.ccinp:
+        rows = parse_ccinp(sorted(a.ccinp), a.session, stats)
+        write_output(rows, a.out, stats)
+        return
     rows, workdir = [], Path("/tmp/taekdhub-ingest")
 
     if a.zip:
@@ -372,23 +561,32 @@ def main():
     else:
         sys.exit("Fournir --zip ou --pdf")
 
-    # Dédoublonnage sur l'identifiant stable de l'exercice.
+    write_output(rows, a.out, stats)
+
+
+def write_output(rows, out: Path, stats):
+    """Dédoublonne sur l'identifiant stable, écrit le fichier, rend compte."""
     seen, unique = set(), []
-    for r in rows:
-        if r["externalId"] in seen:
-            stats["rejets"]["doublon"] = stats["rejets"].get("doublon", 0) + 1
+    for row in rows:
+        if row["externalId"] in seen:
+            stats["rejets"].setdefault("doublon", []).append(row["externalId"])
             continue
-        seen.add(r["externalId"]); unique.append(r)
+        seen.add(row["externalId"])
+        unique.append(row)
 
-    a.out.parent.mkdir(parents=True, exist_ok=True)
-    a.out.write_text(json.dumps(unique, ensure_ascii=False, indent=2), encoding="utf-8")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(unique, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    print(f"\n{stats['vus']} exercices lus, {len(unique)} retenus "
-          f"({100*len(unique)//max(1,stats['vus'])} %), {stats['corr_rejetees']} corrections écartées.")
-    print("Rejets :")
-    for reason, n in sorted(stats["rejets"].items(), key=lambda kv: -kv[1]):
-        print(f"  {n:5d}  {reason}")
-    print(f"\nÉcrit dans {a.out} — à importer depuis TaekdHub (Exercices → Importer).")
+    kept = len(unique)
+    print(f"\n{stats['vus']} exercices lus, {kept} retenus "
+          f"({100 * kept // max(1, stats['vus'])} %), {stats['corr_rejetees']} corrections écartées.")
+    if stats["rejets"]:
+        print("Rejets :")
+        for reason, items in sorted(stats["rejets"].items(), key=lambda kv: -len(kv[1])):
+            detail = ", ".join(str(x) for x in sorted(items, key=str)[:24])
+            more = "…" if len(items) > 24 else ""
+            print(f"  {len(items):5d}  {reason}\n         exercices : {detail}{more}")
+    print(f"\nÉcrit dans {out} — à importer depuis TaekdHub (Exercices → Importer).")
 
 
 if __name__ == "__main__":

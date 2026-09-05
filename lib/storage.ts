@@ -253,7 +253,14 @@ function normalizeExercise(raw: unknown): Exercise {
     // antérieure : normalisés à null, et `provenance` DÉDUITE prudemment
     // plutôt que supposée vérifiée (voir lib/supabase/types.ts#Provenance).
     epreuve: typeof item.epreuve === "string" && item.epreuve.trim() ? item.epreuve : null,
-    filiere: (FILIERES as string[]).includes(item.filiere as string) ? (item.filiere as Filiere) : null,
+    // Rétrocompatibilité : les fiches enregistrées avant le passage à une
+    // liste portaient un `filiere` unique. On le relit tel quel plutôt que de
+    // le perdre.
+    filieres: Array.isArray(item.filieres)
+      ? item.filieres.filter((value): value is Filiere => (FILIERES as string[]).includes(value as string))
+      : (FILIERES as string[]).includes(item.filiere as string)
+        ? [item.filiere as Filiere]
+        : [],
     exercise_number: typeof item.exercise_number === "string" && item.exercise_number.trim() ? item.exercise_number : null,
     provenance: (PROVENANCES as string[]).includes(item.provenance as string)
       ? (item.provenance as Provenance)

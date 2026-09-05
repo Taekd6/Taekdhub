@@ -12,7 +12,7 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     chapter_id: null, source: "Ancienne source", year: null, competition: null, programme_level: null,
     license_status: null, external_id: null,
   epreuve: null,
-  filiere: null,
+  filieres: [],
   exercise_number: null,
   provenance: "originale", source_url: null, prerequisites: [],
     pedagogical_goal: null, level: null, type: "TD", difficulty: 3,
@@ -300,13 +300,22 @@ describe("clé de banque — deux écritures d'un même titre ne font qu'une fic
  * futur ajout de dataset ne puisse pas les défaire en silence.
  */
 describe("loadSeedBank — invariants de la banque livrée", () => {
-  it("aucune fiche sans énoncé, aucun doublon de titre", async () => {
+  it("aucune fiche sans énoncé, aucune fiche en double", async () => {
     const { exercises } = await loadSeedBank();
 
     expect(exercises.length).toBeGreaterThan(0);
     expect(exercises.filter((exercise) => !exercise.statement.trim())).toEqual([]);
 
-    const keys = exercises.map((exercise) => `${exercise.subject}::${exercise.title.normalize("NFKC").replace(/[‘’]/g, "'").replace(/\s+/g, " ").trim().toLowerCase()}`);
+    // L'unicité se juge sur l'IDENTITÉ, pas sur l'intitulé. Deux exercices
+    // d'une banque de concours peuvent porter le même titre — « Montrer que
+    // f est de classe C¹ » n'appartient à personne — tout en étant deux
+    // exercices distincts, numérotés différemment. Exiger des titres uniques
+    // reviendrait à en jeter un.
+    const identity = (exercise: (typeof exercises)[number]) =>
+      exercise.external_id
+        ? `id::${exercise.external_id}`
+        : `titre::${exercise.subject}::${exercise.title.normalize("NFKC").replace(/[‘’]/g, "'").replace(/\s+/g, " ").trim().toLowerCase()}`;
+    const keys = exercises.map(identity);
     expect(keys.length - new Set(keys).size).toBe(0);
   });
 });

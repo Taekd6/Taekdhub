@@ -19,7 +19,7 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     license_status: null,
     external_id: null,
   epreuve: null,
-  filiere: null,
+  filieres: [],
   exercise_number: null,
   provenance: "originale",
     source_url: null,

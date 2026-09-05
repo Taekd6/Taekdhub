@@ -30,7 +30,17 @@ export function ProvenanceBadge({ exercise, className }: { exercise: Exercise; c
   }
 
   // Session et épreuve ne s'affichent que si elles existent réellement.
-  const details = [exercise.year ? String(exercise.year) : null, exercise.epreuve].filter(Boolean).join(" · ");
+  // On n'affiche que ce que la source établit : la session si elle est
+  // connue, l'épreuve si elle l'est, les filières telles qu'elles sont
+  // publiées — « MP · MPI » quand le sujet vaut pour les deux, jamais l'une
+  // choisie à la place de l'autre.
+  const details = [
+    exercise.year ? String(exercise.year) : null,
+    exercise.epreuve,
+    exercise.filieres.length > 0 ? exercise.filieres.join(" · ") : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const verified = exercise.provenance === "concours-verifie";
 
   return (

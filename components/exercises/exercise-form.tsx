@@ -44,7 +44,7 @@ export interface NewExerciseInput {
   pedagogicalGoal?: string | null;
   level?: ExerciseLevel | null;
   epreuve?: string | null;
-  filiere?: Filiere | null;
+  filieres?: Filiere[];
   exerciseNumber?: string | null;
   /** Niveau de vérification de la provenance — voir `Provenance` (lib/supabase/types.ts). Déduit si absent. */
   provenance?: Provenance | null;

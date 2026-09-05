@@ -82,6 +82,16 @@ describe("provenance — un exercice ne peut pas revendiquer plus qu'il ne prouv
     expect(errors[0].message).toContain("filière invalide");
   });
 
+  it("conserve PLUSIEURS filières quand la source en publie plusieurs", () => {
+    const { rows, errors } = importOne({ competition: "CCINP", epreuve: "Oral", filieres: ["MP", "MPI"] });
+    expect(errors).toEqual([]);
+    expect(rows[0].input.filieres).toEqual(["MP", "MPI"]);
+  });
+
+  it("n'invente aucune filière quand la source est muette", () => {
+    expect(importOne({ competition: "CCINP", epreuve: "Oral" }).rows[0].input.filieres).toEqual([]);
+  });
+
   it("déduit prudemment la provenance quand elle n'est pas déclarée", () => {
     expect(importOne({ competition: "Centrale", epreuve: "Oral" }).rows[0].input.provenance).toBe("concours-partiel");
     expect(importOne({}).rows[0].input.provenance).toBe("originale");

@@ -18,7 +18,7 @@ export const SEED_FLAG_KEY = "prepahub:seeded";
  * ajoutés, libellés de chapitres de Mathématiques consolidés (60 → 20, plus
  * aucun chapitre à une seule fiche). 477 → 440 exercices.
  */
-export const SEED_CONTENT_VERSION = 7;
+export const SEED_CONTENT_VERSION = 8;
 export const SEED_VERSION_KEY = "prepahub:seeded:version";
 
 function buildSeed(bank: unknown): { exercises: Exercise[]; chapters: Chapter[] } {
@@ -44,12 +44,27 @@ function buildSeed(bank: unknown): { exercises: Exercise[]; chapters: Chapter[] 
 }
 
 
+/**
+ * Dédoublonnage de la banque livrée — MÊME RÈGLE que l'import manuel
+ * (lib/exercise-import.ts#identityKeys) : l'identifiant externe fait foi
+ * quand il existe, le titre ne sert qu'à défaut.
+ *
+ * Les deux chemins divergeaient, et cela se voyait : deux exercices du CCINP
+ * portent le même intitulé — « Montrer que… » n'a rien d'unique — mais des
+ * numéros différents. L'amorçage en écartait un, l'import le gardait, si bien
+ * que réimporter le fichier officiel proposait toujours « 1 exercice » à
+ * ajouter. Un exercice de la banque officielle était purement et simplement
+ * perdu à l'amorçage.
+ */
 function dedupeBank(items: unknown[]): unknown[] {
   const seen = new Set<string>();
   return items.filter((item) => {
     if (!item || typeof item !== "object") return true;
-    const value = item as { subject?: unknown; title?: unknown };
-    const key = `${String(value.subject ?? "")}::${canonicalLabel(String(value.title ?? ""))}`;
+    const value = item as { subject?: unknown; title?: unknown; externalId?: unknown; external_id?: unknown };
+    const externalId = String(value.externalId ?? value.external_id ?? "").trim();
+    const key = externalId
+      ? `id::${externalId}`
+      : `titre::${String(value.subject ?? "")}::${canonicalLabel(String(value.title ?? ""))}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -57,7 +72,7 @@ function dedupeBank(items: unknown[]): unknown[] {
 }
 
 export async function loadSeedBank(): Promise<{ exercises: Exercise[]; chapters: Chapter[] }> {
-  const [base, algebra, corrected, reduction, vectorSpaces] = await Promise.all([
+  const [base, algebra, corrected, reduction, vectorSpaces, ccinp] = await Promise.all([
     import("@/datasets/exercices-banque-complete.json"),
     import("@/datasets/exercices-algebre-lineaire-hors-reduction-septembre-2026.json"),
     import("@/datasets/exercices-algebre-lineaire-feuille-13-24-corriges.json"),
@@ -66,12 +81,18 @@ export async function loadSeedBank(): Promise<{ exercises: Exercise[]; chapters:
     // des endomorphismes, alors que c'est le premier gros chapitre de l'année.
     import("@/datasets/mp-reduction-endomorphismes.json"),
     import("@/datasets/mp-espaces-vectoriels.json"),
+    // Banque officielle de l'épreuve orale du CCINP, session 2025, filières
+    // MP et MPI — la première source dont la provenance soit COMPLÈTE
+    // (concours, session, épreuve, numéro). Publiée sous CC BY-NC-SA 3.0 FR,
+    // voir datasets/NOTICE-CCINP.md pour l'attribution.
+    import("@/datasets/ccinp-2025-oral-mp-mpi.json"),
   ]);
   const baseBank = (base as { default: unknown }).default;
   const algebraBank = (algebra as { default: unknown }).default;
   const correctedBank = (corrected as { default: unknown }).default;
   const reductionBank = (reduction as { default: unknown }).default;
   const vectorSpacesBank = (vectorSpaces as { default: unknown }).default;
+  const ccinpBank = (ccinp as { default: unknown }).default;
   // Les jeux les plus soignés en premier : `dedupeBank` garde la PREMIÈRE
   // occurrence d'un même couple (matière, titre).
   const all = [
@@ -79,6 +100,7 @@ export async function loadSeedBank(): Promise<{ exercises: Exercise[]; chapters:
     ...(Array.isArray(algebraBank) ? algebraBank : []),
     ...(Array.isArray(reductionBank) ? reductionBank : []),
     ...(Array.isArray(vectorSpacesBank) ? vectorSpacesBank : []),
+    ...(Array.isArray(ccinpBank) ? ccinpBank : []),
     ...(Array.isArray(baseBank) ? baseBank : []),
   ];
   return buildSeed(dedupeBank(all));
@@ -136,7 +158,12 @@ export function reconcileSeedBank(
   localChapters: Chapter[],
   seed: { exercises: Exercise[]; chapters: Chapter[] }
 ): SeedReconciliation {
-  const seedByKey = new Map(seed.exercises.map((exercise) => [bankKey(exercise.subject, exercise.title), exercise]));
+  // Même règle d'identité que partout ailleurs : l'identifiant externe prime.
+  // Sans cela, deux exercices de concours de même intitulé se recouvraient
+  // dans cette table et la réconciliation en perdait un.
+  const identityOf = (exercise: Exercise) =>
+    exercise.external_id ? `id::${exercise.external_id}` : `titre::${bankKey(exercise.subject, exercise.title)}`;
+  const seedByKey = new Map(seed.exercises.map((exercise) => [identityOf(exercise), exercise]));
   const seedChapterById = new Map(seed.chapters.map((chapter) => [chapter.id, chapter]));
   const chapters = [...localChapters];
   const chapterIdByLabel = new Map(chapters.map((chapter) => [bankKey(chapter.subject, chapter.label), chapter.id]));
@@ -155,7 +182,7 @@ export function reconcileSeedBank(
   let removedCount = 0;
   const seenKeys = new Set<string>();
   const exercises = localExercises.flatMap<Exercise>((local) => {
-    const key = bankKey(local.subject, local.title);
+    const key = identityOf(local);
     const fresh = seedByKey.get(key);
     if (!fresh) {
       // La banque ne contient plus cette fiche. Sans chemin de retrait, une
@@ -202,7 +229,7 @@ export function reconcileSeedBank(
     return [merged];
   });
   const added = seed.exercises
-    .filter((exercise) => !seenKeys.has(bankKey(exercise.subject, exercise.title)))
+    .filter((exercise) => !seenKeys.has(identityOf(exercise)))
     .map((exercise) => ({ ...exercise, chapter_id: resolveChapterId(exercise.chapter_id) }));
   return { exercises: [...exercises, ...added], chapters, updatedCount, addedCount: added.length, removedCount };
 }

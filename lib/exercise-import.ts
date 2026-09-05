@@ -81,7 +81,7 @@ export function createExerciseFromInput(input: NewExerciseInput): Exercise {
     license_status: input.licenseStatus ?? null,
     external_id: input.externalId ?? null,
     epreuve: input.epreuve ?? null,
-    filiere: input.filiere ?? null,
+    filieres: input.filieres ?? [],
     exercise_number: input.exerciseNumber ?? null,
     // Le niveau de provenance n'est jamais deviné à la hausse : sans
     // déclaration explicite, un exercice portant un concours est au mieux
@@ -137,14 +137,24 @@ export interface ExerciseImportParseResult {
 }
 
 /**
- * Clé d'identité d'un exercice. L'identifiant externe fait foi quand il
- * existe (il vient de la source et survit à une reformulation du titre) ;
- * sinon on retombe sur matière + titre normalisé, comme l'amorçage.
+ * Clés d'identité d'un exercice.
+ *
+ * L'identifiant externe FAIT FOI quand il existe : il vient de la source et
+ * désigne un exercice précis. Deux exercices d'une même banque peuvent très
+ * bien porter le même intitulé — « Montrer que f est de classe C¹ » n'a rien
+ * d'unique — et les confondre reviendrait à en perdre un. On ne cherche donc
+ * sur le titre QUE lorsque aucun identifiant n'est fourni.
+ *
+ * En revanche on ENREGISTRE les deux clés : une fiche sans identifiant
+ * importée plus tard, mais de même titre, doit bien être reconnue.
  */
-function identityKeys(subject: string, title: string, externalId: string | null): string[] {
-  const keys = [`titre::${subject}::${canonicalLabel(title)}`];
-  if (externalId) keys.unshift(`id::${externalId}`);
-  return keys;
+function identityKeys(subject: string, title: string, externalId: string | null): { lookup: string[]; register: string[] } {
+  const titleKey = `titre::${subject}::${canonicalLabel(title)}`;
+  if (externalId) {
+    const idKey = `id::${externalId}`;
+    return { lookup: [idKey], register: [idKey, titleKey] };
+  }
+  return { lookup: [titleKey], register: [titleKey] };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -183,7 +193,7 @@ export function parseExerciseImportPayload(
 
   const seen = new Set<string>();
   for (const exercise of existing) {
-    for (const key of identityKeys(exercise.subject, exercise.title, exercise.external_id)) seen.add(key);
+    for (const key of identityKeys(exercise.subject, exercise.title, exercise.external_id).register) seen.add(key);
   }
 
   raw.forEach((entry, index) => {
@@ -358,15 +368,16 @@ export function parseExerciseImportPayload(
      */
     const epreuve = asTrimmedString(entry.epreuve);
     const exerciseNumber = asTrimmedString(entry.exerciseNumber ?? entry.exercise_number);
-    const filiereRaw = asTrimmedString(entry.filiere);
-    let filiere: Filiere | null = null;
-    if (filiereRaw) {
-      if (!(FILIERES as string[]).includes(filiereRaw)) {
-        errors.push({ index, message: `${label} ("${title}") — filière invalide ("${filiereRaw}"). Attendu : ${FILIERES.join(", ")}.` });
-        return;
-      }
-      filiere = filiereRaw as Filiere;
+    // `filiere` (une valeur) et `filieres` (une liste, ou une chaîne séparée
+    // par des virgules) sont tous deux acceptés : un sujet publié pour deux
+    // filières doit pouvoir le dire.
+    const filiereValues = [...parseListField(entry.filieres, ","), ...(asTrimmedString(entry.filiere) ? [asTrimmedString(entry.filiere)!] : [])];
+    const unknownFiliere = filiereValues.find((value) => !(FILIERES as string[]).includes(value));
+    if (unknownFiliere) {
+      errors.push({ index, message: `${label} ("${title}") — filière invalide ("${unknownFiliere}"). Attendu : ${FILIERES.join(", ")}.` });
+      return;
     }
+    const filieres = [...new Set(filiereValues)] as Filiere[];
 
     const provenanceRaw = asTrimmedString(entry.provenance);
     if (provenanceRaw && !(PROVENANCES as string[]).includes(provenanceRaw)) {
@@ -420,7 +431,7 @@ export function parseExerciseImportPayload(
     }
 
     const keys = identityKeys(subject, title, externalId);
-    const clash = keys.find((key) => seen.has(key));
+    const clash = keys.lookup.find((key) => seen.has(key));
     if (clash) {
       duplicates.push({
         index,
@@ -428,7 +439,7 @@ export function parseExerciseImportPayload(
       });
       return;
     }
-    for (const key of keys) seen.add(key);
+    for (const key of keys.register) seen.add(key);
 
     rows.push({
       index,
@@ -458,7 +469,7 @@ export function parseExerciseImportPayload(
         archived,
         level,
         epreuve,
-        filiere,
+        filieres,
         exerciseNumber,
         provenance,
       },

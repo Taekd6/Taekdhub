@@ -289,8 +289,15 @@ export interface Exercise {
   external_id: string | null;
   /** Épreuve d'origine (« Oral », « Maths 1 », « Maths 2 »…) — `null` hors concours. */
   epreuve: string | null;
-  /** Filière du sujet — voir `Filiere`. `null` hors concours ou si inconnue. */
-  filiere: Filiere | null;
+  /**
+   * Filières concernées par le sujet — une LISTE, parce qu'un même sujet en
+   * sert souvent plusieurs : la banque d'oral du CCINP est publiée pour « la
+   * filière MP et la filière MPI ». Réduire cela à une seule valeur
+   * reviendrait à inventer une information que la source ne donne pas.
+   * `[]` quand l'exercice ne vient pas d'un concours, ou que la source reste
+   * muette sur la filière.
+   */
+  filieres: Filiere[];
   /** Numéro ou identifiant de l'exercice dans le sujet d'origine. */
   exercise_number: string | null;
   /** Niveau de vérification de la provenance — voir `Provenance`. */
