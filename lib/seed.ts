@@ -13,12 +13,18 @@ export const SEED_FLAG_KEY = "prepahub:seeded";
  * une nouvelle installation — l'élève qui utilise déjà l'app, lui, ne voit
  * rien changer.
  *
+ * 9 — rangement : les chapitres fourre-tout « Analyse » et « Algèbre »
+ * supprimés au profit de chapitres réels, « Calcul différentiel » créé,
+ * « Intégration sur un intervalle » fondu dans « Intégration » et « Fonctions
+ * d'une variable réelle » dans « Fonctions ». Titres des exercices de concours
+ * repris : ils commençaient par le numéro de question (« (a) Prouver que… »).
+ *
  * 6 — banque nettoyée : 37 fiches retirées (15 sans énoncé du tout, 22
  * renvoyant à une feuille papier absente de l'app), 16 énoncés de concours
  * ajoutés, libellés de chapitres de Mathématiques consolidés (60 → 20, plus
  * aucun chapitre à une seule fiche). 477 → 440 exercices.
  */
-export const SEED_CONTENT_VERSION = 8;
+export const SEED_CONTENT_VERSION = 9;
 export const SEED_VERSION_KEY = "prepahub:seeded:version";
 
 function buildSeed(bank: unknown): { exercises: Exercise[]; chapters: Chapter[] } {

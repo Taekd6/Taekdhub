@@ -326,23 +326,31 @@ CHAPITRE_PAR_FICHIER = {"algèbre": "Algèbre — oral", "analyse": "Analyse —
 # plus général. Un exercice non reconnu garde le chapitre générique du
 # fichier plutôt que d'être rangé arbitrairement.
 CHAPITRES_MP = [
-    ("Réduction des endomorphismes", r"diagonalis|trigonalis|valeur propre|vecteur propre|sous-espace propre|polynôme caractéristique|polynôme minimal|nilpotent|spectre|Cayley|\bréduction\b|réduire l"),
-    ("Espaces préhilbertiens et euclidiens", r"euclidien|préhilbertien|produit scalaire|orthonormé|orthogonal|isométrie|rotation|autoadjoint|symétrique d[’']un espace"),
+    # Du plus SPÉCIFIQUE au plus général : la première entrée qui reconnaît un
+    # motif l'emporte. « Analyse » et « Algèbre » n'y figurent pas — ce sont
+    # les deux moitiés du programme, pas des chapitres : y ranger un exercice
+    # revient à ne pas le ranger.
+    ("Réduction des endomorphismes", r"diagonalis|trigonalis|valeur propre|vecteur propre|sous-espace propre|polynôme caractéristique|polynôme minimal|nilpotent|spectre|cayley|\bréduction\b"),
+    ("Calcul différentiel", r"sur r2|de r2 dans r|\(x, ?y\) ∈ r2|dérivée partielle|∂f|∂x|extremum|extrema|point critique|gradient"),
+    ("Espaces préhilbertiens et euclidiens", r"euclidien|préhilbertien|produit scalaire|orthonormé|orthogonal|isométrie|autoadjoint|matrice symétrique|\bs\+?n ?\(r\)"),
     ("Séries entières", r"série entière|rayon de convergence|développement en série"),
     ("Suites et séries de fonctions", r"convergence uniforme|convergence normale|série de fonctions|suite de fonctions"),
-    ("Intégration sur un intervalle", r"intégrable|convergence dominée|intégrale généralisée|intégrale impropre|intégrale dépendant"),
-    ("Équations différentielles", r"équation différentielle|wronskien|y[’']{1,2}\s*[+=-]"),
-    ("Probabilités", r"probabilité|variable aléatoire|espérance|loi de|indépendan"),
-    ("Espaces vectoriels normés et topologie", r"norme|compact|dense|adhérence|ouvert|fermé|topologi|converge vers|borné"),
-    ("Groupes, anneaux et arithmétique", r"\bgroupe|\banneau|\bidéal|\bmorphisme de groupe|divisib|congru|premier entre eux|pgcd|\bZ/n"),
+    ("Intégration", r"intégrable|convergence dominée|intégrale généralisée|intégrale impropre|intégrale dépendant|∫|primitive"),
+    ("Équations différentielles", r"équation différentielle|wronskien"),
+    ("Probabilités", r"probabilité|variable aléatoire|espérance|\bloi de\b|indépendan|espace probabilisé"),
+    ("Nombres complexes", r"argument d[’\']un nombre complexe|forme trigonométrique|racine n-ième de l|module et argument"),
+    ("Arithmétique", r"≡.{0,12}\[\d|congru|pgcd|nombre premier|premiers entre eux|divisibilité"),
+    ("Espaces vectoriels normés et topologie", r"norme|compact|dense|adhérence|ouvert|fermé|topologi|borné"),
+    ("Groupes, anneaux et arithmétique", r"\bgroupe|\banneau|\bidéal|morphisme de groupe|\bz/n"),
     ("Polynômes", r"polynôme|racine|scindé|irréductible|interpolation"),
     ("Déterminants", r"déterminant|det\("),
     ("Matrices et systèmes", r"matrice|rang|inversible|trace|système linéaire"),
     ("Applications linéaires", r"endomorphisme|application linéaire|noyau|image|forme linéaire|projecteur"),
-    ("Espaces vectoriels", r"espace vectoriel|famille libre|génératrice|base|dimension|supplémentaire|hyperplan"),
+    ("Espaces vectoriels", r"espace vectoriel|famille libre|génératrice|\bbase\b|dimension|supplémentaire|hyperplan"),
     ("Séries numériques", r"série|convergen[ct]"),
-    ("Suites numériques", r"suite"),
-    ("Fonctions d'une variable réelle", r"continue|dérivable|développement limité|croissance"),
+    ("Suites numériques", r"\bsuite\b"),
+    ("Dérivation", r"dérivée d[’\']ordre|formule de leibniz|accroissements finis|dérivable"),
+    ("Fonctions", r"continue|développement limité|croissance|théorème des valeurs"),
 ]
 
 
@@ -369,8 +377,16 @@ def make_title(statement: str, ident: str) -> str:
     l'exercice et se lit bien ; on la préfère dès qu'on en trouve une.
     """
     flat = re.sub(r"\s+", " ", statement.replace("\n", " ")).strip()
-    phrases = [p.strip() for p in re.split(r"(?<=[.?])\s+", flat) if p.strip()]
-    chosen = next((p for p in phrases if ACTION_RE.match(p)), None) or (phrases[0] if phrases else "")
+    # Les numéros de question ne font pas partie du titre : « (a) Prouver
+    # que… » ou « 1. Montrer que… » donnaient des intitulés qui commençaient
+    # au milieu de l'énoncé.
+    strip_marker = lambda p: re.sub(r"^(?:N\.B\.\s*:\s*|\(?[a-z0-9]{1,2}[.)]\s*)+", "", p).strip()
+    phrases = [strip_marker(p) for p in re.split(r"(?<=[.?])\s+", flat) if strip_marker(p)]
+    # Une phrase d'action assez longue pour dire quelque chose : « Justifier »
+    # tout seul n'est pas un titre.
+    chosen = next((p for p in phrases if ACTION_RE.match(p) and len(p) >= 28), None)
+    if not chosen:
+        chosen = next((p for p in phrases if len(p) >= 28), phrases[0] if phrases else "")
     chosen = chosen.strip(" .;:,")
     # Un titre saturé de symboles est le signe d'une formule mal restituée :
     # on retombe alors sur un intitulé neutre plutôt que d'afficher du bruit.
@@ -434,7 +450,12 @@ CCINP_CORRIGE_RE = re.compile(r"Corrig[ée]\s+[Ee]xercice\s+(\d+)")
 
 # Domaine annoncé par le document → chapitre de repli, utilisé seulement si
 # l'analyse du contenu ne reconnaît rien de plus précis.
-CCINP_DOMAINE = {"analyse": "Analyse", "algèbre": "Algèbre", "algebre": "Algèbre",
+# Repli quand l'analyse du contenu ne reconnaît rien. « Analyse » et
+# « Algèbre » ne sont PAS des chapitres : ce sont les deux moitiés du
+# programme. Y ranger un exercice, c'est ne pas le ranger. On préfère donc
+# un chapitre réel, quitte à ce qu'il soit large.
+CCINP_DOMAINE = {"analyse": "Fonctions", "algèbre": "Espaces vectoriels",
+                 "algebre": "Espaces vectoriels",
                  "probabilités": "Probabilités", "probabilites": "Probabilités"}
 
 
