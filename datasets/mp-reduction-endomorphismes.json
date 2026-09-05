@@ -1,0 +1,770 @@
+[
+  {
+    "title": "Valeurs propres et vecteurs propres d'une matrice $2\\times 2$",
+    "statement": "Soit $A=\\begin{pmatrix} 3 & 1 \\\\ 2 & 4 \\end{pmatrix} \\in M_2(\\mathbb{R})$.\n\n1. Calculer le polynôme caractéristique $\\chi_A$ de $A$.\n2. En déduire les valeurs propres de $A$.\n3. Déterminer une base de chaque sous-espace propre.\n4. $A$ est-elle diagonalisable ? Si oui, écrire une matrice $P$ inversible et une matrice diagonale $D$ telles que $A=PDP^{-1}$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 1,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 12,
+    "tags": [
+      "valeurs propres",
+      "vecteurs propres",
+      "polynôme caractéristique",
+      "diagonalisation"
+    ],
+    "hints": [
+      "$\\chi_A(X)=\\det(XI_2-A)=X^2-\\mathrm{tr}(A)\\,X+\\det(A)$.",
+      "Ici $\\mathrm{tr}(A)=7$ et $\\det(A)=12-2=10$.",
+      "Deux valeurs propres distinctes en dimension $2$ suffisent à conclure à la diagonalisabilité."
+    ],
+    "correction": "1. $\\chi_A(X)=X^2-7X+10$.\n\n2. $X^2-7X+10=(X-2)(X-5)$, donc $\\mathrm{Sp}(A)=\\{2,5\\}$.\n\n3. Pour $\\lambda=2$ : $A-2I_2=\\begin{pmatrix} 1 & 1 \\\\ 2 & 2\\end{pmatrix}$, le système se réduit à $x+y=0$, d'où $E_2=\\mathrm{Vect}\\left((1,-1)\\right)$.\nPour $\\lambda=5$ : $A-5I_2=\\begin{pmatrix} -2 & 1 \\\\ 2 & -1\\end{pmatrix}$, le système se réduit à $y=2x$, d'où $E_5=\\mathrm{Vect}\\left((1,2)\\right)$.\n\n4. $A$ possède deux valeurs propres distinctes en dimension $2$ : elle est diagonalisable. Avec $P=\\begin{pmatrix} 1 & 1 \\\\ -1 & 2\\end{pmatrix}$ et $D=\\begin{pmatrix} 2 & 0 \\\\ 0 & 5\\end{pmatrix}$, on a $A=PDP^{-1}$.\n\nAttention à l'ordre : la $k$-ième colonne de $P$ doit être un vecteur propre associé au $k$-ième coefficient diagonal de $D$.",
+    "programmeLevel": "spe",
+    "level": 1,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Dérouler sans hésitation la chaîne polynôme caractéristique → valeurs propres → sous-espaces propres → matrice de passage.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "matrices"
+    ]
+  },
+  {
+    "title": "Lire le spectre d'une matrice triangulaire",
+    "statement": "Soit $T=\\begin{pmatrix} 2 & 7 & -1 \\\\ 0 & 2 & 5 \\\\ 0 & 0 & -3 \\end{pmatrix}$.\n\n1. Donner $\\chi_T$ sans calcul de déterminant $3\\times 3$ développé, en justifiant.\n2. En déduire $\\mathrm{Sp}(T)$ et la multiplicité algébrique de chaque valeur propre.\n3. Déterminer $E_2$ et sa dimension. $T$ est-elle diagonalisable ?",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "Colle",
+    "difficulty": 1,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 10,
+    "tags": [
+      "polynôme caractéristique",
+      "valeurs propres",
+      "multiplicité",
+      "diagonalisation"
+    ],
+    "hints": [
+      "Le déterminant d'une matrice triangulaire est le produit de ses coefficients diagonaux ; $XI_3-T$ est encore triangulaire.",
+      "Comparer $\\dim E_2$ à la multiplicité algébrique de $2$."
+    ],
+    "correction": "1. $XI_3-T$ est triangulaire supérieure de coefficients diagonaux $X-2$, $X-2$, $X+3$, donc $\\chi_T(X)=(X-2)^2(X+3)$.\n\n2. $\\mathrm{Sp}(T)=\\{2,-3\\}$, avec $m_a(2)=2$ et $m_a(-3)=1$.\n\n3. $T-2I_3=\\begin{pmatrix} 0 & 7 & -1 \\\\ 0 & 0 & 5 \\\\ 0 & 0 & -5\\end{pmatrix}$. Le système donne $5z=0$ puis $7y-z=0$, soit $z=0$ et $y=0$ : $E_2=\\mathrm{Vect}\\left((1,0,0)\\right)$, de dimension $1$.\n\nComme $\\dim E_2=1<2=m_a(2)$, $T$ n'est pas diagonalisable.\n\nLe piège classique : une matrice triangulaire n'est PAS diagonalisable pour autant. Elle est seulement déjà trigonalisée.",
+    "programmeLevel": "spe",
+    "level": 1,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Lire un spectre sur la diagonale, et se rappeler que triangulaire n'implique jamais diagonalisable.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "matrices"
+    ]
+  },
+  {
+    "title": "Diagonalisabilité par comparaison des multiplicités",
+    "statement": "Soit $A=\\begin{pmatrix} 2 & 1 & 1 \\\\ 1 & 2 & 1 \\\\ 1 & 1 & 2 \\end{pmatrix}$.\n\n1. Vérifier que $A=J+I_3$ où $J$ est la matrice dont tous les coefficients valent $1$.\n2. Déterminer le rang de $J$, puis $\\dim\\ker J$. En déduire les valeurs propres de $J$ et leurs multiplicités.\n3. En déduire $\\mathrm{Sp}(A)$ et montrer que $A$ est diagonalisable.\n4. Donner une base de vecteurs propres de $A$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 20,
+    "tags": [
+      "valeurs propres",
+      "sous-espaces propres",
+      "multiplicité",
+      "diagonalisation"
+    ],
+    "hints": [
+      "$J$ est de rang $1$ : toutes ses lignes sont égales.",
+      "Si $J$ est de rang $1$ alors $\\dim\\ker J=2$, donc $0$ est valeur propre de multiplicité géométrique $2$.",
+      "Le vecteur $(1,1,1)$ est propre pour $J$. Quelle valeur propre ?",
+      "Si $Jx=\\mu x$ alors $Ax=(\\mu+1)x$ : les sous-espaces propres de $A$ et $J$ sont les mêmes."
+    ],
+    "correction": "1. Immédiat : $J+I_3$ a des $2$ sur la diagonale et des $1$ ailleurs, c'est bien $A$.\n\n2. Les trois lignes de $J$ sont égales et non nulles donc $\\mathrm{rg}(J)=1$, d'où $\\dim\\ker J=3-1=2$ : $0$ est valeur propre de $J$ avec $\\dim E_0(J)=2$. Par ailleurs $J\\,(1,1,1)^{\\top}=(3,3,3)^{\\top}=3\\,(1,1,1)^{\\top}$, donc $3\\in\\mathrm{Sp}(J)$. Comme $2+1=3=\\dim\\mathbb{R}^3$, on a $\\mathrm{Sp}(J)=\\{0,3\\}$ et $\\mathbb{R}^3=E_0(J)\\oplus E_3(J)$ : $J$ est diagonalisable.\n\n3. Si $Jx=\\mu x$ alors $Ax=(J+I_3)x=(\\mu+1)x$. Donc $\\mathrm{Sp}(A)=\\{1,4\\}$ avec $\\dim E_1(A)=2$ et $\\dim E_4(A)=1$. La somme des dimensions vaut $3$ : $A$ est diagonalisable.\n\n4. $E_1(A)=\\ker J=\\{(x,y,z)\\mid x+y+z=0\\}=\\mathrm{Vect}\\left((1,-1,0),(1,0,-1)\\right)$ et $E_4(A)=\\mathrm{Vect}\\left((1,1,1)\\right)$.\n\nLa base $\\left((1,-1,0),(1,0,-1),(1,1,1)\\right)$ diagonalise $A$ en $\\mathrm{diag}(1,1,4)$.",
+    "programmeLevel": "spe",
+    "level": 2,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Utiliser le rang pour obtenir une dimension de sous-espace propre sans résoudre le système, et transporter le spectre par translation.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "rang d'une matrice"
+    ]
+  },
+  {
+    "title": "Un polynôme annulateur suffit-il à donner le spectre ?",
+    "statement": "Soit $E$ un $\\mathbb{K}$-espace vectoriel de dimension finie non nulle et $u\\in\\mathcal{L}(E)$ vérifiant\n$$u^2-5u+6\\,\\mathrm{id}_E=0.$$\n\n1. Montrer que $\\mathrm{Sp}(u)\\subset\\{2,3\\}$.\n2. Montrer que $u$ est diagonalisable.\n3. A-t-on nécessairement $\\mathrm{Sp}(u)=\\{2,3\\}$ ? Justifier par un exemple.\n4. Que vaut $u$ si $\\mathrm{Sp}(u)=\\{2\\}$ ?",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 20,
+    "tags": [
+      "polynôme annulateur",
+      "diagonalisation",
+      "valeurs propres",
+      "lemme des noyaux"
+    ],
+    "hints": [
+      "Si $\\lambda$ est valeur propre et $P$ annulateur de $u$, alors $P(\\lambda)=0$.",
+      "$X^2-5X+6=(X-2)(X-3)$ : scindé, à racines simples.",
+      "Pour la question 3, pensez à $u=2\\,\\mathrm{id}_E$."
+    ],
+    "correction": "1. Soit $\\lambda\\in\\mathrm{Sp}(u)$ et $x\\neq 0$ tel que $u(x)=\\lambda x$. Alors $u^2(x)=\\lambda^2 x$, donc $0=(u^2-5u+6\\,\\mathrm{id})(x)=(\\lambda^2-5\\lambda+6)\\,x$. Comme $x\\neq 0$, $\\lambda^2-5\\lambda+6=0$, soit $\\lambda\\in\\{2,3\\}$.\n\n2. $P=X^2-5X+6=(X-2)(X-3)$ annule $u$ ; il est scindé sur $\\mathbb{K}$ et à racines simples. Donc $u$ est diagonalisable. (Autre rédaction : le lemme des noyaux donne $E=\\ker(u-2\\,\\mathrm{id})\\oplus\\ker(u-3\\,\\mathrm{id})$.)\n\n3. Non. Si $u=2\\,\\mathrm{id}_E$, alors $u^2-5u+6\\,\\mathrm{id}=(4-10+6)\\,\\mathrm{id}=0$ : le polynôme annule bien $u$, et pourtant $\\mathrm{Sp}(u)=\\{2\\}$.\n\nC'est le piège central : un polynôme annulateur donne une INCLUSION $\\mathrm{Sp}(u)\\subset\\{\\text{racines}\\}$, jamais une égalité. L'égalité vaut pour le polynôme MINIMAL.\n\n4. Si $\\mathrm{Sp}(u)=\\{2\\}$, comme $u$ est diagonalisable, $u$ est semblable à $2I_n$, donc $u=2\\,\\mathrm{id}_E$.",
+    "programmeLevel": "spe",
+    "level": 2,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Distinguer polynôme annulateur (inclusion du spectre) et polynôme minimal (égalité), et savoir conclure à la diagonalisabilité sans calculer un seul déterminant.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "matrices"
+    ]
+  },
+  {
+    "title": "Spectre d'un projecteur et d'une symétrie",
+    "statement": "Soit $E$ un $\\mathbb{K}$-espace vectoriel de dimension finie non nulle.\n\n1. Soit $p\\in\\mathcal{L}(E)$ tel que $p^2=p$ et $p\\notin\\{0,\\mathrm{id}_E\\}$. Déterminer $\\mathrm{Sp}(p)$, montrer que $p$ est diagonalisable et identifier $E_1$ et $E_0$.\n2. Soit $s\\in\\mathcal{L}(E)$ tel que $s^2=\\mathrm{id}_E$. Montrer que $s$ est diagonalisable et préciser $\\mathrm{Sp}(s)$ selon les cas.\n3. Si $\\mathbb{K}=\\mathbb{R}$ et $\\dim E=2$, donner l'interprétation géométrique de chacun.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 18,
+    "tags": [
+      "projecteur",
+      "polynôme annulateur",
+      "diagonalisation",
+      "sous-espaces propres"
+    ],
+    "hints": [
+      "$p^2=p$ signifie que $X^2-X=X(X-1)$ annule $p$.",
+      "$s^2=\\mathrm{id}$ signifie que $X^2-1=(X-1)(X+1)$ annule $s$.",
+      "$E_1(p)=\\ker(p-\\mathrm{id})$ : montrer que c'est exactement $\\mathrm{Im}\\,p$."
+    ],
+    "correction": "1. $X(X-1)$ annule $p$, il est scindé à racines simples, donc $p$ est diagonalisable et $\\mathrm{Sp}(p)\\subset\\{0,1\\}$. Comme $p\\neq 0$, $1$ est valeur propre ; comme $p\\neq\\mathrm{id}_E$, $0$ est valeur propre. Donc $\\mathrm{Sp}(p)=\\{0,1\\}$.\n$E_0=\\ker p$. Pour $E_1$ : si $p(x)=x$ alors $x\\in\\mathrm{Im}\\,p$ ; réciproquement si $x=p(y)$ alors $p(x)=p^2(y)=p(y)=x$. Donc $E_1=\\mathrm{Im}\\,p$.\nOn retrouve $E=\\ker p\\oplus\\mathrm{Im}\\,p$ : $p$ est le projecteur sur $\\mathrm{Im}\\,p$ parallèlement à $\\ker p$.\n\n2. $(X-1)(X+1)$ annule $s$, scindé à racines simples (car $1\\neq -1$ en caractéristique $\\neq 2$), donc $s$ est diagonalisable et $\\mathrm{Sp}(s)\\subset\\{-1,1\\}$.\nSi $s=\\mathrm{id}_E$ : $\\mathrm{Sp}(s)=\\{1\\}$. Si $s=-\\mathrm{id}_E$ : $\\mathrm{Sp}(s)=\\{-1\\}$. Sinon $\\mathrm{Sp}(s)=\\{-1,1\\}$ et $E=E_1\\oplus E_{-1}$.\n\n3. En dimension $2$ réelle : $p$ est une projection sur une droite parallèlement à une autre droite ; $s$ est une symétrie par rapport à une droite parallèlement à une autre.",
+    "programmeLevel": "spe",
+    "level": 2,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Reconnaître un endomorphisme remarquable à partir d'une relation algébrique, et en déduire immédiatement sa réduction.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "matrices"
+    ]
+  },
+  {
+    "title": "Un endomorphisme nilpotent non nul n'est jamais diagonalisable",
+    "statement": "Soit $E$ un $\\mathbb{K}$-espace vectoriel de dimension finie $n\\geq 1$ et $u\\in\\mathcal{L}(E)$ nilpotent, c'est-à-dire qu'il existe $p\\in\\mathbb{N}^*$ tel que $u^p=0$.\n\n1. Montrer que $\\mathrm{Sp}(u)\\subset\\{0\\}$.\n2. En déduire que si $u$ est diagonalisable, alors $u=0$.\n3. Donner un exemple explicite d'endomorphisme nilpotent non nul de $\\mathbb{R}^2$, et vérifier directement qu'il n'est pas diagonalisable.\n4. Que vaut $\\chi_u$ ?",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 15,
+    "tags": [
+      "nilpotence",
+      "valeurs propres",
+      "diagonalisation",
+      "polynôme caractéristique"
+    ],
+    "hints": [
+      "$X^p$ annule $u$.",
+      "Un endomorphisme diagonalisable dont le spectre est réduit à $\\{0\\}$ est semblable à la matrice nulle.",
+      "Prendre $N=\\begin{pmatrix} 0 & 1 \\\\ 0 & 0\\end{pmatrix}$."
+    ],
+    "correction": "1. $X^p$ annule $u$, donc toute valeur propre $\\lambda$ vérifie $\\lambda^p=0$, soit $\\lambda=0$. (En dimension finie non nulle sur $\\mathbb{C}$, le spectre est non vide, donc $\\mathrm{Sp}(u)=\\{0\\}$.)\n\n2. Si $u$ est diagonalisable, $E$ est somme directe de ses sous-espaces propres, tous associés à la valeur propre $0$ : donc $E=\\ker u$, c'est-à-dire $u=0$.\n\n3. $N=\\begin{pmatrix} 0 & 1 \\\\ 0 & 0\\end{pmatrix}$ vérifie $N^2=0$ et $N\\neq 0$. Son polynôme caractéristique est $X^2$, donc $\\mathrm{Sp}(N)=\\{0\\}$ et $E_0=\\ker N=\\mathrm{Vect}\\left((1,0)\\right)$ est de dimension $1<2$ : $N$ n'est pas diagonalisable.\n\n4. $u$ étant nilpotent, son unique valeur propre (sur $\\mathbb{C}$) est $0$, donc $\\chi_u=X^n$. Réciproquement, si $\\chi_u=X^n$, le théorème de Cayley-Hamilton donne $u^n=0$ : $u$ est nilpotent.",
+    "programmeLevel": "spe",
+    "level": 2,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Comprendre pourquoi la nilpotence est l'exact opposé de la diagonalisabilité, et savoir produire le contre-exemple de référence.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "matrices"
+    ]
+  },
+  {
+    "title": "Calcul de $A^n$ par diagonalisation",
+    "statement": "Soit $A=\\begin{pmatrix} 5 & -3 \\\\ 6 & -4 \\end{pmatrix}$.\n\n1. Diagonaliser $A$ : donner $P$ inversible et $D$ diagonale telles que $A=PDP^{-1}$.\n2. Calculer $P^{-1}$.\n3. En déduire une expression explicite de $A^n$ pour tout $n\\in\\mathbb{N}$.\n4. Vérifier le résultat pour $n=0$ et $n=1$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 25,
+    "tags": [
+      "diagonalisation",
+      "puissances de matrice",
+      "valeurs propres",
+      "vecteurs propres"
+    ],
+    "hints": [
+      "$\\mathrm{tr}(A)=1$ et $\\det(A)=-20+18=-2$.",
+      "$A^n=PD^nP^{-1}$, et $D^n$ est diagonale de coefficients $\\lambda_i^n$.",
+      "Toujours contrôler le résultat en $n=0$ (on doit retrouver $I_2$) et $n=1$ (on doit retrouver $A$)."
+    ],
+    "correction": "1. $\\chi_A(X)=X^2-X-2=(X-2)(X+1)$, donc $\\mathrm{Sp}(A)=\\{2,-1\\}$ : deux valeurs propres distinctes en dimension $2$, $A$ est diagonalisable.\n$E_2$ : $A-2I=\\begin{pmatrix} 3 & -3 \\\\ 6 & -6\\end{pmatrix}$ donne $x=y$, d'où $E_2=\\mathrm{Vect}\\left((1,1)\\right)$.\n$E_{-1}$ : $A+I=\\begin{pmatrix} 6 & -3 \\\\ 6 & -3\\end{pmatrix}$ donne $y=2x$, d'où $E_{-1}=\\mathrm{Vect}\\left((1,2)\\right)$.\nOn prend $P=\\begin{pmatrix} 1 & 1 \\\\ 1 & 2\\end{pmatrix}$ et $D=\\begin{pmatrix} 2 & 0 \\\\ 0 & -1\\end{pmatrix}$.\n\n2. $\\det P=1$ donc $P^{-1}=\\begin{pmatrix} 2 & -1 \\\\ -1 & 1\\end{pmatrix}$.\n\n3. $A^n=PD^nP^{-1}=\\begin{pmatrix} 1 & 1 \\\\ 1 & 2\\end{pmatrix}\\begin{pmatrix} 2^n & 0 \\\\ 0 & (-1)^n\\end{pmatrix}\\begin{pmatrix} 2 & -1 \\\\ -1 & 1\\end{pmatrix}$, d'où\n$$A^n=\\begin{pmatrix} 2^{n+1}-(-1)^n & -2^n+(-1)^n \\\\ 2^{n+1}-2(-1)^n & -2^n+2(-1)^n \\end{pmatrix}.$$\n\n4. Pour $n=0$ : $\\begin{pmatrix} 2-1 & -1+1 \\\\ 2-2 & -1+2\\end{pmatrix}=I_2$. Pour $n=1$ : $\\begin{pmatrix} 4+1 & -2-1 \\\\ 4+2 & -2-2\\end{pmatrix}=\\begin{pmatrix} 5 & -3 \\\\ 6 & -4\\end{pmatrix}=A$. Les deux contrôles passent.",
+    "programmeLevel": "spe",
+    "level": 2,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Maîtriser le calcul de puissances par diagonalisation, et prendre le réflexe de vérifier le résultat sur deux valeurs de $n$.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "matrices"
+    ]
+  },
+  {
+    "title": "Suite récurrente linéaire d'ordre 2 par réduction matricielle",
+    "statement": "On définit $(u_n)_{n\\in\\mathbb{N}}$ par $u_0=1$, $u_1=0$ et\n$$\\forall n\\in\\mathbb{N},\\quad u_{n+2}=u_{n+1}+2u_n.$$\n\n1. Écrire $X_{n+1}=AX_n$ où $X_n=\\begin{pmatrix} u_n \\\\ u_{n+1}\\end{pmatrix}$, en explicitant $A$.\n2. Diagonaliser $A$.\n3. En déduire l'expression de $u_n$ en fonction de $n$.\n4. Vérifier sur $u_2$ et $u_3$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 25,
+    "tags": [
+      "suites récurrentes",
+      "diagonalisation",
+      "puissances de matrice",
+      "valeurs propres"
+    ],
+    "hints": [
+      "$A=\\begin{pmatrix} 0 & 1 \\\\ 2 & 1\\end{pmatrix}$ convient : vérifiez que $AX_n$ redonne bien $X_{n+1}$.",
+      "$\\chi_A(X)=X^2-X-2$ : c'est exactement l'équation caractéristique de la récurrence.",
+      "Une fois les valeurs propres $\\lambda_1,\\lambda_2$ distinctes obtenues, $u_n=a\\lambda_1^n+b\\lambda_2^n$ et on détermine $a,b$ par $u_0$ et $u_1$."
+    ],
+    "correction": "1. $X_{n+1}=\\begin{pmatrix} u_{n+1} \\\\ u_{n+2}\\end{pmatrix}=\\begin{pmatrix} u_{n+1} \\\\ 2u_n+u_{n+1}\\end{pmatrix}$, donc $A=\\begin{pmatrix} 0 & 1 \\\\ 2 & 1\\end{pmatrix}$.\n\n2. $\\chi_A(X)=X^2-X-2=(X-2)(X+1)$, donc $\\mathrm{Sp}(A)=\\{2,-1\\}$ et $A$ est diagonalisable (deux valeurs propres distinctes en dimension $2$). $E_2=\\mathrm{Vect}\\left((1,2)\\right)$ et $E_{-1}=\\mathrm{Vect}\\left((1,-1)\\right)$.\n\n3. Comme $X_n=A^nX_0$ et que $A$ est diagonalisable de valeurs propres $2$ et $-1$, il existe $a,b$ tels que $u_n=a\\,2^n+b\\,(-1)^n$. Les conditions initiales donnent $a+b=1$ et $2a-b=0$, d'où $a=\\tfrac{1}{3}$, $b=\\tfrac{2}{3}$ :\n$$u_n=\\frac{2^n+2\\,(-1)^n}{3}.$$\n\n4. $u_2=\\tfrac{4+2}{3}=2$, et la récurrence donne $u_2=u_1+2u_0=0+2=2$. $u_3=\\tfrac{8-2}{3}=2$, et la récurrence donne $u_3=u_2+2u_1=2+0=2$. Cohérent.\n\nRemarque : le polynôme caractéristique de $A$ est exactement l'équation caractéristique $r^2=r+2$ de la récurrence. La réduction matricielle REDÉMONTRE la méthode vue en Sup, elle ne la contredit pas.",
+    "programmeLevel": "spe",
+    "level": 2,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Faire le lien explicite entre récurrence linéaire et réduction, et retrouver la méthode de Sup comme cas particulier.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "suites récurrentes linéaires"
+    ]
+  },
+  {
+    "title": "Système différentiel linéaire et diagonalisation",
+    "statement": "On cherche les fonctions $x,y:\\mathbb{R}\\to\\mathbb{R}$ dérivables vérifiant\n$$\\begin{cases} x'(t)=x(t)+2y(t) \\\\ y'(t)=2x(t)+y(t) \\end{cases}$$\n\n1. Écrire le système sous la forme $X'=AX$ et diagonaliser $A$.\n2. En posant $Y=P^{-1}X$, montrer que $Y'=DY$ et résoudre.\n3. En déduire toutes les solutions $(x,y)$.\n4. Déterminer la solution vérifiant $x(0)=1$, $y(0)=0$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 30,
+    "tags": [
+      "systèmes différentiels",
+      "diagonalisation",
+      "valeurs propres",
+      "sous-espaces propres"
+    ],
+    "hints": [
+      "$A=\\begin{pmatrix} 1 & 2 \\\\ 2 & 1\\end{pmatrix}$ est symétrique réelle, donc diagonalisable.",
+      "$\\mathrm{tr}(A)=2$, $\\det(A)=1-4=-3$.",
+      "Le changement de variable $Y=P^{-1}X$ découple le système en deux équations scalaires $y_i'=\\lambda_i y_i$."
+    ],
+    "correction": "1. $A=\\begin{pmatrix} 1 & 2 \\\\ 2 & 1\\end{pmatrix}$, $\\chi_A(X)=X^2-2X-3=(X-3)(X+1)$, donc $\\mathrm{Sp}(A)=\\{3,-1\\}$.\n$E_3=\\mathrm{Vect}\\left((1,1)\\right)$ et $E_{-1}=\\mathrm{Vect}\\left((1,-1)\\right)$. On pose $P=\\begin{pmatrix} 1 & 1 \\\\ 1 & -1\\end{pmatrix}$, $D=\\mathrm{diag}(3,-1)$, de sorte que $A=PDP^{-1}$.\n\n2. Avec $Y=P^{-1}X$ (donc $X=PY$) : $X'=AX$ équivaut à $PY'=APY=PDY$, soit $Y'=DY$ car $P$ est inversible et constante. Le système est découplé : $y_1'=3y_1$ et $y_2'=-y_2$, d'où $y_1(t)=\\alpha e^{3t}$ et $y_2(t)=\\beta e^{-t}$, $(\\alpha,\\beta)\\in\\mathbb{R}^2$.\n\n3. $X=PY$ donne\n$$\\begin{pmatrix} x(t) \\\\ y(t)\\end{pmatrix}=\\alpha e^{3t}\\begin{pmatrix} 1 \\\\ 1\\end{pmatrix}+\\beta e^{-t}\\begin{pmatrix} 1 \\\\ -1\\end{pmatrix}.$$\nAutrement dit $x(t)=\\alpha e^{3t}+\\beta e^{-t}$ et $y(t)=\\alpha e^{3t}-\\beta e^{-t}$.\n\n4. Les conditions $x(0)=1$, $y(0)=0$ donnent $\\alpha+\\beta=1$ et $\\alpha-\\beta=0$, soit $\\alpha=\\beta=\\tfrac12$ :\n$$x(t)=\\frac{e^{3t}+e^{-t}}{2},\\qquad y(t)=\\frac{e^{3t}-e^{-t}}{2}.$$\nContrôle : $x'(0)=\\tfrac{3-1}{2}=1$ et $x(0)+2y(0)=1$. Cohérent.\n\nÀ retenir : les vecteurs propres donnent directement les directions propres du système, et les valeurs propres les exponentielles.",
+    "programmeLevel": "spe",
+    "level": 3,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Résoudre un système différentiel linéaire à coefficients constants en le découplant par diagonalisation.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "équations différentielles linéaires"
+    ]
+  },
+  {
+    "title": "Polynôme minimal et diagonalisabilité : deux matrices de même polynôme caractéristique",
+    "statement": "On considère\n$$A=\\begin{pmatrix} 2 & 0 & 0 \\\\ 0 & 2 & 0 \\\\ 0 & 0 & 3\\end{pmatrix},\\qquad B=\\begin{pmatrix} 2 & 1 & 0 \\\\ 0 & 2 & 0 \\\\ 0 & 0 & 3\\end{pmatrix}.$$\n\n1. Vérifier que $\\chi_A=\\chi_B$.\n2. Déterminer le polynôme minimal de $A$, puis celui de $B$.\n3. En déduire laquelle de ces deux matrices est diagonalisable.\n4. Que peut-on en conclure sur ce que le polynôme caractéristique permet — ou ne permet pas — de décider ?",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 25,
+    "tags": [
+      "polynôme minimal",
+      "polynôme caractéristique",
+      "diagonalisation",
+      "multiplicité"
+    ],
+    "hints": [
+      "Les deux matrices sont triangulaires : lisez $\\chi$ sur la diagonale.",
+      "Le polynôme minimal divise $\\chi$ et a les mêmes racines : ici les candidats sont $(X-2)(X-3)$ et $(X-2)^2(X-3)$.",
+      "Testez directement si $(A-2I_3)(A-3I_3)=0$, puis la même chose pour $B$."
+    ],
+    "correction": "1. Les deux matrices sont triangulaires supérieures de diagonale $(2,2,3)$, donc $\\chi_A=\\chi_B=(X-2)^2(X-3)$.\n\n2. Le polynôme minimal divise $\\chi$ et admet exactement les mêmes racines (les valeurs propres). Les seuls candidats sont donc $(X-2)(X-3)$ et $(X-2)^2(X-3)$.\nPour $A$ : $A-2I_3=\\mathrm{diag}(0,0,1)$ et $A-3I_3=\\mathrm{diag}(-1,-1,0)$, dont le produit est nul. Donc $\\mu_A=(X-2)(X-3)$.\nPour $B$ : $B-2I_3=\\begin{pmatrix} 0&1&0\\\\0&0&0\\\\0&0&1\\end{pmatrix}$ et $B-3I_3=\\begin{pmatrix} -1&1&0\\\\0&-1&0\\\\0&0&0\\end{pmatrix}$ ; leur produit vaut $\\begin{pmatrix} 0&-1&0\\\\0&0&0\\\\0&0&0\\end{pmatrix}\\neq 0$. Donc $\\mu_B=(X-2)^2(X-3)$.\n\n3. $\\mu_A$ est scindé à racines simples : $A$ est diagonalisable (elle l'est visiblement, étant déjà diagonale). $\\mu_B$ admet la racine double $2$ : $B$ n'est pas diagonalisable. On le confirme directement : $\\dim E_2(B)=1<2=m_a(2)$.\n\n4. Le polynôme caractéristique ne suffit JAMAIS à décider de la diagonalisabilité : deux matrices peuvent avoir le même $\\chi$ sans être semblables. C'est le polynôme minimal (ou la comparaison $\\dim E_\\lambda$ contre $m_a(\\lambda)$) qui tranche.",
+    "programmeLevel": "spe",
+    "level": 3,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Comprendre que le polynôme minimal, et non le caractéristique, est le critère de diagonalisabilité.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "matrices"
+    ]
+  },
+  {
+    "title": "Réduction de $P\\mapsto XP'$ sur $\\mathbb{R}_n[X]$",
+    "statement": "Soit $n\\in\\mathbb{N}^*$ et $u:\\mathbb{R}_n[X]\\to\\mathbb{R}_n[X]$ définie par $u(P)=XP'$.\n\n1. Vérifier que $u$ est bien un endomorphisme de $\\mathbb{R}_n[X]$.\n2. Calculer $u(X^k)$ pour $0\\leq k\\leq n$.\n3. En déduire la matrice de $u$ dans la base canonique, puis $\\mathrm{Sp}(u)$.\n4. $u$ est-elle diagonalisable ? Déterminer $\\ker u$ et $\\mathrm{Im}\\,u$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 22,
+    "tags": [
+      "endomorphisme induit",
+      "diagonalisation",
+      "valeurs propres",
+      "vecteurs propres"
+    ],
+    "hints": [
+      "Si $\\deg P\\leq n$ alors $\\deg P'\\leq n-1$ donc $\\deg(XP')\\leq n$.",
+      "$u(X^k)=X\\cdot kX^{k-1}=kX^k$ : la base canonique est déjà une base de vecteurs propres !",
+      "Une matrice diagonale dans une base est diagonalisable, sans aucun calcul supplémentaire."
+    ],
+    "correction": "1. $u$ est clairement linéaire. Si $\\deg P\\leq n$, alors $\\deg P'\\leq n-1$ (ou $P'=0$), donc $\\deg(XP')\\leq n$ : $u$ envoie bien $\\mathbb{R}_n[X]$ dans lui-même.\n\n2. Pour $k\\geq 1$ : $u(X^k)=X\\cdot kX^{k-1}=kX^k$. Pour $k=0$ : $u(1)=X\\cdot 0=0=0\\cdot 1$. Donc dans tous les cas $u(X^k)=k\\,X^k$.\n\n3. La matrice de $u$ dans la base canonique $(1,X,\\dots,X^n)$ est $\\mathrm{diag}(0,1,2,\\dots,n)$. Donc $\\mathrm{Sp}(u)=\\{0,1,\\dots,n\\}$, soit $n+1$ valeurs propres distinctes.\n\n4. $u$ est diagonalisable : sa matrice est diagonale dans la base canonique, qui est donc une base de vecteurs propres. (On peut aussi invoquer $n+1$ valeurs propres distinctes en dimension $n+1$.)\n$E_k=\\mathrm{Vect}(X^k)$ pour chaque $k$. En particulier $\\ker u=E_0=\\mathbb{R}_0[X]$ (les constantes), de dimension $1$, et par le théorème du rang $\\mathrm{rg}(u)=n$, avec $\\mathrm{Im}\\,u=\\mathrm{Vect}(X,X^2,\\dots,X^n)$.",
+    "programmeLevel": "spe",
+    "level": 2,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Reconnaître qu'une base est déjà une base propre, et travailler la réduction en dehors du cadre matriciel numérique.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "polynômes"
+    ]
+  },
+  {
+    "title": "Réduction de $P\\mapsto P-P'$ sur $\\mathbb{R}_n[X]$",
+    "statement": "Soit $n\\in\\mathbb{N}^*$ et $v:\\mathbb{R}_n[X]\\to\\mathbb{R}_n[X]$ définie par $v(P)=P-P'$.\n\n1. Écrire la matrice de $v$ dans la base canonique pour $n=3$. Que constate-t-on sur sa forme ?\n2. Déterminer $\\mathrm{Sp}(v)$ pour $n$ quelconque.\n3. Déterminer $\\ker(v-\\mathrm{id})$ et sa dimension.\n4. $v$ est-elle diagonalisable ? Est-elle inversible ?",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 25,
+    "tags": [
+      "endomorphisme induit",
+      "diagonalisation",
+      "valeurs propres",
+      "nilpotence"
+    ],
+    "hints": [
+      "Notons $d$ l'opérateur de dérivation : $v=\\mathrm{id}-d$, et $d$ est nilpotent sur $\\mathbb{R}_n[X]$.",
+      "La matrice de $d$ est triangulaire supérieure stricte, donc celle de $v$ est triangulaire de diagonale constante.",
+      "$\\ker(v-\\mathrm{id})=\\ker(-d)=\\ker d$."
+    ],
+    "correction": "1. Pour $n=3$, dans la base $(1,X,X^2,X^3)$ : $v(1)=1$, $v(X)=X-1$, $v(X^2)=X^2-2X$, $v(X^3)=X^3-3X^2$, d'où\n$$\\mathrm{Mat}(v)=\\begin{pmatrix} 1 & -1 & 0 & 0 \\\\ 0 & 1 & -2 & 0 \\\\ 0 & 0 & 1 & -3 \\\\ 0 & 0 & 0 & 1\\end{pmatrix}.$$\nElle est triangulaire supérieure, de diagonale constante égale à $1$.\n\n2. La matrice étant triangulaire, $\\chi_v=(X-1)^{n+1}$, donc $\\mathrm{Sp}(v)=\\{1\\}$.\n\n3. Notons $d$ la dérivation. Alors $v=\\mathrm{id}-d$ et $v-\\mathrm{id}=-d$, donc $\\ker(v-\\mathrm{id})=\\ker d=\\mathbb{R}_0[X]$, l'ensemble des polynômes constants, de dimension $1$.\n\n4. $\\dim E_1=1<n+1=m_a(1)$ dès que $n\\geq 1$ : $v$ n'est PAS diagonalisable.\nEn revanche $v$ est inversible : $0\\notin\\mathrm{Sp}(v)$. On peut même expliciter l'inverse — $d$ étant nilpotent d'indice $n+1$ sur $\\mathbb{R}_n[X]$, $(\\mathrm{id}-d)^{-1}=\\mathrm{id}+d+d^2+\\dots+d^n$, c'est-à-dire $v^{-1}(P)=P+P'+P''+\\dots+P^{(n)}$.\n\nLe contraste avec $P\\mapsto XP'$ est instructif : deux endomorphismes très proches en apparence, l'un diagonalisable à spectre maximal, l'autre pas diagonalisable du tout.",
+    "programmeLevel": "spe",
+    "level": 3,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Repérer une structure « identité moins nilpotent », et en tirer à la fois la non-diagonalisabilité et l'inverse explicite.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "polynômes"
+    ]
+  },
+  {
+    "title": "Matrices de rang 1 : diagonalisable ou nilpotente",
+    "statement": "Soit $n\\geq 2$, $C\\in M_{n,1}(\\mathbb{R})$ et $L\\in M_{1,n}(\\mathbb{R})$ tous deux non nuls, et $A=CL\\in M_n(\\mathbb{R})$.\n\n1. Montrer que $\\mathrm{rg}(A)=1$, puis que $A^2=\\mathrm{tr}(A)\\,A$.\n2. On suppose $\\mathrm{tr}(A)\\neq 0$. Montrer que $A$ est diagonalisable et donner son spectre avec les multiplicités.\n3. On suppose $\\mathrm{tr}(A)=0$. Montrer que $A$ n'est pas diagonalisable.\n4. Appliquer au cas $A=\\begin{pmatrix} 1 & 2 \\\\ 2 & 4\\end{pmatrix}$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 30,
+    "tags": [
+      "polynôme annulateur",
+      "diagonalisation",
+      "nilpotence",
+      "multiplicité"
+    ],
+    "hints": [
+      "$LC$ est une matrice $1\\times 1$, qu'on identifie au scalaire $\\mathrm{tr}(A)$.",
+      "$A^2=C(LC)L=(LC)\\,CL$.",
+      "Si $\\mathrm{tr}(A)\\neq 0$, le polynôme $X^2-\\mathrm{tr}(A)X=X(X-\\mathrm{tr}(A))$ est scindé à racines simples.",
+      "Si $\\mathrm{tr}(A)=0$ alors $A^2=0$ avec $A\\neq 0$."
+    ],
+    "correction": "1. Toutes les colonnes de $A=CL$ sont proportionnelles à $C$, qui est non nul, et $L\\neq 0$ assure $A\\neq 0$ : donc $\\mathrm{rg}(A)=1$.\nEnsuite $A^2=(CL)(CL)=C\\,(LC)\\,L$. Or $LC\\in M_1(\\mathbb{R})$ s'identifie au scalaire $t=\\sum_i L_iC_i$, et ce même scalaire vaut $\\mathrm{tr}(CL)=\\mathrm{tr}(A)$. Donc $A^2=t\\,CL=\\mathrm{tr}(A)\\,A$.\n\n2. Si $t=\\mathrm{tr}(A)\\neq 0$, le polynôme $X^2-tX=X(X-t)$ annule $A$ ; il est scindé à racines simples car $t\\neq 0$. Donc $A$ est diagonalisable, et $\\mathrm{Sp}(A)\\subset\\{0,t\\}$.\nComme $\\mathrm{rg}(A)=1$, $\\dim E_0=\\dim\\ker A=n-1$. Comme $A$ est diagonalisable, la somme des dimensions propres vaut $n$, donc $\\dim E_t=1$. Finalement $\\mathrm{Sp}(A)=\\{0,t\\}$ avec $m(0)=n-1$ et $m(t)=1$ (cohérent avec $\\mathrm{tr}(A)=(n-1)\\cdot 0+1\\cdot t=t$).\n\n3. Si $t=0$, alors $A^2=0$ avec $A\\neq 0$ : $A$ est nilpotente non nulle, donc non diagonalisable (une matrice nilpotente diagonalisable est nulle).\n\n4. Ici $C=\\begin{pmatrix} 1 \\\\ 2\\end{pmatrix}$, $L=\\begin{pmatrix} 1 & 2\\end{pmatrix}$, et $\\mathrm{tr}(A)=1+4=5\\neq 0$. Donc $A$ est diagonalisable, de spectre $\\{0,5\\}$ avec $m(0)=1$, $m(5)=1$. On vérifie : $A^2=\\begin{pmatrix} 5 & 10 \\\\ 10 & 20\\end{pmatrix}=5A$. $E_0=\\mathrm{Vect}\\left((2,-1)\\right)$ et $E_5=\\mathrm{Vect}\\left((1,2)\\right)$.",
+    "programmeLevel": "spe",
+    "level": 3,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Traiter une famille entière de matrices d'un coup grâce à une relation algébrique, et voir la trace décider de la diagonalisabilité.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "rang d'une matrice",
+      "trace"
+    ]
+  },
+  {
+    "title": "Trigonaliser une matrice non diagonalisable",
+    "statement": "Soit $A=\\begin{pmatrix} 0 & 1 & 0 \\\\ -1 & 2 & 0 \\\\ 0 & 0 & 2\\end{pmatrix}$.\n\n1. Calculer $\\chi_A$ et donner $\\mathrm{Sp}(A)$ avec les multiplicités algébriques.\n2. Déterminer $E_1$ et montrer que $A$ n'est pas diagonalisable.\n3. Trouver un vecteur $e_2$ tel que $(A-I_3)e_2=e_1$, où $e_1$ engendre $E_1$.\n4. En déduire une base dans laquelle la matrice de l'endomorphisme est triangulaire, et écrire cette matrice.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 30,
+    "tags": [
+      "trigonalisation",
+      "valeurs propres",
+      "multiplicité",
+      "sous-espaces propres"
+    ],
+    "hints": [
+      "La matrice est diagonale par blocs : un bloc $2\\times 2$ en haut à gauche, et le scalaire $2$.",
+      "Pour le bloc $\\begin{pmatrix} 0 & 1 \\\\ -1 & 2\\end{pmatrix}$ : trace $2$, déterminant $1$.",
+      "Le vecteur $e_2$ cherché s'appelle un vecteur propre généralisé : le système $(A-I_3)x=e_1$ est compatible mais pas de solution unique."
+    ],
+    "correction": "1. $A$ est diagonale par blocs. Le bloc $B=\\begin{pmatrix} 0 & 1 \\\\ -1 & 2\\end{pmatrix}$ vérifie $\\mathrm{tr}(B)=2$, $\\det(B)=1$, donc $\\chi_B=X^2-2X+1=(X-1)^2$. Ainsi $\\chi_A=(X-1)^2(X-2)$ et $\\mathrm{Sp}(A)=\\{1,2\\}$ avec $m_a(1)=2$, $m_a(2)=1$.\n\n2. $A-I_3=\\begin{pmatrix} -1 & 1 & 0 \\\\ -1 & 1 & 0 \\\\ 0 & 0 & 1\\end{pmatrix}$. Le système donne $z=0$ et $x=y$, donc $E_1=\\mathrm{Vect}(e_1)$ avec $e_1=(1,1,0)$, de dimension $1$.\nComme $\\dim E_1=1<2=m_a(1)$, $A$ n'est pas diagonalisable. Elle est en revanche trigonalisable, son polynôme caractéristique étant scindé sur $\\mathbb{R}$.\n\n3. On résout $(A-I_3)x=e_1$, c'est-à-dire $-x+y=1$, $-x+y=1$, $z=0$. Le vecteur $e_2=(0,1,0)$ convient.\n\n4. On complète avec un vecteur propre pour la valeur propre $2$ : $A-2I_3=\\begin{pmatrix} -2&1&0\\\\-1&0&0\\\\0&0&0\\end{pmatrix}$ donne $x=0$ puis $y=0$, donc $e_3=(0,0,1)$ convient.\nDans la base $(e_1,e_2,e_3)$ : $Ae_1=e_1$, $Ae_2=e_1+e_2$ (par construction), $Ae_3=2e_3$. La matrice est donc\n$$T=\\begin{pmatrix} 1 & 1 & 0 \\\\ 0 & 1 & 0 \\\\ 0 & 0 & 2\\end{pmatrix},$$\ntriangulaire supérieure. On a $A=PTP^{-1}$ avec $P=\\begin{pmatrix} 1&0&0\\\\1&1&0\\\\0&0&1\\end{pmatrix}$.",
+    "programmeLevel": "spe",
+    "level": 3,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Savoir quoi faire quand la diagonalisation échoue : construire une base de trigonalisation à partir d'un vecteur propre généralisé.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "matrices"
+    ]
+  },
+  {
+    "title": "Cayley-Hamilton pour inverser une matrice",
+    "statement": "Soit $A=\\begin{pmatrix} 1 & 2 \\\\ 3 & 4\\end{pmatrix}$.\n\n1. Calculer $\\chi_A$.\n2. Énoncer le théorème de Cayley-Hamilton et l'appliquer à $A$.\n3. En déduire $A^{-1}$ comme combinaison linéaire de $A$ et $I_2$, sans calculer de comatrice.\n4. Vérifier le résultat.\n5. Généraliser : si $A\\in M_n(\\mathbb{K})$ est inversible, expliquer pourquoi $A^{-1}$ est toujours un polynôme en $A$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 25,
+    "tags": [
+      "Cayley-Hamilton",
+      "polynôme caractéristique",
+      "polynôme annulateur"
+    ],
+    "hints": [
+      "$\\mathrm{tr}(A)=5$ et $\\det(A)=4-6=-2$.",
+      "Cayley-Hamilton : $\\chi_A(A)=0$.",
+      "De $A^2-5A-2I_2=0$, factoriser par $A$ : $A(A-5I_2)=2I_2$.",
+      "Pour la question 5 : le terme constant de $\\chi_A$ est $\\pm\\det(A)$, non nul si $A$ est inversible."
+    ],
+    "correction": "1. $\\chi_A(X)=X^2-\\mathrm{tr}(A)X+\\det(A)=X^2-5X-2$.\n\n2. Cayley-Hamilton : tout endomorphisme (ou matrice carrée) annule son propre polynôme caractéristique. Ici $A^2-5A-2I_2=0$.\n\n3. On factorise : $A^2-5A=2I_2$, soit $A(A-5I_2)=2I_2$, donc $A\\cdot\\tfrac{1}{2}(A-5I_2)=I_2$. Ainsi $A$ est inversible et\n$$A^{-1}=\\frac{1}{2}\\left(A-5I_2\\right)=\\frac{1}{2}\\begin{pmatrix} -4 & 2 \\\\ 3 & -1\\end{pmatrix}=\\begin{pmatrix} -2 & 1 \\\\ \\tfrac{3}{2} & -\\tfrac{1}{2}\\end{pmatrix}.$$\n\n4. $A\\,A^{-1}=\\begin{pmatrix} 1&2\\\\3&4\\end{pmatrix}\\begin{pmatrix} -2&1\\\\ \\tfrac32&-\\tfrac12\\end{pmatrix}=\\begin{pmatrix} -2+3 & 1-1 \\\\ -6+6 & 3-2\\end{pmatrix}=I_2$. Correct.\n\n5. Écrivons $\\chi_A=X^n+a_{n-1}X^{n-1}+\\dots+a_1X+a_0$ avec $a_0=\\chi_A(0)=(-1)^n\\det(A)$. Si $A$ est inversible, $a_0\\neq 0$. Cayley-Hamilton donne $A^n+\\dots+a_1A+a_0I_n=0$, d'où $A\\left(A^{n-1}+\\dots+a_1I_n\\right)=-a_0I_n$ et\n$$A^{-1}=-\\frac{1}{a_0}\\left(A^{n-1}+a_{n-1}A^{n-2}+\\dots+a_1I_n\\right),$$\nqui est bien un polynôme en $A$.",
+    "programmeLevel": "spe",
+    "level": 3,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Utiliser Cayley-Hamilton comme outil de calcul, et pas seulement comme un énoncé théorique.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "matrices"
+    ]
+  },
+  {
+    "title": "Si $A^2$ est diagonalisable, $A$ l'est-elle ?",
+    "statement": "Soit $A\\in M_n(\\mathbb{C})$ INVERSIBLE telle que $A^2$ soit diagonalisable.\n\n1. Justifier l'existence d'un polynôme $P=\\prod_{i=1}^{r}(X-\\mu_i)$, à racines $\\mu_i$ deux à deux distinctes, annulant $A^2$.\n2. Montrer que les $\\mu_i$ sont tous non nuls.\n3. En écrivant $\\mu_i=\\nu_i^2$ avec $\\nu_i\\in\\mathbb{C}^*$, construire un polynôme scindé à racines simples annulant $A$.\n4. Conclure. L'hypothèse d'inversibilité est-elle nécessaire ?\n5. Le résultat subsiste-t-il sur $\\mathbb{R}$ ? On étudiera $A=\\begin{pmatrix} 0 & -1 \\\\ 1 & 0\\end{pmatrix}$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 4,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 35,
+    "tags": [
+      "polynôme annulateur",
+      "diagonalisation",
+      "polynôme minimal"
+    ],
+    "hints": [
+      "$A^2$ diagonalisable équivaut à : son polynôme minimal est scindé à racines simples.",
+      "Si $\\mu_i=0$ était racine, alors $A^2$ serait non inversible.",
+      "Poser $Q=\\prod_{i=1}^{r}(X-\\nu_i)(X+\\nu_i)$ et calculer $Q(A)$ en regroupant : $(A-\\nu_iI)(A+\\nu_iI)=A^2-\\mu_iI$.",
+      "Pour la question 4, tester $A=\\begin{pmatrix} 0&1\\\\0&0\\end{pmatrix}$."
+    ],
+    "correction": "1. $A^2$ est diagonalisable, donc son polynôme minimal $P=\\prod_{i=1}^{r}(X-\\mu_i)$ est scindé sur $\\mathbb{C}$ à racines simples, et il annule $A^2$.\n\n2. Les $\\mu_i$ sont les valeurs propres de $A^2$. Comme $A$ est inversible, $A^2$ l'est aussi, donc $0$ n'est pas valeur propre de $A^2$ : tous les $\\mu_i$ sont non nuls.\n\n3. Sur $\\mathbb{C}$, chaque $\\mu_i$ admet deux racines carrées opposées ; on en choisit une, $\\nu_i\\in\\mathbb{C}^*$. Posons $Q=\\prod_{i=1}^{r}(X-\\nu_i)(X+\\nu_i)$. Alors\n$$Q(A)=\\prod_{i=1}^{r}(A-\\nu_iI_n)(A+\\nu_iI_n)=\\prod_{i=1}^{r}\\left(A^2-\\mu_i I_n\\right)=P(A^2)=0.$$\n(Les facteurs commutent, tous étant des polynômes en $A$.)\nRacines de $Q$ : les $\\pm\\nu_i$. Elles sont deux à deux distinctes : $\\nu_i\\neq-\\nu_i$ car $\\nu_i\\neq 0$, et $\\pm\\nu_i\\neq\\pm\\nu_j$ pour $i\\neq j$ car $\\nu_i^2=\\mu_i\\neq\\mu_j=\\nu_j^2$.\n\n4. $Q$ est scindé sur $\\mathbb{C}$, à racines simples, et annule $A$ : donc $A$ est diagonalisable.\nL'hypothèse d'inversibilité est bien nécessaire. Contre-exemple : $A=\\begin{pmatrix} 0&1\\\\0&0\\end{pmatrix}$ vérifie $A^2=0$, qui est diagonalisable, alors que $A$ est nilpotente non nulle donc non diagonalisable.\n\n5. Non, le résultat tombe sur $\\mathbb{R}$. Pour $A=\\begin{pmatrix} 0&-1\\\\1&0\\end{pmatrix}$ (rotation d'angle $\\tfrac{\\pi}{2}$) : $A$ est inversible, $A^2=-I_2$ est diagonalisable, mais $\\chi_A=X^2+1$ n'a aucune racine réelle, donc $\\mathrm{Sp}_{\\mathbb{R}}(A)=\\varnothing$ et $A$ n'est pas diagonalisable dans $M_2(\\mathbb{R})$.\n\nL'étape qui casse est la question 3 : sur $\\mathbb{R}$, un $\\mu_i<0$ n'a pas de racine carrée.",
+    "programmeLevel": "spe",
+    "level": 3,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Fabriquer un polynôme annulateur adapté plutôt que calculer, et mesurer précisément où l'hypothèse « corps algébriquement clos » intervient.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "réduction des endomorphismes",
+      "polynômes"
+    ]
+  },
+  {
+    "title": "Endomorphismes vérifiant $u^3=u$",
+    "statement": "Soit $E$ un $\\mathbb{R}$-espace vectoriel de dimension finie et $u\\in\\mathcal{L}(E)$ tel que $u^3=u$.\n\n1. Montrer que $u$ est diagonalisable et que $\\mathrm{Sp}(u)\\subset\\{-1,0,1\\}$.\n2. En déduire une décomposition de $E$ en somme directe de trois sous-espaces, que l'on décrira.\n3. Montrer que $u$ est un projecteur si et seulement si $-1\\notin\\mathrm{Sp}(u)$.\n4. Montrer que $\\mathrm{rg}(u)=\\dim E_1+\\dim E_{-1}$ et que $u$ induit une bijection de $\\mathrm{Im}\\,u$ sur lui-même.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 28,
+    "tags": [
+      "polynôme annulateur",
+      "diagonalisation",
+      "lemme des noyaux",
+      "projecteur"
+    ],
+    "hints": [
+      "$u^3=u$ signifie que $X^3-X$ annule $u$.",
+      "$X^3-X=X(X-1)(X+1)$ : scindé sur $\\mathbb{R}$, à racines simples.",
+      "Le lemme des noyaux donne directement la somme directe demandée.",
+      "$u$ projecteur équivaut à $u^2=u$, soit $u$ diagonalisable de spectre inclus dans $\\{0,1\\}$."
+    ],
+    "correction": "1. $X^3-X=X(X-1)(X+1)$ annule $u$ ; il est scindé sur $\\mathbb{R}$ et à racines simples. Donc $u$ est diagonalisable, et toute valeur propre est racine de ce polynôme : $\\mathrm{Sp}(u)\\subset\\{-1,0,1\\}$.\n\n2. Le lemme des noyaux appliqué aux facteurs premiers entre eux donne\n$$E=\\ker u\\oplus\\ker(u-\\mathrm{id})\\oplus\\ker(u+\\mathrm{id})=E_0\\oplus E_1\\oplus E_{-1}.$$\n$E_0=\\ker u$, $E_1$ est l'ensemble des vecteurs fixes, $E_{-1}$ celui des vecteurs changés en leur opposé. (Certains de ces sous-espaces peuvent être réduits à $\\{0\\}$.)\n\n3. Si $-1\\notin\\mathrm{Sp}(u)$, alors $E_{-1}=\\{0\\}$ et $E=E_0\\oplus E_1$ : sur $E_0$, $u$ est nul, et sur $E_1$, $u$ est l'identité, donc $u^2=u$ sur chaque facteur, d'où $u^2=u$ : $u$ est un projecteur.\nRéciproquement si $u$ est un projecteur, $\\mathrm{Sp}(u)\\subset\\{0,1\\}$, donc $-1\\notin\\mathrm{Sp}(u)$.\n\n4. $u$ étant diagonalisable, dans une base adaptée sa matrice est $\\mathrm{diag}(0,\\dots,0,1,\\dots,1,-1,\\dots,-1)$. Le rang est le nombre de coefficients diagonaux non nuls, soit $\\dim E_1+\\dim E_{-1}$.\nDe plus $\\mathrm{Im}\\,u=E_1\\oplus E_{-1}$ : en effet $u$ est nul sur $E_0$ et bijectif sur $E_1\\oplus E_{-1}$ (il y agit comme $\\pm\\mathrm{id}$). La restriction de $u$ à $\\mathrm{Im}\\,u$ est donc bien un automorphisme de $\\mathrm{Im}\\,u$, d'ailleurs involutif puisque $u^2=\\mathrm{id}$ sur $E_1\\oplus E_{-1}$.",
+    "programmeLevel": "spe",
+    "level": 3,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Exploiter à fond une seule relation algébrique : diagonalisabilité, décomposition, rang et image en découlent sans aucun calcul.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "réduction des endomorphismes"
+    ]
+  },
+  {
+    "title": "Deux endomorphismes qui commutent sont codiagonalisables",
+    "statement": "Soit $E$ un $\\mathbb{K}$-espace vectoriel de dimension finie, et $u,v\\in\\mathcal{L}(E)$ DIAGONALISABLES tels que $u\\circ v=v\\circ u$.\n\n1. Montrer que tout sous-espace propre $E_\\lambda(u)$ est stable par $v$.\n2. Montrer que l'endomorphisme induit par $v$ sur $E_\\lambda(u)$ est diagonalisable.\n3. En déduire qu'il existe une base de $E$ formée de vecteurs propres communs à $u$ et $v$.\n4. Montrer sur un exemple que l'hypothèse « $u$ et $v$ commutent » ne peut pas être supprimée.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 4,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 35,
+    "tags": [
+      "sous-espaces stables",
+      "diagonalisation",
+      "endomorphisme induit",
+      "commutant"
+    ],
+    "hints": [
+      "Si $x\\in E_\\lambda(u)$, calculer $u(v(x))$ en utilisant la commutation.",
+      "Un polynôme qui annule $v$ annule aussi sa restriction à tout sous-espace stable.",
+      "Recoller les bases propres obtenues sur chaque $E_\\lambda(u)$, en utilisant $E=\\bigoplus_\\lambda E_\\lambda(u)$.",
+      "Pour le contre-exemple, prendre deux symétries d'axes différents dans le plan."
+    ],
+    "correction": "1. Soit $x\\in E_\\lambda(u)$, c'est-à-dire $u(x)=\\lambda x$. Alors\n$$u\\left(v(x)\\right)=\\left(u\\circ v\\right)(x)=\\left(v\\circ u\\right)(x)=v\\left(\\lambda x\\right)=\\lambda\\,v(x),$$\ndonc $v(x)\\in E_\\lambda(u)$ : le sous-espace $E_\\lambda(u)$ est stable par $v$.\n\n2. $v$ est diagonalisable, donc son polynôme minimal $\\mu_v$ est scindé à racines simples. Notons $v_\\lambda$ l'endomorphisme induit par $v$ sur $E_\\lambda(u)$ (bien défini par la question 1). Pour tout $x\\in E_\\lambda(u)$, $\\mu_v(v_\\lambda)(x)=\\mu_v(v)(x)=0$ : $\\mu_v$ annule $v_\\lambda$. Étant scindé à racines simples, il assure que $v_\\lambda$ est diagonalisable.\n\n3. $u$ étant diagonalisable, $E=\\bigoplus_{\\lambda\\in\\mathrm{Sp}(u)}E_\\lambda(u)$. Sur chaque $E_\\lambda(u)$, la question 2 fournit une base $\\mathcal{B}_\\lambda$ de vecteurs propres de $v$. Or tout vecteur de $E_\\lambda(u)$ est déjà vecteur propre de $u$ (pour $\\lambda$). Donc les vecteurs de $\\mathcal{B}_\\lambda$ sont propres à la fois pour $u$ et pour $v$. La concaténation $\\mathcal{B}=\\bigcup_\\lambda\\mathcal{B}_\\lambda$ est une base de $E$ (réunion de bases de sous-espaces en somme directe) formée de vecteurs propres communs : $u$ et $v$ sont codiagonalisables.\n\n4. Prenons $u=\\begin{pmatrix} 1&0\\\\0&-1\\end{pmatrix}$ et $v=\\begin{pmatrix} 0&1\\\\1&0\\end{pmatrix}$ dans $M_2(\\mathbb{R})$. Les deux sont diagonalisables (symétriques réelles, de valeurs propres $\\pm 1$). Mais $uv=\\begin{pmatrix} 0&1\\\\-1&0\\end{pmatrix}$ et $vu=\\begin{pmatrix} 0&-1\\\\1&0\\end{pmatrix}$ : elles ne commutent pas. Et elles ne sont pas codiagonalisables : les sous-espaces propres de $u$ sont les axes, ceux de $v$ les bissectrices, aucun vecteur non nul n'est propre pour les deux.",
+    "programmeLevel": "spe",
+    "level": 3,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Maîtriser l'argument de stabilité + endomorphisme induit, qui est le schéma de démonstration réutilisé partout en réduction.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "réduction des endomorphismes"
+    ]
+  },
+  {
+    "title": "Sous-espaces stables d'un endomorphisme à valeurs propres simples",
+    "statement": "Soit $E$ de dimension $n$ et $u\\in\\mathcal{L}(E)$ diagonalisable ayant $n$ valeurs propres DEUX À DEUX DISTINCTES $\\lambda_1,\\dots,\\lambda_n$, de vecteurs propres associés $e_1,\\dots,e_n$.\n\n1. Soit $F$ un sous-espace stable par $u$ et $x=\\sum_{i=1}^{n}x_ie_i\\in F$. Montrer que pour tout $k$, $u^k(x)=\\sum_i \\lambda_i^k x_i e_i\\in F$.\n2. En utilisant un argument de type Vandermonde, montrer que $x_ie_i\\in F$ pour tout $i$.\n3. En déduire que les sous-espaces stables par $u$ sont exactement les $\\mathrm{Vect}\\left(e_i,\\,i\\in I\\right)$ pour $I\\subset\\{1,\\dots,n\\}$.\n4. Combien $u$ admet-il de sous-espaces stables ?",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 4,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 35,
+    "tags": [
+      "sous-espaces stables",
+      "diagonalisation",
+      "vecteurs propres"
+    ],
+    "hints": [
+      "$F$ stable par $u$ implique $F$ stable par $u^k$, donc par tout polynôme en $u$.",
+      "Les vecteurs $x,u(x),\\dots,u^{n-1}(x)$ sont tous dans $F$ ; écrivez leurs coordonnées : la matrice obtenue est une Vandermonde en les $\\lambda_i$.",
+      "Une matrice de Vandermonde de paramètres distincts est inversible.",
+      "Compter les parties de $\\{1,\\dots,n\\}$."
+    ],
+    "correction": "1. $F$ est stable par $u$, donc par récurrence stable par $u^k$ pour tout $k\\in\\mathbb{N}$. Comme $u(e_i)=\\lambda_ie_i$, on a $u^k(x)=\\sum_{i=1}^{n}\\lambda_i^k x_i e_i$, et ce vecteur appartient à $F$.\n\n2. Considérons les $n$ vecteurs $u^k(x)$ pour $k=0,\\dots,n-1$, tous dans $F$. Cherchons à isoler le terme $j$ : on veut des scalaires $c_0,\\dots,c_{n-1}$ tels que $\\sum_{k}c_k\\lambda_i^k=\\delta_{ij}$ pour tout $i$. Ce système linéaire en $(c_k)$ a pour matrice la Vandermonde $V=\\left(\\lambda_i^{\\,k}\\right)_{i,k}$, inversible car les $\\lambda_i$ sont deux à deux distincts. Il admet donc une solution.\nPour ce choix, $\\sum_{k=0}^{n-1}c_k\\,u^k(x)=\\sum_{i}\\left(\\sum_k c_k\\lambda_i^k\\right)x_ie_i=x_je_j$, combinaison linéaire d'éléments de $F$ : donc $x_je_j\\in F$.\n(Variante classique : prendre les polynômes interpolateurs de Lagrange $L_j$ aux points $\\lambda_i$, et calculer $L_j(u)(x)=x_je_j$.)\n\n3. Posons $I=\\{i\\mid \\exists x\\in F,\\ x_i\\neq 0\\}$. Par la question 2, $e_i\\in F$ pour tout $i\\in I$, donc $\\mathrm{Vect}(e_i,i\\in I)\\subset F$. Réciproquement tout $x\\in F$ s'écrit $\\sum_{i\\in I}x_ie_i$ par définition de $I$, d'où l'égalité $F=\\mathrm{Vect}(e_i,\\,i\\in I)$.\nRéciproquement, chaque $\\mathrm{Vect}(e_i,i\\in I)$ est bien stable par $u$, puisque $u(e_i)=\\lambda_ie_i$.\n\n4. Les sous-espaces stables sont donc en bijection avec les parties de $\\{1,\\dots,n\\}$ : il y en a exactement $2^n$ (y compris $\\{0\\}$ pour $I=\\varnothing$ et $E$ pour $I=\\{1,\\dots,n\\}$).\n\nAttention : ce dénombrement utilise de façon essentielle que les valeurs propres sont SIMPLES. Si une valeur propre est multiple, son sous-espace propre contient une infinité de droites, toutes stables.",
+    "programmeLevel": "spe",
+    "level": 3,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Relier stabilité, polynômes en $u$ et interpolation — et voir pourquoi la simplicité du spectre rend la classification finie.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "réduction des endomorphismes",
+      "déterminant de Vandermonde"
+    ]
+  },
+  {
+    "title": "Le commutant d'une matrice à spectre simple",
+    "statement": "Soit $A\\in M_n(\\mathbb{K})$ diagonalisable, de valeurs propres $\\lambda_1,\\dots,\\lambda_n$ deux à deux distinctes. On note $\\mathcal{C}(A)=\\{M\\in M_n(\\mathbb{K})\\mid AM=MA\\}$ son commutant.\n\n1. Montrer que $\\mathcal{C}(A)$ est un sous-espace vectoriel de $M_n(\\mathbb{K})$ contenant $I_n$ et $A$.\n2. On suppose d'abord $A=D=\\mathrm{diag}(\\lambda_1,\\dots,\\lambda_n)$. Déterminer $\\mathcal{C}(D)$ et sa dimension.\n3. Revenir au cas général : montrer que $\\dim\\mathcal{C}(A)=n$.\n4. En déduire que $\\mathcal{C}(A)=\\mathbb{K}[A]=\\mathrm{Vect}\\left(I_n,A,\\dots,A^{n-1}\\right)$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 4,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 40,
+    "tags": [
+      "commutant",
+      "diagonalisation",
+      "polynôme minimal",
+      "sous-espaces stables"
+    ],
+    "hints": [
+      "Pour la question 2, écrire la relation $DM=MD$ coefficient par coefficient : $\\lambda_i m_{ij}=m_{ij}\\lambda_j$.",
+      "Si $A=PDP^{-1}$, l'application $M\\mapsto P^{-1}MP$ est un isomorphisme qui envoie $\\mathcal{C}(A)$ sur $\\mathcal{C}(D)$.",
+      "La famille $(I_n,A,\\dots,A^{n-1})$ est libre car le polynôme minimal de $A$ est de degré $n$."
+    ],
+    "correction": "1. $\\mathcal{C}(A)$ est le noyau de l'application linéaire $M\\mapsto AM-MA$, c'est donc un sous-espace vectoriel. Il contient évidemment $I_n$ et $A$, et plus généralement tout polynôme en $A$.\n\n2. Écrivons $DM=MD$ coefficient par coefficient : $(DM)_{ij}=\\lambda_i m_{ij}$ et $(MD)_{ij}=m_{ij}\\lambda_j$. L'égalité impose $(\\lambda_i-\\lambda_j)\\,m_{ij}=0$ pour tous $i,j$. Les $\\lambda_i$ étant deux à deux distincts, $m_{ij}=0$ dès que $i\\neq j$ : $M$ est diagonale.\nRéciproquement deux matrices diagonales commutent. Donc $\\mathcal{C}(D)$ est l'ensemble des matrices diagonales, de dimension $n$.\n\n3. Écrivons $A=PDP^{-1}$. Alors\n$$AM=MA\\iff PDP^{-1}M=MPDP^{-1}\\iff D\\left(P^{-1}MP\\right)=\\left(P^{-1}MP\\right)D.$$\nAinsi $M\\in\\mathcal{C}(A)$ si et seulement si $P^{-1}MP\\in\\mathcal{C}(D)$. L'application $\\Phi:M\\mapsto P^{-1}MP$ est un automorphisme de $M_n(\\mathbb{K})$ (d'inverse $N\\mapsto PNP^{-1}$), et elle réalise une bijection linéaire de $\\mathcal{C}(A)$ sur $\\mathcal{C}(D)$. Donc $\\dim\\mathcal{C}(A)=\\dim\\mathcal{C}(D)=n$.\n\n4. $A$ ayant $n$ valeurs propres distinctes, son polynôme minimal est $\\mu_A=\\prod_{i=1}^n(X-\\lambda_i)$, de degré $n$. Donc la famille $\\left(I_n,A,\\dots,A^{n-1}\\right)$ est libre : sinon une relation non triviale fournirait un polynôme annulateur non nul de degré $<n$, contredisant la minimalité de $\\mu_A$. Elle engendre $\\mathbb{K}[A]$, qui est donc de dimension $n$, et $\\mathbb{K}[A]\\subset\\mathcal{C}(A)$ par la question 1. Deux sous-espaces emboîtés de même dimension finie sont égaux : $\\mathcal{C}(A)=\\mathbb{K}[A]$.\n\nAttention : le résultat est FAUX sans l'hypothèse de spectre simple. Pour $A=I_n$, $\\mathcal{C}(A)=M_n(\\mathbb{K})$ est de dimension $n^2$, alors que $\\mathbb{K}[A]$ est de dimension $1$.",
+    "programmeLevel": "spe",
+    "level": 5,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Ramener un problème général au cas diagonal par conjugaison, et manier ensemble dimension, liberté et polynôme minimal.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "réduction des endomorphismes"
+    ]
+  },
+  {
+    "title": "Diagonalisabilité lue sur le rang",
+    "statement": "Soit $A\\in M_n(\\mathbb{C})$ telle que $\\mathrm{Sp}(A)=\\{0,\\alpha\\}$ avec $\\alpha\\neq 0$.\n\n1. Exprimer $\\dim E_0(A)$ en fonction de $\\mathrm{rg}(A)$.\n2. Montrer que $A$ est diagonalisable si et seulement si $\\mathrm{rg}(A)=\\mathrm{rg}(A^2)$.\n3. Application : $A=\\begin{pmatrix} 1 & 1 & -1 \\\\ -1 & -1 & 1 \\\\ 0 & 0 & 0\\end{pmatrix}$. Calculer $A^2$, en déduire si $A$ est diagonalisable, puis donner $\\mathrm{Sp}(A)$.\n4. Même question pour $B=\\begin{pmatrix} 0 & 1 & 0 \\\\ 0 & 0 & 0 \\\\ 0 & 0 & 0\\end{pmatrix}$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 4,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 35,
+    "tags": [
+      "diagonalisation",
+      "polynôme annulateur",
+      "multiplicité",
+      "nilpotence"
+    ],
+    "hints": [
+      "$E_0(A)=\\ker A$, donc le théorème du rang s'applique.",
+      "$A$ diagonalisable de spectre $\\{0,\\alpha\\}$ équivaut à : $X(X-\\alpha)$ annule $A$, soit $A^2=\\alpha A$.",
+      "Utiliser $\\mathbb{C}^n=\\ker A\\oplus\\mathrm{Im}\\,A$ pour traduire $\\mathrm{rg}(A)=\\mathrm{rg}(A^2)$.",
+      "En question 3, calculez $A^2$ : vous devriez trouver un multiple de $A$."
+    ],
+    "correction": "1. $E_0(A)=\\ker A$, donc par le théorème du rang $\\dim E_0(A)=n-\\mathrm{rg}(A)$.\n\n2. ($\\Rightarrow$) Si $A$ est diagonalisable de spectre $\\{0,\\alpha\\}$, son polynôme minimal est $X(X-\\alpha)$, donc $A^2=\\alpha A$ et $\\mathrm{rg}(A^2)=\\mathrm{rg}(\\alpha A)=\\mathrm{rg}(A)$ car $\\alpha\\neq 0$.\n($\\Leftarrow$) Supposons $\\mathrm{rg}(A)=\\mathrm{rg}(A^2)$. On a toujours $\\ker A\\subset\\ker A^2$, et le théorème du rang donne $\\dim\\ker A=\\dim\\ker A^2$ : donc $\\ker A=\\ker A^2$.\nMontrons alors $\\mathbb{C}^n=\\ker A\\oplus\\mathrm{Im}\\,A$. Si $x\\in\\ker A\\cap\\mathrm{Im}\\,A$, écrivons $x=Ay$ ; alors $A^2y=Ax=0$, donc $y\\in\\ker A^2=\\ker A$, donc $x=Ay=0$. L'intersection est nulle, et les dimensions se somment à $n$ : la somme est directe et vaut $\\mathbb{C}^n$.\n$\\mathrm{Im}\\,A$ est stable par $A$, et la restriction de $A$ à $\\mathrm{Im}\\,A$ est injective (son noyau est $\\ker A\\cap\\mathrm{Im}\\,A=\\{0\\}$), donc bijective. Son spectre est inclus dans $\\mathrm{Sp}(A)\\setminus\\{0\\}=\\{\\alpha\\}$, et comme on est sur $\\mathbb{C}$ ce spectre est non vide (si $\\mathrm{Im}\\,A\\neq\\{0\\}$) : la restriction n'a que $\\alpha$ pour valeur propre. Étant de plus annulée par un polynôme scindé, il reste à voir qu'elle vaut $\\alpha\\,\\mathrm{id}$ : posons $N=A-\\alpha\\,\\mathrm{id}$ sur $\\mathrm{Im}\\,A$, qui est nilpotente. Si $N\\neq 0$, il existe $x$ avec $Nx\\neq0$ et $N^2x=0$, et l'on vérifie que $\\ker A^2\\supsetneq\\ker A$, contradiction. Donc $A=\\alpha\\,\\mathrm{id}$ sur $\\mathrm{Im}\\,A$ et $A=0$ sur $\\ker A$ : $A$ est diagonalisable.\n\n3. $A^2=\\begin{pmatrix} 1&1&-1\\\\-1&-1&1\\\\0&0&0\\end{pmatrix}^2=\\begin{pmatrix} 0&0&0\\\\0&0&0\\\\0&0&0\\end{pmatrix}$. En effet la première ligne de $A^2$ vaut $(1-1+0,\\ 1-1+0,\\ -1+1+0)=(0,0,0)$, et de même pour les autres.\nDonc $A^2=0$ avec $A\\neq 0$ : $A$ est nilpotente non nulle, donc NON diagonalisable, et $\\mathrm{Sp}(A)=\\{0\\}$. (Cohérent avec le critère : $\\mathrm{rg}(A)=1$ mais $\\mathrm{rg}(A^2)=0$.)\n\n4. $B^2=0$ et $B\\neq 0$ : même conclusion, $B$ est nilpotente non nulle, non diagonalisable, $\\mathrm{Sp}(B)=\\{0\\}$. Ici $\\mathrm{rg}(B)=1\\neq 0=\\mathrm{rg}(B^2)$.",
+    "programmeLevel": "spe",
+    "level": 5,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Transformer un critère de diagonalisabilité en un test calculatoire sur les rangs, utilisable sans chercher les vecteurs propres.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "réduction des endomorphismes",
+      "théorème du rang"
+    ]
+  },
+  {
+    "title": "L'endomorphisme $M\\mapsto AM$ de $M_n(\\mathbb{C})$",
+    "statement": "Soit $A\\in M_n(\\mathbb{C})$ et $\\varphi_A:M_n(\\mathbb{C})\\to M_n(\\mathbb{C})$, $M\\mapsto AM$.\n\n1. Vérifier que $\\varphi_A$ est un endomorphisme de $M_n(\\mathbb{C})$ et que $\\varphi_A^{\\,k}=\\varphi_{A^k}$ pour tout $k\\in\\mathbb{N}$.\n2. En déduire que pour tout polynôme $P$, $P(\\varphi_A)=\\varphi_{P(A)}$.\n3. Montrer que $P$ annule $\\varphi_A$ si et seulement si $P$ annule $A$. En déduire $\\mu_{\\varphi_A}=\\mu_A$.\n4. Conclure : $\\varphi_A$ est diagonalisable si et seulement si $A$ l'est. Déterminer $\\mathrm{Sp}(\\varphi_A)$.\n5. Si $\\lambda\\in\\mathrm{Sp}(A)$, montrer que $\\dim E_\\lambda(\\varphi_A)=n\\cdot\\dim E_\\lambda(A)$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 5,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 45,
+    "tags": [
+      "polynôme minimal",
+      "diagonalisation",
+      "endomorphisme induit",
+      "valeurs propres"
+    ],
+    "hints": [
+      "La linéarité de $M\\mapsto AM$ est immédiate ; pour la composée, $\\varphi_A(\\varphi_A(M))=A(AM)=A^2M$.",
+      "$P(\\varphi_A)(M)=P(A)M$ : tout se lit sur la matrice $P(A)$.",
+      "$\\varphi_{P(A)}=0$ signifie $P(A)M=0$ pour TOUTE matrice $M$ ; prendre $M=I_n$.",
+      "Pour la question 5 : $AM=\\lambda M$ signifie que chaque COLONNE de $M$ est dans $E_\\lambda(A)$."
+    ],
+    "correction": "1. $\\varphi_A$ est linéaire car le produit matriciel est bilinéaire : $A(M+\\alpha N)=AM+\\alpha AN$. Ensuite $\\varphi_A^{\\,2}(M)=A(AM)=A^2M=\\varphi_{A^2}(M)$, et une récurrence immédiate donne $\\varphi_A^{\\,k}=\\varphi_{A^k}$.\n\n2. Par linéarité de $P\\mapsto P(\\varphi_A)$ et la question 1 : si $P=\\sum_k a_kX^k$, alors $P(\\varphi_A)=\\sum_k a_k\\varphi_{A^k}=\\varphi_{\\sum_k a_kA^k}=\\varphi_{P(A)}$, c'est-à-dire $P(\\varphi_A)(M)=P(A)\\,M$ pour toute $M$.\n\n3. $P$ annule $\\varphi_A$ $\\iff$ $\\varphi_{P(A)}=0$ $\\iff$ $P(A)M=0$ pour toute $M\\in M_n(\\mathbb{C})$. En prenant $M=I_n$ on obtient $P(A)=0$ ; réciproquement si $P(A)=0$ alors $P(A)M=0$ pour toute $M$. Donc $P$ annule $\\varphi_A$ si et seulement si $P$ annule $A$.\nLes deux endomorphismes ont donc exactement le même idéal annulateur, donc le même générateur unitaire : $\\mu_{\\varphi_A}=\\mu_A$.\n\n4. La diagonalisabilité se lit sur le polynôme minimal (scindé à racines simples). Comme $\\mu_{\\varphi_A}=\\mu_A$, $\\varphi_A$ est diagonalisable si et seulement si $A$ l'est.\nDe même, le spectre est l'ensemble des racines du polynôme minimal : $\\mathrm{Sp}(\\varphi_A)=\\mathrm{Sp}(A)$.\n\n5. $M\\in E_\\lambda(\\varphi_A)$ signifie $AM=\\lambda M$, c'est-à-dire que chaque colonne $C_j$ de $M$ vérifie $AC_j=\\lambda C_j$, soit $C_j\\in E_\\lambda(A)$. Les colonnes étant indépendantes les unes des autres, $E_\\lambda(\\varphi_A)\\cong\\left(E_\\lambda(A)\\right)^n$ et donc $\\dim E_\\lambda(\\varphi_A)=n\\cdot\\dim E_\\lambda(A)$.\n\nContrôle de cohérence : $\\sum_\\lambda \\dim E_\\lambda(\\varphi_A)=n\\sum_\\lambda\\dim E_\\lambda(A)$, qui vaut $n\\cdot n=n^2=\\dim M_n(\\mathbb{C})$ exactement quand $A$ est diagonalisable.",
+    "programmeLevel": "spe",
+    "level": 5,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Travailler la réduction dans un espace de matrices, et voir qu'un transport de polynôme minimal remplace tout calcul.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "réduction des endomorphismes",
+      "polynôme minimal"
+    ]
+  },
+  {
+    "title": "Réduction de $M\\mapsto AM-MA$ quand $A$ est diagonalisable",
+    "statement": "Soit $A\\in M_n(\\mathbb{C})$ DIAGONALISABLE et $\\mathrm{ad}_A:M_n(\\mathbb{C})\\to M_n(\\mathbb{C})$, $M\\mapsto AM-MA$.\n\n1. Vérifier que $\\mathrm{ad}_A$ est linéaire, et que $\\mathrm{ad}_A(M)=0$ si et seulement si $M$ commute avec $A$.\n2. On suppose d'abord $A=D=\\mathrm{diag}(\\lambda_1,\\dots,\\lambda_n)$. Calculer $\\mathrm{ad}_D(E_{ij})$ où $E_{ij}$ est la matrice élémentaire.\n3. En déduire que $\\mathrm{ad}_D$ est diagonalisable et donner son spectre.\n4. Traiter le cas général $A=PDP^{-1}$.\n5. Que vaut $\\dim\\ker\\mathrm{ad}_A$ lorsque $A$ a $n$ valeurs propres distinctes ? Interpréter.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 5,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 45,
+    "tags": [
+      "commutant",
+      "diagonalisation",
+      "valeurs propres",
+      "endomorphisme induit"
+    ],
+    "hints": [
+      "$E_{ij}$ a un seul coefficient non nul, en position $(i,j)$. Calculez $DE_{ij}$ puis $E_{ij}D$.",
+      "$DE_{ij}=\\lambda_i E_{ij}$ et $E_{ij}D=\\lambda_j E_{ij}$.",
+      "La base $(E_{ij})_{1\\leq i,j\\leq n}$ de $M_n(\\mathbb{C})$ est donc une base de vecteurs propres.",
+      "Pour le cas général, comparer $\\mathrm{ad}_A$ et $\\mathrm{ad}_D$ via la conjugaison $M\\mapsto P^{-1}MP$."
+    ],
+    "correction": "1. La linéarité est immédiate. $\\mathrm{ad}_A(M)=0$ signifie $AM=MA$, c'est-à-dire $M\\in\\mathcal{C}(A)$.\n\n2. $DE_{ij}$ multiplie la $i$-ième ligne par $\\lambda_i$, donc $DE_{ij}=\\lambda_iE_{ij}$. $E_{ij}D$ multiplie la $j$-ième colonne par $\\lambda_j$, donc $E_{ij}D=\\lambda_jE_{ij}$. Ainsi\n$$\\mathrm{ad}_D(E_{ij})=(\\lambda_i-\\lambda_j)\\,E_{ij}.$$\n\n3. La famille $(E_{ij})_{1\\leq i,j\\leq n}$ est une base de $M_n(\\mathbb{C})$, et chacun de ses éléments est vecteur propre de $\\mathrm{ad}_D$. Donc $\\mathrm{ad}_D$ est diagonalisable, de matrice diagonale dans cette base, et\n$$\\mathrm{Sp}(\\mathrm{ad}_D)=\\left\\{\\lambda_i-\\lambda_j\\ \\mid\\ 1\\leq i,j\\leq n\\right\\}.$$\nEn particulier $0$ y figure toujours (prendre $i=j$).\n\n4. Écrivons $A=PDP^{-1}$ et posons $\\Phi(M)=P^{-1}MP$, automorphisme de $M_n(\\mathbb{C})$. Alors\n$$\\Phi\\left(\\mathrm{ad}_A(M)\\right)=P^{-1}(AM-MA)P=D\\,\\Phi(M)-\\Phi(M)\\,D=\\mathrm{ad}_D\\left(\\Phi(M)\\right),$$\ndonc $\\Phi\\circ\\mathrm{ad}_A=\\mathrm{ad}_D\\circ\\Phi$, c'est-à-dire $\\mathrm{ad}_A=\\Phi^{-1}\\circ\\mathrm{ad}_D\\circ\\Phi$ : $\\mathrm{ad}_A$ et $\\mathrm{ad}_D$ sont semblables. Donc $\\mathrm{ad}_A$ est diagonalisable, de même spectre $\\{\\lambda_i-\\lambda_j\\}$, où les $\\lambda_i$ sont les valeurs propres de $A$ comptées avec multiplicité.\n\n5. Si les $\\lambda_i$ sont deux à deux distincts, $\\lambda_i-\\lambda_j=0$ uniquement pour $i=j$, soit exactement $n$ couples $(i,j)$. La valeur propre $0$ de $\\mathrm{ad}_D$ est donc de multiplicité $n$, et $\\dim\\ker\\mathrm{ad}_A=n$.\nInterprétation : $\\ker\\mathrm{ad}_A=\\mathcal{C}(A)$, on retrouve que le commutant d'une matrice à spectre simple est de dimension $n$ — c'est-à-dire réduit aux polynômes en $A$.",
+    "programmeLevel": "spe",
+    "level": 5,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Diagonaliser un endomorphisme de $M_n$ en exhibant directement une base propre, et retrouver le commutant comme noyau.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "réduction des endomorphismes",
+      "matrices élémentaires"
+    ]
+  },
+  {
+    "title": "Si toutes les traces des puissances sont nulles",
+    "statement": "Soit $A\\in M_n(\\mathbb{C})$ telle que $\\mathrm{tr}\\left(A^k\\right)=0$ pour tout $k\\in\\{1,\\dots,n\\}$.\n\n1. Justifier que $A$ est trigonalisable et que $\\mathrm{tr}\\left(A^k\\right)=\\sum_{i=1}^{n}\\lambda_i^{\\,k}$, où $\\lambda_1,\\dots,\\lambda_n$ sont les valeurs propres de $A$ comptées avec multiplicité.\n2. On note $\\mu_1,\\dots,\\mu_r$ les valeurs propres non nulles DEUX À DEUX DISTINCTES de $A$, et $m_1,\\dots,m_r$ leurs multiplicités. Écrire le système vérifié par les $m_j$.\n3. Montrer, à l'aide d'un déterminant de Vandermonde, que ce système impose $r=0$.\n4. Conclure que $A$ est nilpotente.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 5,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 40,
+    "tags": [
+      "trigonalisation",
+      "valeurs propres",
+      "nilpotence",
+      "multiplicité"
+    ],
+    "hints": [
+      "Sur $\\mathbb{C}$, tout polynôme est scindé, donc toute matrice est trigonalisable.",
+      "Si $A$ est semblable à une triangulaire $T$ de diagonale $(\\lambda_i)$, alors $A^k$ est semblable à $T^k$, de diagonale $(\\lambda_i^k)$.",
+      "En regroupant les valeurs propres égales : $\\sum_{j=1}^{r} m_j\\mu_j^{\\,k}=0$ pour $k=1,\\dots,r$.",
+      "Factoriser $\\mu_j$ dans chaque colonne fait apparaître une matrice de Vandermonde en les $\\mu_j$."
+    ],
+    "correction": "1. $\\mathbb{C}$ est algébriquement clos, donc $\\chi_A$ est scindé et $A$ est trigonalisable : il existe $P$ inversible et $T$ triangulaire supérieure avec $A=PTP^{-1}$, la diagonale de $T$ portant les valeurs propres $\\lambda_1,\\dots,\\lambda_n$ avec multiplicité. Alors $A^k=PT^kP^{-1}$, et $T^k$ est triangulaire de diagonale $\\left(\\lambda_i^{\\,k}\\right)$. La trace étant invariante par similitude, $\\mathrm{tr}(A^k)=\\mathrm{tr}(T^k)=\\sum_{i=1}^n\\lambda_i^{\\,k}$.\n\n2. Les valeurs propres nulles ne contribuent pas (pour $k\\geq 1$). En regroupant les valeurs propres égales :\n$$\\forall k\\in\\{1,\\dots,r\\},\\qquad \\sum_{j=1}^{r} m_j\\,\\mu_j^{\\,k}=0.$$\n(On n'utilise que les $r$ premières équations, et $r\\leq n$.)\n\n3. Supposons $r\\geq 1$. Le système ci-dessus s'écrit $V\\,m=0$ où $m=(m_1,\\dots,m_r)^{\\top}$ et $V=\\left(\\mu_j^{\\,k}\\right)_{1\\leq k,j\\leq r}$. En factorisant $\\mu_j$ dans la $j$-ième colonne :\n$$\\det V=\\left(\\prod_{j=1}^{r}\\mu_j\\right)\\cdot\\det\\left(\\mu_j^{\\,k-1}\\right)_{1\\leq k,j\\leq r}=\\left(\\prod_{j=1}^{r}\\mu_j\\right)\\prod_{1\\leq i<j\\leq r}\\left(\\mu_j-\\mu_i\\right).$$\nLes $\\mu_j$ sont non nuls et deux à deux distincts, donc $\\det V\\neq 0$ : $V$ est inversible et $m=0$. Or les $m_j$ sont des multiplicités, donc des entiers $\\geq 1$ : contradiction. Donc $r=0$.\n\n4. Il n'y a aucune valeur propre non nulle : $\\mathrm{Sp}(A)=\\{0\\}$, donc $\\chi_A=X^n$, et le théorème de Cayley-Hamilton donne $A^n=0$ : $A$ est nilpotente.\n\nRemarque : la réciproque est immédiate (une matrice nilpotente est semblable à une triangulaire stricte, donc toutes les $A^k$ sont de trace nulle). On a donc une caractérisation, valable sur $\\mathbb{C}$ — et c'est bien $n$ équations qui suffisent, pas une infinité.",
+    "programmeLevel": "spe",
+    "level": 5,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Assembler trigonalisation, trace et Vandermonde pour une caractérisation non calculatoire de la nilpotence.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "réduction des endomorphismes",
+      "déterminant de Vandermonde",
+      "trace"
+    ]
+  },
+  {
+    "title": "Matrice du graphe complet : spectre, puissances et dénombrement de chemins",
+    "statement": "Pour $n\\geq 2$, on note $J_n\\in M_n(\\mathbb{R})$ la matrice dont tous les coefficients valent $1$, et $A_n=J_n-I_n$ (matrice d'adjacence du graphe complet à $n$ sommets : $a_{ij}=1$ si $i\\neq j$, $0$ sinon).\n\n1. Déterminer $\\mathrm{rg}(J_n)$, puis les valeurs propres de $J_n$ avec leurs multiplicités. Justifier que $J_n$ est diagonalisable.\n2. En déduire $\\mathrm{Sp}(A_n)$ avec les multiplicités, et justifier que $A_n$ est diagonalisable.\n3. Montrer que $A_n^{\\,2}=(n-2)A_n+(n-1)I_n$. Retrouver le spectre à partir de cette relation.\n4. Déterminer $\\alpha_k,\\beta_k$ tels que $A_n^{\\,k}=\\alpha_k J_n+\\beta_k I_n$, puis en déduire le nombre de chemins de longueur $k$ reliant deux sommets distincts du graphe complet.\n5. Vérifier le résultat pour $n=3$ et $k=2$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "DM",
+    "difficulty": 5,
+    "chapter": "Réduction des endomorphismes",
+    "estimatedMinutes": 50,
+    "tags": [
+      "diagonalisation",
+      "puissances de matrice",
+      "polynôme annulateur",
+      "valeurs propres"
+    ],
+    "hints": [
+      "Toutes les lignes de $J_n$ sont égales : son rang vaut $1$, donc $\\dim\\ker J_n=n-1$.",
+      "Le vecteur $(1,\\dots,1)$ est propre pour $J_n$ : pour quelle valeur propre ?",
+      "$J_n^{\\,2}=nJ_n$ ; développez $A_n^{\\,2}=(J_n-I_n)^2$ avec cette relation.",
+      "Cherchez $A_n^{\\,k}$ sous la forme $\\alpha_kJ_n+\\beta_kI_n$ et écrivez la récurrence sur $(\\alpha_k,\\beta_k)$.",
+      "Le coefficient $(i,j)$ de $A_n^{\\,k}$ compte les chemins de longueur $k$ de $i$ à $j$."
+    ],
+    "correction": "1. Toutes les lignes de $J_n$ sont égales et non nulles, donc $\\mathrm{rg}(J_n)=1$ et $\\dim\\ker J_n=n-1$ : $0$ est valeur propre de multiplicité géométrique $n-1$. De plus $J_n\\,(1,\\dots,1)^{\\top}=n\\,(1,\\dots,1)^{\\top}$, donc $n\\in\\mathrm{Sp}(J_n)$. Comme $(n-1)+1=n$, la somme des dimensions propres vaut $n$ : $J_n$ est diagonalisable, $\\mathrm{Sp}(J_n)=\\{0,n\\}$ avec $m(0)=n-1$ et $m(n)=1$.\n\n2. $A_n=J_n-I_n$, donc si $J_nx=\\mu x$ alors $A_nx=(\\mu-1)x$ : les sous-espaces propres sont les mêmes, les valeurs propres décalées de $-1$. Ainsi $\\mathrm{Sp}(A_n)=\\{-1,\\ n-1\\}$ avec $m(-1)=n-1$ et $m(n-1)=1$, et $A_n$ est diagonalisable.\nContrôle : $\\mathrm{tr}(A_n)=0$ et $(n-1)\\times(-1)+1\\times(n-1)=0$. Cohérent.\n\n3. $J_n^{\\,2}=nJ_n$ (chaque coefficient du produit vaut $n$). Donc\n$$A_n^{\\,2}=(J_n-I_n)^2=J_n^{\\,2}-2J_n+I_n=nJ_n-2J_n+I_n=(n-2)J_n+I_n.$$\nComme $J_n=A_n+I_n$, il vient $A_n^{\\,2}=(n-2)(A_n+I_n)+I_n=(n-2)A_n+(n-1)I_n$.\nLe polynôme $X^2-(n-2)X-(n-1)=(X+1)\\left(X-(n-1)\\right)$ annule donc $A_n$ ; il est scindé à racines simples (car $n\\geq 2$ donne $-1\\neq n-1$ dès que $n\\neq 0$, et ici $n\\geq 2$), ce qui redonne à la fois la diagonalisabilité et $\\mathrm{Sp}(A_n)\\subset\\{-1,n-1\\}$.\n\n4. Cherchons $A_n^{\\,k}=\\alpha_kJ_n+\\beta_kI_n$. C'est vrai pour $k=1$ avec $\\alpha_1=1$, $\\beta_1=-1$. En multipliant par $A_n=J_n-I_n$ et en utilisant $J_n^{\\,2}=nJ_n$ :\n$$A_n^{\\,k+1}=\\left(\\alpha_kJ_n+\\beta_kI_n\\right)\\left(J_n-I_n\\right)=\\alpha_k nJ_n-\\alpha_kJ_n+\\beta_kJ_n-\\beta_kI_n,$$\nsoit $\\alpha_{k+1}=(n-1)\\alpha_k+\\beta_k$ et $\\beta_{k+1}=-\\beta_k$. D'où $\\beta_k=(-1)^k$, puis $\\alpha_{k+1}=(n-1)\\alpha_k+(-1)^k$. En résolvant cette récurrence affine (solution particulière constante $\\tfrac{(-1)^k}{n}$ au signe près), on obtient\n$$\\alpha_k=\\frac{(n-1)^k-(-1)^k}{n},\\qquad \\beta_k=(-1)^k.$$\nVérification : pour $k=1$, $\\alpha_1=\\tfrac{(n-1)+1}{n}=1$ et $\\beta_1=-1$. Correct.\nPour $i\\neq j$, le coefficient $(i,j)$ de $A_n^{\\,k}$ vaut $\\alpha_k$ (car $I_n$ n'y contribue pas). Le nombre de chemins de longueur $k$ entre deux sommets distincts est donc\n$$\\frac{(n-1)^k-(-1)^k}{n}.$$\n\n5. Pour $n=3$, $k=2$ : la formule donne $\\tfrac{4-1}{3}=1$. Et en effet, dans le triangle, il y a exactement un chemin de longueur $2$ entre deux sommets distincts : celui qui passe par le troisième sommet. Directement : $A_3^{\\,2}=\\begin{pmatrix} 2&1&1\\\\1&2&1\\\\1&1&2\\end{pmatrix}$, dont les coefficients hors diagonale valent bien $1$.",
+    "programmeLevel": "spe",
+    "level": 5,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Mener un problème complet — rang, spectre, relation algébrique, puissances, application combinatoire — comme dans une épreuve.",
+    "prerequisites": [
+      "algèbre linéaire",
+      "réduction des endomorphismes",
+      "suites récurrentes linéaires"
+    ]
+  }
+]

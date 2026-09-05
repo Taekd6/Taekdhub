@@ -88,3 +88,35 @@ export function RichMath({ text, className }: { text: string; className?: string
     </div>
   );
 }
+
+/**
+ * Rendu mathématique INLINE, pour un titre d'exercice.
+ *
+ * 13 exercices de la banque portent du LaTeX dans leur `title` (par exemple
+ * « Translation des polynômes et base de $\\mathbb{R}_n[X]$ »), et ce titre
+ * s'affiche partout : aperçu de séance, en-tête du mode focus, écran de
+ * résultat, banque d'exercices, historique. Rendu en texte brut, l'élève y
+ * lisait les dollars et les antislashs bruts — sur l'écran même où il
+ * travaille. `RichMath` ne convenait pas ici : il produit un `<div>` en
+ * `whitespace-pre-line`, qui casse à la fois le `truncate` des listes et la
+ * mise en ligne d'un titre.
+ *
+ * Ce composant rend donc un `<span>` : il s'insère dans un `<h1>`, dans un
+ * conteneur `truncate`, ou au milieu d'une phrase, sans rien changer à la
+ * mise en page. Seul l'inline `$...$` est interprété — un titre n'a jamais
+ * de formule en bloc. Même garantie que `RichMath` : une formule invalide
+ * retombe sur son texte source, jamais sur une page cassée.
+ */
+export function MathInline({ text, className }: { text: string; className?: string }) {
+  const segments = useMemo(() => splitInline(text), [text]);
+
+  return (
+    <span className={className}>
+      {segments.map((segment, index) => {
+        if (segment.type === "text") return <span key={index}>{segment.value}</span>;
+        const html = renderKatex(segment.value, false);
+        return html ? <span key={index} dangerouslySetInnerHTML={{ __html: html }} /> : <span key={index}>{`$${segment.value}$`}</span>;
+      })}
+    </span>
+  );
+}

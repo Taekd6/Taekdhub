@@ -364,7 +364,7 @@
     "subject": "Mathématiques",
     "type": "TD",
     "difficulty": 3,
-    "chapter": "Algèbre linéaire",
+    "chapter": "Applications linéaires",
     "estimatedMinutes": 30,
     "tags": [
       "algèbre linéaire",
@@ -2591,7 +2591,7 @@
     "subject": "Mathématiques",
     "type": "TD",
     "difficulty": 2,
-    "chapter": "Algèbre linéaire",
+    "chapter": "Espaces vectoriels",
     "estimatedMinutes": 20,
     "tags": [
       "consolidation",
@@ -2621,7 +2621,7 @@
     "subject": "Mathématiques",
     "type": "TD",
     "difficulty": 3,
-    "chapter": "Algèbre linéaire",
+    "chapter": "Espaces vectoriels",
     "estimatedMinutes": 25,
     "tags": [
       "classique",
@@ -2652,7 +2652,7 @@
     "subject": "Mathématiques",
     "type": "Colle",
     "difficulty": 2,
-    "chapter": "Algèbre linéaire",
+    "chapter": "Espaces vectoriels",
     "estimatedMinutes": 10,
     "tags": [
       "piège",
@@ -3102,474 +3102,6 @@
     "level": 3
   },
   {
-    "title": "Recherche des valeurs propres d'une matrice 2×2 — première approche",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "TD",
-    "difficulty": 2,
-    "chapter": "Réduction des endomorphismes (Spé)",
-    "estimatedMinutes": 20,
-    "tags": [
-      "piliers-spe",
-      "réduction",
-      "valeurs propres"
-    ],
-    "prerequisites": [
-      "réduction des endomorphismes",
-      "polynôme caractéristique"
-    ],
-    "pedagogicalGoal": "premier contact avec les valeurs propres : notion centrale de la Spé, introduite ici sur le cas le plus simple (2×2) pour préparer la théorie générale vue en cours.",
-    "hints": [
-      "Une valeur propre λ vérifie det(A-λI)=0 : c'est le polynôme caractéristique.",
-      "Pour chaque valeur propre trouvée, le sous-espace propre associé est Ker(A-λI)."
-    ],
-    "correction": "Le polynôme caractéristique det(A-λI)=0 donne les valeurs propres. Pour chacune, résoudre (A-λI)X=0 donne le sous-espace propre associé — première étape vers la diagonalisation étudiée en détail en Spé.",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé : à débloquer une fois le cours de réduction des endomorphismes vu en classe.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 4
-  },
-  {
-    "title": "Diagonalisabilité d'une matrice — critère et méthode",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "TD",
-    "difficulty": 3,
-    "chapter": "Réduction des endomorphismes (Spé)",
-    "estimatedMinutes": 30,
-    "tags": [
-      "piliers-spe",
-      "réduction",
-      "diagonalisation"
-    ],
-    "prerequisites": [
-      "valeurs propres",
-      "sous-espaces propres",
-      "dimension"
-    ],
-    "pedagogicalGoal": "comprendre le critère complet de diagonalisabilité (somme des dimensions des sous-espaces propres égale la dimension de l'espace) avant de l'appliquer machinalement.",
-    "hints": [
-      "Une matrice est diagonalisable si et seulement si la somme des dimensions de ses sous-espaces propres égale la taille de la matrice.",
-      "Si toutes les valeurs propres sont distinctes (racines simples du polynôme caractéristique), la diagonalisabilité est automatique."
-    ],
-    "correction": "Une matrice n×n est diagonalisable ⟺ Σ dim(sous-espaces propres) = n. Cas particulier simplificateur : n valeurs propres distinctes ⟹ diagonalisable automatiquement (chaque sous-espace propre est alors de dimension 1).",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 4
-  },
-  {
-    "title": "Calcul de puissances d'une matrice diagonalisable",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "TD",
-    "difficulty": 3,
-    "chapter": "Réduction des endomorphismes (Spé)",
-    "estimatedMinutes": 25,
-    "tags": [
-      "piliers-spe",
-      "réduction",
-      "puissances de matrices"
-    ],
-    "prerequisites": [
-      "diagonalisation",
-      "produit matriciel"
-    ],
-    "pedagogicalGoal": "application phare de la diagonalisation : calculer Aⁿ pour n grand via A=PDP⁻¹, impossible à faire directement par produits répétés.",
-    "hints": [
-      "Si A=PDP⁻¹ avec D diagonale, alors Aⁿ=PDⁿP⁻¹, et Dⁿ se calcule terme à terme (chaque terme diagonal à la puissance n).",
-      "C'est exactement pour ce type de calcul que la diagonalisation devient un outil indispensable, pas juste une curiosité théorique."
-    ],
-    "correction": "Avec A=PDP⁻¹, Aⁿ=(PDP⁻¹)ⁿ=PDⁿP⁻¹ (les P⁻¹P intermédiaires s'annulent). Dⁿ, matrice diagonale, se calcule immédiatement (chaque coefficient diagonal à la puissance n) : c'est ce qui rend le calcul de Aⁿ praticable même pour n très grand.",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 4
-  },
-  {
-    "title": "Rayon de convergence d'une série entière",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "TD",
-    "difficulty": 2,
-    "chapter": "Séries entières (Spé)",
-    "estimatedMinutes": 20,
-    "tags": [
-      "piliers-spe",
-      "séries entières",
-      "rayon de convergence"
-    ],
-    "prerequisites": [
-      "séries entières",
-      "règle de d'Alembert"
-    ],
-    "pedagogicalGoal": "premier calcul de rayon de convergence via la règle de d'Alembert, préparant la notion centrale des séries entières vue en Spé.",
-    "hints": [
-      "Applique la règle de d'Alembert au terme général : calcule la limite de |a(n+1)/a(n)| quand n tend vers l'infini.",
-      "Le rayon de convergence R est l'inverse de cette limite (ou +∞ si la limite est nulle, 0 si elle est infinie)."
-    ],
-    "correction": "Si |a(n+1)/a(n)| → ℓ, le rayon de convergence de Σaₙxⁿ vaut R=1/ℓ (avec les conventions R=+∞ si ℓ=0 et R=0 si ℓ=+∞) — la règle de d'Alembert appliquée aux coefficients donne directement le rayon.",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 4
-  },
-  {
-    "title": "Développement en série entière de fonctions usuelles",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "TD",
-    "difficulty": 2,
-    "chapter": "Séries entières (Spé)",
-    "estimatedMinutes": 20,
-    "tags": [
-      "piliers-spe",
-      "séries entières",
-      "DSE"
-    ],
-    "prerequisites": [
-      "séries entières",
-      "développements limités"
-    ],
-    "pedagogicalGoal": "faire le pont entre les développements limités déjà connus (Sup) et les développements en série entière (Spé) — même idée, poussée à l'infini.",
-    "hints": [
-      "Un développement en série entière ressemble à un développement limité poussé à l'ordre infini — tu connais déjà les DL de exp, cos, sin en 0.",
-      "Vérifie le rayon de convergence de la série obtenue avant d'affirmer qu'elle représente bien la fonction sur tout son domaine."
-    ],
-    "correction": "Les développements en série entière usuels (exp, cos, sin, 1/(1-x)...) prolongent à l'infini les développements limités déjà connus en Sup — la nouveauté de la Spé est la question du rayon de convergence, absente du cadre local des DL.",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 4
-  },
-  {
-    "title": "Résolution d'une équation différentielle par série entière",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "DM",
-    "difficulty": 4,
-    "chapter": "Séries entières (Spé)",
-    "estimatedMinutes": 40,
-    "tags": [
-      "piliers-spe",
-      "séries entières",
-      "équations différentielles"
-    ],
-    "prerequisites": [
-      "séries entières",
-      "équations différentielles",
-      "relations de récurrence sur les coefficients"
-    ],
-    "pedagogicalGoal": "application avancée combinant deux thèmes de Spé (séries entières et équations différentielles) — à garder pour plus tard dans l'année de Spé, pas en tout début.",
-    "hints": [
-      "Cherche une solution sous forme de série entière Σaₙxⁿ, réinjecte dans l'équation, et identifie une relation de récurrence entre les coefficients aₙ.",
-      "Résous la récurrence obtenue pour exprimer aₙ, puis identifie éventuellement la fonction somme comme une fonction usuelle."
-    ],
-    "correction": "En réinjectant y=Σaₙxⁿ dans l'équation différentielle, l'identification des coefficients de même puissance de x donne une relation de récurrence sur (aₙ), qui se résout explicitement — la série obtenue coïncide parfois avec le développement d'une fonction usuelle déjà connue.",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé. Plus exigeant que les autres piliers : à réserver pour la seconde moitié de l'année de Spé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 6
-  },
-  {
-    "title": "Produit scalaire sur un espace de fonctions",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "TD",
-    "difficulty": 2,
-    "chapter": "Espaces préhilbertiens (Spé)",
-    "estimatedMinutes": 20,
-    "tags": [
-      "piliers-spe",
-      "préhilbertien",
-      "produit scalaire"
-    ],
-    "prerequisites": [
-      "espaces préhilbertiens",
-      "intégration"
-    ],
-    "pedagogicalGoal": "généraliser le produit scalaire (déjà connu en géométrie, Sup) à un espace de fonctions via une intégrale — première étape vers les espaces préhilbertiens de Spé.",
-    "hints": [
-      "Le produit scalaire ⟨f,g⟩=∫f(t)g(t)dt sur un intervalle généralise directement le produit scalaire géométrique déjà connu — les mêmes axiomes (bilinéarité, symétrie, positivité) s'appliquent.",
-      "Pour vérifier l'orthogonalité de deux fonctions, calcule simplement cette intégrale et regarde si elle est nulle, exactement comme en géométrie."
-    ],
-    "correction": "⟨f,g⟩=∫f(t)g(t)dt définit un produit scalaire sur un espace de fonctions (bilinéaire, symétrique, défini positif) — l'orthogonalité de deux fonctions se teste alors exactement comme en géométrie plane, mais avec une intégrale au lieu d'une somme de produits de coordonnées.",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 4
-  },
-  {
-    "title": "Norme associée à un produit scalaire et inégalité de Cauchy-Schwarz",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "TD",
-    "difficulty": 3,
-    "chapter": "Espaces préhilbertiens (Spé)",
-    "estimatedMinutes": 25,
-    "tags": [
-      "piliers-spe",
-      "préhilbertien",
-      "Cauchy-Schwarz"
-    ],
-    "prerequisites": [
-      "produit scalaire",
-      "norme"
-    ],
-    "pedagogicalGoal": "découvrir l'inégalité de Cauchy-Schwarz |⟨u,v⟩| ≤ ‖u‖·‖v‖, outil transversal réutilisé dans tout le reste de la Spé (probabilités, analyse, algèbre).",
-    "hints": [
-      "La norme associée au produit scalaire est ‖u‖=√⟨u,u⟩ — vérifie que cette définition a bien un sens (positivité du produit scalaire d'un vecteur avec lui-même).",
-      "L'inégalité de Cauchy-Schwarz relie produit scalaire et normes : |⟨u,v⟩| ≤ ‖u‖·‖v‖, avec égalité si et seulement si u et v sont colinéaires."
-    ],
-    "correction": "‖u‖=√⟨u,u⟩ définit une norme à partir du produit scalaire. L'inégalité de Cauchy-Schwarz |⟨u,v⟩|≤‖u‖·‖v‖ (égalité ssi colinéarité) est un résultat central, réutilisé dans de nombreux contextes de Spé (majorations, espaces de fonctions, probabilités).",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 4
-  },
-  {
-    "title": "Construction d'une famille orthonormée par le procédé de Gram-Schmidt",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "DM",
-    "difficulty": 4,
-    "chapter": "Espaces préhilbertiens (Spé)",
-    "estimatedMinutes": 40,
-    "tags": [
-      "piliers-spe",
-      "préhilbertien",
-      "Gram-Schmidt"
-    ],
-    "prerequisites": [
-      "produit scalaire",
-      "familles libres",
-      "orthogonalité"
-    ],
-    "pedagogicalGoal": "procédé de Gram-Schmidt : transformer une famille libre quelconque en famille orthonormée, outil clé pour toute la suite du chapitre (projections orthogonales).",
-    "hints": [
-      "Le principe : à chaque étape, soustrais au vecteur suivant sa projection sur les vecteurs déjà orthogonalisés, puis normalise.",
-      "Traite les vecteurs un par un, dans l'ordre, sans sauter d'étape — chaque nouveau vecteur orthogonal dépend de tous les précédents."
-    ],
-    "correction": "Le procédé de Gram-Schmidt construit, vecteur par vecteur, une famille orthogonale en soustrayant à chaque nouveau vecteur ses projections sur les vecteurs déjà traités, puis normalise chaque résultat pour obtenir une famille orthonormée — base de toutes les projections orthogonales étudiées ensuite en Spé.",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé. À réserver pour une fois le cours sur les espaces préhilbertiens bien avancé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 6
-  },
-  {
-    "title": "Convergence simple et convergence uniforme d'une suite de fonctions",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "TD",
-    "difficulty": 3,
-    "chapter": "Suites et séries de fonctions (Spé)",
-    "estimatedMinutes": 30,
-    "tags": [
-      "piliers-spe",
-      "convergence uniforme",
-      "suites de fonctions"
-    ],
-    "prerequisites": [
-      "convergence simple",
-      "borne supérieure"
-    ],
-    "pedagogicalGoal": "distinguer précisément convergence simple (point par point) et convergence uniforme (contrôle global de l'écart) — distinction subtile mais centrale de la Spé, source de nombreuses erreurs si mal comprise.",
-    "hints": [
-      "La convergence simple se vérifie point par point : pour chaque x fixé, (fₙ(x)) converge vers f(x).",
-      "La convergence uniforme est plus forte : sup_x |fₙ(x)-f(x)| doit tendre vers 0 — un seul contrôle global, pas un contrôle point par point."
-    ],
-    "correction": "Convergence simple : pour tout x fixé, fₙ(x) → f(x) (contrôle point par point, la vitesse peut varier selon x). Convergence uniforme : sup_x|fₙ(x)-f(x)| → 0 (contrôle global uniforme en x) — la convergence uniforme implique la simple, mais pas l'inverse, ce qui est souvent la source d'erreur.",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 4
-  },
-  {
-    "title": "Interversion limite-intégrale — pourquoi la convergence uniforme importe",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "TD",
-    "difficulty": 3,
-    "chapter": "Suites et séries de fonctions (Spé)",
-    "estimatedMinutes": 25,
-    "tags": [
-      "piliers-spe",
-      "convergence uniforme",
-      "intégration"
-    ],
-    "prerequisites": [
-      "convergence uniforme",
-      "intégration"
-    ],
-    "pedagogicalGoal": "comprendre POURQUOI la convergence uniforme est exigée pour intervertir limite et intégrale — motivation concrète plutôt qu'une règle apprise par cœur.",
-    "hints": [
-      "Cherche un contre-exemple où la convergence est seulement simple : la limite de l'intégrale peut alors différer de l'intégrale de la limite.",
-      "Avec convergence uniforme sur un segment, l'interversion devient licite — c'est exactement la condition qui manque dans ton contre-exemple simple."
-    ],
-    "correction": "Sans convergence uniforme, lim∫fₙ peut différer de ∫lim fₙ (contre-exemple classique : une suite de \"bosses\" étroites qui convergent simplement vers 0 mais dont l'intégrale reste constante). Avec convergence uniforme sur un segment, l'interversion limite-intégrale est justifiée rigoureusement — comprendre ce contre-exemple éclaire pourquoi l'hypothèse est nécessaire, pas arbitraire.",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 4
-  },
-  {
-    "title": "Nature d'une intégrale généralisée (impropre)",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "TD",
-    "difficulty": 2,
-    "chapter": "Intégrales généralisées (Spé)",
-    "estimatedMinutes": 20,
-    "tags": [
-      "piliers-spe",
-      "intégrales généralisées",
-      "convergence"
-    ],
-    "prerequisites": [
-      "intégrales généralisées",
-      "primitives"
-    ],
-    "pedagogicalGoal": "premier contact avec la notion d'intégrale sur un intervalle non borné (ou fonction non bornée) — étendre l'intégration déjà connue (Sup, sur un segment) à ce nouveau cadre.",
-    "hints": [
-      "Une intégrale généralisée se définit comme une limite : ∫[a,+∞[ f = lim (X→+∞) ∫[a,X] f — calcule d'abord l'intégrale sur [a,X], puis fais tendre X vers l'infini.",
-      "Si cette limite existe et est finie, l'intégrale généralisée converge ; sinon, elle diverge."
-    ],
-    "correction": "∫[a,+∞[ f(t)dt := lim(X→+∞) ∫[a,X] f(t)dt : on calcule d'abord une primitive sur [a,X] (méthode déjà connue de Sup), puis on étudie la limite quand X→+∞ — c'est cette étape de passage à la limite qui est nouvelle en Spé.",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 4
-  },
-  {
-    "title": "Critère de comparaison pour les intégrales généralisées",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "TD",
-    "difficulty": 3,
-    "chapter": "Intégrales généralisées (Spé)",
-    "estimatedMinutes": 25,
-    "tags": [
-      "piliers-spe",
-      "intégrales généralisées",
-      "comparaison"
-    ],
-    "prerequisites": [
-      "intégrales généralisées",
-      "intégrales de Riemann de référence"
-    ],
-    "pedagogicalGoal": "transférer la méthode de comparaison déjà connue pour les séries numériques (équivalents, comparaison à une référence) au cadre des intégrales généralisées.",
-    "hints": [
-      "Cherche un équivalent simple de la fonction au voisinage du point problématique (borne infinie ou singularité).",
-      "Compare à une intégrale de Riemann de référence ∫1/tᵅ, convergente si et seulement si α>1 (en +∞) — exactement comme pour les séries."
-    ],
-    "correction": "La méthode est parallèle à celle des séries : trouver un équivalent au voisinage du point problématique, puis comparer à une intégrale de Riemann de référence (convergente en +∞ ssi l'exposant α>1) — la nature de l'intégrale généralisée s'en déduit directement par le critère de comparaison des fonctions positives.",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 4
-  },
-  {
-    "title": "Convergence absolue d'une série numérique",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "TD",
-    "difficulty": 2,
-    "chapter": "Séries numériques (approfondissement Spé)",
-    "estimatedMinutes": 20,
-    "tags": [
-      "piliers-spe",
-      "séries",
-      "convergence absolue"
-    ],
-    "prerequisites": [
-      "séries à termes positifs (Sup)",
-      "valeur absolue"
-    ],
-    "pedagogicalGoal": "étendre aux séries à termes de signe quelconque la théorie de convergence déjà connue pour les séries à termes positifs (Sup), via la convergence absolue.",
-    "hints": [
-      "Pour une série à termes de signe quelconque, étudie d'abord la convergence de la série des valeurs absolues (tu retombes sur les critères de Sup, tous valables pour des termes positifs).",
-      "Convergence absolue ⟹ convergence (théorème à connaître), mais la réciproque est fausse : une série peut converger sans converger absolument (semi-convergence)."
-    ],
-    "correction": "Si Σ|aₙ| converge (convergence absolue), alors Σaₙ converge aussi — cela permet de réutiliser directement tous les critères de convergence des séries à termes positifs déjà maîtrisés en Sup, appliqués à |aₙ|. La réciproque est fausse : il existe des séries semi-convergentes (convergentes mais pas absolument), étudiées plus finement en Spé.",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 4
-  },
-  {
-    "title": "Application linéaire orthogonale et matrice orthogonale",
-    "source": "TaekdHub — exercice original (pilier de Spé, archivé)",
-    "subject": "Mathématiques",
-    "type": "TD",
-    "difficulty": 3,
-    "chapter": "Espaces préhilbertiens (Spé)",
-    "estimatedMinutes": 25,
-    "tags": [
-      "piliers-spe",
-      "préhilbertien",
-      "matrices orthogonales"
-    ],
-    "prerequisites": [
-      "produit scalaire",
-      "matrice transposée"
-    ],
-    "pedagogicalGoal": "reconnaître qu'une isométrie vectorielle se caractérise simplement par la relation matricielle A^T·A = I — pont entre l'aspect géométrique (conservation des distances) et l'aspect calculatoire (matrices).",
-    "hints": [
-      "Une application linéaire conserve le produit scalaire (donc les distances et les angles) si et seulement si sa matrice A vérifie A^T·A = I.",
-      "Vérifie cette relation directement par le calcul matriciel plutôt que par un argument géométrique informel."
-    ],
-    "correction": "Une matrice A représente une isométrie vectorielle (conservation du produit scalaire, donc des normes et angles) si et seulement si A^T·A = I (matrice orthogonale) — cette caractérisation purement calculatoire remplace avantageusement une vérification géométrique cas par cas.",
-    "note": "Exercice original TaekdHub — pilier de Spé, archivé.",
-    "year": null,
-    "competition": null,
-    "programmeLevel": "spe",
-    "licenseStatus": "libre",
-    "archived": true,
-    "level": 4
-  },
-  {
     "title": "Étude d'une suite définie par une intégrale à paramètre (type Wallis généralisé)",
     "statement": "Pour $n \\in \\mathbb{N}$, on pose\n$$I_n = \\int_0^{\\pi/2} \\sin^n(t)\\, dt.$$\n1. À l'aide d'une intégration par parties, établir une relation de récurrence entre $I_n$ et $I_{n-1}$ (pour $n \\geq 1$).\n2. Montrer que la suite $(I_n)$ est positive et décroissante, puis qu'elle converge vers une limite que l'on déterminera.\n3. En étudiant le produit $n \\cdot I_n \\cdot I_{n-1}$, montrer qu'il existe une constante $C > 0$ telle que $I_n \\sim \\dfrac{C}{\\sqrt{n}}$ quand $n \\to +\\infty$, et déterminer $C$.",
     "source": "TaekdHub — exercice original, style concours (Sup)",
@@ -3813,7 +3345,7 @@
     "subject": "Mathématiques",
     "type": "DM",
     "difficulty": 4,
-    "chapter": "Algèbre linéaire",
+    "chapter": "Applications linéaires",
     "estimatedMinutes": 45,
     "tags": [
       "style-concours",
@@ -3841,6 +3373,7 @@
   },
   {
     "title": "CCINP Maths 1 MP-MPI 2024 — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « CCINP Maths 1 MP-MPI 2024 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "source": "CCINP Maths 1 MP-MPI 2024",
     "subject": "Mathématiques",
     "type": "Annale",
@@ -3863,10 +3396,14 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 1",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "CCINP Maths 2 MP-MPI 2024 — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « CCINP Maths 2 MP-MPI 2024 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "source": "CCINP Maths 2 MP-MPI 2024",
     "subject": "Mathématiques",
     "type": "Annale",
@@ -3889,10 +3426,14 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 2",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "CCINP Maths 1 MP-MPI 2023 — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « CCINP Maths 1 MP-MPI 2023 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "source": "CCINP Maths 1 MP-MPI 2023",
     "subject": "Mathématiques",
     "type": "Annale",
@@ -3915,10 +3456,14 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 1",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "CCINP Physique-Chimie MP 2023 — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « CCINP Physique-Chimie MP 2023 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "source": "CCINP Physique-Chimie MP 2023",
     "subject": "Physique",
     "type": "Annale",
@@ -3941,10 +3486,13 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Mines-Ponts Maths 1 MP-MPI 2024 — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « Mines-Ponts Maths 1 MP-MPI 2024 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://concoursminesponts.fr/",
     "source": "Mines-Ponts Maths 1 MP-MPI 2024",
     "subject": "Mathématiques",
     "type": "Annale",
@@ -3967,10 +3515,14 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://concoursminesponts.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 1",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Mines-Ponts Maths 2 MP-MPI 2024 — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « Mines-Ponts Maths 2 MP-MPI 2024 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://concoursminesponts.fr/",
     "source": "Mines-Ponts Maths 2 MP-MPI 2024",
     "subject": "Mathématiques",
     "type": "Annale",
@@ -3993,10 +3545,14 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://concoursminesponts.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 2",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Mines-Ponts Maths 2 MP-MPI 2023 (fonction de Wallis) — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « Mines-Ponts Maths 2 MP-MPI 2023 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://concoursminesponts.fr/",
     "source": "Mines-Ponts Maths 2 MP-MPI 2023",
     "subject": "Mathématiques",
     "type": "Annale",
@@ -4019,10 +3575,14 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://concoursminesponts.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 2",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Mines-Ponts Physique 1 MP-MPI 2024 — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « Mines-Ponts Physique 1 MP-MPI 2024 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://concoursminesponts.fr/",
     "source": "Mines-Ponts Physique 1 MP-MPI 2024",
     "subject": "Physique",
     "type": "Annale",
@@ -4045,10 +3605,13 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://concoursminesponts.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Mines Chimie MP 2023 (complexe du chrome) — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « Mines-Ponts Chimie MP 2023 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://concoursminesponts.fr/",
     "source": "Mines-Ponts Chimie MP 2023",
     "subject": "Chimie",
     "type": "Annale",
@@ -4071,10 +3634,13 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://concoursminesponts.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "e3a Mathématiques MP-MPI 2024 — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « e3a Mathématiques MP-MPI 2024 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://www.e3a-polytech.fr/annales-et-rapport/",
     "source": "e3a Mathématiques MP-MPI 2024",
     "subject": "Mathématiques",
     "type": "Annale",
@@ -4097,10 +3663,13 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.e3a-polytech.fr/annales-et-rapport/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "e3a Mathématiques MP-MPI 2023 (polynômes, intégrales à paramètre) — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « e3a Mathématiques MP-MPI 2023 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://www.e3a-polytech.fr/annales-et-rapport/",
     "source": "e3a Mathématiques MP-MPI 2023",
     "subject": "Mathématiques",
     "type": "Annale",
@@ -4123,10 +3692,13 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.e3a-polytech.fr/annales-et-rapport/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "e3a Physique-Chimie MP 2024 — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « e3a Physique-Chimie MP 2024 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://www.e3a-polytech.fr/annales-et-rapport/",
     "source": "e3a Physique-Chimie MP 2024",
     "subject": "Physique",
     "type": "Annale",
@@ -4149,10 +3721,13 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.e3a-polytech.fr/annales-et-rapport/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Centrale-Supélec Maths 1 MP-MPI 2024 (calcul ombral) — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « Centrale-Supélec Maths 1 MP-MPI 2024 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://www.concours-centrale-supelec.fr/",
     "source": "Centrale-Supélec Maths 1 MP-MPI 2024",
     "subject": "Mathématiques",
     "type": "Annale",
@@ -4175,10 +3750,14 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-centrale-supelec.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 1",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Centrale-Supélec Maths 2 MP-MPI 2024 (fonction gaussienne) — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « Centrale-Supélec Maths 2 MP-MPI 2024 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://www.concours-centrale-supelec.fr/",
     "source": "Centrale-Supélec Maths 2 MP-MPI 2024",
     "subject": "Mathématiques",
     "type": "Annale",
@@ -4201,10 +3780,14 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-centrale-supelec.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 2",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Centrale-Supélec Physique-Chimie 1 MP 2023 (changement climatique) — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « Centrale-Supélec Physique-Chimie 1 MP 2023 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://www.concours-centrale-supelec.fr/",
     "source": "Centrale-Supélec Physique-Chimie 1 MP 2023",
     "subject": "Physique",
     "type": "Annale",
@@ -4227,10 +3810,13 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-centrale-supelec.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Centrale-Supélec Informatique optionnelle MP 2024 (langages et automates) — référence officielle",
+    "statement": "Énoncé non reproduit dans TaekdHub (sujet officiel, droits d'auteur).\nÉpreuve : « Centrale-Supélec Informatique optionnelle MP 2024 ».\nOuvre le sujet complet et le corrigé officiel sur la page des annales du concours : https://www.concours-centrale-supelec.fr/",
     "source": "Centrale-Supélec Informatique optionnelle MP 2024",
     "subject": "Informatique Spé",
     "type": "Annale",
@@ -4253,7 +3839,10 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-centrale-supelec.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "chapter": "Langages et automates",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Chute libre sans frottement — équations horaires",
@@ -12293,7 +11882,7 @@
     "subject": "Mathématiques",
     "type": "TD",
     "difficulty": 3,
-    "chapter": "Algèbre linéaire",
+    "chapter": "Matrices et systèmes",
     "estimatedMinutes": 25,
     "tags": [
       "consolidation",
@@ -12327,7 +11916,7 @@
     "subject": "Mathématiques",
     "type": "DM",
     "difficulty": 4,
-    "chapter": "Algèbre linéaire",
+    "chapter": "Matrices et systèmes",
     "estimatedMinutes": 30,
     "tags": [
       "transition spé",
@@ -12361,7 +11950,7 @@
     "subject": "Mathématiques",
     "type": "TD",
     "difficulty": 2,
-    "chapter": "Algèbre linéaire",
+    "chapter": "Matrices et systèmes",
     "estimatedMinutes": 18,
     "tags": [
       "classique",

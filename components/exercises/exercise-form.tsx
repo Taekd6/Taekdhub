@@ -7,7 +7,7 @@ import { Input, Select, Textarea } from "@/components/ui/input";
 import { ChapterPicker } from "@/components/exercises/chapter-picker";
 import { exerciseTypes, subjects } from "@/lib/study";
 import type { Chapter } from "@/lib/storage";
-import type { Difficulty, ExerciseLevel, ExerciseType, LicenseStatus, ProgrammeLevel, Subject } from "@/lib/supabase/types";
+import type { Difficulty, ExerciseLevel, ExerciseType, LicenseStatus, ProgrammeLevel, Subject, Filiere, Provenance } from "@/lib/supabase/types";
 
 /**
  * Champs saisis à la création — le manager complète le reste (id, created_at,
@@ -43,6 +43,11 @@ export interface NewExerciseInput {
   prerequisites?: string[];
   pedagogicalGoal?: string | null;
   level?: ExerciseLevel | null;
+  epreuve?: string | null;
+  filieres?: Filiere[];
+  exerciseNumber?: string | null;
+  /** Niveau de vérification de la provenance — voir `Provenance` (lib/supabase/types.ts). Déduit si absent. */
+  provenance?: Provenance | null;
   /**
    * `true` pour un exercice importé hors périmètre "faisable maintenant"
    * (ex. pilier de Spé) — réutilise le champ `archived` déjà existant (masqué

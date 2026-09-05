@@ -1,0 +1,2351 @@
+[
+  {
+    "title": "Prouver que E est un sous-espace vectoriel de l’espace vectoriel des suites à valeurs…",
+    "statement": "Soit E l’ensemble des suites à valeurs réelles qui convergent vers 0.\n1. Prouver que E est un sous-espace vectoriel de l’espace vectoriel des suites à valeurs réelles.\n2. On pose : ∀ u = (un)n∈N ∈ E, ||u|| = sup\n|un|.\nn∈N\n(a) Prouver que || . || est une norme sur E.\n∑ un\n(b) Prouver que : ∀ u = (un)n∈N ∈ E,\n2n+1 converge.\n+∞\nun\n∑\n(c) On pose : ∀ u = (un)n∈N ∈ E, f (u) =\n2n+1 .\nn=0\nProuver que f est continue sur E.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 54 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces vectoriels normés et topologie",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "54",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-54",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 54, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que E est un sous-espace vectoriel de l’ensemble des suites à valeurs complexes",
+    "statement": "Soit a un nombre complexe.\nOn note E l’ensemble des suites à valeurs complexes telles que :\n∀ n ∈ N, un+2 = 2aun+1 + 4(ia − 1)un avec (u0, u1) ∈ C2.\n1. (a) Prouver que E est un sous-espace vectoriel de l’ensemble des suites à valeurs complexes.\n(b) Déterminer, en le justifiant, la dimension de E.\n2. Dans cette question, on considère la suite de E définie par : u0 = 1 et u1 = 1.\nExprimer, pour tout entier naturel n, le nombre complexe un en fonction de n.\nIndication : discuter suivant les valeurs de a.",
+    "correction": "1. (a) Montrons que E est un sous-espace-vectoriel de l’ensemble des suites à valeurs complexes.\nLa suite nulle appartient à E ( obtenue pour (u0, u1) = (0, 0)).\nSoit u = (un)n∈N et v = (vn)n∈N deux suites de E. Soit λ ∈ C.\nMontrons que w = u + λv ∈ E.\nOn a ∀ n ∈ N, wn = un + λvn.\nSoit n ∈ N.\nwn+2 = un+2 + λvn+2.\nOr (u, v) ∈ E2, donc wn+2 = 2aun+1 + 4(ia − 1)un + λ (2avn+1 + 4(ia − 1)vn)\nc’est-à-dire wn+2 = 2a (un+1 + λvn+1) + 4(ia − 1) (un + λvn)\nou encore wn+2 = 2awn+1 + 4(ia − 1)wn.\nDonc w ∈ E.\nDonc E est un sous-espace vectoriel de l’ensemble des suites à valeurs complexes.\n(b) On considère l’application φ définie par :\n−→ C2\nE\nφ :\nu = (un)n∈N\n↦ (u0, u1)\nPar construction, φ est linéaire et bijective.\nDonc φ est un isomorphisme d’espaces vectoriels.\nOn en déduit que dim E = dim C2 = 2.\n2. Il s’agit d’une suite récurrente linéaire d’ordre 2 à coefficients constants.\nOn introduit l’équation caractéristique (E) : r2 − 2ar − 4(ia − 1) = 0.\nOn a deux possibilités :\n— si (E) admet deux racines distinctes r1 et r2, alors ∀ n ∈ N, un = αrn\n1 + βrn\n\navec (α, β) que l’on détermine à partir des conditions initiales.\n— si (E) a une unique racine double r, alors ∀ n ∈ N, un = (αn + β)rn\navec (α, β) que l’on détermine à partir des conditions initiales.\nLe discriminant réduit de (E) est ∆′ = a2 + 4ia − 4 = (a + 2i)2.\nPremier cas : a = −2i\nr = a = −2i est racine double de (E).\nDonc, ∀ n ∈ N, un = (αn + β)(−2i)n.\nOr u0 = 1 et u1 = 1, donc 1 = β et 1 = (α + β)(−2i).\ni\nOn en déduit que α =\n− 1 et β = 1.\n\nDeuxième cas : a ̸= −2i\nOn a deux racines distinctes r1 = 2(a + i) et r2 = −2i.\nDonc ∀ n ∈ N, un = α (2(a + i))n + β (−2i)n.\nOr u0 = 1 et u1 = 1, donc α + β = 1 et 2(a + i)α − 2iβ = 1.\n1 + 2i\n2a + 2i − 1\nOn en déduit, après résolution, que α =\net β =\n.\n2a + 4i\n2a + 4i",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 55 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces vectoriels",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "55",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-55",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 55, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Justifier, oralement, que f admet un maximum global sur K puis le déterminer",
+    "statement": "Soit f la fonction définie sur R2 par : ∀(x, y) ∈ R2, f (x, y) = 2x3 + 6xy − 3y2 + 2.\n1. f admet-elle des extrema locaux sur R2 ? Si oui, les déterminer.\n2. f admet-elle des extrema globaux sur R2 ? Justifier.\n3. On pose K = [0, 1] × [0, 1].\nJustifier, oralement, que f admet un maximum global sur K puis le déterminer.",
+    "correction": "1. f est de classe C2 sur R2 et R2 est un ouvert.\nDéterminons les points critiques de f sur R2.\nOn a : ∀(x, y) ∈ R2, ∂f\n∂x (x, y) = 6x2 + 6y et ∂f\n∂y (x, y) = 6x − 6y.\n\nx = 0\net\ny = 0\n{ 6x2 + 6y = 0\n{ x(x + 1) = 0\n\nou\n⇐⇒\n⇐⇒\n6x − 6y = 0\ny = x\n\nx = −1\net\ny = −1\nDonc f admet 2 points critiques sur R2 : (0, 0) et (−1, −1).\nDonc si f admet un extremum en a alors a = (0, 0) ou a = (−1, −1).\nOn a : ∀(x, y) ∈ R2, ∂2f\n∂x2 (x, y) = 12x, ∂2f\n∂x∂y (x, y) = ∂2f\n∂y∂x (x, y) = 6 et ∂2f\n∂y2 (x, y) = −6.\nEtudions la matrice hessienne de f en (0, 0).\nNotons H1 = Hf ((0, 0)) la matrice hessienne de f en (0, 0).\n( ∂2f\n)\n∂2f\n(0\n)\n∂x2 (0, 0)\n∂x∂y (0, 0)\n\nH1 =\ndonc H1 =\n.\n∂2f\n∂2f\n6 −6\n∂y∂x (0, 0)\n∂y2 (0, 0)\ndet H1 = −36 < 0.\nDonc H1 admet une valeur propre strictement positive et une valeur propre strictement négative.\nDonc f n’admet pas d’extremum local en (0, 0).\nEtudions la matrice hessienne de f en (−1, −1).\nNotons H2 = Hf ((−1, −1)) la matrice hessienne de f en (−1, −1).\n( ∂2f\n)\n∂2f\n(−12\n)\n∂x2 (−1, −1)\n∂x∂y (−1, −1)\n\nH2 =\ndonc H2 =\n.\n∂2f\n∂2f\n\n−6\n∂y∂x (−1, −1)\n∂y2 (−1, −1)\ndet H2 = 12 × 6 − 36 = 36 > 0.\nDe plus, tr (H2) = −18 < 0.\nDonc H2 admet deux valeurs propres strictement négatives.\nDonc f admet en (−1, 1) un maximum local qui vaut f (−1, −1) = 3.\nConclusion : f admet uniquement un maximum local atteint en (−1, −1) et n’admet pas de minimum\nlocal.\n2x3 + 2 = +∞ et\n2x3 + 2 = −∞.\n2.\nlim\nf (x, 0) = lim\nlim\nf (x, 0) = lim\nx→+∞\nx→+∞\nx→−∞\nx→−∞\nDonc f n’admet pas d’extrema globaux sur R2.\n3. K est une partie bornée de R2.\nK est un produit de fermés de R2 donc K est un fermé de R2.\nDonc, comme R2 est de dimension finie, K est un compact.\nOr f est clairement continue sur K.\nDoncf est bornée sur K et atteint ses bornes.\nDonc f admet un maximum global sur K et atteint ce maximum.\nSi f atteint ce maximum en a ∈ ˚K, qui est un ouvert, alors a est un point critique.\nOr, les deux seuls points critiques de f n’appartiennent pas à ˚K.\nDonc f atteint son maximum en un point a du bord ∂K de K.\n\nOn pose :\nL1 = {(x, 0) , x ∈ [0, 1]}, L2 = {(1, y) , y ∈ [0, 1]}, L3 = {(x, 1) , x ∈ [0, 1]} et L4 = {(0, y) , y ∈ [0, 1]}.\nOn a alors : ∂K = L1 ∪ L2 ∪ L3 ∪ L4.\nEtude de f sur L1 :\ng1(x) = f (x, 0) = 2x3 + 2.\ng1 est croissante sur [0, 1].\nDonc sup\ng1(x) = g1(1) = 4.\nx∈[0,1]\nEtude de f sur L2 :\ng2(y) = f (1, y) = 4 + 6y − 3y2.\n2(y) = 6 − 6y ⩾ 0 donc g2 est croissante sur [0, 1].\n∀y ∈ [0, 1], g′\nDonc sup\ng2(x) = g2(1) = 7.\ny∈[0,1]\nEtude de f sur L3 :\ng3(x) = f (x, 1) = 2x3 + 6x − 1.\ng3 est croissante sur [0, 1].\nDonc sup\ng3(x) = g3(1) = 7.\nx∈[0,1]\nEtude de f sur L4 :\ng4(y) = f (0, y) = −3y2 + 2.\ng4 est décroissante sur [0, 1].\nDonc sup\ng4(y) = g4(0) = 2.\ny∈[0,1]\nConclusion :\nOn en déduit que f admet 7 comme maximum global sur K et que ce maximum est atteint en (1, 1).",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 56 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Calcul différentiel",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "56",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-56",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 56, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Donner, en utilisant des quantificateurs, la définition de la continuité de f en (0, 0)",
+    "statement": "1. Soit f une fonction de R2 dans R.\n(a) Donner, en utilisant des quantificateurs, la définition de la continuité de f en (0, 0).\n(b) Donner la définition de «f différentiable en (0, 0)».\n\nx2 − y2\n\nxy\nsi (x, y) ̸= (0, 0)\n2. On considère l’application définie sur R2 par f (x, y) =\nx2 + y2\n\nsi (x, y) = (0, 0)\n(a) Montrer que f est continue sur R2.\n(b) Montrer que f est de classe C1 sur R2.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 57 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Calcul différentiel",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "57",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-57",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 57, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Donner la définition de «f différentiable en a»",
+    "statement": "1. Soit E et F deux R-espaces vectoriels normés de dimension finie.\nSoit a ∈ E et soit f : E −→ F une application.\nDonner la définition de «f différentiable en a».\n2. Soit n ∈ N∗. Soit E un R-espace vectoriel de dimension finie n.\nSoit e = (e1, e2, . . . , en) une base de E.\nn\n∑\nOn pose : ∀x ∈ E, ∥x∥∞ = max\n|xi|, où x =\nxiei.\n1⩽i⩽n\ni=1\nOn pose : ∀(x, y) ∈ E × E, ∥(x, y)∥ = max(∥x∥∞, ∥y∥∞).\nOn admet que ∥.∥∞ est une norme sur E et que ∥.∥ est une norme sur E × E.\nSoit B : E × E −→ R une forme bilinéaire sur E.\n(a) Prouver que : ∃ C ∈ R+/ ∀ (x, y) ∈ E × E, |B(x, y)| ⩽ C∥x∥∞∥y∥∞.\n(b) Montrer que B est différentiable sur E × E et déterminer sa différentielle en tout (u0, v0) ∈ E × E.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 58 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces vectoriels normés et topologie",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "58",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-58",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 58, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que f est bijectif de deux manières : (a) sans utiliser de matrice de f , (b)…",
+    "statement": "Soit n un entier naturel tel que n ⩾ 2.\nSoit E l’espace vectoriel des polynômes à coefficients dans K (K = R ou K = C) de degré inférieur ou égal à n.\nOn pose : ∀ P ∈ E, f (P ) = P − P ′.\n1. Démontrer que f est bijectif de deux manières :\n(a) sans utiliser de matrice de f ,\n(b) en utilisant une matrice de f .\n2. Soit Q ∈ E. Trouver P tel que f (P ) = Q .\nIndication : si P ∈ E, quel est le polynôme P (n+1) ?\n3. f est-il diagonalisable ?",
+    "correction": "1. f est clairement linéaire. (*) De plus, ∀ P ∈ E\\ {0}, deg P ′ < deg P donc deg(P − P ′) = deg P .\nEt, si P = 0, alors P − P ′ = 0 donc deg(P − P ′) = deg P = −∞.\nOn en déduit que ∀ P ∈ E, deg f (P ) = deg P .\nDonc f (E) ⊂ E. (**)\nD’après (*) et (**), f est bien un endomorphisme de E.\n(a) Déterminons Kerf .\nSoit P ∈ Kerf .\nf (P ) = 0 donc P − P ′ = 0 donc deg(P − P ′) = −∞.\nOr, d’après ce qui précéde, deg(P − P ′) = deg P donc deg P = −∞.\nDonc P = 0.\nOn en déduit que Kerf = {0}.\nDonc f est injectif.\nOr, f ∈ L (E) et E est de dimension finie (dim E = n + 1) donc f est bijectif.\n(b) Soit e = (1, X, ..., X n) la base canonique de E. Soit A la matrice de f dans la base e.\n\n1 −1\n(0)\n. . .\n\n∈ Mn+1 (R) .\nA =\n\n. . . −n\n\n(0)\n\ndet A = 1 d’où det A ̸= 0.\nDonc f est bijectif.\n2. Soit Q ∈ E.\nD’après 1. : ∃ !P ∈ E, tel que f (P ) = Q.\nP − P ′ = Q, P ′ − P ′′ = Q′,. . ., P (n) − P (n+1) = Q(n).\nOr P (n+1) = 0, donc, en sommant ces n + 1 égalités, P = Q + Q′ + · · · + Q(n).\n3. Reprenons les notations de 1.(b).\nTout revient à se demander si A est diagonalisable.\nNotons χA le polynôme caractéristique de A.\nD’après 1.(b), on a χA = (X − 1)n+1.\nDonc 1 est l’unique valeur propre de A.\nAinsi, si A était diagonalisable, alors A serait semblable à la matrice unité In+1.\nOn aurait donc A = In+1.\nCe qui est manifestement faux car f ̸= Id.\nDonc A n’est pas diagonalisable et par conséquent, f n’est pas diagonalisable.",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 59 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Réduction des endomorphismes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "59",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-59",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 59, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Déterminer une base de Kerf",
+    "statement": "( 1 2\n)\net f l’endomorphisme de M2 (R) défini par :\nSoit la matrice A =\nf (M ) = AM.\n2 4\n1. Déterminer une base de Kerf .\n2. f est-il surjectif ?\n3. Déterminer une base de Imf.\n4. A-t-on M2 (R) = Kerf ⊕ Imf ?",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 60 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Matrices et systèmes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "60",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-60",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 60, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que || || est une norme sur Mn (C)",
+    "statement": "On note Mn (C) l’espace vectoriel des matrices carrées d’ordre n à coefficients complexes.\n∈ Mn (C), on pose : ∥A∥ = max\nPour A = (ai,j)1⩽i⩽n\n|ai,j|.\n1⩽i⩽n\n1⩽j⩽n\n1⩽j⩽n\n1. Prouver que || || est une norme sur Mn (C).\n2. Démontrer que : ∀ (A, B) ∈ (Mn (C))2, ∥AB∥ ⩽ n ∥A∥ ∥B∥.\nPuis, démontrer que, pour tout entier p ⩾ 1, ∥Ap∥ ⩽ np−1 ∥A∥p.\n∑ Ap\n3. Démontrer que, pour toute matrice A ∈ Mn (C), la série\nest absolument convergente.\np!\nEst-elle convergente ?",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 61 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces vectoriels normés et topologie",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "61",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-61",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 61, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que f est bijectif et exprimer f −1 en fonction de f",
+    "statement": "Soit E un espace vectoriel sur R ou C.\nSoit f ∈ L(E) tel que f 2 − f − 2Id = 0.\n1. Prouver que f est bijectif et exprimer f −1 en fonction de f .\n2. Prouver que E = Ker(f + Id) ⊕ Ker(f − 2Id) :\n(a) en utilisant le lemme des noyaux.\n(b) sans utiliser le lemme des noyaux.\n3. Dans cette question, on suppose que E est de dimension finie.\nProuver que Im(f + Id) = Ker(f − 2Id).",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 62 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Applications linéaires",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "62",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-62",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 62, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que les trois assertions suivantes sont équivalentes : i",
+    "statement": "Soit E un espace euclidien muni d’un produit scalaire noté ( | ).\nOn pose ∀x ∈ E, ||x|| = √(x|x).\nPour tout endomorphisme u de E, on note u∗ l’adjoint de u.\n1. Un endomorphisme u de E vérifiant ∀x ∈ E, (u(x)|x) = 0 est-il nécessairement l’endomorphisme nul ?\n2. Soit u ∈ L(E).\nProuver que les trois assertions suivantes sont équivalentes :\ni. u ◦ u∗ = u∗ ◦ u.\nii. ∀(x, y) ∈ E2, (u(x)|u(y)) = (u∗(x)|u∗(y)).\niii. ∀x ∈ E, ||u(x)|| = ||u∗(x)||.",
+    "correction": "1. On se place sur E = R2 muni du produit scalaire canonique.\n(0 −1\n)\n2 dont la matrice dans la base canonique de R2 est A =\nOn considère u la rotation d’angle π\n.\n\nOn a bien ∀x ∈ E,(u(x)|x) = 0 mais u n’est pas l’endomorphisme nul.\n2. Prouvons que i. ⇐⇒ ii.\nProcédons par double implication.\nSupposons que u ◦ u∗ = u∗ ◦ u.\nProuvons que ∀(x, y) ∈ E2, (u(x)|u(y)) = (u∗(x)|u∗(y)).\nSoit (x, y) ∈ E2.\nPar définition de l’adjoint, (u(x)|u(y)) = (x|u∗ ◦ u(y)).\nOr, par hypothèse, u ◦ u∗ = u∗ ◦ u.\nDonc (u(x), u(y)) = (x|u ◦ u∗(y)).\nOr, par définition de l’adjoint, (x|u ◦ u∗(y)) = (u∗(x)|u∗(y)).\nDonc (u(x)|u(y)) = (u∗(x)|u∗(y)).\nSupposons que ∀(x, y) ∈ E2, (u(x)|u(y)) = (u∗(x)|u∗(y)).\nProuvons que u ◦ u∗ = u∗ ◦ u.\nSoit x ∈ E.\nProuvons que u ◦ u∗(x) − u∗ ◦ u(x) ∈ E⊥.\nSoit y ∈ E.\nPar bilinéarité du produit scalaire, (u ◦ u∗(x) − u∗ ◦ u(x)|y) = (u ◦ u∗(x)|y) − (u∗ ◦ u(x)|y).\nOr, par définition de l’adjoint, (u ◦ u∗(x)|y) = (u∗(x)|u∗(y)) et (u∗ ◦ u(x)|y) = (u(x)|u(y)).\nDonc (u ◦ u∗(x) − u∗ ◦ u(x)|y) = (u∗(x)|u∗(y)) − (u(x)|u(y)).\nOr, par hypothèse, (u∗(x)|u∗(y)) = (u(x)|u(y)).\nDonc (u ◦ u∗(x) − u∗ ◦ u(x)|y) = (u(x)|u(y)) − (u(x)|u(y)) = 0.\nDonc u ◦ u∗(x) − u∗ ◦ u(x) ∈ E⊥.\nOr E⊥ = {0}.\nDonc u ◦ u∗(x) − u∗ ◦ u(x) = 0.\nProuvons que ii. ⇐⇒ iii.\nProcédons par double implication.\nOn suppose que ∀(x, y) ∈ E2, (u(x)|u(y)) = (u∗(x)|u∗(y)).\nDonc, en prenant y = x, on obtient : ∀x ∈ E, ||u(x)||2 = ||u∗(x)||2.\nOr, ∀x ∈ E, ||u(x)| ⩾ 0 et ||u∗(x)|| ⩾ 0.\nDonc ∀x ∈ E, ||u(x)|| = ||u∗(x)||.\nOn suppose que ∀x ∈ E, ||u(x)|| = ||u∗(x)||.\nProuvons que ∀(x, y) ∈ E2, (u(x)|u(y)) = (u∗(x)|u∗(y)).\nSoit (x, y) ∈ E2.\n\n(||u(x) + u(y)||2 − ||u(x)||2 − ||u(y)||2).\nD’après une identité de polarisation, (u(x)|u(y)) = 1\n\nOr, u est linéaire donc ||u(x) + u(y)||2 = ||u(x + y)||2.\nDe plus par hypothèse, ||u(x + y)|| = ||u∗(x + y)||, ||u(x)|| = ||u∗(x)|| et ||u(y)|| = ||u∗(y)||.\n(||u∗(x + y)||2 − ||u∗(x)||2 − ||u∗(y)||2).\nDonc (u(x)|u(y)) = 1\n\nOr u∗ est linéaire donc ||u∗(x + y)|| = ||u∗(x) + u∗(y)||.\n(||u∗(x) + u∗(y))||2 − ||u∗(x)||2 − ||u∗(y)||2).\nDonc (u(x)|u(y)) = 1\n\n(||u∗(x) + u∗(y))||2 − ||u∗(x)||2 − ||u∗(y)||2).\nOr, d’après une identité de polarisation, (u∗(x)|u∗(y)) = 1\n\nDonc (u(x)|u(y)) = (u∗(x)|u∗(y)).",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 63 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces préhilbertiens et euclidiens",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "63",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-63",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 63, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que : E = Imf ⊕ Kerf =⇒ Imf = Imf 2",
+    "statement": "Soit f un endomorphisme d’un espace vectoriel E de dimension finie n.\n1. Démontrer que : E = Imf ⊕ Kerf =⇒ Imf = Imf 2.\n2. (a) Démontrer que : Imf = Imf 2 ⇐⇒ Kerf = Kerf 2.\n(b) Démontrer que : Imf = Imf 2 =⇒ E = Imf ⊕ Kerf .",
+    "correction": "1. Supposons E = Imf ⊕ Kerf .\nIndépendamment de l’hypothèse, on peut affirmer que Imf 2 ⊂ Imf\n(*)\nMontrons que Imf ⊂ Imf 2.\nSoit y ∈ Imf .\nAlors, ∃ x ∈ E tel que y = f (x).\nOr E = Imf ⊕ Kerf , donc ∃ (a, b) ∈ E × Kerf tel que x = f (a) + b.\nOn a alors y = f 2(a) ∈ Imf 2.\nAinsi Imf ⊂ Imf 2\n(**)\nD’après (*) et (**), Imf = Imf 2.\n2. (a) On a Imf 2 ⊂ Imf et Kerf ⊂ Kerf 2.\nOn en déduit que Imf 2 = Imf ⇐⇒ rgf 2 = rgf et Kerf = Kerf 2 ⇐⇒ dim Kerf = dim Kerf 2.\nAlors, en utilisant le théorème du rang,\nImf = Imf 2 ⇔ rgf = rgf 2 ⇔ dim Kerf = dim Kerf 2 ⇔ Kerf = Kerf 2.\n(b) Supposons Imf = Imf 2.\nSoit x ∈ Imf ∩ Kerf .\n∃ a ∈ E tel que x = f (a) et f (x) = 0E.\nOn en déduit que f 2(a) = 0E c’est-à-dire a ∈ Kerf 2.\nOr, d’après l’hypothèse et 2.(a), Kerf 2 = Kerf donc a ∈ Kerf c’est-à-dire f (a) = 0E.\nC’est-à-dire x = 0.\nAinsi Imf ∩ Kerf = {0E}.\n(***)\nDe plus, d’après le théorème du rang, dim Imf + dim Kerf = dim E.\n(****)\nDonc, d’après (***) et (****), E = Imf ⊕ Kerf .",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 64 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Applications linéaires",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "64",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-64",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 64, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Exercice d'oral 65",
+    "statement": "Soit u un endomorphisme d’un espace vectoriel E sur le corps K (= R ou C). On note K[X] l’ensemble des\npolynômes à coefficients dans K.\n1. Démontrer que : ∀(P, Q) ∈ K[X] × K[X], (P Q)(u) = P (u) ◦ Q(u) .\n2. (a) Démontrer que : ∀(P, Q) ∈ K[X] × K[X], P (u) ◦ Q(u) = Q(u) ◦ P (u) .\n(b) Démontrer que, pour tout (P, Q) ∈ K[X] × K[X] :\n(P polynôme annulateur de u)=⇒ (P Q polynôme annulateur de u)\n(−1 −2\n)\n3. Soit A =\n.\n\nÉcrire le polynôme caractéristique de A, puis en déduire que le polynôme R = X 4 + 2X 3 + X 2 − 4X est un\npolynôme annulateur de A.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 65 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Réduction des endomorphismes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "65",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-65",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 65, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que ∀ A ∈ Sn (R), A2 ∈ S+ n (R)",
+    "statement": "1. Soit A ∈ Sn (R).\nn (R) ⇐⇒ sp(A) ⊂ [0, +∞[.\nProuver que A ∈ S+\n2. Prouver que ∀ A ∈ Sn (R), A2 ∈ S+\nn (R).\n3. Prouver que ∀ A ∈ Sn (R), ∀ B ∈ S+\nn (R), AB = BA =⇒ A2B ∈ S+\nn (R).\nn (R).\n4. Soit A ∈ S+\nn (R) telle que A = B2.\nProuver qu’il existe B ∈ S+",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 66 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces préhilbertiens et euclidiens",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "66",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-66",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 66, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "a c b c Soit la matrice M = où a, b, c sont des réels",
+    "statement": "a\nc\nb\n\nc\nSoit la matrice M =\n où a, b, c sont des réels.\n\nb −a 0\nM est-elle diagonalisable dans M3 (R) ? M est-elle diagonalisable dans M3 (C) ?",
+    "correction": "χM (λ) = det(λI3 − M ).\nAprès calculs, on trouve, χM = X(X 2 + ca − ba − bc).\nPremier cas : ca − ba − bc < 0\nM est diagonalisable dans M3(R) car M possède trois valeurs propres réelles distinctes.\nElle est, a fortiori, diagonalisable dans M3(C).\nDeuxième cas : ca − ba − bc = 0\nAlors, 0 est la seule valeur propre de M .\nAinsi, si M est diagonalisable, alors M est semblable à la matrice nulle c’est-à-dire M = 0 ou encore\na = b = c = 0. Réciproquement, si a = b = c = 0 alors M = 0 et donc M est diagonalisable.\nOn en déduit que M est diagonalisable si et seulement si a = b = c = 0.\nTroisième cas : ca − ba − bc > 0\nAlors 0 est la seule valeur propre réelle et donc M n’est pas diagonalisable dans M3(R) car χM (X) n’est pas\nscindé sur R[X].\nEn revanche, M est diagonalisable dans M3(C) car elle admet trois valeurs propres complexes distinctes.",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 67 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Réduction des endomorphismes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "67",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-67",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 67, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que A est diagonalisable de quatre manières : (a) sans calcul, (b) en…",
+    "statement": "1 −1\n\n−1\n1 −1\nSoit la matrice A =\n .\n\n1 −1\n\n1. Démontrer que A est diagonalisable de quatre manières :\n(a) sans calcul,\n(b) en calculant directement le déterminant det(λI3 − A), où I3 est la matrice identité d’ordre 3, et en\ndéterminant les sous-espaces propres,\n(c) en utilisant le rang de la matrice,\n(d) en calculant A2.\n2. On note f l’endomorphisme de R3 dont la matrice dans la base canonique de R3 est A.\nTrouver une base orthonormée dans laquelle la matrice de f est diagonale.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 68 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Réduction des endomorphismes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "68",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-68",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 68, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "0 a 1 a 0 On considère la matrice A = où a est un réel",
+    "statement": "0 a 1\na 0\n\nOn considère la matrice A =\n où a est un réel.\n\na 1\n\n1. Déterminer le rang de A.\n2. Pour quelles valeurs de a, la matrice A est-elle diagonalisable ?",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 69 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Réduction des endomorphismes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "69",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-69",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 69, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Déterminer p(u) et donner la matrice de p dans la base canonique de R3",
+    "statement": "y\nz\nSoit P le plan d’équation x + y + z = 0 et D la droite d’équation x =\n=\n.\n\n1. Vérifier que R3 = P ⊕ D.\n2. Soit p la projection vectorielle de R3 sur P parallèlement à D.\nSoit u = (x, y, z) ∈ R3.\nDéterminer p(u) et donner la matrice de p dans la base canonique de R3.\n3. Déterminer une base de R3 dans laquelle la matrice de p est diagonale.",
+    "correction": "1. D = Vect ((1, 2, 3)).\n(1, 2, 3) ̸∈ P car les coordonnées du vecteur (1, 2, 3) ne vérifient pas l’équation de P .\nDonc D ∩ P = {0}.\n(*)\nDe plus, dim D + dim P = 1 + 2 = dim R3.\n(**)\nD’après (*) et (**), R3 = P ⊕ D.\n2. Soit u = (x, y, z) ∈ R3.\nPar définition d’une projection, p(u) ∈ P et u − p(u) ∈ D.\nu − p(u) ∈ D signifie que ∃ α ∈ R tel que u − p(u) = α(1, 2, 3).\nOn en déduit que p(u) = (x − α, y − 2α, z − 3α).\n(***)\n\nOr p(u) ∈ P donc (x − α) + (y − 2α) + (z − 3α) = 0, c’est-à-dire α =\n(x + y + z).\n\nEt donc, d’après (***), p(u) =\n(5x − y − z, −2x + 4y − 2z, −3x − 3y + 3z).\n\nSoit e = (e1, e2, e3) la base canonique de R3.\n\n5 −1 −1\n\n−2\n4 −2\nSoit A la matrice de p dans la base e. On a A =\n.\n\n−3 −3\n\n3. On pose e′\n1 = (1, 2, 3), e′\n2 = (1, −1, 0) et e′\n3 = (0, 1, −1).\ne′\n1 est une base de D et (e′\n2, e′\n3) est une base de P .\nOr R3 = P ⊕ D donc e′ = (e′\n3) est une base de R3.\n1, e′\n2, e′\nDe plus e′\n1 ∈ D donc p(e′\n1) = 0. e′\n2 ∈ P et e′\n3 ∈ P donc p(e′\n2) = e′\n2 et p(e′\n3) = e′\n3.\n\n0 0\nAinsi, M (p, e′) =\n\n1 0\n.\n\n0 1",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 71 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Matrices et systèmes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "71",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-71",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 71, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Soit n un entier naturel non nul",
+    "statement": "Soit n un entier naturel non nul.\nSoit f un endomorphisme d’un espace vectoriel E de dimension n, et soit e = (e1, . . . , en) une base de E.\nOn suppose que f (e1) = f (e2) = · · · = f (en) = v, où v est un vecteur donné de E.\n1. Donner le rang de f .\n2. f est-il diagonalisable ? (discuter en fonction du vecteur v)",
+    "correction": "1. Si v = 0E alors f est l’endomorphisme nul et donc rgf = 0.\nSi v ̸= 0 alors rgf = 1 car, si on note c1, c2, ..., cn les colonnes de la matrice A de f dans la base e, alors\nc1 ̸= 0 et c1 = c2 = ... = cn.\n2. On note χf le polynôme caractéristique de f .\nPremier cas : v = 0E\nalors f est l’endomorphisme nul et donc f est diagonalisable.\nDeuxième cas : v ̸= 0E.\nAlors rgf = 1 et donc dim Kerf = n − 1.\nDonc 0 est valeur propre de f et, si on note m0 l’ordre de multiplicité de la valeur propre 0 dans le\npolynôme caractéristique de f , alors m0 ⩾ n − 1.\nOn en déduit alors que : ∃λ ∈ K / χf = X n−1(X − λ).\n(*)\nEt donc, tr(f ) = λ.\ne est une base de E donc : ∃ ! (x1, x2, ..., xn) ∈ Kn / v = x1e1 + x2e2 + ... + xnen.\nEn écrivant la matrice de f dans la base e, on obtient alors tr(f ) = x1 + x2 + ... + xn.\nAinsi, λ = x1 + x2 + ... + xn.\n(**)\nCe qui amène à la discussion suivante :\nPremier sous- cas : si x1 + x2 + ... + xn ̸= 0\nD’après (*) et (**), λ = x1 + x2 + ... + xn est une valeur propre non nulle de f et dim Eλ = 1.\nAinsi, dim E0 + dim Eλ = n et donc f est diagonalisable.\nDeuxième sous- cas : si x1 + x2 + ... + xn = 0\nAlors, d’après (*) et (**), χf = X n.\nDonc 0 est valeur propre d’ordre de multiplicité n dans le polynôme caractéristique.\nOr dim E0 = n − 1.\nDonc f n’est pas diagonalisable.\nRemarque dans le cas où v ̸= 0\nComme v = x1e1 + x2e2 + ... + xnen, alors, par linéarité de f , f (v) = x1f (e1) + x2f (e2) + ... + xnf (en).\nC’est-à-dire, f (v) = (x1 + x2 + ... + xn)v. (***)\nOn en déduit que : x1 + x2 + ... + xn = 0 ⇐⇒ f (v) = 0.\nDe plus, dans le cas où x1 + x2 + ...xn ̸= 0, alors, d’après (***), v est un vecteur propre associé à la valeur\npropre λ = x1 + x2 + ... + xn et d’après ce qui précéde, Ef (λ) = Vect(v).",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 72 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Réduction des endomorphismes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "72",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-72",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 72, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Déterminer les valeurs propres et les vecteurs propres de A",
+    "statement": "(2\n)\n\nOn pose A =\n.\n4 −1\n1. Déterminer les valeurs propres et les vecteurs propres de A.\n(3\n)\n\n2. Déterminer toutes les matrices qui commutent avec la matrice\n.\n0 −2\nEn déduire que l’ensemble des matrices qui commutent avec A est Vect (I2, A).",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 73 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Matrices et systèmes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "73",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-73",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 73, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Déterminer les valeurs propres de A puis une base de vecteurs propres associés",
+    "statement": "0 2\n\n1 0\n1. On considère la matrice A =\n.\n\n0 1\n(a) Justifier sans calcul que A est diagonalisable.\n(b) Déterminer les valeurs propres de A puis une base de vecteurs propres associés.\n\nx′ = x + 2z\n\ny′ = y\n2. On considère le système différentiel\n, x, y, z désignant trois fonctions de la variable t,\n\nz′ = 2x + z\ndérivables sur R.\nEn utilisant la question 1. et en le justifiant, résoudre ce système.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 74 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Réduction des endomorphismes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "74",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-74",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 74, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que A n’est pas diagonalisable",
+    "statement": "(−1 −4\n)\nOn considère la matrice A =\n.\n\n1. Démontrer que A n’est pas diagonalisable.\n2. On note f l’endomorphisme de R2 canoniquement associé à A.\n(a b\n)\nTrouver une base (v1, v2) de R2 dans laquelle la matrice de f est de la forme\n.\n\nc\nOn donnera explicitement les valeurs de a, b et c.\n{ x′ = −x − 4y\n3. En déduire la résolution du système différentiel\n.\ny′ = x + 3y",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 75 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Réduction des endomorphismes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "75",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-75",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 75, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Soit E un R-espace vectoriel muni d’un produit scalaire noté ( | )",
+    "statement": "Soit E un R-espace vectoriel muni d’un produit scalaire noté ( | ).\nOn pose ∀ x ∈ E, ||x|| = √(x|x).\n1. (a) Énoncer et démontrer l’inégalité de Cauchy-Schwarz.\n(b) Dans quel cas a-t-on égalité ? Le démontrer.\n2. Soit E = {f ∈ C ([a, b] , R) , ∀ x ∈ [a, b] f (x) > 0}.\n{∫ b\n}\n∫ b\n\nProuver que l’ensemble\nf (t)dt ×\ndt , f ∈ E\nadmet une borne inférieure m et déterminer la\nf (t)\na\na\nvaleur de m.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 76 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces préhilbertiens et euclidiens",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "76",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-76",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 76, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que (F + G)⊥ = F ⊥ ∩ G⊥",
+    "statement": "Soit E un espace euclidien.\n1. Soit A un sous-espace vectoriel de E.\nDémontrer que (A⊥)⊥\n= A.\n2. Soient F et G deux sous-espaces vectoriels de E.\n(a) Démontrer que (F + G)⊥ = F ⊥ ∩ G⊥.\n(b) Démontrer que (F ∩ G)⊥ = F ⊥ + G⊥.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 77 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces préhilbertiens et euclidiens",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "77",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-77",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 77, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Exercice d'oral 78",
+    "statement": "Soit E un espace euclidien de dimension n et u un endomorphisme de E.\nOn note (x|y) le produit scalaire de x et de y et ||.|| la norme euclidienne associée.\n1. Soit u un endomorphisme de E, tel que : ∀x ∈ E, ||u(x)|| = ||x||.\n(a) Démontrer que : ∀(x, y) ∈ E2 (u(x)|u(y)) = (x|y).\n(b) Démontrer que u est bijectif.\n2. On note O(E) l’ensemble des isométries vectorielles de E.\nC’est -à-dire O(E) = {u ∈ L (E) / ∀x ∈ E, ||u(x)|| = ||x||}.\nDémontrer que O(E) , muni de la loi ◦ , est un groupe.\n3. Soit u ∈ L(E). Soit e = (e1, e2, ..., en) une base orthonormée de E.\nProuver que : u ∈ O(E) ⇐⇒(u(e1), u(e2), ..., u(en)) est une base orthonormée de E.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 78 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces préhilbertiens et euclidiens",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "78",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-78",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 78, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que (f | g) = f (t) g (t) dt définit un produit scalaire sur E",
+    "statement": "Soit E l’espace vectoriel des applications continues et 2π-périodiques de R dans R.\n∫ 2π\n\n1. Démontrer que (f | g) =\nf (t) g (t) dt définit un produit scalaire sur E.\n2π\n\n2. Soit F le sous-espace vectoriel engendré par f : x ↦ cos x et g : x ↦ cos (2x).\nDéterminer le projeté orthogonal sur F de la fonction u : x ↦ sin2 x.",
+    "correction": "∫ 2π\n\n1. On pose ∀ (f, g) ∈ E2, (f |g) =\nf (t)g(t)dt.\n2π\n\nPar linéarité de l’intégrale, ( | ) est linéaire par rapport à sa première variable.\nPar commutativité du produit sur R, ( | ) est symétrique.\nOn en déduit que ( | ) est une forme bilinéaire symétrique.\n(*)\n∫ 2π\n\nf 2(t)dt.\nSoit f ∈ E. (f |f ) =\n2π\n\nOr t ↦ f 2(t) est positive sur [0, 2π] et 0 < 2π, donc (f |f ) ⩾ 0.\nDonc ( | ) est positive.\n(**)\nSoit f ∈ E telle que (f |f ) = 0.\n∫ 2π\nf 2(t)dt = 0.\nAlors\n\nOr t ↦ f 2(t) est positive et continue sur [0, 2π].\nDonc, f est nulle sur [0, 2π].\nOr f est 2π-périodique donc f = 0.\nDonc ( | ) est définie.\n(***)\nD’après (*), (**) et (***), ( | ) est un produit scalaire sur E.\n\n2. On a ∀x ∈ R, sin2 x =\n−\ncos(2x).\n\nx ↦ −\ncos(2x)∈ F .\n\nDe plus, si on note h l’application x ↦\n,\n\n∫ 2π\n∫ 2π\n\ncos(2x)dx = 0 donc h ∈ F ⊥ (car F = Vect(f, g)).\n(h|f ) =\ncos xdx = 0 et (h|g) =\n4π\n4π\n\nOn en déduit que le projeté orthogonal de u sur F est x ↦ −\ncos(2x).",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 80 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces préhilbertiens et euclidiens",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "80",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-80",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 80, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que si λ est valeur propre de u ◦ v, alors λ est valeur propre de v ◦ u",
+    "statement": "Soit u et v deux endomorphismes d’un R-espace vectoriel E.\n1. Soit λ un réel non nul. Prouver que si λ est valeur propre de u ◦ v, alors λ est valeur propre de v ◦ u.\n∫ X\n2. On considère, sur E = R [X] les endomorphismes u et v définis par u : P ↦\nP et v : P ↦ P ′ .\n\nDéterminer Ker(u ◦ v) et Ker(v ◦ u). Le résultat de la question 1. reste-t-il vrai pour λ = 0 ?\n3. Si E est de dimension finie, démontrer que le résultat de la première question reste vrai pour λ = 0.\nIndication : penser à utiliser le déterminant.",
+    "correction": "1. Soit λ ̸= 0.\nSi λ valeur propre de u ◦ v alors ∃ x ∈ E \\ {0} / (u ◦ v)(x) = λx.\n(∗)\nPour un tel x non nul, on a alors v(u ◦ v(x)) = λv(x) c’est-à-dire (v ◦ u)(v(x)) = λv(x) (∗∗).\nSi v(x) = 0 alors, d’après (∗), λx = 0. Ce qui est impossible car x ̸= 0 et λ ̸= 0.\nDonc v(x) ̸= 0.\nDonc, d’après (∗∗), v(x) est un vecteur propre de v ◦ u associé à la valeur propre λ.\n2. On trouve que v ◦ u = Id et u ◦ v : P ↦ P (X) − P (1).\nAinsi Ker(v ◦ u) = {0} et Ker(u ◦ v) = R0 [X].\nOn observe que 0 est valeur propre de u ◦ v mais n’est pas valeur propre de v ◦ u.\nOn constate donc que le résultat de la question 1. est faux pour λ = 0.\n3. Si E est de dimension finie, comme det(u ◦ v) = det u det v = det(v ◦ u) alors :\n0 est valeur propre de u ◦ v ⇐⇒ det(u ◦ v) = 0 ⇐⇒ det(v ◦ u) = 0 ⇐⇒ 0 est valeur propre de v ◦ u.\nRemarque 1 : le résultat de la question 1. est vrai pour λ = 0 si et seulement si E est de dimension finie.\nRemarque 2 : Si E est de dimension finie, u ◦ v et v ◦ u ont les mêmes valeurs propres.",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 83 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Réduction des endomorphismes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "83",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-83",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 83, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Donner la définition d’un argument d’un nombre complexe non nul (on ne demande ni…",
+    "statement": "1. Donner la définition d’un argument d’un nombre complexe non nul (on ne demande ni l’interprétation\ngéométrique, ni la démonstration de l’existence d’un tel nombre).\n2. Soit n ∈ N∗. Donner, en justifiant, les solutions dans C de l’équation zn = 1 et préciser leur nombre.\n3. En déduire, pour n ∈ N∗, les solutions dans C de l’équation (z + i)n = (z − i)n et démontrer que ce sont des\nnombres réels.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 84 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Nombres complexes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "84",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-84",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 84, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que, pour tout entier naturel n, la fonction t ↦ 1 + t2 + tne−t est…",
+    "statement": "1. Démontrer que, pour tout entier naturel n, la fonction t ↦\n1 + t2 + tne−t est intégrable sur [0, +∞[.\n∫ +∞\ndt\n2. Pour tout n ∈ N, on pose un =\n1 + t2 + tne−t . Calculer\nlim\nun.\nn→+∞",
+    "correction": "1. fn : t ↦\n1 + t2 + tne−t est définie et continue par morceaux sur [0, +∞[.\nDe plus, ∀ t ∈ [0, +∞[, |fn(t)| ⩽ 1\n1 + t2 = φ(t).\n\nOr φ(t) ∼\nt2 et t ↦\nt2 est intégrable sur [1, +∞[, donc φ est intégrable sur [1, +∞[.\n+∞\nDonc, par critère de majoration pour les fonctions positives, fn est intégrable sur [1, +∞[.\nOr fn est continue sur [0, 1] donc fn est intégrable sur [0, +∞[.\n2. i) La suite de fonctions (fn) converge simplement sur [0, +∞[ vers la fonction f définie par :\n\nsi t ∈ [0, 1[\n1 + t2\n\nf (t) =\nsi t = 1\n\n2 + e−1\n\nsi t ∈ ]1, +∞[\nii) Les fonctions fn et f sont continues par morceaux sur [0, +∞[.\niii) ∀t ∈ [0, +∞[ , |fn(t)| ⩽ φ(t) avec φ intégrable sur [0, +∞[.\n∫ +∞\n∫ +∞\nAlors, d’après le théorème de convergence dominée,\nlim\nun = lim\nfn(t) dt =\nf (t) dt.\nn→+∞\nn→+∞\n\n∫ +∞\n∫ 1\ndt\nπ\nOr\nf (t) dt =\n1 + t2 =\n.\n\nπ\nDonc,\nlim\nun =\n.\n\nn→+∞",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 25 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Intégration",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "25",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-25",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 25, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Justifier que In est bien définie",
+    "statement": "∫ +∞\n\nPour tout entier n ⩾ 1, on pose In =\n(1 + t2)n dt.\n\n1. Justifier que In est bien définie.\n2. (a) Étudier la monotonie de la suite (In)n∈N∗ .\n(b) Déterminer la limite de la suite (In)n∈N∗ .\n∑\n(−1)nIn est-elle convergente ?\n3. La série\nn⩾1",
+    "correction": "Posons pour tout n ∈ N∗ et t ∈ [0, +∞[, fn(t) =\n(1 + t2)n .\n1. ∀ n ∈ N∗, fn est continue sur [0, +∞[.\n\nDe plus, |fn(t)| ∼\nt2n .\n+∞\n\nOr n ⩾ 1, alors t ↦\nt2n est intégrable sur [1, +∞[.\nDonc, par règle d’équivalence, fn est intégrable sur [1, +∞[ .\nOr fn est continue sur[0, 1], donc fn est intégrable sur [0, +∞[.\n\n⩽\n(1 + t2)n car 1 + t2 ⩾ 1.\n2. (a) ∀ t ∈ [0, +∞[,\n(1 + t2)n+1\nEn intégrant, on obtient : ∀ n ∈ N∗, In+1 ⩽ In.\nDonc (In)n∈N∗ est décroissante.\n(b) Remarque : (In)n∈N∗ est décroissante et clairement positive ce qui nous assure la convergence de la suite\n(In)n∈N∗ .\nDéterminons la limite de la suite (In)n∈N∗ .\ni) ∀ n ∈ N∗, fn est continue par morceaux sur [0, +∞[.\nii) La suite de fonctions (fn)n⩾1 converge simplement sur [0, +∞[ vers la fonction f définie sur [0, +∞[\n{\n0 si t > 0\npar f (t) =\n.\n1 si t = 0\nDe plus, f est continue par morceaux sur [0, +∞[.\niii) ∀t ∈ [0, +∞[ , ∀n ∈ N∗, |fn(t)| ⩽ 1\n1 + t2 = φ(t) avec φ intégrable sur [0, +∞[.\n\nEn effet φ est continue sur [0, +∞[ et φ(t) ∼\nt2 . Comme t ↦\nt2 est intégrable sur [1, +∞[, donc φ est\n+∞\nintégrable sur [1, +∞[. Comme φ est continue sur [0, 1], donc φ est intégrable sur [0, 1] donc sur [0, +∞[.\nPar le théorème de convergence dominée on obtient :\n∫ +∞\n∫ +∞\nlim\nIn = lim\nfn(t) dt =\nf (t) dt = 0\nn→+∞\nn→+∞\n\net la suite (In)n∈N∗ a pour limite 0.\n3. D’après les questions précédentes, la suite (In)n∈N∗ est positive, décroissante et converge vers 0.\nDonc, par application du théorème spécial des séries alternées, on peut affirmer la convergence de la série\n∑\n(−1)nIn.\nn⩾1",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 26 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Intégration",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "26",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-26",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 26, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Étudier la convergence simple de la suite de fonctions (fn) sur [0, 1]",
+    "statement": "∫ 1\ne−x\nPour tout n ∈ N∗, on pose fn (x) =\n1 + n2x2 et un =\nfn (x) dx.\n\n1. Étudier la convergence simple de la suite de fonctions (fn) sur [0, 1].\n2. Soit a ∈ ]0, 1[. La suite de fonctions (fn) converge-t-elle uniformément sur [a, 1] ?\n3. La suite de fonctions (fn) converge-t-elle uniformément sur [0, 1] ?\n4. Trouver la limite de la suite (un)n∈N∗ .",
+    "correction": "1. Soit x ∈ [0, 1].\nSi x = 0, fn(0) = 1.\ne−x\n\nSi x ∈ ]0, 1], pour n au voisinage de +∞, fn(x) ∼\nn2 , donc\nlim\nfn(x) = 0.\nx2\n+∞\nn→+∞\nOn en déduit que la suite de fonctions (fn) converge simplement sur [0, 1] vers la fonction f définie par :\n{ 0\nsi x ∈ ]0, 1]\nf (x) =\n\nsi x = 0\n2. Soit a ∈ ]0; 1[.\n∀ n ∈ N∗, ∀ x ∈ [a, 1], |fn(x) − f (x)| = fn(x) ⩽ e−a\n1 + n2a2 (majoration indépendante de x).\nDonc fn − f est bornée sur [a, 1] et en posant ||fn − f ]]∞,[a,1] = sup\n|fn(t) − f (t)| on a :\nt∈[a,1]\n||fn − f ]]∞,[a,1] ⩽ e−a\n1 + n2a2 .\ne−a\nOr\nlim\n1 + n2a2 = 0,.\nn→+∞\ndonc\nlim\n||fn − f ||∞,[a,1] = 0\nn→+∞\nOn en déduit que (fn) converge uniformément vers f sur [a, 1].\n3. Les fonctions fn étant continues sur [0, 1] et la limite simple f ne l’étant pas, on peut assurer qu’il n’y a pas\nconvergence uniforme sur [0, 1].\n4. i) Les fonctions fn sont continues par morceaux sur [0, 1].\nii) (fn) converge simplement vers f sur [0, 1], continue par morceaux sur [0, 1] .\niii) De plus, ∀x ∈ [0, 1] , |fn(x)| ⩽ e−x ⩽ 1 = φ(x) avec φ : [0, 1] → R+ continue par morceaux et intégrable\nsur [0, 1] .\nD’après le théorème de convergence dominée, on peut donc affirmer que :\n∫ 1\n∫ 1\nlim\nun = lim\nfn(x) dx =\nf (x) dx = 0.\nn→+∞\nn→+∞",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 27 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Suites et séries de fonctions",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "27",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-27",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 27, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "les deux questions sont indépendantes",
+    "statement": "N.B. : les deux questions sont indépendantes.\ne−x\n√\n1. La fonction x ↦\nest-elle intégrable sur ]2, +∞[ ?\nx2 − 4\n2. Soit a un réel strictement positif.\nln x\n√\nLa fonction x ↦\nest-elle intégrable sur ]0, +∞[ ?\n1 + x2a",
+    "correction": "e−x\n√\n1. Soit f : x ↦\n.\nx2 − 4\nf est continue sur ]2, +∞[.\ne−x\ne−2\n\n∼\nf (x) =\n×\n.\n√(x − 2)(x + 2)\n(x − 2) 1\n\nOr x ↦\nest intégrable sur ]2, 3] (fonction de Riemann intégrable sur ]2, 3] car\n< 1).\n(x − 2) 1\n\nDonc, par règle d’équivalence, f est intégrable sur ]2, 3].\n(*)\ne−x\nf (x) ∼\n= g(x).\nx\n+∞\n\nx2g(x) = 0 donc, au voisinage de +∞, g(x) = o(\nOr\nlim\nx2 ).\nx→+∞\n\nComme x ↦\nx2 est intégrable sur [3, +∞[, on en déduit que g est intégrable sur [3, +∞[.\nDonc, par règle d’équivalence, f est intégrable sur [3, +∞[.\n(**)\nD’après (*) et (**), f est intégrable sur ]2, +∞[.\n2. Soit a un réel strictement positif.\nln x\n√\nOn pose ∀ x ∈ ]0, +∞[, f (x) =\n.\n1 + x2a\nf est continue sur ]0, +∞[.\n|f (x)| ∼\n| ln x| = g(x).\n\n( 1\n)\nx 1\nOr lim\n2 g(x) = 0 donc, au voisinage de 0, g(x) = o\n.\nx 1\nx→0\n\nOr x ↦\nest intégrable sur ]0, 1] (fonction de Riemann intégrable sur ]0, 1] car\n< 1).\nx 1\n\nDonc g est intégrable sur ]0, 1].\nDonc, par règle d’équivalence, |f | est intégrable sur ]0, 1].\nDonc, f est intégrable sur ]0, 1]\n(*)\nln x\nf (x) ∼\nxa = h(x).\n+∞\nPremier cas : si a > 1.\n( 1\n)\n1+a\n1−a\nlim\nx\n2 h(x) = lim\nx\nln x = 0, donc, au voisinage de +∞, h(x) = o\n.\n\n1+a\nx→+∞\nx→+∞\nx\n\n1 + a\nOr x ↦\nest intégrable sur [1, +∞[ (fonction de Riemann intégrable sur [1, +∞[ car\n> 1).\n1+a\n\nx\n\nDonc, h est intégrable sur [1, +∞[.\nDonc, par règle d’équivalence, f est intégrable sur [1, +∞[.\n(**).\nD’après (*) et (**), f est intégrable sur ]0, +∞[.\nDeuxième cas : si a ⩽ 1\n∀ x ∈ [e, +∞[, h(x) ⩾ 1\nxa .\n\nxa non intégrable sur [e, +∞[.(fonction de Riemann avec a ⩽ 1)\nOr x ↦\nDonc, par règle de minoration pour les fonctions positives, h non intégrable sur [e, +∞[\nDonc, par règle d’équivalence, f non intégrable sur [e, +∞[.\nDonc, f non intégrable sur ]0, +∞[.",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 28 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Intégration",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "28",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-28",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 28, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que : ∀ x ∈ ]0, +∞[, la fonction t ↦ f (x, t) est intégrable sur ]0, +∞[",
+    "statement": "On pose : ∀ x ∈]0, +∞[, ∀ t ∈ ]0, +∞[, f (x, t) = e−ttx−1 .\n1. Démontrer que : ∀ x ∈ ]0, +∞[, la fonction t ↦ f (x, t) est intégrable sur ]0, +∞[.\n∫ +∞\ne−ttx−1dt.\nOn pose alors : ∀ x ∈]0, +∞[, Γ(x) =\n\n2. Pour tout x ∈]0, +∞[, exprimer Γ(x + 1) en fonction de Γ(x).\n3. Démontrer que Γ est de classe C 1 sur ]0, +∞[ et exprimer Γ ′(x) sous forme d’intégrale.",
+    "correction": "1. Soit x ∈ ]0, +∞[.\nLa fonction t ↦ e−ttx−1 est définie, positive et continue par morceaux sur ]0, +∞[.\n\ntx−1 et t ↦ tx−1 =\nf (x, t) ∼\nt1−x est intégrable sur ]0, 1] (fonction de Riemann avec 1 − x < 1).\nt→0+\nDonc, par critère d’équivalence, t ↦ f (x, t) est intégrable sur ]0, 1] .\n(*)\n\nt2f (x, t) = 0, donc, pour t au voisinage de +∞, f (x, t) = o(\nDe plus,\nlim\nt2 ).\nt→+∞\n\nOr t ↦\nt2 est intégrable sur [1, +∞[ (fonction de Riemann intégrable).\nDonc t ↦ f (x, t) est intégrable sur [1, +∞[.\n(**)\nDonc, d’après (*) et (**), t ↦ f (x, t) est intégrable sur ]0, +∞[.\n∫ +∞\n∫ +∞\ne−ttx dt = [−e−ttx]+∞\ne−ttx−1 dt.\n2. Par intégration par parties, justifiée ci-après\n0 + x\n\nLe terme de variation possède des limites finies à ses bornes par croissances comparées, et est de valeur\nnulle, ce qui valide ce calcul et donne\nΓ(x + 1) = xΓ(x).\n3. i) pour tout x > 0, t ↦ f (x, t) est continue par morceaux et intégrable sur ]0, +∞[ (d’après la question 1.).\n∂f\nii) ∀ t ∈ ]0, +∞[, la fonction x ↦ f (x, t) est dérivable et ∀ (x, t) ∈ ]0, +∞[2,\n(x, t) = (ln t)e−ttx−1.\n∂x\n∂f\niii) Pour tout x > 0, t ↦\n(x, t) est continue par morceaux sur ]0, +∞[.\n∂x\n∂f\niv) Pour tout t > 0, x ↦\n(x, t) est continue sur ]0, +∞[.\n∂x\nv) Pour tout [a, b] ⊂ ]0, +∞[ et ∀ (t, x) ∈ ]0, +∞[ × [a, b] :\n|\n|\n{ | ln t|e−tta−1\n∂f\nsi\nt ∈ ]0, 1[\n|\n|\n⩽ φ(t) avec φ(t) =\n(x, t)\n|\n|\n| ln t|e−ttb−1\nsi\nt ∈ [1, +∞[\n∂x\n|\n|\navec φ continue par morceaux et intégrable sur ]0, +∞[.\nEn effet :\na\na\n1−\nφ(t) ∼\n| ln t|ta−1 = φ1(t) et lim\n2 φ1(t) = lim\n2 | ln t| = 0.\nt\nt\nt→0\n0+\nt→0+\n\nDonc, au voisinage de 0+, φ1(t) = o\n.\na\n\n1−\n\nt\n\na\nOr t ↦\nest intégrable sur ]0, 1[(fonction de Riemann avec 1 −\n< 1).\na\n\n1−\n\nt\nDonc, φ1 est intégrable sur ]0, 1[.\nDonc, par critère d’équivalence pour les fonctions positives, φ est intégrable sur ]0, 1[.\n(*)\nt2φ(t) = 0.\nlim\nt→+∞\n\nDonc, pour t au voisinage de +∞, φ(t) = o(\nt2 ).\n\nOr, t ↦\nt2 est intégrable sur [1, +∞[ (fonction de Riemann intégrable).\nDonc φ est intégrable sur [1, +∞[.\n(**)\nD’après (*) et (**), φ est intégrable sur ]0, +∞[.\nD’où, d’après le théorème de dérivation des intégrales à paramètres, Γ est de classe C1 sur ]0, +∞[.\n∫ +∞\n(ln t)e−ttx−1 dt.\nDe plus, ∀ x ∈ ]0, +∞[, Γ′(x) =",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 29 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Intégration",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "29",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-29",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 29, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que la fonction f : x ↦ 3",
+    "statement": "1. Énoncer le théorème de dérivation sous le signe intégrale.\n∫ +∞\ne−t2\ncos (xt) dt est de classe C 1 sur R.\n2. Démontrer que la fonction f : x ↦\n\n3. (a) Trouver une équation différentielle linéaire (E) d’ordre 1 dont f est solution.\n(b) Résoudre (E).",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 30 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Intégration",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "30",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-30",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 30, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Déterminer une primitive de x ↦ cos4 x",
+    "statement": "1. Déterminer une primitive de x ↦ cos4 x.\n2. Résoudre sur R l’équation différentielle : y′′ + y = cos3 x en utilisant la méthode de variation des\nconstantes.",
+    "correction": "1. En linéarisant cos4 x, on obtient cos4 x =\n(cos(4x) + 4 cos(2x) + 3).\n\nx est une primitive de x ↦ cos4 x.\nDonc, x ↦\nsin(4x) +\nsin(2x) +\n\n2. Notons (E) l’équation différentielle y′′ + y = cos3 x .\nC’est une équation différentielle linéaire d’ordre 2 à coefficients constants.\nLes solutions de l’équation homogène associée sont les fonctions y définies par : y(x) = λ cos x + µ sin x.\nPar la méthode de variation des constantes,\non cherche une solution particulière de (E) de la forme yp(x) = λ(x) cos x + µ(x) sin x avec λ, µ fonctions\n{λ′(x) cos x + µ′(x) sin x = 0\n{λ′(x) = − sin x cos3 x\ndérivables vérifiant :\ni.e.\n.\n−λ′(x) sin x + µ′(x) cos x = cos3 x\nµ′(x) = cos4 x\n\ncos4 x convient.\nλ(x) =\n\nD’après la question 1., µ(x) =\nsin(4x) +\nsin(2x) +\nx convient.\n\n( 1\n)\n\ncos5 x +\nOn en déduit que la fonction yp définie par yp(x) =\nsin(4x) +\nsin(2x) +\nx\nsin x est une\n\nsolution particulière de (E).\nFinalement, les solutions de l’équation (E) sont les fonctions y définies par :\ny(x) = λ cos x + µ sin x + yp(x), avec (λ, µ) ∈ R2.",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 31 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Intégration",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "31",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-31",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 31, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Trouver les solutions de cette équation différentielle développables en série entière…",
+    "statement": "Soit l’équation différentielle : x(x − 1)y′′ + 3xy′ + y = 0.\n1. Trouver les solutions de cette équation différentielle développables en série entière sur un intervalle ]−r, r[\nde R, avec r > 0.\nDéterminer la somme des séries entières obtenues.\n2. Est-ce que toutes les solutions de x(x − 1)y′′ + 3xy′ + y = 0 sur ]0; 1[ sont les restrictions d’une fonction\ndéveloppable en série entière sur ]−1, 1[ ?",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 32 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Séries entières",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "32",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-32",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 32, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que f est continue sur R2",
+    "statement": "xy\nOn pose : ∀ (x, y) ∈ R2\\ {(0, 0)}, f (x, y) =\net f (0, 0) = 0.\n√x2 + y2\n1. Démontrer que f est continue sur R2.\n2. Démontrer que f admet des dérivées partielles en tout point de R2.\n3. f est-elle de classe C 1 sur R2 ? Justifier.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 33 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Calcul différentiel",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "33",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-33",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 33, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que si, pour tout x ∈ A, f (x) = g(x), alors f = g",
+    "statement": "E et F désignent deux espaces vectoriels normés.\nOn note || ||E ( respectivement || ||F ) la norme sur E (respectivement sur F ).\n1. Soient f une application de E dans F et a un point de E.\nOn considère les propositions suivantes :\nP1. f est continue en a.\nP2. Pour toute suite (xn)n∈N d’éléments de E telle que\nlim\nxn = a, alors\nlim\nf (xn) = f (a).\nn→+∞\nn→+∞\nProuver que les propositions P1 et P2 sont équivalentes.\n2. Soit A une partie dense dans E, et soient f et g deux applications continues de E dans F .\nDémontrer que si, pour tout x ∈ A, f (x) = g(x), alors f = g.",
+    "correction": "1. Prouvons que P 1. =⇒ P 2..\nSupposons f continue en a.\nSoit (xn)n∈N une suite d’éléments de E convergeant vers a. Prouvons que\nlim\nf (xn) = f (a).\nn→+∞\nSoit ε > 0.\n⩽ α ⇒ ∥f (x) − f (a)∥F\n⩽ ε.\nPar continuité de f en a, ∃ α > 0 / ∀x ∈ E, ∥x − a∥E\n(*)\nOn fixe un tel α strictement positif.\nPar convergence de (xn)n∈N vers a, ∃ N ∈ N / ∀n ∈ N, n ⩾ N ⇒ ∥xn − a∥E\n⩽ α.\nOn fixe un N convenable.\nAlors, d’après (*), ∀n ∈ N, n ⩾ N ⇒ ∥f (xn) − f (a)∥F\n⩽ ε.\nOn peut donc conclure que\nlim\nf (xn) = f (a).\nn→+∞\nProuvons que P 2. =⇒ P 1.\nSupposons P 2. vraie.\nRaisonnons par l’absurde en supposant que f non continue en a.\nC’est-à-dire ∃ ε > 0 / ∀ α > 0, ∃ x ∈ E tel que ||x − a||E ⩽ α et ||f (x) − f (a)||F > ε.\nOn fixe un tel ε strictement positif.\n\n, il existe xn ∈ E tel que ||xn − a||E ⩽ 1\nAlors, ∀ n ∈ N∗, en prenant α =\net ||f (xn) − f (a)||F > ε.\n(*)\nn\nn\nComme ∀ n ∈ N∗, ||xn − a||E ⩽ 1\n, la suite (xn)n∈N∗ ainsi construite converge vers a.\nn\nDonc, d’après l’hypothèse, la suite (f (xn))n∈N∗ converge vers f (a).\nDonc ∃ N ∈ N∗ tel que ∀ n ∈ N, n ⩾ N =⇒ ||f (xn) − f (a||F ⩽ ε\n.\n\nAinsi, on obtient une contradiction avec (*).\n2. Soit x ∈ E.\nPuisque la partie A est dense dans E, il existe une suite (xn)n∈N d’éléments de A telle que\nlim\nxn = x.\nn→+∞\nOn a alors : ∀n ∈ N, f (xn) = g(xn).\nEt en passant à la limite, sachant que f et g sont continues sur E, on obtient f (x) = g(x).",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 35 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces vectoriels normés et topologie",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "35",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-35",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 35, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que si f est une application linéaire de E dans F , alors les propriétés…",
+    "statement": "Soient E et F deux espaces vectoriels normés sur le corps R.\nOn note || ||E ( respectivement || ||F ) la norme sur E (respectivement sur F ).\n1. Démontrer que si f est une application linéaire de E dans F , alors les propriétés suivantes sont deux à\ndeux équivalentes :\nP1. f est continue sur E.\nP2. f est continue en 0E.\n⩽ k ∥x∥E.\nP3. ∃k > 0 tel que : ∀x ∈ E, ∥f (x)∥F\n2. Soit E l’espace vectoriel des applications continues de [0; 1] dans R muni de la norme définie par :\n∫ 1\n|f (x)| . On considère l’application φ de E dans R définie par : φ(f ) =\n∥f ∥∞ = sup\nf (t)dt.\nx∈[0;1]\n\nDémontrer que φ est linéaire et continue.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 36 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Intégration",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "36",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-36",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 36, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que N∞ et N1 sont deux normes sur E",
+    "statement": "On note E l’espace vectoriel des applications continues de [0; 1] dans R.\n∫ 1\nOn pose : ∀ f ∈ E, N∞(f ) = sup\n|f (x)| et N1(f ) =\n|f (t)|dt.\nx∈[0;1]\n\n1. (a) Démontrer que N∞ et N1 sont deux normes sur E.\n(b) Démontrer qu’il existe k > 0 tel que, pour tout f de E, N1(f ) ≤ kN∞(f ).\n(c) Démontrer que tout ouvert pour la norme N1 est un ouvert pour la norme N∞.\n2. Démontrer que les normes N1 et N∞ ne sont pas équivalentes.",
+    "correction": "1. (a) Prouvons que N∞ est une norme sur E.\n∀ f ∈ E, |f | est positive et continue sur le segment [0, 1] donc f est bornée et donc N∞(f ) existe et est\npositive.\ni) Soit f ∈ E telle que N∞(f ) = 0.\nAlors, ∀ t ∈ [0, 1], |f (t)| = 0, donc f = 0.\nii) Soit λ ∈ R. Soit f ∈ E. Comme |λ| ≥ 0, on a par positive homogénéité de la borne supérieure\nN∞(λf ) = sup\n|λf (x)| = sup\n|λ| |f (x)| = |λ| sup\n|f (x)| = |λ|N∞(f ).\nx∈[0;1]\nx∈[0;1]\nx∈[0;1]\niii) Soit (f, g) ∈ E2.\n∀ t ∈ [0, 1],|(f + g)(t)| ⩽ |f (t)| + |g(t)| ⩽ N∞(f ) + N∞(g).\nDonc N∞(f + g) ⩽ N∞(f ) + N∞(g).\nOn en déduit que N∞ est une norme.\nProuvons que N1 est une norme sur E.\n∀ f ∈ E, |f | est continue et positive sur [0, 1] donc N1(f ) existe et est positive.\ni) Soit f ∈ E telle que N1(f ) = 0.\nOr |f | est continue et positive sur [0, 1], donc |f | est nulle.\nC’est-à-dire f = 0.\nii) Soit λ ∈ R. Soit f ∈ E.\n\n∫\n∫\nN1(λf ) =\n|λf (t)|dt = |λ|\n|f (t)|dt = |λ|N1(f ).\n\niii) Soit (f, g) ∈ E2.\n∀ t ∈ [0, 1], |(f + g)(t)| ⩽ |f (t)| + |g(t)|. Donc, par linéarité de l’intégrale, N1(f + g) ⩽ N1(f ) + N1(g).\nOn en déduit que N1 est une norme sur E.\n∫ 1\n∫ 1\n|f (t)| dt ⩽\n(b) k = 1 convient car, ∀ f ∈ E, N1(f ) =\nN∞(f )dt = N∞(f ).\n\n(c) L’application identité de E, muni de la norme N∞, vers E, muni de la norme N1, est continue car\nlinéaire et vérifiant ∀ f ∈ E, N1(f ) ⩽ kN∞(f ).\nL’image réciproque d’un ouvert par une application continue étant un ouvert, on en déduit que :\nun ouvert pour la norme N1 est un ouvert pour la norme N∞.\nOn peut aussi raisonner de façon plus élémentaire par inclusion de boules et retour à la définition d’un\nouvert.\n\nN∞(fn)\n2. Pour fn(t) = tn, on a N1 (fn) =\net N∞(fn) = 1, donc\nlim\n= +∞.\nn + 1\nN1(fn)\nn→+∞\nDonc ces deux normes ne sont donc pas équivalentes.",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 37 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Intégration",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "37",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-37",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 37, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que la série +∞ ∑ un",
+    "statement": "Soit A une algèbre de dimension finie admettant e pour élément unité et munie d’une norme notée || ||.\nOn suppose que : ∀(u, v) ∈ A2, ||u.v|| ⩽ ||u||.||v||.\n1. Soit u un élément de A tel que ∥u∥ < 1.\n∑\nun est convergente.\n(a) Démontrer que la série\n+∞\n∑\nun.\n(b) Démontrer que (e − u) est inversible et que (e − u)−1 =\nn=0\n∑ un\n2. Démontrer que, pour tout u ∈ A, la série\nconverge.\nn!",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 40 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces vectoriels normés et topologie",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "40",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-40",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 40, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Justifier que f atteint un maximum et un minimum sur C",
+    "statement": "Soit f l’application de R2 dans R définie par f : (x, y) ↦ 4x2 + 12xy − y2.\nSoit C = {(x, y) ∈ R2, x2 + y2 = 13}.\n1. Justifier que f atteint un maximum et un minimum sur C.\n2. Soit (u, v) ∈ C un point où f atteint un de ses extremums.\n(a) Justifier avec un théorème du programme qu’il existe un réel λ tel que le système (S) suivant soit\nvérifié :\n{ 4u +6v = λu\n(S) :\n6u −v = λv\n(b) Montrer que (λ − 4)(λ + 1) − 36 = 0.\nEn déduire les valeurs possibles de λ.\n3. Déterminer les valeurs possibles de (u, v), puis donner le maximum et le minimum de f sur C.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 41 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Calcul différentiel",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "41",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-41",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 41, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que la suite (un) est monotone et déterminer, en fonction de la valeur de x0,…",
+    "statement": "Soit x0 ∈ R.\nOn définit la suite (un) par u0 = x0 et, ∀n ∈ N , un+1 = Arctan(un).\n1. (a) Démontrer que la suite (un) est monotone et déterminer, en fonction de la valeur de x0, le sens de\nvariation de (un).\n(b) Montrer que (un) converge et déterminer sa limite.\n2. Déterminer l’ensemble des fonctions h, continues sur R, telles que : ∀x ∈ R, h(x) = h(Arctan x).",
+    "correction": "On pose f (x) = Arctan x.\n1. (a) Premier cas : Si u1 < u0\nPuisque la fonction f : x ↦ Arctan x est strictement croissante sur R alors Arctan(u1) < Arctan(u0)\nc’est-à-dire u2 < u1.\nPar récurrence, on prouve que ∀n ∈ N , un+1 < un. Donc la suite (un) est strictement décroissante.\nDeuxième cas : Si u1 > u0\nPar un raisonnement similaire, on prouve que la suite (un) est strictement croissante.\nTroisième cas : Si u1 = u0\nLa suite (un) est constante.\nPour connaître les variations de la suite (un), il faut donc déterminer le signe de u1 − u0, c’est-à-dire le\nsigne de Arctan(u0) − u0.\nOn pose alors g(x) = Arctanx − x et on étudie le signe de la fonction g.\n−x2\nOn a ∀x ∈ R, g′(x) =\n1 + x2 et donc ∀ x ∈ R∗, g′(x) < 0.\nDonc g est strictement décroissante sur R et comme g(0) = 0 alors :\n∀x ∈ ]0, +∞[, g(x) < 0 et ∀x ∈ ]−∞, 0[, g(x) > 0.\nOn a donc trois cas suivant le signe de x0 :\n- Si x0 > 0, la suite(un) est strictement décroissante.\n- Si x0 = 0, la suite (un) est constante.\n- Si x0 < 0, la suite(un) est strictement croissante.\n(b) La fonction g étant strictement décroissante et continue sur R, elle induit une bijection de R sur\ng(R) = R.\n0 admet donc un unique antécédent par g et, comme g(0) = 0, alors 0 est le seul point fixe de f .\nDonc si la suite (un) converge, elle converge vers 0, le seul point fixe de f .\nPremier cas : Si u0 > 0\nL’intervalle ]0, +∞[ étant stable par f , on a par récurrence, ∀n ∈ N, un > 0. Donc la suite (un) est\ndécroissante et minorée par 0, donc elle converge et ce vers 0, unique point fixe de f .\nDeuxième cas : Si u0 < 0\nPar un raisonnement similaire, on prouve que (un) est croissante et majorée par 0, donc elle converge\nvers 0.\nTroisième cas : Si u0 = 0\nLa suite (un) est constante.\nConclusion : ∀ u0 ∈ R, (un) converge vers 0.\n2. Soit h une fonction continue sur R telle que, ∀x ∈ R, h(x) = h(Arctan x).\nSoit x ∈ R.\nConsidérons la suite (un) définie par u0 = x et ∀n ∈ N , un+1 = Arctan(un).\nOn a alors h(x) = h(u0) = h(Arctan(u0)) = h(u1) = h(Arctan(u1)) = h(u2) = . . . .\nPar récurrence, on prouve que, ∀n ∈ N, h(x) = h(un).\nDe plus\nlim\nh(un) = h(0) par convergence de la suite (un) vers 0 et par continuité de h.\nn→+∞\nOn obtient ainsi : h(x) = h(0) et donc h est une fonction constante.\n\nRéciproquement, toutes les fonctions constantes conviennent.\nConclusion : Seules les fonctions constantes répondent au problème.",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 43 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Suites numériques",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "43",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-43",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 43, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Pour chacune des séries entières de la variable réelle suivantes, déterminer le rayon…",
+    "statement": "Pour chacune des séries entières de la variable réelle suivantes, déterminer le rayon de convergence et calculer la\nsomme de la série entière sur l’intervalle ouvert de convergence :\n3nx2n\n∑\n1.\n.\nn\nn⩾1\n{ a2n = 4n\n∑\nanxn avec\n2.\na2n+1 = 5n+1",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 47 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Séries entières",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "47",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-47",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 47, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Montrer que la suite de fonctions (Pnf ) converge uniformément sur le segment [0, 1]…",
+    "statement": "C 0 ([0, 1] , R) désigne l’espace vectoriel des fonctions continues sur [0, 1] à valeurs dans R.\n∫ 1\nSoit f ∈ C 0 ([0, 1] , R) telle que : ∀n ∈ N,\ntnf (t) dt = 0.\n\n1. Énoncer le théorème de Weierstrass d’approximation par des fonctions polynomiales.\n2. Soit (Pn) une suite de fonctions polynomiales convergeant uniformément sur le segment [0, 1] vers f .\n(a) Montrer que la suite de fonctions (Pnf ) converge uniformément sur le segment [0, 1] vers f 2.\n∫ 1\n∫ 1\nf 2(t) dt = lim\n(b) Démontrer que\nPn(t)f (t)dt.\nn→+∞\n\n∫ 1\n(c) Calculer\nPn (t) f (t) dt.\n\n3. En déduire que f est la fonction nulle sur le segment [0, 1] .",
+    "correction": "1. Toute fonction f continue sur un segment [a, b] et à valeurs réelles ou complexes est limite uniforme sur ce\nsegment d’une suite de fonctions polynomiales.\n2. On pose : ∀f ∈ C 0 ([0, 1] , R), N∞(f ) = sup\n|f (t)|.\nt∈[0,1]\n(a) f et Pn étant continues sur [0, 1],\n∀t ∈ [0, 1], |Pn(t)f (t) − f 2(t)| = |f (t)||Pn(t) − f (t)| ⩽ N∞(f )N∞(Pn − f ).\nOn en déduit que N∞(Pnf − f 2) ⩽ N∞(f )N∞(Pn − f )\n(1)\nOr (Pn) converge uniformément vers f sur [0, 1] donc\nlim\nN∞(Pn − f ) = 0.\nn→+∞\nN∞(Pnf − f 2) = 0.\nDonc, d’après (1),\nlim\nn→+∞\nDonc (Pnf ) converge uniformément sur [0, 1] vers f 2.\n(b) D’après la question précédente, (Pnf ) converge uniformément sur le segment [0, 1] vers f 2.\nDe plus, ∀n ∈ N, Pnf est continue sur [0, 1].\nDonc, d’après le théorème d’intégration d’une limite uniforme de fonctions continues,\n∫ 1\n∫ 1\n∫ 1\nf 2(t) dt.\nlim\nPn(t)f (t)dt =\nlim\n(Pn(t)f (t))dt =\nn→+∞\nn→+∞\n\ndn∑\n(c) Pour tout entier naturel n, Pn ∈ R[X] donc il existe un entier naturel dn tel que Pn =\nan,k X k où les\nk=0\nan,k sont des réels.\nPar linéarité de l’intégrale, on a :\n( dn∑\n)\n( dn∑\n)\ndn∑\n∫ 1\n∫ 1\n∫ 1\n∫ 1\nan,k tk\nan,k tk f (t)\ntkf (t)dt.\nPn(t)f (t)dt =\nf (t)dt =\ndt =\nan,k\n\nk=0\nk=0\nk=0\n∫ 1\n∫ 1\nOr, par hypothèse, ∀k ∈ N,\ntkf (t) dt = 0, donc\nPn(t)f (t)dt = 0.\n\n∫ 1\nf 2(t) dt = 0.\n3. D’après les questions 2.(b) et 2.(c), on a\n\nOr f 2 est positive et continue sur [0, 1], donc f 2 est nulle sur [0, 1] et donc f est nulle sur [0, 1].",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 48 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Suites et séries de fonctions",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "48",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-48",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 48, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que F est définie et continue sur ]0; +∞[",
+    "statement": "∫ +∞\ne−2 t\nOn considère la fonction F : x ↦\ndt.\nx + t\n\n1. Prouver que F est définie et continue sur ]0; +∞[.\n2. Prouver que x ↦ xF (x) admet une limite en +∞ et déterminer la valeur de cette limite.\n3. Déterminer un équivalent, au voisinage de +∞, de F (x).",
+    "correction": "{ ]0; +∞[×[0; +∞[ −→ R\n1. Notons f :\n↦ e−2 t\n(x, t)\nx+t\n(a) ∀x ∈]0; +∞[, t ↦ f (x, t) est continue par morceaux sur [0; +∞[.\ne−2 t\n(b) ∀t ∈ [0; +∞[, x ↦ f (x, t) =\nest continue sur ]0; +∞[.\nx + t\n(c) Soit [a, b] un segment de ]0; +∞[.\n∀x ∈ [a, b], ∀t ∈ [0; +∞[, |f (x, t)| ⩽ 1\n\ne−2 t et φ : t ↦\ne−2 t est continue par morceaux, positive et\na\na\nintégrable sur [0; +∞[.\n( 1\n)\nt2φ(t) = 0, donc φ(t) = o\nEn effet,\nlim\n.\nt2\nt→+∞\nt→+∞\nDonc φ est intégrable sur [1, +∞[, donc sur [0; +∞[ .\nOn en déduit que, d’après le théorème de continuité des intégrales à paramètres,\n∫ +∞\ne−2 t\nF : x ↦\ndt est définie et continue sur ]0; +∞[.\nx + t\n\n∫ +∞\nx\ne−2 tdt.\n2. ∀ x ∈ ]0; +∞[, xF (x) =\nx + t\n\nPosons ∀ x ∈ ]0; +∞[, ∀ t ∈ [0; +∞[, hx(t) = x\nx+t e−2 t.\ni) ∀ x ∈ ]0; +∞[, t ↦ hx(t) est continue par morceaux sur [0, +∞[.\nhx(t) = e−2 t.\nii) ∀t ∈ [0; +∞[,\nlim\nx→+∞\nLa fonction h : t ↦ e−2 t est continue par morceaux sur [0; +∞[.\niii) ∀ x ∈ ]0; +∞[, ∀t ∈ [0; +∞[, |hx(t)| ⩽ e−2 t et t ↦ e−2 t est continue par morceaux, positive et intégrable\nsur [0; +∞[.\nDonc, d’après l’extension du théorème de convergence dominée à (hx)x∈]0;+∞[,\n∫ +∞\n∫ +∞\n∫ +∞\n\ne−2 tdt =\nlim\nhx(t)dt =\nh(t)dt =\n.\n\nx→+∞\n\nxF (x) = 1\nConclusion :\nlim\n2 .\nx→+∞\n2 , donc F (x) ∼\nxF (x) = 1\n\n3. D’après 2.,\nlim\n2 x .\nx→+∞\nx→+∞",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 50 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Intégration",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "50",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-50",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 50, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Montrer que la série ∑ converge",
+    "statement": "(2n)!\n1. Montrer que la série ∑\nconverge.\n(n!)224n(2n + 1)\nOn se propose de calculer la somme de cette série.\n\n√\n2. Donner le développement en série entière en 0 de t ↦\nen précisant le rayon de convergence.\n1 − t\nRemarque : dans l’expression du développement, on utilisera la notation factorielle.\n3. En déduire le développement en série entière en 0 de x ↦ Arcsin x ainsi que son rayon de convergence.\n+∞\n(2n)!\n∑\n4. En déduire la valeur de\n.\n(n!)224n(2n + 1)\nn=0",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 51 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Séries entières",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "51",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-51",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 51, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Exercice d'oral 52",
+    "statement": "Soit α ∈ R.\n\ny4\n\nsi (x, y) ̸= (0, 0)\nOn considère l’application définie sur R2 par f (x, y) =\nx2 + y2 − xy\n\nα\nsi (x, y) = (0, 0).\n1. Prouver que : ∀(x, y) ∈ R2, x2 + y2 − xy ⩾ 1\n(x2 + y2).\n\n2. (a) Justifier que le domaine de définition de f est bien R2.\n(b) Déterminer α pour que f soit continue sur R2.\n3. Dans cette question, on suppose que α = 0.\n∂f\n∂f\nsur R2 \\ {(0, 0)} et les calculer.\n(a) Justifier l’existence de\net\n∂x\n∂y\n∂f\n∂f\n(b) Justifier l’existence de\n(0, 0) et\n(0, 0) et donner leur valeur.\n∂x\n∂y\n(c) f est-elle de classe C1 sur R2 ?",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 52 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Calcul différentiel",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "52",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-52",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 52, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que F est une partie fermée de E pour la norme || ||∞",
+    "statement": "On note E l’espace vectoriel des applications continues sur [0, 1] à valeurs dans R.\n∫ 1\nOn pose : ∀f ∈ E, ||f ||∞ = sup\n|f (t)| et ||f ||1 =\n|f (t)|dt.\nt∈[0,1]\n\n1. Les normes || ||∞ et || ||1 sont-elles équivalentes ? Justifier.\n2. Dans cette question, on munit E de la norme || ||∞.\n{ E −→ R\n(a) Soit u :\nf\n↦ f (0)\nProuver que u est une application continue sur E.\n(b) On pose F = {f ∈ E / f (0) = 0}.\nProuver que F est une partie fermée de E pour la norme || ||∞.\n3. Dans cette question, on munit E de la norme || ||1.\n{ [0, 1] −→ R\nSoit c :\nx\n↦ 1\n\n0 ⩽ x ⩽ 1\n\nnx si\nn\nOn pose : ∀n ∈ N∗, fn(x) =\n\n< x ⩽ 1\n\nsi\nn\n(a) Soit n ∈ N∗. Calculer ||fn − c||1.\n(b) On pose F = {f ∈ E / f (0) = 0}.\nOn note ¯F l’adhérence de F .\nProuver que c ∈ ¯F .\nF est-elle une partie fermée de E pour la norme || ||1 ?",
+    "correction": "1. Posons ∀n ∈ N, ∀x ∈ [0, 1], fn(x) = xn.\n||fn||∞\n\n(fn) est une suite à valeurs dans E et ∀n ∈ N,\n=\n= n + 1.\n\n||fn||1\nn+1\n||fn||∞\nDonc\nlim\n= +∞.\n||fn||1\nn→+∞\nDonc || ||∞ et || ||1 ne sont pas équivalentes.\n2. (a) u est clairement linéaire.\nDe plus, ∀f ∈ E, |u(f )| = |f (0)| ⩽ 1.||f ||∞.\nDonc u est continue sur E muni de la norme || ||∞.\n(b) On remarque que F = u−1 ({0}).\nDe plus, {0} est un fermé de R.\nDonc F est l’image réciproque d’un fermé, par une application continue sur E, muni de la norme || ||∞.\nDonc F est un fermé de E pour la norme || ||∞.\n3. (a) Soit n ∈ N.\n∫ 1\n∫ 1\n∫ 1\nn\n||fn − c||1 =\n|fn(t) − c(t)|dt =\n|fn(t) − c(t)|dt +\n|fn(t) − c(t)|dt.\n\nn\nOr, ∀t ∈ [ 1\nn , 1], fn(t) − c(t) = 0.\n∫ 1\nn\nDonc ||fn − c||1 =\n(1 − nt) dt.\n\nDonc ||fn − c||1 =\n.\n2n\n\n[\n[\n] 1\n]\n\n(b) ∀n ∈ N∗, fn est continue sur\n0,\net\n, 1\n.\nn\nn\nDe plus, ∀n ∈ N∗,\nfn(x) = 1 = fn( 1\nn ) donc fn continue en 1\nlim\nfn(x) = lim\nn .\nn )+\nn )−\nx−→( 1\nx−→( 1\nDonc ∀n ∈ N∗, fn est continue sur [0, 1].\nDe plus, ∀n ∈ N∗, fn(0) = 0.\nDonc (fn) est une suite à valeurs dans F .\nRemarque : le tracé de la courbe de fn peut suffire à justifier la continuité de fn.\n\nD’après 3.(a), ||fn − c||1 =\n.\n2n\nDonc\nlim\n||fn − c||1 = 0.\nn−→+∞\nDonc la suite (fn), à valeurs dans F , converge vers c ( au sens de la norme || ||1).\nDonc c ∈ F .\nOr c /∈ F (car c(0) = 1 ̸= 0).\nDonc F ̸= F .\nDonc F n’est pas un fermé pour la norme || ||1.",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 1 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Intégration",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "1",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-1",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 1, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Exercice d'oral 2",
+    "statement": "3x + 7\nOn pose f (x) =\n(x + 1)2 .\n1. Décomposer f (x) en éléments simples.\n2. En déduire que f est développable en série entière sur un intervalle du type ]−r, r[ (où r > 0).\nPréciser ce développement en série entière et déterminer, en le justifiant, le domaine de validité D de ce\ndéveloppement en série entière.\n3. (a) Soit ∑ anxn une série entière de rayon R > 0.\n+∞\n∑\nanxn.\nOn pose, pour tout x ∈ ]−R, R[, g(x) =\nn=0\nExprimer, pour tout entier p, en le prouvant, ap en fonction de g(p)(0).\n(b) En déduire le développement limité de f à l’ordre 3 au voisinage de 0.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 2 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Séries entières",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "2",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-2",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 2, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer, dans le cas général, la formule de Leibniz, utilisée dans la question…",
+    "statement": "1. On pose g(x) = e2x et h(x) =\n.\n1 + x\nCalculer, pour tout entier naturel k, la dérivée d’ordre k des fonctions g et h sur leurs ensembles de\ndéfinitions respectifs.\ne2x\n2. On pose f (x) =\n.\n1 + x\nEn utilisant la formule de Leibniz concernant la dérivée nième d’un produit de fonctions, déterminer, pour\ntout entier naturel n et pour tout x ∈ R\\ {−1}, la valeur de f (n)(x).\n3. Démontrer, dans le cas général, la formule de Leibniz, utilisée dans la question précédente.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 3 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Dérivation",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "3",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-3",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 3, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que, si f ′ admet une limite finie en x0, alors f est dérivable en x0 et f…",
+    "statement": "1. Énoncer le théorème des accroissements finis.\n2. Soit f : [a, b] −→ R et soit x0 ∈ ]a, b[.\nOn suppose que f est continue sur [a, b] et que f est dérivable sur ]a, x0[ et sur ]x0, b[.\nDémontrer que, si f ′ admet une limite finie en x0, alors f est dérivable en x0 et f ′(x0) = lim\nf ′(x).\nx→x0\n3. Prouver que l’implication : ( f est dérivable en x0) =⇒ (f ′ admet une limite finie en x0) est fausse.\n\nIndication : on pourra considérer la fonction g définie par : g(x) = x2 sin\nsi x ̸= 0 et g(0) = 0.\nx",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 4 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Dérivation",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "4",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-4",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 4, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que si lim = l, alors la série un converge",
+    "statement": "Soit (un)n∈N une suite de réels strictement positifs et l un réel positif strictement inférieur à 1.\nun+1\n∑\n1. Démontrer que si\nlim\n= l, alors la série\nun converge.\nun\nn→+∞\nun+1\nIndication : écrire, judicieusement, la définition de\nlim\n= l, puis majorer, pour n assez grand, un\nun\nn→+∞\npar le terme général d’une suite géométrique.\nn!\n∑\n2. Quelle est la nature de la série\nnn ?\nn⩾1",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 6 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Séries numériques",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "6",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-6",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 6, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que la suite de fonctions (fn) converge uniformément sur [0, 1]",
+    "statement": "On pose fn (x) = (x2 + 1) nex + xe−x\n.\nn + x\n1. Démontrer que la suite de fonctions (fn) converge uniformément sur [0, 1].\n\n∫\n(x2 + 1) nex + xe−x\n2. Calculer\nlim\ndx.\nn + x\nn→+∞",
+    "correction": "fn(x) = (x2 + 1)ex.\n1. Pour x ∈ [0, 1],\nlim\nn→+∞\nLa suite de fonctions (fn) converge simplement vers f : x ↦ (x2 + 1)ex sur [0, 1].\nx(e−x − ex)\nOn a ∀ x ∈ [0, 1], fn(x) − f (x) = (x2 + 1)\n,\nn + x\net donc : ∀x ∈ [0, 1], |fn(x) − f (x)| ⩽ 2e\n( majoration indépendante de x).\nn\nDonc ||fn − f ||∞ ⩽ 2e\n.\nn\n2e\nDe plus,\nlim\n= 0 donc la suite de fonctions (fn) converge uniformément vers f sur [0, 1].\nn\nn→+∞\n2. Par convergence uniforme sur le segment [0, 1] de cette suite de fonctions continues sur [0, 1], on peut\nintervertir limite et intégrale.\n∫ 1\n∫ 1\nnex + xe−x\n(x2 + 1)\n(x2 + 1)ex dx.\nOn a donc\nlim\ndx =\nn + x\nn→+∞\n\n∫ 1\n(x2 + 1)ex dx = 2e − 3.\nPuis, en effectuant deux intégrations par parties, on trouve",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 10 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Suites et séries de fonctions",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "10",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-10",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 10, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que la suite de fonctions (fn) ne converge pas uniformément vers f sur X",
+    "statement": "1. Soit X une partie de R, (fn) une suite de fonctions de X dans R convergeant simplement vers une fonction\nf .\nOn suppose qu’il existe une suite (xn)n∈N d’éléments de X telle que la suite (fn(xn) − f (xn))n∈N ne tende\npas vers 0.\nDémontrer que la suite de fonctions (fn) ne converge pas uniformément vers f sur X.\nsin (nx)\n2. Pour tout x ∈ R, on pose fn(x) =\n1 + n2x2 .\n(a) Étudier la convergence simple de la suite (fn).\n(b) Étudier la convergence uniforme de la suite (fn) sur [a, +∞[ (avec a > 0), puis sur ]0, +∞[.",
+    "correction": "1. Par contraposée :\nsi (fn) converge uniformément vers f alors :\nil existe un entier N tel que ∀n ⩾ N , ∥fn − f ∥∞ = sup\n|fn(x) − f (x)| existe et\nlim\n∥fn − f ∥∞ = 0.\nn→+∞\nx∈X\nOr, ∀ n ∈ N, xn ∈ X donc ∀ n ∈ N, n ⩾ N =⇒ |fn(xn) − f (xn)| ⩽ ∥fn − f ∥∞.\nOr\nlim\n∥fn − f ∥∞ = 0.\nn→+∞\nDonc\nlim\n|fn(xn) − f (xn)| = 0.\nn→+∞\nC’est-à-dire la suite (fn(xn) − f (xn))n∈N converge vers 0.\n2. (a) Soit x ∈ R.\nSi x = 0, alors fn(0) = 0.\nfn(x) = 0 car |fn(x)| ⩽ 1\nSi x ̸= 0, alors\nlim\nn2x2 .\nn→+∞\nDonc la suite (fn) converge simplement vers la fonction f définie par : ∀x ∈ R, f (x) = 0.\n(b) Soit a > 0.\n\n∀ x ∈ [a, +∞[, |fn(x) − f (x)| = |fn(x)| ⩽\n1 + n2a2 (majoration indépendante de x).\n\nDonc ||fn − f ||∞ ⩽\n1 + n2a2 .\n\nDe plus,\nlim\n1 + n2a2 = 0.\nn→+∞\nOn en déduit que la suite de fonctions (fn) converge uniformément vers la fonction f sur [a, +∞[ .\nπ\nOn pose, ∀ n ∈ N∗, xn =\n.\n2n\n\nOn a ∀ n ∈ N∗, xn ∈ ]0, +∞[ et |fn(xn) − f (xn)| =\nqui ne tend pas vers 0 quand n → +∞.\nπ2\n1 +\n\nOn en déduit, d’après 1., que la suite de fonctions (fn) ne converge pas uniformément sur ]0, +∞[.",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 11 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Suites et séries de fonctions",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "11",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-11",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 11, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer que f est continue en x0",
+    "statement": "1. Soit (fn) une suite de fonctions de [a, b] dans R.\nOn suppose que la suite de fonctions (fn) converge uniformément sur [a, b] vers une fonction f , et que, pour\ntout n ∈ N, fn est continue en x0, avec x0 ∈ [a, b].\nDémontrer que f est continue en x0.\n2. On pose : ∀ n ∈ N∗, ∀ x ∈ [0; 1], gn(x) = xn.\nLa suite de fonctions (gn)n∈N∗ converge-t-elle uniformément sur [0; 1] ?",
+    "correction": "1. Soit x0 ∈ [a, b].\nProuvons que f est continue en x0.\nSoit ε > 0.\nPar convergence uniforme, il existe un entier N tel que ∀ n ∈ N, n ⩾ N =⇒ (∀x ∈ [a, b] , |f (x) − fn(x)| ⩽ ε).\nEn particulier pour n = N , on a ∀x ∈ [a, b] , |f (x) − fN (x)| ⩽ ε.\n(*)\nOr la fonction fN est continue en x0 donc ∃ α > 0 tel que :\n∀x ∈ [a, b] , |x − x0| ⩽ α ⇒ |fN (x) − fN (x0)| ⩽ ε.\n(**)\nD’après l’inégalité triangulaire, ∀ x ∈ [a, b],\n|f (x) − f (x0)| ⩽ |f (x) − fN (x)| + |fN (x) − fN (x0)| + |fN (x0) − f (x0)|.\nAlors d’après (*) et (**),\n∀x ∈ [a, b] , |x − x0| ⩽ α ⇒ |f (x) − f (x0)| ⩽ 3ε.\nOn en déduit que f est continue en x0.\n{ 0\nsi x ∈ [0, 1[\n2. La suite (gn)n∈N∗ converge simplement sur [0, 1] vers la fonction g : x ↦\n\nsi x = 1\n∀ n ∈ N∗, gn est continue en 1 alors que g est discontinue en 1.\nD’après la question précédente, on en déduit que (gn)n∈N∗ ne converge pas uniformément vers g sur [0, 1].",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 12 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Suites et séries de fonctions",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "12",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-12",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 12, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Démontrer qu’une partie compacte d’un espace vectoriel normé est une partie fermée de…",
+    "statement": "1. Rappeler, oralement, la définition, par les suites de vecteurs, d’une partie compacte d’un espace vectoriel\nnormé.\n2. Démontrer qu’une partie compacte d’un espace vectoriel normé est une partie fermée de cet espace.\n3. Démontrer qu’une partie compacte d’un espace vectoriel normé est une partie bornée de cet espace.\nIndication : On pourra raisonner par l’absurde.\n4. On se place sur E = R[X] muni de la norme || ||1 définie pour tout polynôme P = a0 + a1X + .... + anX n\nn\n∑\nde E par : ||P ||1 =\n|ai|.\ni=0\n(a) Justifier que S(0, 1) = {P ∈ R[X] / ||P ||1 = 1} est une partie fermée et bornée de E.\n(b) Calculer ||X n − X m||1 pour m et n entiers naturels distincts.\nS(0, 1) est-elle une partie compacte de E ? Justifier.",
+    "correction": "1. Une partie A d’un espace vectoriel normé (E, || ||) est une partie compacte si et seulement si pour toute\nsuite (xn) à valeurs dans A on peut extraire une sous-suite qui converge dans A.\nC’est-à-dire A est une partie compacte si et seulement pour toute suite (xn) à valeurs dans A il existe\nφ : N −→ N strictement croissante telle que (xφ(n)\n) converge vers l ∈ A.\nRemarque : φ : N −→ N étant strictement croissante, on a, par récurrence immédiate, ∀n ∈ N, φ(n) ⩾ n.\n2. Soit (E, || ||) un espace vectoriel normé.\nSoit A une partie compacte de E.\nMontrons que A est une partie fermée de E.\nC’est-à-dire montrons que toute suite à valeurs dans A qui converge, converge dans A.\nSoit (xn) une suite à valeurs dans A telle que (xn) converge vers l.\nA est une partie compacte donc il existe φ : N −→ N strictement croissante telle que (xφ(n)\n) converge vers\nl′ ∈ A. Or, (xn) converge vers l donc (xφ(n)\n) converge vers l ( sous-suite de (xn)).\nPar unicité de la limite, l′ = l.\nOr, l′ ∈ A ,donc l ∈ A.\n3. Soit (E, || ||) un espace vectoriel normé.\nRappel : Soit B une partie de E.\nB est bornée si et seulement si ∃ M ∈ R / ∀x ∈ B, ||x|| ⩽ M .\nSoit A une partie compacte de E.\nMontrons que A est une partie bornée de E.\nRaisonnons par l’absurde.\nSupposons que A soit non bornée.\nC’est-à-dire, ∀M ∈ R, ∃ x ∈ A / ||x|| > M .\nDonc, ∀n ∈ N, ∃xn ∈ A / ||xn|| > n (∗)\n(xn) est une suite à valeurs dans A et A est une partie compacte de E donc il existe φ : N −→ N\nstrictement croissante telle que (xφ(n)\n) converge vers l ∈ A.\nDonc, d’après (∗), ∀n ∈ N,||xφ(n)|| > φ(n).\nOr ∀n ∈ N, φ(n) ⩾ n.\nDonc, ∀n ∈ N, ||xφ(n)|| > n.\nDonc,\nlim\n||xφ(n)|| = +∞.\nn→+∞\nAbsurde car (xφ(n)) converge donc (xφ(n)) est bornée.\n4. Posons S = S(0, 1).\n\n(a) ∀x ∈ S, ||x|| = 1 donc S est bornée.\nE −→ R\nSoit f :\nx\n↦ ||x||\nf est continue sur E.\nOr, S = f −1(1) et {1} est un fermé de R donc S est une partie fermée de E, en tant qu’image\nréciproque par une application continue d’un fermé.\n(b) Soit (m, n) ∈ N2 avec m ̸= n.\n||X n − X m||1 = 2.\nSupposons que S soit une partie compacte de E.\n∀n ∈ N, ||X n||1 = 1, donc (Xn) est une suite à valeurs dans S.\nOr, S est une partie compacte de E, donc il existe φ : N −→ N strictement croissante telle que (X φ(n))\nconverge vers l ∈ S.\n||X φ(n) − X φ(n+1)||1 = ||l − l|| = 0.\nAlors\nlim\nn→+∞\nContredit le fait que : ∀n ∈ N, ||X φ(n) − X φ(n+1)||1 = 2.\nDonc S est non compact.",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 13 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces vectoriels normés et topologie",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "13",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-13",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 13, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Étudier la convergence simple de cette série",
+    "statement": "(−1)nxn\nOn pose : ∀ n ∈ N∗, ∀ x ∈ R, un(x) =\n.\nn\n∑\nOn considère la série de fonctions\nun.\nn⩾1\n1. Étudier la convergence simple de cette série.\nOn note D l’ensemble des x où cette série converge et S(x) la somme de cette série pour x ∈ D.\n2. (a) La fonction S est-elle continue sur D ?\n(b) Étudier la convergence normale, puis la convergence uniforme de cette série sur D.\n(c) Étudier la convergence uniforme de cette série sur [0, 1].",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 18 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Suites et séries de fonctions",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "18",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-18",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 18, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Justifier, oralement, à l’aide du théorème de dérivation terme à terme, que la somme…",
+    "statement": "1. (a) Justifier, oralement, à l’aide du théorème de dérivation terme à terme, que la somme d’une série entière\nde la variable réelle est dérivable sur son intervalle ouvert de convergence.\n∑\n∑\nanxn et la série\nnanxn ont\nRemarque : On pourra utiliser, sans le démontrer, que la série\nmême rayon de convergence.\n(b) En déduire le développement en série entière à l’origine, de la fonction de la variable réelle :\n\nx ↦\n(1 − x)2 .\n2. (a) Donner le développement en série entière à l’origine de la fonction de la variable complexe :\n\nz ↦\n.\n1 − z\n(b) Rappeler le produit de Cauchy de deux séries entières.\n(c) En déduire le développement en série entière à l’origine, de la fonction de la variable complexe :\n\nz ↦\n(1 − z)2 .",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 19 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Séries entières",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "19",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-19",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 19, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Donner la définition du rayon de convergence d’une série entière de la variable complexe",
+    "statement": "1. Donner la définition du rayon de convergence d’une série entière de la variable complexe.\n2. Déterminer le rayon de convergence de chacune des séries entières suivantes :\n∑ (n!)2\nz2n+1.\n(a)\n(2n)!\n∑\nn(−1)n\nzn.\n(b)\n∑\ncos nzn.\n(c)",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 20 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Séries entières",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "20",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-20",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 20, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Que peut-on dire du rayon de convergence de la somme de deux séries entières ?",
+    "statement": "1. Que peut-on dire du rayon de convergence de la somme de deux séries entières ? Le démontrer.\n2. Développer en série entière au voisinage de 0, en précisant le rayon de convergence, la fonction\nf : x ↦ ln (1 + x) + ln (1 − 2x) .\n\nLa série obtenue converge-t-elle pour x =\n? x =\n? x = −\n?\n\nEn cas de convergence, la somme de cette série est-elle continue en ces points ?",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 22 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Séries entières",
+    "tags": [
+      "analyse",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "22",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-22",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 22, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que si P annule u alors toute valeur propre de u est racine de P",
+    "statement": "1. Soit E un K-espace vectoriel (K = R ou C).\nSoit u ∈ L(E). Soit P ∈ K[X].\nProuver que si P annule u alors toute valeur propre de u est racine de P .\n2. Soit n ∈ N tel que n ⩾ 2. On pose E = Mn (R).\n{ 0 si i = j\nSoit A = (ai,j)1⩽i⩽n\nla matrice de E définie par ai,j =\n.\n1 si i ̸= j\n1⩽j⩽n\nSoit u ∈ L (E) défini par : ∀ M ∈ E, u(M ) = M + tr(M )A.\n(a) Prouver que le polynôme X 2 − 2X + 1 est annulateur de u.\n(b) u est-il diagonalisable ?\nJustifier votre réponse en utilisant deux méthodes (l’une avec, l’autre sans l’aide de la question 1.).",
+    "correction": "n\n∑\nakX k ∈ K[X].\n1. Soit u ∈ L(E). Soit P =\nk=0\nOn suppose que P annule u.\nSoit λ une valeur propre de u.\nProuvons que P (λ) = 0.\nλ valeur propre de u donc : ∃ x ∈ E\\ {0} / u(x) = λx.\nOn prouve alors par récurrence que : ∀ k ∈ N, uk(x) = λkx.\nn\nn\n∑\n∑\nakuk(x) =\nakλkx = P (λ) x.\nAinsi : P (u)(x) =\nk=0\nk=0\nOr P (u) = 0 donc P (u)(x) = 0 donc P (λ)x = 0.\nOr x ̸= 0 donc P (λ) = 0.\n2. Soit n ∈ N tel que n ⩾ 2. On pose E = Mn (R).\n{ 0 si i = j\nSoit A = (ai,j)1⩽i⩽n\nla matrice de E définie par ai,j =\n.\n1 si i ̸= j\n1⩽j⩽n\n(a) Posons P = X 2 − 2X + 1.\nProuvons que P est annulateur de u c’est-à-dire que P (u) = 0.\nSoit M ∈ E.\nu2(M ) = u ◦ u(M ) = (M + tr(M )A) + tr (M + tr(M )A) A.\nC’est-à-dire, par linéarité de la trace, u2(M ) = M + tr(M )A + tr(M )A + tr(M )tr(A)A.\nOr tr(A) = 0 donc u2(M ) = M + 2tr(M )A.\nAinsi u2(M ) − 2u(M ) + Id(M ) = M + 2tr(M )A − 2M − 2tr(M )A + M = 0.\nOn a donc prouvé que u2 − 2u + Id = 0.\nC’est-à-dire P est annulateur de u.\n(b) Notons In la matrice unité de E.\nPremière méthode :\nNotons Spec(u) le spectre de u.\nP = (X − 1)2 et P est annulateur de u.\nDonc d’après 1., Spec(u) ⊂ {1}.\nDe plus A ̸= 0 et u(A) = A donc Spec(u) = {1}.\nAinsi, si u était diagonalisable alors on aurait E = Ker (u − Id).\nC’est-à-dire, on aurait u = Id.\nOr u(In) ̸= In (puisque tr(In) ̸= 0) donc u ̸= Id.\nOn obtient donc une contradiction.\nOn en déduit que u n’est pas diagonalisable.\nDeuxième méthode :\n\nNotons πu le polynôme minimal de u.\nP = (X − 1)2 est un polynôme annulateur de u donc πu|P .\nSi u était diagonalisable alors πu serait scindé à racines simples.\nOn aurait donc πu = X − 1.\nCe qui impliquerait que u = Id car Pm est également un polynôme annulateur de u.\nOr u(In) ̸= In (puisque tr(In) ̸= 0) donc u ̸= Id.\nOn obtient donc une contradiction.\nOn en déduit que u n’est pas diagonalisable.",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 88 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Réduction des endomorphismes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "88",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-88",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 88, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Montrer que Φ : K2[X] −→ K3 est un isomorphisme d’espaces vectoriels",
+    "statement": "K désigne le corps des réels ou celui des complexes.\nSoient a1, a2, a3 trois scalaires distincts donnés de K.\n1. Montrer que Φ : K2[X] −→ K3\nest un isomorphisme d’espaces vectoriels.\n↦ (P (a1), P (a2), P (a3))\nP\n2. On note (e1, e2, e3) la base canonique de K3 et on pose ∀k ∈ {1, 2, 3}, Lk = Φ−1(ek).\n(a) Justifier que (L1, L2, L3) est une base de K2[X].\n(b) Exprimer les polynômes L1, L2 et L3 en fonction de a1, a2 et a3.\n3. Soit P ∈ K2[X]. Déterminer les coordonnées de P dans la base (L1, L2, L3).\n4. Application : on se place dans R2 muni d’un repère orthonormé et on considère les trois points\nA(0, 1), B(1, 3), C(2, 1).\nDéterminer une fonction polynomiale de degré 2 dont la courbe passe par les points A, B et C.",
+    "correction": "1. Par linéarité de l’évaluation P ↦ P (a) (où a est un scalaire fixé), Φ est linéaire.\nSoit P ∈ K2[X] tel que Φ(P ) = 0.\nAlors P (a1) = P (a2) = P (a3) = 0, donc P admet trois racines distinctes.\nOr P est de degré inférieur ou égal à 2 ; donc P est nul.\nAinsi, Ker(Φ) = {0} i.e. Φ est injective.\nEnfin, dim (K2[X]) = dim (K3) = 3 donc Φ est bijective.\nPar conséquent, Φ est un isomorphisme d’espaces vectoriels de K2 [X] dans K3.\n2. (a) Φ est un isomorphisme donc l’image réciproque d’une base est une base.\nAinsi, (L1, L2, L3) est une base de K2[X].\n(b) L1 ∈ R2[X] et vérifie Φ(L1) = (1, 0, 0) i.e. (L1(a1), L1(a2), L1(a3)) = (1, 0, 0).\nDonc, comme a2 et a3 sont distincts, (X − a2)(X − a3) |L1.\nOr deg L1 ⩽ 2, donc ∃k ∈ K tel que L1 = k(X − a2)(X − a3).\n\nLa valeur L1(a1) = 1 donne k =\n.\n(a1 − a2)(a1 − a3)\n(X − a2)(X − a3)\nDonc L1 =\n.\n(a1 − a2)(a1 − a3)\n(X − a1)(X − a3)\n(X − a1)(X − a2)\nUn raisonnement analogue donne L2 =\net L3 =\n.\n(a2 − a1)(a2 − a3)\n(a3 − a1)(a3 − a2)\n3. (L1, L2, L3) base de K2[X] donc ∃(λ1, λ2, λ3) ∈ K3 tel que P = λ1L1 + λ2L2 + λ3L3.\nPar construction, ∀(i, j) ∈ {1, 2, 3}2, Li(aj) = δij donc P (aj) = λj.\nAinsi, P = P (a1)L1 + P (a2)L2 + P (a3)L3.\n4. On pose a1 = 0, a2 = 1 et a3 = 2. Ces trois réels sont bien distincts.\nOn cherche P ∈ R2[X] tel que (P (a1), P (a2), P (a3)) = (1, 3, 1).\nPar bijectivité de Φ et d’après 3. , l’unique solution est le polynôme P = 1.L1 + 3.L2 + 1.L3.\n(X − 1)(X − 2)\nX(X − 2)\nX(X − 1)\nOn a L1 =\n, L2 =\net L3 =\n.\n\n−1\n\nDonc P = −2X 2 + 4X + 1.",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 90 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces préhilbertiens et euclidiens",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "90",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-90",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 90, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Montrer que A n’admet qu’une seule valeur propre que l’on déterminera",
+    "statement": "2 −1\n ∈ M3(R).\n−1\n3 −1\nOn considère la matrice A =\n\n−1\n\n1. Montrer que A n’admet qu’une seule valeur propre que l’on déterminera.\n2. La matrice A est-elle inversible ? Est-elle diagonalisable ?\n3. Déterminer, en justifiant, le polynôme minimal de A.\n4. Soit n ∈ N. Déterminer le reste de la division euclidienne de X n par (X − 1)2 et en déduire la valeur de\nAn.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 91 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Réduction des endomorphismes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "91",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-91",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 91, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que ⟨ , ⟩ est un produit scalaire sur E",
+    "statement": "Soit n ∈ N∗. On considère E = Mn(R) l’espace vectoriel des matrices carrées d’ordre n.\nOn pose : ∀(A, B) ∈ E2, ⟨A , B⟩ = tr(AT B) où tr désigne la trace et AT désigne la transposée de la matrice A.\n1. Prouver que ⟨ , ⟩ est un produit scalaire sur E.\n2. On note Sn(R) l’ensemble des matrices symétriques de E.\nUne matrice A de E est dite antisymétrique lorsque AT = −A.\nOn note An(R) l’ensemble des matrices antisymétriques de E.\nOn admet que Sn(R) et An(R) sont des sous-espaces vectoriels de E.\n(a) Prouver que E = Sn(R) ⊕ An(R).\n(b) Prouver que An(R)⊥ = Sn(R).\n3. Soit F l’ensemble des matrices diagonales de E.\nDéterminer F ⊥.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 92 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Espaces préhilbertiens et euclidiens",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "92",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-92",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 92, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Déterminer les valeurs propres de u",
+    "statement": "Soit E un espace vectoriel réel de dimension finie n > 0 et u ∈ L(E) tel que u3 + u2 + u = 0.\nOn notera Id l’application identité sur E.\n1. Montrer que Imu ⊕ Keru = E.\n2. (a) Énoncer le lemme des noyaux pour deux polynômes.\n(b) En déduire que Imu = Ker(u2 + u + Id).\n3. On suppose que u est non bijectif.\nDéterminer les valeurs propres de u. Justifier la réponse.\nRemarque : les questions 1. , 2. et 3. peuvent être traitées indépendamment les unes des autres.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 93 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Polynômes",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "93",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-93",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 93, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que : (a|c et b|c) ⇐⇒ ab|c",
+    "statement": "{ x ≡ 5\n[6]\n1. En raisonnant par l’absurde, montrer que le système (S) :\nn’a pas de solution x\nx ≡ 4\n[8]\nappartenant à Z.\n2. (a) Énoncer le théorème de Bézout dans Z.\n(b) Soit a et b deux entiers naturels premiers entre eux.\nSoit c ∈ Z.\nProuver que : (a|c et b|c) ⇐⇒ ab|c.\n\nx ≡ 6\n[17]\n\ndans lequel l’inconnue x appartient à Z.\nx ≡ 5\n[16]\n3. On considère le système (S) :\n\nx ≡ 4\n[15]\n(a) Déterminer une solution particulière x0 de (S) dans Z.\n(b) Déduire des questions précédentes la résolution dans Z du système (S).\nOn exprimera les solutions en fonction de la solution particulière x0.",
+    "correction": "1. Par l’absurde on suppose que x ∈ Z est solution.\nAlors x ≡ 5 [6] donne que x est impair puisque qu’il existe k ∈ Z tel que x = 6k + 5.\nDe même x ≡ 4 [8] donne que x est pair. D’où l’absurdité.\n2. (a) Théorème de Bézout :\nSoit (a, b) ∈ Z2.\na ∧ b = 1 ⇐⇒ ∃(u, v) ∈ Z2 / au + bv = 1.\n(b) Soit (a, b) ∈ N2. On suppose que a ∧ b = 1.\nSoit c ∈ Z.\nProuvons que ab|c =⇒ a|c et b|c.\nSi ab|c alors ∃k ∈ Z / c = kab.\nAlors, c = (kb)a donc a|c et c = (ka)b donc b|c.\nProuvons que (a|c et b|c) =⇒ ab|c.\na ∧ b = 1 donc ∃(u, v) ∈ Z2 / au + bv = 1.\n(1)\nDe plus a|c donc ∃k1 ∈ Z / c = k1a.\n(2)\nDe même, b|c donc ∃k2 ∈ Z / c = k2b.\n(3)\nOn multiplie (1) par c et on obtient cau + cbv = c.\nAlors, d’après (2) et (3), (k2b)au + (k1a)bv = c, donc (k2u + k1v)(ab) = c et donc ab|c.\nOn a donc prouvé que (a|c et b|c) ⇐⇒ ab|c.\n3. (a) En observant le système (S), on peut remarquer que x0 = −11 est une solution particulière.\n\nx0 = 6\n[17]\n\nx0 ≡ 5\n[16]\n(b) x0 solution particulière de (S) donc\n.\n\nx0 ≡ 4\n[15]\n\nx − x0 ≡ 0\n[17]\n\nx − x0 ≡ 0\n[16]\nOn en déduit que x solution de (S) si et seulement si\n\nx − x0 ≡ 0\n[15]\nc’est-à-dire x solution de (S) ⇐⇒ (17|x − x0 et 16|x − x0 et 15|x − x0).\nOr 17 ∧ 16 = 1 donc d’après 2.(b), x solution de (S) ⇐⇒ (17 × 16|x − x0 et 15|x − x0).\nDe même (17 × 16) ∧ 15 = 1 donc d’après 2.(b), x solution de (S) ⇐⇒ 17 × 16 × 15|x − x0.\nDonc l’ensemble des solutions de (S) est {x0 + 17 × 16 × 15k, k ∈ Z} = {−11 + 4080k, k ∈ Z}.\n\nBANQUE PROBABILITÉS",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 94 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Arithmétique",
+    "tags": [
+      "algèbre",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "94",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-94",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 94, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Déterminer la loi de X, son espérance et sa variance",
+    "statement": "Une urne contient deux boules blanches et huit boules noires.\n1. Un joueur tire successivement, avec remise, cinq boules dans cette urne.\nPour chaque boule blanche tirée, il gagne 2 points et pour chaque boule noire tirée, il perd 3 points.\nOn note X la variable aléatoire représentant le nombre de boules blanches tirées.\nOn note Y le nombre de points obtenus par le joueur sur une partie.\n(a) Déterminer la loi de X, son espérance et sa variance.\n(b) Déterminer la loi de Y , son espérance et sa variance.\n2. Dans cette question, on suppose que l’on tire simultanément cinq boules dans l’urne.\n(a) Déterminer la loi de X.\n(b) Déterminer la loi de Y .",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 95 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Probabilités",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "95",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-95",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 95, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que l’intervalle ]−1, 1[ est inclus dans l’ensemble de définition de GX",
+    "statement": "Soit X une variable aléatoire à valeurs dans N, de loi de probabilité donnée par : ∀n ∈ N, P (X = n) = pn.\n+∞\n∑\npntn.\nLa fonction génératrice de X est notée GX et elle est définie par GX (t) = E[tX ] =\nn=0\n1. Prouver que l’intervalle ]−1, 1[ est inclus dans l’ensemble de définition de GX .\n2. Soit X1 et X2 deux variables aléatoires indépendantes à valeurs dans N.\nOn pose S = X1 + X2.\nDémontrer que ∀t ∈ ]−1, 1[, GS(t) = GX1(t)GX2 (t) :\n(a) en utilisant le produit de Cauchy de deux séries entières.\n(b) en utilisant uniquement la définition de la fonction génératrice.\nRemarque : on admettra, pour la question suivante, que ce résultat est généralisable à n variables\naléatoires indépendantes à valeurs dans N.\n3. Un sac contient quatre boules : une boule numérotée 0, deux boules numérotées 1 et une boule numérotée 2.\nSoit n ∈ N∗. On effectue n tirages successifs, avec remise, d’une boule dans ce sac.\nOn note Sn la somme des numéros tirés.\nSoit t ∈ ]−1, 1[.\nDéterminer GSn (t) puis en déduire la loi de Sn.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 96 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Probabilités",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 4,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "96",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-96",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 96, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Déterminer les lois marginales de X et de Y",
+    "statement": "Soit (X, Y ) un couple de variables aléatoires à valeurs dans N2 dont la loi est donnée par :\n( 1\n)j+k\n(j + k)\n\n∀(j, k) ∈ N2, P ((X, Y ) = (j, k)) =\n.\ne j! k!\n1. Déterminer les lois marginales de X et de Y .\nLes variables X et Y sont-elles indépendantes ?\n2. Prouver que E [2X+Y ] existe et la calculer.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 97 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Probabilités",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "97",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-97",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 97, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que X admet une espérance, puis la calculer",
+    "statement": "Soit λ ∈ ]0, +∞[.\nSoit X une variable aléatoire discrète à valeurs dans N∗.\nλ\nOn suppose que ∀n ∈ N∗, P (X = n) =\n.\nn(n + 1)(n + 2)\n\n1. Décomposer en éléments simples la fraction rationnelle R définie par R(x) =\n.\nx(x + 1)(x + 2)\n2. Calculer λ.\n3. Prouver que X admet une espérance, puis la calculer.\n4. X admet-elle une variance ? Justifier.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 100 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Probabilités",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "100",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-100",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 100, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Exprimer, en le justifiant, an+1 en fonction de an, bn et cn",
+    "statement": "Dans une zone désertique, un animal erre entre trois points d’eau A, B et C.\nÀ l’instant t = 0, il se trouve au point A.\nQuand il a épuisé l’eau du point où il se trouve, il part avec équiprobabilité rejoindre l’un des deux autres points\nd’eau.\nL’eau du point qu’il vient de quitter se régénère alors.\nSoit n ∈ N.\nOn note An l’événement «l’animal est en A après son nième trajet».\nOn note Bn l’événement «l’animal est en B après son nième trajet».\nOn note Cn l’événement «l’animal est en C après son nième trajet».\nOn pose P (An) = an, P (Bn) = bn et P (Cn) = cn.\n1. (a) Exprimer, en le justifiant, an+1 en fonction de an, bn et cn.\n(b) Exprimer, de même, bn+1 et cn+1 en fonction de an, bn et cn.\n\n2. On considère la matrice A =\n.\n\n(a) Justifier, sans calcul, que la matrice A est diagonalisable.\n\n(b) Prouver que −\nest valeur propre de A et déterminer le sous-espace propre associé.\n\n(c) Déterminer une matrice P inversible et une matrice D diagonale de M3(R) telles que D = P −1AP .\nRemarque : le calcul de P −1 n’est pas demandé.\n3. Montrer comment les résultats de la question 2. peuvent être utilisés pour calculer an, bn et cn en fonction\nde n.\nRemarque : aucune expression finalisée de an, bn et cn n’est demandée.",
+    "correction": "1. (a) (An, Bn, Cn) est un système complet d’événements donc d’après la formule des probabilités totales :\nP (An+1) = P (An+1|An)P (An) + P (An+1|Bn)P (Bn) + P (An+1|Cn)P (Cn).\ndonc an+1 = 0an + 1\n2 bn + 1\n2 cn c’est-à-dire an+1 = 1\n2 bn + 1\n2 cn.\n(b) De même, bn+1 = 1\n2 an + 1\n2 cn et cn+1 = 1\n2 an + 1\n2 bn.\n2. (a) A est symétrique à coefficients réels, donc elle est diagonalisable.\n\n1 1\n(\n)\n\n1 1\n(b) A +\nI3 =\n donc rg\nA +\nI3\n= 1.\n\n1 1\nDonc − 1\n2 est valeur propre de A et dim E− 1\n(A) = 2.\n\nL’expression de A +\nI3 donne immédiatement que E− 1\n(A) = Vect\n.\n\n−1\n−1\n(c) Puisque tr (A) = 0, on en déduit que 1 est une valeur propre de A de multiplicité 1.\nA étant symétrique réelle, les sous-espaces propres sont supplémentaires sur R3 et orthogonaux deux à\ndeux.\n(\n)⊥\n⊥\nOn en déduit que R3 = E− 1\n(A)\n⊕ E1(A), donc que E1(A) =\nE− 1\n(A)\n.\n\nDonc E1(A) = Vect\n .\n\n, on a alors D = P −1AP .\n\n0 −1/2\n\nEn posant P =\n et D =\n\n1 −1 −1\n\n−1/2\n\nan+1\nan\nbn+1\nbn\n3. D’après la question 1.,\n = A\n\ncn+1\ncn\nEt donc on prouve par récurrence que :\n\nan\na0\n∀n ∈ N,\n = An\nbn\nb0\n\ncn\nc0\nOr A = P DP −1 donc An = P DnP −1.\n\nan\na0\n = P DnP −1\nbn\nb0\nDonc\n\ncn\nc0\nOr, d’après l’énoncé, a0 = 1, b0 = 0 et c0 = 0 donc :\n\nan\n\n(− 1\n)n\nP −1\n= P\n.\nbn\n\n(− 1\n)n\ncn",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 101 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Réduction des endomorphismes",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 4,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "101",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-101",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 101, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "On considère N variables aléatoires X1, X2, · · · , XN définies sur un même espace…",
+    "statement": "Soit N ∈ N∗.\nSoit p ∈ ]0, 1[. On pose q = 1 − p.\nOn considère N variables aléatoires X1, X2, · · · , XN définies sur un même espace probabilisé (Ω, A, P ),\nindépendantes et de même loi géométrique de paramètre p.\n. Soit n ∈ N∗.\n1. Soit i ∈\n1, N\n⟦\n⟧\nDéterminer P (Xi ⩽ n), puis P (Xi > n).\n2. On considère la variable aléatoire Y définie par Y = min\n(Xi)\n1⩽i⩽N\nc’est-à-dire ∀ω ∈ Ω, Y (ω) = min (X1(ω), · · · , XN (ω)), min désignant « le plus petit élément de ».\n(a) Soit n ∈ N∗. Calculer P (Y > n).\nEn déduire P (Y ⩽ n), puis P (Y = n).\n(b) Reconnaître la loi de Y . En déduire E(Y ).",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 102 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Probabilités",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "102",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-102",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 102, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Déterminer la loi de X1 + X2",
+    "statement": "Remarque : les questions 1. et 2. sont indépendantes.\nSoit (Ω, A, P ) un espace probabilisé.\n1. (a) Soit (λ1, λ2) ∈ (]0, +∞[)2.\nSoit X1 et X2 deux variables aléatoires définies sur (Ω, A, P ).\nOn suppose que X1 et X2 sont indépendantes et suivent des lois de Poisson, de paramètres respectifs λ1\net λ2.\nDéterminer la loi de X1 + X2.\n(b) En déduire l’espérance et la variance de X1 + X2.\n2. Soit p ∈ ]0, 1]. Soit λ ∈ ]0, +∞[.\nSoit X et Y deux variables aléatoires définies sur (Ω, A, P ).\nOn suppose que Y suit une loi de Poisson de paramètre λ.\nOn suppose que X(Ω) = N et que, pour tout m ∈ N, la loi conditionnelle de X sachant (Y = m) est une loi\nbinomiale de paramètre (m, p).\nDéterminer la loi de X.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 103 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Probabilités",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "103",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-103",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 103, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Déterminer la probabilité P (X = 2)",
+    "statement": "Soit n un entier naturel supérieur ou égal à 3.\nOn dispose de n boules numérotées de 1 à n et d’une boîte formée de trois compartiments identiques également\nnumérotés de 1 à 3.\nOn lance simultanément les n boules.\nElles viennent toutes se ranger aléatoirement dans les 3 compartiments.\nChaque compartiment peut éventuellement contenir les n boules.\nOn note X la variable aléatoire qui à chaque expérience aléatoire fait correspondre le nombre de compartiments\nrestés vides.\n1. Préciser les valeurs prises par X.\n2. (a) Déterminer la probabilité P (X = 2).\n(b) Finir de déterminer la loi de probabilité de X.\n3. (a) Calculer E(X).\n(b) Déterminer\nlim\nE(X). Interpréter ce résultat.\nn→+∞",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 104 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Probabilités",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "104",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-104",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 104, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Énoncer et démontrer la formule de Bayes pour un système complet d’événements",
+    "statement": "1. Énoncer et démontrer la formule de Bayes pour un système complet d’événements.\n2. On dispose de 100 dés dont 25 sont pipés (c’est-à-dire truqués).\n\nPour chaque dé pipé, la probabilité d’obtenir le chiffre 6 lors d’un lancer vaut\n.\n\n(a) On tire un dé au hasard parmi les 100 dés. On lance ce dé et on obtient le chiffre 6.\nQuelle est la probabilité que ce dé soit pipé ?\n(b) Soit n ∈ N∗.\nOn tire un dé au hasard parmi les 100 dés. On lance ce dé n fois et on obtient n fois le chiffre 6.\nQuelle est la probabilité pn que ce dé soit pipé ?\n(c) Déterminer\nlim\npn. Interpréter ce résultat.\nn→+∞",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 105 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Probabilités",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "105",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-105",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 105, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Déterminer la loi du couple (U, V )",
+    "statement": "X et Y sont deux variables aléatoires indépendantes et à valeurs dans N.\nElles suivent la même loi définie par : ∀ k ∈ N, P (X = k) = P (Y = k) = pqk où p ∈ ]0, 1[ et q = 1 − p.\nOn considère alors les variables U et V définies par U = sup(X, Y ) et V = inf(X, Y ).\n1. Déterminer la loi du couple (U, V ).\n2. Déterminer la loi marginale de U .\nOn admet que V (Ω) = N et que, ∀ n ∈ N, P (V = n) = pq2n(1 + q).\n3. Prouver que W = V + 1 suit une loi géométrique.\nEn déduire l’espérance de V .\n4. U et V sont-elles indépendantes ?",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 106 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Probabilités",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "106",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-106",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 106, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Prouver que : ∀ n ∈ N∗, pn+1 = − pn +",
+    "statement": "On dispose de deux urnes U1 et U2.\nL’urne U1 contient deux boules blanches et trois boules noires.\nL’urne U2 contient quatre boules blanches et trois boules noires.\nOn effectue des tirages successifs dans les conditions suivantes :\non choisit une urne au hasard et on tire une boule dans l’urne choisie.\nOn note sa couleur et on la remet dans l’urne d’où elle provient.\nSi la boule tirée était blanche, le tirage suivant se fait dans l’urne U1.\nSinon le tirage suivant se fait dans l’urne U2.\nPour tout n ∈ N∗, on note Bn l’événement « la boule tirée au nième tirage est blanche » et on pose pn = P (Bn).\n1. Calculer p1.\n\n2. Prouver que : ∀ n ∈ N∗, pn+1 = −\npn +\n.\n\n3. En déduire, pour tout entier naturel n non nul, la valeur de pn.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 107 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Probabilités",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "107",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-107",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 107, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Déterminer les lois de X et de Y",
+    "statement": "Soient X et Y deux variables aléatoires définies sur un même espace probabilisé (Ω, A, P ) et à valeurs dans N.\nOn suppose que la loi du couple (X, Y ) est donnée par :\n\n∀ (i, j) ∈ N2, P ((X = i) ∩ (Y = j)) =\ne 2i+1j!\n1. Déterminer les lois de X et de Y .\n2. (a) Prouver que 1 + X suit une loi géométrique et en déduire l’espérance et la variance de X.\n(b) Déterminer l’espérance et la variance de Y .\n3. Les variables X et Y sont-elles indépendantes ?\n4. Calculer P (X = Y ).",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 108 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Probabilités",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "108",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-108",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 108, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Une urne contient n boules blanches numérotées de 1 à n et deux boules noires…",
+    "statement": "Soit n ∈ N∗. Une urne contient n boules blanches numérotées de 1 à n et deux boules noires numérotées 1 et 2.\nOn effectue le tirage une à une, sans remise, de toutes les boules de l’urne.\nOn suppose que tous les tirages sont équiprobables.\nOn note X la variable aléatoire égale au rang d’apparition de la première boule blanche.\nOn note Y la variable aléatoire égale au rang d’apparition de la première boule numérotée 1.\n1. Déterminer la loi de X.\n2. Déterminer la loi de Y .",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 109 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Probabilités",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "109",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-109",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 109, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Exprimer, en justifiant la réponse, P (X = k) en fonction de G(k) X (0)",
+    "statement": "Soit (Ω, A, P ) un espace probabilisé.\n1. Soit X une variable aléatoire définie sur (Ω, A, P ) et à valeurs dans N.\n∑\ntnP (X = n) de variable réelle t.\nOn considère la série entière\nOn note RX son rayon de convergence.\n(a) Prouver que RX ⩾ 1.\n+∞\n∑\ntnP (X = n) et on note DGX l’ensemble de définition de GX .\nOn pose GX (t) =\nn=0\nJustifier que [−1, 1] ⊂ DGX .\nPour tout réel t fixé de [−1, 1], exprimer GX (t) sous forme d’une espérance.\n(b) Soit k ∈ N. Exprimer, en justifiant la réponse, P (X = k) en fonction de G(k)\nX (0).\n2. (a) On suppose que X suit une loi de Poisson de paramètre λ.\nDéterminer DGX et, pour tout t ∈ DGX , calculer GX (t).\n(b) Soit X et Y deux variables aléatoires définies sur un même espace probabilisé, indépendantes et suivant\ndes lois de Poisson de paramètres respectifs λ1 et λ2.\nDéterminer, en utilisant les questions précédentes, la loi de X + Y .",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 110 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Séries entières",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "110",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-110",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 110, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  },
+  {
+    "title": "Déterminer le nombre a de couples (A, B) ∈ (P(E))2 tels que A ⊂ B",
+    "statement": "Soit n ∈ N∗ et E un ensemble possédant n éléments.\nOn désigne par P(E) l’ensemble des parties de E.\n1. Déterminer le nombre a de couples (A, B) ∈ (P(E))2 tels que A ⊂ B.\n2. Déterminer le nombre b de couples (A, B) ∈ (P(E))2 tels que A ∩ B = ∅.\n3. Déterminer le nombre c de triplets (A, B, C) ∈ (P(E))3 tels que A, B et C soient deux à deux disjoints et\nvérifient A ∪ B ∪ C = E.",
+    "correction": "",
+    "source": "CCINP — banque de l'épreuve orale de mathématiques, session 2025, exercice 112 (filière MP et MPI). Licence CC BY-NC-SA 3.0 FR.",
+    "subject": "Mathématiques",
+    "type": "Concours",
+    "chapter": "Probabilités",
+    "tags": [
+      "probabilités",
+      "oral CCINP"
+    ],
+    "difficulty": 3,
+    "estimatedMinutes": 25,
+    "competition": "CCINP",
+    "epreuve": "Oral de mathématiques",
+    "filieres": [
+      "MP",
+      "MPI"
+    ],
+    "exerciseNumber": "112",
+    "year": 2025,
+    "provenance": "concours-verifie",
+    "programmeLevel": "spe",
+    "licenseStatus": "libre",
+    "externalId": "ccinp-2025-112",
+    "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/les-epreuves-orales.html",
+    "note": "Banque officielle CCINP, session 2025, exercice 112, filières MP et MPI. Publié sous licence CC BY-NC-SA 3.0 FR."
+  }
+]

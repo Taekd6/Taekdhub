@@ -6,6 +6,7 @@ import { subjectMeta } from "@/lib/study";
 import { formatDuration } from "@/lib/utils";
 import { cn } from "@/lib/cn";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
+import { MathInline } from "@/components/rich-math";
 
 /** Étiquette + couleur du résultat d'une tentative — un seul point de vérité pour tout affichage de `WorkSession.result`. */
 const RESULT_BADGE: Record<AttemptResult, { label: string; variant: "success" | "warning" | "danger" }> = {
@@ -43,7 +44,7 @@ export function SessionRow({
           {subjectMeta[session.subject].short}
         </span>
         <div className="min-w-0">
-          <p className="truncate text-sm text-ink">{exerciseTitle ?? session.subject}</p>
+          <p className="truncate text-sm text-ink">{exerciseTitle ? <MathInline text={exerciseTitle} /> : session.subject}</p>
           <p className="mt-0.5 truncate text-xs text-muted">
             {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(session.started_at))}
             {exerciseTitle && ` · ${session.subject}`}

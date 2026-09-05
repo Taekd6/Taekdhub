@@ -118,6 +118,20 @@ function lastAttemptWasAssisted(attempts: WorkSession[]): boolean {
   return last?.result === "réussi" && last.hints_used !== null && last.hints_used >= ASSISTED_HINTS_THRESHOLD;
 }
 
+/**
+ * La dernière tentative s'est-elle arrêtée en chemin ?
+ *
+ * « Partiel » est le résultat le plus fréquent en prépa (on a trouvé la
+ * moitié, on a séché sur la fin) et c'était le SEUL des trois que le moteur
+ * n'exploitait pas du tout : ni raison, ni terme de score. Déclarer
+ * « Partiel » ne changeait donc strictement rien à ce qui était proposé
+ * ensuite — la réponse à « est-ce que mon résultat compte ? » était « non »
+ * une fois sur trois.
+ */
+function lastAttemptWasPartial(attempts: WorkSession[]): boolean {
+  return attempts[0]?.result === "partiel";
+}
+
 /** Longueur de la série de réussites consécutives la plus récente (s'arrête à la première tentative non réussie). */
 function recentSuccessStreak(attempts: WorkSession[]): number {
   let streak = 0;
@@ -233,8 +247,14 @@ export function comfortDifficulty(exercises: Exercise[], sessions: WorkSession[]
   const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
 
   // Socle : la difficulté que l'élève RÉUSSIT. À défaut de toute réussite,
-  // celle où il échoue — auquel cas on visera en dessous, juste après.
-  const base = succeeded.length > 0 ? average(succeeded.map((a) => a.difficulty)) : average(failed.map((a) => a.difficulty));
+  // celle où il échoue — auquel cas on visera en dessous, juste après. À
+  // défaut des deux (fenêtre entièrement composée de « partiel », cas très
+  // banal), la difficulté des tentatives elles-mêmes : `average([])` vaut
+  // NaN, et un seul NaN suffisait à contaminer TOUS les scores (`difficultyFit`
+  // → `urgencyScore`), rendant le tri inopérant — le moteur reproposait alors
+  // les mêmes exercices, dans l'ordre du fichier source, indéfiniment.
+  const graded = succeeded.length > 0 ? succeeded : failed.length > 0 ? failed : recent;
+  const base = average(graded.map((a) => a.difficulty));
 
   // La série de réussites qui autorise une montée ne compte QUE les
   // réussites autonomes : réussir trois exercices en révélant tous les
@@ -312,6 +332,12 @@ function evaluateExercise(exercise: Exercise, minutesSpent: number, attempts: Wo
   const failures = recentFailureCount(attempts);
   if (failures >= 2) reasons.push("Plusieurs échecs");
   else if (attempts[0]?.result === "échoué") reasons.push("Échec récent");
+  // Critère d'inclusion À PART ENTIÈRE, au même titre qu'un échec : « j'ai
+  // fait la moitié » est la preuve directe que l'exercice n'est pas acquis,
+  // quoi qu'en disent `status` et `mastery` (saisis à la main, souvent
+  // périmés). Sans cette ligne, un exercice coché « maîtrisé » puis rendu à
+  // moitié ne revenait jamais.
+  else if (lastAttemptWasPartial(attempts)) reasons.push("Réussi à moitié");
   // Critère d'inclusion À PART ENTIÈRE : une réussite très assistée suffit à
   // reproposer l'exercice, même si tous les autres signaux sont au vert
   // (statut "maîtrisé", maîtrise à 100, travaillé hier). C'est précisément
@@ -345,8 +371,35 @@ const STATUS_WEIGHT: Record<ExerciseStatus, number> = {
   maîtrisé: -30,
 };
 
-/** Maîtrise maximale retenue AU CLASSEMENT pour un exercice dont la dernière réussite a demandé des indices — la valeur saisie par l'élève n'est jamais modifiée. */
+/**
+ * Maîtrise maximale retenue AU CLASSEMENT quand la dernière tentative
+ * CONTREDIT la maîtrise déclarée — la valeur saisie par l'élève n'est jamais
+ * modifiée (voir la note en tête de fichier : le moteur ne réécrit jamais
+ * `status`/`mastery`).
+ *
+ * Sans ce plafond, un exercice passé en « maîtrisé / 100 % » un jour puis
+ * échoué le lendemain tombait autour de -40 au classement (masteryGap nul +
+ * statut « maîtrisé » à -30) : il était bien RETENU (raison « Échec récent »)
+ * mais arrivait derrière absolument tout le reste, donc jamais proposé. Le
+ * cas de la réussite arrachée aux indices avait déjà été corrigé ainsi ;
+ * l'échec et le partiel, non — alors que ce sont les deux contradictions les
+ * plus fortes.
+ *
+ * Trois valeurs distinctes, dans l'ordre de ce que la tentative prouve : un
+ * échec contredit le plus (25), un exercice à moitié traité un peu moins
+ * (50), une réussite obtenue avec les indices reste une réussite (50).
+ */
+const FAILED_MASTERY_CAP = 25;
+const PARTIAL_MASTERY_CAP = 50;
 const ASSISTED_MASTERY_CAP = 50;
+
+/** `null` quand la dernière tentative ne contredit rien (réussite autonome, aucune tentative qualifiée) — le score est alors strictement celui de la maîtrise déclarée. */
+function contradictedMasteryCap(attempts: WorkSession[]): number | null {
+  if (attempts[0]?.result === "échoué") return FAILED_MASTERY_CAP;
+  if (lastAttemptWasPartial(attempts)) return PARTIAL_MASTERY_CAP;
+  if (lastAttemptWasAssisted(attempts)) return ASSISTED_MASTERY_CAP;
+  return null;
+}
 
 /**
  * REPOS APRÈS UNE TENTATIVE — le pendant de `staleMasteryBonus`.
@@ -369,7 +422,16 @@ const ASSISTED_MASTERY_CAP = 50;
  * exercice écarté aujourd'hui reste accessible dans la banque, et remonte de
  * lui-même à la fin du repos.
  */
-const RECENT_ATTEMPT_PENALTY = 50;
+/**
+ * 70, et non 50 : à 50, le repos ne tenait pas contre le signal qu'il doit
+ * justement tempérer. Un exercice échoué DEUX fois cumule `masteryGap` (60),
+ * le statut (10) et `failureBonus` (40) — il repassait donc devant un
+ * exercice jamais ouvert dès le lendemain, exactement le cas que le repos
+ * existe pour éviter. Mesuré sur 14 jours de la vraie banque avec un élève
+ * aux résultats mélangés : un même exercice proposé 10 jours sur 14. À 70, il
+ * revient au deuxième jour, jamais au premier.
+ */
+const RECENT_ATTEMPT_PENALTY = 70;
 const RECENT_ATTEMPT_COOLDOWN_DAYS = 3;
 
 function recentAttemptPenalty(exercise: Exercise, now: Date): number {
@@ -409,15 +471,17 @@ function staleMasteryBonus(exercise: Exercise, now: Date): number {
  * strictement identique à avant ce sprint.
  */
 function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSession[], now: Date, comfort: ComfortLevel | null = null): number {
-  // Une réussite arrachée aux indices CONTREDIT la maîtrise déclarée. Pour le
-  // classement seulement (jamais dans les données de l'élève, qui restent les
-  // siennes), on ne lui accorde donc ni le crédit de `mastery` au-delà de
-  // ASSISTED_MASTERY_CAP, ni celui du statut « maîtrisé » — l'exercice est
-  // traité comme « à revoir », ce qu'il est en réalité.
+  // Un échec, un exercice traité à moitié ou une réussite arrachée aux
+  // indices CONTREDISENT la maîtrise déclarée. Pour le classement seulement
+  // (jamais dans les données de l'élève, qui restent les siennes), on ne leur
+  // accorde donc ni le crédit de `mastery` au-delà du plafond correspondant,
+  // ni celui du statut « maîtrisé » — l'exercice est traité comme « à
+  // revoir », ce qu'il est en réalité.
   const assisted = lastAttemptWasAssisted(attempts);
-  const effectiveMastery = assisted ? Math.min(exercise.mastery, ASSISTED_MASTERY_CAP) : exercise.mastery;
+  const masteryCap = contradictedMasteryCap(attempts);
+  const effectiveMastery = masteryCap === null ? exercise.mastery : Math.min(exercise.mastery, masteryCap);
   const masteryGap = (100 - effectiveMastery) * 0.6; // 0 (maîtrisé à 100%) à 60 (maîtrisé à 0%)
-  const statusWeight = assisted && exercise.status === "maîtrisé" ? STATUS_WEIGHT["à revoir"] : STATUS_WEIGHT[exercise.status]; // -30 à 40
+  const statusWeight = masteryCap !== null && exercise.status === "maîtrisé" ? STATUS_WEIGHT["à revoir"] : STATUS_WEIGHT[exercise.status]; // -30 à 40
   const neverWorkedBonus = isNeverWorked(exercise, minutesSpent) ? 15 : 0;
   // Temps déjà investi : léger bonus, plafonné pour ne jamais dominer les
   // autres termes — un exercice presque fini mérite d'être terminé, mais pas
@@ -443,7 +507,18 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
   // profil « ne réussit qu'aidé » : ses 15 réussites assistées tombaient
   // autour de -30 et n'apparaissaient nulle part — le signal était collecté,
   // affiché en raison, et sans le moindre effet sur ce qui était proposé.
-  const assistedBonus = assisted ? 25 : 0;
+  // Ramené de 25 à 15 en même temps que l'introduction du plafond de maîtrise
+  // pour l'échec : l'intention documentée ci-dessus est conservée (repasse
+  // devant un exercice jamais ouvert, n'atteint jamais un échec constaté),
+  // mais les trois signaux « la maîtrise déclarée est démentie » doivent
+  // rester dans l'ordre de ce qu'ils prouvent — voir `partialBonus`.
+  const assistedBonus = assisted ? 15 : 0;
+  // Un exercice traité à moitié n'est pas acquis : il doit revenir. Entre les
+  // deux signaux voisins, et dans cet ordre à profil égal : échoué (20, rien
+  // n'a abouti) > partiel (18, la moitié a abouti, seul) > réussi avec aide
+  // (15, tout a abouti, mais guidé). Comme pour l'échec, c'est un effet de
+  // CLASSEMENT : jamais une exclusion.
+  const partialBonus = lastAttemptWasPartial(attempts) ? 18 : 0;
   // À l'inverse, une série de réussites récentes fait progressivement
   // redescendre l'exercice — jamais jusqu'à l'exclure (ce n'est pas un
   // critère d'exclusion, seulement un effet sur le tri), et d'une amplitude
@@ -465,6 +540,7 @@ function urgencyScore(exercise: Exercise, minutesSpent: number, attempts: WorkSe
     favoriteBonus +
     failureBonus +
     assistedBonus +
+    partialBonus +
     difficultyFit -
     successPenalty -
     restPenalty
@@ -555,53 +631,18 @@ export interface RecommendationOptions {
  * Fonction pure : aucun effet de bord, aucune dépendance à autre chose que
  * ses arguments.
  */
-/** Répartit `items` (déjà triés par score décroissant) en groupes, dans l'ordre de leur première apparition — brique commune à `roundRobinFromGroups`/`diversifyByChapter`. */
-function groupByKey<T>(items: T[], keyFn: (item: T) => string): { order: string[]; groups: Map<string, T[]> } {
-  const groups = new Map<string, T[]>();
-  const order: string[] = [];
-  for (const item of items) {
-    const key = keyFn(item);
-    let group = groups.get(key);
-    if (!group) {
-      group = [];
-      groups.set(key, group);
-      order.push(key);
-    }
-    group.push(item);
-  }
-  return { order, groups };
-}
-
 /**
- * Round-robin déterministe sur des groupes déjà constitués (voir
- * `groupByKey`) : le meilleur candidat de chaque groupe d'abord (dans
- * l'ordre où ces groupes sont apparus, donc le plus urgent en premier), puis
- * un deuxième tour pour le deuxième meilleur de chaque groupe, etc. Aucun
- * candidat n'est perdu — un groupe épuisé est simplement sauté aux tours
- * suivants, jamais remplacé par du bourrage.
+ * Écart de score au-delà duquel la diversification cède le pas — payé une
+ * fois par exercice DÉJÀ retenu dans le même chapitre, et une fois par
+ * exercice déjà retenu dans la même matière. Répéter un chapitre coûte donc
+ * 20 points, changer de chapitre à l'intérieur d'une matière 10.
+ *
+ * Calibré au niveau des signaux qu'il doit pouvoir laisser passer : 20, c'est
+ * l'ordre de grandeur d'un échec constaté ou d'un favori. En dessous de cet
+ * écart, deux exercices se valent et on alterne ; au-dessus, l'exercice
+ * nettement plus urgent passe quand même.
  */
-function roundRobinFromGroups<T>(order: string[], groups: Map<string, T[]>): T[] {
-  const total = order.reduce((sum, key) => sum + groups.get(key)!.length, 0);
-  const result: T[] = [];
-  for (let round = 0; result.length < total; round++) {
-    let addedThisRound = false;
-    for (const key of order) {
-      const group = groups.get(key)!;
-      if (round < group.length) {
-        result.push(group[round]);
-        addedThisRound = true;
-      }
-    }
-    if (!addedThisRound) break;
-  }
-  return result;
-}
-
-/** Compose `groupByKey` + `roundRobinFromGroups` pour un seul niveau de diversification. */
-function roundRobinByGroup<T>(candidates: T[], keyFn: (item: T) => string): T[] {
-  const { order, groups } = groupByKey(candidates, keyFn);
-  return roundRobinFromGroups(order, groups);
-}
+const DIVERSITY_REPEAT_PENALTY = 10;
 
 /**
  * Réordonne les candidats (déjà triés par score décroissant) pour éviter que
@@ -610,34 +651,69 @@ function roundRobinByGroup<T>(candidates: T[], keyFn: (item: T) => string): T[] 
  * comme son propre groupe par matière (jamais mélangé à un autre chapitre,
  * ni traité comme "diversifié" à tort).
  *
- * Deux niveaux de round-robin emboîtés, pas une pénalité numérique de plus à
- * calibrer : d'abord une diversification par CHAPITRE à l'intérieur de
- * chaque matière (comportement historique, inchangé), puis un round-robin
- * par MATIÈRE entre ces listes déjà diversifiées. Le score d'origine décide
- * toujours QUELS chapitres/matières passent en premier ; le round-robin
- * décide seulement de ne jamais répéter un groupe tant qu'une alternative
- * existe.
+ * Sélection gloutonne : à chaque tour on retient le meilleur score DIMINUÉ
+ * d'une pénalité par exercice déjà retenu dans le même chapitre et dans la
+ * même matière. Aucun candidat n'est perdu (la liste retournée est une
+ * permutation de l'entrée) et, à scores strictement égaux — l'état réel au
+ * tout premier lancement, où toute la banque est à la même maîtrise —, la
+ * pénalité produit exactement une rotation chapitre/matière : sans elle, le
+ * tri stable dégénérerait en "ordre du fichier source", structurellement
+ * dominé par la matière la plus fournie (Mathématiques), un artefact
+ * d'implémentation et non un signal de pertinence.
  *
- * Le niveau matière est nécessaire en plus du niveau chapitre : sans lui, un
- * tri stable dont TOUS les candidats ont exactement le même score (état réel
- * au tout premier lancement — maîtrise, priorité et statut identiques sur
- * toute la banque avant la moindre séance) dégénère silencieusement en
- * "ordre du fichier source", structurellement dominé par la matière la plus
- * fournie (Mathématiques) — un artefact d'implémentation, pas un signal de
- * pertinence. Le round-robin par matière garantit une rotation équitable
- * entre matières même dans ce cas dégénéré, sans rien changer quand les
- * scores différencient réellement les candidats (le tri par score reste
- * l'unique décideur DANS chaque groupe).
+ * La pénalité remplace un round-robin strict à deux niveaux, qui ignorait
+ * l'ampleur des écarts de score : avec sept matières, il repoussait le
+ * deuxième exercice le plus urgent derrière le meilleur de CHACUNE des six
+ * autres matières. Un élève qui venait d'échouer sur trois exercices de maths
+ * n'en revoyait qu'un seul dans une séance de cinq — la diversité passait
+ * avant l'urgence au lieu de la départager.
  */
 export function diversifyByChapter(candidates: ExerciseRecommendation[]): ExerciseRecommendation[] {
-  const { order: subjectOrder, groups: bySubject } = groupByKey(candidates, (candidate) => candidate.exercise.subject);
-  const diversifiedBySubject = new Map(
-    subjectOrder.map((subject) => [
-      subject,
-      roundRobinByGroup(bySubject.get(subject)!, (candidate) => candidate.exercise.chapter_id ?? `subject:${candidate.exercise.subject}`),
-    ])
-  );
-  return roundRobinFromGroups(subjectOrder, diversifiedBySubject);
+  // Les groupes sont convertis en entiers UNE fois : la boucle ci-dessous
+  // est quadratique (chaque tour réexamine les candidats restants) et tourne
+  // sur toute la banque à chaque rendu — comparer des chaînes ou interroger
+  // des `Map` à chaque itération y coûtait plusieurs millisecondes.
+  const chapterIds = new Map<string, number>();
+  const subjectIds = new Map<string, number>();
+  const idOf = (registry: Map<string, number>, key: string): number => {
+    const existing = registry.get(key);
+    if (existing !== undefined) return existing;
+    registry.set(key, registry.size);
+    return registry.size - 1;
+  };
+  const remaining = candidates.map((candidate) => ({
+    candidate,
+    // Un chapitre est toujours qualifié par sa matière : deux matières ne
+    // partagent jamais un `chapter_id`, et "sans chapitre" reste un groupe
+    // par matière.
+    chapter: idOf(chapterIds, `${candidate.exercise.subject}::${candidate.exercise.chapter_id ?? "sans-chapitre"}`),
+    subject: idOf(subjectIds, candidate.exercise.subject),
+  }));
+  const pickedByChapter = new Array<number>(chapterIds.size).fill(0);
+  const pickedBySubject = new Array<number>(subjectIds.size).fill(0);
+  const result: ExerciseRecommendation[] = [];
+
+  while (remaining.length > 0) {
+    let bestIndex = 0;
+    let bestValue = -Infinity;
+    for (let index = 0; index < remaining.length; index++) {
+      const entry = remaining[index];
+      const value =
+        entry.candidate.score - (pickedByChapter[entry.chapter] + pickedBySubject[entry.subject]) * DIVERSITY_REPEAT_PENALTY;
+      // Strictement supérieur : à valeur égale, l'ordre d'entrée tranche —
+      // le score pour `recommendExercises`, la priorité de chapitre pour
+      // lib/plan.ts, qui passe une liste déjà ordonnée par ses soins.
+      if (value > bestValue) {
+        bestValue = value;
+        bestIndex = index;
+      }
+    }
+    const [picked] = remaining.splice(bestIndex, 1);
+    pickedByChapter[picked.chapter]++;
+    pickedBySubject[picked.subject]++;
+    result.push(picked.candidate);
+  }
+  return result;
 }
 
 export function recommendExercises(
@@ -693,6 +769,7 @@ const REASON_RULES: ReasonRule[] = [
   { test: (r) => r.includes("Séance reprise"), sentence: () => "Tu avais laissé cette séance en cours — on reprend là où tu t'étais arrêté." },
   { test: (r) => r.includes("Plusieurs échecs"), sentence: () => "Tu as échoué plusieurs fois récemment dessus — ça mérite une nouvelle tentative." },
   { test: (r) => r.includes("Échec récent"), sentence: () => "Ta dernière tentative n'a pas abouti — on retente." },
+  { test: (r) => r.includes("Réussi à moitié"), sentence: () => "Tu ne l'avais traité qu'à moitié — on le reprend en entier." },
   { test: (r) => r.includes("Réussi avec aide"), sentence: () => "Tu l'avais réussi, mais avec les indices — on vérifie que c'est acquis." },
   // Avant les raisons "difficulté/maîtrise" : quand l'élève vient
   // d'enchaîner des réussites, la montée de palier est LE fait nouveau qui

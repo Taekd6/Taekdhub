@@ -19,7 +19,10 @@ interface TimerContext {
 }
 
 export function Timer() {
-  const { sessions, saveSessions } = usePrepahubData();
+  // `ready` est indispensable ici comme partout ailleurs : le chrono restaure
+  // une séance persistée dès son premier effet, donc "Terminer" est cliquable
+  // avant même que la banque locale ait fini d'être lue.
+  const { sessions, saveSessions, ready } = usePrepahubData();
   const { seconds, running, context, setContext, start, toggle, stop } = useWorkTimer<TimerContext>(TIMER_STORAGE_KEY, {
     subject: "Mathématiques",
   });
@@ -58,6 +61,11 @@ export function Timer() {
       saveSessions([session, ...sessions]);
     });
   }
+
+  // Tant que la banque locale n'est pas lue, on n'affiche pas de chrono
+  // manipulable : « Terminer » enregistrerait alors une séance à partir d'un
+  // historique encore vide en mémoire.
+  if (!ready) return <Card className="h-64 animate-pulse p-8" />;
 
   const content = (
     <>

@@ -292,6 +292,15 @@ export function computeChaptersToConsolidate(
       ).length;
       if (assistedCount >= 2) reasons.push(`${assistedCount} réussites avec indices`);
 
+      // Même logique, pour le résultat le plus fréquent de tous : plusieurs
+      // exercices rendus à moitié sur un même chapitre disent quelque chose
+      // qu'aucun autre champ ne dit. Sans cette raison, un chapitre où rien
+      // n'aboutit jamais complètement mais où l'élève n'échoue pas
+      // franchement — et dont la maîtrise déclarée reste au-dessus de 50 —
+      // n'apparaissait tout simplement pas dans "À consolider".
+      const partialCount = recentAttempts.filter((attempt) => attempt.result === "partiel").length;
+      if (partialCount >= 2) reasons.push(`${partialCount} exercices à moitié traités`);
+
       const lastWorkedTimestamps = chapterExercises
         .map((exercise) => exercise.last_worked_at)
         .filter((value): value is string => value !== null)

@@ -3,3 +3,7 @@ node_modules/
 .env.local
 .vercel/
 tsconfig.tsbuildinfo
+
+# Sortie de scripts/ingest-concours.py : contenu tiers, jamais versionné.
+/concours-import*.json
+/exos.zip

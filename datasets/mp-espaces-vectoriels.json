@@ -1,0 +1,197 @@
+[
+  {
+    "title": "Familles libres de polynômes échelonnés en degré",
+    "statement": "Soit $n\\in\\mathbb{N}$ et $(P_0,P_1,\\dots,P_n)$ une famille de $\\mathbb{R}_n[X]$ telle que $\\deg P_k=k$ pour tout $k$.\n\n1. Montrer que cette famille est libre.\n2. En déduire que c'est une base de $\\mathbb{R}_n[X]$.\n3. Application : montrer que $\\left(1,\\ X-1,\\ (X-1)^2,\\ \\dots,\\ (X-1)^n\\right)$ est une base de $\\mathbb{R}_n[X]$, et donner les coordonnées de $P=X^2$ dans cette base pour $n=2$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Espaces vectoriels",
+    "estimatedMinutes": 18,
+    "tags": [
+      "famille libre",
+      "base",
+      "dimension",
+      "polynômes",
+      "DS espaces vectoriels"
+    ],
+    "hints": [
+      "Supposons une combinaison linéaire nulle et regardez le terme de plus haut degré.",
+      "Notez $k_0$ le plus grand indice tel que $\\lambda_{k_0}\\neq 0$ : quel est le degré de la somme ?",
+      "Pour la question 3, la formule de Taylor en $1$ donne directement les coordonnées."
+    ],
+    "correction": "**1.** Supposons $\\sum_{k=0}^{n}\\lambda_kP_k=0$ avec les $\\lambda_k$ non tous nuls. Soit $k_0=\\max\\{k\\mid\\lambda_k\\neq 0\\}$. Alors\n$$\\sum_{k=0}^{n}\\lambda_kP_k=\\lambda_{k_0}P_{k_0}+\\sum_{k<k_0}\\lambda_kP_k.$$\nLe premier terme est de degré exactement $k_0$ (car $\\lambda_{k_0}\\neq 0$ et $\\deg P_{k_0}=k_0$), tandis que la somme restante est de degré $<k_0$. La somme totale est donc de degré exactement $k_0$, en particulier non nulle : contradiction. Donc tous les $\\lambda_k$ sont nuls, la famille est libre.\n\n**2.** C'est une famille libre de $n+1$ vecteurs dans $\\mathbb{R}_n[X]$, qui est de dimension $n+1$ : c'est donc une base.\n\n**3.** Les polynômes $(X-1)^k$ ont pour degré $k$ : la famille est échelonnée en degré, donc c'est une base d'après ce qui précède.\nPour $n=2$ et $P=X^2$, la formule de Taylor en $1$ donne\n$$P=P(1)+P'(1)(X-1)+\\frac{P''(1)}{2}(X-1)^2=1+2(X-1)+(X-1)^2.$$\nLes coordonnées cherchées sont donc $(1,2,1)$. Vérification : $1+2(X-1)+(X-1)^2=1+2X-2+X^2-2X+1=X^2$. $\\checkmark$\n\n*« Échelonnée en degré $\\Rightarrow$ libre » est l'argument le plus rentable du chapitre : il évite systématiquement de résoudre un système.*",
+    "programmeLevel": "sup_spe",
+    "level": 2,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Installer l'argument du degré maximal, qui remplace tout calcul pour prouver la liberté d'une famille de polynômes.",
+    "prerequisites": [
+      "espaces vectoriels",
+      "polynômes"
+    ]
+  },
+  {
+    "title": "Somme directe et caractérisation par les dimensions",
+    "statement": "Soit $E$ un $\\mathbb{K}$-espace vectoriel de dimension finie $n$, et $F,G$ deux sous-espaces vectoriels de $E$.\n\n1. Rappeler et démontrer la formule de Grassmann : $\\dim(F+G)=\\dim F+\\dim G-\\dim(F\\cap G)$.\n2. Montrer que les trois assertions suivantes sont équivalentes :\n  (i) $E=F\\oplus G$ ; (ii) $F\\cap G=\\{0\\}$ et $\\dim F+\\dim G=n$ ; (iii) $F+G=E$ et $\\dim F+\\dim G=n$.\n3. Dans $E=\\mathbb{R}^4$, on pose $F=\\{(x,y,z,t)\\mid x+y+z+t=0\\}$ et $G=\\mathrm{Vect}\\left((1,1,1,1)\\right)$. Montrer que $E=F\\oplus G$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 2,
+    "chapter": "Espaces vectoriels",
+    "estimatedMinutes": 22,
+    "tags": [
+      "somme directe",
+      "dimension",
+      "supplémentaire",
+      "formule de Grassmann",
+      "DS espaces vectoriels"
+    ],
+    "hints": [
+      "Pour Grassmann, partez d'une base de $F\\cap G$ et complétez-la en une base de $F$, puis en une base de $G$.",
+      "Pour la question 2, utilisez Grassmann pour passer d'une condition à l'autre.",
+      "En question 3, $F$ est le noyau d'une forme linéaire non nulle : c'est un hyperplan, de dimension $3$."
+    ],
+    "correction": "**1.** Soit $(e_1,\\dots,e_r)$ une base de $F\\cap G$. Complétons-la en une base $(e_1,\\dots,e_r,f_1,\\dots,f_p)$ de $F$ et en une base $(e_1,\\dots,e_r,g_1,\\dots,g_q)$ de $G$. Montrons que $\\mathcal{B}=(e_1,\\dots,e_r,f_1,\\dots,f_p,g_1,\\dots,g_q)$ est une base de $F+G$.\n*Génératrice* : tout élément de $F+G$ est somme d'un élément de $F$ et d'un de $G$, chacun combinaison des vecteurs ci-dessus.\n*Libre* : supposons $\\sum\\alpha_ie_i+\\sum\\beta_jf_j+\\sum\\gamma_kg_k=0$. Alors $x=\\sum\\gamma_kg_k=-\\sum\\alpha_ie_i-\\sum\\beta_jf_j$ appartient à $F$ (membre de droite) et à $G$ (membre de gauche), donc $x\\in F\\cap G$. En écrivant $x$ dans la base $(e_i)$ et en comparant avec $\\sum\\gamma_kg_k$, la liberté de la base de $G$ impose $\\gamma_k=0$ pour tout $k$. Il reste $\\sum\\alpha_ie_i+\\sum\\beta_jf_j=0$, et la liberté de la base de $F$ donne $\\alpha_i=\\beta_j=0$.\nD'où $\\dim(F+G)=r+p+q=(r+p)+(r+q)-r=\\dim F+\\dim G-\\dim(F\\cap G)$. $\\square$\n\n**2.** (i)$\\Rightarrow$(ii) : par définition $F\\cap G=\\{0\\}$ et $F+G=E$, donc Grassmann donne $n=\\dim F+\\dim G-0$.\n(ii)$\\Rightarrow$(iii) : Grassmann donne $\\dim(F+G)=\\dim F+\\dim G=n$, et $F+G\\subset E$ avec $\\dim(F+G)=\\dim E$ entraîne $F+G=E$.\n(iii)$\\Rightarrow$(i) : Grassmann donne $n=n-\\dim(F\\cap G)$, donc $\\dim(F\\cap G)=0$, soit $F\\cap G=\\{0\\}$ ; avec $F+G=E$ la somme est directe et vaut $E$. $\\square$\n\n**3.** $F=\\ker\\varphi$ où $\\varphi(x,y,z,t)=x+y+z+t$ est une forme linéaire non nulle : $F$ est un hyperplan, $\\dim F=3$. Et $\\dim G=1$, donc $\\dim F+\\dim G=4=n$.\nSoit $u=(a,a,a,a)\\in F\\cap G$ : la condition $x+y+z+t=0$ donne $4a=0$, donc $a=0$ et $F\\cap G=\\{0\\}$.\nPar le critère (ii), $E=F\\oplus G$. $\\square$\n\n*En dimension finie, deux conditions sur trois suffisent toujours : c'est ce qui rend le critère (ii) si commode en DS.*",
+    "programmeLevel": "sup_spe",
+    "level": 2,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Savoir démontrer Grassmann et l'utiliser comme critère rapide de somme directe.",
+    "prerequisites": [
+      "espaces vectoriels",
+      "dimension"
+    ]
+  },
+  {
+    "title": "Inégalités sur le rang d'une somme",
+    "statement": "Soit $E,F$ deux $\\mathbb{K}$-espaces vectoriels de dimension finie et $u,v\\in\\mathcal{L}(E,F)$.\n\n1. Montrer que $\\mathrm{Im}(u+v)\\subset\\mathrm{Im}\\,u+\\mathrm{Im}\\,v$, puis que\n$$\\mathrm{rg}(u+v)\\leq\\mathrm{rg}(u)+\\mathrm{rg}(v).$$\n2. En déduire que $\\left|\\mathrm{rg}(u)-\\mathrm{rg}(v)\\right|\\leq\\mathrm{rg}(u+v)$.\n3. Donner un exemple où l'inégalité de la question 1 est stricte, et un exemple où c'est une égalité.\n4. Application : si $p$ et $q$ sont deux projecteurs de $E$ tels que $p+q$ soit un projecteur, montrer que $\\mathrm{rg}(p+q)=\\mathrm{rg}(p)+\\mathrm{rg}(q)$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Applications linéaires",
+    "estimatedMinutes": 25,
+    "tags": [
+      "rang",
+      "théorème du rang",
+      "applications linéaires",
+      "projecteur",
+      "DS espaces vectoriels"
+    ],
+    "hints": [
+      "Tout élément de $\\mathrm{Im}(u+v)$ s'écrit $u(x)+v(x)$.",
+      "$\\dim(A+B)\\leq\\dim A+\\dim B$ pour deux sous-espaces.",
+      "Pour la question 2, appliquez la question 1 à $u=(u+v)+(-v)$.",
+      "Pour la question 4, utilisez la trace : un projecteur vérifie $\\mathrm{rg}=\\mathrm{Tr}$."
+    ],
+    "correction": "**1.** Soit $y\\in\\mathrm{Im}(u+v)$ : il existe $x$ avec $y=(u+v)(x)=u(x)+v(x)\\in\\mathrm{Im}\\,u+\\mathrm{Im}\\,v$. D'où l'inclusion, puis\n$$\\mathrm{rg}(u+v)=\\dim\\mathrm{Im}(u+v)\\leq\\dim\\left(\\mathrm{Im}\\,u+\\mathrm{Im}\\,v\\right)\\leq\\dim\\mathrm{Im}\\,u+\\dim\\mathrm{Im}\\,v=\\mathrm{rg}(u)+\\mathrm{rg}(v).$$\n\n**2.** Appliquons la question 1 à la décomposition $u=(u+v)+(-v)$ :\n$$\\mathrm{rg}(u)\\leq\\mathrm{rg}(u+v)+\\mathrm{rg}(-v)=\\mathrm{rg}(u+v)+\\mathrm{rg}(v),$$\nd'où $\\mathrm{rg}(u)-\\mathrm{rg}(v)\\leq\\mathrm{rg}(u+v)$. En échangeant les rôles de $u$ et $v$ on obtient $\\mathrm{rg}(v)-\\mathrm{rg}(u)\\leq\\mathrm{rg}(u+v)$, d'où le résultat en valeur absolue.\n\n**3.** *Inégalité stricte* : $v=-u$ avec $u\\neq 0$. Alors $u+v=0$ donc $\\mathrm{rg}(u+v)=0$, tandis que $\\mathrm{rg}(u)+\\mathrm{rg}(v)=2\\,\\mathrm{rg}(u)>0$.\n*Égalité* : dans $\\mathbb{R}^2$, $u(x,y)=(x,0)$ et $v(x,y)=(0,y)$. Alors $u+v=\\mathrm{id}$, $\\mathrm{rg}(u+v)=2=1+1$.\n\n**4.** Pour un projecteur $p$, on a $\\mathrm{rg}(p)=\\mathrm{Tr}(p)$ (dans une base adaptée à $E=\\mathrm{Im}\\,p\\oplus\\ker p$, sa matrice est $\\mathrm{diag}(1,\\dots,1,0,\\dots,0)$ avec $\\mathrm{rg}(p)$ coefficients $1$).\nSi $p$, $q$ et $p+q$ sont tous trois des projecteurs, la trace étant linéaire :\n$$\\mathrm{rg}(p+q)=\\mathrm{Tr}(p+q)=\\mathrm{Tr}(p)+\\mathrm{Tr}(q)=\\mathrm{rg}(p)+\\mathrm{rg}(q).$$\n$\\square$\n\n*L'astuce « rang d'un projecteur = sa trace » revient très souvent en DS : elle transforme une question de rang en un calcul linéaire.*",
+    "programmeLevel": "sup_spe",
+    "level": 3,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Manipuler le rang par les images plutôt que par des calculs matriciels, et connaître l'égalité rang-trace des projecteurs.",
+    "prerequisites": [
+      "espaces vectoriels",
+      "applications linéaires",
+      "rang"
+    ]
+  },
+  {
+    "title": "Quand a-t-on $E=\\ker u\\oplus\\mathrm{Im}\\,u$ ?",
+    "statement": "Soit $E$ un $\\mathbb{K}$-espace vectoriel de dimension finie $n$ et $u\\in\\mathcal{L}(E)$.\n\n1. Montrer que $\\ker u\\subset\\ker u^2$ et $\\mathrm{Im}\\,u^2\\subset\\mathrm{Im}\\,u$.\n2. Montrer que $E=\\ker u\\oplus\\mathrm{Im}\\,u$ si et seulement si $\\ker u=\\ker u^2$.\n3. Montrer que cette condition équivaut aussi à $\\mathrm{rg}(u)=\\mathrm{rg}(u^2)$.\n4. Donner un exemple où $E\\neq\\ker u\\oplus\\mathrm{Im}\\,u$ bien que $\\dim\\ker u+\\dim\\mathrm{Im}\\,u=n$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Applications linéaires",
+    "estimatedMinutes": 28,
+    "tags": [
+      "noyau",
+      "image",
+      "somme directe",
+      "théorème du rang",
+      "rang",
+      "DS espaces vectoriels"
+    ],
+    "hints": [
+      "Le théorème du rang donne TOUJOURS $\\dim\\ker u+\\dim\\mathrm{Im}\\,u=n$ : la somme des dimensions n'est jamais le problème.",
+      "Il suffit donc de caractériser $\\ker u\\cap\\mathrm{Im}\\,u=\\{0\\}$.",
+      "Si $x\\in\\ker u\\cap\\mathrm{Im}\\,u$, écrivez $x=u(y)$ et appliquez $u$.",
+      "Pour la question 4, pensez à une matrice nilpotente d'ordre 2."
+    ],
+    "correction": "**1.** Si $u(x)=0$ alors $u^2(x)=u(0)=0$ : $\\ker u\\subset\\ker u^2$. Si $y=u^2(x)$ alors $y=u\\left(u(x)\\right)\\in\\mathrm{Im}\\,u$ : $\\mathrm{Im}\\,u^2\\subset\\mathrm{Im}\\,u$.\n\n**2.** Le théorème du rang donne toujours $\\dim\\ker u+\\dim\\mathrm{Im}\\,u=n$. La somme $\\ker u+\\mathrm{Im}\\,u$ est donc égale à $E$ si et seulement si elle est directe, c'est-à-dire si et seulement si $\\ker u\\cap\\mathrm{Im}\\,u=\\{0\\}$.\n($\\Leftarrow$) Supposons $\\ker u=\\ker u^2$ et soit $x\\in\\ker u\\cap\\mathrm{Im}\\,u$. Écrivons $x=u(y)$. Alors $u^2(y)=u(x)=0$, donc $y\\in\\ker u^2=\\ker u$, donc $x=u(y)=0$.\n($\\Rightarrow$) Supposons $E=\\ker u\\oplus\\mathrm{Im}\\,u$ et soit $x\\in\\ker u^2$. Alors $u(x)\\in\\ker u\\cap\\mathrm{Im}\\,u=\\{0\\}$, donc $u(x)=0$, soit $x\\in\\ker u$. Avec l'inclusion de la question 1, $\\ker u=\\ker u^2$. $\\square$\n\n**3.** Le théorème du rang appliqué à $u$ et à $u^2$ donne $\\dim\\ker u=n-\\mathrm{rg}(u)$ et $\\dim\\ker u^2=n-\\mathrm{rg}(u^2)$. Comme $\\ker u\\subset\\ker u^2$, l'égalité $\\ker u=\\ker u^2$ équivaut à l'égalité des dimensions, c'est-à-dire à $\\mathrm{rg}(u)=\\mathrm{rg}(u^2)$.\n\n**4.** Prenons $E=\\mathbb{R}^2$ et $u$ de matrice $N=\\begin{pmatrix} 0&1\\\\0&0\\end{pmatrix}$. Alors $\\ker u=\\mathrm{Im}\\,u=\\mathrm{Vect}\\left((1,0)\\right)$, de dimension $1$ chacun : la somme des dimensions vaut bien $1+1=2=n$, mais $\\ker u\\cap\\mathrm{Im}\\,u\\neq\\{0\\}$, donc la somme n'est PAS directe.\nCohérent avec 3 : $\\mathrm{rg}(u)=1$ tandis que $u^2=0$ donne $\\mathrm{rg}(u^2)=0$.\n\n*Piège classique : le théorème du rang garantit la bonne SOMME de dimensions, jamais la somme DIRECTE. C'est l'erreur la plus fréquente sur ce chapitre.*",
+    "programmeLevel": "sup_spe",
+    "level": 3,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Éviter le piège « théorème du rang donc somme directe » et disposer d'un critère opérationnel.",
+    "prerequisites": [
+      "espaces vectoriels",
+      "applications linéaires",
+      "théorème du rang"
+    ]
+  },
+  {
+    "title": "Hyperplans et formes linéaires",
+    "statement": "Soit $E$ un $\\mathbb{K}$-espace vectoriel de dimension finie $n\\geq 1$.\n\n1. Montrer que si $\\varphi$ est une forme linéaire NON NULLE sur $E$, alors $\\ker\\varphi$ est un hyperplan (c'est-à-dire un sous-espace de dimension $n-1$).\n2. Réciproquement, montrer que tout hyperplan $H$ de $E$ est le noyau d'une forme linéaire non nulle.\n3. Montrer que deux formes linéaires non nulles $\\varphi$ et $\\psi$ ont le même noyau si et seulement si elles sont proportionnelles.\n4. Soit $H$ un hyperplan et $D$ une droite non incluse dans $H$. Montrer que $E=H\\oplus D$.",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Espaces vectoriels",
+    "estimatedMinutes": 25,
+    "tags": [
+      "hyperplan",
+      "formes linéaires",
+      "dimension",
+      "somme directe",
+      "noyau",
+      "DS espaces vectoriels"
+    ],
+    "hints": [
+      "$\\varphi$ non nulle est surjective sur $\\mathbb{K}$ : son rang vaut $1$.",
+      "Pour la réciproque, complétez une base de $H$ par un vecteur $e_n$ et définissez $\\varphi$ par ses valeurs sur la base.",
+      "En question 3, si $\\ker\\varphi=\\ker\\psi=H$, prenez $a\\notin H$ et comparez $\\varphi(a)$ et $\\psi(a)$.",
+      "En question 4, $D\\not\\subset H$ signifie $H\\cap D=\\{0\\}$ car $D$ est une droite."
+    ],
+    "correction": "**1.** $\\varphi:E\\to\\mathbb{K}$ non nulle a une image non réduite à $\\{0\\}$ dans $\\mathbb{K}$, qui est de dimension $1$ : donc $\\mathrm{Im}\\,\\varphi=\\mathbb{K}$ et $\\mathrm{rg}(\\varphi)=1$. Le théorème du rang donne $\\dim\\ker\\varphi=n-1$ : c'est un hyperplan.\n\n**2.** Soit $H$ un hyperplan, $(e_1,\\dots,e_{n-1})$ une base de $H$, complétée en une base $(e_1,\\dots,e_{n-1},e_n)$ de $E$. Définissons $\\varphi$ comme l'unique forme linéaire vérifiant $\\varphi(e_i)=0$ pour $i\\leq n-1$ et $\\varphi(e_n)=1$. Elle est non nulle, et pour $x=\\sum x_ie_i$ on a $\\varphi(x)=x_n$, donc $\\varphi(x)=0\\iff x\\in\\mathrm{Vect}(e_1,\\dots,e_{n-1})=H$. Ainsi $H=\\ker\\varphi$. $\\square$\n\n**3.** ($\\Leftarrow$) Si $\\psi=\\lambda\\varphi$ avec $\\lambda\\neq 0$, les noyaux coïncident visiblement.\n($\\Rightarrow$) Supposons $\\ker\\varphi=\\ker\\psi=H$. Soit $a\\notin H$ ; alors $\\varphi(a)\\neq 0$. Posons $\\lambda=\\dfrac{\\psi(a)}{\\varphi(a)}$ et $\\theta=\\psi-\\lambda\\varphi$. Alors $\\theta$ s'annule sur $H$ (les deux formes y sont nulles) et $\\theta(a)=\\psi(a)-\\lambda\\varphi(a)=0$. Or $E=H\\oplus\\mathbb{K}a$ (question 4), donc $\\theta=0$ sur $E$, c'est-à-dire $\\psi=\\lambda\\varphi$. Enfin $\\lambda\\neq 0$ car $\\psi\\neq 0$. $\\square$\n\n**4.** $D$ est une droite non incluse dans $H$ : $H\\cap D$ est un sous-espace de $D$ (dimension $\\leq 1$) différent de $D$, donc $H\\cap D=\\{0\\}$. Et $\\dim H+\\dim D=(n-1)+1=n$. Par le critère de somme directe en dimension finie, $E=H\\oplus D$. $\\square$\n\n*À retenir : « hyperplan » et « noyau d'une forme linéaire non nulle » sont deux façons de dire la même chose, et le passage de l'une à l'autre est souvent la première ligne d'un exercice de DS.*",
+    "programmeLevel": "sup_spe",
+    "level": 2,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Faire le va-et-vient entre description par équation et description par dimension, réflexe central du chapitre.",
+    "prerequisites": [
+      "espaces vectoriels",
+      "dimension",
+      "formes linéaires"
+    ]
+  },
+  {
+    "title": "Liberté d'une famille de fonctions exponentielles",
+    "statement": "Soit $\\mathcal{F}$ le $\\mathbb{R}$-espace vectoriel des fonctions de $\\mathbb{R}$ dans $\\mathbb{R}$. Pour $a\\in\\mathbb{R}$, on note $f_a:x\\mapsto e^{ax}$.\n\n1. Soient $a_1<a_2<\\dots<a_p$ des réels. Montrer que $(f_{a_1},\\dots,f_{a_p})$ est libre dans $\\mathcal{F}$.\n2. Que peut-on en déduire sur la dimension de $\\mathcal{F}$ ?\n3. Montrer de même que la famille $(x\\mapsto\\cos(nx))_{n\\in\\mathbb{N}}$ est libre. *On pourra utiliser un argument d'intégration.*",
+    "source": "TaekdHub — exercice original",
+    "subject": "Mathématiques",
+    "type": "TD",
+    "difficulty": 3,
+    "chapter": "Espaces vectoriels",
+    "estimatedMinutes": 25,
+    "tags": [
+      "famille libre",
+      "dimension",
+      "fonctions",
+      "DS espaces vectoriels"
+    ],
+    "hints": [
+      "Supposez $\\sum\\lambda_kf_{a_k}=0$ et divisez par $e^{a_px}$ avant de faire tendre $x$ vers $+\\infty$.",
+      "Comme $a_k<a_p$ pour $k<p$, on a $e^{(a_k-a_p)x}\\to 0$.",
+      "Cela donne $\\lambda_p=0$, puis on recommence par récurrence descendante.",
+      "En question 3, utilisez l'orthogonalité : $\\int_{-\\pi}^{\\pi}\\cos(nx)\\cos(mx)\\,dx=0$ si $n\\neq m$."
+    ],
+    "correction": "**1.** Raisonnons par récurrence sur $p$. Pour $p=1$ : $\\lambda_1e^{a_1x}=0$ pour tout $x$ donne $\\lambda_1=0$.\nSupposons le résultat au rang $p-1$ et soit $\\sum_{k=1}^{p}\\lambda_ke^{a_kx}=0$ pour tout $x\\in\\mathbb{R}$. Divisons par $e^{a_px}$ (jamais nul) :\n$$\\sum_{k=1}^{p-1}\\lambda_ke^{(a_k-a_p)x}+\\lambda_p=0.$$\nPour $k\\leq p-1$ on a $a_k-a_p<0$, donc $e^{(a_k-a_p)x}\\xrightarrow[x\\to+\\infty]{}0$. En passant à la limite : $\\lambda_p=0$.\nIl reste $\\sum_{k=1}^{p-1}\\lambda_ke^{a_kx}=0$, et l'hypothèse de récurrence donne $\\lambda_1=\\dots=\\lambda_{p-1}=0$. $\\square$\n\n**2.** Pour tout $p\\in\\mathbb{N}^*$, $\\mathcal{F}$ contient une famille libre de $p$ éléments (prendre $a_k=k$). Donc $\\mathcal{F}$ n'est pas de dimension finie : $\\dim\\mathcal{F}=+\\infty$.\n\n**3.** Notons $c_n:x\\mapsto\\cos(nx)$ et supposons $\\sum_{n=0}^{N}\\lambda_nc_n=0$ (fonction nulle). Fixons $m\\in\\{0,\\dots,N\\}$, multiplions par $\\cos(mx)$ et intégrons sur $[-\\pi,\\pi]$ :\n$$\\sum_{n=0}^{N}\\lambda_n\\int_{-\\pi}^{\\pi}\\cos(nx)\\cos(mx)\\,dx=0.$$\nOr $\\int_{-\\pi}^{\\pi}\\cos(nx)\\cos(mx)\\,dx=0$ pour $n\\neq m$, vaut $\\pi$ pour $n=m\\geq 1$, et $2\\pi$ pour $n=m=0$. Il ne reste donc qu'un terme, non nul, d'où $\\lambda_m=0$. Ceci valant pour tout $m$, la famille est libre. $\\square$\n\n*Deux techniques à avoir dans la trousse pour prouver la liberté d'une famille de FONCTIONS : le comportement asymptotique (question 1) et l'orthogonalité par intégration (question 3). Une troisième existe : évaluer en des points bien choisis, ou dériver.*",
+    "programmeLevel": "sup_spe",
+    "level": 3,
+    "licenseStatus": "libre",
+    "pedagogicalGoal": "Prouver la liberté hors du cadre des dimensions finies, où les déterminants ne servent plus à rien.",
+    "prerequisites": [
+      "espaces vectoriels",
+      "fonctions",
+      "intégration"
+    ]
+  }
+]

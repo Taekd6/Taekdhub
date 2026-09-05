@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { localData, normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
+import { lastStorageWriteFailure, localData, normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -216,5 +216,185 @@ describe("localData — lecture blindée d'un stockage corrompu", () => {
     const preferences = withStorage({ "prepahub:preferences": "nope" }, () => localData.preferences());
     expect(preferences.dailyGoalMinutes).toBeGreaterThan(0);
     expect(preferences.themeMode).toBeTruthy();
+  });
+});
+
+/**
+ * ------------------------------------------------------------------------
+ * Écriture : la moitié du problème que la lecture blindée ne couvrait pas.
+ * ------------------------------------------------------------------------
+ * Les deux régressions ci-dessous font perdre, chacune, la TOTALITÉ de
+ * l'historique d'un élève — le contraire exact de la promesse du produit
+ * ("je déclare Réussi, je reviens plus tard, mon entraînement a évolué").
+ */
+
+const writeStore: Record<string, string> = {};
+let refuseWrites = false;
+
+const writableStub = {
+  getItem: (key: string) => writeStore[key] ?? null,
+  setItem: (key: string, value: string) => {
+    if (refuseWrites) {
+      // Ce que jette réellement un navigateur quand le quota est atteint.
+      const error = new Error("QuotaExceededError");
+      error.name = "QuotaExceededError";
+      throw error;
+    }
+    writeStore[key] = value;
+  },
+};
+
+function withWritableStorage<T>(entries: Record<string, string>, run: () => T, refuse = false): T {
+  Object.keys(writeStore).forEach((key) => delete writeStore[key]);
+  Object.assign(writeStore, entries);
+  refuseWrites = refuse;
+  const globals = globalThis as unknown as { window?: unknown; localStorage?: unknown };
+  const previousWindow = globals.window;
+  const previousStorage = globals.localStorage;
+  globals.window = globals.window ?? {};
+  globals.localStorage = writableStub;
+  try {
+    return run();
+  } finally {
+    refuseWrites = false;
+    globals.window = previousWindow;
+    globals.localStorage = previousStorage;
+  }
+}
+
+function rawSession(id: string, startedAt: string): Record<string, unknown> {
+  return makeRawSession({ id, started_at: startedAt, created_at: startedAt, ended_at: startedAt, duration_seconds: 600 });
+}
+
+/**
+ * Régression P0 — perte totale de l'historique par copie périmée.
+ *
+ * Chaque appel à `usePrepahubData()` a sa PROPRE copie React (ce n'est pas un
+ * contexte partagé). components/timer.tsx, en particulier, n'attend pas
+ * `ready` : tant que `maybeSeedBank()` n'a pas résolu (import dynamique de
+ * 1,35 Mo de JSON puis reconstruction de 477 exercices), sa liste `sessions`
+ * vaut encore `[]` — alors que `useWorkTimer` a déjà restauré le chrono
+ * persisté et que le bouton « Terminer » est cliquable. Un rechargement en
+ * pleine séance suivi de « Terminer » écrivait `[la séance en cours]` par
+ * REMPLACEMENT : toutes les séances précédentes disparaissaient d'un coup.
+ */
+describe("localData.mergeSessions — le scénario 'Terminer avant chargement'", () => {
+  it("une séance ajoutée depuis une liste vide ne détruit pas les six mois d'historique déjà stockés", () => {
+    const disk = [rawSession("s-1", "2026-01-01T08:00:00.000Z"), rawSession("s-2", "2026-02-01T08:00:00.000Z")];
+    const nouvelle = normalizeSession(rawSession("s-3", "2026-03-01T08:00:00.000Z"));
+
+    const stored = withWritableStorage({ "prepahub:sessions": JSON.stringify(disk) }, () =>
+      // Exactement ce que fait components/timer.tsx#handleStop avec `sessions === []`.
+      localData.mergeSessions([nouvelle])
+    );
+
+    expect(stored.map((session) => session.id).sort()).toEqual(["s-1", "s-2", "s-3"]);
+    expect(JSON.parse(writeStore["prepahub:sessions"])).toHaveLength(3);
+  });
+
+  it("la liste entrante fait foi pour les id qu'elle contient — une modification n'est pas annulée", () => {
+    const disk = [rawSession("s-1", "2026-01-01T08:00:00.000Z")];
+    const stored = withWritableStorage({ "prepahub:sessions": JSON.stringify(disk) }, () =>
+      localData.mergeSessions([normalizeSession({ ...rawSession("s-1", "2026-01-01T08:00:00.000Z"), result: "réussi" })])
+    );
+    expect(stored).toHaveLength(1);
+    expect(stored[0].result).toBe("réussi");
+  });
+
+  it("une liste entrante VIDE n'efface rien", () => {
+    const disk = [rawSession("s-1", "2026-01-01T08:00:00.000Z")];
+    const stored = withWritableStorage({ "prepahub:sessions": JSON.stringify(disk) }, () => localData.mergeSessions([]));
+    expect(stored).toHaveLength(1);
+  });
+
+  it("renvoie la liste RÉELLEMENT enregistrée, pas celle qu'on croyait écrire", () => {
+    const disk = [rawSession("s-1", "2026-01-01T08:00:00.000Z")];
+    const stored = withWritableStorage({ "prepahub:sessions": JSON.stringify(disk) }, () =>
+      localData.mergeSessions([normalizeSession(rawSession("s-2", "2026-02-01T08:00:00.000Z"))])
+    );
+    expect(stored).toHaveLength(2);
+  });
+});
+
+describe("localData.mergeExercises — une progression enregistrée ailleurs n'est pas annulée", () => {
+  it("garde les exercices absents de la liste entrante et applique la modification sur celui qu'elle contient", () => {
+    const disk = [
+      { id: "ex-1", subject: "Mathématiques", title: "A", source: "s", difficulty: 3, status: "à faire", created_at: "2026-01-01T00:00:00.000Z", attempts: 0 },
+      { id: "ex-2", subject: "Physique", title: "B", source: "s", difficulty: 3, status: "maîtrisé", created_at: "2026-01-01T00:00:00.000Z", attempts: 7 },
+    ];
+    const stored = withWritableStorage({ "prepahub:exercises": JSON.stringify(disk) }, () => {
+      const current = localData.exercises();
+      const patched = current.filter((item) => item.id === "ex-1").map((item) => ({ ...item, attempts: 1 }));
+      return localData.mergeExercises(patched);
+    });
+
+    expect(stored).toHaveLength(2);
+    expect(stored.find((item) => item.id === "ex-1")!.attempts).toBe(1);
+    expect(stored.find((item) => item.id === "ex-2")!.attempts).toBe(7);
+  });
+});
+
+/**
+ * Régression P0 — quota atteint = résultat perdu EN SILENCE.
+ *
+ * `localStorage.setItem` lève un `QuotaExceededError`, et aucun appel n'était
+ * protégé. Dans components/exercises/focus-view.tsx#commitResult, l'exception
+ * partait depuis un gestionnaire de clic React : `update(...)` et `onClose(...)`
+ * ne s'exécutaient jamais, l'écran « Comment s'est passé l'exercice ? » restait
+ * figé, et la séance était perdue sans aucun message. Ce n'est pas théorique :
+ * la banque amorcée sérialise à elle seule ~1,20 M caractères, soit ~2,3 Mo
+ * en UTF-16, sur un quota de 5 Mo par origine.
+ */
+describe("écriture refusée par le navigateur (quota) — ne lève jamais, et ne ment jamais", () => {
+  it("saveSessions renvoie false au lieu de faire exploser le gestionnaire de clic", () => {
+    const result = withWritableStorage({}, () => localData.saveSessions([normalizeSession(rawSession("s-1", "2026-01-01T08:00:00.000Z"))]), true);
+    expect(result).toBe(false);
+  });
+
+  it("mergeSessions ne lève pas non plus et laisse le disque intact", () => {
+    const disk = [rawSession("s-1", "2026-01-01T08:00:00.000Z")];
+    withWritableStorage({ "prepahub:sessions": JSON.stringify(disk) }, () => {
+      expect(() => localData.mergeSessions([normalizeSession(rawSession("s-2", "2026-02-01T08:00:00.000Z"))])).not.toThrow();
+    }, true);
+    expect(JSON.parse(writeStore["prepahub:sessions"])).toHaveLength(1);
+  });
+
+  it("l'échec est signalé, pour que l'app puisse le dire plutôt que de laisser croire que c'est enregistré", () => {
+    withWritableStorage({}, () => localData.saveExercises([]), true);
+    expect(lastStorageWriteFailure()?.key).toBe("prepahub:exercises");
+    // …et un écriture qui repasse efface le signal.
+    withWritableStorage({}, () => localData.saveExercises([]));
+    expect(lastStorageWriteFailure()).toBeNull();
+  });
+
+  it("saveChapters/savePreferences/saveWeekSnapshots ne lèvent pas non plus", () => {
+    withWritableStorage({}, () => {
+      expect(() => localData.saveChapters([])).not.toThrow();
+      expect(() => localData.saveWeekSnapshots([])).not.toThrow();
+      expect(() => localData.saveLastBackupAt("2026-01-01T00:00:00.000Z")).not.toThrow();
+      expect(() => localData.savePreferences(normalizePreferences({}))).not.toThrow();
+    }, true);
+  });
+});
+
+/**
+ * Compteurs négatifs — une seule valeur suffit à fausser durablement tout ce
+ * qui s'additionne (temps du jour, bilan hebdo, XP), sans qu'aucune erreur
+ * ne soit levée nulle part.
+ */
+describe("normalize* — un compteur négatif ne franchit jamais la frontière de confiance", () => {
+  it("une durée négative ne fait pas DIMINUER le temps de travail", () => {
+    expect(normalizeSession(makeRawSession({ duration_seconds: -3600 })).duration_seconds).toBe(0);
+  });
+
+  it("une durée fractionnaire est arrondie, jamais rejetée", () => {
+    expect(normalizeSession(makeRawSession({ duration_seconds: 599.6 })).duration_seconds).toBe(600);
+  });
+
+  it("des tentatives négatives et une durée estimée négative sont écartées", () => {
+    const raw = [{ id: "ex-1", subject: "Mathématiques", title: "A", source: "s", difficulty: 3, status: "à faire", created_at: "2026-01-01T00:00:00.000Z", attempts: -5, estimated_minutes: -30 }];
+    const [exercise] = withWritableStorage({ "prepahub:exercises": JSON.stringify(raw) }, () => localData.exercises());
+    expect(exercise.attempts).toBe(0);
+    expect(exercise.estimated_minutes).toBeNull();
   });
 });

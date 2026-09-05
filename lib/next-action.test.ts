@@ -26,6 +26,10 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     programme_level: null,
     license_status: null,
     external_id: null,
+  epreuve: null,
+  filieres: [],
+  exercise_number: null,
+  provenance: "originale",
     source_url: null,
     prerequisites: [],
     pedagogical_goal: null,
@@ -267,6 +271,35 @@ describe("computeChaptersToConsolidate", () => {
     ];
     const items = computeChaptersToConsolidate([exercise], sessions, chapters, NOW);
     expect(items[0].reasons).toContain("2 réussites avec indices");
+  });
+
+  it("détecte un chapitre où rien n'aboutit complètement : plusieurs exercices rendus à moitié", () => {
+    // Ni échec franc (rien ne l'alerte) ni maîtrise déclarée basse : sans ce
+    // signal, un chapitre où l'élève s'arrête systématiquement en chemin
+    // n'apparaissait nulle part.
+    const chapters: Chapter[] = [{ id: "chap-1", subject: "Mathématiques", label: "Séries" }];
+    const exercise = makeExercise({ chapter_id: "chap-1", mastery: 75, status: "en cours", attempts: 2 });
+    const sessions = [
+      makeSession(exercise.id, { result: "partiel", hints_used: 0, started_at: "2026-08-09T10:00:00.000Z" }),
+      makeSession(exercise.id, { result: "partiel", hints_used: 0, started_at: "2026-08-08T10:00:00.000Z" }),
+    ];
+    const items = computeChaptersToConsolidate([exercise], sessions, chapters, NOW);
+    expect(items[0].reasons).toContain("2 exercices à moitié traités");
+  });
+
+  it("un seul exercice rendu à moitié ne suffit pas à condamner un chapitre", () => {
+    // Le chapitre est bien listé (maîtrise faible), mais SANS la raison
+    // "à moitié" : il faut au moins deux tentatives pour parler d'un motif.
+    const chapters: Chapter[] = [{ id: "chap-1", subject: "Mathématiques", label: "Séries" }];
+    const exercise = makeExercise({ chapter_id: "chap-1", mastery: 25, status: "en cours", attempts: 2 });
+    const sessions = [
+      makeSession(exercise.id, { result: "partiel", hints_used: 0, started_at: "2026-08-09T10:00:00.000Z" }),
+      makeSession(exercise.id, { result: "réussi", hints_used: 0, started_at: "2026-08-08T10:00:00.000Z" }),
+    ];
+    const items = computeChaptersToConsolidate([exercise], sessions, chapters, NOW);
+    expect(items).toHaveLength(1);
+    expect(items[0].reasons).toContain("Maîtrise faible");
+    expect(items[0].reasons.some((reason) => reason.includes("à moitié"))).toBe(false);
   });
 
   it("des réussites autonomes ne déclenchent jamais ce signal", () => {

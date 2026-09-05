@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryBar, SubjectAvatar } from "@/components/exercises/exercise-badges";
 import type { Exercise } from "@/lib/supabase/types";
+import { MathInline } from "@/components/rich-math";
 
 /**
  * Vue "Archivés" (Sprint 3H) — consultation + restauration uniquement,
@@ -35,7 +36,7 @@ export function ArchivedExercises({ exercises, onRestore }: { exercises: Exercis
               <span className="text-xs text-zinc-500">{item.source}</span>
               <Badge>{item.type}</Badge>
             </div>
-            <h2 className="mt-2 truncate font-semibold tracking-tight text-zinc-100">{item.title}</h2>
+            <h2 className="mt-2 truncate font-semibold tracking-tight text-zinc-100"><MathInline text={item.title} /></h2>
             <div className="mt-2 flex flex-wrap items-center gap-2.5">
               <DifficultyDots value={item.difficulty} />
               <MasteryBar value={item.mastery} />

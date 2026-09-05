@@ -5,6 +5,15 @@ import { Button } from "@/components/ui/button";
 /**
  * Ce que le produit fait RÉELLEMENT aujourd'hui.
  *
+ * Plus AUCUN décompte d'exercices en dur ici. Cette page annonçait « 402
+ * exercices » à deux endroits alors que l'amorçage réel (lib/seed.ts, trois
+ * jeux de données fusionnés puis dédoublonnés) en produisait un tout autre
+ * nombre — vérifié en lançant l'app. Un chiffre écrit à la main dans une page
+ * d'accueil se désynchronise dès la première correction de la banque, et la
+ * toute première phrase que lit l'élève devient fausse. La banque est donc
+ * décrite, jamais comptée : c'est la seule formulation qui reste vraie quels
+ * que soient les exercices ajoutés ou retirés ensuite.
+ *
  * L'ancienne liste décrivait des mécaniques ("heatmap, streak, XP") plutôt que
  * des bénéfices, et l'une d'elles était devenue fausse : « Gagne de l'XP à
  * chaque séance et exercice terminé » promettait exactement l'automatisme qui
@@ -16,7 +25,7 @@ const features = [
   {
     icon: Target,
     title: "Il sait quoi te faire travailler",
-    desc: "402 exercices classés en continu selon tes résultats réels — et chaque recommandation dit pourquoi elle est là.",
+    desc: "Toute ta banque d'exercices classée en continu selon tes résultats réels — et chaque recommandation dit pourquoi elle est là.",
   },
   {
     icon: CalendarClock,
@@ -61,7 +70,7 @@ export default function Home() {
             </Link>
             <Link href="/exercises">
               <Button size="lg" variant="secondary">
-                Parcourir les 402 exercices
+                Parcourir la banque d&apos;exercices
               </Button>
             </Link>
           </div>

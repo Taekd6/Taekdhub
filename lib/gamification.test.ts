@@ -9,7 +9,11 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
   return {
     id: `ex-${counter}`, subject: "Mathématiques", title: `Exercice ${counter}`, statement: "",
     chapter_id: null, source: "Test", year: null, competition: null, programme_level: null,
-    license_status: null, external_id: null, source_url: null, prerequisites: [],
+    license_status: null, external_id: null,
+  epreuve: null,
+  filieres: [],
+  exercise_number: null,
+  provenance: "originale", source_url: null, prerequisites: [],
     pedagogical_goal: null, level: null, type: "TD", difficulty: 3,
     mastery: 0 as Mastery, status: "à faire", estimated_minutes: null, attempts: 0, note: null,
     created_at: now, updated_at: now, tags: [], favorite: false, archived: false, hints: [],

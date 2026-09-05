@@ -47,6 +47,29 @@ export type ProgrammeLevel = "sup" | "spe" | "sup_spe";
  */
 export type LicenseStatus = "libre" | "à vérifier" | "restreint";
 
+/** Filière de concours d'origine — `null` quand l'exercice n'en vient pas. */
+export type Filiere = "MP" | "MPI" | "PC" | "PSI" | "PT" | "TSI";
+
+/**
+ * NIVEAU DE VÉRIFICATION de la provenance — le champ qui empêche de faire
+ * passer pour un sujet de concours ce qui n'en est pas un.
+ *
+ * "concours-verifie" : concours, session, épreuve ET numéro d'exercice sont
+ *   tous connus. C'est le seul niveau qui autorise l'affichage complet
+ *   « CCINP 2023 · Maths 1 · exercice 4 ».
+ * "concours-partiel" : l'exercice vient bien d'un concours et l'épreuve est
+ *   identifiée, mais la session ne l'est pas — cas des recueils d'oraux,
+ *   qui classent par concours sans dater chaque exercice. L'interface
+ *   affiche alors « session inconnue » plutôt que d'inventer une année.
+ * "enseignant" : feuille de TD, DM ou DS d'un professeur.
+ * "originale" : écrit pour TaekdHub. Ne peut JAMAIS porter de concours.
+ *
+ * Le pipeline d'import fait respecter ces règles (lib/exercise-import.ts) :
+ * un exercice ne peut pas se déclarer d'un niveau que ses métadonnées ne
+ * justifient pas.
+ */
+export type Provenance = "concours-verifie" | "concours-partiel" | "enseignant" | "originale";
+
 /**
  * Palier PÉDAGOGIQUE de l'exercice (Sprint 4) — où il se situe dans la
  * progression d'apprentissage, DISTINCT de `Difficulty` (sa difficulté
@@ -55,16 +78,19 @@ export type LicenseStatus = "libre" | "à vérifier" | "restreint";
  * et inversement.
  *
  * 1 = Automatismes (très courts, réflexe/rapidité)
- * 2 = Classiques Sup (méthodes fondamentales à maîtriser)
+ * 2 = Classiques (méthodes fondamentales à maîtriser)
  * 3 = Consolidation (combine ou approfondit plusieurs classiques)
- * 4 = Transition Spé (prépare l'entrée en 2e année — voir contrainte ci-dessous)
- * 5 = Concours (plus long/subtil, mais reste accessible avec le programme actuel)
- * 6 = Expert (à débloquer beaucoup plus tard)
+ * 4 = Transition (fait le pont entre deux années/chapitres)
+ * 5 = Concours (plus long/subtil, format épreuve)
+ * 6 = Expert (nettement au-dessus de l'attendu courant)
  *
- * Contrainte produit (Sprint 4) : les niveaux 4 et 6 doivent TOUJOURS être
- * importés avec `archived: true` — jamais mélangés aux recommandations
- * actuelles (voir lib/exercise-import.ts, qui l'impose au niveau du pipeline,
- * pas seulement par convention).
+ * Ces paliers sont désormais une simple ÉTIQUETTE PÉDAGOGIQUE : ils ne
+ * décident plus de la visibilité d'un exercice. Les paliers 4 et 6 étaient
+ * jusqu'ici archivés d'office à l'import, parce que l'élève était en Sup et
+ * que rien de deuxième année ne devait entrer dans ses recommandations. Il
+ * est maintenant en MP : cette règle masquait exactement le contenu à
+ * travailler, elle a donc été retirée de lib/exercise-import.ts. `archived`
+ * redevient un choix de l'élève.
  */
 export type ExerciseLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -251,12 +277,31 @@ export interface Exercise {
    * X/ENS n'apparaissent jamais ici dans le dataset principal — voir `ProgrammeLevel`.
    */
   competition: string | null;
-  /** Niveau de programme réellement requis — voir `ProgrammeLevel`. `null` = non classifié. */
+  /**
+   * Niveau de programme réellement requis — voir `ProgrammeLevel`. `null` =
+   * non classifié. Étiquette informative (distinguer une révision de Sup d'un
+   * chapitre de Spé) : elle ne conditionne plus l'archivage à l'import.
+   */
   programme_level: ProgrammeLevel | null;
   /** Statut de réutilisation vérifié — voir `LicenseStatus`. `null` = non renseigné (exercice non issu d'une source externe, typiquement). */
   license_status: LicenseStatus | null;
   /** Identifiant externe (ex. référence SCEI), si disponible, sinon null. */
   external_id: string | null;
+  /** Épreuve d'origine (« Oral », « Maths 1 », « Maths 2 »…) — `null` hors concours. */
+  epreuve: string | null;
+  /**
+   * Filières concernées par le sujet — une LISTE, parce qu'un même sujet en
+   * sert souvent plusieurs : la banque d'oral du CCINP est publiée pour « la
+   * filière MP et la filière MPI ». Réduire cela à une seule valeur
+   * reviendrait à inventer une information que la source ne donne pas.
+   * `[]` quand l'exercice ne vient pas d'un concours, ou que la source reste
+   * muette sur la filière.
+   */
+  filieres: Filiere[];
+  /** Numéro ou identifiant de l'exercice dans le sujet d'origine. */
+  exercise_number: string | null;
+  /** Niveau de vérification de la provenance — voir `Provenance`. */
+  provenance: Provenance;
   /** URL vers la source originale, si disponible, sinon null. */
   source_url: string | null;
   /**

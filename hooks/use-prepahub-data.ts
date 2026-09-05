@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { localData, type Chapter, type Preferences, type WeekSnapshot } from "@/lib/storage";
+import { lastStorageWriteFailure, localData, type Chapter, type Preferences, type WeekSnapshot } from "@/lib/storage";
 import { loadSeedBank, reconcileSeedBank, SEED_CONTENT_VERSION, SEED_FLAG_KEY, SEED_VERSION_KEY } from "@/lib/seed";
 import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -22,8 +22,14 @@ async function maybeSeedBank(): Promise<void> {
     try {
       const { exercises, chapters } = await loadSeedBank();
       if (exercises.length === 0) return;
+      // La banque D'ABORD, et on n'écrit les chapitres/drapeaux que si elle
+      // est réellement passée. `localStorage.setItem` peut être refusé
+      // (quota : la banque pèse ~2,3 Mo en UTF-16 sur un budget de 5 Mo,
+      // voir lib/storage.ts#writeKey) ; l'ordre inverse laissait 84
+      // chapitres enregistrés SANS un seul exercice, et l'ancien `catch {}`
+      // rendait l'échec totalement invisible.
+      if (!localData.saveExercises(exercises)) return;
       localData.saveChapters(chapters);
-      localData.saveExercises(exercises);
       localStorage.setItem(SEED_FLAG_KEY, new Date().toISOString());
       localStorage.setItem(SEED_VERSION_KEY, String(SEED_CONTENT_VERSION));
     } catch {
@@ -42,8 +48,11 @@ async function maybeSeedBank(): Promise<void> {
     const seed = await loadSeedBank();
     if (seed.exercises.length === 0) return;
     const merged = reconcileSeedBank(localExercises, localData.chapters(), seed);
+    // Même règle qu'à l'amorçage : la version de contenu n'est marquée comme
+    // appliquée que si la banque réconciliée a VRAIMENT été écrite. Sinon on
+    // aurait perdu la réconciliation tout en jurant qu'elle a eu lieu.
+    if (!localData.saveExercises(merged.exercises)) return;
     localData.saveChapters(merged.chapters);
-    localData.saveExercises(merged.exercises);
     localStorage.setItem(SEED_VERSION_KEY, String(SEED_CONTENT_VERSION));
     if (!hasSeedFlag) localStorage.setItem(SEED_FLAG_KEY, new Date().toISOString());
   } catch {
@@ -59,6 +68,14 @@ type DataState = {
   lastBackupAt: string | null;
   preferences: Preferences;
   ready: boolean;
+  /**
+   * Horodatage de la dernière écriture REFUSÉE par le navigateur (quota
+   * dépassé, stockage bloqué) — `null` tant que tout passe. Voir
+   * lib/storage.ts#writeKey : sans ce signal, un quota atteint faisait
+   * disparaître les résultats déclarés en silence, l'élève croyant les avoir
+   * enregistrés.
+   */
+  writeFailedAt: string | null;
 };
 
 /**
@@ -76,7 +93,7 @@ function ensureWeekSnapshot(exercises: Exercise[], sessions: WorkSession[], week
   return next;
 }
 
-function readAll(): Omit<DataState, "ready"> {
+function readAll(): Omit<DataState, "ready" | "writeFailedAt"> {
   const exercises = localData.exercises();
   const sessions = localData.sessions();
   const weekSnapshots = ensureWeekSnapshot(exercises, sessions, localData.weekSnapshots());
@@ -100,10 +117,11 @@ export function usePrepahubData() {
     lastBackupAt: null,
     preferences: localData.preferences(),
     ready: false,
+    writeFailedAt: null,
   });
 
   const refresh = useCallback(() => {
-    setData({ ...readAll(), ready: true });
+    setData({ ...readAll(), ready: true, writeFailedAt: lastStorageWriteFailure()?.at ?? null });
   }, []);
 
   useEffect(() => {
@@ -124,24 +142,35 @@ export function usePrepahubData() {
     };
   }, [refresh]);
 
+  /**
+   * Écritures INCRÉMENTALES (une séance de plus, un exercice modifié) :
+   * fusionnées avec ce qui est réellement sur le disque plutôt qu'écrites en
+   * remplacement — voir lib/storage.ts#mergeById pour le scénario de perte
+   * totale que cela ferme. L'état React reçoit la liste RÉELLEMENT
+   * enregistrée, jamais celle qu'on croyait écrire.
+   *
+   * `saveChapters` reste un remplacement : les chapitres, eux, se
+   * SUPPRIMENT (lib/chapters.ts#removeChapter), une fusion y ressusciterait
+   * un chapitre que l'élève vient d'effacer.
+   */
   const saveSessions = useCallback((sessions: WorkSession[]) => {
-    localData.saveSessions(sessions);
-    setData((prev) => ({ ...prev, sessions }));
+    const stored = localData.mergeSessions(sessions);
+    setData((prev) => ({ ...prev, sessions: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
   const saveExercises = useCallback((exercises: Exercise[]) => {
-    localData.saveExercises(exercises);
-    setData((prev) => ({ ...prev, exercises }));
+    const stored = localData.mergeExercises(exercises);
+    setData((prev) => ({ ...prev, exercises: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
   const saveChapters = useCallback((chapters: Chapter[]) => {
     localData.saveChapters(chapters);
-    setData((prev) => ({ ...prev, chapters }));
+    setData((prev) => ({ ...prev, chapters, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
   const savePreferences = useCallback((preferences: Preferences) => {
     localData.savePreferences(preferences);
-    setData((prev) => ({ ...prev, preferences }));
+    setData((prev) => ({ ...prev, preferences, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
   return { ...data, refresh, saveSessions, saveExercises, saveChapters, savePreferences };

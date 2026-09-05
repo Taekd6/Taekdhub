@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ASSISTED_HINTS_THRESHOLD, comfortDifficulty, computeExerciseBankStats, computeWorkingLevel, explainReasons, isNeverWorked, recommendExercises } from "@/lib/recommendation";
-import type { Exercise, Mastery, Subject, WorkSession } from "@/lib/supabase/types";
+import type { AttemptResult, Exercise, Mastery, Subject, WorkSession } from "@/lib/supabase/types";
 
 let counter = 0;
 function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
@@ -18,6 +18,10 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     programme_level: null,
     license_status: null,
     external_id: null,
+  epreuve: null,
+  filieres: [],
+  exercise_number: null,
+  provenance: "originale",
     source_url: null,
     prerequisites: [],
     pedagogical_goal: null,
@@ -536,6 +540,31 @@ describe("Repos après une tentative — le produit ne se répète pas d'un jour
     expect(result.map((r) => r.exercise.id)).toContain(exercise.id);
   });
 
+  it("même échoué DEUX fois, il n'est pas reproposé dès le lendemain — le repos doit tenir contre le signal qu'il tempère", () => {
+    // À 50 points de repos, `masteryGap` + statut + `failureBonus` (40 pour
+    // deux échecs) repassaient devant un exercice jamais ouvert dès J+1 :
+    // sur 14 jours de banque réelle, un même exercice proposé 10 jours sur 14.
+    // Statut laissé tel quel ("à faire") : c'est l'état réel de la banque,
+    // que l'élève ne repasse pas à la main en "à revoir" après chaque échec.
+    const exercise = makeExercise({ mastery: 0, attempts: 2, last_worked_at: dayAgo(1) });
+    const sessions = [
+      makeSession(exercise.id, { result: "échoué", started_at: dayAgo(1) }),
+      makeSession(exercise.id, { result: "échoué", started_at: dayAgo(2) }),
+    ];
+    const fresh = makeExercise();
+    expect(recommendExercises([exercise, fresh], sessions, 2, { now: NOW })[0].exercise.id).toBe(fresh.id);
+
+    // … mais deux jours après l'échec, il repasse bien devant : le repos
+    // diffère, il n'enterre pas.
+    const rested = makeExercise({ mastery: 0, attempts: 2, last_worked_at: dayAgo(2) });
+    const restedSessions = [
+      makeSession(rested.id, { result: "échoué", started_at: dayAgo(2) }),
+      makeSession(rested.id, { result: "échoué", started_at: dayAgo(3) }),
+    ];
+    const otherFresh = makeExercise();
+    expect(recommendExercises([rested, otherFresh], restedSessions, 2, { now: NOW })[0].exercise.id).toBe(rested.id);
+  });
+
   it("entre deux exercices ratés, le plus ancien passe devant", () => {
     const recent = attempted(0);
     const older = attempted(2);
@@ -543,5 +572,199 @@ describe("Repos après une tentative — le produit ne se répète pas d'un jour
       (r) => r.exercise.id
     );
     expect(order[0]).toBe(older.exercise.id);
+  });
+});
+
+/**
+ * « Partiel » était le tiers du feedback qui ne servait à rien : aucune
+ * raison, aucun terme de score. Déclarer « Partiel » ne changeait donc
+ * strictement rien à la suite — et, pire, trois « Partiel » d'affilée
+ * suffisaient à faire basculer TOUS les scores à NaN (voir
+ * `comfortDifficulty`), figeant les propositions sur les mêmes exercices,
+ * jour après jour. Rejoué sur la vraie banque, 14 jours : 42 propositions
+ * pour 3 exercices distincts, les mêmes trois du premier au dernier jour.
+ */
+describe("Partiel — le résultat le plus fréquent doit compter", () => {
+  const dayAgo = (days: number) => new Date(NOW.getTime() - days * 86400000).toISOString();
+
+  it("un exercice marqué maîtrisé puis rendu à moitié revient dans les propositions", () => {
+    const exercise = makeExercise({ status: "maîtrisé", mastery: 100, attempts: 3, last_worked_at: dayAgo(4) });
+    const sessions = [makeSession(exercise.id, { result: "partiel", hints_used: 0, started_at: dayAgo(4) })];
+    const [result] = recommendExercises([exercise], sessions, 5, { now: NOW });
+    expect(result).toBeDefined();
+    expect(result.reasons).toContain("Réussi à moitié");
+  });
+
+  it("… et il passe devant un exercice jamais ouvert — sinon il resterait retenu sans jamais être proposé", () => {
+    const partial = makeExercise({ status: "maîtrisé", mastery: 100, attempts: 3, last_worked_at: dayAgo(4) });
+    const fresh = makeExercise();
+    const sessions = [makeSession(partial.id, { result: "partiel", hints_used: 0, started_at: dayAgo(4) })];
+    const order = recommendExercises([fresh, partial], sessions, 2, { now: NOW }).map((r) => r.exercise.id);
+    expect(order[0]).toBe(partial.id);
+  });
+
+  it("à profil identique, l'urgence suit ce que la tentative prouve : échoué, puis partiel, puis réussi avec aide", () => {
+    const profile = () => makeExercise({ status: "maîtrisé", mastery: 100, attempts: 1, last_worked_at: dayAgo(4) });
+    const failed = profile();
+    const partial = profile();
+    const assisted = profile();
+    const sessions = [
+      makeSession(failed.id, { result: "échoué", hints_used: 0, started_at: dayAgo(4) }),
+      makeSession(partial.id, { result: "partiel", hints_used: 0, started_at: dayAgo(4) }),
+      makeSession(assisted.id, { result: "réussi", hints_used: ASSISTED_HINTS_THRESHOLD + 1, started_at: dayAgo(4) }),
+    ];
+    const order = recommendExercises([assisted, partial, failed], sessions, 3, { now: NOW }).map((r) => r.exercise.id);
+    expect(order).toEqual([failed.id, partial.id, assisted.id]);
+  });
+
+  it("le repos vaut aussi pour le partiel : pas le lendemain, mais bien une fois le repos écoulé", () => {
+    const attempted = (days: number) => {
+      const exercise = makeExercise({ attempts: 1, last_worked_at: dayAgo(days) });
+      return { exercise, session: makeSession(exercise.id, { result: "partiel", hints_used: 0, started_at: dayAgo(days) }) };
+    };
+    const yesterday = attempted(1);
+    const freshA = makeExercise();
+    expect(recommendExercises([yesterday.exercise, freshA], [yesterday.session], 2, { now: NOW })[0].exercise.id).toBe(freshA.id);
+
+    const restedFor = attempted(4);
+    const freshB = makeExercise();
+    expect(recommendExercises([restedFor.exercise, freshB], [restedFor.session], 2, { now: NOW })[0].exercise.id).toBe(restedFor.exercise.id);
+  });
+
+  it("RÉGRESSION : une fenêtre entièrement composée de « partiel » donne un niveau de confort exploitable, jamais NaN", () => {
+    const exercises = Array.from({ length: 3 }, () => makeExercise({ difficulty: 4 }));
+    const sessions = exercises.map((exercise) => makeSession(exercise.id, { result: "partiel", hints_used: 0 }));
+    const comfort = comfortDifficulty(exercises, sessions)!;
+    expect(comfort).not.toBeNull();
+    expect(Number.isNaN(comfort.target)).toBe(false);
+    expect(comfort.target).toBe(4);
+  });
+
+  it("RÉGRESSION : trois « partiel » d'affilée ne figent pas le classement (tous les scores restent des nombres, le tri opère)", () => {
+    const attempted = Array.from({ length: 3 }, () => makeExercise({ difficulty: 3, attempts: 1, last_worked_at: dayAgo(5) }));
+    const sessions = attempted.map((exercise) => makeSession(exercise.id, { result: "partiel", hints_used: 0, started_at: dayAgo(5) }));
+    const fresh = makeExercise({ difficulty: 3 });
+
+    const results = recommendExercises([fresh, ...attempted], sessions, 10, { now: NOW });
+
+    expect(results).toHaveLength(4);
+    for (const result of results) expect(Number.isFinite(result.score)).toBe(true);
+    // Les trois exercices à moitié traités passent devant celui qui n'a
+    // jamais été ouvert : c'est exactement ce que le classement figé (NaN)
+    // rendait impossible.
+    expect(results.slice(0, 3).map((r) => r.exercise.id).sort()).toEqual(attempted.map((e) => e.id).sort());
+    expect(results[3].exercise.id).toBe(fresh.id);
+  });
+
+  it("explainReasons traduit le partiel en une phrase, sans retomber sur le libellé brut", () => {
+    expect(explainReasons(["Réussi à moitié", "Maîtrise faible"])).toBe("Tu ne l'avais traité qu'à moitié — on le reprend en entier.");
+  });
+});
+
+/**
+ * `status`/`mastery` sont saisis à la main et vieillissent mal ; un résultat
+ * de séance est un fait daté. Quand les deux se contredisent, c'est le fait
+ * qui doit décider du CLASSEMENT (jamais des données de l'élève). Sans ce
+ * plafond, un exercice coché « maîtrisé / 100 % » puis échoué tombait à ~-40
+ * quand un exercice jamais ouvert vaut ~85 : il était bien retenu, avec la
+ * raison « Échec récent », et pourtant jamais proposé.
+ */
+describe("Échec sur une fiche déclarée maîtrisée — le fait prime sur l'auto-évaluation", () => {
+  const dayAgo = (days: number) => new Date(NOW.getTime() - days * 86400000).toISOString();
+
+  it("un exercice maîtrisé à 100 % puis échoué repasse devant un exercice jamais ouvert", () => {
+    const failed = makeExercise({ status: "maîtrisé", mastery: 100, attempts: 4, last_worked_at: dayAgo(4) });
+    const fresh = makeExercise();
+    const sessions = [makeSession(failed.id, { result: "échoué", hints_used: 0, started_at: dayAgo(4) })];
+    const order = recommendExercises([fresh, failed], sessions, 2, { now: NOW }).map((r) => r.exercise.id);
+    expect(order[0]).toBe(failed.id);
+  });
+
+  it("la fiche de l'élève n'est jamais réécrite : seul le classement en tient compte", () => {
+    const failed = makeExercise({ status: "maîtrisé", mastery: 100, attempts: 4, last_worked_at: dayAgo(4) });
+    const sessions = [makeSession(failed.id, { result: "échoué", hints_used: 0, started_at: dayAgo(4) })];
+    recommendExercises([failed], sessions, 2, { now: NOW });
+    expect(failed.status).toBe("maîtrisé");
+    expect(failed.mastery).toBe(100);
+  });
+});
+
+/**
+ * La diversification doit DÉPARTAGER des candidats comparables, pas passer
+ * devant l'urgence. Le round-robin strict à deux niveaux, lui, repoussait le
+ * deuxième exercice le plus urgent derrière le meilleur de chacune des six
+ * autres matières : un élève qui venait d'échouer sur trois exercices de
+ * maths n'en revoyait qu'un seul dans une séance de cinq.
+ */
+describe("Diversité — elle départage, elle ne prime pas sur l'urgence", () => {
+  const dayAgo = (days: number) => new Date(NOW.getTime() - days * 86400000).toISOString();
+
+  it("plusieurs échecs dans un même chapitre ne sont pas noyés sous un exercice frais de chaque autre matière", () => {
+    const failed = Array.from({ length: 3 }, () =>
+      makeExercise({ subject: "Mathématiques", chapter_id: "chap-faible", status: "à revoir", mastery: 0, attempts: 2, last_worked_at: dayAgo(4) })
+    );
+    const sessions = failed.map((exercise) => makeSession(exercise.id, { result: "échoué", hints_used: 0, started_at: dayAgo(4) }));
+    const fresh = (["Physique", "Chimie", "Français", "Anglais"] as Subject[]).map((subject) => makeExercise({ subject }));
+
+    const top = recommendExercises([...failed, ...fresh], sessions, 5, { now: NOW });
+    const failedIds = new Set(failed.map((exercise) => exercise.id));
+
+    expect(top.filter((r) => failedIds.has(r.exercise.id)).length).toBeGreaterThanOrEqual(2);
+    // … sans pour autant monopoliser la séance : les autres matières restent servies.
+    expect(top.some((r) => !failedIds.has(r.exercise.id))).toBe(true);
+  });
+
+  it("à scores égaux (banque neuve), la rotation entre matières reste stricte", () => {
+    const maths = Array.from({ length: 4 }, () => makeExercise({ subject: "Mathématiques" }));
+    const physique = Array.from({ length: 2 }, () => makeExercise({ subject: "Physique" }));
+    const subjects = recommendExercises([...maths, ...physique], [], 4, { now: NOW }).map((r) => r.exercise.subject);
+    expect(subjects).toEqual(["Mathématiques", "Physique", "Mathématiques", "Physique"]);
+  });
+
+  it("aucun candidat n'est perdu ni dupliqué par la diversification", () => {
+    const bank = [
+      ...Array.from({ length: 5 }, () => makeExercise({ subject: "Mathématiques", chapter_id: "chap-A" })),
+      ...Array.from({ length: 2 }, () => makeExercise({ subject: "Physique", chapter_id: null })),
+      ...Array.from({ length: 3 }, () => makeExercise({ subject: "Chimie", chapter_id: "chap-C", mastery: 25 })),
+    ];
+    const all = recommendExercises(bank, [], bank.length, { now: NOW });
+    expect(new Set(all.map((r) => r.exercise.id)).size).toBe(bank.length);
+  });
+});
+
+/**
+ * LA question du produit : « déclarer Réussi / Partiel / Échoué change-t-il
+ * réellement les exercices suivants ? ». Un seul et même exercice, un seul et
+ * même profil de fiche — seul le résultat déclaré change.
+ */
+describe("Boucle de feedback — le résultat déclaré change réellement la suite", () => {
+  const dayAgo = (days: number) => new Date(NOW.getTime() - days * 86400000).toISOString();
+
+  function scoreAfter(result: AttemptResult | null, hintsUsed: number | null): number {
+    const exercise = makeExercise({ status: "en cours", mastery: 25, attempts: 1, last_worked_at: dayAgo(4) });
+    const sessions = [makeSession(exercise.id, { result, hints_used: hintsUsed, started_at: dayAgo(4) })];
+    return recommendExercises([exercise], sessions, 1, { now: NOW })[0].score;
+  }
+
+  it("échoué remonte, partiel remonte moins, réussi en autonomie redescend — et l'étape passée ne bouge rien", () => {
+    const skipped = scoreAfter(null, null);
+    expect(scoreAfter("échoué", 0)).toBeGreaterThan(scoreAfter("partiel", 0));
+    expect(scoreAfter("partiel", 0)).toBeGreaterThan(skipped);
+    expect(scoreAfter("réussi", 0)).toBeLessThan(skipped);
+    // « Passer » l'étape du résultat doit rester neutre : même score que si
+    // le champ n'existait pas (séance antérieure, séance libre…).
+    expect(scoreAfter(null, null)).toBe(skipped);
+  });
+
+  it("chaque résultat produit une raison différente et lisible", () => {
+    const reasonsFor = (result: AttemptResult, hintsUsed: number) => {
+      const exercise = makeExercise({ status: "en cours", mastery: 50, attempts: 1, last_worked_at: dayAgo(4) });
+      const sessions = [makeSession(exercise.id, { result, hints_used: hintsUsed, started_at: dayAgo(4) })];
+      return recommendExercises([exercise], sessions, 1, { now: NOW })[0].reasons;
+    };
+    expect(reasonsFor("échoué", 0)).toContain("Échec récent");
+    expect(reasonsFor("partiel", 0)).toContain("Réussi à moitié");
+    expect(reasonsFor("réussi", ASSISTED_HINTS_THRESHOLD)).toContain("Réussi avec aide");
+    expect(reasonsFor("réussi", 0)).toContain("Réussi récemment");
   });
 });
