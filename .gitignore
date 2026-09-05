@@ -7,3 +7,7 @@ tsconfig.tsbuildinfo
 # Sortie de scripts/ingest-concours.py : contenu tiers, jamais versionné.
 /concours-import*.json
 /exos.zip
+
+# Bytecode Python de scripts/
+__pycache__/
+*.pyc
