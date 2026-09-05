@@ -1,43 +1,47 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/cn";
 
+/**
+ * BOUTON — quatre intentions, trois tailles, aucune ombre.
+ *
+ * Règle de composition qui vaut pour tout l'écran : UN SEUL bouton `primary`
+ * par vue. Dès qu'il y en a deux, aucun des deux ne veut plus dire « c'est
+ * ici qu'on clique ». Tout le reste est `secondary` (filet) ou `ghost`
+ * (texte seul).
+ *
+ * Le survol ne modifie ni la taille, ni la position, ni l'ombre : uniquement
+ * le fond. Un bouton qui se soulève au passage de la souris fait bouger la
+ * page sous le curseur — c'est du bruit, pas du retour d'information.
+ * L'appui, lui, assombrit franchement : c'est le seul moment où l'on veut un
+ * accusé de réception immédiat.
+ */
 const buttonVariants = cva(
-  // `transition-colors` et non `transition-all` : animer toutes les propriétés
-  // fait bouger la taille au survol (padding, bordure) — un tremblement, pas
-  // une réaction. `font-medium` plutôt que `semibold` : le gras appartient aux
-  // titres, pas à chaque contrôle.
-  "focus-ring inline-flex select-none items-center justify-center gap-2 rounded-lg font-medium transition-colors duration-150 disabled:pointer-events-none disabled:opacity-40",
+  "relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap font-medium transition-[background-color,border-color,color,opacity] duration-150 disabled:pointer-events-none disabled:opacity-40",
   {
     variants: {
       variant: {
-        // `bg-accent-solid` et non `bg-accent` : le bouton principal porte la
-        // COULEUR DE MARQUE telle quelle dans les deux thèmes (avec
-        // `text-accent-foreground`, noir ou blanc selon sa luminance). Seule
-        // l'encre — texte, icônes, teintes fines — s'assombrit en thème clair.
-        // UNE seule action pleine par écran : `primary` doit rester rare pour
-        // rester lisible comme « c'est ici qu'on clique ».
-        primary: "bg-accent-solid text-accent-solid-foreground hover:opacity-90 active:opacity-100",
-        secondary: "border border-hairline/[0.14] bg-transparent text-ink hover:bg-inset",
-        ghost: "text-muted hover:bg-inset hover:text-ink",
-        danger: "border border-rose-500/25 text-rose-300 hover:bg-rose-500/10",
+        primary:
+          "rounded-lg bg-accent-solid text-accent-solid-foreground hover:opacity-[0.88] active:opacity-100",
+        secondary:
+          "rounded-lg border border-line bg-panel text-ink hover:bg-inset active:bg-inset",
+        ghost: "rounded-lg text-muted hover:bg-inset hover:text-ink",
+        danger: "rounded-lg border border-rose-500/30 text-rose-300 hover:bg-rose-500/10",
+        /**
+         * Lien-action : se lit comme du texte, se comporte comme un bouton.
+         * Pour les sorties secondaires d'une section (« Tout voir »,
+         * « Modifier »), qui n'ont aucune raison de porter un cadre.
+         */
+        link: "rounded text-accent underline-offset-[3px] hover:underline",
       },
       /*
-       * Hauteurs minimales explicites plutôt que « ce que le padding donne » :
-       * mesuré au navigateur, `sm` tombait à 34 px et `icon` à 32 px, très en
-       * dessous des ~44 px recommandés pour une cible tactile — or ces deux
-       * tailles portent l'essentiel des actions sur mobile (raccourcis du
-       * Dashboard, préréglages de durée, "Préparer maintenant"…).
-       *
-       * Le palier `max-lg:` ne s'applique QU'EN DESSOUS du point de rupture où
-       * la barre latérale apparaît (lg) — c'est-à-dire exactement là où l'app
-       * est utilisée au doigt. La densité du desktop (souris, cibles fines
-       * acceptables) reste donc strictement inchangée : aucune régression
-       * visuelle sur les listes denses d'exercices.
+       * Hauteurs minimales explicites. Sous `lg` (c'est-à-dire là où l'app est
+       * utilisée au doigt), tout contrôle passe à 44 px — la cible tactile
+       * admise. La densité du desktop reste inchangée.
        */
       size: {
-        sm: "min-h-8 gap-1.5 px-2.5 text-xs max-lg:min-h-11",
+        sm: "min-h-8 gap-1.5 px-2.5 text-[0.8125rem] max-lg:min-h-11",
         md: "min-h-9 px-3.5 text-sm max-lg:min-h-11",
-        lg: "min-h-11 px-5 text-sm",
+        lg: "min-h-11 px-5 text-[0.9375rem]",
         icon: "h-9 w-9 p-0 max-lg:h-11 max-lg:w-11",
       },
     },

@@ -13,5 +13,67 @@ export function PreparationCommand() {
   const snapshot = useMemo(() => computePreparationSnapshot(exercises, sessions, chapters), [exercises, sessions, chapters]); const plan = useMemo(() => computePreparationPlan(exercises, sessions, chapters, minutes), [exercises, sessions, chapters, minutes]);
   if (!ready || snapshot.subjects.length === 0) return null;
   const start = () => { const picks = plan.items.flatMap((item) => { const exercise = exercises.find((e) => e.id === item.exerciseId); return exercise ? [{ exercise, score: 0, reasons: [item.reason] }] : []; }); const stored = serializePlan({ blocks: [{ intent: "consolider", label: "Préparation globale", focus: "Toutes tes matières", estimatedMinutes: plan.allocatedMinutes, picks }], requestedMinutes: plan.requestedMinutes, totalMinutes: plan.allocatedMinutes, totalExercises: picks.length }); sessionStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(stored)); router.push("/session"); };
-  return <section className="mt-8 border-y border-hairline/[0.07] py-7"><div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"><div className="max-w-2xl"><p className="eyebrow">Préparation globale</p><h2 className="mt-2 text-2xl font-semibold tracking-tight">Ne laisse aucune matière disparaître.</h2><p className="mt-2 text-sm leading-6 text-muted">TaekdHub protège d&apos;abord la couverture de tes matières, puis utilise ses recommandations pour remplir le temps restant.</p></div><SegmentedControl ariaLabel="Temps de préparation" value={minutes} onChange={setMinutes} options={[30,45,60,90].map((value) => ({ value, label: `${value} min` }))} /></div><div className="mt-6 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{snapshot.subjects.map((state) => { const planned = plan.items.filter((i) => i.subject === state.subject).reduce((s,i) => s+i.minutes,0); return <div key={state.subject} className="rounded-lg border border-hairline/[0.07] p-3.5"><div className="flex items-center justify-between gap-2"><span className="flex items-center gap-2 text-sm font-medium"><SubjectAvatar subject={state.subject} size="sm" />{state.subject}</span><span className="text-xs tabular-nums text-muted">{planned ? `${planned} min` : "—"}</span></div><p className="mt-2 text-xs text-muted">{state.completionRate}% maîtrisé · {state.pending} restant{state.pending > 1 ? "s" : ""}</p></div>; })}</div><div className="mt-6 flex flex-col gap-4 rounded-xl bg-inset p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 shrink-0 text-accent" size={18}/><div><p className="text-sm font-medium text-ink">{plan.allocatedMinutes} min construites · {plan.items.length} exercice{plan.items.length > 1 ? "s" : ""}</p><p className="mt-0.5 text-xs text-muted">Chaque minute est recalculée depuis ton historique actuel.</p></div></div><Button onClick={start} disabled={!plan.items.length}>Construire ma séance <ArrowRight size={14}/></Button></div></section>;
+  /*
+   * L'en-tête interne (« PRÉPARATION GLOBALE · Ne laisse aucune matière
+   * disparaître. ») a été retiré : ce composant avait son propre titre parce
+   * qu'il vivait AU MILIEU du tableau de bord, sous un autre titre. Il a
+   * maintenant son écran, dont l'en-tête dit déjà de quoi il s'agit — deux
+   * titres empilés ne hiérarchisent rien.
+   */
+  return (
+    <div className="space-y-7">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <p className="t-meta max-w-[56ch]">
+          TaekdHub protège d&apos;abord la couverture de tes matières, puis utilise ses recommandations pour remplir le
+          temps restant.
+        </p>
+        <SegmentedControl
+          ariaLabel="Temps de préparation"
+          value={minutes}
+          onChange={setMinutes}
+          options={[30, 45, 60, 90].map((value) => ({ value, label: `${value} min` }))}
+        />
+      </div>
+
+      {/* Une LIGNE par matière, avec la minute allouée alignée à droite :
+          c'est une répartition, et une répartition se lit en colonne. */}
+      <ul className="divide-y divide-line border-y border-line">
+        {snapshot.subjects.map((state) => {
+          const planned = plan.items
+            .filter((item) => item.subject === state.subject)
+            .reduce((sum, item) => sum + item.minutes, 0);
+          return (
+            <li key={state.subject} className="flex items-center gap-3 py-3">
+              <SubjectAvatar subject={state.subject} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="t-subhead truncate">{state.subject}</p>
+                <p className="t-meta mt-0.5">
+                  {state.completionRate} % maîtrisé · {state.pending} restant{state.pending > 1 ? "s" : ""}
+                </p>
+              </div>
+              <span className={planned ? "t-figure-sm shrink-0" : "t-meta tabular shrink-0"}>
+                {planned ? `${planned} min` : "—"}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="mt-0.5 shrink-0 text-accent" size={17} />
+          <div>
+            <p className="t-subhead">
+              {plan.allocatedMinutes} min construites · {plan.items.length} exercice
+              {plan.items.length > 1 ? "s" : ""}
+            </p>
+            <p className="t-meta mt-0.5">Chaque minute est recalculée depuis ton historique actuel.</p>
+          </div>
+        </div>
+        <Button onClick={start} disabled={!plan.items.length}>
+          Construire ma séance <ArrowRight size={14} />
+        </Button>
+      </div>
+    </div>
+  );
 }

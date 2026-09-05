@@ -1,91 +1,89 @@
 import Link from "next/link";
-import { ArrowRight, CalendarClock, ListChecks, Sparkles, Target } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Wordmark } from "@/components/app-nav";
 
 /**
- * Ce que le produit fait RÉELLEMENT aujourd'hui.
+ * PAGE D'ACCUEIL PUBLIQUE.
  *
- * Plus AUCUN décompte d'exercices en dur ici. Cette page annonçait « 402
- * exercices » à deux endroits alors que l'amorçage réel (lib/seed.ts, trois
- * jeux de données fusionnés puis dédoublonnés) en produisait un tout autre
- * nombre — vérifié en lançant l'app. Un chiffre écrit à la main dans une page
- * d'accueil se désynchronise dès la première correction de la banque, et la
- * toute première phrase que lit l'élève devient fausse. La banque est donc
- * décrite, jamais comptée : c'est la seule formulation qui reste vraie quels
- * que soient les exercices ajoutés ou retirés ensuite.
+ * Ce que le produit fait RÉELLEMENT, sans un seul chiffre écrit à la main :
+ * la page annonçait autrefois « 402 exercices » alors que l'amorçage réel en
+ * produisait un tout autre nombre. Un décompte codé en dur se désynchronise
+ * dès la première correction de la banque, et la première phrase que lit
+ * l'élève devient fausse. La banque est donc DÉCRITE, jamais comptée.
  *
- * L'ancienne liste décrivait des mécaniques ("heatmap, streak, XP") plutôt que
- * des bénéfices, et l'une d'elles était devenue fausse : « Gagne de l'XP à
- * chaque séance et exercice terminé » promettait exactement l'automatisme qui
- * a été supprimé — l'XP exige désormais une réussite prouvée. Une page
- * d'accueil qui promet ce que le produit ne fait plus est le plus court chemin
- * vers la déception au premier usage.
+ * Composition : une page de titre, pas une page d'atterrissage marketing.
+ * Un énoncé au centre gauche, deux actions, puis quatre principes séparés par
+ * des filets. Aucune carte, aucun dégradé, aucune capture d'écran — c'est un
+ * outil de travail, il se présente comme tel.
  */
-const features = [
+const PRINCIPES = [
   {
-    icon: Target,
-    title: "Il sait quoi te faire travailler",
-    desc: "Toute ta banque d'exercices classée en continu selon tes résultats réels — et chaque recommandation dit pourquoi elle est là.",
+    titre: "Il sait quoi te faire travailler",
+    texte:
+      "Toute ta banque classée en continu selon tes résultats réels — et chaque recommandation dit pourquoi elle est là.",
   },
   {
-    icon: CalendarClock,
-    title: "Un plan adapté au temps que tu as",
-    desc: "20 minutes ou 90 : la séance ne fait pas que s'allonger, sa structure change. Réparer d'abord, entretenir ensuite.",
+    titre: "Un plan adapté au temps que tu as",
+    texte:
+      "20 minutes ou 90 : la séance ne fait pas que s'allonger, sa structure change. Réparer d'abord, entretenir ensuite.",
   },
   {
-    icon: ListChecks,
-    title: "Réussir seul ≠ réussir aidé",
-    desc: "Les indices que tu révèles sont comptés. Un exercice arraché aux indices revient ; une réussite autonome, non.",
+    titre: "Réussir seul n'est pas réussir aidé",
+    texte:
+      "Les indices que tu révèles sont comptés. Un exercice arraché aux indices revient ; une réussite autonome, non.",
   },
   {
-    icon: Sparkles,
-    title: "Tes points faibles, avec les preuves",
-    desc: "Trois chapitres prioritaires, chacun justifié par tes tentatives datées. Rien d'inventé, rien de décoratif.",
+    titre: "Des annales, pas des imitations",
+    texte:
+      "Un exercice n'est présenté comme sujet de concours que si sa source établit le concours, l'année, l'épreuve et le numéro.",
   },
 ];
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-canvas px-6 text-ink">
-      <div className="mx-auto max-w-5xl">
-        <header className="flex min-h-[85vh] flex-col justify-center">
-          <div className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-brand text-black shadow-glow">
-              <Sparkles size={16} />
-            </span>
-            <p className="eyebrow text-accent">TaekdHub</p>
-          </div>
-          <h1 className="mt-6 max-w-3xl text-5xl font-semibold tracking-tight md:text-7xl">
-            Chaque heure <span className="text-gradient">compte.</span>
+      <div className="mx-auto max-w-[62rem]">
+        <header className="flex items-center py-6">
+          <Wordmark />
+        </header>
+
+        <section className="flex min-h-[calc(100vh-14rem)] flex-col justify-center py-16">
+          <p className="t-label">Prépa scientifique</p>
+          <h1 className="mt-5 max-w-[16ch] font-serif text-[clamp(2.75rem,1.8rem+4.2vw,5rem)] font-normal leading-[1.02] tracking-[-0.03em]">
+            Chaque heure compte.
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-8 text-muted">
-            TaekdHub regarde ce que tu réussis, ce que tu rates et ce que tu n&apos;obtiens qu&apos;avec des indices, puis te dit quoi
-            travailler maintenant — et pourquoi. Pour la prépa scientifique.
+          <p className="t-read mt-7 max-w-[48ch] text-muted">
+            TaekdHub regarde ce que tu réussis, ce que tu rates et ce que tu n&apos;obtiens qu&apos;avec des indices,
+            puis te dit quoi travailler maintenant — et pourquoi.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
             <Link href="/dashboard">
               <Button size="lg">
-                Ouvrir le tableau de bord <ArrowRight size={18} />
+                Ouvrir TaekdHub <ArrowRight size={17} />
               </Button>
             </Link>
             <Link href="/exercises">
               <Button size="lg" variant="secondary">
-                Parcourir la banque d&apos;exercices
+                Parcourir la bibliothèque
               </Button>
             </Link>
           </div>
-        </header>
+        </section>
 
-        <section className="grid gap-4 pb-20 sm:grid-cols-2">
-          {features.map(({ icon: Icon, title, desc }) => (
-            <article key={title} className="surface surface-hover rounded-2xl p-6">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-accent/10">
-                <Icon size={18} className="text-accent" />
+        <section className="border-t border-line pb-24">
+          <dl className="divide-y divide-line">
+            {/* Deux colonnes en flex plutôt qu'une grille de gabarit : les
+                gabarits de page appartiennent au système de composition
+                (components/ui/layout.tsx), pas aux écrans. Ici il ne s'agit
+                que d'un terme et de sa définition côte à côte. */}
+            {PRINCIPES.map(({ titre, texte }) => (
+              <div key={titre} className="flex flex-col gap-2 py-7 sm:flex-row sm:gap-10">
+                <dt className="t-heading sm:w-72 sm:shrink-0">{titre}</dt>
+                <dd className="t-body min-w-0 max-w-[58ch] text-muted">{texte}</dd>
               </div>
-              <h2 className="mt-4 font-semibold">{title}</h2>
-              <p className="mt-2 text-sm leading-6 text-muted">{desc}</p>
-            </article>
-          ))}
+            ))}
+          </dl>
         </section>
       </div>
     </main>

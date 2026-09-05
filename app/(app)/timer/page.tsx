@@ -1,1 +1,14 @@
-import { PageHeader } from "@/components/page-header"; import { Timer } from "@/components/timer"; export default function TimerPage(){return <><PageHeader eyebrow="Focus" title="Chronomètre" description="Une seule chose à la fois."/><Timer/></>}
+import { PageBar, Stack } from "@/components/ui/layout";
+import { Timer } from "@/components/timer";
+
+export default function TimerPage() {
+  return (
+    <Stack className="space-y-8">
+      <PageBar
+        title="Chronomètre"
+        meta="Pour le travail qui ne passe pas par un exercice de la banque — un DM, une relecture de cours."
+      />
+      <Timer />
+    </Stack>
+  );
+}

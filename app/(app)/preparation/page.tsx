@@ -1,6 +1,16 @@
-import { PageHeader } from "@/components/page-header";
+import { PageBar, Stack } from "@/components/ui/layout";
 import { PreparationCommand } from "@/components/preparation/preparation-command";
-export const metadata = { title: "Préparation globale" };
+
+export const metadata = { title: "Équilibrer mes matières — TaekdHub" };
+
 export default function PreparationPage() {
-  return <><PageHeader eyebrow="Pilotage" title="Préparation globale" description="Répartir ton temps sans perdre de vue une seule matière." /><PreparationCommand /></>;
+  return (
+    <Stack className="space-y-8">
+      <PageBar
+        title="Équilibrer mes matières"
+        meta="Répartir ton temps sans laisser une matière disparaître — la vue d'ensemble que la séance du jour ne donne pas."
+      />
+      <PreparationCommand />
+    </Stack>
+  );
 }

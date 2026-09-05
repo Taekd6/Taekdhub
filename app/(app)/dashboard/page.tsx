@@ -1,13 +1,12 @@
-"use client";
-import { useMemo } from "react";
-import { PageHeader } from "@/components/page-header";
 import { DashboardOverview } from "@/components/dashboard-overview";
-import { PreparationCommand } from "@/components/preparation/preparation-command";
-import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { computeDailyObjective, computeNextAction, computeStatusLine } from "@/lib/next-action";
-const today = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
+
+/**
+ * L'écran ne pose plus d'en-tête au-dessus de son contenu : le titre vit
+ * DANS la composition (voir `PageBar`, components/ui/layout.tsx), à
+ * l'intérieur de la colonne principale, pour que le rail « où j'en suis »
+ * commence à la même hauteur que lui. Un en-tête pleine largeur au-dessus
+ * d'une mise en page en deux colonnes casse justement les deux colonnes.
+ */
 export default function DashboardPage() {
-  const { sessions, exercises, preferences, ready } = usePrepahubData(); const name = preferences.displayName?.trim(); const greeting = ready && name ? `Bonjour, ${name}.` : "Bonjour.";
-  const description = useMemo(() => { if (!ready) return "Une séance claire, puis la suivante."; const now = new Date(); return computeStatusLine(computeDailyObjective(sessions, preferences.dailyGoalMinutes, now), computeNextAction(exercises, sessions, preferences.dailyGoalMinutes, now)); }, [ready, sessions, exercises, preferences.dailyGoalMinutes]);
-  return <><PageHeader eyebrow={today} title={greeting} description={description}/><DashboardOverview/><PreparationCommand/></>;
+  return <DashboardOverview />;
 }

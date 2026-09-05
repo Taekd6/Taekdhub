@@ -90,41 +90,67 @@ export default {
         teal: { 200: "rgb(var(--teal-200-rgb) / <alpha-value>)", 400: "rgb(var(--teal-400-rgb) / <alpha-value>)" },
         orange: { 200: "rgb(var(--orange-200-rgb) / <alpha-value>)", 400: "rgb(var(--orange-400-rgb) / <alpha-value>)" },
       },
-      borderRadius: {
-        sm: "0.5rem",
-        md: "0.75rem",
-        lg: "1rem",
-        xl: "1.25rem",
-        "2xl": "1.5rem",
-        "3xl": "1.75rem",
+      fontFamily: {
+        // Voir app/layout.tsx : `sans` = chrome, `serif` = contenu lu.
+        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        serif: ["var(--font-serif)", "Georgia", "serif"],
       },
+      /*
+       * RAYONS — quatre marches, resserrées.
+       *
+       * L'ancienne échelle montait à 1,75 rem : au-delà d'une douzaine de
+       * pixels, un coin arrondi cesse de dire « ceci est un bloc » et
+       * commence à dire « ceci est un coussin ». Les blocs de contenu
+       * s'arrondissent peu (10-12 px), les contrôles un peu moins (8 px), et
+       * seules les pastilles sont pleinement rondes.
+       */
+      borderRadius: {
+        sm: "0.375rem",
+        DEFAULT: "0.5rem",
+        md: "0.5rem",
+        lg: "0.625rem",
+        xl: "0.75rem",
+        "2xl": "0.75rem",
+        "3xl": "0.875rem",
+      },
+      /*
+       * OMBRES — une seule, et elle ne sert QU'AUX couches flottantes
+       * (feuille modale, menu déroulant, barre collante au moment où elle se
+       * décolle). Le contenu en place se détache par sa valeur et par un
+       * filet : voir `.surface` dans app/globals.css. `glow` et `card` ont
+       * été supprimées avec les surfaces qui les portaient.
+       */
       boxShadow: {
-        // Piloté par le thème (voir app/globals.css) : une ombre large et
-        // sombre soulève une carte sur fond noir et la salit sur fond blanc.
         surface: "var(--shadow-surface)",
-        glow: "0 0 22px rgb(var(--accent-rgb) / .18)",
-        card: "0 1px 0 rgba(255,255,255,.04) inset, 0 12px 34px rgba(0,0,0,.16)",
       },
       fontSize: {
-        "2xs": ["0.6875rem", { lineHeight: "1rem" }],
+        "2xs": ["0.71875rem", { lineHeight: "1rem" }],
       },
+      /*
+       * ANIMATIONS — trois, toutes courtes et toutes fonctionnelles.
+       * `slide-up` (l'ancienne, 8 px sur 400 ms) faisait « monter » chaque
+       * carte au chargement : sur une liste, trente éléments qui glissent
+       * ensemble sont un effet, pas une information. Ne restent que
+       * l'apparition d'un élément qui n'était pas là, et le battement du
+       * témoin de chronomètre en marche.
+       */
       animation: {
-        "fade-in": "fadeIn .4s ease-out",
-        "slide-up": "slideUp .4s ease-out",
-        "pulse-soft": "pulseSoft 2s ease-in-out infinite",
+        "fade-in": "fadeIn .18s ease-out",
+        "rise": "rise .22s cubic-bezier(.32,.72,0,1)",
+        "pulse-soft": "pulseSoft 2.4s ease-in-out infinite",
       },
       keyframes: {
         fadeIn: {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
-        slideUp: {
-          from: { opacity: "0", transform: "translateY(8px)" },
+        rise: {
+          from: { opacity: "0", transform: "translateY(4px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
         pulseSoft: {
           "0%,100%": { opacity: "1" },
-          "50%": { opacity: "0.7" },
+          "50%": { opacity: "0.45" },
         },
       },
     },

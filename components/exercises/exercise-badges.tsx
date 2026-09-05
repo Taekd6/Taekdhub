@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { ProgressBar } from "@/components/ui/progress";
 import { Select } from "@/components/ui/input";
 import { exerciseStatuses, statusMeta, subjectMeta } from "@/lib/study";
@@ -17,8 +16,8 @@ export function SubjectAvatar({ subject, size = "md" }: { subject: Subject; size
   return (
     <span
       className={cn(
-        "grid shrink-0 place-items-center rounded-md font-bold",
-        size === "sm" ? "h-5 w-5 text-[9px]" : "h-7 w-7 text-xs",
+        "grid shrink-0 place-items-center rounded-md font-semibold leading-none",
+        size === "sm" ? "h-[1.375rem] w-[1.375rem] text-[0.6875rem]" : "h-7 w-7 text-[0.75rem]",
         meta.className
       )}
     >
@@ -31,8 +30,8 @@ export function SubjectAvatar({ subject, size = "md" }: { subject: Subject; size
 export function MasteryBar({ value }: { value: Mastery }) {
   return (
     <span className="inline-flex items-center gap-1.5" title={`Maîtrise ${value}%`}>
-      <ProgressBar value={value} animated={false} className="h-1.5 w-10 bg-hairline/[0.08]" barClassName="bg-sky-400/80" />
-      <span className="text-2xs tabular-nums text-zinc-500">{value}%</span>
+      <ProgressBar value={value} className="w-10" barClassName="bg-sky-400" />
+      <span className="tabular text-2xs text-subtle">{value}%</span>
     </span>
   );
 }
@@ -47,19 +46,20 @@ export function MasteryPicker({ value, onChange }: { value: Mastery; onChange: (
   return (
     <div className="inline-flex gap-1" role="group" aria-label="Maîtrise">
       {options.map((option) => (
-        <motion.button
+        <button
           key={option}
           type="button"
-          whileTap={{ scale: 0.85 }}
           onClick={() => onChange(option)}
           aria-pressed={value === option}
           className={cn(
-            "rounded-md px-2 py-1 text-2xs font-semibold tabular-nums transition",
-            value === option ? "bg-sky-400/20 text-sky-200" : "bg-hairline/[0.04] text-zinc-500 hover:bg-hairline/[0.08] hover:text-zinc-300"
+            "tabular min-h-7 rounded-md border px-2 text-2xs font-medium transition-[background-color,border-color,color,transform] active:scale-95 max-lg:min-h-10",
+            value === option
+              ? "border-sky-400/35 bg-sky-400/15 text-sky-200"
+              : "border-transparent bg-inset text-subtle hover:text-ink"
           )}
         >
           {option}%
-        </motion.button>
+        </button>
       ))}
     </div>
   );
@@ -79,7 +79,8 @@ export function StatusSelect({
     <Select
       value={value}
       onChange={(event) => onChange(event.target.value as ExerciseStatus)}
-      className={cn("w-auto rounded-lg px-2.5 py-2 text-xs font-medium", statusMeta[value].className, className)}
+      wrapperClassName="w-auto"
+      className={cn("rounded-lg px-2.5 py-2 text-xs font-medium", statusMeta[value].className, className)}
     >
       {exerciseStatuses.map((status) => (
         <option key={status}>{status}</option>

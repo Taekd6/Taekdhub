@@ -1,18 +1,22 @@
 import { cn } from "@/lib/cn";
 
 /**
- * Les badges étaient en CAPITALES, gras, sur fond teinté : trois signaux
- * d'emphase pour une information de second rang, répétée jusqu'à quatre fois
- * par ligne de liste. À ce compte-là, plus rien ne ressort. Ils redeviennent
- * ce qu'ils sont : une étiquette discrète.
+ * ÉTIQUETTE — information de second rang, jamais d'emphase.
+ *
+ * Pas de capitales, pas de gras, pas de pastille colorée par défaut : une
+ * ligne de liste peut en porter trois, et trois signaux d'emphase côte à côte
+ * n'en font aucun. Seules les variantes de STATUT sont teintées, parce que
+ * là, la couleur EST l'information.
  */
 const variants = {
-  default: "bg-inset text-muted",
-  accent: "bg-accent/10 text-accent",
-  success: "bg-emerald-400/10 text-emerald-300",
-  warning: "bg-amber-400/10 text-amber-300",
-  danger: "bg-rose-400/10 text-rose-300",
-  subject: "",
+  /** Le cas normal : un filet, pas un aplat. */
+  default: "border border-line text-muted",
+  /** Sans cadre du tout — pour une méta déjà entourée de texte. */
+  bare: "text-subtle",
+  accent: "border border-accent/25 bg-accent/[0.08] text-accent",
+  success: "border border-emerald-400/25 bg-emerald-400/[0.10] text-emerald-300",
+  warning: "border border-amber-400/25 bg-amber-400/[0.10] text-amber-300",
+  danger: "border border-rose-400/25 bg-rose-400/[0.10] text-rose-300",
 };
 
 export function Badge({
@@ -27,7 +31,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded px-1.5 py-0.5 text-2xs font-medium",
+        "inline-flex items-center gap-1 rounded-[0.3125rem] px-[0.3125rem] py-[0.0625rem] text-2xs leading-4",
         variants[variant],
         className
       )}

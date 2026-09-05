@@ -1,83 +1,115 @@
 import { cn } from "@/lib/cn";
 
 /**
- * SECTION — l'unité de composition des pages.
+ * SECTION — l'unité de composition de tous les écrans.
  *
- * Chaque écran réinventait son propre en-tête de bloc : un `eyebrow`, parfois
- * une icône d'accent, un `CardTitle` de taille variable (`text-lg`, `text-xl`,
- * ou rien), une description tantôt présente tantôt absente, le tout enveloppé
- * dans une `Card` — y compris pour des blocs qui n'avaient aucune raison
- * d'être des cartes. Résultat : dix blocs de même poids visuel sur un écran,
- * et aucune hiérarchie lisible.
+ * Le système précédent encadrait par défaut : chaque bloc devenait une carte,
+ * et un écran finissait en pile de rectangles de poids identique. Ici,
+ * l'encadrement est l'EXCEPTION.
  *
- * Une section porte donc un RANG explicite :
+ *   `bare`    (défaut) titre + filet + contenu. Aucun cadre. C'est la mise en
+ *             page éditoriale : ce sont les FILETS et les blancs qui
+ *             structurent, pas les boîtes.
+ *   `panel`   une surface encadrée. Réservée à ce qui doit se lire comme un
+ *             objet détaché du flux : le bloc d'action principal d'un écran,
+ *             un encart de saisie.
+ *   `feature` la seule section « qui compte » d'un écran. Une par page au
+ *             maximum, comme le bouton principal.
  *
- *   `primary`   ce que l'écran veut faire faire. Un seul par page.
- *   `secondary` ce qui aide à décider. Encadré, discret.
- *   `quiet`     le détail. Pas de cadre du tout : un titre et du contenu.
- *
- * Le rang décide de l'encadrement et de la taille du titre — jamais l'écran
- * appelant, qui n'a aucun moyen de savoir ce que font les autres.
+ * Le rang décide de l'encadrement ET de la taille du titre — jamais l'écran
+ * appelant, qui ne sait pas ce que font les autres sections autour de lui.
  */
 export function Section({
-  rank = "secondary",
-  eyebrow,
+  as: Tag = "section",
+  variant = "bare",
+  label,
   title,
   description,
   action,
   footer,
   className,
+  bodyClassName,
   children,
 }: {
-  rank?: "primary" | "secondary" | "quiet";
-  eyebrow?: string;
+  as?: "section" | "div" | "article";
+  variant?: "bare" | "panel" | "feature";
+  /** Étiquette de rubrique, en capitales discrètes. */
+  label?: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
-  /** Contrôle aligné à droite du titre (sélecteur de durée, lien « tout voir »…). */
+  /** Contrôle aligné à droite du titre (sélecteur, lien « tout voir »…). */
   action?: React.ReactNode;
-  /** Barre basse séparée par une règle — l'action de sortie de la section. */
+  /** Barre basse séparée par un filet — la sortie de la section. */
   footer?: React.ReactNode;
   className?: string;
+  bodyClassName?: string;
   children?: React.ReactNode;
 }) {
-  const framed = rank !== "quiet";
+  const framed = variant !== "bare";
+  const hasHeader = Boolean(label || title || description || action);
+
   return (
-    <section
+    <Tag
       className={cn(
-        framed && "surface rounded-2xl",
-        rank === "primary" && "p-5 sm:p-6",
-        rank === "secondary" && "p-4 sm:p-5",
+        framed && "surface",
+        variant === "panel" && "p-4 sm:p-5",
+        variant === "feature" && "p-5 sm:p-7",
         className
       )}
     >
-      {(title || eyebrow || action) && (
-        <header className={cn("flex flex-wrap items-start justify-between gap-x-4 gap-y-2", children && "mb-4")}>
+      {hasHeader && (
+        <header
+          className={cn(
+            "flex flex-wrap items-end justify-between gap-x-5 gap-y-2",
+            children && (variant === "feature" ? "mb-5" : "mb-3")
+          )}
+        >
           <div className="min-w-0">
-            {eyebrow && <p className="eyebrow mb-1.5">{eyebrow}</p>}
-            {title && <h2 className={rank === "primary" ? "t-display" : "t-title"}>{title}</h2>}
-            {description && <p className="t-meta mt-1.5 max-w-prose">{description}</p>}
+            {label && <p className="t-label mb-1.5">{label}</p>}
+            {title &&
+              (variant === "feature" ? (
+                <h2 className="t-display">{title}</h2>
+              ) : (
+                <h2 className="t-heading">{title}</h2>
+              ))}
+            {description && <p className="t-meta mt-1.5 max-w-[52ch]">{description}</p>}
           </div>
           {action && <div className="shrink-0">{action}</div>}
         </header>
       )}
 
-      {children}
+      <div className={bodyClassName}>{children}</div>
 
       {footer && (
-        <div className={cn("mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-hairline/[0.07] pt-4")}>{footer}</div>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+          {footer}
+        </div>
       )}
-    </section>
+    </Tag>
   );
 }
 
 /**
- * Rangée d'une liste dans une section — la tuile la plus courante de l'app
- * (exercice recommandé, chapitre à consolider, séance de l'historique).
- * `asChild` n'existe pas ici volontairement : quand la rangée est cliquable,
- * l'appelant met ces classes sur son propre `<Link>`, pour ne pas imbriquer
- * un lien dans un div cliquable.
+ * LISTE — le second motif universel : des rangées séparées par des filets,
+ * pas par des marges entre cartes. Une liste de trente exercices reste alors
+ * une liste, et non trente objets empilés.
  */
-export const rowClass =
-  "flex min-w-0 items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-150";
+export function List({ className, children }: { className?: string; children: React.ReactNode }) {
+  return <ul className={cn("divide-y divide-line border-y border-line", className)}>{children}</ul>;
+}
 
-export const rowInteractiveClass = cn(rowClass, "focus-ring hover:bg-inset");
+/**
+ * Classes d'une rangée. `rowClass` pour une rangée inerte, `rowInteractive`
+ * quand la rangée entière est cliquable — dans ce cas l'appelant les pose sur
+ * son propre `<Link>`/`<button>`, pour ne jamais imbriquer un lien dans un
+ * conteneur cliquable.
+ */
+export const rowClass = "flex min-w-0 items-center gap-3 px-1 py-3 text-left sm:px-2";
+
+export const rowInteractive = cn(
+  rowClass,
+  "row-hover w-full cursor-pointer rounded-md max-lg:min-h-[3.25rem]"
+);
+
+/** Compat : ancien nom, même valeur. */
+export const rowInteractiveClass = rowInteractive;

@@ -1,7 +1,19 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, Eye, EyeOff, Lightbulb, MinusCircle, Sparkles, X, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Lightbulb,
+  MinusCircle,
+  Pause,
+  Play,
+  Sparkles,
+  X,
+  XCircle,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +39,8 @@ export function FocusView({
   onClose,
   reasons,
   progress,
+  onPrev,
+  onNext,
 }: {
   item: Exercise;
   update: (id: string, patch: Partial<Exercise>) => void;
@@ -48,6 +62,18 @@ export function FocusView({
   reasons?: string[];
   /** Position dans la séance en cours (« 2 / 5 ») — absent hors séance, l'exercice étant alors ouvert seul depuis la banque. */
   progress?: { index: number; total: number };
+  /**
+   * Exercice précédent/suivant de la liste d'où l'on vient (banque filtrée,
+   * chapitre…). Absents en séance : là, l'ordre est décidé par le plan et on
+   * n'a pas à pouvoir le contourner — c'est `SessionRunner` qui avance, une
+   * fois le résultat déclaré.
+   *
+   * `undefined` quand il n'y a rien de ce côté : le bouton est alors
+   * désactivé plutôt que masqué, pour que la barre ne change pas de forme
+   * d'un exercice à l'autre.
+   */
+  onPrev?: () => void;
+  onNext?: () => void;
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
   const [hintCount, setHintCount] = useState(0);
@@ -188,218 +214,266 @@ export function FocusView({
 
   if (draftSession) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-7 bg-canvas px-6 text-center"
-      >
-        <div>
-          <p className="text-base font-semibold text-zinc-100">Comment s&apos;est passé l&apos;exercice ?</p>
-          <p className="mt-1.5 text-sm text-zinc-500"><MathInline text={item.title} /></p>
+      <div className="animate-fade-in fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 bg-canvas px-6">
+        <div className="text-center">
+          <p className="t-label">Tentative terminée</p>
+          <h2 className="t-display mt-2">Comment ça s&apos;est passé ?</h2>
+          <p className="t-meta mx-auto mt-2 max-w-[36ch]">
+            <MathInline text={item.title} />
+          </p>
         </div>
-        <div className="flex w-full max-w-xs flex-col gap-2.5">
-          <Button
-            size="lg"
+
+        {/* Trois choix de MÊME poids : la couleur les distingue, pas la
+            taille. Le raccourci clavier est écrit sur chaque bouton — après
+            une heure de crayon, on n'a pas envie de reprendre la souris. */}
+        <div className="flex w-full max-w-sm flex-col gap-2">
+          <ResultButton
             onClick={() => commitResult("réussi")}
-            className="justify-between gap-3 border border-emerald-400/20 bg-emerald-400/[0.12] text-emerald-200 hover:bg-emerald-400/20"
-          >
-            <span className="flex items-center gap-3">
-              <CheckCircle2 size={18} /> Réussi
-            </span>
-            <kbd className="rounded border border-emerald-400/25 px-1.5 py-0.5 text-2xs">1</kbd>
-          </Button>
-          <Button
-            size="lg"
+            icon={<CheckCircle2 size={18} />}
+            label="Réussi"
+            hint="1"
+            className="border-emerald-400/30 bg-emerald-400/[0.10] text-emerald-300 hover:bg-emerald-400/20"
+          />
+          <ResultButton
             onClick={() => commitResult("partiel")}
-            className="justify-between gap-3 border border-amber-400/20 bg-amber-400/[0.12] text-amber-200 hover:bg-amber-400/20"
-          >
-            <span className="flex items-center gap-3">
-              <MinusCircle size={18} /> Partiellement réussi
-            </span>
-            <kbd className="rounded border border-amber-400/25 px-1.5 py-0.5 text-2xs">2</kbd>
-          </Button>
-          <Button
-            size="lg"
+            icon={<MinusCircle size={18} />}
+            label="Partiellement"
+            hint="2"
+            className="border-amber-400/30 bg-amber-400/[0.10] text-amber-300 hover:bg-amber-400/20"
+          />
+          <ResultButton
             onClick={() => commitResult("échoué")}
-            className="justify-between gap-3 border border-rose-400/20 bg-rose-400/[0.12] text-rose-200 hover:bg-rose-400/20"
-          >
-            <span className="flex items-center gap-3">
-              <XCircle size={18} /> Échoué
-            </span>
-            <kbd className="rounded border border-rose-400/25 px-1.5 py-0.5 text-2xs">3</kbd>
-          </Button>
+            icon={<XCircle size={18} />}
+            label="Échoué"
+            hint="3"
+            className="border-rose-400/30 bg-rose-400/[0.10] text-rose-300 hover:bg-rose-400/20"
+          />
         </div>
+
         <button
           type="button"
           onClick={() => commitResult(null)}
-          className="focus-ring rounded-lg px-2 py-1 text-xs text-zinc-600 underline underline-offset-2 transition hover:text-zinc-400"
+          className="rounded px-2 py-1 text-[0.8125rem] text-subtle underline underline-offset-4 transition-colors hover:text-muted max-lg:min-h-11"
         >
           Passer <span className="no-underline">(Échap)</span>
         </button>
-      </motion.div>
+      </div>
     );
   }
 
+  const hasHints = hintCount < item.hints.length;
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="fixed inset-0 z-50 flex flex-col bg-canvas"
-    >
-      {/* BANDEAU DE TRAVAIL — le strict nécessaire.
-          Il répétait le titre de l'exercice, affiché en entier dans le <h1>
-          trois centimètres plus bas, et portait DEUX boutons distincts
-          (réduire, fermer) appelant la même fonction. Ne restent que les
-          informations qu'on ne peut pas lire ailleurs : où j'en suis dans la
-          séance, depuis combien de temps, et comment sortir. */}
-      <header className="flex items-center justify-between gap-3 border-b border-hairline/[0.07] px-4 py-3 sm:px-6">
-        <p className="t-meta tabular-nums">
+    <div className="animate-fade-in fixed inset-0 z-50 flex flex-col bg-canvas">
+      {/* ── BANDEAU DE TRAVAIL ─────────────────────────────────────
+          Le strict nécessaire : où j'en suis, depuis combien de temps,
+          comment sortir. Rien d'autre — surtout pas le titre de l'exercice,
+          qui est composé en grand trois centimètres plus bas. */}
+      <header className="flex shrink-0 items-center gap-3 border-b border-line px-4 py-2.5 sm:px-6">
+        <p className="t-meta tabular min-w-0 truncate">
           {progress ? `Exercice ${progress.index + 1} sur ${progress.total}` : item.subject}
         </p>
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="flex items-center gap-2 tabular-nums text-sm font-medium text-ink">
+
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {/* Le chrono est une INFORMATION, pas un contrôle : il se lit, et le
+              seul geste qu'on lui associe (mettre en pause) tient dans une
+              icône à côté. Il occupait auparavant un bouton texte
+              « Pause »/« Reprendre » aussi large que le bouton de sortie. */}
+          <span className="tabular flex items-center gap-2 text-sm text-ink">
             {running && <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent" />}
             {formatDuration(seconds)}
           </span>
-          <Button variant="ghost" size="sm" onClick={toggle}>
-            {running ? "Pause" : "Reprendre"}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggle}
+            aria-label={running ? "Mettre le chronomètre en pause" : "Reprendre le chronomètre"}
+            className="h-8 w-8 max-lg:h-11 max-lg:w-11"
+          >
+            {running ? <Pause size={15} /> : <Play size={15} />}
           </Button>
-          <Button variant="ghost" size="icon" aria-label="Terminer l'exercice" onClick={endSession}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Terminer l'exercice"
+            onClick={endSession}
+            className="h-8 w-8 max-lg:h-11 max-lg:w-11"
+          >
             <X size={17} />
           </Button>
         </div>
       </header>
 
-      {/* Contenu défilable : l'énoncé (contenu principal) prime sur le chrono, resté dans le bandeau supérieur, secondaire dans la hiérarchie visuelle. */}
-      <div className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-10">
-        <div className="mx-auto w-full max-w-[42rem] pb-16">
-          {/* Le titre d'abord. Les métadonnées (difficulté, type) passaient
-              AVANT lui, et la molette de maîtrise — cinq pastilles — pesait
-              plus lourd que l'exercice qu'elle qualifie. Elles rejoignent le
-              pied de page, où l'élève va après avoir travaillé, pas avant. */}
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem] sm:leading-[1.15]"><MathInline text={item.title} /></h1>
-          <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-zinc-500">
+      {/* ── COLONNE DE LECTURE ─────────────────────────────────────
+          Bornée à `measure` (~66 caractères) et composée en serif : c'est la
+          géométrie d'un polycopié, pas celle d'une fiche d'application. Le
+          padding bas laisse la place à la barre d'actions collante. */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-10 sm:px-6 sm:py-14">
+        <article className="measure mx-auto w-full pb-10">
+          {/* Métadonnées AVANT le titre, en une seule ligne discrète : d'où
+              vient cet exercice et ce qu'il vaut. Elles situent, puis on les
+              oublie. */}
+          <div className="t-meta flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
             <ProvenanceBadge exercise={item} />
             <span>{item.subject}</span>
             <span aria-hidden>·</span>
             <span className="min-w-0 truncate">{item.source}</span>
-            <span aria-hidden>·</span>
-            <DifficultyDots value={item.difficulty} />
-            <span className="text-xs">{item.type}</span>
+            {/* Pas de séparateur avant les traits de difficulté : quand la
+                ligne passe à la ligne sur mobile, un « · » se retrouvait seul
+                en fin de ligne. Un espace suffit à les détacher. */}
+            <span className="ml-0.5">
+              <DifficultyDots value={item.difficulty} />
+            </span>
           </div>
 
-          {/* "Pourquoi cet exercice ?" — le contexte de recommandation ne
-              doit jamais disparaître entre l'aperçu de séance (où il est déjà
-              affiché, voir SessionRunner) et le moment où l'élève travaille
-              réellement dessus : perdre cette explication ici, précisément
-              quand l'attention est maximale, revenait à faire passer le choix
-              pour arbitraire. `explainReasons` ne fabrique rien : sans raison
-              réelle transmise, ce bloc ne s'affiche simplement pas. */}
+          <h1 className="t-display mt-3">
+            <MathInline text={item.title} />
+          </h1>
+
+          {/* « Pourquoi cet exercice ? » — `explainReasons` ne fabrique rien :
+              sans raison réelle transmise, ce bloc ne s'affiche pas du tout. */}
           {explainReasons(reasons ?? []) && (
-            <p className="mt-4 flex items-start gap-2 border-l-2 border-accent/40 py-0.5 pl-3 text-sm leading-6 text-muted">
-              <Sparkles size={14} className="mt-0.5 shrink-0 text-accent" />
+            <p className="mt-5 flex items-start gap-2 border-l-2 border-accent/40 py-0.5 pl-3.5 text-[0.8125rem] leading-6 text-muted">
+              <Sparkles size={13} className="mt-1 shrink-0 text-accent" />
               {explainReasons(reasons ?? [])}
             </p>
           )}
 
-          {/* Énoncé — cœur de la séance. Il était enfermé dans une carte grise
-              qui, sur fond clair, n'était qu'un cadre autour de 80 % de
-              l'écran. C'est le CONTENU : il se lit comme un texte, pas comme
-              un composant. Seules les interruptions (indices, correction)
-              gardent un cadre, parce qu'elles interrompent justement. */}
-          <div className="mt-7">
+          {/* L'ÉNONCÉ. Pas de cadre, pas de fond : c'est le contenu de la
+              page, pas un composant posé dessus. */}
+          <div className="mt-8">
             {item.statement.trim() ? (
-              <RichMath text={item.statement} className="text-[1.0625rem] leading-[1.85] text-ink sm:text-lg" />
+              <RichMath text={item.statement} className="t-read text-ink" />
             ) : (
-              <p className="rounded-xl border border-dashed border-hairline/[0.14] px-4 py-6 text-center text-sm leading-7 text-zinc-500">
-                Aucun énoncé renseigné pour cet exercice — ouvre sa fiche (hors mode focus) pour l&apos;ajouter.
+              <p className="t-meta rounded-lg border border-dashed border-line px-4 py-6 text-center">
+                Aucun énoncé renseigné pour cet exercice — ouvre sa fiche depuis la banque pour l&apos;ajouter.
               </p>
             )}
           </div>
 
-          <div className="mt-6 space-y-3">
-            {item.hints.slice(0, hintCount).map((hint, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-xl border border-accent/15 bg-accent/[0.055] p-4 text-sm leading-7 text-zinc-300"
-              >
-                <RichMath text={`Indice ${index + 1} — ${hint}`} />
-              </motion.div>
-            ))}
-            {/* Deux aides de même rang, côte à côte. L'indice occupait toute
-                la largeur : le bouton le plus lourd de l'écran était donc
-                celui qui invite à ne PAS chercher seul. */}
-            {(hintCount < item.hints.length || item.correction) && (
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                {hintCount < item.hints.length && (
-                  <Button variant="secondary" size="sm" onClick={() => setHintCount((c) => c + 1)}>
-                    <Lightbulb size={15} /> Indice {hintCount + 1}
-                    <span className="text-zinc-500">/ {item.hints.length}</span>
-                  </Button>
-                )}
-                {item.correction && (
-                  <Button variant="ghost" size="sm" onClick={() => setCorrectionVisible((v) => !v)}>
-                    {correctionVisible ? <EyeOff size={15} /> : <Eye size={15} />}
-                    {correctionVisible ? "Masquer la correction" : "Voir la correction"}
-                  </Button>
-                )}
-              </div>
-            )}
-            {item.correction && (
-              <div>
-                {correctionVisible && (
-                  <div className="rounded-2xl border border-hairline/[0.09] bg-hairline/[0.025] p-5 text-left text-sm leading-7 text-zinc-300">
-                    <p className="eyebrow mb-2.5">Correction</p>
-                    <RichMath text={item.correction} />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          {/* Indices révélés : composés comme du contenu (serif), en retrait
+              par un filet vertical. Un encadré teinté par indice transformait
+              la page en accordéon de boîtes. */}
+          {hintCount > 0 && (
+            <div className="mt-8 space-y-5">
+              {item.hints.slice(0, hintCount).map((hint, index) => (
+                <div key={index} className="animate-fade-in border-l-2 border-accent/40 pl-4">
+                  <p className="t-label mb-1.5">Indice {index + 1}</p>
+                  <RichMath text={hint} className="t-read-quiet text-muted" />
+                </div>
+              ))}
+            </div>
+          )}
 
-          {/* PIED DE PAGE « où j'en suis » — séparé du contenu par une règle.
-              Ces quatre statuts étaient quatre boutons de pleine importance,
-              dont l'actif en aplat de marque : le réglage administratif était
-              l'élément le plus criard de l'écran. Un sélecteur segmenté (le
-              même composant que partout ailleurs) dit « une valeur parmi
-              quatre » sans hurler. La maîtrise le rejoint : les deux
-              répondent à la même question, après l'exercice. */}
-          <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4 border-t border-hairline/[0.07] pt-6">
-            <label className="flex flex-wrap items-center gap-2.5 text-xs text-zinc-500">
-              Où j&apos;en suis
+          {correctionVisible && item.correction && (
+            <section className="animate-fade-in mt-10 border-t border-line pt-6">
+              <p className="t-label mb-3">Correction</p>
+              <RichMath text={item.correction} className="t-read-quiet text-muted" />
+            </section>
+          )}
+
+          {/* ── OÙ J'EN SUIS ─────────────────────────────────────
+              Après le contenu, jamais avant : on qualifie un exercice une
+              fois qu'on l'a fait. */}
+          <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-5 border-t border-line pt-6">
+            <label className="flex flex-wrap items-center gap-2.5">
+              <span className="t-label">Statut</span>
               <SegmentedControl
+                size="sm"
                 ariaLabel="Statut de l'exercice"
                 value={item.status}
                 onChange={(status) => update(item.id, { status })}
-                options={(["à faire", "en cours", "à revoir", "maîtrisé"] as ExerciseStatus[]).map((s) => ({ value: s, label: s }))}
+                options={(["à faire", "en cours", "à revoir", "maîtrisé"] as ExerciseStatus[]).map((value) => ({
+                  value,
+                  label: value,
+                }))}
               />
             </label>
-            <label className="flex flex-wrap items-center gap-2.5 text-xs text-zinc-500">
-              Maîtrise
+            <label className="flex flex-wrap items-center gap-2.5">
+              <span className="t-label">Maîtrise</span>
               <MasteryPicker value={item.mastery} onChange={(mastery: Mastery) => update(item.id, { mastery })} />
             </label>
-            <AnimatePresence>
-              {justMastered && (
-                <motion.span
-                  initial={{ opacity: 0, scale: 0.7, x: -6 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  exit={{ opacity: 0, scale: 0.7 }}
-                  transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
-                  className="flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent"
-                >
-                  <Sparkles size={13} /> Maîtrisé !
-                </motion.span>
-              )}
-            </AnimatePresence>
+            {justMastered && (
+              <span className="animate-rise flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1.5 text-2xs font-medium text-accent">
+                <Sparkles size={12} /> Maîtrisé
+              </span>
+            )}
           </div>
-        </div>
+        </article>
       </div>
 
-      <footer className="border-t border-hairline/[0.07] px-6 py-4 text-center text-xs text-zinc-600">
-        Échap pour quitter · Barre d&apos;espace pour le timer
+      {/* ── BARRE D'ACTIONS ────────────────────────────────────────
+          Collée en bas, donc toujours atteignable sans remonter — c'est ce
+          qui manquait le plus : les boutons « Indice » et « Correction »
+          étaient perdus au milieu du texte, et « terminer » n'existait qu'en
+          croix minuscule tout en haut.
+
+          Les aides sont à GAUCHE et discrètes ; la sortie est à DROITE et
+          pleine. Le bouton le plus lourd de l'écran ne doit jamais être celui
+          qui invite à ne pas chercher. */}
+      <footer className="shrink-0 border-t border-line bg-canvas px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
+        <div className="measure mx-auto flex w-full flex-wrap items-center gap-2">
+          {hasHints && (
+            <Button variant="secondary" size="sm" onClick={() => setHintCount((count) => count + 1)}>
+              <Lightbulb size={15} /> Indice {hintCount + 1}
+              <span className="text-subtle">/ {item.hints.length}</span>
+            </Button>
+          )}
+          {item.correction && (
+            <Button variant="ghost" size="sm" onClick={() => setCorrectionVisible((visible) => !visible)}>
+              {correctionVisible ? <EyeOff size={15} /> : <Eye size={15} />}
+              {correctionVisible ? "Masquer la correction" : "Voir la correction"}
+            </Button>
+          )}
+
+          <div className="ml-auto flex items-center gap-2">
+            {(onPrev || onNext) && (
+              <span className="flex items-center gap-0.5">
+                <Button variant="ghost" size="icon" onClick={onPrev} disabled={!onPrev} aria-label="Exercice précédent">
+                  <ChevronLeft size={17} />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={onNext} disabled={!onNext} aria-label="Exercice suivant">
+                  <ChevronRight size={17} />
+                </Button>
+              </span>
+            )}
+            <Button size="md" onClick={endSession}>
+              Terminer
+            </Button>
+          </div>
+        </div>
+        <p className="t-meta measure mx-auto mt-2 hidden text-2xs sm:block">
+          Échap pour terminer · Barre d&apos;espace pour le chronomètre
+        </p>
       </footer>
-    </motion.div>
+    </div>
+  );
+}
+
+/** Bouton de l'écran de résultat — même géométrie pour les trois, seule la couleur change. */
+function ResultButton({
+  onClick,
+  icon,
+  label,
+  hint,
+  className,
+}: {
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  hint: string;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-h-12 items-center justify-between gap-3 rounded-lg border px-4 text-sm font-medium transition-colors ${className ?? ""}`}
+    >
+      <span className="flex items-center gap-3">
+        {icon} {label}
+      </span>
+      <kbd className="rounded border border-current/25 px-1.5 py-0.5 text-2xs opacity-70">{hint}</kbd>
+    </button>
   );
 }

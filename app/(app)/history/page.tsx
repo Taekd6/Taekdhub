@@ -1,1 +1,6 @@
-import { PageHeader } from "@/components/page-header"; import { SessionHistory } from "@/components/session-history"; export default function HistoryPage(){return <><PageHeader eyebrow="Journal" title="Historique" description="La trace exacte du travail accompli."/><SessionHistory/></>}
+import { SessionHistory } from "@/components/session-history";
+
+/** Titre porté par la composition elle-même — voir `PageBar` (components/ui/layout.tsx). */
+export default function HistoryPage() {
+  return <SessionHistory />;
+}

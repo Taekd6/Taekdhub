@@ -3,20 +3,11 @@
 import { cn } from "@/lib/cn";
 
 /**
- * Sélecteur segmenté (« pilule ») — un seul choix parmi quelques options
- * courtes, présentées côte à côte dans un conteneur commun.
+ * SÉLECTEUR SEGMENTÉ — un choix parmi quelques options courtes.
  *
- * Extrait d'une duplication littérale : le Dashboard (durée du plan du jour)
- * et l'écran d'aperçu de séance (dimensionner par temps / par nombre)
- * portaient exactement le même balisage et les mêmes classes, copiés à
- * l'identique. Les faire diverger visuellement n'était qu'une question de
- * temps — et surtout, les DEUX oubliaient `focus-ring` : le contrôle était
- * invisible au clavier, alors que tous les autres boutons de l'app le
- * signalent.
- *
- * Volontairement limité à ce cas précis : les puces du sélecteur de thème
- * (Réglages) sont un autre motif — chips bordées qui passent à la ligne, sur
- * plusieurs rangées — et n'ont rien à gagner à entrer de force ici.
+ * La pastille active est SURÉLEVÉE (fond de panneau + filet) plutôt que
+ * teintée : deux gris pâles côte à côte, en thème clair, ne se distinguaient
+ * pas. C'est aussi la convention que tout le monde reconnaît.
  */
 export function SegmentedControl<T extends string | number>({
   options,
@@ -24,13 +15,15 @@ export function SegmentedControl<T extends string | number>({
   onChange,
   ariaLabel,
   className,
+  size = "md",
 }: {
   options: { value: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
-  /** Nomme le groupe pour les lecteurs d'écran (ex. « Durée du plan ») — les boutons seuls ne disent pas de quoi ils sont l'option. */
+  /** Nomme le groupe pour les lecteurs d'écran — les options seules ne disent pas de quoi elles sont l'alternative. */
   ariaLabel: string;
   className?: string;
+  size?: "sm" | "md";
 }) {
   return (
     <div
@@ -47,18 +40,13 @@ export function SegmentedControl<T extends string | number>({
             onClick={() => onChange(option.value)}
             aria-pressed={active}
             className={cn(
-              // `min-h-9`/`max-lg:min-h-10` : même raison que les tailles de
-              // `Button` (voir components/ui/button.tsx) — mesuré à 28 px de
-              // haut avant correction, bien trop court au doigt.
-              "focus-ring min-h-8 rounded-[0.4rem] px-2.5 text-xs font-medium transition-colors max-lg:min-h-10",
-              // Pastille SURÉLEVÉE plutôt que teintée : une teinte d'accent à
-              // 15 % se distinguait à peine de la piste en thème clair (deux
-              // gris pâles côte à côte). Un fond de panneau plus une ombre
-              // courte se lisent immédiatement dans les deux thèmes — c'est
-              // aussi la convention que tout le monde reconnaît.
+              "rounded-[0.4375rem] font-medium transition-colors",
+              size === "sm"
+                ? "min-h-7 px-2 text-2xs max-lg:min-h-10"
+                : "min-h-8 px-2.5 text-[0.8125rem] max-lg:min-h-10",
               active
-                ? "bg-panel text-ink shadow-[0_1px_2px_rgba(0,0,0,.14)]"
-                : "text-muted hover:text-ink"
+                ? "border border-line bg-panel text-ink"
+                : "border border-transparent text-muted hover:text-ink"
             )}
           >
             {option.label}

@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { Maximize2, Minimize2, Pause, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { useWorkTimer } from "@/hooks/use-work-timer";
 import { subjects } from "@/lib/study";
@@ -65,11 +64,11 @@ export function Timer() {
   // Tant que la banque locale n'est pas lue, on n'affiche pas de chrono
   // manipulable : « Terminer » enregistrerait alors une séance à partir d'un
   // historique encore vide en mémoire.
-  if (!ready) return <Card className="h-64 animate-pulse p-8" />;
+  if (!ready) return <Skeleton className="h-72 w-full rounded-xl" />;
 
   const content = (
     <>
-      <p className="eyebrow flex items-center justify-center gap-2">
+      <p className="t-label flex items-center justify-center gap-2">
         {running && <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent" />}
         {running ? "Séance en cours" : "Nouvelle séance"}
       </p>
@@ -84,14 +83,13 @@ export function Timer() {
         ))}
       </Select>
 
-      <motion.div
-        key={seconds}
-        initial={running ? { scale: 1.02 } : false}
-        animate={{ scale: 1 }}
-        className="mt-10 text-6xl font-semibold tabular-nums tracking-tight md:text-8xl"
-      >
-        {formatDuration(seconds)}
-      </motion.div>
+      {/* Le chrono est le seul très grand nombre de l'application : composé en
+          serif à taille optique, il se lit d'un mètre — exactement l'usage
+          (poser le téléphone à côté de la copie). Il ne « pulse » plus à
+          chaque seconde : un chiffre qui tressaute une fois par seconde,
+          pendant une heure, dans le champ de vision de quelqu'un qui essaie
+          de se concentrer, est le contraire d'un outil de concentration. */}
+      <div className="t-figure mt-10 text-[clamp(3.5rem,2rem+8vw,7rem)]">{formatDuration(seconds)}</div>
 
       <p className="mt-4 text-sm text-muted">
         {running ? "Concentre-toi. Le reste peut attendre." : "Choisis une matière et commence."}
@@ -117,25 +115,17 @@ export function Timer() {
         </Button>
       </div>
 
-      <p className="mt-6 text-xs text-zinc-600">Barre d&apos;espace pour démarrer / pause</p>
+      <p className="t-meta mt-7 text-2xs">Barre d&apos;espace pour démarrer / pause</p>
     </>
   );
 
   if (fullscreen) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-canvas text-center"
-      >
+      <div className="animate-fade-in fixed inset-0 z-50 flex flex-col items-center justify-center bg-canvas text-center">
         {content}
-      </motion.div>
+      </div>
     );
   }
 
-  return (
-    <Card className="mx-auto max-w-2xl rounded-3xl p-7 text-center md:p-12">
-      {content}
-    </Card>
-  );
+  return <div className="surface mx-auto max-w-2xl p-7 text-center md:p-12">{content}</div>;
 }

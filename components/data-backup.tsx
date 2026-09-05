@@ -1,10 +1,9 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Download, Upload } from "lucide-react";
 import { ChangeEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { exportBackup, localData, validateBackupPayload, type BackupPayload } from "@/lib/storage";
 
@@ -62,18 +61,21 @@ export function DataBackup() {
   }
 
   return (
-    <Card className="max-w-2xl p-6">
-      <p className="eyebrow">Données locales</p>
-      <h2 className="mt-2 text-lg font-semibold">Tes données restent sous ton contrôle.</h2>
+    <Section
+      variant="panel"
+      label="Données locales"
+      title="Tes données restent sous ton contrôle."
+      className="max-w-2xl"
+    >
       {/* Dit franchement ce que « local » implique. TaekdHub n'a pas de compte :
           l'élève doit pouvoir décider en connaissance de cause, pas découvrir
           la contrainte le jour où il perd son année. */}
-      <p className="mt-2 text-sm leading-6 text-zinc-500">
+      <p className="t-body max-w-[64ch] text-muted">
         TaekdHub fonctionne sans compte : tes exercices, tes séances et ta progression sont enregistrés dans ce navigateur, sur cet
         appareil, et nulle part ailleurs. Ils ne partent sur aucun serveur — mais ils ne te suivent pas non plus d&apos;un appareil à
         l&apos;autre, et vider les données du navigateur les efface.
       </p>
-      <p className="mt-2 text-sm leading-6 text-zinc-500">
+      <p className="t-body mt-3 max-w-[64ch] text-muted">
         La sauvegarde est donc ta seule copie : exporte-la régulièrement, et restaure-la sur ton nouvel appareil.
         L&apos;import remplace les données de cet appareil, jamais celles d&apos;un autre.
       </p>
@@ -87,32 +89,27 @@ export function DataBackup() {
         <input ref={input} onChange={importData} type="file" accept="application/json" className="hidden" />
       </div>
 
-      <AnimatePresence>
+      <>
         {pendingImport && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="mt-5 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-4"
-          >
+          <div className="animate-rise mt-5 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-4">
             <div className="flex items-start gap-3">
               <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-300" />
-              <div className="text-sm leading-6 text-zinc-300">
-                <p className="font-semibold text-zinc-100">Remplacer tes données locales ?</p>
-                <p className="mt-1 text-zinc-400">
-                  Ce fichier contient <span className="font-medium text-zinc-200">{pendingImport.exercises.length}</span> exercice
-                  {pendingImport.exercises.length > 1 ? "s" : ""}, <span className="font-medium text-zinc-200">{pendingImport.sessions.length}</span> séance
+              <div className="t-body text-muted">
+                <p className="t-subhead text-ink">Remplacer tes données locales ?</p>
+                <p className="mt-1">
+                  Ce fichier contient <span className="font-medium text-ink">{pendingImport.exercises.length}</span> exercice
+                  {pendingImport.exercises.length > 1 ? "s" : ""}, <span className="font-medium text-ink">{pendingImport.sessions.length}</span> séance
                   {pendingImport.sessions.length > 1 ? "s" : ""}
                   {pendingImport.chapters?.length ? (
                     <>
-                      , <span className="font-medium text-zinc-200">{pendingImport.chapters.length}</span> chapitre
+                      , <span className="font-medium text-ink">{pendingImport.chapters.length}</span> chapitre
                       {pendingImport.chapters.length > 1 ? "s" : ""}
                     </>
                   ) : null}
                   {pendingImport.weekSnapshots?.length ? (
                     <>
                       {" "}
-                      et <span className="font-medium text-zinc-200">{pendingImport.weekSnapshots.length}</span> semaine
+                      et <span className="font-medium text-ink">{pendingImport.weekSnapshots.length}</span> semaine
                       {pendingImport.weekSnapshots.length > 1 ? "s" : ""} de progression
                     </>
                   ) : null}
@@ -129,15 +126,15 @@ export function DataBackup() {
                 Confirmer le remplacement
               </Button>
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {message && (
         <p role="status" className="mt-4 text-sm text-accent">
           {message}
         </p>
       )}
-    </Card>
+    </Section>
   );
 }

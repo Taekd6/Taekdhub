@@ -3,6 +3,7 @@
 import { AlertTriangle, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/state";
 import { exportBackup, lastStorageWriteFailure } from "@/lib/storage";
 
 /**
@@ -53,20 +54,23 @@ export function StorageAlert() {
   if (!failedAt) return null;
 
   return (
-    <div
-      role="alert"
-      className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/[0.08] px-4 py-3 text-sm"
+    <Notice
+      tone="danger"
+      className="mb-6"
+      action={
+        <Button size="sm" variant="secondary" onClick={() => exportBackup()}>
+          <Download size={14} /> Exporter maintenant
+        </Button>
+      }
     >
-      <p className="flex min-w-0 items-start gap-2.5 text-rose-100">
-        <AlertTriangle size={17} className="mt-0.5 shrink-0 text-rose-300" />
+      <span className="flex min-w-0 items-start gap-2.5">
+        <AlertTriangle size={16} className="mt-0.5 shrink-0 text-rose-300" />
         <span>
-          <span className="font-medium">Ton navigateur a refusé d&apos;enregistrer.</span> Le travail fait depuis peut être perdu au
-          prochain rechargement. Exporte une sauvegarde maintenant, puis libère de l&apos;espace pour ce site.
+          <strong className="font-medium text-ink">Ton navigateur a refusé d&apos;enregistrer.</strong> Le travail fait
+          depuis peut être perdu au prochain rechargement. Exporte une sauvegarde maintenant, puis libère de
+          l&apos;espace pour ce site.
         </span>
-      </p>
-      <Button size="sm" variant="secondary" className="shrink-0" onClick={() => exportBackup()}>
-        <Download size={14} /> Exporter maintenant
-      </Button>
-    </div>
+      </span>
+    </Notice>
   );
 }

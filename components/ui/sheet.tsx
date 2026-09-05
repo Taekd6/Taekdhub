@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -48,29 +47,24 @@ export function Sheet({
     };
   }, [open, onClose]);
 
+  if (!open) return null;
+
+  /* Ouverture en CSS (`animate-fade-in` / `animate-rise`, voir
+     tailwind.config.ts) plutôt qu'avec une librairie d'animation : une
+     feuille modale n'a pas d'animation de SORTIE ici — elle se ferme net,
+     ce qui est le comportement attendu quand on vient de valider un filtre. */
   return (
-    <AnimatePresence>
+    <>
       {open && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end lg:hidden">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/45"
-          />
-          <motion.div
+        <div className="fixed inset-0 z-50 flex flex-col justify-end sm:hidden">
+          <div onClick={onClose} className="animate-fade-in absolute inset-0 bg-black/45" />
+          <div
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "tween", duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
-            className="relative flex max-h-[85vh] flex-col rounded-t-2xl border-t border-hairline/[0.09] bg-panel"
+            className="animate-rise relative flex max-h-[85vh] flex-col rounded-t-2xl border-t border-line bg-panel"
           >
-            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline/[0.07] px-4 py-3">
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3">
               <h2 className="t-title">{title}</h2>
               <Button variant="ghost" size="icon" aria-label="Fermer" onClick={onClose}>
                 <X size={18} />
@@ -80,11 +74,11 @@ export function Sheet({
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">{children}</div>
 
             {footer && (
-              <div className="shrink-0 border-t border-hairline/[0.07] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">{footer}</div>
+              <div className="shrink-0 border-t border-line px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">{footer}</div>
             )}
-          </motion.div>
+          </div>
         </div>
       )}
-    </AnimatePresence>
+    </>
   );
 }

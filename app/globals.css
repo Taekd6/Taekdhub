@@ -3,242 +3,250 @@
 @tailwind utilities;
 
 /**
- * Système de thème (Sprint personnalisation) — deux dimensions indépendantes :
+ * =====================================================================
+ * TAEKDHUB — SYSTÈME VISUEL « PAPIER & ENCRE »
+ * =====================================================================
  *
- * 1. COULEUR D'ACCENT (--accent-rgb / --accent-fg-rgb) : déjà en place avant
- *    ce sprint (voir lib/theme.ts), inchangé ici.
- * 2. MODE D'APPARENCE (clair/sombre/système) : nouveau. Un seul mécanisme —
- *    `[data-theme="light"]` / `[data-theme="dark"]` posé sur `<html>` par
- *    `applyThemeMode` (lib/theme.ts) pour un choix explicite ; l'ABSENCE de
- *    `data-theme` (mode "système") laisse `prefers-color-scheme` décider via
- *    la media query ci-dessous. Jamais un troisième bloc de valeurs dupliqué :
- *    la media query réutilise exactement les mêmes variables que
- *    `[data-theme="light"]`.
+ * UNE SEULE feuille de style. L'ancien couple `globals.css` +
+ * `ui-redesign.css` définissait puis redéfinissait `.surface`, `.eyebrow`,
+ * `aside`, `button`, `input` — deux systèmes qui se battaient sur les mêmes
+ * sélecteurs, dont l'un par balise. Toute correction dans l'un était annulée
+ * par l'autre. Il n'en reste qu'un, et il ne cible aucune balise nue.
  *
- * Tous les composants existants utilisent déjà des classes Tailwind standard
- * (`bg-canvas`, `text-zinc-400`, `border-white/[0.06]`, etc. — voir
- * tailwind.config.ts) : aucun composant n'a besoin d'être réécrit pour
- * devenir "theme-aware", seules ces variables changent de valeur.
+ * ─── LE PARTI PRIS ───────────────────────────────────────────────────
  *
- * `--hairline-rgb` remplace la couleur `white` utilisée jusqu'ici pour les
- * bordures/surbrillances discrètes (`border-white/[0.06]`, `divide-white/[0.06]`,
- * etc.) : blanc-sur-blanc serait invisible en thème clair, il faut donc que
- * cette teinte s'inverse avec le thème. `black/[opacity]` (fonds "en creux"
- * des champs/boutons secondaires), lui, reste une couleur Tailwind normale et
- * n'a PAS besoin de varier : du noir à faible opacité assombrit légèrement
- * son fond quel que soit le thème (déjà correct en clair comme en sombre).
+ * TaekdHub n'est pas un tableau de bord : c'est un BUREAU DE TRAVAIL. Deux
+ * matières coexistent, et leur contraste EST l'identité du produit :
+ *
+ *   CHROME    navigation, contrôles, métadonnées, chiffres d'appoint.
+ *             Sans-serif, compact, discret, contraste modéré. On ne le
+ *             regarde pas, on s'en sert.
+ *
+ *   CONTENU   titres, énoncés, corrections, grands nombres.
+ *             Serif de lecture (Newsreader), généreux, contraste maximal.
+ *             On le lit longtemps.
+ *
+ * Le serif n'est pas décoratif : KaTeX compose les mathématiques en Computer
+ * Modern, un serif. Un énoncé mêlant texte sans-serif et formules serif
+ * change de police à chaque symbole. Passer la colonne de lecture en serif
+ * supprime cette rupture — c'est d'abord une correction de lisibilité.
+ *
+ * ─── NEUTRES CHAUDS ──────────────────────────────────────────────────
+ *
+ * Les gris « zinc » sont bleutés. Sur des séances de deux heures, un fond
+ * froid fatigue. Toute l'échelle est retendue vers le papier (teinte ~40°,
+ * saturation très basse) : même hiérarchie de valeurs, température opposée.
+ *
+ * ─── PAS D'OMBRES ────────────────────────────────────────────────────
+ *
+ * Une carte ne se détache plus par un halo mais par sa VALEUR et par un
+ * FILET d'1 px. Empiler des ombres produit exactement le « tas de cartes »
+ * qu'on veut éviter ; les filets produisent une mise en page éditoriale.
+ * `--shadow-surface` ne subsiste que pour les couches réellement flottantes
+ * (feuille modale, menu) — jamais pour du contenu en place.
  */
+
 @layer base {
   :root {
+    color-scheme: light;
+
+    /* ── ACCENT ────────────────────────────────────────────────────
+       Piloté par l'élève (lib/theme.ts). `--accent-rgb` est la couleur de
+       marque brute ; `--accent-ink-rgb` sa version lisible en tant que TEXTE
+       (recalculée par le script anti-flash) ; `--accent-solid-rgb` le
+       remplissage du bouton principal. Inchangé dans son principe. */
     --accent-rgb: 212 243 107;
-    /* L'accent en tant qu'ENCRE (texte, icônes, teintes fines) — voir
-       `accentInk` (lib/theme.ts), qui recalcule cette valeur dès que l'élève
-       change d'accent. Valeur de repli pour l'accent par défaut, utilisée
-       avant l'exécution du script anti-flash. */
     --accent-ink-base-rgb: 104 119 52;
-    /* En thème sombre l'accent EST déjà lisible (15,95:1) : l'encre lui est
-       simplement égale. Les blocs "clair" plus bas basculent sur la version
-       assombrie — c'est le seul endroit où l'arbitrage se fait. */
-    --accent-ink-rgb: var(--accent-rgb);
-    --accent-fg-rgb: 0 0 0;
-    /* Remplissage du bouton principal. En SOMBRE, le maximum de contraste
-       contre la page est la couleur de marque elle-même. En CLAIR, c'est
-       l'inverse : un aplat fluo sur du blanc se lit comme un surligneur, pas
-       comme un bouton — le bloc « clair » plus bas bascule donc sur une
-       version profonde de la même teinte. */
-    --accent-solid-rgb: var(--accent-rgb);
-    --accent-solid-fg-rgb: var(--accent-fg-rgb);
-    --accent-deep-base-rgb: 47 55 22;
-
-    /* Fond et ombre des surfaces. En sombre, une carte se détache par une
-       translucidité floutée et une ombre large ; en clair, ce même réglage
-       donne du blanc sur du blanc avec une tache grise. Les deux thèmes ont
-       donc leurs propres valeurs, au lieu d'un réglage unique pensé pour l'un
-       et subi par l'autre. */
-    --surface-bg: rgb(var(--elevated-rgb) / 0.7);
-    --shadow-surface: 0 12px 34px rgba(0, 0, 0, 0.16);
-    /* Fond « en creux » : champs, boutons secondaires, pistes de sélecteurs.
-       C'était `bg-black/20` en dur, avec l'idée qu'un noir peu opaque
-       assombrit légèrement n'importe quel fond. C'est faux : 20 % de noir sur
-       du blanc donne un gris #cccccc franc. D'où l'impression de bouillie
-       grise en thème clair, où chaque contrôle devenait une dalle. */
-    --inset-rgb: 0 0 0;
-    --inset-alpha: 0.2;
-
-    /* Thème sombre — valeurs par défaut, identiques à celles utilisées avant ce sprint : aucun changement visuel pour un utilisateur qui ne touche à rien. */
-    --canvas-rgb: 9 9 11;
-    --panel-rgb: 18 18 20;
-    --elevated-rgb: 24 24 27;
-    --line-rgb: 39 39 42;
-    --ink-rgb: 244 244 245;
-    --muted-rgb: 161 161 170;
-    --subtle-rgb: 113 113 122;
-    --hairline-rgb: 255 255 255;
-
-    /* Échelle "zinc" — reprend exactement la palette Tailwind par défaut en sombre (aucune classe text-zinc-N/bg-zinc-N existante ne change de valeur ici). */
-    --zinc-50-rgb: 250 250 250;
-    --zinc-100-rgb: 244 244 245;
-    --zinc-200-rgb: 228 228 231;
-    --zinc-300-rgb: 212 212 216;
-    --zinc-400-rgb: 161 161 170;
-    --zinc-500-rgb: 113 113 122;
-    --zinc-600-rgb: 82 82 91;
-    --zinc-700-rgb: 63 63 70;
-    --zinc-800-rgb: 39 39 42;
-    --zinc-900-rgb: 24 24 27;
-    --zinc-950-rgb: 9 9 11;
-
-    /*
-     * Texte "statut" (réussi/attention/échec) posé sur un fond teinté à
-     * faible opacité (ex. `bg-emerald-400/10 text-emerald-300` — Focus View,
-     * badges, "Prêt pour le DS ?"). Les teintes 400/500 (fonds/bordures,
-     * utilisées seulement en faible opacité) restent identiques entre les
-     * thèmes — un lavis translucide reste lisible quel que soit le fond.
-     * Seules 200/300 (TEXTE) doivent s'assombrir en clair : gardées ici
-     * telles quelles pour le sombre (valeurs Tailwind d'origine).
-     */
-    --emerald-200-rgb: 167 243 208;
-    --emerald-300-rgb: 110 231 183;
-    --emerald-400-rgb: 52 211 153;
-    --emerald-500-rgb: 16 185 129;
-    --amber-200-rgb: 253 230 138;
-    --amber-300-rgb: 252 211 77;
-    --amber-400-rgb: 251 191 36;
-    --amber-500-rgb: 245 158 11;
-    --rose-200-rgb: 254 205 211;
-    --rose-300-rgb: 253 164 175;
-    --rose-400-rgb: 251 113 133;
-    --rose-500-rgb: 244 63 94;
-
-    /* Identité de matière (lib/study.ts#subjectMeta — avatars "M"/"P"/"C"…, partout dans l'app) : même principe, seule la teinte 200 (texte) s'assombrit en clair. */
-    --violet-200-rgb: 221 214 254;
-    --violet-400-rgb: 167 139 250;
-    --sky-200-rgb: 186 230 253;
-    --sky-400-rgb: 56 189 248;
-    --teal-200-rgb: 153 246 228;
-    --teal-400-rgb: 45 212 191;
-    --orange-200-rgb: 254 215 170;
-    --orange-400-rgb: 251 146 60;
-  }
-
-  /* Thème clair explicite (Réglages → Apparence → Clair). */
-  :root[data-theme="light"] {
-    /* La page n'est PAS blanche : sans écart réel entre le fond et les cartes,
-       celles-ci disparaissent (l'ancien couple 250/255 laissait 2 % d'écart,
-       soit des rectangles invisibles empilés). */
-    --canvas-rgb: 244 245 247;
-    --panel-rgb: 255 255 255;
-    --elevated-rgb: 255 255 255;
-    --line-rgb: 226 229 234;
-    --ink-rgb: 24 24 27;
-    --muted-rgb: 82 82 91;
-    --subtle-rgb: 113 113 122;
-    --hairline-rgb: 0 0 0;
     --accent-ink-rgb: var(--accent-ink-base-rgb);
-    /* Aplat principal : une teinte profonde de la couleur de marque, texte
-       clair dessus — la lisibilité maximale sur une page claire, et la même
-       famille chromatique que le thème sombre. */
+    --accent-fg-rgb: 0 0 0;
+    --accent-deep-base-rgb: 47 55 22;
     --accent-solid-rgb: var(--accent-deep-base-rgb);
     --accent-solid-fg-rgb: 255 255 255;
-    --surface-bg: rgb(var(--panel-rgb));
-    /* Deux couches courtes plutôt qu'un halo de 34 px : sur fond clair, une
-       ombre large et sombre salit au lieu de soulever. */
-    --shadow-surface: 0 1px 2px rgba(24, 24, 27, 0.05), 0 4px 14px rgba(24, 24, 27, 0.06);
-    --inset-rgb: 24 24 27;
+
+    /* ── NEUTRES — THÈME CLAIR (défaut) ────────────────────────────
+       `paper` n'est pas blanc : le blanc pur est réservé aux surfaces, pour
+       qu'une carte se détache du fond sans avoir besoin d'ombre. */
+    --canvas-rgb: 250 249 246;   /* le bureau */
+    --panel-rgb: 255 255 255;    /* une surface posée dessus */
+    --elevated-rgb: 255 255 255;
+    --line-rgb: 231 227 219;     /* filet */
+    --ink-rgb: 26 24 21;         /* texte principal */
+    --muted-rgb: 90 85 78;       /* texte secondaire */
+    /* Texte tertiaire (étiquettes de rubrique, légendes). Mesuré au
+       navigateur : la valeur précédente (138 132 123) donnait 3,52:1 sur le
+       fond papier — sous le seuil AA de 4,5:1 pour un texte de cette taille.
+       Ramenée à 4,65:1 sur le fond et 4,90:1 sur une surface. */
+    --subtle-rgb: 118 112 104;
+    --hairline-rgb: 26 24 21;    /* teinte des filets/fonds en opacité */
+    --inset-rgb: 26 24 21;
     --inset-alpha: 0.045;
+    --surface-bg: rgb(var(--panel-rgb));
+    --shadow-surface: 0 1px 2px rgb(26 24 21 / 0.05), 0 12px 32px rgb(26 24 21 / 0.09);
 
-    /* Échelle "zinc" inversée : une classe conçue pour "texte clair sur fond sombre" (ex. text-zinc-100 = texte principal) doit rester le texte PRINCIPAL une fois le fond devenu clair — donc devenir sombre, pas rester claire. */
-    --zinc-50-rgb: 9 9 11;
-    --zinc-100-rgb: 24 24 27;
-    --zinc-200-rgb: 39 39 42;
-    --zinc-300-rgb: 63 63 70;
-    --zinc-400-rgb: 82 82 91;
-    --zinc-500-rgb: 82 82 91;
-    --zinc-600-rgb: 161 161 170;
-    --zinc-700-rgb: 212 212 216;
-    --zinc-800-rgb: 228 228 231;
-    --zinc-900-rgb: 244 244 245;
-    --zinc-950-rgb: 250 250 250;
+    /* Échelle « zinc » réchauffée. Les noms de classes existants
+       (text-zinc-400, bg-zinc-900…) sont conservés — seules les valeurs
+       changent, et elles s'inversent avec le thème comme auparavant. */
+    --zinc-50-rgb: 12 11 10;
+    --zinc-100-rgb: 26 24 21;
+    --zinc-200-rgb: 41 38 34;
+    --zinc-300-rgb: 66 62 56;
+    --zinc-400-rgb: 90 85 78;
+    --zinc-500-rgb: 116 110 101;
+    --zinc-600-rgb: 160 153 143;
+    --zinc-700-rgb: 203 197 187;
+    --zinc-800-rgb: 231 227 219;
+    --zinc-900-rgb: 243 240 234;
+    --zinc-950-rgb: 250 249 246;
 
-    /* Texte statut assombri pour rester lisible sur fond clair — 400/500 (fonds/bordures) inchangés, voir la note en thème sombre ci-dessus. */
-    --emerald-200-rgb: 4 120 87;
-    --emerald-300-rgb: 4 120 87;
-    --emerald-400-rgb: 52 211 153;
-    --emerald-500-rgb: 16 185 129;
-    --amber-200-rgb: 180 83 9;
-    --amber-300-rgb: 180 83 9;
-    --amber-400-rgb: 251 191 36;
-    --amber-500-rgb: 245 158 11;
-    --rose-200-rgb: 190 18 60;
-    --rose-300-rgb: 190 18 60;
-    --rose-400-rgb: 251 113 133;
-    --rose-500-rgb: 244 63 94;
+    /* ── STATUT ────────────────────────────────────────────────────
+       Trois familles seulement : acquis / à surveiller / raté. Les teintes
+       200-300 servent de TEXTE (donc sombres en thème clair), 400-500 de
+       fond ou de bordure en faible opacité (donc stables). */
+    --emerald-200-rgb: 21 105 78;
+    --emerald-300-rgb: 21 105 78;
+    --emerald-400-rgb: 27 148 105;
+    --emerald-500-rgb: 22 128 92;
+    --amber-200-rgb: 155 90 12;
+    --amber-300-rgb: 155 90 12;
+    --amber-400-rgb: 217 143 36;
+    --amber-500-rgb: 196 124 24;
+    --rose-200-rgb: 172 38 58;
+    --rose-300-rgb: 172 38 58;
+    --rose-400-rgb: 216 79 99;
+    --rose-500-rgb: 199 55 78;
 
-    --violet-200-rgb: 109 40 217;
-    --violet-400-rgb: 167 139 250;
-    --sky-200-rgb: 3 105 161;
-    --sky-400-rgb: 56 189 248;
-    --teal-200-rgb: 15 118 110;
-    --teal-400-rgb: 45 212 191;
-    --orange-200-rgb: 194 65 12;
-    --orange-400-rgb: 251 146 60;
+    /* Identité de matière — désaturée pour rester sur le papier. */
+    --violet-200-rgb: 88 56 158;
+    --violet-400-rgb: 132 105 200;
+    --sky-200-rgb: 21 90 140;
+    --sky-400-rgb: 62 141 190;
+    --teal-200-rgb: 19 108 105;
+    --teal-400-rgb: 45 158 152;
+    --orange-200-rgb: 168 74 22;
+    --orange-400-rgb: 214 122 58;
+
+    /* ── RYTHME ───────────────────────────────────────────────────
+       Une mesure de lecture, pas « ce que la largeur donne ». 66 caractères
+       est l'optimum admis pour du texte long ; les énoncés y sont composés,
+       quelle que soit la taille de l'écran. */
+    --measure: 34rem;
+    --measure-wide: 46rem;
+    --shell-max: 1140px;
+    --nav-h: 3.5rem;
   }
 
-  /* Mode "système" (aucun `data-theme` posé) : mêmes valeurs que `[data-theme="light"]` ci-dessus, appliquées seulement si l'OS/navigateur préfère le clair. Un choix explicite ("light"/"dark") l'emporte toujours — voir le sélecteur `:not([data-theme="dark"])`. */
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) {
-      --canvas-rgb: 244 245 247;
-      --panel-rgb: 255 255 255;
-      --elevated-rgb: 255 255 255;
-      --line-rgb: 226 229 234;
-      --ink-rgb: 24 24 27;
-      --muted-rgb: 82 82 91;
-      --subtle-rgb: 113 113 122;
-      --hairline-rgb: 0 0 0;
-    --accent-ink-rgb: var(--accent-ink-base-rgb);
-      /* Aplat principal : une teinte profonde de la couleur de marque, texte
-         clair dessus — la lisibilité maximale sur une page claire, et la même
-         famille chromatique que le thème sombre. */
-      --accent-solid-rgb: var(--accent-deep-base-rgb);
-      --accent-solid-fg-rgb: 255 255 255;
+  /* ── THÈME SOMBRE ─────────────────────────────────────────────────
+     Pas un simple négatif : le fond descend vers un brun très sombre plutôt
+     qu'un noir bleuté, pour garder la même température que le thème clair.
+     Les deux blocs ci-dessous (choix explicite / préférence système) sont
+     identiques par construction — seule leur condition d'application diffère. */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --canvas-rgb: 18 17 15;
+    --panel-rgb: 26 25 22;
+    --elevated-rgb: 33 31 28;
+    --line-rgb: 48 45 41;
+    --ink-rgb: 245 243 239;
+    --muted-rgb: 168 162 152;
+    /* 4,99:1 sur le fond sombre et 4,58:1 sur une surface — voir la note
+       du thème clair. Mesuré page par page au navigateur, pas estimé. */
+    --subtle-rgb: 138 132 122;
+    --hairline-rgb: 255 253 248;
+    --inset-rgb: 255 253 248;
+    --inset-alpha: 0.05;
+    --accent-ink-rgb: var(--accent-rgb);
+    --accent-solid-rgb: var(--accent-rgb);
+    --accent-solid-fg-rgb: var(--accent-fg-rgb);
+    --surface-bg: rgb(var(--panel-rgb));
+    --shadow-surface: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.45);
+
+    --zinc-50-rgb: 250 249 246;
+    --zinc-100-rgb: 245 243 239;
+    --zinc-200-rgb: 224 220 213;
+    --zinc-300-rgb: 196 190 181;
+    --zinc-400-rgb: 168 162 152;
+    --zinc-500-rgb: 124 118 109;
+    --zinc-600-rgb: 100 95 87;
+    --zinc-700-rgb: 72 68 62;
+    --zinc-800-rgb: 48 45 41;
+    --zinc-900-rgb: 33 31 28;
+    --zinc-950-rgb: 18 17 15;
+
+    --emerald-200-rgb: 126 222 178;
+    --emerald-300-rgb: 110 214 168;
+    --emerald-400-rgb: 62 190 138;
+    --emerald-500-rgb: 40 168 118;
+    --amber-200-rgb: 246 205 132;
+    --amber-300-rgb: 242 191 108;
+    --amber-400-rgb: 231 168 66;
+    --amber-500-rgb: 214 148 44;
+    --rose-200-rgb: 250 176 186;
+    --rose-300-rgb: 246 154 168;
+    --rose-400-rgb: 236 116 136;
+    --rose-500-rgb: 224 88 112;
+
+    --violet-200-rgb: 197 182 246;
+    --violet-400-rgb: 160 137 232;
+    --sky-200-rgb: 158 205 238;
+    --sky-400-rgb: 104 174 224;
+    --teal-200-rgb: 138 225 216;
+    --teal-400-rgb: 78 196 186;
+    --orange-200-rgb: 246 194 156;
+    --orange-400-rgb: 232 154 100;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --canvas-rgb: 18 17 15;
+      --panel-rgb: 26 25 22;
+      --elevated-rgb: 33 31 28;
+      --line-rgb: 48 45 41;
+      --ink-rgb: 245 243 239;
+      --muted-rgb: 168 162 152;
+      --subtle-rgb: 138 132 122;
+      --hairline-rgb: 255 253 248;
+      --inset-rgb: 255 253 248;
+      --inset-alpha: 0.05;
+      --accent-ink-rgb: var(--accent-rgb);
+      --accent-solid-rgb: var(--accent-rgb);
+      --accent-solid-fg-rgb: var(--accent-fg-rgb);
       --surface-bg: rgb(var(--panel-rgb));
-      /* Deux couches courtes plutôt qu'un halo de 34 px : sur fond clair, une
-         ombre large et sombre salit au lieu de soulever. */
-      --shadow-surface: 0 1px 2px rgba(24, 24, 27, 0.05), 0 4px 14px rgba(24, 24, 27, 0.06);
+      --shadow-surface: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.45);
 
-      --zinc-50-rgb: 9 9 11;
-      --zinc-100-rgb: 24 24 27;
-      --zinc-200-rgb: 39 39 42;
-      --zinc-300-rgb: 63 63 70;
-      --zinc-400-rgb: 82 82 91;
-      --zinc-500-rgb: 82 82 91;
-      --zinc-600-rgb: 161 161 170;
-      --zinc-700-rgb: 212 212 216;
-      --zinc-800-rgb: 228 228 231;
-      --zinc-900-rgb: 244 244 245;
-      --zinc-950-rgb: 250 250 250;
+      --zinc-50-rgb: 250 249 246;
+      --zinc-100-rgb: 245 243 239;
+      --zinc-200-rgb: 224 220 213;
+      --zinc-300-rgb: 196 190 181;
+      --zinc-400-rgb: 168 162 152;
+      --zinc-500-rgb: 124 118 109;
+      --zinc-600-rgb: 100 95 87;
+      --zinc-700-rgb: 72 68 62;
+      --zinc-800-rgb: 48 45 41;
+      --zinc-900-rgb: 33 31 28;
+      --zinc-950-rgb: 18 17 15;
 
-      --emerald-200-rgb: 4 120 87;
-      --emerald-300-rgb: 4 120 87;
-      --emerald-400-rgb: 52 211 153;
-      --emerald-500-rgb: 16 185 129;
-      --amber-200-rgb: 180 83 9;
-      --amber-300-rgb: 180 83 9;
-      --amber-400-rgb: 251 191 36;
-      --amber-500-rgb: 245 158 11;
-      --rose-200-rgb: 190 18 60;
-      --rose-300-rgb: 190 18 60;
-      --rose-400-rgb: 251 113 133;
-      --rose-500-rgb: 244 63 94;
+      --emerald-200-rgb: 126 222 178;
+      --emerald-300-rgb: 110 214 168;
+      --emerald-400-rgb: 62 190 138;
+      --emerald-500-rgb: 40 168 118;
+      --amber-200-rgb: 246 205 132;
+      --amber-300-rgb: 242 191 108;
+      --amber-400-rgb: 231 168 66;
+      --amber-500-rgb: 214 148 44;
+      --rose-200-rgb: 250 176 186;
+      --rose-300-rgb: 246 154 168;
+      --rose-400-rgb: 236 116 136;
+      --rose-500-rgb: 224 88 112;
 
-      --violet-200-rgb: 109 40 217;
-      --violet-400-rgb: 167 139 250;
-      --sky-200-rgb: 3 105 161;
-      --sky-400-rgb: 56 189 248;
-      --teal-200-rgb: 15 118 110;
-      --teal-400-rgb: 45 212 191;
-      --orange-200-rgb: 194 65 12;
-      --orange-400-rgb: 251 146 60;
+      --violet-200-rgb: 197 182 246;
+      --violet-400-rgb: 160 137 232;
+      --sky-200-rgb: 158 205 238;
+      --sky-400-rgb: 104 174 224;
+      --teal-200-rgb: 138 225 216;
+      --teal-400-rgb: 78 196 186;
+      --orange-200-rgb: 246 194 156;
+      --orange-400-rgb: 232 154 100;
     }
   }
 
@@ -248,7 +256,7 @@
 
   html {
     background: rgb(var(--canvas-rgb));
-    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
@@ -256,116 +264,304 @@
     min-height: 100vh;
     background: rgb(var(--canvas-rgb));
     color: rgb(var(--ink-rgb));
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    /* 15 px : le 14 px par défaut de Tailwind est en dessous du confort de
+       lecture prolongée, et poussait à écrire des `text-xs` partout ensuite. */
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    /* `cv05` (l minuscule à empattement) et `ss03` : l'ambiguïté 1/l/I d'Inter
+       est un vrai problème dans une app où l'on lit « 1 exercice », « l'un »,
+       « Il ». `tnum` est posé localement (`.tabular`), pas globalement : des
+       chiffres tabulaires dans du texte courant écartent mal. */
+    font-feature-settings: "cv05", "ss03";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: background-color 0.2s ease, color 0.2s ease;
   }
-
-  /* Aucun dégradé de fond. Trois halos radiaux teintaient toutes les pages :
-     l'œil lisait une ambiance, pas une hiérarchie, et le fond « bougeait »
-     derrière des cartes censées se détacher de lui. Un fond de travail se
-     tait. */
 
   button,
   input,
   select,
   textarea {
     font: inherit;
+    color: inherit;
   }
 
   ::selection {
-    background: rgb(var(--accent-rgb));
-    color: rgb(var(--accent-fg-rgb));
+    background: rgb(var(--accent-rgb) / 0.35);
+    color: rgb(var(--ink-rgb));
+  }
+
+  /* Une seule règle de focus pour toute l'application, posée sur la balise :
+     aucun contrôle ne peut être oublié, et aucun composant n'a besoin de
+     penser à l'ajouter. */
+  :focus-visible {
+    outline: 2px solid rgb(var(--accent-ink-rgb));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Le défilement fluide est agréable au clic sur une ancre et pénible quand
+     on saute d'écran en écran au clavier — donc seulement là où il est
+     demandé explicitement, jamais globalement. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
-/**
- * ÉCHELLE `hairline` — trois marches, et seulement trois.
- *
- * Avant consolidation, l'app utilisait SEPT opacités de bordure
- * (0.06/0.07/0.08/0.09/0.1/0.12/0.14) et SEPT de fond
- * (0.02/0.025/0.035/0.04/0.045/0.07/0.08) pour des rôles pourtant
- * identiques : deux cartes voisines pouvaient porter des bordures
- * imperceptiblement différentes sans qu'aucune règle ne dise laquelle
- * choisir. Un écart sub-perceptuel n'apporte rien à l'œil mais rend le
- * système illisible et garantit la dérive à chaque ajout.
- *
- * Chaque marche a désormais UN rôle :
- *
- *   BORDURES
- *   0.07  tuile interne, séparateur discret (le cas le plus courant)
- *   0.09  surface, contrôle (champ, bouton secondaire, groupe segmenté)
- *   0.14  survol / emphase
- *
- *   FONDS
- *   0.025 fond à peine posé (zone en léger relief)
- *   0.04  tuile, survol d'un élément de liste
- *   0.08  état actif / appuyé
- *
- * Ajouter une valeur intermédiaire, c'est recommencer le problème : s'il
- * semble manquer une nuance, c'est le rôle qu'il faut interroger, pas
- * l'échelle.
- */
 @layer components {
-  /**
-   * SURFACE — une carte, et rien d'autre.
-   *
-   * Plus de `backdrop-blur` : le flou d'arrière-plan coûte cher au rendu, ne
-   * se voyait que par-dessus les anciens dégradés, et appartient à une mode
-   * (le « verre dépoli ») plutôt qu'à une hiérarchie. Une carte se détache
-   * par sa valeur et sa bordure — c'est suffisant, et c'est net.
-   */
-  .surface {
-    @apply border border-hairline/[0.09];
-    background: var(--surface-bg);
-    box-shadow: var(--shadow-surface);
-  }
+  /* ═══════════════════════════════════════════════════════════════
+     TYPOGRAPHIE
+     ═══════════════════════════════════════════════════════════════
 
-  .surface-hover {
-    @apply transition-colors duration-150 hover:border-hairline/[0.14] hover:bg-inset;
-  }
+     Deux familles, six rôles. Un écran ne choisit JAMAIS une taille : il
+     choisit un rôle. C'est ce qui empêche la dérive où chaque page finit
+     avec sa propre taille en rem, écrite à la main.
 
-  /**
-   * ZONE EN CREUX — un bloc posé DANS une carte (tuile de liste, encart).
-   * Sans bordure ni ombre : deux cadres emboîtés font du bruit, pas de la
-   * hiérarchie. C'est la valeur du fond qui dit « ceci est à l'intérieur ».
-   */
-  .well {
-    @apply rounded-xl bg-inset;
-  }
-
-  /**
-   * ÉCHELLE TYPOGRAPHIQUE — cinq rôles nommés, au lieu d'un choix ad hoc de
-   * `text-*` à chaque écran (on comptait `text-3xl`, `2xl`, `xl`, `lg`,
-   * `base`, `sm`, `xs`, `2xs` mélangés sans règle).
-   */
+       .t-display   titre d'écran            serif   28→36 px
+       .t-heading   titre de section         serif   19→21 px
+       .t-subhead   titre de bloc            sans    15 px  600
+       .t-body      texte courant d'interface sans   15 px
+       .t-meta      métadonnée, légende      sans    13 px
+       .t-label     étiquette de champ/rubrique sans 11.5 px capitales
+       .t-read      CONTENU LU (énoncé, correction) serif 17→18 px / 1.8
+  */
   .t-display {
-    @apply text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.02em] sm:text-[2rem];
+    font-family: var(--font-serif), Georgia, serif;
+    font-size: clamp(1.75rem, 1.45rem + 1.1vw, 2.25rem);
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: -0.018em;
+    font-optical-sizing: auto;
   }
 
-  .t-title {
-    @apply text-lg font-semibold leading-snug tracking-[-0.01em];
+  .t-heading {
+    font-family: var(--font-serif), Georgia, serif;
+    font-size: clamp(1.1875rem, 1.1rem + 0.35vw, 1.3125rem);
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.012em;
+  }
+
+  .t-subhead {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.005em;
   }
 
   .t-body {
-    @apply text-sm leading-6;
+    font-size: 0.9375rem;
+    line-height: 1.6;
   }
 
   .t-meta {
-    @apply text-xs leading-5 text-muted;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: rgb(var(--muted-rgb));
   }
 
+  /* Remplace `.eyebrow`. Nom explicite : c'est une ÉTIQUETTE de rubrique, et
+     elle est en capitales parce qu'elle ne doit surtout pas se lire comme un
+     titre — pas pour « faire premium ». */
+  .t-label {
+    font-size: 0.71875rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: rgb(var(--subtle-rgb));
+    font-feature-settings: "cv05", "ss03", "cpsp";
+  }
+
+  /* La signature du produit — une taille, un seul endroit. Elle apparaît
+     dans la barre de navigation et sur la page d'accueil publique ; deux
+     valeurs écrites à la main auraient fini par diverger. */
+  .t-wordmark {
+    font-family: var(--font-serif), Georgia, serif;
+    font-size: 1.0625rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  /* Alias conservés le temps que les derniers composants secondaires soient
+     repris. UNE seule définition chacun, qui pointe vers le rôle réel — pas
+     un second système parallèle. */
   .eyebrow {
-    @apply text-2xs font-semibold uppercase tracking-[0.14em] text-subtle;
+    @apply t-label;
   }
 
-  .focus-ring {
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+  .t-title {
+    @apply t-heading;
   }
 
-  .text-gradient {
-    @apply bg-gradient-to-r from-ink to-zinc-400 bg-clip-text text-transparent;
+  /* Le focus est désormais géré globalement sur `:focus-visible`
+     (app/globals.css, couche `base`) : aucun composant ne peut l'oublier.
+     Cette classe reste pour les appelants existants et ne fait plus rien
+     d'autre que renforcer le décalage sur les contrôles collés à un bord. */
+  .focus-ring:focus-visible {
+    outline: 2px solid rgb(var(--accent-ink-rgb));
+    outline-offset: 2px;
+  }
+
+  /* Le texte qu'on LIT. Serif, interligne 1.8, mesure bornée par l'appelant.
+     `text-wrap: pretty` évite les lignes veuves d'un mot en fin de paragraphe
+     (ignoré silencieusement par les navigateurs qui ne le connaissent pas). */
+  .t-read {
+    font-family: var(--font-serif), Georgia, serif;
+    font-size: 1.0625rem;
+    line-height: 1.8;
+    letter-spacing: -0.003em;
+    font-optical-sizing: auto;
+    text-wrap: pretty;
+  }
+
+  @media (min-width: 640px) {
+    .t-read {
+      font-size: 1.125rem;
+    }
+  }
+
+  /* Contenu lu SECONDAIRE — un indice, une correction. Même famille et même
+     interligne que `.t-read`, un cran plus bas : ce qui accompagne l'énoncé
+     ne doit jamais peser autant que lui. */
+  .t-read-quiet {
+    font-family: var(--font-serif), Georgia, serif;
+    font-size: 1rem;
+    line-height: 1.78;
+    letter-spacing: -0.003em;
+    font-optical-sizing: auto;
+    text-wrap: pretty;
+  }
+
+  @media (min-width: 640px) {
+    .t-read-quiet {
+      font-size: 1.0625rem;
+    }
+  }
+
+  /* Chiffres alignés en colonne — statistiques, durées, compteurs. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum", "cv05";
+  }
+
+  /* Nombre d'un indicateur : serif, parce qu'un résultat scolaire se lit
+     comme un bulletin, pas comme une métrique de supervision.
+     TROIS tailles nommées — sans elles, chaque écran réinventait la sienne
+     (`text-[1.75rem]` ici, `text-[2.5rem]` là) et deux indicateurs voisins
+     finissaient à des corps différents sans raison. */
+  .t-figure {
+    font-family: var(--font-serif), Georgia, serif;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .t-figure-sm {
+    @apply t-figure;
+    font-size: 1.25rem;
+  }
+
+  .t-figure-md {
+    @apply t-figure;
+    font-size: 1.75rem;
+  }
+
+  .t-figure-lg {
+    @apply t-figure;
+    font-size: 2.5rem;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SURFACES — trois seulement, et jamais d'ombre sur du contenu en place.
+     ═══════════════════════════════════════════════════════════════ */
+
+  /** Bloc posé sur le bureau. Se détache par sa valeur + un filet. */
+  .surface {
+    background: var(--surface-bg);
+    border: 1px solid rgb(var(--line-rgb));
+    border-radius: 0.75rem;
+  }
+
+  /** Zone en creux DANS une surface (tuile de liste, encart). Ni filet ni
+      ombre : deux cadres emboîtés font du bruit, pas de la hiérarchie. */
+  .well {
+    background: rgb(var(--inset-rgb) / var(--inset-alpha));
+    border-radius: 0.625rem;
+  }
+
+  /** Couche réellement flottante — feuille modale, menu. Le seul endroit où
+      une ombre porte encore du sens : l'objet est AU-DESSUS de la page. */
+  .floating {
+    background: rgb(var(--panel-rgb));
+    border: 1px solid rgb(var(--line-rgb));
+    box-shadow: var(--shadow-surface);
+  }
+
+  /** Séparateur horizontal — l'outil de mise en page principal, à la place
+      des cadres. */
+  .rule {
+    height: 1px;
+    background: rgb(var(--line-rgb));
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     RANGÉE INTERACTIVE — le motif le plus répété de l'app.
+     ═══════════════════════════════════════════════════════════════
+     Le survol ne déplace rien et ne pose pas d'ombre : il change la valeur du
+     fond. C'est instantané, ça ne provoque aucun recalcul de mise en page, et
+     ça ne « saute » pas quand on parcourt une liste de trente lignes. */
+  .row-hover {
+    transition: background-color 130ms ease;
+  }
+
+  .row-hover:hover {
+    background: rgb(var(--inset-rgb) / var(--inset-alpha));
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     MATHÉMATIQUES
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* KaTeX compose en Computer Modern, dont l'œil est plus petit que celui de
+     Newsreader : sans compensation, les formules paraissent rétrécies au
+     milieu de la phrase. */
+  .katex {
+    font-size: 1.06em;
+  }
+
+  /* Une formule centrée est un paragraphe à elle seule : elle respire
+     au-dessus et au-dessous, et défile horizontalement plutôt que de forcer
+     toute la page à s'élargir sur mobile. */
+  .katex-display {
+    margin: 1.4em 0 !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.25rem 0;
+  }
+
+  .katex-display > .katex {
+    white-space: normal;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     UTILITAIRES
+     ═══════════════════════════════════════════════════════════════ */
+
+  .measure {
+    max-width: var(--measure);
+  }
+
+  .measure-wide {
+    max-width: var(--measure-wide);
   }
 
   .scrollbar-none::-webkit-scrollbar {
@@ -376,7 +572,16 @@
     scrollbar-width: none;
   }
 
-  .glass-divider {
-    @apply h-px bg-gradient-to-r from-transparent via-hairline/[0.08] to-transparent;
+  /* Masque le débordement d'une bande défilable horizontalement (onglets,
+     filtres) sans afficher de barre, tout en gardant l'accrochage au doigt. */
+  .rail {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rail > * {
+    scroll-snap-align: start;
   }
 }

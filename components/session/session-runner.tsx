@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, PlayCircle, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
+import { EmptyState, Skeleton } from "@/components/ui/state";
 import { Input, Select } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
@@ -241,10 +241,9 @@ export function SessionRunner() {
 
   if (phase === "loading") {
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
-        {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="surface h-40 animate-pulse rounded-2xl" />
-        ))}
+      <div className="space-y-4">
+        <Skeleton className="h-56 w-full rounded-xl" />
+        <Skeleton className="h-24 w-full" />
       </div>
     );
   }
@@ -273,56 +272,62 @@ export function SessionRunner() {
 
   if (phase === "empty") {
     content = (
-      <Card className="p-10 text-center">
-        <Sparkles className="mx-auto text-accent" size={24} />
-        <p className="mt-4 font-medium">
-          {contextSubject ? `Rien à travailler en ${contextSubject} pour l'instant.` : "Rien à travailler pour l'instant."}
-        </p>
-        <p className="mt-2 text-sm text-zinc-500">
-          {contextSubject
+      <EmptyState
+        icon={Sparkles}
+        title={contextSubject ? `Rien à travailler en ${contextSubject} pour l'instant.` : "Rien à travailler pour l'instant."}
+        description={
+          contextSubject
             ? "Cette matière est à jour — reviens plus tard, ou explore tes exercices."
-            : "Ta banque est à jour — reviens plus tard, ou explore tes exercices."}
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Link href="/exercises">
-            <Button variant="secondary">Voir les exercices</Button>
-          </Link>
-          {contextSubject && (
-            <Link href="/session">
-              <Button variant="ghost">Séance complète</Button>
+            : "Ta banque est à jour — reviens plus tard, ou explore tes exercices."
+        }
+        action={
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link href="/exercises">
+              <Button variant="secondary">Voir les exercices</Button>
             </Link>
-          )}
-        </div>
-      </Card>
+            {contextSubject && (
+              <Link href="/session">
+                <Button variant="ghost">Séance complète</Button>
+              </Link>
+            )}
+          </div>
+        }
+      />
     );
   } else if (phase === "preview") {
     content = (
       <div className="space-y-5">
-        <Card className="p-8 text-center">
-          <PlayCircle className="mx-auto text-accent" size={28} />
-
+        {/* Aligné à gauche, sans icône décorative au centre : un écran de
+            réglage se lit de gauche à droite comme le reste de l'application.
+            La composition centrée faisait de chaque libellé un titre et
+            empêchait toute hiérarchie entre « choisis une durée » et
+            « commence ». */}
+        <section className="surface p-5 sm:p-7">
           {planSelection ? (
             planSource === "libre" ? (
               <>
-                <h2 className="mt-4 text-xl font-semibold tracking-tight">Ta séance libre</h2>
-                <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+                <p className="t-label">La séance</p>
+                <h2 className="t-display mt-2">Ta séance libre</h2>
+                <p className="t-meta mt-2 max-w-[52ch]">
                   Exactement la sélection choisie dans la banque d&apos;exercices — matière, chapitre, sous-thème et difficulté filtrés à la main.
                 </p>
               </>
             ) : (
               <>
-                <h2 className="mt-4 text-xl font-semibold tracking-tight">Ton plan du jour</h2>
-                <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
-                  Réparti sur tes matières prioritaires, dans le temps que tu as choisi depuis le tableau de bord.
+                <p className="t-label">La séance</p>
+                <h2 className="t-display mt-2">Ton plan du jour</h2>
+                <p className="t-meta mt-2 max-w-[52ch]">
+                  Réparti sur tes matières prioritaires, dans le temps que tu as choisi depuis l&apos;accueil.
                 </p>
               </>
             )
           ) : (
             <>
-              <h2 className="mt-4 text-xl font-semibold tracking-tight">
+              <p className="t-label">La séance</p>
+              <h2 className="t-display mt-2">
                 {sizingMode === "time" ? "Combien de temps as-tu devant toi ?" : "Combien d'exercices veux-tu travailler ?"}
               </h2>
-              <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+              <p className="t-meta mt-2 max-w-[52ch]">
                 {sizingMode === "time"
                   ? "La séance tient dans ce temps — aucun exercice trop long n'est jamais forcé dedans."
                   : "Une sélection de ce nombre exact, classée par urgence et répartie sur plusieurs chapitres."}
@@ -343,8 +348,8 @@ export function SessionRunner() {
                   variable que `?subject=` alimentait déjà, et
                   `scopedExercises` s'occupe du reste. */}
               {availableSubjects.length > 1 && (
-                <div className="mx-auto mt-5 flex max-w-xs items-center justify-center gap-2">
-                  <label htmlFor="session-subject" className="text-xs text-zinc-500">
+                <div className="mt-6 flex max-w-xs items-center gap-2">
+                  <label htmlFor="session-subject" className="t-label">
                     Matière
                   </label>
                   <Select
@@ -354,7 +359,7 @@ export function SessionRunner() {
                       const value = event.target.value;
                       setContextSubject(value === "Toutes" ? null : (value as Subject));
                     }}
-                    className="w-auto min-w-[150px]"
+                    wrapperClassName="w-auto min-w-[150px]"
                   >
                     {["Toutes", ...availableSubjects].map((value) => (
                       <option key={value}>{value}</option>
@@ -364,7 +369,7 @@ export function SessionRunner() {
               )}
 
               <SegmentedControl
-                className="mx-auto mt-4"
+                className="mt-5"
                 ariaLabel="Dimensionner la séance"
                 value={sizingMode}
                 onChange={setSizingMode}
@@ -379,7 +384,7 @@ export function SessionRunner() {
                   « Commencer ma séance », deux lignes plus bas. Choisir une
                   durée n'est pas agir, c'est régler. */}
               {sizingMode === "time" ? (
-                <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
                   <SegmentedControl
                     ariaLabel="Temps disponible"
                     value={budgetMinutes}
@@ -396,11 +401,11 @@ export function SessionRunner() {
                       className="w-20 text-center"
                       aria-label="Temps disponible, en minutes"
                     />
-                    <span className="text-xs text-zinc-500">min</span>
+                    <span className="t-meta">min</span>
                   </div>
                 </div>
               ) : (
-                <div className="mx-auto mt-4 flex max-w-sm flex-wrap items-center justify-center gap-2">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
                   <SegmentedControl
                     ariaLabel="Nombre d'exercices"
                     value={countTarget}
@@ -417,7 +422,7 @@ export function SessionRunner() {
                       className="w-20 text-center"
                       aria-label="Nombre d'exercices"
                     />
-                    <span className="text-xs text-zinc-500">exercice{countTarget > 1 ? "s" : ""}</span>
+                    <span className="t-meta">exercice{countTarget > 1 ? "s" : ""}</span>
                   </div>
                 </div>
               )}
@@ -425,7 +430,7 @@ export function SessionRunner() {
           )}
 
           {previewSelection.length > 0 ? (
-            <p className="mx-auto mt-5 max-w-md text-sm text-zinc-400">
+            <p className="t-meta mt-6">
               {sizingMode === "time" ? (
                 <>
                   {previewSelection.length} exercice{previewSelection.length > 1 ? "s" : ""} sélectionné{previewSelection.length > 1 ? "s" : ""} — environ{" "}
@@ -439,7 +444,7 @@ export function SessionRunner() {
               )}
             </p>
           ) : (
-            <p className="mx-auto mt-5 max-w-md text-sm text-amber-300">
+            <p className="t-meta mt-6 text-amber-300">
               {sizingMode === "time" && budgetMinutes === 0
                 ? "Objectif du jour déjà atteint — choisis un temps si tu veux continuer."
                 : sizingMode === "time"
@@ -451,10 +456,11 @@ export function SessionRunner() {
           <Button size="lg" className="mt-6" onClick={startSession} disabled={previewSelection.length === 0}>
             Commencer ma séance <ArrowRight size={16} />
           </Button>
-        </Card>
+        </section>
 
         {previewSelection.length > 0 && (
-          <div className="surface divide-y divide-hairline/[0.07] rounded-2xl px-4 py-1 sm:columns-2 sm:gap-6 sm:divide-y-0 sm:[&>*]:break-inside-avoid">
+          <Section label="Au programme" title={`${previewSelection.length} exercice${previewSelection.length > 1 ? "s" : ""}`}>
+            <ul className="divide-y divide-line border-y border-line">
             {previewSelection.map(({ exercise, reasons }) => (
               // `min-w-0` obligatoire ici : un élément de grille a
               // `min-width: auto` par défaut, donc sa largeur minimale vaut
@@ -468,8 +474,8 @@ export function SessionRunner() {
               // portait jusqu'à quatre étiquettes teintées par exercice, soit
               // plus de signal d'emphase que de contenu. Durée et raisons
               // tiennent sur une ligne secondaire, qui se lit d'un coup d'œil.
-              <div key={exercise.id} className="flex min-w-0 items-start gap-3 py-2 text-left">
-                <span className="mt-0.5 shrink-0">
+              <li key={exercise.id} className="flex min-w-0 items-center gap-3 py-2.5 text-left">
+                <span className="shrink-0">
                   <SubjectAvatar subject={exercise.subject} size="sm" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -478,9 +484,10 @@ export function SessionRunner() {
                     ≈ {estimatedDurationMinutes(exercise, sessions)} min{reasons.length > 0 && <> · {reasons.slice(0, 2).join(" · ")}</>}
                   </p>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+            </ul>
+          </Section>
         )}
       </div>
     );
@@ -491,16 +498,26 @@ export function SessionRunner() {
     // suivant ?" ne doit pas s'arrêter à un simple titre entre deux exercices.
     const nextReason = nextPick ? explainReasons(nextPick.reasons) : null;
     content = (
-      <Card className="p-8 text-center">
-        <CheckCircle2 className="mx-auto text-accent" size={28} />
-        <h2 className="mt-4 text-xl font-semibold tracking-tight">Exercice travaillé</h2>
-        {done && <p className="mt-2 text-sm text-zinc-400"><MathInline text={done.title} /></p>}
-        <p className="mt-1 text-xs text-zinc-500">
-          {currentIndex + 1} / {recommendations.length}
-          {nextPick && <> · Prochain : <MathInline text={nextPick.exercise.title} /></>}
+      <section className="surface p-5 sm:p-7">
+        <p className="t-label flex items-center gap-1.5">
+          <CheckCircle2 size={13} className="text-emerald-300" /> Exercice travaillé
         </p>
-        {nextReason && <p className="mx-auto mt-2 max-w-sm text-xs text-accent/90">{nextReason}</p>}
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
+        {done && (
+          <h2 className="t-heading mt-2">
+            <MathInline text={done.title} />
+          </h2>
+        )}
+        <p className="t-meta tabular mt-2">
+          {currentIndex + 1} / {recommendations.length}
+          {nextPick && (
+            <>
+              {" · Prochain : "}
+              <MathInline text={nextPick.exercise.title} />
+            </>
+          )}
+        </p>
+        {nextReason && <p className="t-meta mt-2 border-l-2 border-accent/40 py-0.5 pl-3">{nextReason}</p>}
+        <div className="mt-6 flex flex-wrap gap-3">
           <Button onClick={continueToNext}>
             Continuer <ArrowRight size={16} />
           </Button>
@@ -508,7 +525,7 @@ export function SessionRunner() {
             Terminer la séance
           </Button>
         </div>
-      </Card>
+      </section>
     );
   } else {
     // phase === "summary"
@@ -516,13 +533,14 @@ export function SessionRunner() {
     const runPartialCount = runResults.filter((result) => result === "partiel").length;
     const runFailureCount = runResults.filter((result) => result === "échoué").length;
     content = (
-      <Card className="p-10 text-center">
-        <CardTitle className="text-xl">Séance terminée</CardTitle>
-        <p className="mt-2 text-sm text-zinc-400">
+      <section className="surface p-5 sm:p-7">
+        <p className="t-label">Bilan</p>
+        <h2 className="t-display mt-2">Séance terminée</h2>
+        <p className="t-meta mt-2">
           {visitedCount} exercice{visitedCount > 1 ? "s" : ""} travaillé{visitedCount > 1 ? "s" : ""} durant cette séance.
         </p>
         {runResults.length > 0 && (
-          <div className="mx-auto mt-3 flex max-w-sm flex-wrap items-center justify-center gap-1.5">
+          <div className="mt-4 flex flex-wrap items-center gap-1.5">
             {runSuccessCount > 0 && (
               <Badge variant="success">
                 {runSuccessCount} réussi{runSuccessCount > 1 ? "s" : ""}
@@ -542,13 +560,13 @@ export function SessionRunner() {
         )}
 
         {upcomingNextAction.kind === "start-session" && (
-          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-hairline/[0.09] bg-hairline/[0.025] p-5 text-left">
-            <p className="eyebrow">Et maintenant ?</p>
-            <p className="mt-2 text-sm font-medium text-zinc-100"><MathInline text={upcomingNextAction.title} /></p>
-            <p className="mt-1 text-xs leading-5 text-zinc-500">{upcomingNextAction.description}</p>
+          <div className="well mt-7 max-w-md p-4">
+            <p className="t-label">Et maintenant ?</p>
+            <p className="t-subhead mt-2"><MathInline text={upcomingNextAction.title} /></p>
+            <p className="t-meta mt-1">{upcomingNextAction.description}</p>
             <Button
               size="sm"
-              className="mt-4 w-full"
+              className="mt-4"
               // Navigation complète (pas de Link) : SessionRunner ne
               // réinitialise sa sélection qu'au montage — un rechargement
               // complet est le moyen le plus sûr de repartir sur cette
@@ -562,29 +580,25 @@ export function SessionRunner() {
           </div>
         )}
 
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <div className="mt-7 flex flex-wrap gap-3">
           <Link href="/dashboard">
-            <Button variant={upcomingNextAction.kind === "start-session" ? "secondary" : "primary"}>Retour au tableau de bord</Button>
+            <Button variant={upcomingNextAction.kind === "start-session" ? "secondary" : "primary"}>Retour à l&apos;accueil</Button>
           </Link>
           <Link href="/exercises">
             <Button variant="secondary">Voir les exercices</Button>
           </Link>
         </div>
-      </Card>
+      </section>
     );
   }
 
+  /* `key={phase}` remonte le bloc à chaque changement d'étape, ce qui relance
+     l'animation CSS d'entrée — le même effet qu'`AnimatePresence`, sans la
+     librairie. Il n'y a pas d'animation de sortie : personne n'attend qu'un
+     écran de réglage s'efface avant de voir son exercice. */
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={phase}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
-      >
-        {content}
-      </motion.div>
-    </AnimatePresence>
+    <div key={phase} className="animate-rise">
+      {content}
+    </div>
   );
 }

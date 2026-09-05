@@ -1,21 +1,20 @@
 "use client";
 
-import { Archive, ArrowLeft, BookOpenCheck, LayoutGrid, List } from "lucide-react";
+import { Archive, ChevronLeft, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { PageBar, Workbench } from "@/components/ui/layout";
 import { Select } from "@/components/ui/input";
+import { EmptyState, Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { ArchivedExercises } from "@/components/exercises/archived-exercises";
-import { ExerciseBrowser } from "@/components/exercises/exercise-browser";
-import { ExerciseFiltersBar } from "@/components/exercises/exercise-filters-bar";
+import { BankNavigator } from "@/components/exercises/bank-navigator";
+import { ExerciseToolbar } from "@/components/exercises/exercise-toolbar";
 import { ExerciseForm, type NewExerciseInput } from "@/components/exercises/exercise-form";
-import { ExerciseCard } from "@/components/exercises/exercise-card";
 import { ExerciseImport } from "@/components/exercises/exercise-import";
-import { ExerciseListRow } from "@/components/exercises/exercise-list-row";
-import { ExerciseReviewPanel } from "@/components/exercises/exercise-review-panel";
+import { ExerciseRow } from "@/components/exercises/exercise-row";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { addChapter, removeChapter, renameChapter } from "@/lib/chapters";
 import { chapterOptionsForSubject, competitionOptionsForFilters, defaultExerciseFilters, difficultyOptionsForFilters, distinctYears, filterExercises, tagOptionsForFilters, type ExerciseFilters } from "@/lib/exercise-filters";
@@ -23,25 +22,32 @@ import { defaultExerciseSort, exerciseSortOptions, sortExercises, type ExerciseS
 import { createExerciseFromInput } from "@/lib/exercise-import";
 import { SessionBuilderBar } from "@/components/exercises/session-builder-bar";
 import { recommendExercises } from "@/lib/recommendation";
-import { minutesByExerciseMap } from "@/lib/study";
-import { cn } from "@/lib/cn";
+import { minutesByExerciseMap, subjects } from "@/lib/study";
 import type { Exercise, Subject } from "@/lib/supabase/types";
 
-type ViewMode = "cards" | "list";
+/**
+ * Nombre d'exercices rendus d'un coup.
+ *
+ * Il n'y en avait AUCUN : la liste rendait tout ce que le filtre laissait
+ * passer. Ouvrir un exercice depuis le tableau de bord réinitialisait les
+ * filtres, et la page montait alors à 534 rangées — mesuré à 80 000 pixels de
+ * haut, avec l'animation d'entrée de chaque carte par-dessus. C'est le défaut
+ * le plus coûteux trouvé pendant la refonte.
+ *
+ * 40 couvre largement un chapitre entier (le plus gros en compte 37) : dans
+ * l'usage normal, le bouton « Afficher plus » n'apparaît même pas.
+ */
+const PAGE_SIZE = 40;
 
 export function ExerciseManager() {
   const { exercises, saveExercises, sessions, saveSessions, chapters, saveChapters, ready } = usePrepahubData();
   const [filters, setFilters] = useState<ExerciseFilters>(defaultExerciseFilters);
-  // Vrai tant que l'utilisateur parcourt la hiérarchie Matière → Chapitre
-  // (ExerciseBrowser) sans avoir encore demandé de résultats précis : la
-  // liste plate reste masquée pour ne pas reproduire, à l'échelle d'une
-  // matière, le problème qu'elle est censée résoudre (des dizaines
-  // d'exercices d'un coup avant même d'avoir choisi un chapitre). Passe à
-  // `false` dès qu'un chapitre est choisi, qu'un filtre de la barre est
-  // utilisé, ou qu'on saute vers un exercice précis (ex. depuis "À revoir").
-  const [browseMode, setBrowseMode] = useState(true);
   const [sort, setSort] = useState<ExerciseSort>(defaultExerciseSort);
-  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  // Combien de rangées sont réellement rendues — remis à `PAGE_SIZE` dès que
+  // le résultat change (nouveau filtre, nouvelle recherche) : garder une
+  // pagination étendue après un changement de filtre afficherait 200 rangées
+  // d'un coup sans que personne ne l'ait demandé.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -108,8 +114,9 @@ export function ExerciseManager() {
 
   // Callbacks à identité stable (jamais recréés) — condition pour que le
   // memo des cartes/rangées serve vraiment à quelque chose.
-  const toggleSelected = useCallback((id: string) => setSelectedId((prev) => (prev === id ? null : id)), []);
-  const enterFocus = useCallback((id: string) => {
+  /** Déplie/replie la FICHE d'un exercice (réglages, notes, séances) — jamais l'ouverture du lecteur, qui passe par `openReader`. */
+  const toggleDetail = useCallback((id: string) => setSelectedId((prev) => (prev === id ? null : id)), []);
+  const openReader = useCallback((id: string) => {
     setSelectedId(id);
     setFocusMode(true);
   }, []);
@@ -159,20 +166,20 @@ export function ExerciseManager() {
     [saveChapters, saveExercises]
   );
 
-  // Depuis le tableau "À revoir" : on réinitialise les filtres (l'exercice
-  // visé pourrait être masqué par le filtrage courant), on le sélectionne,
-  // puis on l'amène à l'écran — sans quoi le clic n'aurait visiblement aucun
-  // effet si l'exercice n'était pas déjà dans la liste affichée.
+  /**
+   * Depuis « À revoir » ou depuis un autre écran : on OUVRE L'EXERCICE.
+   *
+   * Le comportement précédent était différent et coûteux : réinitialiser tous
+   * les filtres, quitter le mode navigation, puis faire défiler jusqu'à la
+   * rangée correspondante. Cliquer un exercice recommandé affichait donc la
+   * banque ENTIÈRE (534 rangées) pour en surligner une seule — et l'élève
+   * devait encore cliquer pour se mettre au travail. Ouvrir directement le
+   * lecteur répond à l'intention réelle du clic, et supprime au passage le
+   * rendu géant.
+   */
   const jumpToExercise = useCallback((id: string) => {
-    setFilters(defaultExerciseFilters);
-    // Quitte le mode navigation (voir sa définition plus haut) : sans ça, la
-    // liste plate resterait masquée au profit de la grille de matières et le
-    // clic depuis "À revoir" n'amènerait visiblement rien à l'écran.
-    setBrowseMode(false);
     setSelectedId(id);
-    requestAnimationFrame(() => {
-      document.getElementById(`exercise-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
+    setFocusMode(true);
   }, []);
 
   // Même geste que `jumpToExercise`, mais déclenché depuis une autre page
@@ -191,6 +198,21 @@ export function ExerciseManager() {
       if (exercises.some((item) => item.id === id && !item.archived)) jumpToExercise(id);
     },
     [exercises, jumpToExercise]
+  );
+
+  /** Entrée depuis l'écran Concours : on montre immédiatement les exercices de cette banque, sans repasser par le parcours matière → chapitre. */
+  const filterByCompetition = useCallback((competition: string) => {
+    setFilters({ ...defaultExerciseFilters, competition });
+  }, []);
+
+  /** Entrée depuis le tableau « Chapitre par chapitre » (Progression) : le chapitre s'ouvre directement, la matière étant déduite du chapitre lui-même. */
+  const openChapter = useCallback(
+    (chapterId: string) => {
+      const chapter = chaptersRef.current.find((entry) => entry.id === chapterId);
+      if (!chapter) return;
+      setFilters({ ...defaultExerciseFilters, subject: chapter.subject, chapter: chapterId });
+    },
+    []
   );
 
   const create = useCallback(
@@ -279,38 +301,34 @@ export function ExerciseManager() {
   const visible = useMemo(() => filterExercises(exercises, filters), [exercises, filters]);
   const sorted = useMemo(() => sortExercises(visible, sort, recommendationRank), [visible, sort, recommendationRank]);
 
-  // Callbacks dédiés d'ExerciseBrowser (Matière → Chapitre) : choisir une
-  // matière ou remonter garde le mode navigation actif (on reste dans la
-  // hiérarchie) ; choisir un chapitre en SORT (ses exercices s'affichent en
-  // liste normale, juste en dessous). `filters` reste l'unique source de
-  // vérité du "où en est-on" — ces callbacks ne font que l'écrire.
-  const goHome = useCallback(() => {
-    setFilters(defaultExerciseFilters);
-    setBrowseMode(true);
-  }, []);
-  const selectSubject = useCallback((subject: Subject) => {
-    setFilters((prev) => ({ ...prev, subject, chapter: "Tous" }));
-    setBrowseMode(true);
-  }, []);
-  const goToChapters = useCallback(() => {
-    setFilters((prev) => ({ ...prev, chapter: "Tous" }));
-    setBrowseMode(true);
-  }, []);
-  const selectChapter = useCallback((chapterId: string) => {
-    setFilters((prev) => ({ ...prev, chapter: chapterId }));
-    setBrowseMode(false);
-  }, []);
+  // Toute nouvelle sélection repart de la première page — voir `PAGE_SIZE`.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [filters, sort]);
 
-  // Toute interaction directe avec la barre de filtres (recherche, un des
-  // sélecteurs) exprime une intention explicite de voir des résultats — sort
-  // du mode navigation, quel que soit le champ modifié.
-  const updateFiltersFromBar = useCallback(
-    (patch: Partial<ExerciseFilters>) => {
-      setBrowseMode(false);
-      updateFilters(patch);
-    },
-    [updateFilters]
-  );
+  const page = useMemo(() => sorted.slice(0, visibleCount), [sorted, visibleCount]);
+
+  /*
+   * NAVIGATION — il n'y a plus de « mode ».
+   *
+   * L'écran distinguait auparavant un mode PARCOURS (grille de matières, liste
+   * masquée) et un mode RÉSULTATS (liste visible), et chaque callback devait
+   * décider dans lequel on basculait. C'était la source de la confusion la
+   * plus fréquente : cliquer une matière masquait les exercices, cliquer un
+   * filtre les faisait réapparaître, sans que rien ne l'annonce.
+   *
+   * Désormais le volet de gauche EST la navigation, et la liste de droite
+   * montre toujours le résultat des filtres courants. Ces callbacks ne font
+   * plus qu'écrire dans `filters` — l'unique source de vérité.
+   */
+  const goHome = useCallback(() => setFilters(defaultExerciseFilters), []);
+  const showFavorites = useCallback(() => setFilters({ ...defaultExerciseFilters, favoritesOnly: true }), []);
+  const selectSubject = useCallback((subject: Subject) => {
+    setFilters((prev) => ({ ...prev, subject, chapter: "Tous", favoritesOnly: false }));
+  }, []);
+  const selectChapter = useCallback((subject: Subject, chapterId: string) => {
+    setFilters((prev) => ({ ...prev, subject, chapter: chapterId, favoritesOnly: false }));
+  }, []);
 
   const selected = exercises.find((item) => item.id === selectedId);
 
@@ -351,6 +369,27 @@ export function ExerciseManager() {
   }, [focusMode, formOpen, importOpen, selectedId, showArchived]);
 
   if (focusMode && selected) {
+    /*
+     * Navigation précédent/suivant DANS LA LISTE COURANTE.
+     *
+     * L'ordre est celui que l'élève voit : le tri et les filtres en vigueur,
+     * pas un ordre interne. Enchaîner les exercices d'un chapitre sans
+     * repasser par la liste est le geste naturel d'une séance de travail, et
+     * il n'existait tout simplement pas — il fallait fermer, retrouver sa
+     * ligne, cliquer.
+     *
+     * On se base sur `sorted` (la sélection entière) et non sur `page` (ce
+     * qui est rendu) : la pagination est une contrainte d'affichage, elle
+     * n'a pas à borner la lecture. Un exercice ouvert depuis le tableau de
+     * bord peut ne pas être dans la sélection courante — `index` vaut alors
+     * -1 et les deux boutons sont simplement désactivés.
+     */
+    const index = sorted.findIndex((item) => item.id === selected.id);
+    const goTo = (offset: number) => {
+      const target = sorted[index + offset];
+      if (target) setSelectedId(target.id);
+    };
+
     return (
       <FocusView
         item={selected}
@@ -359,6 +398,8 @@ export function ExerciseManager() {
         saveSessions={saveSessions}
         onClose={() => setFocusMode(false)}
         reasons={recommendationReasons.get(selected.id)}
+        onPrev={index > 0 ? () => goTo(-1) : undefined}
+        onNext={index >= 0 && index < sorted.length - 1 ? () => goTo(1) : undefined}
       />
     );
   }
@@ -366,12 +407,12 @@ export function ExerciseManager() {
   if (showArchived) {
     return (
       <div className="space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Button variant="ghost" size="sm" onClick={() => setShowArchived(false)}>
-            <ArrowLeft size={15} /> Retour aux exercices
+            <ChevronLeft size={15} /> Retour aux exercices
           </Button>
-          <p className="text-sm text-zinc-500">
-            <span className="font-semibold text-zinc-200">{archivedExercises.length}</span> exercice
+          <p className="t-meta tabular">
+            <span className="font-medium text-ink">{archivedExercises.length}</span> exercice
             {archivedExercises.length > 1 ? "s" : ""} archivé{archivedExercises.length > 1 ? "s" : ""}
           </p>
         </div>
@@ -380,159 +421,196 @@ export function ExerciseManager() {
     );
   }
 
+  if (!ready) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-10 w-full" />
+        {Array.from({ length: 6 }).map((_, index) => (
+          <Skeleton key={index} className="h-14 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  // Fil d'Ariane de la sélection courante, pour que la zone de travail dise
+  // toujours CE QU'ELLE MONTRE — sans quoi une liste de 37 lignes ressemble à
+  // n'importe quelle autre liste de 37 lignes.
+  const currentChapter = chapters.find((chapter) => chapter.id === filters.chapter);
+  const scopeLabel = filters.favoritesOnly
+    ? "Favoris"
+    : currentChapter
+      ? currentChapter.label
+      : filters.subject !== "Toutes"
+        ? filters.subject
+        : filters.competition !== "Tous"
+          ? filters.competition
+          : "Toute la banque";
+  const scopeParent = currentChapter ? currentChapter.subject : null;
+
   return (
-    <div className="space-y-5">
+    <>
       {/* `useSearchParams` exige une limite Suspense — isolée ici pour ne pas
           faire basculer toute la page en rendu dynamique. */}
       <Suspense fallback={null}>
-        <FocusQueryHandler ready={ready} onFocus={jumpToExerciseFromQuery} />
+        <FocusQueryHandler ready={ready} onFocus={jumpToExerciseFromQuery} onCompetition={filterByCompetition} onChapter={openChapter} onSubject={selectSubject} />
       </Suspense>
 
-      {/* `ExerciseBankStats` retiré d'ici (il reste sur /progress, sa vraie
-          place). Ces agrégats occupaient tout le premier écran d'une page
-          dont l'unique objet est de RETROUVER un exercice parmi 402 : ils
-          répondent à « où en est ma banque ? », question de bilan, pas à
-          « lequel je travaille maintenant ? ». Le compteur « À revoir »
-          faisait de surcroît doublon avec le panneau ci-dessous, qui montre
-          les exercices concernés — donc actionnable, lui. L'élève arrive
-          désormais directement sur ses priorités et sa navigation. */}
-      <ExerciseReviewPanel exercises={exercises} sessions={sessions} onSelect={jumpToExercise} />
+      <Workbench
+        paneLabel="Navigation de la banque"
+        paneSummary={scopeLabel}
+        scopeKey={`${filters.subject}::${filters.chapter}::${filters.favoritesOnly}::${filters.competition}`}
+        pane={
+          <BankNavigator
+            exercises={exercises}
+            chapters={chapters}
+            filters={filters}
+            onSelectAll={goHome}
+            onSelectFavorites={showFavorites}
+            onSelectSubject={selectSubject}
+            onSelectChapter={selectChapter}
+          />
+        }
+      >
+        <div className="space-y-6">
+          <PageBar
+            title={scopeLabel}
+            meta={
+              <>
+                {scopeParent && <span>{scopeParent} · </span>}
+                <span className="tabular">{sorted.length}</span> exercice{sorted.length > 1 ? "s" : ""}
+                {sorted.length !== exercises.filter((item) => !item.archived).length && (
+                  <> sur {exercises.filter((item) => !item.archived).length}</>
+                )}
+              </>
+            }
+            actions={
+              <Button variant="ghost" size="sm" onClick={() => setShowArchived(true)}>
+                <Archive size={15} /> Archivés{archivedExercises.length > 0 && ` (${archivedExercises.length})`}
+              </Button>
+            }
+          />
 
-      <ExerciseBrowser
-        exercises={exercises}
-        chapters={chapters}
-        filters={filters}
-        onGoHome={goHome}
-        onSelectSubject={selectSubject}
-        onGoToChapters={goToChapters}
-        onSelectChapter={selectChapter}
-      />
+          <ExerciseToolbar
+            filters={filters}
+            onChange={updateFilters}
+            onReset={goHome}
+            chapterOptions={chapterOptions}
+            tagOptions={tagOptions}
+            difficultyOptions={difficultyOptions}
+            competitionOptions={competitionOptions}
+            yearOptions={yearOptions}
+            onAddClick={() => setFormOpen((value) => !value)}
+            onImportClick={() => setImportOpen((value) => !value)}
+            sortControl={
+              <label className="flex items-center gap-2">
+                <span className="t-label">Trier</span>
+                <Select
+                  value={sort}
+                  onChange={(event) => setSort(event.target.value as ExerciseSort)}
+                  wrapperClassName="w-auto min-w-[10rem]"
+                  className="text-xs"
+                >
+                  {exerciseSortOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            }
+          />
 
-      <ExerciseFiltersBar
-        filters={filters}
-        onChange={updateFiltersFromBar}
-        chapterOptions={chapterOptions}
-        tagOptions={tagOptions}
-        difficultyOptions={difficultyOptions}
-        competitionOptions={competitionOptions}
-        yearOptions={yearOptions}
-        onAddClick={() => setFormOpen((value) => !value)}
-        onImportClick={() => setImportOpen((value) => !value)}
-      />
+          <ExerciseForm open={formOpen} chapters={chapters} onSubmit={create} onCancel={() => setFormOpen(false)} onCreateChapter={handleCreateChapter} />
 
-      <ExerciseForm open={formOpen} chapters={chapters} onSubmit={create} onCancel={() => setFormOpen(false)} onCreateChapter={handleCreateChapter} />
+          <ExerciseImport
+            open={importOpen}
+            chapters={chapters}
+            existing={exercises}
+            onCommit={importExercises}
+            onCreateChapter={handleCreateChapter}
+            onCancel={() => setImportOpen(false)}
+          />
 
-      <ExerciseImport
-        open={importOpen}
-        chapters={chapters}
-        existing={exercises}
-        onCommit={importExercises}
-        onCreateChapter={handleCreateChapter}
-        onCancel={() => setImportOpen(false)}
-      />
-
-      <div className="flex justify-end px-1">
-        <Button variant="ghost" size="sm" onClick={() => setShowArchived(true)}>
-          <Archive size={15} /> Archivés{archivedExercises.length > 0 && ` (${archivedExercises.length})`}
-        </Button>
-      </div>
-
-      {!browseMode && (
-        <>
           <SessionBuilderBar exercises={sorted} sessions={sessions} />
 
-          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-            <p className="text-sm text-zinc-500">
-              <span className="font-semibold text-zinc-200">{sorted.length}</span> exercice{sorted.length > 1 ? "s" : ""} affiché{sorted.length > 1 ? "s" : ""}
-            </p>
-            <div className="flex items-center gap-2">
-              <Select value={sort} onChange={(event) => setSort(event.target.value as ExerciseSort)} className="w-auto min-w-[150px] py-2 text-xs">
-                {exerciseSortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
+          {page.length === 0 ? (
+            <EmptyState
+              icon={Search}
+              title="Aucun exercice ne correspond."
+              description="Retire un filtre, ou élargis ta recherche. La banque en compte des centaines — il y a de fortes chances que le bon soit à un critère près."
+              action={
+                <Button variant="secondary" onClick={goHome}>
+                  Tout réinitialiser
+                </Button>
+              }
+            />
+          ) : (
+            <>
+              <ul className="divide-y divide-line border-y border-line">
+                {page.map((item) => (
+                  <ExerciseRow
+                    key={item.id}
+                    item={item}
+                    expanded={selectedId === item.id}
+                    minutesSpent={minutesMap.get(item.id) ?? 0}
+                    chapters={chapters}
+                    sessions={sessions}
+                    hideSubject={filters.subject !== "Toutes"}
+                    hideChapter={filters.chapter !== "Tous"}
+                    onOpen={openReader}
+                    onToggleDetail={toggleDetail}
+                    onUpdate={update}
+                    onArchive={archiveExercise}
+                    onCreateChapter={handleCreateChapter}
+                    onRenameChapter={handleRenameChapter}
+                    onRemoveChapter={handleRemoveChapter}
+                  />
                 ))}
-              </Select>
-              <div className="flex items-center gap-1 rounded-xl border border-hairline/[0.09] bg-inset p-1">
-                <button
-                  onClick={() => setViewMode("cards")}
-                  aria-label="Vue cartes"
-                  aria-pressed={viewMode === "cards"}
-                  className={cn("rounded-lg p-1.5 transition", viewMode === "cards" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
-                >
-                  <LayoutGrid size={15} />
-                </button>
-                <button
-                  onClick={() => setViewMode("list")}
-                  aria-label="Vue liste compacte"
-                  aria-pressed={viewMode === "list"}
-                  className={cn("rounded-lg p-1.5 transition", viewMode === "list" ? "bg-accent/15 text-accent" : "text-zinc-500 hover:text-zinc-300")}
-                >
-                  <List size={15} />
-                </button>
-              </div>
-            </div>
-            <span className="hidden items-center gap-2 text-xs text-zinc-500 sm:flex">⌘K recherche · N nouvel exercice · Esc fermer</span>
-          </div>
+              </ul>
 
-          <div className={viewMode === "cards" ? "grid gap-3" : "grid gap-2"}>
-            {sorted.map((item, index) =>
-              viewMode === "cards" ? (
-                <ExerciseCard
-                  key={item.id}
-                  item={item}
-                  index={index}
-                  selected={selectedId === item.id}
-                  minutesSpent={minutesMap.get(item.id) ?? 0}
-                  chapters={chapters}
-                  sessions={sessions}
-                  onToggle={toggleSelected}
-                  onUpdate={update}
-                  onFocus={enterFocus}
-                  onArchive={archiveExercise}
-                  onCreateChapter={handleCreateChapter}
-                  onRenameChapter={handleRenameChapter}
-                  onRemoveChapter={handleRemoveChapter}
-                />
-              ) : (
-                <ExerciseListRow
-                  key={item.id}
-                  item={item}
-                  selected={selectedId === item.id}
-                  minutesSpent={minutesMap.get(item.id) ?? 0}
-                  chapters={chapters}
-                  sessions={sessions}
-                  onToggle={toggleSelected}
-                  onUpdate={update}
-                  onFocus={enterFocus}
-                  onArchive={archiveExercise}
-                  onCreateChapter={handleCreateChapter}
-                  onRenameChapter={handleRenameChapter}
-                  onRemoveChapter={handleRemoveChapter}
-                />
-              )
-            )}
-            {sorted.length === 0 && (
-              <Card className="px-6 py-16 text-center">
-                <BookOpenCheck className="mx-auto text-accent" />
-                <p className="mt-4 font-semibold">Aucun exercice ne correspond.</p>
-                <p className="mt-1 text-sm text-zinc-500">Ajuste les filtres ou ajoute une nouvelle fiche.</p>
-              </Card>
-            )}
-          </div>
-        </>
-      )}
-    </div>
+              {sorted.length > page.length && (
+                <div className="flex flex-col items-center gap-2 pt-1">
+                  <Button variant="secondary" onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}>
+                    Afficher {Math.min(PAGE_SIZE, sorted.length - page.length)} exercices de plus
+                  </Button>
+                  <p className="t-meta tabular">
+                    {page.length} sur {sorted.length}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </Workbench>
+    </>
   );
 }
 
 /**
- * Lit `?focus=<id>` dans l'URL (ex. lien "À revoir" du Dashboard), déclenche
- * `onFocus` une seule fois, puis nettoie l'URL. Isolé dans son propre
- * composant car `useSearchParams` impose une limite Suspense — inutile de
- * l'imposer à tout `ExerciseManager`.
+ * Lit les paramètres d'entrée de l'URL, déclenche l'action correspondante une
+ * seule fois, puis nettoie l'URL :
+ *
+ *   `?focus=<id>`          ouvre directement le lecteur sur cet exercice
+ *                          (lien « À revoir » du tableau de bord).
+ *   `?competition=<nom>`   pré-filtre la banque sur ce concours
+ *                          (bouton « Travailler cette banque », écran Concours).
+ *
+ * Isolé dans son propre composant car `useSearchParams` impose une limite
+ * Suspense — inutile de l'imposer à tout `ExerciseManager`.
  */
-function FocusQueryHandler({ ready, onFocus }: { ready: boolean; onFocus: (id: string) => void }) {
+function FocusQueryHandler({
+  ready,
+  onFocus,
+  onCompetition,
+  onChapter,
+  onSubject,
+}: {
+  ready: boolean;
+  onFocus: (id: string) => void;
+  onCompetition: (competition: string) => void;
+  onChapter: (chapterId: string) => void;
+  onSubject: (subject: Subject) => void;
+}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const handled = useRef(false);
@@ -540,11 +618,17 @@ function FocusQueryHandler({ ready, onFocus }: { ready: boolean; onFocus: (id: s
   useEffect(() => {
     if (!ready || handled.current) return;
     const focusId = searchParams.get("focus");
-    if (!focusId) return;
+    const competition = searchParams.get("competition");
+    const chapter = searchParams.get("chapter");
+    const subject = searchParams.get("subject");
+    if (!focusId && !competition && !chapter && !subject) return;
     handled.current = true;
-    onFocus(focusId);
+    if (focusId) onFocus(focusId);
+    else if (competition) onCompetition(competition);
+    else if (chapter) onChapter(chapter);
+    else if (subject && (subjects as string[]).includes(subject)) onSubject(subject as Subject);
     router.replace("/exercises", { scroll: false });
-  }, [ready, searchParams, onFocus, router]);
+  }, [ready, searchParams, onFocus, onCompetition, onChapter, onSubject, router]);
 
   return null;
 }

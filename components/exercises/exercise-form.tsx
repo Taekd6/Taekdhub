@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
@@ -108,16 +107,12 @@ export function ExerciseForm({
     setForm(emptyForm);
   }
 
+  if (!open) return null;
+
   return (
-    <AnimatePresence>
+    <>
       {open && (
-        <motion.form
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          onSubmit={handleSubmit}
-          className="surface grid gap-3 rounded-2xl p-5 sm:grid-cols-2"
-        >
+        <form onSubmit={handleSubmit} className="surface animate-rise grid gap-3 p-5 sm:grid-cols-2">
           <Input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Intitulé de l'exercice" />
           <Input required value={form.source} onChange={(event) => setForm({ ...form, source: event.target.value })} placeholder="Source (feuille, DM, livre…)" />
           <Textarea
@@ -173,8 +168,8 @@ export function ExerciseForm({
             </Button>
             <Button type="submit">Créer l&apos;exercice</Button>
           </div>
-        </motion.form>
+        </form>
       )}
-    </AnimatePresence>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3, Eye, EyeOff, Pencil, Target, Trash2 } from "lucide-react";
+import { Archive, Clock3, Eye, EyeOff, Heart, Pencil, Target, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -21,6 +21,7 @@ export function ExerciseDetail({
   onCreateChapter,
   onRenameChapter,
   onRemoveChapter,
+  onArchive,
 }: {
   item: Exercise;
   update: (id: string, patch: Partial<Exercise>) => void;
@@ -32,6 +33,13 @@ export function ExerciseDetail({
   onCreateChapter: (subject: Subject, label: string) => Chapter;
   onRenameChapter: (id: string, label: string) => void;
   onRemoveChapter: (id: string) => void;
+  /**
+   * Favori et archivage. Ces deux gestes vivaient UNIQUEMENT sur la ligne de
+   * liste, où ils occupaient un tiers de la largeur sur mobile au détriment
+   * du titre. La ligne ne les propose donc plus qu'à partir de `sm` — ils
+   * doivent exister ici, sinon ils deviennent inatteignables au doigt.
+   */
+  onArchive: (id: string) => void;
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
   const [hintCount, setHintCount] = useState(0);
@@ -81,7 +89,7 @@ export function ExerciseDetail({
           placeholder={"Énoncé complet — maths en LaTeX : $x^2$ inline, $$\\int_0^1 f$$ en bloc"}
         />
         {statementDraft.trim() && (
-          <div className="mt-3 rounded-xl border border-hairline/[0.09] bg-hairline/[0.04] p-3 text-sm leading-6 text-zinc-300">
+          <div className="mt-3 rounded-xl border border-line bg-inset p-3 text-sm leading-6 text-zinc-300">
             <p className="mb-1 text-2xs uppercase tracking-wide text-zinc-600">Aperçu</p>
             <RichMath text={statementDraft} />
           </div>
@@ -230,7 +238,7 @@ export function ExerciseDetail({
               {correctionVisible ? "Masquer la correction" : "Afficher la correction"}
             </Button>
             {correctionVisible && (
-              <div className="mt-3 rounded-xl border border-hairline/[0.09] bg-hairline/[0.04] p-3 text-sm leading-6 text-zinc-300">
+              <div className="mt-3 rounded-xl border border-line bg-inset p-3 text-sm leading-6 text-zinc-300">
                 <RichMath text={item.correction} />
               </div>
             )}
@@ -249,14 +257,30 @@ export function ExerciseDetail({
           )}
         </div>
         {pastSessions.length ? (
-          <div className="mt-3 space-y-2">
+          <ul className="mt-3 divide-y divide-line border-y border-line">
             {pastSessions.map((session) => (
               <SessionRow key={session.id} session={session} chapterLabel={currentChapter?.label} />
             ))}
-          </div>
+          </ul>
         ) : (
           <p className="mt-2 text-sm text-zinc-500">Aucune séance enregistrée sur cet exercice pour l&apos;instant.</p>
         )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4 md:col-span-2">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => update(item.id, { favorite: !item.favorite })}
+          aria-pressed={item.favorite}
+        >
+          <Heart size={14} fill={item.favorite ? "currentColor" : "none"} className={item.favorite ? "text-rose-300" : undefined} />
+          {item.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={() => onArchive(item.id)}>
+          <Archive size={14} /> Archiver
+        </Button>
       </div>
     </div>
   );

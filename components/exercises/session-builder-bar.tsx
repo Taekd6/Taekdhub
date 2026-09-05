@@ -4,7 +4,6 @@ import { PlayCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { buildFreeSessionPlan, PLAN_STORAGE_KEY } from "@/lib/plan";
 import { estimatedDurationMinutes } from "@/lib/recommendation";
@@ -48,9 +47,9 @@ export function SessionBuilderBar({ exercises, sessions }: { exercises: Exercise
   };
 
   return (
-    <Card className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4">
-      <div className="flex min-w-0 items-center gap-2 text-sm">
-        <span className="text-zinc-400">Séance libre sur cette sélection :</span>
+    <div className="well flex flex-wrap items-center justify-between gap-3 p-3">
+      <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+        <span className="text-muted">Séance libre sur cette sélection :</span>
         <Input
           type="number"
           min={1}
@@ -64,16 +63,16 @@ export function SessionBuilderBar({ exercises, sessions }: { exercises: Exercise
           // reflètent déjà la sélection réelle.
           value={effectiveCount}
           onChange={(event) => setCount(Math.max(1, Math.round(Number(event.target.value) || 1)))}
-          className="h-8 w-16 px-2 py-0 text-center text-xs"
+          className="min-h-8 w-16 bg-panel px-2 py-0 text-center text-xs max-lg:min-h-10"
           aria-label="Nombre d'exercices pour la séance libre"
         />
-        <span className="text-xs text-zinc-500">
+        <span className="t-meta tabular">
           sur {exercises.length} · ≈ {estimatedMinutes} min
         </span>
       </div>
       <Button size="sm" onClick={start}>
         <PlayCircle size={15} /> Démarrer la séance
       </Button>
-    </Card>
+    </div>
   );
 }

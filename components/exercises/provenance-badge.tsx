@@ -23,8 +23,13 @@ export function ProvenanceBadge({ exercise, className }: { exercise: Exercise; c
   if (!isConcours) {
     if (exercise.provenance !== "enseignant") return null;
     return (
-      <span className={cn("inline-flex items-center gap-1 rounded-md bg-sky-400/12 px-1.5 py-0.5 text-2xs font-medium text-sky-200", className)}>
-        <PenLine size={11} /> Cours
+      <span
+        className={cn(
+          "inline-flex shrink-0 items-center gap-1 rounded-[0.3125rem] border border-sky-400/25 bg-sky-400/[0.10] px-1.5 text-2xs leading-[1.15rem] text-sky-200",
+          className
+        )}
+      >
+        <PenLine size={10} /> Cours
       </span>
     );
   }
@@ -46,8 +51,14 @@ export function ProvenanceBadge({ exercise, className }: { exercise: Exercise; c
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-2xs font-medium",
-        verified ? "bg-amber-400/15 text-amber-200" : "bg-amber-400/10 text-amber-200/85",
+        // Un FILET plutôt qu'un aplat, et la même géométrie que toutes les
+        // autres étiquettes de l'app (components/ui/badge.tsx) : sur une ligne
+        // de liste, ce badge est répété des dizaines de fois — un aplat le
+        // faisait passer devant le titre de l'exercice qu'il qualifie.
+        "inline-flex shrink-0 items-center gap-1 rounded-[0.3125rem] border px-1.5 text-2xs leading-[1.15rem]",
+        verified
+          ? "border-amber-400/35 bg-amber-400/[0.10] text-amber-200"
+          : "border-amber-400/20 bg-amber-400/[0.06] text-amber-200/85",
         className
       )}
       title={
@@ -56,10 +67,9 @@ export function ProvenanceBadge({ exercise, className }: { exercise: Exercise; c
           : "Exercice de concours : concours identifié, session non documentée."
       }
     >
-      <Award size={11} />
-      <span className="font-semibold tracking-wide">CONCOURS</span>
-      <span className="opacity-80">· {exercise.competition}</span>
-      {details && <span className="opacity-80">· {details}</span>}
+      <Award size={10} aria-hidden />
+      <span className="font-medium">{exercise.competition}</span>
+      {details && <span className="opacity-75">· {details}</span>}
       {!verified && <span className="opacity-60">· session inconnue</span>}
     </span>
   );

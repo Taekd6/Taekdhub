@@ -7,22 +7,34 @@ export const exerciseTypes: ExerciseType[] = ["TD", "DM", "DS", "Colle", "TP", "
 /** Paliers de maîtrise, dans l'ordre d'affichage — source unique pour toute UI qui énumère les paliers (voir lib/progress.ts). */
 export const masteryLevels: Mastery[] = [0, 25, 50, 75, 100];
 
+/**
+ * Identité de matière — une lettre, une teinte.
+ *
+ * L'opacité de fond est passée de 15 % à 22 % et le texte à sa teinte pleine :
+ * mesurée au navigateur sur le nouveau fond papier, la pastille précédente
+ * était pratiquement invisible à 20 px de côté, ce qui la rendait inutile
+ * précisément là où elle sert — repérer la matière d'une ligne dans une liste
+ * mêlant maths, physique et chimie.
+ */
 export const subjectMeta: Record<Subject, { short: string; className: string }> = {
-  Mathématiques: { short: "M", className: "bg-violet-400/15 text-violet-200" },
-  Physique: { short: "P", className: "bg-sky-400/15 text-sky-200" },
-  Chimie: { short: "C", className: "bg-amber-400/15 text-amber-200" },
-  "Informatique TC": { short: "IT", className: "bg-emerald-400/15 text-emerald-200" },
-  "Informatique Spé": { short: "IS", className: "bg-teal-400/15 text-teal-200" },
-  Français: { short: "F", className: "bg-orange-400/15 text-orange-200" },
-  Anglais: { short: "A", className: "bg-rose-400/15 text-rose-200" },
+  Mathématiques: { short: "M", className: "bg-violet-400/22 text-violet-200" },
+  Physique: { short: "P", className: "bg-sky-400/22 text-sky-200" },
+  Chimie: { short: "C", className: "bg-amber-400/22 text-amber-200" },
+  "Informatique TC": { short: "IT", className: "bg-emerald-400/22 text-emerald-200" },
+  "Informatique Spé": { short: "IS", className: "bg-teal-400/22 text-teal-200" },
+  Français: { short: "F", className: "bg-orange-400/22 text-orange-200" },
+  Anglais: { short: "A", className: "bg-rose-400/22 text-rose-200" },
 };
 
 /** Couleurs par statut, pour que le sélecteur de statut reste immédiatement lisible d'un coup d'œil (Sprint 2B). Purement visuel — n'affecte pas le modèle de données. */
 export const statusMeta: Record<ExerciseStatus, { className: string }> = {
-  "à faire": { className: "bg-white/[0.045] text-zinc-300" },
-  "en cours": { className: "bg-sky-400/15 text-sky-200" },
-  "à revoir": { className: "bg-amber-400/15 text-amber-200" },
-  maîtrisé: { className: "bg-emerald-400/15 text-emerald-200" },
+  // `bg-white/[0.045]` était du BLANC en dur : invisible sur le fond papier du
+  // thème clair, alors que les trois autres statuts s'y voyaient. `bg-inset`
+  // suit le thème, comme tous les autres fonds en creux de l'application.
+  "à faire": { className: "bg-inset text-muted" },
+  "en cours": { className: "bg-sky-400/18 text-sky-200" },
+  "à revoir": { className: "bg-amber-400/18 text-amber-200" },
+  maîtrisé: { className: "bg-emerald-400/18 text-emerald-200" },
 };
 
 export function dayKey(value: string | Date) { return new Date(value).toLocaleDateString("en-CA"); }

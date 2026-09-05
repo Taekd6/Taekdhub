@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { localData } from "@/lib/storage";
 import { ACCENT_PRESETS, DEFAULT_ACCENT, accentForegroundCss, applyAccent, applyThemeMode, THEME_MODES, type ThemeMode, hexToRgb } from "@/lib/theme";
@@ -46,11 +46,15 @@ export function ThemePicker() {
   }
 
   return (
-    <Card className="max-w-2xl p-6">
-      <p className="eyebrow">Apparence</p>
-
-      <div className="mt-4">
-        <h2 className="text-sm font-semibold text-zinc-200">Mode</h2>
+    <Section
+      variant="panel"
+      label="Apparence"
+      title="Comment TaekdHub s'affiche"
+      description="Le mode suit ton système par défaut ; la couleur d'accent s'applique instantanément à toute l'interface."
+      className="max-w-2xl"
+    >
+      <div>
+        <h3 className="t-subhead">Mode</h3>
         <div className="mt-3 flex flex-wrap gap-2">
           {THEME_MODES.map((option) => {
             const meta = MODE_META[option];
@@ -63,8 +67,8 @@ export function ThemePicker() {
                 onClick={() => chooseMode(option)}
                 aria-pressed={active}
                 className={cn(
-                  "focus-ring flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition",
-                  active ? "border-accent/40 bg-accent/10 text-accent" : "border-hairline/[0.09] text-zinc-400 hover:border-hairline/[0.14] hover:text-zinc-200"
+                  "flex min-h-9 items-center gap-2 rounded-lg border px-3.5 text-sm font-medium transition-colors max-lg:min-h-11",
+                  active ? "border-accent/40 bg-accent/10 text-accent" : "border-line text-muted hover:text-ink"
                 )}
               >
                 <Icon size={15} /> {meta.label}
@@ -74,19 +78,20 @@ export function ThemePicker() {
         </div>
       </div>
 
-      <div className="mt-6 border-t border-hairline/[0.07] pt-5">
+      <div className="mt-7 border-t border-line pt-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-sm font-semibold text-zinc-200">Couleur principale</h2>
-            <p className="mt-1.5 text-sm leading-6 text-zinc-500">
-              Le texte posé sur l&apos;accent reste toujours lisible — la teinte s&apos;applique instantanément, sur toute l&apos;interface.
+            <h3 className="t-subhead">Couleur principale</h3>
+            <p className="t-meta mt-1.5 max-w-[52ch]">
+              Le texte posé sur l&apos;accent reste toujours lisible : la teinte est assombrie automatiquement quand le
+              fond est clair.
             </p>
           </div>
           {accent !== DEFAULT_ACCENT && (
             <button
               type="button"
               onClick={() => choose(DEFAULT_ACCENT)}
-              className="focus-ring flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-zinc-500 hover:bg-hairline/[0.04] hover:text-zinc-300"
+              className="row-hover flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-subtle hover:text-ink max-lg:min-h-11"
             >
               <RotateCcw size={13} /> Réinitialiser
             </button>
@@ -111,7 +116,7 @@ export function ThemePicker() {
               >
                 {active && <Check size={16} style={{ color: accentForegroundCss(preset.hex) }} />}
               </span>
-              <span className={cn("text-2xs", active ? "text-zinc-200" : "text-zinc-500")}>{preset.label}</span>
+              <span className={cn("text-2xs", active ? "text-ink" : "text-muted")}>{preset.label}</span>
             </button>
           );
         })}
@@ -129,10 +134,10 @@ export function ThemePicker() {
               className="h-12 w-12 cursor-pointer border-none bg-transparent p-0"
             />
           </span>
-          <span className={cn("text-2xs", !isPreset ? "text-zinc-200" : "text-zinc-500")}>Personnalisé</span>
+          <span className={cn("text-2xs", !isPreset ? "text-ink" : "text-muted")}>Personnalisé</span>
         </label>
         </div>
       </div>
-    </Card>
+    </Section>
   );
 }

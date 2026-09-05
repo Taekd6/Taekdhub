@@ -3,7 +3,9 @@
 import { ChevronDown, Clock3 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
+import { PageBar, Split } from "@/components/ui/layout";
+import { EmptyState, Skeleton } from "@/components/ui/state";
 import { HistoryFilters } from "@/components/history/history-filters";
 import { HistorySummary } from "@/components/history/history-summary";
 import { SessionRow } from "@/components/history/session-row";
@@ -51,13 +53,10 @@ export function SessionHistory() {
   if (!ready) {
     return (
       <div className="space-y-4">
-        <div className="surface h-16 animate-pulse rounded-2xl" />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="surface h-24 animate-pulse rounded-2xl" />
-          <div className="surface h-24 animate-pulse rounded-2xl" />
-        </div>
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="surface h-16 animate-pulse rounded-xl" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-20 w-full" />
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="h-12 w-full" />
         ))}
       </div>
     );
@@ -65,42 +64,64 @@ export function SessionHistory() {
 
   if (!sessions.length) {
     return (
-      <Card className="p-12 text-center">
-        <Clock3 className="mx-auto text-accent" />
-        <p className="mt-4 font-medium">Ton historique est prêt.</p>
-        <p className="mt-2 text-sm text-muted">Les séances terminées apparaîtront ici.</p>
-      </Card>
+      <EmptyState
+        icon={Clock3}
+        title="Ton journal est prêt."
+        description="Chaque exercice travaillé y laissera sa durée, son résultat et sa date. Rien n'y est écrit à ta place."
+      />
     );
   }
 
+  /*
+   * Le JOURNAL est le contenu ; les agrégats le commentent. Ils étaient
+   * empilés au-dessus de lui, si bien qu'on faisait défiler trois blocs de
+   * synthèse avant d'atteindre la première séance — alors que c'est
+   * précisément la séance qu'on vient chercher. Ils passent dans le rail,
+   * où ils restent visibles pendant qu'on remonte le journal.
+   */
   return (
-    <div className="space-y-5">
-      <HistoryFilters filters={filters} onChange={updateFilters} />
-      <HistorySummary summary={summary} results={results} />
-      <div className="space-y-3">
-        {sorted.length ? (
-          sorted.slice(0, visibleCount).map((session) => {
-            const exercise = session.exercise_id ? exerciseById.get(session.exercise_id) : undefined;
-            const chapter = exercise?.chapter_id ? chapterById.get(exercise.chapter_id) : undefined;
-            return <SessionRow key={session.id} session={session} exerciseTitle={exercise?.title} chapterLabel={chapter?.label} />;
-          })
-        ) : (
-          <Card className="p-10 text-center">
-            <p className="text-sm text-zinc-500">Aucune séance ne correspond à ces filtres.</p>
-          </Card>
-        )}
-      </div>
-
-      {sorted.length > visibleCount && (
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-xs text-zinc-500">
-            {visibleCount} séance{visibleCount > 1 ? "s" : ""} affichée{visibleCount > 1 ? "s" : ""} sur {sorted.length}
-          </p>
-          <Button variant="secondary" size="sm" onClick={() => setVisibleCount((count) => count + HISTORY_PAGE_SIZE)}>
-            Afficher {Math.min(HISTORY_PAGE_SIZE, sorted.length - visibleCount)} de plus <ChevronDown size={14} />
-          </Button>
+    <Split
+      railLabel="Synthèse de la période"
+      rail={
+        <div className="space-y-8">
+          <HistoryFilters filters={filters} onChange={updateFilters} />
+          <HistorySummary summary={summary} results={results} />
         </div>
-      )}
-    </div>
+      }
+    >
+      <div className="space-y-8">
+        <PageBar
+          title="Séances"
+          meta="La trace exacte du travail accompli : ce qui a été travaillé, combien de temps, avec quel résultat."
+        />
+
+      <Section label="Journal" title={`${sorted.length} séance${sorted.length > 1 ? "s" : ""}`}>
+        {sorted.length ? (
+          <ul className="divide-y divide-line border-y border-line">
+            {sorted.slice(0, visibleCount).map((session) => {
+              const exercise = session.exercise_id ? exerciseById.get(session.exercise_id) : undefined;
+              const chapter = exercise?.chapter_id ? chapterById.get(exercise.chapter_id) : undefined;
+              return (
+                <SessionRow key={session.id} session={session} exerciseTitle={exercise?.title} chapterLabel={chapter?.label} />
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="t-meta border-y border-line py-6 text-center">Aucune séance ne correspond à ces filtres.</p>
+        )}
+
+        {sorted.length > visibleCount && (
+          <div className="mt-4 flex flex-col items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setVisibleCount((count) => count + HISTORY_PAGE_SIZE)}>
+              Afficher {Math.min(HISTORY_PAGE_SIZE, sorted.length - visibleCount)} de plus <ChevronDown size={14} />
+            </Button>
+            <p className="t-meta tabular">
+              {visibleCount} sur {sorted.length}
+            </p>
+          </div>
+        )}
+      </Section>
+      </div>
+    </Split>
   );
 }

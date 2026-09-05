@@ -1,8 +1,8 @@
 "use client";
 
-import { AlertCircle, HelpCircle, TrendingUp } from "lucide-react";
 import { useMemo } from "react";
-import { MetricCard } from "@/components/ui/metric-card";
+import { Stat, StatRow } from "@/components/ui/stat";
+import { cn } from "@/lib/cn";
 import { resultCounts } from "@/lib/history";
 import { computeExerciseBankStats } from "@/lib/recommendation";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -29,21 +29,57 @@ import type { Exercise, WorkSession } from "@/lib/supabase/types";
  * Restent trois métriques réellement actionnables : combien reste-t-il à
  * retravailler, combien n'ai-je jamais ouvert, et est-ce que je réussis.
  */
-export function ExerciseBankStats({ exercises, sessions }: { exercises: Exercise[]; sessions: WorkSession[] }) {
+export function ExerciseBankStats({
+  exercises,
+  sessions,
+  layout = "row",
+}: {
+  exercises: Exercise[];
+  sessions: WorkSession[];
+  /**
+   * `row` : trois indicateurs côte à côte, séparés par des filets verticaux.
+   * `rail` : empilés, valeur alignée à droite — la seule forme lisible dans
+   * une colonne de 18 rem, où la version en rangée se repliait en escalier.
+   */
+  layout?: "row" | "rail";
+}) {
   const stats = useMemo(() => computeExerciseBankStats(exercises, sessions), [exercises, sessions]);
   const results = useMemo(() => resultCounts(sessions), [sessions]);
 
+  const entries = [
+    { label: "À revoir", value: String(stats.toReviewCount), detail: "exercices à retravailler" },
+    { label: "Jamais travaillés", value: String(stats.neverWorkedCount), detail: "aucune séance enregistrée" },
+    {
+      label: "Taux de réussite",
+      value: results.successRate === null ? "—" : `${results.successRate} %`,
+      detail:
+        results.attempted > 0
+          ? `${results.attempted} tentative${results.attempted > 1 ? "s" : ""} qualifiée${results.attempted > 1 ? "s" : ""}`
+          : "aucun résultat enregistré",
+    },
+  ];
+
+  if (layout === "rail") {
+    return (
+      <dl className="divide-y divide-line border-y border-line">
+        {entries.map((entry) => (
+          <div key={entry.label} className={cn("flex items-baseline justify-between gap-3 py-3")}>
+            <div className="min-w-0">
+              <dt className="t-label">{entry.label}</dt>
+              <dd className="t-meta mt-0.5 text-2xs">{entry.detail}</dd>
+            </div>
+            <dd className="t-figure-sm shrink-0">{entry.value}</dd>
+          </div>
+        ))}
+      </dl>
+    );
+  }
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      <MetricCard label="À revoir" value={String(stats.toReviewCount)} detail="Exercices à retravailler" icon={AlertCircle} delay={0} />
-      <MetricCard label="Jamais travaillés" value={String(stats.neverWorkedCount)} detail="Aucune séance enregistrée" icon={HelpCircle} delay={0.05} />
-      <MetricCard
-        label="Taux de réussite"
-        value={results.successRate === null ? "—" : `${results.successRate}%`}
-        detail={results.attempted > 0 ? `${results.attempted} tentative${results.attempted > 1 ? "s" : ""} qualifiée${results.attempted > 1 ? "s" : ""}` : "Aucun résultat enregistré"}
-        icon={TrendingUp}
-        delay={0.1}
-      />
-    </div>
+    <StatRow>
+      {entries.map((entry) => (
+        <Stat key={entry.label} label={entry.label} value={entry.value} detail={entry.detail} />
+      ))}
+    </StatRow>
   );
 }

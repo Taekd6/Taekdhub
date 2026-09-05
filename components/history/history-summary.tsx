@@ -1,76 +1,81 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardTitle } from "@/components/ui/card";
-import { ProgressBar } from "@/components/ui/progress";
+import { Meter } from "@/components/ui/progress";
+import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import type { HistorySummary as HistorySummaryData, ResultCounts } from "@/lib/history";
-import { subjectMeta } from "@/lib/study";
 import { formatDuration } from "@/lib/utils";
 
 /**
  * Purement présentationnel — l'agrégat de temps vient de
- * lib/history.ts#summarizeSessions, les résultats de
- * lib/history.ts#resultCounts (Sprint Plan de travail : "qu'est-ce que j'ai
- * réellement fait", pas seulement "combien de temps").
+ * `summarizeSessions`, les résultats de `resultCounts` : « qu'est-ce que j'ai
+ * réellement fait », pas seulement « combien de temps ».
  */
 export function HistorySummary({ summary, results }: { summary: HistorySummaryData; results: ResultCounts }) {
   const maxSeconds = Math.max(1, ...summary.bySubject.map((entry) => entry.seconds));
 
   return (
-    <div className="space-y-4">
-      {/* Trois chiffres sur la période filtrée : une ligne suffit. En cartes,
-          ils pesaient autant que le journal lui-même, qui est le contenu. */}
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 px-1">
-        <Figure label="Temps total" value={formatDuration(summary.totalSeconds)} />
-        <Figure label="Séances" value={String(summary.sessionCount)} />
-        <Figure
+    <div className="space-y-8">
+      {/* Empilées, pas en rangée : dans un rail de 18 rem, trois indicateurs
+          côte à côte redeviennent illisibles. */}
+      <dl className="divide-y divide-line border-y border-line">
+        <SummaryLine label="Temps total" value={formatDuration(summary.totalSeconds)} />
+        <SummaryLine label="Séances" value={String(summary.sessionCount)} />
+        <SummaryLine
           label="Réussite"
           value={results.successRate === null ? "—" : `${results.successRate} %`}
           detail={`${results.attempted} tentative${results.attempted > 1 ? "s" : ""} notée${results.attempted > 1 ? "s" : ""}`}
         />
-      </div>
+      </dl>
 
       {results.attempted > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
-          {results.success > 0 && <Badge variant="success">{results.success} réussi{results.success > 1 ? "s" : ""}</Badge>}
-          {results.partial > 0 && <Badge variant="warning">{results.partial} partiel{results.partial > 1 ? "s" : ""}</Badge>}
-          {results.failure > 0 && <Badge variant="danger">{results.failure} échoué{results.failure > 1 ? "s" : ""}</Badge>}
+          {results.success > 0 && (
+            <Badge variant="success">
+              {results.success} réussi{results.success > 1 ? "s" : ""}
+            </Badge>
+          )}
+          {results.partial > 0 && (
+            <Badge variant="warning">
+              {results.partial} partiel{results.partial > 1 ? "s" : ""}
+            </Badge>
+          )}
+          {results.failure > 0 && (
+            <Badge variant="danger">
+              {results.failure} échoué{results.failure > 1 ? "s" : ""}
+            </Badge>
+          )}
         </div>
       )}
 
       {summary.bySubject.length > 0 && (
-        <Card className="p-5">
-          <p className="eyebrow">Répartition</p>
-          <CardTitle className="mt-2 text-base">Par matière</CardTitle>
-          <div className="mt-4 space-y-3">
+        <div>
+          <p className="t-label mb-3">Par matière</p>
+          <ul className="space-y-2.5">
             {summary.bySubject.map(({ subject, seconds }) => (
-              <div key={subject}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2">
-                    <span className={`grid h-5 w-5 place-items-center rounded text-[9px] font-bold ${subjectMeta[subject].className}`}>
-                      {subjectMeta[subject].short}
-                    </span>
-                    {subject}
-                  </span>
-                  <span className="text-zinc-500">{formatDuration(seconds)}</span>
-                </div>
-                <ProgressBar value={(seconds / maxSeconds) * 100} animated={false} className="mt-2 h-1.5" />
-              </div>
+              <li key={subject} className="flex items-center gap-3">
+                <SubjectAvatar subject={subject} size="sm" />
+                <span className="min-w-0 flex-1 truncate text-sm">{subject}</span>
+                <Meter value={(seconds / maxSeconds) * 100} className="w-14 shrink-0" tone="neutral" />
+                <span className="tabular w-12 shrink-0 text-right text-2xs text-muted">{formatDuration(seconds)}</span>
+              </li>
             ))}
-          </div>
-        </Card>
+          </ul>
+        </div>
       )}
     </div>
   );
 }
 
-/** Chiffre de synthèse — même forme que le bandeau de /progress, un seul vocabulaire pour « un nombre sur une période ». */
-function Figure({ label, value, detail }: { label: string; value: string; detail?: string }) {
+/** Une mesure du rail — étiquette à gauche, valeur en serif à droite. */
+function SummaryLine({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <div className="min-w-0">
-      <p className="eyebrow">{label}</p>
-      <p className="mt-1 text-sm font-medium tabular-nums text-ink">{value}</p>
-      {detail && <p className="t-meta mt-0.5">{detail}</p>}
+    <div className="flex items-baseline justify-between gap-3 py-3">
+      <div className="min-w-0">
+        <dt className="t-label">{label}</dt>
+        {detail && <dd className="t-meta mt-0.5 text-2xs">{detail}</dd>}
+      </div>
+      <dd className="t-figure-sm shrink-0">{value}</dd>
     </div>
   );
 }
