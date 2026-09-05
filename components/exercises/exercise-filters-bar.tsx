@@ -25,6 +25,7 @@ export function ExerciseFiltersBar({
   chapterOptions,
   tagOptions,
   difficultyOptions,
+  competitionOptions,
   yearOptions,
   onAddClick,
   onImportClick,
@@ -36,6 +37,8 @@ export function ExerciseFiltersBar({
   tagOptions: string[];
   /** Difficultés présentes dans le périmètre choisi — voir lib/exercise-filters.ts#difficultyOptionsForFilters. */
   difficultyOptions: Difficulty[];
+  /** Concours présents dans le périmètre choisi — voir lib/exercise-filters.ts#competitionOptionsForFilters. */
+  competitionOptions: string[];
   yearOptions: number[];
   onAddClick: () => void;
   onImportClick: () => void;
@@ -52,6 +55,8 @@ export function ExerciseFiltersBar({
     filters.difficulty !== "Toutes",
     filters.mastery !== "Toutes",
     filters.year !== "Toutes",
+    filters.competition !== "Tous",
+    filters.origin !== "Toutes",
     filters.favoritesOnly,
   ].filter(Boolean).length;
 
@@ -138,6 +143,36 @@ export function ExerciseFiltersBar({
             </option>
           ))}
         </Select>
+        {/* Origine puis concours : c'est l'enchaînement que suit un élève qui
+            veut « du Centrale sur la réduction ». Le sélecteur de concours ne
+            propose que les concours réellement présents dans le périmètre
+            déjà choisi, et disparaît quand la banque n'en contient aucun. */}
+        <Select
+          value={filters.origin}
+          onChange={(event) => onChange({ origin: event.target.value as ExerciseFilters["origin"], competition: "Tous" })}
+          className="w-auto min-w-[140px]"
+          aria-label="Origine de l'exercice"
+        >
+          <option value="Toutes">Toutes origines</option>
+          <option value="Concours">Concours</option>
+          <option value="TaekdHub">TaekdHub</option>
+          <option value="Enseignant">Cours / prof</option>
+        </Select>
+        {competitionOptions.length > 0 && (
+          <Select
+            value={filters.competition}
+            onChange={(event) => onChange({ competition: event.target.value })}
+            className="w-auto min-w-[140px]"
+            aria-label="Concours"
+          >
+            <option value="Tous">Tous concours</option>
+            {competitionOptions.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </Select>
+        )}
         <Select value={filters.type} onChange={(event) => onChange({ type: event.target.value as ExerciseType | "Tous" })} className="w-auto min-w-[110px]">
           {["Tous", ...exerciseTypes].map((value) => (
             <option key={value}>{value}</option>

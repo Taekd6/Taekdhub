@@ -28,6 +28,18 @@ export interface ExerciseFilters {
   difficulty: Difficulty | "Toutes";
   mastery: Mastery | "Toutes";
   year: number | "Toutes";
+  /**
+   * Concours d'origine ("CCINP", "Centrale"…) ou "Tous". Permet le parcours
+   * que réclame la révision ciblée : matière → chapitre → concours.
+   */
+  competition: string | "Tous";
+  /**
+   * Origine de l'exercice : "Concours" ne retient que ce qui vient réellement
+   * d'un concours (provenance vérifiée OU partielle), "TaekdHub" les exercices
+   * écrits pour l'app, "Enseignant" les feuilles de cours. Voir
+   * lib/supabase/types.ts#Provenance.
+   */
+  origin: "Toutes" | "Concours" | "TaekdHub" | "Enseignant";
   favoritesOnly: boolean;
 }
 
@@ -41,6 +53,8 @@ export const defaultExerciseFilters: ExerciseFilters = {
   difficulty: "Toutes",
   mastery: "Toutes",
   year: "Toutes",
+  competition: "Tous",
+  origin: "Toutes",
   favoritesOnly: false,
 };
 
@@ -48,7 +62,18 @@ export const defaultExerciseFilters: ExerciseFilters = {
 function matchesSearch(exercise: Exercise, query: string): boolean {
   const trimmed = query.trim().toLowerCase();
   if (!trimmed) return true;
-  const haystack = [exercise.title, exercise.source, ...exercise.tags, exercise.year ? String(exercise.year) : "", exercise.type]
+  // Le concours et l'épreuve entrent dans la recherche : taper « mines » ou
+  // « oral » doit ramener les exercices correspondants sans passer par les
+  // sélecteurs.
+  const haystack = [
+    exercise.title,
+    exercise.source,
+    ...exercise.tags,
+    exercise.year ? String(exercise.year) : "",
+    exercise.type,
+    exercise.competition ?? "",
+    exercise.epreuve ?? "",
+  ]
     .join(" ")
     .toLowerCase();
   return haystack.includes(trimmed);
@@ -70,8 +95,30 @@ export function filterExercises(exercises: Exercise[], filters: ExerciseFilters)
     .filter((item) => filters.difficulty === "Toutes" || item.difficulty === filters.difficulty)
     .filter((item) => filters.mastery === "Toutes" || item.mastery === filters.mastery)
     .filter((item) => filters.year === "Toutes" || item.year === filters.year)
+    .filter((item) => filters.competition === "Tous" || item.competition === filters.competition)
+    .filter((item) => filters.origin === "Toutes" || originOf(item) === filters.origin)
     .filter((item) => !filters.favoritesOnly || item.favorite)
     .filter((item) => matchesSearch(item, filters.query));
+}
+
+/** Regroupe les quatre niveaux de provenance dans les trois origines que l'élève distingue réellement. */
+export function originOf(exercise: Exercise): "Concours" | "TaekdHub" | "Enseignant" {
+  if (exercise.provenance === "concours-verifie" || exercise.provenance === "concours-partiel") return "Concours";
+  if (exercise.provenance === "enseignant") return "Enseignant";
+  return "TaekdHub";
+}
+
+/**
+ * Concours réellement présents dans le périmètre déjà filtré (matière,
+ * chapitre) — mêmes conventions que `chapterOptionsForSubject` : on ne
+ * propose jamais un concours qui ne ramènerait aucun exercice.
+ */
+export function competitionOptionsForFilters(exercises: Exercise[], filters: ExerciseFilters): string[] {
+  const scoped = exercises
+    .filter((item) => !item.archived)
+    .filter((item) => filters.subject === "Toutes" || item.subject === filters.subject)
+    .filter((item) => filters.chapter === "Tous" || item.chapter_id === filters.chapter);
+  return [...new Set(scoped.map((item) => item.competition).filter((value): value is string => Boolean(value)))].sort();
 }
 
 /**

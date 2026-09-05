@@ -1,6 +1,6 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
 import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, THEME_MODES, type ThemeMode } from "@/lib/theme";
-import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, LicenseStatus, Mastery, ProgrammeLevel, Subject, WorkSession } from "@/lib/supabase/types";
+import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, Filiere, LicenseStatus, Mastery, ProgrammeLevel, Provenance, Subject, WorkSession } from "@/lib/supabase/types";
 
 const ATTEMPT_RESULTS: readonly AttemptResult[] = ["réussi", "partiel", "échoué"];
 
@@ -87,6 +87,8 @@ const MASTERY_VALUES: readonly Mastery[] = [0, 25, 50, 75, 100];
 const PROGRAMME_LEVELS: readonly ProgrammeLevel[] = ["sup", "spe", "sup_spe"];
 const EXERCISE_LEVELS: readonly ExerciseLevel[] = [1, 2, 3, 4, 5, 6];
 const LICENSE_STATUSES: readonly LicenseStatus[] = ["libre", "à vérifier", "restreint"];
+const FILIERES: readonly Filiere[] = ["MP", "MPI", "PC", "PSI", "PT", "TSI"];
+const PROVENANCES: readonly Provenance[] = ["concours-verifie", "concours-partiel", "enseignant", "originale"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -247,6 +249,17 @@ function normalizeExercise(raw: unknown): Exercise {
     programme_level: (PROGRAMME_LEVELS as string[]).includes(item.programme_level as string) ? (item.programme_level as ProgrammeLevel) : null,
     license_status: (LICENSE_STATUSES as string[]).includes(item.license_status as string) ? (item.license_status as LicenseStatus) : null,
     external_id: typeof item.external_id === "string" && item.external_id.trim() ? item.external_id : null,
+    // Champs de provenance (Sprint banque concours) — absents de toute donnée
+    // antérieure : normalisés à null, et `provenance` DÉDUITE prudemment
+    // plutôt que supposée vérifiée (voir lib/supabase/types.ts#Provenance).
+    epreuve: typeof item.epreuve === "string" && item.epreuve.trim() ? item.epreuve : null,
+    filiere: (FILIERES as string[]).includes(item.filiere as string) ? (item.filiere as Filiere) : null,
+    exercise_number: typeof item.exercise_number === "string" && item.exercise_number.trim() ? item.exercise_number : null,
+    provenance: (PROVENANCES as string[]).includes(item.provenance as string)
+      ? (item.provenance as Provenance)
+      : typeof item.competition === "string" && item.competition.trim()
+        ? "concours-partiel"
+        : "originale",
     source_url: typeof item.source_url === "string" && item.source_url.trim() ? item.source_url : null,
     prerequisites: stringArray(item.prerequisites),
     pedagogical_goal: typeof item.pedagogical_goal === "string" && item.pedagogical_goal.trim() ? item.pedagogical_goal : null,

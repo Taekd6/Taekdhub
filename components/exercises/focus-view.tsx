@@ -9,6 +9,7 @@ import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryPicker } from "@/components/exercises/exercise-badges";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { MathInline, RichMath } from "@/components/rich-math";
+import { ProvenanceBadge } from "@/components/exercises/provenance-badge";
 import { useWorkTimer } from "@/hooks/use-work-timer";
 import { explainReasons } from "@/lib/recommendation";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
@@ -278,6 +279,7 @@ export function FocusView({
               pied de page, où l'élève va après avoir travaillé, pas avant. */}
           <h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem] sm:leading-[1.15]"><MathInline text={item.title} /></h1>
           <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-zinc-500">
+            <ProvenanceBadge exercise={item} />
             <span>{item.subject}</span>
             <span aria-hidden>·</span>
             <span className="min-w-0 truncate">{item.source}</span>

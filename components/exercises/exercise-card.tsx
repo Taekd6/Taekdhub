@@ -12,6 +12,7 @@ import { cn } from "@/lib/cn";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, ExerciseStatus, Subject, WorkSession } from "@/lib/supabase/types";
 import { MathInline } from "@/components/rich-math";
+import { ProvenanceBadge } from "@/components/exercises/provenance-badge";
 
 interface ExerciseCardProps {
   item: Exercise;
@@ -62,6 +63,7 @@ function ExerciseCardImpl({
             <SubjectAvatar subject={item.subject} />
             <span className="text-xs text-zinc-500">{item.source}</span>
             <Badge>{item.type}</Badge>
+            <ProvenanceBadge exercise={item} />
             {item.favorite && <Heart size={12} className="text-rose-300" fill="currentColor" />}
           </div>
           <h2 className="mt-2 truncate font-semibold tracking-tight text-zinc-100"><MathInline text={item.title} /></h2>

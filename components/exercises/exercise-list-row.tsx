@@ -11,6 +11,7 @@ import { cn } from "@/lib/cn";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, ExerciseStatus, Subject, WorkSession } from "@/lib/supabase/types";
 import { MathInline } from "@/components/rich-math";
+import { ProvenanceBadge } from "@/components/exercises/provenance-badge";
 
 interface ExerciseListRowProps {
   item: Exercise;
@@ -61,6 +62,7 @@ function ExerciseListRowImpl({
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5">
               <span className="min-w-0 truncate text-sm text-ink"><MathInline text={item.title} /></span>
+              <ProvenanceBadge exercise={item} className="shrink-0" />
               {item.favorite && <Heart size={11} className="shrink-0 text-rose-300" fill="currentColor" />}
             </span>
             <span className="t-meta mt-0.5 hidden truncate sm:block">{item.subject}</span>

@@ -1,4 +1,5 @@
 import { addChapter } from "@/lib/chapters";
+import { canonicalLabel } from "@/lib/utils";
 import { createExerciseFromInput, parseExerciseImportPayload } from "@/lib/exercise-import";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise } from "@/lib/supabase/types";
@@ -42,31 +43,6 @@ function buildSeed(bank: unknown): { exercises: Exercise[]; chapters: Chapter[] 
   return { exercises, chapters };
 }
 
-/**
- * Forme canonique d'un libellé (titre d'exercice, libellé de chapitre) pour
- * le dédoublonnage et le rapprochement banque ↔ local.
- *
- * `trim().toLowerCase()` ne suffisait pas : deux fiches rigoureusement
- * identiques passaient au travers dès que l'une écrivait l'apostrophe typo-
- * graphique U+2019 et l'autre l'apostrophe ASCII U+0027 — cas réel,
- * « Déterminant d'une matrice tridiagonale », entrée deux fois dans la banque.
- * Même effet avec une espace insécable ou une double espace. Et le problème ne
- * s'arrête pas au doublon : `reconcileSeedBank` utilise la MÊME clé pour
- * retrouver la fiche locale correspondante — une apostrophe changée d'un
- * dataset à l'autre détachait la progression de l'élève de sa fiche et
- * réinsérait la version banque à côté, à zéro tentative.
- *
- * NFKC unifie les variantes de compatibilité (dont l'espace insécable), la
- * classe explicite couvre les apostrophes/accents que NFKC laisse distincts.
- */
-function canonicalLabel(value: string): string {
-  return value
-    .normalize("NFKC")
-    .replace(/[\u2018\u2019\u201B\u02BC\u00B4\u0060]/g, "'")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
 
 function dedupeBank(items: unknown[]): unknown[] {
   const seen = new Set<string>();

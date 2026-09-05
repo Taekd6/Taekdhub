@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import type { NewExerciseInput } from "@/components/exercises/exercise-form";
 import { downloadExerciseImportTemplate, parseExerciseImportPayload, type ExerciseImportRowError, type ParsedImportRow } from "@/lib/exercise-import";
 import type { Chapter } from "@/lib/storage";
-import type { Subject } from "@/lib/supabase/types";
+import type { Exercise, Subject } from "@/lib/supabase/types";
 
 /**
  * Import en masse (Sprint infrastructure banque) — même esprit que
@@ -19,12 +19,15 @@ import type { Subject } from "@/lib/supabase/types";
 export function ExerciseImport({
   open,
   chapters,
+  existing,
   onCommit,
   onCreateChapter,
   onCancel,
 }: {
   open: boolean;
   chapters: Chapter[];
+  /** Banque actuelle — sert uniquement à repérer ce qui est déjà importé. */
+  existing: Exercise[];
   onCommit: (inputs: NewExerciseInput[]) => void;
   onCreateChapter: (subject: Subject, label: string) => Chapter;
   onCancel: () => void;
@@ -34,11 +37,13 @@ export function ExerciseImport({
   const [rows, setRows] = useState<ParsedImportRow[]>([]);
   const [errors, setErrors] = useState<ExerciseImportRowError[]>([]);
   const [parsed, setParsed] = useState(false);
+  const [duplicates, setDuplicates] = useState<ExerciseImportRowError[]>([]);
 
   function reset() {
     setText("");
     setRows([]);
     setErrors([]);
+    setDuplicates([]);
     setParsed(false);
   }
 
@@ -52,9 +57,10 @@ export function ExerciseImport({
     }
     try {
       const json = JSON.parse(raw);
-      const result = parseExerciseImportPayload(json, chapters);
+      const result = parseExerciseImportPayload(json, chapters, existing);
       setRows(result.rows);
       setErrors(result.errors);
+      setDuplicates(result.duplicates);
       setParsed(true);
     } catch {
       setRows([]);
@@ -143,6 +149,7 @@ export function ExerciseImport({
           <span className="text-xs text-zinc-500">
             {rows.length} exercice{rows.length > 1 ? "s" : ""} valide{rows.length > 1 ? "s" : ""}
             {errors.length > 0 && ` · ${errors.length} ligne${errors.length > 1 ? "s" : ""} en erreur`}
+            {duplicates.length > 0 && ` · ${duplicates.length} déjà présent${duplicates.length > 1 ? "s" : ""}`}
           </span>
         )}
       </div>
@@ -157,6 +164,24 @@ export function ExerciseImport({
               <li key={index}>{error.message}</li>
             ))}
             {errors.length > 8 && <li>… et {errors.length - 8} de plus.</li>}
+          </ul>
+        </div>
+      )}
+
+      {/* Les doublons ne sont pas des erreurs : le fichier est valide, ces
+          exercices sont simplement déjà là. On le dit dans un ton neutre,
+          séparément, pour que l'élève sache que rien n'a été perdu. */}
+      {duplicates.length > 0 && (
+        <div className="rounded-xl border border-hairline/[0.09] bg-hairline/[0.025] p-3.5">
+          <div className="flex items-center gap-2 text-xs font-semibold text-zinc-300">
+            <FileJson size={14} /> {duplicates.length} exercice{duplicates.length > 1 ? "s" : ""} déjà dans ta banque
+            {duplicates.length > 1 ? " — non réimportés" : " — non réimporté"}
+          </div>
+          <ul className="mt-2 space-y-1 text-xs leading-5 text-zinc-500">
+            {duplicates.slice(0, 5).map((entry, index) => (
+              <li key={index}>{entry.message}</li>
+            ))}
+            {duplicates.length > 5 && <li>… et {duplicates.length - 5} de plus.</li>}
           </ul>
         </div>
       )}

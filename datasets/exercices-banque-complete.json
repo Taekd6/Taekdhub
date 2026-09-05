@@ -3396,7 +3396,10 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 1",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "CCINP Maths 2 MP-MPI 2024 — référence officielle",
@@ -3423,7 +3426,10 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 2",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "CCINP Maths 1 MP-MPI 2023 — référence officielle",
@@ -3450,7 +3456,10 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 1",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "CCINP Physique-Chimie MP 2023 — référence officielle",
@@ -3477,7 +3486,9 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-commun-inp.fr/fr/epreuves/annales.html",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Mines-Ponts Maths 1 MP-MPI 2024 — référence officielle",
@@ -3504,7 +3515,10 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://concoursminesponts.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 1",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Mines-Ponts Maths 2 MP-MPI 2024 — référence officielle",
@@ -3531,7 +3545,10 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://concoursminesponts.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 2",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Mines-Ponts Maths 2 MP-MPI 2023 (fonction de Wallis) — référence officielle",
@@ -3558,7 +3575,10 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://concoursminesponts.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 2",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Mines-Ponts Physique 1 MP-MPI 2024 — référence officielle",
@@ -3585,7 +3605,9 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://concoursminesponts.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Mines Chimie MP 2023 (complexe du chrome) — référence officielle",
@@ -3612,7 +3634,9 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://concoursminesponts.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "e3a Mathématiques MP-MPI 2024 — référence officielle",
@@ -3639,7 +3663,9 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.e3a-polytech.fr/annales-et-rapport/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "e3a Mathématiques MP-MPI 2023 (polynômes, intégrales à paramètre) — référence officielle",
@@ -3666,7 +3692,9 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.e3a-polytech.fr/annales-et-rapport/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "e3a Physique-Chimie MP 2024 — référence officielle",
@@ -3693,7 +3721,9 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.e3a-polytech.fr/annales-et-rapport/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Centrale-Supélec Maths 1 MP-MPI 2024 (calcul ombral) — référence officielle",
@@ -3720,7 +3750,10 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-centrale-supelec.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 1",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Centrale-Supélec Maths 2 MP-MPI 2024 (fonction gaussienne) — référence officielle",
@@ -3747,7 +3780,10 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-centrale-supelec.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 2",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Centrale-Supélec Physique-Chimie 1 MP 2023 (changement climatique) — référence officielle",
@@ -3774,7 +3810,9 @@
     "licenseStatus": "à vérifier",
     "sourceUrl": "https://www.concours-centrale-supelec.fr/",
     "archived": true,
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Centrale-Supélec Informatique optionnelle MP 2024 (langages et automates) — référence officielle",
@@ -3802,7 +3840,9 @@
     "sourceUrl": "https://www.concours-centrale-supelec.fr/",
     "archived": true,
     "level": 6,
-    "chapter": "Langages et automates"
+    "chapter": "Langages et automates",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Chute libre sans frottement — équations horaires",

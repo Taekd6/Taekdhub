@@ -25,7 +25,9 @@
       "Pour le noyau : $v$ étant injective, $v(u(x))=0$ équivaut à $u(x)=0$."
     ],
     "correction": "**$v\\circ u$ est un projecteur.**\n$$(v\\circ u)\\circ(v\\circ u)=v\\circ\\left(u\\circ v\\right)\\circ u=v\\circ\\mathrm{Id}_F\\circ u=v\\circ u.$$\nDonc $(v\\circ u)^2=v\\circ u$ : c'est un projecteur de $E$.\n\n**Injectivité de $v$, surjectivité de $u$.**\nSi $v(y)=0$ alors $y=\\mathrm{Id}_F(y)=u(v(y))=u(0)=0$ : $v$ est injective, donc $\\dim\\mathrm{Im}\\,v=\\dim F=p$.\nPar ailleurs $u\\circ v=\\mathrm{Id}_F$ est surjective, donc $u$ l'est aussi : $\\mathrm{rg}(u)=p$.\n\n**Rang de $v\\circ u$.**\nD'une part $\\mathrm{Im}(v\\circ u)\\subset\\mathrm{Im}\\,v$. D'autre part, soit $y\\in\\mathrm{Im}\\,v$, disons $y=v(z)$ avec $z\\in F$ ; alors\n$$(v\\circ u)(y)=v\\left(u(v(z))\\right)=v(z)=y,$$\ndonc $y\\in\\mathrm{Im}(v\\circ u)$. Ainsi $\\mathrm{Im}(v\\circ u)=\\mathrm{Im}\\,v$ et\n$$\\mathrm{rg}(v\\circ u)=\\dim\\mathrm{Im}\\,v=p.$$\n(Au passage : un projecteur est l'identité sur son image — on vient de le revérifier à la main.)\n\n**Noyau.**\n$v$ étant injective, $(v\\circ u)(x)=0\\iff u(x)=0$. Donc\n$$\\ker(v\\circ u)=\\ker u,\\qquad \\dim\\ker u=n-\\mathrm{rg}(u)=n-p.$$\n\n**Bilan.** $v\\circ u$ est le projecteur sur $\\mathrm{Im}\\,v$ parallèlement à $\\ker u$, et l'on retrouve bien\n$E=\\ker u\\oplus\\mathrm{Im}\\,v$ avec $(n-p)+p=n$.\n\n*Le réflexe à garder : dès qu'on voit $u\\circ v=\\mathrm{Id}$, on sait immédiatement que $v$ est injective, $u$ surjective, et que $v\\circ u$ est un projecteur.*",
-    "level": 3
+    "level": 3,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Sous-espaces de même dimension et supplémentaire commun",
@@ -53,7 +55,9 @@
       "Récurrence descendante sur la codimension : si $x\\notin F_1\\cup F_2$, appliquez l'hypothèse de récurrence à $F_1\\oplus\\mathbb{K}x$ et $F_2\\oplus\\mathbb{K}x$."
     ],
     "correction": "On raisonne par récurrence sur la codimension commune $c=n-\\dim F_1=n-\\dim F_2$.\n\n**Lemme.** Si $F_1$ et $F_2$ sont deux sous-espaces STRICTS de $E$, alors $F_1\\cup F_2\\neq E$.\n*Preuve.* Si $F_1\\subset F_2$ alors $F_1\\cup F_2=F_2\\neq E$ ; idem si $F_2\\subset F_1$. Sinon, choisissons $a\\in F_2\\setminus F_1$ et $b\\in F_1\\setminus F_2$, et posons $x=a+b$.\nSi $x\\in F_1$ : comme $b\\in F_1$, on aurait $a=x-b\\in F_1$, exclu.\nSi $x\\in F_2$ : comme $a\\in F_2$, on aurait $b=x-a\\in F_2$, exclu.\nDonc $x\\notin F_1\\cup F_2$. $\\square$\n\n**Initialisation ($c=0$).** Alors $F_1=F_2=E$ et $G=\\{0\\}$ convient.\n\n**Hérédité.** Supposons le résultat vrai pour la codimension $c-1$, et soient $F_1,F_2$ de codimension $c\\geq 1$. Ce sont deux sous-espaces stricts, donc par le lemme il existe $x\\notin F_1\\cup F_2$.\nPosons $F_i'=F_i\\oplus\\mathbb{K}x$ (la somme est bien directe puisque $x\\notin F_i$). Alors $F_1'$ et $F_2'$ ont la même dimension $\\dim F_1+1$, donc la même codimension $c-1$. Par hypothèse de récurrence, il existe $G'$ supplémentaire commun à $F_1'$ et $F_2'$ :\n$$E=F_i'\\oplus G'=\\left(F_i\\oplus\\mathbb{K}x\\right)\\oplus G'=F_i\\oplus\\left(\\mathbb{K}x\\oplus G'\\right)\\quad(i=1,2).$$\nLe sous-espace $G=\\mathbb{K}x\\oplus G'$ est donc un supplémentaire commun à $F_1$ et $F_2$. $\\square$\n\n*Le lemme « $E$ n'est pas réunion de deux sous-espaces stricts » est un classique d'oral à connaître pour lui-même. Attention : il est faux sur un corps fini (par exemple $\\mathbb{F}_2^2$ est réunion de ses trois droites — mais il en faut trois, pas deux).*",
-    "level": 5
+    "level": 5,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Endomorphisme sur R_n[X] et nilpotence",
@@ -83,7 +87,11 @@
       "Pour la question 5, considérez la restriction de $u$ à l'hyperplan $\\{Q\\in E\\mid Q(0)=0\\}$."
     ],
     "correction": "**1.** Si $\\deg P\\leq n$ alors $P(X+1)$ et $P(X)$ sont de degré $\\leq n$, donc $u(P)\\in E$ ; la linéarité est claire.\n$u(P)=0$ signifie $P(X+1)=P(X)$. Si $P$ était non constant, de degré $d\\geq 1$, la question 3 donnerait $\\deg u(P)=d-1\\geq 0$, donc $u(P)\\neq 0$. Donc $P$ est constant, et réciproquement toute constante est dans le noyau :\n$$\\ker u=\\mathbb{R}_0[X],\\qquad \\dim\\ker u=1.$$\n\n**2.** $\\deg N_0=0$ et, pour $1\\leq k\\leq n$, $\\deg N_k=\\deg\\left(X^{k-1}(X-1)\\right)=k$. La famille $(N_0,\\dots,N_n)$ est donc constituée de $n+1$ polynômes de degrés deux à deux distincts $0,1,\\dots,n$ : elle est libre (échelonnée en degré). Comme $\\dim E=n+1$, c'est une base de $E$.\n\n**3.** Écrivons $P=\\sum_{i=0}^{d}a_iX^i$ avec $a_d\\neq 0$ et $d\\geq 1$. Alors\n$$u(P)=\\sum_{i=0}^{d}a_i\\left[(X+1)^i-X^i\\right].$$\nPour chaque $i$, $(X+1)^i-X^i=\\sum_{j=0}^{i-1}\\binom{i}{j}X^j$ est de degré $i-1$, de coefficient dominant $\\binom{i}{i-1}=i$. Le terme de plus haut degré provient donc de $i=d$ et vaut $d\\,a_d\\,X^{d-1}$, avec $d\\,a_d\\neq 0$. Donc $\\deg u(P)=d-1$.\n\n**4.** Par récurrence immédiate à partir de 3 : pour tout $P\\in E$, $u^k(P)$ est soit nul, soit de degré $\\deg P-k$. Comme $\\deg P\\leq n$, on a $u^{n+1}(P)=0$ pour tout $P$ : $u^{n+1}=0$, $u$ est nilpotent.\nDe plus $u^{n}(X^n)$ est de degré $n-n=0$, donc c'est une constante NON nulle (son coefficient est $n!$ par application répétée de 3). Donc $u^{n}\\neq 0$ et l'indice de nilpotence vaut exactement $n+1$.\n\n**5.** Posons $F=\\{Q\\in E\\mid Q(0)=0\\}$ : c'est le noyau de la forme linéaire non nulle $Q\\mapsto Q(0)$, donc un hyperplan de $E$, de dimension $n$.\nConsidérons $v:F\\to\\mathbb{R}_{n-1}[X]$, restriction de $u$ à $F$ (bien définie : $\\deg u(Q)\\leq n-1$ par 3). Son noyau est $\\ker u\\cap F$, c'est-à-dire les constantes nulles en $0$ : $\\{0\\}$. Donc $v$ est injective.\nComme $\\dim F=n=\\dim\\mathbb{R}_{n-1}[X]$, $v$ est bijective. Il existe donc un unique $Q\\in F$ — c'est-à-dire un unique $Q\\in E$ vérifiant $Q(0)=0$ — tel que $u(Q)=P$. $\\square$\n\n*C'est l'opérateur de différence finie : il joue pour les suites le rôle que la dérivation joue pour les fonctions, et la question 5 est l'analogue discret de « toute fonction continue admet une unique primitive nulle en $0$ ».*",
-    "level": 5
+    "level": 5,
+    "epreuve": "Oral",
+    "exerciseNumber": "BEOS 2518",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Familles de formes linéaires et déterminant",
@@ -111,7 +119,11 @@
       "Enfin, remarquez que $\\bigcap_i\\ker f_i=\\ker\\Phi$, et appliquez le théorème du rang."
     ],
     "correction": "Posons $\\Phi:E\\to\\mathbb{C}^p$, $\\Phi(x)=\\left(f_1(x),\\dots,f_p(x)\\right)$ : c'est une application linéaire.\n\n**(i) $\\Rightarrow$ (ii).** Par contraposée. Si $\\Phi$ n'est pas surjective, $\\mathrm{Im}\\,\\Phi$ est un sous-espace strict de $\\mathbb{C}^p$, donc contenu dans un hyperplan : il existe $(a_1,\\dots,a_p)\\neq 0$ tel que $\\sum_{i=1}^p a_iy_i=0$ pour tout $y\\in\\mathrm{Im}\\,\\Phi$. Autrement dit $\\sum_i a_if_i(x)=0$ pour tout $x\\in E$, c'est-à-dire $\\sum_i a_if_i=0$ avec les $a_i$ non tous nuls : la famille est liée.\n\n**(ii) $\\Rightarrow$ (iii).** $\\Phi$ étant surjective, pour chaque $j$ il existe $x_j\\in E$ tel que $\\Phi(x_j)=e_j$, $j$-ième vecteur de la base canonique de $\\mathbb{C}^p$. Cela signifie exactement $f_i(x_j)=\\delta_{ij}$, donc la matrice $\\left(f_i(x_j)\\right)_{i,j}$ vaut $I_p$, de déterminant $1\\neq 0$.\n\n**(iii) $\\Rightarrow$ (i).** Supposons $\\sum_i a_if_i=0$. En évaluant en $x_j$ : $\\sum_i a_if_i(x_j)=0$ pour tout $j$, c'est-à-dire ${}^{t}a\\,M=0$ où $M=\\left(f_i(x_j)\\right)$. Comme $\\det M\\neq 0$, $M$ est inversible et $a=0$. La famille est libre.\n\n**Intersection des noyaux.** On a directement\n$$\\bigcap_{i=1}^{p}\\ker f_i=\\ker\\Phi,$$\ncar $\\Phi(x)=0$ équivaut à $f_i(x)=0$ pour tout $i$. Le théorème du rang donne alors, avec $n=\\dim E$,\n$$\\dim\\left(\\bigcap_{i=1}^{p}\\ker f_i\\right)=n-\\mathrm{rg}(\\Phi)=n-\\mathrm{rg}\\left(f_1,\\dots,f_p\\right),$$\nla dernière égalité venant de ce que le rang de $\\Phi$ est exactement le rang de la famille $(f_1,\\dots,f_p)$ dans $E^*$ (c'est ce que dit l'équivalence (i)$\\iff$(ii) appliquée à une sous-famille maximale libre).\n\n**Cas particulier à connaître :** si la famille est libre, l'intersection des $p$ noyaux est de dimension $n-p$ — « $p$ équations indépendantes font chuter la dimension de $p$ ».",
-    "level": 5
+    "level": 5,
+    "epreuve": "Oral",
+    "exerciseNumber": "BEOS 2770",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Bézout matriciel sur Z",
@@ -130,7 +142,9 @@
     ],
     "competition": "CCINP",
     "programmeLevel": "sup",
-    "licenseStatus": "à vérifier"
+    "licenseStatus": "à vérifier",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Déterminant d’une matrice de sommes partielles",
@@ -148,7 +162,9 @@
     ],
     "competition": "Mines-Ponts",
     "programmeLevel": "sup",
-    "licenseStatus": "à vérifier"
+    "licenseStatus": "à vérifier",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Déterminant d’une matrice de forme ai+bj",
@@ -193,6 +209,8 @@
       "$L_j$ est de degré $p\\leq n$, donc appartient bien à $\\mathbb{R}_n[X]$ : c'est là que la condition intervient."
     ],
     "correction": "**Réponse : la famille $\\left(\\varphi_a\\right)_{a\\in A}$ est libre si et seulement si $A$ est finie de cardinal au plus $n+1$.**\n\n**Si $\\mathrm{card}(A)\\geq n+2$ (en particulier si $A$ est infinie) : la famille est liée.**\nChaque $\\varphi_a$ est une forme linéaire sur $\\mathbb{R}_n[X]$, donc appartient au dual $\\left(\\mathbb{R}_n[X]\\right)^*$, qui est de dimension $n+1$. Toute famille de $n+2$ éléments ou plus y est liée.\n\n**Si $A=\\{a_0,\\dots,a_p\\}$ avec $p\\leq n$ et les $a_i$ deux à deux distincts : la famille est libre.**\nSupposons $\\sum_{i=0}^{p}\\lambda_i\\varphi_{a_i}=0$, c'est-à-dire\n$$\\forall P\\in\\mathbb{R}_n[X],\\qquad \\sum_{i=0}^{p}\\lambda_i\\,P(a_i)=0.$$\nFixons $j$ et appliquons cette relation au $j$-ième polynôme interpolateur de Lagrange\n$$L_j=\\prod_{\\substack{0\\leq i\\leq p\\\\ i\\neq j}}\\frac{X-a_i}{a_j-a_i},$$\nqui vérifie $L_j(a_i)=\\delta_{ij}$. Son degré vaut $p$, et $p\\leq n$ : donc $L_j\\in\\mathbb{R}_n[X]$, on a bien le droit de l'utiliser. On obtient $\\lambda_j=0$, et ce pour tout $j$. La famille est libre.\n\n*Le point de vigilance est exactement là : si $p>n$, les $L_j$ sortent de $\\mathbb{R}_n[X]$ et l'argument s'effondre — ce n'est pas un détail technique, c'est la raison même pour laquelle la famille devient liée.*",
-    "level": 3
+    "level": 3,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   }
 ]

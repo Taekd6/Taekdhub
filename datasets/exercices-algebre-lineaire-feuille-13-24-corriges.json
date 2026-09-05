@@ -27,7 +27,11 @@
       "2.b) $\\Delta$ fait chuter le degré de $1$ : au-delà de $\\deg P$, les itérées s'annulent."
     ],
     "correction": "**1.a)** Pour $0\\leq j\\leq n$, $T(X^j)=(X+1)^j=\\sum_{i=0}^{j}\\binom{j}{i}X^i$. Donc, en indexant lignes et colonnes de $0$ à $n$,\n$$m_{i,j}=\\begin{cases}\\dbinom{j}{i} & \\text{si } i\\leq j,\\\\[2mm] 0 & \\text{sinon.}\\end{cases}$$\n$M$ est triangulaire supérieure, de diagonale $\\binom{j}{j}=1$.\n\n**1.b)** $M$ est triangulaire de diagonale constante égale à $1$, donc $\\det M=1\\neq 0$ : $M$ est inversible.\nPour l'expliciter, remarquons que $T$ est bijective sur $\\mathbb{R}_n[X]$, d'inverse $T^{-1}(P)(X)=P(X-1)$ (les deux composées redonnent bien $P$). Or $T^{-1}(X^j)=(X-1)^j=\\sum_{i=0}^{j}\\binom{j}{i}(-1)^{j-i}X^i$, d'où\n$$\\left(M^{-1}\\right)_{i,j}=(-1)^{j-i}\\dbinom{j}{i}\\quad\\text{si } i\\leq j,\\qquad 0 \\text{ sinon.}$$\n\n**2.a)** Posons $\\Delta=T-\\mathrm{id}$, c'est-à-dire $\\Delta P=P(X+1)-P(X)$. Calculons $\\Delta H_k$ pour $k\\geq 1$ :\n$$k!\\,\\Delta H_k=(X+1)X\\cdots(X-k+2)-X(X-1)\\cdots(X-k+1)=X(X-1)\\cdots(X-k+2)\\Big[(X+1)-(X-k+1)\\Big],$$\nle crochet valant $k$. Donc $\\Delta H_k=\\dfrac{X(X-1)\\cdots(X-k+2)}{(k-1)!}=H_{k-1}$. (Et $\\Delta H_0=\\Delta 1=0$.)\n\nAppliquons $\\Delta^k$ à $P=\\sum_{m=0}^{n}a_mH_m$ : par ce qui précède $\\Delta^kH_m=H_{m-k}$ si $m\\geq k$, et $0$ sinon. Donc\n$$\\Delta^kP=\\sum_{m\\geq k}a_mH_{m-k}.$$\nEn évaluant en $0$ et en notant que $H_0(0)=1$ tandis que $H_r(0)=0$ pour $r\\geq 1$ (le produit $\\prod_{j=0}^{r-1}(X-j)$ contient le facteur $X$), il ne survit que le terme $m=k$ :\n$$\\left(\\Delta^kP\\right)(0)=a_k.$$\n\nReste à développer $\\Delta^k=(T-\\mathrm{id})^k$. Les endomorphismes $T$ et $\\mathrm{id}$ commutent, donc la formule du binôme s'applique :\n$$\\Delta^k=\\sum_{q=0}^{k}\\binom{k}{q}(-1)^{k-q}T^{q}.$$\nOr $T^q(P)(X)=P(X+q)$, donc en évaluant en $0$ :\n$$a_k=\\left(\\Delta^kP\\right)(0)=\\sum_{q=0}^{k}(-1)^{k-q}\\binom{k}{q}P(q)=\\sum_{q=0}^{k}(-1)^{k+q}\\binom{k}{q}P(q),$$\nles deux écritures coïncidant car $(-1)^{k-q}=(-1)^{k+q}$. $\\square$\n\n**2.b)** $\\Delta$ fait chuter le degré d'exactement $1$ sur les polynômes non constants (le terme dominant $a_dX^d$ produit $d\\,a_dX^{d-1}$). Comme $\\deg P\\leq n$, on a donc $\\Delta^{n+1}P=0$, et a fortiori $\\Delta^{k}P=0$ pour tout $k\\geq n+1$. En évaluant en $0$ et en utilisant le développement ci-dessus :\n$$\\forall k\\geq n+1,\\qquad \\sum_{q=0}^{k}(-1)^{k+q}\\binom{k}{q}P(q)=0.$$\nC'est bien le résultat demandé (l'énoncé le formule pour $k>n+1$, il est en fait vrai dès $k\\geq n+1$).\n\n*Les $H_k$ sont les polynômes binomiaux $\\binom{X}{k}$ ; ils forment la base dans laquelle l'opérateur de différence finie $\\Delta$ agit exactement comme la dérivation agit sur $\\frac{X^k}{k!}$. Toute la question 2 est la version discrète de la formule de Taylor.*",
-    "level": 6
+    "level": 6,
+    "epreuve": "Maths 1",
+    "exerciseNumber": "BEOS 2490",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Interpolation avec valeurs et dérivées prescrites",
@@ -66,7 +70,11 @@
     ],
     "competition": "Centrale",
     "programmeLevel": "sup",
-    "licenseStatus": "à vérifier"
+    "licenseStatus": "à vérifier",
+    "epreuve": "Maths 1",
+    "exerciseNumber": "BEOS 2395",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Une $\\mathbb{R}$-algèbre intègre de dimension finie est isomorphe à $\\mathbb{C}$",
@@ -97,7 +105,9 @@
       "Les polynômes irréductibles de $\\mathbb{R}[X]$ sont de degré $1$ ou $2$ — c'est la clé de la question 3."
     ],
     "correction": "**1.** $f_a$ est linéaire car le produit est bilinéaire. Si $f_a(x)=ax=0$ avec $a\\neq 0$, l'intégrité de $A$ donne $x=0$ : $f_a$ est injective. $A$ étant de dimension FINIE, $f_a$ est donc bijective.\nEn particulier il existe $b\\in A$ tel que $ab=1$ : tout élément non nul est inversible, $A$ est un corps (commutatif par hypothèse).\n\n**2.** Soit $a\\in A$. La famille $\\left(1,a,a^2,\\dots,a^{d}\\right)$ compte $d+1$ éléments dans un espace de dimension $d$ : elle est liée. Une relation non triviale $\\sum_{k=0}^{d}\\lambda_ka^k=0$ fournit un polynôme non nul $P=\\sum\\lambda_kX^k$ tel que $P(a)=0$.\nL'ensemble $I=\\{P\\in\\mathbb{R}[X]\\mid P(a)=0\\}$ est le noyau du morphisme d'algèbres $P\\mapsto P(a)$, c'est donc un idéal de $\\mathbb{R}[X]$, non réduit à $\\{0\\}$ d'après ce qui précède. $\\mathbb{R}[X]$ étant principal, $I=(\\pi_a)$ avec $\\pi_a$ unitaire non constant.\n$\\pi_a$ est irréductible : si $\\pi_a=QR$ avec $\\deg Q,\\deg R<\\deg\\pi_a$, alors $Q(a)R(a)=\\pi_a(a)=0$, et $A$ étant intègre, $Q(a)=0$ ou $R(a)=0$ — ce qui contredit la minimalité du degré de $\\pi_a$.\n\n**3.** Comme $d\\geq 2$, choisissons $a\\in A\\setminus\\mathbb{R}\\cdot 1$. Son polynôme minimal $\\pi_a$ est irréductible sur $\\mathbb{R}$, donc de degré $1$ ou $2$. Le degré $1$ donnerait $a\\in\\mathbb{R}\\cdot 1$, exclu : $\\deg\\pi_a=2$.\nÉcrivons $\\pi_a=X^2+\\alpha X+\\beta$ avec $\\alpha^2-4\\beta<0$ (irréductible sur $\\mathbb{R}$). Posons\n$$j=\\frac{2a+\\alpha\\cdot 1}{\\sqrt{4\\beta-\\alpha^2}}.$$\nUn calcul direct donne $j^2=-1$. Donc $\\mathbb{R}\\cdot 1\\oplus\\mathbb{R}\\cdot j$ est une sous-algèbre de $A$ isomorphe à $\\mathbb{C}$ (l'isomorphisme envoyant $j$ sur $i$).\nMontrons que $A$ s'y réduit. Via $j$, $A$ devient une $\\mathbb{C}$-algèbre commutative intègre de dimension finie sur $\\mathbb{C}$. Soit $x\\in A$ : le même raisonnement qu'en 2, mené sur $\\mathbb{C}$, fournit un polynôme minimal de $x$ irréductible dans $\\mathbb{C}[X]$ — donc de degré $1$, puisque $\\mathbb{C}$ est algébriquement clos. Ainsi $x\\in\\mathbb{C}\\cdot 1=\\mathbb{R}\\cdot 1\\oplus\\mathbb{R}\\cdot j$.\nDonc $A=\\mathbb{R}\\cdot 1\\oplus\\mathbb{R}\\cdot j\\simeq\\mathbb{C}$, et $d=2$. $\\square$\n\n*C'est un cas particulier du théorème de Frobenius. À retenir surtout : le mécanisme « dimension finie + intégrité $\\Rightarrow$ corps », qui se ressert très souvent.*",
-    "level": 6
+    "level": 6,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Égalité des rangs sous $AB=A+B$",
@@ -125,7 +135,11 @@
       "Écrivez ensuite $A$ comme un produit faisant intervenir $A-I_n$ et $B$ — multiplier par une matrice inversible ne change pas le rang."
     ],
     "correction": "**Étape 1 — factoriser.** On calcule\n$$(A-I_n)(B-I_n)=AB-A-B+I_n.$$\nOr l'hypothèse $AB=A+B$ s'écrit $AB-A-B=0$. Donc\n$$(A-I_n)(B-I_n)=I_n.$$\nEn dimension finie, cela suffit à affirmer que $A-I_n$ et $B-I_n$ sont inversibles, inverses l'une de l'autre (et donc qu'elles commutent : $(B-I_n)(A-I_n)=I_n$, d'où $BA=A+B=AB$).\n\n**Étape 2 — écrire $A$ et $B$ comme produits.** Toujours à partir de $AB=A+B$ :\n$$A=AB-B=(A-I_n)\\,B \\qquad\\text{et}\\qquad B=AB-A=A\\,(B-I_n).$$\n\n**Étape 3 — conclure.** Multiplier par une matrice INVERSIBLE ne change pas le rang. Comme $A-I_n$ est inversible,\n$$\\mathrm{rg}(A)=\\mathrm{rg}\\left((A-I_n)B\\right)=\\mathrm{rg}(B).$$\n$\\square$\n\n*Tout l'exercice tient dans la factorisation de la première ligne. Le réflexe à installer : devant une relation du type $AB=A+B$, on cherche systématiquement à faire apparaître $(A-I)(B-I)$ — exactement comme on factorise $xy-x-y+1=(x-1)(y-1)$ dans $\\mathbb{R}$.*",
-    "level": 3
+    "level": 3,
+    "epreuve": "Oral",
+    "exerciseNumber": "BEOS 5377",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Automorphisme multiplicatif de $M_n(\\mathbb{C})$",
@@ -145,7 +159,11 @@
     ],
     "competition": "Mines-Ponts",
     "programmeLevel": "sup",
-    "licenseStatus": "à vérifier"
+    "licenseStatus": "à vérifier",
+    "epreuve": "Oral",
+    "exerciseNumber": "BEOS 4576",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Déterminant d'une matrice bloc réelle",
@@ -220,7 +238,9 @@
       "Question 2 : montrez que $H\\subset\\ker u$, puis utilisez $M_n(\\mathbb{R})=H\\oplus\\mathbb{R}I_n$."
     ],
     "correction": "**1a. $H$ est un hyperplan.**\n$\\mathrm{Tr}$ est une forme linéaire sur $M_n(\\mathbb{R})$, non nulle puisque $\\mathrm{Tr}(I_n)=n\\neq 0$. Son noyau $H$ est donc un hyperplan : $\\dim H=n^2-1$.\n\n**1b. $H$ est engendré par les commutateurs.**\n($\\subset$ facile) Pour tous $A,B$, $\\mathrm{Tr}([A,B])=\\mathrm{Tr}(AB)-\\mathrm{Tr}(BA)=0$, donc $\\mathrm{Vect}\\left\\{[A,B]\\right\\}\\subset H$.\n($\\supset$) Exhibons assez de commutateurs. Pour $i\\neq j$, en utilisant $E_{i,j}E_{k,l}=\\delta_{jk}E_{i,l}$ :\n$$[E_{i,j},E_{j,j}]=E_{i,j}E_{j,j}-E_{j,j}E_{i,j}=E_{i,j}-0=E_{i,j},$$\n$$[E_{i,j},E_{j,i}]=E_{i,i}-E_{j,j}.$$\nOr la famille $\\left\\{E_{i,j}\\ (i\\neq j)\\right\\}\\cup\\left\\{E_{i,i}-E_{1,1}\\ (2\\leq i\\leq n)\\right\\}$ compte $n(n-1)+(n-1)=n^2-1$ éléments, elle est libre, et tous ses éléments sont des commutateurs appartenant à $H$. Elle engendre donc $H$ tout entier, par égalité des dimensions. $\\square$\n\n**2. Identification de $u$.**\nPar hypothèse $u(AB)=u(BA)$, donc par linéarité $u([A,B])=u(AB)-u(BA)=0$ : tout commutateur est dans $\\ker u$. D'après la question 1, $H\\subset\\ker u$.\nComme $u(I_n)=I_n\\neq 0$, on a $I_n\\notin\\ker u$, donc $\\ker u\\neq M_n(\\mathbb{R})$. $H$ étant un hyperplan et $H\\subset\\ker u\\subsetneq M_n(\\mathbb{R})$, on conclut $\\ker u=H$.\n\nDécomposons maintenant $M_n(\\mathbb{R})=H\\oplus\\mathbb{R}I_n$ : toute matrice $M$ s'écrit\n$$M=\\underbrace{\\left(M-\\frac{\\mathrm{Tr}(M)}{n}I_n\\right)}_{\\in\\,H}+\\frac{\\mathrm{Tr}(M)}{n}I_n.$$\nEn appliquant $u$ et en utilisant $\\ker u=H$ puis $u(I_n)=I_n$ :\n$$\\boxed{\\;u(M)=\\frac{\\mathrm{Tr}(M)}{n}\\,I_n\\;}$$\n\n**$u$ est un projecteur.** $u^2(M)=u\\left(\\tfrac{\\mathrm{Tr}(M)}{n}I_n\\right)=\\tfrac{\\mathrm{Tr}(M)}{n}u(I_n)=u(M)$. C'est le projecteur sur la droite $\\mathbb{R}I_n$ parallèlement à $H$.\n\n**$u$ conserve la trace.** $\\mathrm{Tr}\\left(u(M)\\right)=\\tfrac{\\mathrm{Tr}(M)}{n}\\,\\mathrm{Tr}(I_n)=\\tfrac{\\mathrm{Tr}(M)}{n}\\cdot n=\\mathrm{Tr}(M)$. $\\square$",
-    "level": 5
+    "level": 5,
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Système cyclique $x_i+x_{i+1}=2a_i$",
@@ -266,7 +286,11 @@
     ],
     "competition": "CCINP",
     "programmeLevel": "sup",
-    "licenseStatus": "à vérifier"
+    "licenseStatus": "à vérifier",
+    "epreuve": "Oral",
+    "exerciseNumber": "BEOS 4574",
+    "filiere": "MP",
+    "provenance": "concours-partiel"
   },
   {
     "title": "Déterminant d'une matrice tridiagonale",

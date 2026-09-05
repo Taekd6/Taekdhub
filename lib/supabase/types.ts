@@ -47,6 +47,29 @@ export type ProgrammeLevel = "sup" | "spe" | "sup_spe";
  */
 export type LicenseStatus = "libre" | "à vérifier" | "restreint";
 
+/** Filière de concours d'origine — `null` quand l'exercice n'en vient pas. */
+export type Filiere = "MP" | "MPI" | "PC" | "PSI" | "PT" | "TSI";
+
+/**
+ * NIVEAU DE VÉRIFICATION de la provenance — le champ qui empêche de faire
+ * passer pour un sujet de concours ce qui n'en est pas un.
+ *
+ * "concours-verifie" : concours, session, épreuve ET numéro d'exercice sont
+ *   tous connus. C'est le seul niveau qui autorise l'affichage complet
+ *   « CCINP 2023 · Maths 1 · exercice 4 ».
+ * "concours-partiel" : l'exercice vient bien d'un concours et l'épreuve est
+ *   identifiée, mais la session ne l'est pas — cas des recueils d'oraux,
+ *   qui classent par concours sans dater chaque exercice. L'interface
+ *   affiche alors « session inconnue » plutôt que d'inventer une année.
+ * "enseignant" : feuille de TD, DM ou DS d'un professeur.
+ * "originale" : écrit pour TaekdHub. Ne peut JAMAIS porter de concours.
+ *
+ * Le pipeline d'import fait respecter ces règles (lib/exercise-import.ts) :
+ * un exercice ne peut pas se déclarer d'un niveau que ses métadonnées ne
+ * justifient pas.
+ */
+export type Provenance = "concours-verifie" | "concours-partiel" | "enseignant" | "originale";
+
 /**
  * Palier PÉDAGOGIQUE de l'exercice (Sprint 4) — où il se situe dans la
  * progression d'apprentissage, DISTINCT de `Difficulty` (sa difficulté
@@ -264,6 +287,14 @@ export interface Exercise {
   license_status: LicenseStatus | null;
   /** Identifiant externe (ex. référence SCEI), si disponible, sinon null. */
   external_id: string | null;
+  /** Épreuve d'origine (« Oral », « Maths 1 », « Maths 2 »…) — `null` hors concours. */
+  epreuve: string | null;
+  /** Filière du sujet — voir `Filiere`. `null` hors concours ou si inconnue. */
+  filiere: Filiere | null;
+  /** Numéro ou identifiant de l'exercice dans le sujet d'origine. */
+  exercise_number: string | null;
+  /** Niveau de vérification de la provenance — voir `Provenance`. */
+  provenance: Provenance;
   /** URL vers la source originale, si disponible, sinon null. */
   source_url: string | null;
   /**

@@ -1,8 +1,9 @@
 import { getChaptersForSubject } from "@/lib/chapters";
+import { canonicalLabel } from "@/lib/utils";
 import { DEFAULT_MASTERY, type Chapter } from "@/lib/storage";
 import { exerciseTypes, subjects } from "@/lib/study";
 import type { NewExerciseInput } from "@/components/exercises/exercise-form";
-import type { Difficulty, Exercise, ExerciseLevel, ExerciseType, LicenseStatus, ProgrammeLevel, Subject } from "@/lib/supabase/types";
+import type { Difficulty, Exercise, ExerciseLevel, ExerciseType, Filiere, LicenseStatus, ProgrammeLevel, Provenance, Subject } from "@/lib/supabase/types";
 
 /**
  * Import en masse d'exercices (Sprint infrastructure banque) — un fichier
@@ -36,9 +37,21 @@ const COMPETITION_ALIASES: Record<string, string> = {
   "centrale-supelec": "Centrale",
   "centrale supelec": "Centrale",
   "centrale-supélec": "Centrale",
+  // Autres banques réellement passées par un élève de MP. X et ENS restent
+  // volontairement hors périmètre (voir EXCLUDED_COMPETITIONS).
+  "tpe-eivp": "TPE-EIVP", tpe: "TPE-EIVP", eivp: "TPE-EIVP",
+  ensiie: "ENSIIE",
+  imt: "IMT", "mines-telecom": "IMT", "mines-télécom": "IMT", enstim: "IMT",
 };
 
-/** Explicitement HORS périmètre du dataset principal (consigne produit) — jamais importés, quelle que soit la casse ou l'orthographe. */
+/**
+ * Explicitement HORS périmètre, jamais importés quelle que soit la casse ou
+ * l'orthographe : choix de l'élève, qui ne prépare pas ces concours et ne
+ * veut pas que leurs exercices viennent gonfler sa banque.
+ */
+const FILIERES: readonly Filiere[] = ["MP", "MPI", "PC", "PSI", "PT", "TSI"];
+const PROVENANCES: readonly Provenance[] = ["concours-verifie", "concours-partiel", "enseignant", "originale"];
+
 const EXCLUDED_COMPETITIONS = new Set(["x", "ens", "polytechnique", "ens ulm", "ens lyon", "ens paris-saclay", "ens cachan", "ens rennes", "x-ens", "x/ens"]);
 
 function normalizeCompetitionKey(value: string): string {
@@ -67,6 +80,13 @@ export function createExerciseFromInput(input: NewExerciseInput): Exercise {
     programme_level: input.programmeLevel ?? null,
     license_status: input.licenseStatus ?? null,
     external_id: input.externalId ?? null,
+    epreuve: input.epreuve ?? null,
+    filiere: input.filiere ?? null,
+    exercise_number: input.exerciseNumber ?? null,
+    // Le niveau de provenance n'est jamais deviné à la hausse : sans
+    // déclaration explicite, un exercice portant un concours est au mieux
+    // « partiel », et un exercice sans concours est une création propre.
+    provenance: input.provenance ?? (input.competition ? "concours-partiel" : "originale"),
     source_url: input.sourceUrl ?? null,
     prerequisites: input.prerequisites ?? [],
     pedagogical_goal: input.pedagogicalGoal ?? null,
@@ -106,6 +126,25 @@ export interface ParsedImportRow {
 export interface ExerciseImportParseResult {
   rows: ParsedImportRow[];
   errors: ExerciseImportRowError[];
+  /**
+   * Lignes écartées parce qu'elles existent DÉJÀ — dans la banque de l'élève
+   * ou plus haut dans le fichier lui-même. Distinguées des `errors` : ce
+   * n'est pas un fichier mal formé, c'est un import qu'on a déjà fait. Sans
+   * cette détection, réimporter le même recueil doublait la banque en
+   * silence, et l'élève retombait deux fois sur le même exercice.
+   */
+  duplicates: ExerciseImportRowError[];
+}
+
+/**
+ * Clé d'identité d'un exercice. L'identifiant externe fait foi quand il
+ * existe (il vient de la source et survit à une reformulation du titre) ;
+ * sinon on retombe sur matière + titre normalisé, comme l'amorçage.
+ */
+function identityKeys(subject: string, title: string, externalId: string | null): string[] {
+  const keys = [`titre::${subject}::${canonicalLabel(title)}`];
+  if (externalId) keys.unshift(`id::${externalId}`);
+  return keys;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -128,13 +167,23 @@ function parseListField(value: unknown, splitOn: string): string[] {
  * n'empêche jamais les autres d'être importées, elle est simplement listée
  * dans `errors` pour que l'utilisateur puisse la corriger et réessayer.
  */
-export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): ExerciseImportParseResult {
+export function parseExerciseImportPayload(
+  raw: unknown,
+  chapters: Chapter[],
+  existing: Exercise[] = []
+): ExerciseImportParseResult {
   const rows: ParsedImportRow[] = [];
   const errors: ExerciseImportRowError[] = [];
+  const duplicates: ExerciseImportRowError[] = [];
 
   if (!Array.isArray(raw)) {
     errors.push({ index: 0, message: "Le fichier doit contenir un tableau JSON (une entrée par exercice)." });
-    return { rows, errors };
+    return { rows, errors, duplicates };
+  }
+
+  const seen = new Set<string>();
+  for (const exercise of existing) {
+    for (const key of identityKeys(exercise.subject, exercise.title, exercise.external_id)) seen.add(key);
   }
 
   raw.forEach((entry, index) => {
@@ -204,14 +253,14 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
     if (competitionRaw) {
       const key = normalizeCompetitionKey(competitionRaw);
       if (EXCLUDED_COMPETITIONS.has(key)) {
-        errors.push({ index, message: `${label} ("${title}") — X/ENS est explicitement hors périmètre du dataset principal (consigne produit), non importé.` });
+        errors.push({ index, message: `${label} ("${title}") — X/ENS est hors périmètre (choix de l'élève), non importé.` });
         return;
       }
       competition = COMPETITION_ALIASES[key] ?? null;
       if (!competition) {
         errors.push({
           index,
-          message: `${label} ("${title}") — concours non reconnu ("${competitionRaw}"). Attendu : CCINP, Mines-Ponts, e3a, PT, Centrale.`,
+          message: `${label} ("${title}") — concours non reconnu ("${competitionRaw}"). Attendu : ${[...new Set(Object.values(COMPETITION_ALIASES))].join(", ")}.`,
         });
         return;
       }
@@ -287,6 +336,8 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
       licenseStatus = "à vérifier";
     }
 
+    const chapterLabelRaw = asTrimmedString(entry.chapter);
+
     const yearRaw = entry.year;
     if (yearRaw !== undefined && yearRaw !== null && (typeof yearRaw !== "number" || yearRaw < 1900 || yearRaw > 2100)) {
       errors.push({ index, message: `${label} ("${title}") — année invalide (attendu un nombre, ex. 2022).` });
@@ -294,12 +345,72 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
     }
     const year = typeof yearRaw === "number" ? yearRaw : null;
 
+    /**
+     * PROVENANCE — la garantie qu'un exercice ne se fait jamais passer pour
+     * un sujet de concours qu'il n'est pas.
+     *
+     * Le niveau déclaré doit être JUSTIFIÉ par les métadonnées fournies :
+     * un exercice ne peut pas s'annoncer « concours vérifié » sans dire de
+     * quelle session ni de quelle épreuve il sort. Inversement, un exercice
+     * écrit pour TaekdHub ne peut pas porter de concours. Ces règles sont
+     * appliquées ici, à la frontière, plutôt que laissées à la discipline de
+     * celui qui rédige le fichier d'import.
+     */
+    const epreuve = asTrimmedString(entry.epreuve);
+    const exerciseNumber = asTrimmedString(entry.exerciseNumber ?? entry.exercise_number);
+    const filiereRaw = asTrimmedString(entry.filiere);
+    let filiere: Filiere | null = null;
+    if (filiereRaw) {
+      if (!(FILIERES as string[]).includes(filiereRaw)) {
+        errors.push({ index, message: `${label} ("${title}") — filière invalide ("${filiereRaw}"). Attendu : ${FILIERES.join(", ")}.` });
+        return;
+      }
+      filiere = filiereRaw as Filiere;
+    }
+
+    const provenanceRaw = asTrimmedString(entry.provenance);
+    if (provenanceRaw && !(PROVENANCES as string[]).includes(provenanceRaw)) {
+      errors.push({ index, message: `${label} ("${title}") — provenance invalide ("${provenanceRaw}"). Attendu : ${PROVENANCES.join(", ")}.` });
+      return;
+    }
+    const provenance: Provenance = (provenanceRaw as Provenance) ?? (competition ? "concours-partiel" : "originale");
+    const claimsConcours = provenance === "concours-verifie" || provenance === "concours-partiel";
+
+    if (claimsConcours && !competition) {
+      errors.push({ index, message: `${label} ("${title}") — provenance "${provenance}" sans champ "competition" : impossible d'annoncer un exercice de concours sans nommer le concours.` });
+      return;
+    }
+    if (!claimsConcours && competition) {
+      errors.push({ index, message: `${label} ("${title}") — provenance "${provenance}" avec un concours renseigné ("${competition}") : un exercice qui n'est pas issu d'un concours ne doit jamais en porter le nom.` });
+      return;
+    }
+    // Volontairement, « concours-partiel » n'exige PAS l'épreuve : c'est
+    // précisément le niveau des exercices dont on connaît le concours sans
+    // connaître le détail de la session. Exiger davantage pousserait à
+    // inventer une épreuve pour satisfaire le validateur — l'inverse du but.
+    if (provenance === "concours-verifie" && (year === null || !exerciseNumber)) {
+      const missing = [year === null ? '"year"' : null, !exerciseNumber ? '"exerciseNumber"' : null].filter(Boolean).join(" et ");
+      errors.push({
+        index,
+        message: `${label} ("${title}") — provenance "concours-verifie" exige concours + session + épreuve + numéro d'exercice ; il manque ${missing}. Si la session est inconnue, déclarer "concours-partiel".`,
+      });
+      return;
+    }
+    if (claimsConcours && !chapterLabelRaw) {
+      errors.push({ index, message: `${label} ("${title}") — exercice de concours sans champ "chapter" : il serait introuvable dans la banque.` });
+      return;
+    }
+    if (claimsConcours && year !== null && (year < 1970 || year > new Date().getFullYear() + 1)) {
+      errors.push({ index, message: `${label} ("${title}") — année de session incohérente (${year}).` });
+      return;
+    }
+
     const externalId = asTrimmedString(entry.externalId ?? entry.external_id);
     const sourceUrl = asTrimmedString(entry.sourceUrl ?? entry.source_url);
     const prerequisites = parseListField(entry.prerequisites, ",");
     const pedagogicalGoal = asTrimmedString(entry.pedagogicalGoal ?? entry.pedagogical_goal);
 
-    const chapterLabel = asTrimmedString(entry.chapter);
+    const chapterLabel = chapterLabelRaw;
     let chapterId: string | null = null;
     let isNewChapter = false;
     if (chapterLabel) {
@@ -307,6 +418,17 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
       if (existing) chapterId = existing.id;
       else isNewChapter = true;
     }
+
+    const keys = identityKeys(subject, title, externalId);
+    const clash = keys.find((key) => seen.has(key));
+    if (clash) {
+      duplicates.push({
+        index,
+        message: `${label} ("${title}") — déjà présent dans la banque${clash.startsWith("id::") ? ` (identifiant ${externalId})` : ""} : non réimporté.`,
+      });
+      return;
+    }
+    for (const key of keys) seen.add(key);
 
     rows.push({
       index,
@@ -335,11 +457,15 @@ export function parseExerciseImportPayload(raw: unknown, chapters: Chapter[]): E
         pedagogicalGoal,
         archived,
         level,
+        epreuve,
+        filiere,
+        exerciseNumber,
+        provenance,
       },
     });
   });
 
-  return { rows, errors };
+  return { rows, errors, duplicates };
 }
 
 /**
@@ -385,7 +511,15 @@ export const EXERCISE_IMPORT_TEMPLATE = [
     subject: "Mathématiques",
     type: "Concours",
     difficulty: 3,
+    chapter: "Exemple de chapitre",
     competition: "CCINP",
+    // Provenance : "concours-verifie" exige concours + session + épreuve +
+    // numéro. Sans l'un d'eux, déclarer "concours-partiel" — l'import refuse
+    // une revendication que les métadonnées ne soutiennent pas.
+    provenance: "concours-verifie",
+    epreuve: "Maths 1",
+    filiere: "MP",
+    exerciseNumber: "3",
     programmeLevel: "sup",
     licenseStatus: "à vérifier",
     year: 2022,
