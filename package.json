@@ -7,7 +7,10 @@
     "build": "next build",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e": "node scripts/regression-lecteur.mjs"
+    "test:e2e": "node scripts/regression-lecteur.mjs && node scripts/regression-import.mjs",
+    "prebuild": "node scripts/copy-pdfjs-assets.mjs",
+    "predev": "node scripts/copy-pdfjs-assets.mjs",
+    "pdfjs:assets": "node scripts/copy-pdfjs-assets.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
@@ -16,6 +19,7 @@
     "katex": "^0.18.3",
     "lucide-react": "^0.468.0",
     "next": "15.5.23",
+    "pdfjs-dist": "^6.3.289",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.6.0"

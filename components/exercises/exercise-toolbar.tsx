@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Search, SlidersHorizontal, Star, Upload, X } from "lucide-react";
+import { FileUp, Plus, Search, SlidersHorizontal, Star, Upload, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
@@ -41,6 +41,7 @@ export function ExerciseToolbar({
   sortControl,
   onAddClick,
   onImportClick,
+  onSheetImportClick,
 }: {
   filters: ExerciseFilters;
   onChange: (patch: Partial<ExerciseFilters>) => void;
@@ -53,6 +54,8 @@ export function ExerciseToolbar({
   sortControl: React.ReactNode;
   onAddClick: () => void;
   onImportClick: () => void;
+  /** Import d'une feuille d'exercices (PDF) — distinct de l'import JSON, qui reste réservé aux fichiers structurés. */
+  onSheetImportClick: () => void;
 }) {
   const [panelOpen, setPanelOpen] = useState(false);
 
@@ -131,8 +134,15 @@ export function ExerciseToolbar({
           <span className="block h-6 w-px bg-line" />
         </span>
 
-        <Button variant="ghost" onClick={onImportClick}>
-          <Upload size={15} /> <span className="hidden sm:inline">Importer</span>
+        {/* Le libellé disparaît sous `sm`, faute de place. Sans `aria-label`,
+            ces boutons n'ont alors PLUS AUCUN NOM : un lecteur d'écran, comme
+            la navigation au clavier, n'annonce qu'« bouton ». Le nom est donc
+            porté par l'attribut, à toutes les tailles. */}
+        <Button variant="ghost" aria-label="Importer une feuille d'exercices (PDF)" onClick={onSheetImportClick}>
+          <FileUp size={15} /> <span className="hidden sm:inline">Feuille PDF</span>
+        </Button>
+        <Button variant="ghost" aria-label="Importer un fichier JSON d'exercices" onClick={onImportClick}>
+          <Upload size={15} /> <span className="hidden sm:inline">JSON</span>
         </Button>
         <Button variant="secondary" onClick={onAddClick}>
           <Plus size={15} /> Ajouter

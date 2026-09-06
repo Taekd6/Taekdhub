@@ -16,6 +16,7 @@ import { BankNavigator } from "@/components/exercises/bank-navigator";
 import { ExerciseToolbar } from "@/components/exercises/exercise-toolbar";
 import { ExerciseForm, type NewExerciseInput } from "@/components/exercises/exercise-form";
 import { ExerciseImport } from "@/components/exercises/exercise-import";
+import { SheetImport } from "@/components/exercises/sheet-import";
 import { ExerciseRow } from "@/components/exercises/exercise-row";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { addChapter, removeChapter, renameChapter } from "@/lib/chapters";
@@ -52,6 +53,7 @@ export function ExerciseManager() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   /*
    * DEUX états distincts, qui n'en formaient qu'un.
    *
@@ -329,6 +331,7 @@ export function ExerciseManager() {
       exercisesRef.current = next;
       saveExercises(next);
       setImportOpen(false);
+      setSheetOpen(false);
     },
     [saveExercises]
   );
@@ -494,6 +497,7 @@ export function ExerciseManager() {
       // et comment se fermer.
       if (event.key === "Escape" && !focusMode) {
         if (importOpen) setImportOpen(false);
+        if (sheetOpen) setSheetOpen(false);
         else if (formOpen) setFormOpen(false);
         else if (selectedId) setSelectedId(null);
         else if (showArchived) setShowArchived(false);
@@ -508,7 +512,7 @@ export function ExerciseManager() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [focusMode, formOpen, importOpen, selectedId, showArchived]);
+  }, [focusMode, formOpen, importOpen, sheetOpen, selectedId, showArchived]);
 
   if (focusMode && selected) {
     /*
@@ -690,7 +694,14 @@ export function ExerciseManager() {
             competitionOptions={competitionOptions}
             yearOptions={yearOptions}
             onAddClick={() => setFormOpen((value) => !value)}
-            onImportClick={() => setImportOpen((value) => !value)}
+            onImportClick={() => {
+              setSheetOpen(false);
+              setImportOpen((value) => !value);
+            }}
+            onSheetImportClick={() => {
+              setImportOpen(false);
+              setSheetOpen((value) => !value);
+            }}
             sortControl={
               <label className="flex items-center gap-2">
                 <span className="t-label">Trier</span>
@@ -711,6 +722,15 @@ export function ExerciseManager() {
           />
 
           <ExerciseForm open={formOpen} chapters={chapters} onSubmit={create} onCancel={() => setFormOpen(false)} onCreateChapter={handleCreateChapter} />
+
+          <SheetImport
+            open={sheetOpen}
+            chapters={chapters}
+            existing={exercises}
+            onCommit={importExercises}
+            onCreateChapter={handleCreateChapter}
+            onCancel={() => setSheetOpen(false)}
+          />
 
           <ExerciseImport
             open={importOpen}

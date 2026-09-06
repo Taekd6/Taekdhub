@@ -1,0 +1,46 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Italic /Encoding /WinAnsiEncoding >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Bold /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Symbol >>
+endobj
+5 0 obj
+<< /Length 238 >>
+stream
+BT /FB 13 Tf 72 780 Td (Devoir maison - Espaces vectoriels) Tj ET
+BT /F1 11 Tf 72 750 Td (Montrer que l'ensemble des suites reelles bornees est un) Tj ET
+BT /F1 11 Tf 72 732 Td (sous-espace vectoriel de l'espace des suites reelles.) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 7 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /FB 3 0 R /FS 4 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Type /Pages /Count 1 /Kids [6 0 R] >>
+endobj
+8 0 obj
+<< /Type /Catalog /Pages 7 0 R >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000108 00000 n 
+0000000208 00000 n 
+0000000306 00000 n 
+0000000373 00000 n 
+0000000662 00000 n 
+0000000818 00000 n 
+0000000875 00000 n 
+trailer
+<< /Size 9 /Root 8 0 R >>
+startxref
+924
+%%EOF

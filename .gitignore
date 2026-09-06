@@ -11,3 +11,4 @@ tsconfig.tsbuildinfo
 # Bytecode Python de scripts/
 __pycache__/
 *.pyc
+/public/pdfjs/

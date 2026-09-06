@@ -1,0 +1,138 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Italic /Encoding /WinAnsiEncoding >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Bold /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Symbol >>
+endobj
+5 0 obj
+<< /Length 1874 >>
+stream
+BT /FB 15 Tf 72 780 Td (Feuille 4 - Integrales et suites) Tj ET
+BT /F1 10 Tf 72 762 Td (Lycee Jean Perrin - MP - 2026) Tj ET
+BT /FB 12 Tf 72 720 Td (Exercice 1.) Tj ET
+BT /F1 11 Tf 130 720 Td (Convergence d'une suite recurrente) Tj ET
+BT /F1 11 Tf 72 700 Td (Soit ) Tj ET
+BT /F2 11 Tf 96 700 Td (u) Tj ET
+BT /F2 8 Tf 103 697 Td (n) Tj ET
+BT /F1 11 Tf 109 700 Td ( la suite definie par ) Tj ET
+BT /F2 11 Tf 212 700 Td (u) Tj ET
+BT /F2 8 Tf 219 697 Td (0) Tj ET
+BT /F1 11 Tf 225 700 Td ( = 1 et ) Tj ET
+BT /F2 11 Tf 262 700 Td (u) Tj ET
+BT /F2 8 Tf 269 697 Td (n+1) Tj ET
+BT /F1 11 Tf 286 700 Td ( = ) Tj ET
+BT /F2 11 Tf 300 700 Td (u) Tj ET
+BT /F2 8 Tf 307 697 Td (n) Tj ET
+BT /F1 8 Tf 314 704 Td (2) Tj ET
+BT /F1 11 Tf 322 700 Td ( + 1.) Tj ET
+BT /F1 11 Tf 72 682 Td (1. Montrer que ) Tj ET
+BT /F2 11 Tf 146 682 Td (u) Tj ET
+BT /F2 8 Tf 153 679 Td (n) Tj ET
+BT /F1 11 Tf 159 682 Td ( est croissante.) Tj ET
+BT /F1 11 Tf 72 664 Td (2. En deduire que ) Tj ET
+BT /F2 11 Tf 158 664 Td (u) Tj ET
+BT /F2 8 Tf 165 661 Td (n) Tj ET
+BT /FS 11 Tf 172 664 Td (\256) Tj ET
+BT /FS 11 Tf 186 664 Td (\245) Tj ET
+BT /F1 11 Tf 196 664 Td (.) Tj ET
+BT /FB 12 Tf 72 620 Td (Exercice 2.) Tj ET
+BT /F1 11 Tf 130 620 Td (Une integrale a parametre) Tj ET
+BT /F1 11 Tf 72 600 Td (Pour ) Tj ET
+BT /F2 11 Tf 98 600 Td (a) Tj ET
+BT /FS 11 Tf 106 600 Td (\316) Tj ET
+BT /F1 11 Tf 120 600 Td (R, on pose ) Tj ET
+BT /F2 11 Tf 172 600 Td (I) Tj ET
+BT /F1 11 Tf 178 600 Td (\() Tj ET
+BT /F2 11 Tf 182 600 Td (a) Tj ET
+BT /F1 11 Tf 189 600 Td (\) = ) Tj ET
+BT /FS 14 Tf 206 598 Td (\362) Tj ET
+BT /F1 8 Tf 214 610 Td (1) Tj ET
+BT /F1 8 Tf 214 594 Td (0) Tj ET
+BT /F2 11 Tf 224 600 Td (x) Tj ET
+BT /F2 8 Tf 231 606 Td (a) Tj ET
+BT /F1 11 Tf 238 600 Td ( dx.) Tj ET
+BT /F1 11 Tf 72 582 Td (a\) Determiner le domaine de definition de ) Tj ET
+BT /F2 11 Tf 264 582 Td (I) Tj ET
+BT /F1 11 Tf 270 582 Td (.) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 9 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /FB 3 0 R /FS 4 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 1529 >>
+stream
+BT /F1 10 Tf 520 800 Td (2) Tj ET
+BT /F1 11 Tf 72 760 Td (b\) Calculer ) Tj ET
+BT /F2 11 Tf 128 760 Td (I) Tj ET
+BT /F1 11 Tf 134 760 Td (\() Tj ET
+BT /F2 11 Tf 138 760 Td (a) Tj ET
+BT /F1 11 Tf 145 760 Td (\) pour ) Tj ET
+BT /F2 11 Tf 178 760 Td (a) Tj ET
+BT /F1 11 Tf 186 760 Td ( > 0.) Tj ET
+BT /F1 11 Tf 72 742 Td (c\) Etudier la continuite de ) Tj ET
+BT /F2 11 Tf 200 742 Td (I) Tj ET
+BT /F1 11 Tf 206 742 Td ( sur son domaine.) Tj ET
+BT /FB 12 Tf 72 700 Td (Exercice 3.) Tj ET
+BT /F1 11 Tf 130 700 Td (Somme de Riemann) Tj ET
+BT /F1 11 Tf 72 680 Td (Soit ) Tj ET
+BT /F2 11 Tf 96 680 Td (f) Tj ET
+BT /F1 11 Tf 103 680 Td ( continue sur [0, 1] telle que 0 ) Tj ET
+BT /FS 11 Tf 250 680 Td (\243) Tj ET
+BT /F2 11 Tf 264 680 Td (f) Tj ET
+BT /F1 11 Tf 271 680 Td (\() Tj ET
+BT /F2 11 Tf 275 680 Td (x) Tj ET
+BT /F1 11 Tf 282 680 Td (\) ) Tj ET
+BT /FS 11 Tf 290 680 Td (\243) Tj ET
+BT /F1 11 Tf 304 680 Td ( 1.) Tj ET
+BT /F1 11 Tf 72 662 Td (Etudier la limite de la somme ) Tj ET
+BT /FS 13 Tf 210 661 Td (\345) Tj ET
+BT /F2 11 Tf 224 662 Td (f) Tj ET
+BT /F1 11 Tf 231 662 Td (\() Tj ET
+BT /F2 11 Tf 235 662 Td (k) Tj ET
+BT /F1 11 Tf 242 662 Td (/) Tj ET
+BT /F2 11 Tf 246 662 Td (n) Tj ET
+BT /F1 11 Tf 253 662 Td (\) quand ) Tj ET
+BT /F2 11 Tf 294 662 Td (n) Tj ET
+BT /FS 11 Tf 303 662 Td (\256) Tj ET
+BT /FS 11 Tf 317 662 Td (\245) Tj ET
+BT /F1 11 Tf 327 662 Td (.) Tj ET
+BT /F1 11 Tf 72 644 Td (On pourra utiliser une somme de Riemann et la constante ) Tj ET
+BT /FS 11 Tf 340 644 Td (\141) Tj ET
+BT /F1 11 Tf 348 644 Td (.) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 9 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /FB 3 0 R /FS 4 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Type /Pages /Count 2 /Kids [6 0 R 8 0 R] >>
+endobj
+10 0 obj
+<< /Type /Catalog /Pages 9 0 R >>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000009 00000 n 
+0000000108 00000 n 
+0000000208 00000 n 
+0000000306 00000 n 
+0000000373 00000 n 
+0000002299 00000 n 
+0000002455 00000 n 
+0000004036 00000 n 
+0000004192 00000 n 
+0000004255 00000 n 
+trailer
+<< /Size 11 /Root 10 0 R >>
+startxref
+4305
+%%EOF
