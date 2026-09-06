@@ -20,7 +20,7 @@ import { SheetImport } from "@/components/exercises/sheet-import";
 import { ExerciseRow } from "@/components/exercises/exercise-row";
 import { FOCUS_TIMER_PREFIX, FocusView } from "@/components/exercises/focus-view";
 import { addChapter, removeChapter, renameChapter } from "@/lib/chapters";
-import { chapterOptionsForSubject, competitionOptionsForFilters, defaultExerciseFilters, difficultyOptionsForFilters, distinctYears, filterExercises, tagOptionsForFilters, type ExerciseFilters } from "@/lib/exercise-filters";
+import { chapterOptionsForSubject, competitionOptionsForFilters, defaultExerciseFilters, difficultyOptionsForFilters, distinctYears, filterExercises, filtersForScope, tagOptionsForFilters, type ExerciseFilters } from "@/lib/exercise-filters";
 import { defaultExerciseSort, exerciseSortOptions, sortExercises, type ExerciseSort } from "@/lib/exercise-sort";
 import { createExerciseFromInput } from "@/lib/exercise-import";
 import { SessionBuilderBar } from "@/components/exercises/session-builder-bar";
@@ -433,13 +433,20 @@ export function ExerciseManager() {
    * montre toujours le résultat des filtres courants. Ces callbacks ne font
    * plus qu'écrire dans `filters` — l'unique source de vérité.
    */
-  const goHome = useCallback(() => setFilters(defaultExerciseFilters), []);
-  const showFavorites = useCallback(() => setFilters({ ...defaultExerciseFilters, favoritesOnly: true }), []);
+  /*
+   * Les quatre entrées du volet passent par `filtersForScope` — la MÊME
+   * fonction qui sert à calculer leurs compteurs (voir
+   * lib/exercise-filters.ts). Tant qu'elles écrivaient leurs filtres à la
+   * main ici pendant que le volet comptait autrement, les deux pouvaient
+   * dire — et disaient — des choses différentes.
+   */
+  const goHome = useCallback(() => setFilters((prev) => filtersForScope(prev, { kind: "all" })), []);
+  const showFavorites = useCallback(() => setFilters((prev) => filtersForScope(prev, { kind: "favorites" })), []);
   const selectSubject = useCallback((subject: Subject) => {
-    setFilters((prev) => ({ ...prev, subject, chapter: "Tous", favoritesOnly: false }));
+    setFilters((prev) => filtersForScope(prev, { kind: "subject", subject }));
   }, []);
   const selectChapter = useCallback((subject: Subject, chapterId: string) => {
-    setFilters((prev) => ({ ...prev, subject, chapter: chapterId, favoritesOnly: false }));
+    setFilters((prev) => filtersForScope(prev, { kind: "chapter", subject, chapterId }));
   }, []);
 
   /** Exercice affiché par le lecteur — distinct de la rangée dont la fiche est dépliée. */

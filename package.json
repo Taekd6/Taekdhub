@@ -7,7 +7,7 @@
     "build": "next build",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e": "node scripts/regression-lecteur.mjs && node scripts/regression-import.mjs",
+    "test:e2e": "node scripts/regression-lecteur.mjs && node scripts/regression-import.mjs && node scripts/regression-banque.mjs",
     "prebuild": "node scripts/copy-pdfjs-assets.mjs",
     "predev": "node scripts/copy-pdfjs-assets.mjs",
     "pdfjs:assets": "node scripts/copy-pdfjs-assets.mjs"

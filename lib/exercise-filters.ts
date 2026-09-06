@@ -174,3 +174,72 @@ export function tagOptionsForFilters(exercises: Exercise[], filters: Pick<Exerci
     .filter((item) => filters.chapter === "Tous" || item.chapter_id === filters.chapter);
   return Array.from(new Set(scoped.flatMap((item) => item.tags))).sort((a, b) => a.localeCompare(b, "fr"));
 }
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════
+ * PORTÉES DU NAVIGATEUR DE BANQUE — une seule définition, deux usages.
+ * ═══════════════════════════════════════════════════════════════════════
+ *
+ * Le volet de gauche affiche des ENTRÉES (toute la banque, favoris, une
+ * matière, un chapitre) avec un nombre à côté. Ce nombre doit répondre à une
+ * question et une seule : « combien d'exercices vais-je voir si je clique
+ * ici ? »
+ *
+ * Il ne le faisait pas. Les compteurs étaient calculés sur la banque BRUTE
+ * (matière + chapitre, rien d'autre) alors que la liste applique les onze
+ * filtres. Il suffisait donc d'un filtre concours en vigueur pour que le volet
+ * annonce « Applications linéaires 16 » et que la liste en montre 4 : deux
+ * jeux de résultats différents, présentés comme le même. Mesuré au navigateur.
+ *
+ * `filtersForScope` est désormais la seule définition de ce que produit un
+ * clic, et `countForScope` compte avec `filterExercises` — la fonction que la
+ * liste utilise. Les deux ne peuvent plus diverger : c'est le même calcul.
+ */
+export type BankScope =
+  | { kind: "all" }
+  | { kind: "favorites" }
+  | { kind: "subject"; subject: Subject }
+  | { kind: "chapter"; subject: Subject; chapterId: string };
+
+/**
+ * Filtres obtenus en cliquant une entrée du navigateur.
+ *
+ * « Toute la banque » et « Favoris » REMETTENT tout à zéro : ce sont les
+ * sorties de secours de l'écran, celles qui doivent toujours ramener quelque
+ * chose. Choisir une matière ou un chapitre, au contraire, CONSERVE les
+ * autres filtres — c'est le parcours voulu (matière → chapitre → concours).
+ * Les compteurs suivent chacun sa propre règle, puisqu'ils annoncent le
+ * résultat du clic.
+ */
+export function filtersForScope(current: ExerciseFilters, scope: BankScope): ExerciseFilters {
+  switch (scope.kind) {
+    case "all":
+      return defaultExerciseFilters;
+    case "favorites":
+      return { ...defaultExerciseFilters, favoritesOnly: true };
+    case "subject":
+      return { ...current, subject: scope.subject, chapter: "Tous", favoritesOnly: false };
+    case "chapter":
+      return { ...current, subject: scope.subject, chapter: scope.chapterId, favoritesOnly: false };
+  }
+}
+
+/** Nombre d'exercices que la liste affichera après un clic sur cette entrée. */
+export function countForScope(exercises: Exercise[], current: ExerciseFilters, scope: BankScope): number {
+  return filterExercises(exercises, filtersForScope(current, scope)).length;
+}
+
+/**
+ * Les exercices retenus par tous les filtres SAUF ceux que le navigateur
+ * pilote (matière, chapitre, favoris).
+ *
+ * Compter une matière ou un chapitre revient à compter dans cet ensemble —
+ * `filterExercises` n'étant qu'une conjonction de conditions indépendantes,
+ * restreindre ici puis par matière donne exactement le même résultat que de
+ * tout recalculer. C'est ce qui permet de chiffrer soixante entrées en un
+ * seul passage plutôt qu'en soixante ; l'égalité avec `countForScope` est
+ * vérifiée par les tests, entrée par entrée.
+ */
+export function scopeBaseline(exercises: Exercise[], filters: ExerciseFilters): Exercise[] {
+  return filterExercises(exercises, { ...filters, subject: "Toutes", chapter: "Tous", favoritesOnly: false });
+}

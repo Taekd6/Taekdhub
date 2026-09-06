@@ -3,10 +3,9 @@
 import { ChevronDown, Layers, Star } from "lucide-react";
 import { useMemo, useState } from "react";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
-import { computeProgressBySubject, progressByChapter } from "@/lib/progress";
 import { subjects as allSubjects } from "@/lib/study";
 import { cn } from "@/lib/cn";
-import type { ExerciseFilters } from "@/lib/exercise-filters";
+import { scopeBaseline, type ExerciseFilters } from "@/lib/exercise-filters";
 import type { Chapter } from "@/lib/storage";
 import type { Exercise, Subject } from "@/lib/supabase/types";
 
@@ -46,21 +45,84 @@ export function BankNavigator({
   onSelectSubject: (subject: Subject) => void;
   onSelectChapter: (subject: Subject, chapterId: string) => void;
 }) {
-  const bySubject = useMemo(() => computeProgressBySubject(exercises).filter((entry) => entry.total > 0), [exercises]);
-  const byChapter = useMemo(() => progressByChapter(exercises, chapters), [exercises, chapters]);
+  const active = useMemo(() => exercises.filter((item) => !item.archived), [exercises]);
 
-  const totalActive = useMemo(() => exercises.filter((item) => !item.archived).length, [exercises]);
-  const favorites = useMemo(() => exercises.filter((item) => !item.archived && item.favorite).length, [exercises]);
+  /*
+   * COMPTEURS — ce que la liste montrera après le clic, pas autre chose.
+   *
+   * Voir `filtersForScope` (lib/exercise-filters.ts) : « Toute la banque » et
+   * « Favoris » remettent tous les filtres à zéro, donc se comptent sur la
+   * banque entière ; une matière ou un chapitre CONSERVE les autres filtres,
+   * donc se compte dans `baseline`. C'est cette distinction qui manquait :
+   * tout était compté sur la banque brute, si bien qu'un filtre concours en
+   * vigueur faisait annoncer 16 exercices là où la liste en montrait 4.
+   */
+  const baseline = useMemo(() => scopeBaseline(exercises, filters), [exercises, filters]);
+
+  const totalActive = active.length;
+  const favorites = useMemo(() => active.filter((item) => item.favorite).length, [active]);
+
+  const countBySubject = useMemo(() => {
+    const counts = new Map<Subject, number>();
+    for (const item of baseline) counts.set(item.subject, (counts.get(item.subject) ?? 0) + 1);
+    return counts;
+  }, [baseline]);
+
+  const statsByChapter = useMemo(() => {
+    const stats = new Map<string, { total: number; masterySum: number }>();
+    for (const item of baseline) {
+      if (!item.chapter_id) continue;
+      const entry = stats.get(item.chapter_id) ?? { total: 0, masterySum: 0 };
+      entry.total += 1;
+      entry.masterySum += item.mastery;
+      stats.set(item.chapter_id, entry);
+    }
+    return stats;
+  }, [baseline]);
+
+  /*
+   * STRUCTURE de l'arborescence — établie sur la banque ENTIÈRE, pas sur les
+   * filtres courants.
+   *
+   * Si les entrées apparaissaient et disparaissaient au rythme des filtres,
+   * poser un filtre concours ferait s'effondrer l'arbre à quelques chapitres
+   * et il deviendrait impossible d'aller ailleurs sans d'abord tout effacer.
+   * Les entrées restent donc en place ; ce sont leurs nombres qui bougent, et
+   * une entrée à zéro se voit du premier coup d'œil.
+   */
+  const structure = useMemo(() => {
+    const present = allSubjects.filter((subject) => active.some((item) => item.subject === subject));
+    const byChapter = new Map<Subject, Chapter[]>();
+    for (const subject of present) {
+      byChapter.set(
+        subject,
+        chapters
+          .filter((chapter) => chapter.subject === subject && active.some((item) => item.chapter_id === chapter.id))
+          .sort((a, b) => a.label.localeCompare(b.label, "fr"))
+      );
+    }
+    return { present, byChapter };
+  }, [active, chapters]);
 
   // La matière ouverte suit la sélection courante ; on ne l'ouvre à la main
   // que pour aller regarder ailleurs sans quitter sa liste.
   const [manuallyOpen, setManuallyOpen] = useState<Subject | null>(null);
-  const openSubject = manuallyOpen ?? (filters.subject !== "Toutes" ? filters.subject : bySubject[0]?.subject ?? null);
+  const openSubject = manuallyOpen ?? (filters.subject !== "Toutes" ? filters.subject : structure.present[0] ?? null);
 
   const allSelected = filters.subject === "Toutes" && filters.chapter === "Tous" && !filters.favoritesOnly;
 
   return (
     <nav className="space-y-1">
+      {/* Quand d'autres filtres sont en vigueur, les nombres des matières et
+          des chapitres ne comptent qu'à l'intérieur de ceux-ci — tandis que
+          « Toute la banque » les efface, et compte donc tout. Sans cette
+          ligne, l'écart entre les deux serait incompréhensible. */}
+      {baseline.length !== totalActive && (
+        <p className="t-meta mb-2 rounded-md bg-inset px-2 py-1.5 text-2xs">
+          Filtres actifs : <span className="tabular text-ink">{baseline.length}</span> exercice
+          {baseline.length > 1 ? "s" : ""} sur {totalActive}. Les nombres ci-dessous comptent dans cette sélection.
+        </p>
+      )}
       <Entry icon={<Layers size={15} />} label="Toute la banque" count={totalActive} active={allSelected} onClick={onSelectAll} />
       {favorites > 0 && (
         <Entry
@@ -74,15 +136,12 @@ export function BankNavigator({
 
       <div className="pt-4">
         <p className="t-label mb-1.5 px-2">Matières</p>
-        {allSubjects
-          .map((subject) => bySubject.find((entry) => entry.subject === subject))
-          .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
-          .map((entry) => {
-            const expanded = openSubject === entry.subject;
-            const subjectChapters = byChapter
-              .filter((row) => row.chapter.subject === entry.subject)
-              .sort((a, b) => a.chapter.label.localeCompare(b.chapter.label, "fr"));
-            const subjectSelected = filters.subject === entry.subject && filters.chapter === "Tous";
+        {structure.present.map((subject) => {
+            const expanded = openSubject === subject;
+            const subjectChapters = structure.byChapter.get(subject) ?? [];
+            const subjectSelected = filters.subject === subject && filters.chapter === "Tous";
+            const subjectCount = countBySubject.get(subject) ?? 0;
+            const entry = { subject };
 
             return (
               <div key={entry.subject}>
@@ -101,7 +160,7 @@ export function BankNavigator({
                   >
                     <SubjectAvatar subject={entry.subject} size="sm" />
                     <span className="min-w-0 flex-1 truncate">{entry.subject}</span>
-                    <span className="t-meta tabular shrink-0 text-2xs">{entry.total}</span>
+                    <span className={cn("t-meta tabular shrink-0 text-2xs", subjectCount === 0 && "opacity-45")}>{subjectCount}</span>
                   </button>
                   <button
                     type="button"
@@ -116,8 +175,11 @@ export function BankNavigator({
 
                 {expanded && subjectChapters.length > 0 && (
                   <ul className="mb-1 ml-[1.4375rem] border-l border-line pl-2">
-                    {subjectChapters.map(({ chapter, total, averageMastery }) => {
+                    {subjectChapters.map((chapter) => {
                       const selected = filters.chapter === chapter.id;
+                      const stats = statsByChapter.get(chapter.id);
+                      const total = stats?.total ?? 0;
+                      const averageMastery = stats && stats.total ? Math.round(stats.masterySum / stats.total) : 0;
                       return (
                         <li key={chapter.id}>
                           <button
@@ -142,7 +204,7 @@ export function BankNavigator({
                                 )}
                               />
                             )}
-                            <span className="t-meta tabular shrink-0 text-2xs">{total}</span>
+                            <span className={cn("t-meta tabular shrink-0 text-2xs", total === 0 && "opacity-45")}>{total}</span>
                           </button>
                         </li>
                       );
@@ -151,7 +213,7 @@ export function BankNavigator({
                 )}
               </div>
             );
-          })}
+        })}
       </div>
     </nav>
   );
