@@ -8,6 +8,7 @@ import { PageBar, Workbench } from "@/components/ui/layout";
 import { Select } from "@/components/ui/input";
 import { EmptyState, Notice, Skeleton } from "@/components/ui/state";
 import { MathInline } from "@/components/rich-math";
+import { readerNavigation } from "@/lib/reader-navigation";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { ArchivedExercises } from "@/components/exercises/archived-exercises";
@@ -404,11 +405,17 @@ export function ExerciseManager() {
    * `sorted` : ce callback doit garder une identité stable d'un rendu à
    * l'autre, sinon le `memo` des rangées ne sert plus à rien et les 40 lignes
    * se re-rendent à chaque changement de la banque.
+   *
+   * La mise à jour se fait PENDANT LE RENDU, pas dans un effet — et c'était
+   * un bug, pas un détail. `FocusQueryHandler` est un composant ENFANT : son
+   * effet, qui traite `?focus=<id>`, s'exécute avant les effets du parent. Au
+   * commit où les données deviennent prêtes, la référence contenait donc
+   * encore la liste du tout premier rendu (vide), et l'ordre de lecture était
+   * gelé à vide : un exercice ouvert depuis l'accueil arrivait SANS
+   * « précédent » ni « suivant », et refermait le lecteur au lieu d'enchaîner.
    */
   const sortedRef = useRef(sorted);
-  useEffect(() => {
-    sortedRef.current = sorted;
-  }, [sorted]);
+  sortedRef.current = sorted;
 
   /*
    * NAVIGATION — il n'y a plus de « mode ».
@@ -505,31 +512,20 @@ export function ExerciseManager() {
 
   if (focusMode && selected) {
     /*
-     * Navigation précédent/suivant DANS LA LISTE COURANTE.
+     * Navigation précédent/suivant DANS L'ORDRE VU PAR L'ÉLÈVE.
      *
-     * L'ordre est celui que l'élève voit : le tri et les filtres en vigueur,
-     * pas un ordre interne. Enchaîner les exercices d'un chapitre sans
-     * repasser par la liste est le geste naturel d'une séance de travail, et
-     * il n'existait tout simplement pas — il fallait fermer, retrouver sa
-     * ligne, cliquer.
-     *
-     * On se base sur `sorted` (la sélection entière) et non sur `page` (ce
-     * qui est rendu) : la pagination est une contrainte d'affichage, elle
-     * n'a pas à borner la lecture. Un exercice ouvert depuis le tableau de
-     * bord peut ne pas être dans la sélection courante — `index` vaut alors
-     * -1 et les deux boutons sont simplement désactivés.
+     * L'ordre est celui de la liste au moment où le lecteur s'est ouvert
+     * (`readerOrder`), pas le classement recalculé à chaque rendu — voir
+     * lib/reader-navigation.ts, où la règle est isolée et testée. La
+     * pagination ne borne pas la lecture : on navigue dans toute la sélection,
+     * pas seulement dans les 40 lignes rendues. Un exercice ouvert depuis le
+     * tableau de bord peut ne pas être dans la sélection courante ; les deux
+     * boutons sont alors simplement désactivés.
      */
-    /*
-     * Navigation dans l'ordre FIGÉ à l'ouverture (voir `readerOrder`), en
-     * sautant les exercices qui ne sont plus actifs — un exercice archivé
-     * depuis le lecteur ne doit pas réapparaître comme « suivant ».
-     */
-    const order = readerOrder.current.filter((id) =>
+    const { previousId, nextId } = readerNavigation(readerOrder.current, selected.id, (id) =>
       exercises.some((item) => item.id === id && !item.archived)
     );
-    const index = order.indexOf(selected.id);
-    const goTo = (offset: number) => {
-      const target = order[index + offset];
+    const goTo = (target: string | null) => {
       if (!target) return;
       lastReadId.current = target;
       setReaderId(target);
@@ -563,8 +559,8 @@ export function ExerciseManager() {
         saveSessions={saveSessions}
         onClose={() => setFocusMode(false)}
         reasons={recommendationReasons.get(selected.id)}
-        onPrev={index > 0 ? () => goTo(-1) : undefined}
-        onNext={index >= 0 && index < order.length - 1 ? () => goTo(1) : undefined}
+        onPrev={previousId ? () => goTo(previousId) : undefined}
+        onNext={nextId ? () => goTo(nextId) : undefined}
       />
     );
   }

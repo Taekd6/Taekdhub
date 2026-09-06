@@ -3,6 +3,7 @@
 import katex from "katex";
 import { useMemo } from "react";
 import { cn } from "@/lib/cn";
+import { splitBlocks, splitInline } from "@/lib/math-segments";
 
 /**
  * Moteur de rendu mathématique UNIQUE du projet — KaTeX auto-hébergé (CSS +
@@ -23,38 +24,6 @@ import { cn } from "@/lib/cn";
  * page — un énoncé mal formé doit rester lisible, pas faire disparaître
  * l'exercice.
  */
-
-type Segment = { type: "text" | "inline" | "block"; value: string };
-
-/** Formules `$$...$$` d'abord (elles peuvent contenir des `$` isolés côté LaTeX rarement, mais surtout pour ne jamais les couper en deux inline). */
-function splitBlocks(input: string): Segment[] {
-  const segments: Segment[] = [];
-  const blockRegex = /\$\$([\s\S]+?)\$\$/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = blockRegex.exec(input)) !== null) {
-    if (match.index > lastIndex) segments.push(...splitInline(input.slice(lastIndex, match.index)));
-    segments.push({ type: "block", value: match[1].trim() });
-    lastIndex = blockRegex.lastIndex;
-  }
-  if (lastIndex < input.length) segments.push(...splitInline(input.slice(lastIndex)));
-  return segments;
-}
-
-/** Une fois les blocs `$$…$$` retirés, les `$` restants ne délimitent que de l'inline — volontairement limité à une seule ligne pour ne jamais avaler tout un paragraphe si un `$` isolé traîne dans le texte. */
-function splitInline(input: string): Segment[] {
-  const segments: Segment[] = [];
-  const inlineRegex = /\$([^$\n]+?)\$/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = inlineRegex.exec(input)) !== null) {
-    if (match.index > lastIndex) segments.push({ type: "text", value: input.slice(lastIndex, match.index) });
-    segments.push({ type: "inline", value: match[1] });
-    lastIndex = inlineRegex.lastIndex;
-  }
-  if (lastIndex < input.length) segments.push({ type: "text", value: input.slice(lastIndex) });
-  return segments;
-}
 
 function renderKatex(value: string, displayMode: boolean): string | null {
   try {
