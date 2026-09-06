@@ -66,9 +66,32 @@ function renderKatex(value: string, displayMode: boolean): string | null {
 
 export function RichMath({ text, className }: { text: string; className?: string }) {
   const segments = useMemo(() => splitBlocks(text), [text]);
+  /*
+   * PLANTAGE DU MOTEUR DE RENDU — `text-wrap: pretty` + formule centrée.
+   *
+   * Mesuré au navigateur : tout exercice dont l'énoncé contient un
+   * `$$…$$` faisait PLANTER l'onglet Chromium à l'ouverture du lecteur
+   * (onglet mort, page blanche, aucune erreur JS). 92 exercices de la
+   * banque étaient concernés — donc inouvrables.
+   *
+   * La cause n'est ni KaTeX ni la formule : c'est l'algorithme
+   * `text-wrap: pretty` du bloc de lecture (`.t-read`, `.t-read-quiet`)
+   * quand il doit composer une ligne autour du bloc `.katex-display`.
+   * Vérifié par élimination : neutraliser cette seule propriété suffit à
+   * faire disparaître le plantage ; la neutraliser SUR le KaTeX ne suffit
+   * pas (c'est le bloc parent qui casse) ; les formules `$…$` en ligne ne
+   * posent aucun problème.
+   *
+   * On désactive donc `pretty` exactement là où il casse, et nulle part
+   * ailleurs : les énoncés sans formule centrée gardent leur composition.
+   * `RichMath` est le seul endroit du projet qui produit un bloc `$$…$$`,
+   * c'est donc ici, et pas dans la feuille de style, que l'information
+   * existe.
+   */
+  const hasDisplayMath = useMemo(() => segments.some((segment) => segment.type === "block"), [segments]);
 
   return (
-    <div className={cn("whitespace-pre-line", className)}>
+    <div className={cn("whitespace-pre-line", className)} data-display-math={hasDisplayMath ? "" : undefined}>
       {segments.map((segment, index) => {
         if (segment.type === "text") return <span key={index}>{segment.value}</span>;
 

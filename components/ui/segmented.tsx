@@ -29,7 +29,16 @@ export function SegmentedControl<T extends string | number>({
     <div
       role="group"
       aria-label={ariaLabel}
-      className={cn("inline-flex items-center gap-0.5 rounded-lg bg-inset p-0.5", className)}
+      className={cn(
+        // Pleine largeur sous `sm`, options réparties à parts égales. Quatre
+        // options de durée mesuraient 266 px dans une colonne de 246 px à
+        // 320 px de large : le groupe débordait de son cadre, et dans le
+        // lecteur « maîtrisé » se faisait couper par le bord de l'écran. Une
+        // largeur imposée règle le débordement ET donne des cibles plus
+        // larges au doigt, sans rien changer sur grand écran.
+        "flex w-full items-center gap-0.5 rounded-lg bg-inset p-0.5 sm:inline-flex sm:w-auto",
+        className
+      )}
     >
       {options.map((option) => {
         const active = option.value === value;
@@ -40,7 +49,7 @@ export function SegmentedControl<T extends string | number>({
             onClick={() => onChange(option.value)}
             aria-pressed={active}
             className={cn(
-              "rounded-[0.4375rem] font-medium transition-colors",
+              "min-w-0 flex-1 truncate rounded-[0.4375rem] font-medium transition-colors sm:flex-none",
               size === "sm"
                 ? "min-h-7 px-2 text-2xs max-lg:min-h-10"
                 : "min-h-8 px-2.5 text-[0.8125rem] max-lg:min-h-10",

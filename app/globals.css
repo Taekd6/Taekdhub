@@ -567,9 +567,40 @@
     background: rgb(var(--inset-rgb) / var(--inset-alpha));
   }
 
+  /**
+   * RANGÉE QU'ON VIENT DE QUITTER — le repère qu'on cherche des yeux en
+   * revenant du lecteur. Posé par un `data-` depuis le gestionnaire de la
+   * banque et retiré au bout d'une seconde et demie : rien à nettoyer côté
+   * classes, et l'effet disparaît de lui-même.
+   */
+  [data-just-read] {
+    animation: justRead 1.6s ease-out;
+  }
+
+  @keyframes justRead {
+    from {
+      background-color: rgb(var(--accent-ink-rgb) / 0.14);
+    }
+    to {
+      background-color: transparent;
+    }
+  }
+
   /* ═══════════════════════════════════════════════════════════════
      MATHÉMATIQUES
      ═══════════════════════════════════════════════════════════════ */
+
+  /* Voir le commentaire de `RichMath` : `text-wrap: pretty` fait PLANTER le
+     moteur de rendu de Chromium quand le bloc de lecture contient une
+     formule centrée (`.katex-display`). On revient à la césure ordinaire
+     dans ces blocs-là uniquement — le marqueur est posé par `RichMath`, qui
+     est le seul à produire ce genre de bloc. */
+  [data-display-math],
+  .t-read[data-display-math],
+  .t-read-quiet[data-display-math],
+  .t-lede[data-display-math] {
+    text-wrap: wrap;
+  }
 
   /* KaTeX compose en Computer Modern, dont l'œil est plus petit que celui de
      Newsreader : sans compensation, les formules paraissent rétrécies au

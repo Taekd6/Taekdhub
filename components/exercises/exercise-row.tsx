@@ -117,7 +117,11 @@ function ExerciseRowImpl({
                 voisins. */}
             <span className="t-meta mt-0.5 flex min-w-0 items-center gap-1.5 truncate">
               {chapterLabel && <span className="max-w-[16ch] truncate sm:max-w-none">{chapterLabel}</span>}
-              {chapterLabel && <span aria-hidden>·</span>}
+              {/* Le séparateur n'apparaît QUE s'il sépare réellement deux
+                  choses. Il était posé dès qu'un chapitre était affiché, si
+                  bien qu'une ligne sans badge ni source se terminait par un
+                  « · » suspendu dans le vide. */}
+              {chapterLabel && (badge || source) && <span aria-hidden>·</span>}
               <ProvenanceBadge exercise={item} className="shrink-0" />
               {source && <span className="hidden min-w-0 truncate sm:inline">{source}</span>}
               {fallbackType && <span className="shrink-0">{fallbackType}</span>}

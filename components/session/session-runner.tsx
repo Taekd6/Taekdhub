@@ -303,31 +303,33 @@ export function SessionRunner() {
             empêchait toute hiérarchie entre « choisis une durée » et
             « commence ». */}
         <section className="surface p-5 sm:p-7">
+          {/* Plus d'étiquette « LA SÉANCE » : le titre de l'écran, deux
+              centimètres au-dessus, dit déjà « Séance ». Et le chapeau passe
+              en italique serif comme tous les autres chapeaux de section
+              (voir `t-lede`) — c'était le seul écran à le composer en
+              sans-serif gris. */}
           {planSelection ? (
             planSource === "libre" ? (
               <>
-                <p className="t-label">La séance</p>
-                <h2 className="t-display mt-2">Ta séance libre</h2>
-                <p className="t-meta mt-2 max-w-[52ch]">
+                <h2 className="t-display">Ta séance libre</h2>
+                <p className="t-lede mt-2 max-w-[54ch]">
                   Exactement la sélection choisie dans la banque d&apos;exercices — matière, chapitre, sous-thème et difficulté filtrés à la main.
                 </p>
               </>
             ) : (
               <>
-                <p className="t-label">La séance</p>
-                <h2 className="t-display mt-2">Ton plan du jour</h2>
-                <p className="t-meta mt-2 max-w-[52ch]">
+                <h2 className="t-display">Ton plan du jour</h2>
+                <p className="t-lede mt-2 max-w-[54ch]">
                   Réparti sur tes matières prioritaires, dans le temps que tu as choisi depuis l&apos;accueil.
                 </p>
               </>
             )
           ) : (
             <>
-              <p className="t-label">La séance</p>
-              <h2 className="t-display mt-2">
+              <h2 className="t-display">
                 {sizingMode === "time" ? "Combien de temps as-tu devant toi ?" : "Combien d'exercices veux-tu travailler ?"}
               </h2>
-              <p className="t-meta mt-2 max-w-[52ch]">
+              <p className="t-lede mt-2 max-w-[54ch]">
                 {sizingMode === "time"
                   ? "La séance tient dans ce temps — aucun exercice trop long n'est jamais forcé dedans."
                   : "Une sélection de ce nombre exact, classée par urgence et répartie sur plusieurs chapitres."}

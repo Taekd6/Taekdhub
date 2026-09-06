@@ -63,6 +63,11 @@ export function ExerciseToolbar({
    */
   const chips = useMemo(() => {
     const list: { key: keyof ExerciseFilters; label: string }[] = [];
+    // La recherche EST un filtre : elle réduit la liste exactement comme les
+    // autres, mais elle était la seule à ne pas apparaître ici. On pouvait
+    // donc défiler, ne plus voir le champ, et ne pas comprendre pourquoi le
+    // chapitre ouvert ne montrait que trois exercices.
+    if (filters.query.trim()) list.push({ key: "query", label: `« ${filters.query.trim()} »` });
     if (filters.subject !== "Toutes") list.push({ key: "subject", label: filters.subject });
     if (filters.chapter !== "Tous") {
       const chapter = chapterOptions.find((entry) => entry.id === filters.chapter);
@@ -393,7 +398,10 @@ export function ExerciseToolbar({
             key={String(chip.key)}
             type="button"
             onClick={() => onChange({ [chip.key]: defaultExerciseFilters[chip.key] } as Partial<ExerciseFilters>)}
-            className="row-hover inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-2xs text-muted max-lg:min-h-9"
+            // 44 px au doigt : mesurées à 36 px, ces puces étaient sous le
+            // seuil tactile alors qu'elles portent l'action la plus fréquente
+            // de l'écran après la recherche — retirer un filtre.
+            className="row-hover inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-2xs text-muted max-lg:min-h-11"
           >
             {chip.label}
             <X size={11} aria-hidden />

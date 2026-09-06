@@ -1,12 +1,13 @@
 "use client";
 
-import { Archive, ChevronLeft, Search } from "lucide-react";
+import { Archive, ChevronLeft, Search, Undo2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PageBar, Workbench } from "@/components/ui/layout";
 import { Select } from "@/components/ui/input";
-import { EmptyState, Skeleton } from "@/components/ui/state";
+import { EmptyState, Notice, Skeleton } from "@/components/ui/state";
+import { MathInline } from "@/components/rich-math";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { findPersistedSessionSuffix } from "@/hooks/use-work-timer";
 import { ArchivedExercises } from "@/components/exercises/archived-exercises";
@@ -50,8 +51,50 @@ export function ExerciseManager() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  /*
+   * DEUX états distincts, qui n'en formaient qu'un.
+   *
+   * `selectedId` désignait à la fois l'exercice OUVERT EN LECTURE et la
+   * rangée dont la FICHE est dépliée. Conséquence : en refermant le lecteur,
+   * on retrouvait la liste avec la fiche complète de l'exercice grande
+   * ouverte sous sa ligne — mesuré, elle ajoutait un millier de pixels, ce
+   * qui décalait tout le reste et faisait échouer la restauration de la
+   * position. On vient de LIRE cet exercice ; on n'a aucune raison de vouloir
+   * en éditer la fiche dans la foulée.
+   */
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [readerId, setReaderId] = useState<string | null>(null);
   const [focusMode, setFocusMode] = useState(false);
+  /** Exercice qu'on vient de lire — la rangée à mettre en évidence au retour. */
+  const lastReadId = useRef<string | null>(null);
+  /*
+   * POSITION DE DÉFILEMENT DE LA LISTE, mise de côté pendant la lecture.
+   *
+   * Le lecteur remplace la liste : pendant la lecture, la page perd sa
+   * hauteur et le navigateur remet le défilement à zéro. Mesuré : en ouvrant
+   * un exercice depuis 1 200 px, on revenait à 0 — donc re-défiler et
+   * re-chercher sa ligne APRÈS CHAQUE exercice, le geste le plus répété
+   * d'une séance de travail.
+   *
+   * Laisser la liste montée SOUS le lecteur a été essayé : le défilement est
+   * alors préservé nativement, mais une couche plein écran par-dessus une
+   * page longue fait planter le moteur de rendu de Chromium dès quelques
+   * centaines de pixels de défilement (reproduit à 390 px de large, à partir
+   * de ~800 px ; pas de plantage à 400). On restaure donc explicitement.
+   */
+  const listScroll = useRef(0);
+  /*
+   * ORDRE FIGÉ À L'OUVERTURE DU LECTEUR.
+   *
+   * « Précédent » et « suivant » doivent désigner ce que l'élève A VU dans la
+   * liste. Or le tri par défaut est « Recommandé » : dès qu'un résultat est
+   * déclaré, le moteur reclasse, l'exercice courant change de place, et
+   * « suivant » pointait alors sur un exercice arbitraire — voire sur rien du
+   * tout quand l'exercice venait de tomber en dernière position, laissant un
+   * bouton mort. On navigue donc dans l'ordre tel qu'il était au moment
+   * d'ouvrir, pas dans un classement qui bouge sous les pieds.
+   */
+  const readerOrder = useRef<string[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   const resumeChecked = useRef(false);
 
@@ -65,7 +108,7 @@ export function ExerciseManager() {
     resumeChecked.current = true;
     const pendingExerciseId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX);
     if (pendingExerciseId && exercises.some((item) => item.id === pendingExerciseId && !item.archived)) {
-      setSelectedId(pendingExerciseId);
+      setReaderId(pendingExerciseId);
       setFocusMode(true);
     }
   }, [ready, exercises]);
@@ -117,10 +160,53 @@ export function ExerciseManager() {
   /** Déplie/replie la FICHE d'un exercice (réglages, notes, séances) — jamais l'ouverture du lecteur, qui passe par `openReader`. */
   const toggleDetail = useCallback((id: string) => setSelectedId((prev) => (prev === id ? null : id)), []);
   const openReader = useCallback((id: string) => {
-    setSelectedId(id);
+    lastReadId.current = id;
+    // La position de la liste est relevée ICI, à l'instant du clic : c'est la
+    // seule occasion de la connaître avant que le lecteur ne remplace la
+    // liste et ne fasse retomber le défilement à zéro.
+    listScroll.current = typeof window === "undefined" ? 0 : window.scrollY;
+    readerOrder.current = sortedRef.current.map((item) => item.id);
+    setReaderId(id);
     setFocusMode(true);
   }, []);
-  const archiveExercise = useCallback((id: string) => update(id, { archived: true }), [update]);
+  /*
+   * ARCHIVER, avec de quoi revenir en arrière.
+   *
+   * Le bouton d'archivage est à deux centimètres du bouton qui ouvre
+   * l'exercice, sur chaque ligne. Un archivage par mégarde faisait
+   * DISPARAÎTRE l'exercice de la liste sans un mot : ni confirmation, ni
+   * trace, ni moyen d'annuler autrement que d'aller ouvrir l'écran
+   * « Archivés » et d'y retrouver la fiche. Pour une action qu'on déclenche
+   * surtout par erreur, c'est le pire des rapports.
+   *
+   * On ne demande PAS de confirmation avant (une boîte de dialogue à chaque
+   * archivage volontaire serait pire) : on annonce ce qui vient d'être fait
+   * et on laisse annuler.
+   */
+  const [lastArchived, setLastArchived] = useState<{ id: string; title: string } | null>(null);
+
+  const archiveExercise = useCallback(
+    (id: string) => {
+      const exercise = exercisesRef.current.find((item) => item.id === id);
+      update(id, { archived: true });
+      if (exercise) setLastArchived({ id, title: exercise.title });
+    },
+    [update]
+  );
+
+  // L'annonce s'efface d'elle-même : elle informe, elle ne réclame rien.
+  useEffect(() => {
+    if (!lastArchived) return;
+    const timeout = setTimeout(() => setLastArchived(null), 9000);
+    return () => clearTimeout(timeout);
+  }, [lastArchived]);
+
+  const undoArchive = useCallback(() => {
+    setLastArchived((current) => {
+      if (current) update(current.id, { archived: false });
+      return null;
+    });
+  }, [update]);
   // Symétrique d'archiveExercise (Sprint 3H) — même `update`, ne touche à
   // rien d'autre que `archived` (+ `updated_at`, géré par `update` lui-même).
   const restoreExercise = useCallback((id: string) => update(id, { archived: false }), [update]);
@@ -178,7 +264,12 @@ export function ExerciseManager() {
    * rendu géant.
    */
   const jumpToExercise = useCallback((id: string) => {
-    setSelectedId(id);
+    lastReadId.current = id;
+    listScroll.current = typeof window === "undefined" ? 0 : window.scrollY;
+    // Entrée depuis un autre écran : l'ordre visible est celui de la banque
+    // telle qu'elle est filtrée à cet instant.
+    readerOrder.current = sortedRef.current.map((item) => item.id);
+    setReaderId(id);
     setFocusMode(true);
   }, []);
 
@@ -309,6 +400,17 @@ export function ExerciseManager() {
   const page = useMemo(() => sorted.slice(0, visibleCount), [sorted, visibleCount]);
 
   /*
+   * `sortedRef` permet à `openReader` de lire l'ordre affiché SANS dépendre de
+   * `sorted` : ce callback doit garder une identité stable d'un rendu à
+   * l'autre, sinon le `memo` des rangées ne sert plus à rien et les 40 lignes
+   * se re-rendent à chaque changement de la banque.
+   */
+  const sortedRef = useRef(sorted);
+  useEffect(() => {
+    sortedRef.current = sorted;
+  }, [sorted]);
+
+  /*
    * NAVIGATION — il n'y a plus de « mode ».
    *
    * L'écran distinguait auparavant un mode PARCOURS (grille de matières, liste
@@ -330,7 +432,40 @@ export function ExerciseManager() {
     setFilters((prev) => ({ ...prev, subject, chapter: chapterId, favoritesOnly: false }));
   }, []);
 
-  const selected = exercises.find((item) => item.id === selectedId);
+  /** Exercice affiché par le lecteur — distinct de la rangée dont la fiche est dépliée. */
+  const selected = exercises.find((item) => item.id === readerId);
+
+  /*
+   * Au retour du lecteur : remettre la page où elle était, et marquer une
+   * seconde la rangée qu'on vient de travailler — parmi trente-sept titres
+   * qui se ressemblent, c'est ce qui permet à l'œil de retrouver sa ligne.
+   *
+   * On réessaie sur plusieurs cadres : la liste vient d'être remontée et met
+   * quelques images à retrouver toute sa hauteur ; tant qu'elle est trop
+   * courte, le navigateur plafonne la position demandée.
+   */
+  useEffect(() => {
+    if (focusMode) return;
+    const id = lastReadId.current;
+    if (!id) return;
+    lastReadId.current = null;
+    const target = listScroll.current;
+    let frame = 0;
+    let attempts = 0;
+    const restore = () => {
+      if (target > 0) window.scrollTo({ top: target, behavior: "instant" });
+      if (target > 0 && Math.abs(window.scrollY - target) > 2 && attempts++ < 30) {
+        frame = requestAnimationFrame(restore);
+        return;
+      }
+      const row = document.getElementById(`exercise-${id}`);
+      if (!row) return;
+      row.dataset.justRead = "true";
+      window.setTimeout(() => delete row.dataset.justRead, 1600);
+    };
+    frame = requestAnimationFrame(restore);
+    return () => cancelAnimationFrame(frame);
+  }, [focusMode]);
 
 
   useEffect(() => {
@@ -384,14 +519,44 @@ export function ExerciseManager() {
      * bord peut ne pas être dans la sélection courante — `index` vaut alors
      * -1 et les deux boutons sont simplement désactivés.
      */
-    const index = sorted.findIndex((item) => item.id === selected.id);
+    /*
+     * Navigation dans l'ordre FIGÉ à l'ouverture (voir `readerOrder`), en
+     * sautant les exercices qui ne sont plus actifs — un exercice archivé
+     * depuis le lecteur ne doit pas réapparaître comme « suivant ».
+     */
+    const order = readerOrder.current.filter((id) =>
+      exercises.some((item) => item.id === id && !item.archived)
+    );
+    const index = order.indexOf(selected.id);
     const goTo = (offset: number) => {
-      const target = sorted[index + offset];
-      if (target) setSelectedId(target.id);
+      const target = order[index + offset];
+      if (!target) return;
+      lastReadId.current = target;
+      setReaderId(target);
     };
 
     return (
       <FocusView
+        /*
+         * `key` OBLIGATOIRE — et son absence était un vrai bug, pas un détail
+         * de rendu.
+         *
+         * Le lecteur garde en état local le nombre d'indices révélés, la
+         * visibilité de la correction et le chronomètre. Sans clé, passer à
+         * l'exercice suivant par les flèches CONSERVAIT tout cela : mesuré au
+         * navigateur, l'exercice suivant s'ouvrait avec un indice déjà
+         * dévoilé que personne n'avait demandé, et le chronomètre continuait
+         * de compter le temps du précédent (0:03 → 0:06 sans repartir de
+         * zéro).
+         *
+         * Les conséquences dépassent l'affichage : `hints_used` et la durée
+         * sont enregistrés dans la `WorkSession`, et le moteur s'en sert pour
+         * décider si une réussite est AUTONOME. Une réussite obtenue seul
+         * était donc comptée comme aidée, faussant les recommandations et
+         * l'XP. Remonter le composant à chaque exercice remet tout à zéro,
+         * exactement comme une ouverture depuis la liste.
+         */
+        key={selected.id}
         item={selected}
         update={update}
         sessions={sessions}
@@ -399,7 +564,7 @@ export function ExerciseManager() {
         onClose={() => setFocusMode(false)}
         reasons={recommendationReasons.get(selected.id)}
         onPrev={index > 0 ? () => goTo(-1) : undefined}
-        onNext={index >= 0 && index < sorted.length - 1 ? () => goTo(1) : undefined}
+        onNext={index >= 0 && index < order.length - 1 ? () => goTo(1) : undefined}
       />
     );
   }
@@ -436,16 +601,29 @@ export function ExerciseManager() {
   // toujours CE QU'ELLE MONTRE — sans quoi une liste de 37 lignes ressemble à
   // n'importe quelle autre liste de 37 lignes.
   const currentChapter = chapters.find((chapter) => chapter.id === filters.chapter);
-  const scopeLabel = filters.favoritesOnly
-    ? "Favoris"
+  const query = filters.query.trim();
+  /*
+   * Le titre doit dire CE QU'ON REGARDE. En cherchant « diagonalis » on
+   * obtenait 25 résultats sous un titre qui affirmait toujours « Toute la
+   * banque » : l'écran se contredisait lui-même, et rien ne rappelait qu'une
+   * recherche était en cours si on avait fait défiler la page.
+   */
+  const scopeLabel = query
+    ? `« ${query} »`
+    : filters.favoritesOnly
+      ? "Favoris"
+      : currentChapter
+        ? currentChapter.label
+        : filters.subject !== "Toutes"
+          ? filters.subject
+          : filters.competition !== "Tous"
+            ? filters.competition
+            : "Toute la banque";
+  const scopeParent = query
+    ? "Recherche"
     : currentChapter
-      ? currentChapter.label
-      : filters.subject !== "Toutes"
-        ? filters.subject
-        : filters.competition !== "Tous"
-          ? filters.competition
-          : "Toute la banque";
-  const scopeParent = currentChapter ? currentChapter.subject : null;
+      ? currentChapter.subject
+      : null;
 
   return (
     <>
@@ -472,6 +650,22 @@ export function ExerciseManager() {
         }
       >
         <div className="space-y-6">
+          {lastArchived && (
+            <Notice
+              tone="info"
+              action={
+                <Button size="sm" variant="secondary" onClick={undoArchive}>
+                  <Undo2 size={14} /> Annuler
+                </Button>
+              }
+            >
+              <span className="text-ink">
+                <MathInline text={lastArchived.title} />
+              </span>{" "}
+              a été archivé.
+            </Notice>
+          )}
+
           <PageBar
             title={scopeLabel}
             meta={

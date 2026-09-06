@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowRight,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/cn";
 
 import { DifficultyDots } from "@/components/exercises/difficulty-dots";
 import { MasteryPicker } from "@/components/exercises/exercise-badges";
@@ -26,6 +28,13 @@ import { useWorkTimer } from "@/hooks/use-work-timer";
 import { explainReasons } from "@/lib/recommendation";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
 import type { AttemptResult, Exercise, ExerciseStatus, Mastery, WorkSession } from "@/lib/supabase/types";
+
+/** Étiquette et teinte du résultat qu'on vient de noter — affichées une seconde avant d'enchaîner. */
+const COMMITTED_META: Record<AttemptResult, { label: string; tone: string }> = {
+  réussi: { label: "Réussi", tone: "text-emerald-300" },
+  partiel: { label: "Partiellement réussi", tone: "text-amber-300" },
+  échoué: { label: "Échoué", tone: "text-rose-300" },
+};
 
 /** Une seule séance focus à la fois : la clé encode l'exercice concerné, ce qui permet de retrouver après un rechargement lequel reprendre automatiquement. */
 export const FOCUS_TIMER_PREFIX = "prepahub:timer:focus:";
@@ -95,6 +104,7 @@ export function FocusView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+
   /** Micro-célébration au moment précis où l'exercice devient "maîtrisé" — jamais au montage sur un exercice déjà maîtrisé, ni sur les autres transitions de statut. */
   const [justMastered, setJustMastered] = useState(false);
   const previousStatus = useRef(item.status);
@@ -112,6 +122,21 @@ export function FocusView({
   // `null` : soit le focus est toujours en cours, soit aucune séance n'a
   // jamais démarré (rien à qualifier).
   const [draftSession, setDraftSession] = useState<WorkSession | null>(null);
+
+  /*
+   * ENCHAÎNER — l'étape qui manquait entre deux exercices d'un chapitre.
+   *
+   * Une fois le résultat noté, le lecteur se fermait. Pour faire l'exercice
+   * suivant du même chapitre il fallait donc : revenir à la liste, la
+   * retrouver (elle s'est reclassée entre-temps), repérer sa ligne, cliquer.
+   * Quatre gestes entre deux exercices, répétés trente fois dans une séance.
+   *
+   * `committed` porte le résultat qu'on vient d'enregistrer : le travail est
+   * déjà sauvegardé à ce stade, cet écran ne fait que proposer la suite.
+   * Il n'apparaît que s'il Y A une suite (`onNext`) ; sinon on ferme comme
+   * avant, sans écran de plus.
+   */
+  const [committed, setCommitted] = useState<AttemptResult | null>(null);
 
   // Arrête le timer et construit la WorkSession SANS la sauvegarder ni fermer
   // le focus — voir `commitResult`, seul endroit qui la sauvegarde vraiment,
@@ -184,9 +209,15 @@ export function FocusView({
           update(item.id, { attempts: item.attempts + 1, last_worked_at: new Date().toISOString() });
         }
       }
+      if (result !== null && onNext) {
+        // Le résultat est enregistré ; on reste pour proposer la suite.
+        setDraftSession(null);
+        setCommitted(result);
+        return;
+      }
       onClose(result);
     },
-    [draftSession, sessions, saveSessions, item, update, onClose]
+    [draftSession, sessions, saveSessions, item, update, onClose, onNext]
   );
 
   useEffect(() => {
@@ -202,6 +233,13 @@ export function FocusView({
         else if (event.key === "3") commitResult("échoué");
         return;
       }
+      if (committed) {
+        // Entrée ou flèche droite enchaînent, Échap referme : les deux seules
+        // issues, et aucune n'a besoin de la souris.
+        if (event.key === "Enter" || event.key === "ArrowRight") onNext?.();
+        else if (event.key === "Escape") onClose(committed);
+        return;
+      }
       if (event.key === "Escape") endSession();
       if (event.key === " ") {
         event.preventDefault();
@@ -210,7 +248,34 @@ export function FocusView({
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [draftSession, commitResult, endSession, toggle]);
+  }, [draftSession, committed, commitResult, endSession, toggle, onNext, onClose]);
+
+  if (committed) {
+    const meta = COMMITTED_META[committed];
+    return (
+      <div className="animate-fade-in fixed inset-0 z-50 flex flex-col items-center justify-center gap-7 bg-canvas px-6">
+        <div className="text-center">
+          <p className={cn("t-label", meta.tone)}>{meta.label}</p>
+          <h2 className="t-display mt-2">Exercice noté</h2>
+          <p className="t-lede mx-auto mt-2 max-w-[38ch]">
+            <MathInline text={item.title} />
+          </p>
+        </div>
+
+        <div className="flex w-full max-w-xs flex-col gap-2">
+          <Button size="lg" onClick={() => onNext?.()} className="justify-between">
+            <span className="flex items-center gap-2">
+              Exercice suivant <ArrowRight size={16} />
+            </span>
+            <kbd className="rounded border border-current/25 px-1.5 py-0.5 text-2xs opacity-70">↵</kbd>
+          </Button>
+          <Button size="lg" variant="secondary" onClick={() => onClose(committed)}>
+            Revenir à la liste
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (draftSession) {
     return (
@@ -308,16 +373,25 @@ export function FocusView({
           Bornée à `measure` (~66 caractères) et composée en serif : c'est la
           géométrie d'un polycopié, pas celle d'une fiche d'application. Le
           padding bas laisse la place à la barre d'actions collante. */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-10 sm:px-6 sm:py-14">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-10 sm:px-6 sm:py-14">
         <article className="measure mx-auto w-full pb-10">
           {/* Métadonnées AVANT le titre, en une seule ligne discrète : d'où
               vient cet exercice et ce qu'il vaut. Elles situent, puis on les
               oublie. */}
+          {/* La SOURCE n'est répétée que si le badge ne la dit pas déjà. Sur
+              une annale, on lisait « CCINP · 2025 · Oral de mathématiques ·
+              MP · MPI » dans le badge, puis « CCINP — banque de l'oral… »
+              juste derrière — la même chose deux fois, en tête de l'écran de
+              lecture. Même règle que dans la liste. */}
           <div className="t-meta flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
             <ProvenanceBadge exercise={item} />
             <span>{item.subject}</span>
-            <span aria-hidden>·</span>
-            <span className="min-w-0 truncate">{item.source}</span>
+            {item.provenance === "originale" && (
+              <>
+                <span aria-hidden>·</span>
+                <span className="min-w-0 truncate">{item.source}</span>
+              </>
+            )}
             {/* Pas de séparateur avant les traits de difficulté : quand la
                 ligne passe à la ligne sur mobile, un « · » se retrouvait seul
                 en fin de ligne. Un espace suffit à les détacher. */}

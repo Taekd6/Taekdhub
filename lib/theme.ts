@@ -125,7 +125,7 @@ export function accentForeground(hex: string): [number, number, number] {
 }
 
 export function accentForegroundCss(hex: string): string {
-  const [r, g, b] = accentForeground(hex);
+  const [r] = accentForeground(hex);
   return r === 0 ? "#000000" : "#ffffff";
 }
 

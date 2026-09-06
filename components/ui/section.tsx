@@ -79,7 +79,12 @@ export function Section({
                 au lieu d'une légende. */}
             {description && <p className="t-lede mt-2 max-w-[54ch]">{description}</p>}
           </div>
-          {action && <div className="shrink-0">{action}</div>}
+          {/* `shrink-0` protège l'action du rétrécissement quand elle tient sur
+              la même ligne que le titre ; `max-w-full` l'empêche de dépasser
+              la section quand elle passe à la ligne. Mesuré à 320 px : le
+              sélecteur de durée de la séance mesurait 266 px dans une colonne
+              de 246 px, et débordait du cadre. */}
+          {action && <div className="max-w-full shrink-0">{action}</div>}
         </header>
       )}
 
