@@ -92,7 +92,7 @@ export function SessionHistory() {
       <div className="space-y-8">
         <PageBar
           title="Séances"
-          meta="La trace exacte du travail accompli : ce qui a été travaillé, combien de temps, avec quel résultat."
+          lede="La trace exacte du travail accompli : ce qui a été travaillé, combien de temps, avec quel résultat."
         />
 
       <Section label="Journal" title={`${sorted.length} séance${sorted.length > 1 ? "s" : ""}`}>

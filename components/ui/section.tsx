@@ -72,7 +72,12 @@ export function Section({
               ) : (
                 <h2 className="t-heading">{title}</h2>
               ))}
-            {description && <p className="t-meta mt-1.5 max-w-[52ch]">{description}</p>}
+            {/* Le chapeau est composé en italique serif (`t-lede`), pas en
+                sans-serif gris : deux lignes d'italique sous un titre disent
+                « ceci commente ce qui précède » sans avoir besoin d'être plus
+                petites ni plus pâles. C'est ce qui donne une voix à l'écran
+                au lieu d'une légende. */}
+            {description && <p className="t-lede mt-2 max-w-[54ch]">{description}</p>}
           </div>
           {action && <div className="shrink-0">{action}</div>}
         </header>

@@ -72,6 +72,26 @@ function ExerciseRowImpl({
 }: ExerciseRowProps) {
   const chapterLabel = hideChapter ? null : chapters.find((chapter) => chapter.id === item.chapter_id)?.label;
 
+  /*
+   * LA LIGNE DE MÉTADONNÉES ne doit porter que ce qui aide à CHOISIR entre
+   * deux exercices voisins. Deux redondances ont été retirées après lecture
+   * d'écrans réels :
+   *
+   *  — la source d'une annale répétait mot pour mot le badge de provenance
+   *    (« Centrale · Maths 1 · MP » dans le badge, « Centrale maths 1 —
+   *    feuille… » juste après), au point d'écraser le nom du chapitre ;
+   *  — la source d'un exercice écrit pour l'app vaut « TaekdHub — exercice
+   *    original » pour TOUS : répétée trente-sept fois dans un chapitre, elle
+   *    n'apprend rien.
+   *
+   * Ne survit donc que la source d'une feuille d'enseignant, qui elle est
+   * propre à l'exercice. Quand il ne reste rien, on affiche le TYPE (TD, DS,
+   * Colle, Annale…) — court, et différent d'une ligne à l'autre.
+   */
+  const source = item.provenance === "enseignant" ? item.source : null;
+  const badge = item.provenance !== "originale";
+  const fallbackType = !chapterLabel && !badge && !source ? item.type : null;
+
   return (
     <li id={`exercise-${item.id}`} className={cn(expanded && "bg-inset")}>
       <div className="flex items-center gap-2 pr-1">
@@ -96,10 +116,11 @@ function ExerciseRowImpl({
                 à un titre tronqué, sans rien pour distinguer deux exercices
                 voisins. */}
             <span className="t-meta mt-0.5 flex min-w-0 items-center gap-1.5 truncate">
-              {chapterLabel && <span className="truncate">{chapterLabel}</span>}
+              {chapterLabel && <span className="max-w-[16ch] truncate sm:max-w-none">{chapterLabel}</span>}
               {chapterLabel && <span aria-hidden>·</span>}
               <ProvenanceBadge exercise={item} className="shrink-0" />
-              <span className="hidden min-w-0 truncate sm:inline">{item.source}</span>
+              {source && <span className="hidden min-w-0 truncate sm:inline">{source}</span>}
+              {fallbackType && <span className="shrink-0">{fallbackType}</span>}
               {/* Sur mobile, la difficulté remplace la source dans la ligne de
                   méta. La source d'un exercice écrit pour l'app est la même
                   pour tous — répétée 37 fois, elle n'aide pas à choisir ;

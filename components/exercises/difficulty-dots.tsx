@@ -13,7 +13,7 @@ export function DifficultyDots({ value }: { value: Difficulty }) {
       {Array.from({ length: 5 }, (_, index) => (
         <span
           key={index}
-          className={cn("h-[3px] w-3 rounded-full", index < value ? "bg-accent" : "bg-hairline/[0.14]")}
+          className={cn("h-[3px] w-3 rounded-full", index < value ? "bg-accent" : "bg-hairline/[0.07]")}
         />
       ))}
     </span>

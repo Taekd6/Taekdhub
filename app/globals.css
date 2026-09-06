@@ -55,21 +55,26 @@
        marque brute ; `--accent-ink-rgb` sa version lisible en tant que TEXTE
        (recalculée par le script anti-flash) ; `--accent-solid-rgb` le
        remplissage du bouton principal. Inchangé dans son principe. */
-    --accent-rgb: 212 243 107;
-    --accent-ink-base-rgb: 104 119 52;
+    /* Valeurs de repli pour l'accent par défaut « Miel » (#e0a758), utilisées
+       avant l'exécution du script anti-flash et pour qui n'a jamais choisi de
+       couleur. Calculées avec les mêmes formules que lib/theme.ts
+       (`accentInk` → 4,67:1 sur le papier, `accentDeep` → 10,99:1 sous du
+       blanc), pas estimées à l'œil. */
+    --accent-rgb: 224 167 88;
+    --accent-ink-base-rgb: 142 106 56;
     --accent-ink-rgb: var(--accent-ink-base-rgb);
     --accent-fg-rgb: 0 0 0;
-    --accent-deep-base-rgb: 47 55 22;
+    --accent-deep-base-rgb: 76 57 30;
     --accent-solid-rgb: var(--accent-deep-base-rgb);
     --accent-solid-fg-rgb: 255 255 255;
 
     /* ── NEUTRES — THÈME CLAIR (défaut) ────────────────────────────
        `paper` n'est pas blanc : le blanc pur est réservé aux surfaces, pour
        qu'une carte se détache du fond sans avoir besoin d'ombre. */
-    --canvas-rgb: 250 249 246;   /* le bureau */
-    --panel-rgb: 255 255 255;    /* une surface posée dessus */
-    --elevated-rgb: 255 255 255;
-    --line-rgb: 231 227 219;     /* filet */
+    --canvas-rgb: 250 248 243;   /* le bureau — papier, un rien crémeux */
+    --panel-rgb: 255 254 252;    /* une surface posée dessus */
+    --elevated-rgb: 255 254 252;
+    --line-rgb: 231 226 216;     /* filet */
     --ink-rgb: 26 24 21;         /* texte principal */
     --muted-rgb: 90 85 78;       /* texte secondaire */
     /* Texte tertiaire (étiquettes de rubrique, légendes). Mesuré au
@@ -142,11 +147,11 @@
      identiques par construction — seule leur condition d'application diffère. */
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --canvas-rgb: 18 17 15;
-    --panel-rgb: 26 25 22;
-    --elevated-rgb: 33 31 28;
-    --line-rgb: 48 45 41;
-    --ink-rgb: 245 243 239;
+    --canvas-rgb: 19 17 15;
+    --panel-rgb: 27 25 22;
+    --elevated-rgb: 34 31 28;
+    --line-rgb: 49 45 40;
+    --ink-rgb: 246 243 238;
     --muted-rgb: 168 162 152;
     /* 4,99:1 sur le fond sombre et 4,58:1 sur une surface — voir la note
        du thème clair. Mesuré page par page au navigateur, pas estimé. */
@@ -198,11 +203,11 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark;
-      --canvas-rgb: 18 17 15;
-      --panel-rgb: 26 25 22;
-      --elevated-rgb: 33 31 28;
-      --line-rgb: 48 45 41;
-      --ink-rgb: 245 243 239;
+      --canvas-rgb: 19 17 15;
+      --panel-rgb: 27 25 22;
+      --elevated-rgb: 34 31 28;
+      --line-rgb: 49 45 40;
+      --ink-rgb: 246 243 238;
       --muted-rgb: 168 162 152;
       --subtle-rgb: 138 132 122;
       --hairline-rgb: 255 253 248;
@@ -265,15 +270,29 @@
     background: rgb(var(--canvas-rgb));
     color: rgb(var(--ink-rgb));
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-    /* 15 px : le 14 px par défaut de Tailwind est en dessous du confort de
-       lecture prolongée, et poussait à écrire des `text-xs` partout ensuite. */
-    font-size: 0.9375rem;
-    line-height: 1.55;
-    /* `cv05` (l minuscule à empattement) et `ss03` : l'ambiguïté 1/l/I d'Inter
-       est un vrai problème dans une app où l'on lit « 1 exercice », « l'un »,
-       « Il ». `tnum` est posé localement (`.tabular`), pas globalement : des
-       chiffres tabulaires dans du texte courant écartent mal. */
-    font-feature-settings: "cv05", "ss03";
+    /* 16 px. On est passé par 14 (défaut Tailwind) puis 15 ; les deux
+       étaient en dessous du confort d'une session de deux heures, et le 15
+       poussait encore à écrire des `text-xs` un peu partout ensuite. Toute
+       l'échelle a été remontée d'un cran avec lui — voir les rôles plus bas. */
+    font-size: 1rem;
+    line-height: 1.6;
+    /* `tnum` est posé LOCALEMENT (`.tabular`), jamais globalement : des
+       chiffres tabulaires dans du texte courant s'écartent mal. Le reste des
+       fonctions d'Instrument Sans (crénage, ligatures standard) est déjà actif
+       par défaut et n'a pas à être répété ici. */
+    font-kerning: normal;
+    /*
+     * Instrument Sans a une chasse d'espace serrée (0,20 em, contre ~0,26 em
+     * pour la plupart des grotesques) et un point médian d'à peine 0,10 em.
+     * Résultat mesuré au navigateur : dans « 321 exercices · 0 % maîtrisés »,
+     * le blanc AVANT le point disparaissait presque, et le séparateur se
+     * collait au mot précédent. Ces 0,055 em rendent à l'espace sa largeur
+     * normale — c'est une correction de chasse, pas un effet.
+     *
+     * Les rôles composés en serif la neutralisent : Fraunces a déjà l'espace
+     * qu'il faut, et l'élargir abîmerait la couleur d'un paragraphe.
+     */
+    word-spacing: 0.055em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -332,37 +351,58 @@
        .t-label     étiquette de champ/rubrique sans 11.5 px capitales
        .t-read      CONTENU LU (énoncé, correction) serif 17→18 px / 1.8
   */
+  /* Voir la note sur `word-spacing` dans `body` : les rôles serif reprennent
+     la chasse d'espace normale de Fraunces. */
+  .t-display,
+  .t-heading,
+  .t-lede,
+  .t-read,
+  .t-read-quiet,
+  .t-figure,
+  .t-wordmark {
+    word-spacing: normal;
+  }
+
   .t-display {
     font-family: var(--font-serif), Georgia, serif;
-    font-size: clamp(1.75rem, 1.45rem + 1.1vw, 2.25rem);
+    font-size: clamp(2.125rem, 1.65rem + 1.7vw, 3rem);
     font-weight: 400;
-    line-height: 1.15;
-    letter-spacing: -0.018em;
-    font-optical-sizing: auto;
+    /* `opsz` poussé à fond plutôt que laissé à la taille réelle : Fraunces
+       creuse ses contrastes à mesure que la taille optique monte, et c'est
+       exactement ce qu'on veut d'un titre — un dessin d'affiche, pas un gros
+       texte courant.
+       `wght` DOIT figurer ici : `font-variation-settings` reprend la main sur
+       tous les axes, y compris ceux qu'on ne nomme pas. */
+    font-variation-settings: "opsz" 144, "wght" 400;
+    line-height: 1.06;
+    letter-spacing: -0.028em;
+    text-wrap: balance;
   }
 
   .t-heading {
     font-family: var(--font-serif), Georgia, serif;
-    font-size: clamp(1.1875rem, 1.1rem + 0.35vw, 1.3125rem);
+    font-size: clamp(1.3125rem, 1.2rem + 0.5vw, 1.5rem);
     font-weight: 500;
-    line-height: 1.3;
-    letter-spacing: -0.012em;
+    font-variation-settings: "opsz" 60, "wght" 500;
+    line-height: 1.25;
+    letter-spacing: -0.016em;
+    text-wrap: balance;
   }
 
   .t-subhead {
-    font-size: 0.9375rem;
+    font-size: 1rem;
     font-weight: 600;
     line-height: 1.4;
-    letter-spacing: -0.005em;
+    letter-spacing: -0.008em;
   }
 
   .t-body {
-    font-size: 0.9375rem;
-    line-height: 1.6;
+    font-size: 1rem;
+    line-height: 1.65;
   }
 
   .t-meta {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     line-height: 1.5;
     color: rgb(var(--muted-rgb));
   }
@@ -371,60 +411,60 @@
      elle est en capitales parce qu'elle ne doit surtout pas se lire comme un
      titre — pas pour « faire premium ». */
   .t-label {
-    font-size: 0.71875rem;
+    font-size: 0.75rem;
     font-weight: 600;
     line-height: 1.4;
-    letter-spacing: 0.09em;
+    letter-spacing: 0.085em;
     text-transform: uppercase;
     color: rgb(var(--subtle-rgb));
-    font-feature-settings: "cv05", "ss03", "cpsp";
   }
 
-  /* La signature du produit — une taille, un seul endroit. Elle apparaît
-     dans la barre de navigation et sur la page d'accueil publique ; deux
-     valeurs écrites à la main auraient fini par diverger. */
-  .t-wordmark {
+  /**
+   * CHAPEAU — la phrase qui suit un titre de section.
+   *
+   * En italique serif, pas en sans-serif gris. C'est le geste éditorial le
+   * plus rentable de toute la page : deux lignes d'italique sous un titre
+   * disent « ceci commente ce qui précède » sans avoir besoin d'être plus
+   * petites ni plus pâles, et donnent à l'écran une voix au lieu d'une
+   * légende.
+   */
+  .t-lede {
     font-family: var(--font-serif), Georgia, serif;
+    font-style: italic;
     font-size: 1.0625rem;
-    font-weight: 500;
-    letter-spacing: -0.02em;
+    line-height: 1.55;
+    font-variation-settings: "opsz" 24, "wght" 400;
+    color: rgb(var(--muted-rgb));
+    text-wrap: pretty;
   }
 
-  /* Alias conservés le temps que les derniers composants secondaires soient
-     repris. UNE seule définition chacun, qui pointe vers le rôle réel — pas
-     un second système parallèle. */
-  .eyebrow {
-    @apply t-label;
-  }
-
-  .t-title {
-    @apply t-heading;
-  }
-
-  /* Le focus est désormais géré globalement sur `:focus-visible`
-     (app/globals.css, couche `base`) : aucun composant ne peut l'oublier.
-     Cette classe reste pour les appelants existants et ne fait plus rien
-     d'autre que renforcer le décalage sur les contrôles collés à un bord. */
-  .focus-ring:focus-visible {
-    outline: 2px solid rgb(var(--accent-ink-rgb));
-    outline-offset: 2px;
-  }
-
-  /* Le texte qu'on LIT. Serif, interligne 1.8, mesure bornée par l'appelant.
-     `text-wrap: pretty` évite les lignes veuves d'un mot en fin de paragraphe
-     (ignoré silencieusement par les navigateurs qui ne le connaissent pas). */
+  /*
+   * Le texte qu'on LIT — et le réglage le plus délicat de toute la feuille.
+   *
+   * Un énoncé de maths n'est jamais composé dans une seule police : KaTeX
+   * insère ses formules en Computer Modern, un caractère clair et très
+   * contrasté. Fraunces à sa coupe « texte » (opsz 14, graisse 400) paraissait
+   * nettement plus gras que les formules au milieu desquelles il se trouve —
+   * comparé côte à côte au navigateur, le déséquilibre sautait aux yeux à
+   * chaque symbole.
+   *
+   * `opsz` 40 et `wght` 360 remontent le contraste et allègent le trait juste
+   * assez pour que le texte et les mathématiques aient la même couleur sur la
+   * page. Le corps réel reste 19 px : la taille optique est un réglage de
+   * DESSIN, indépendant de la taille rendue.
+   */
   .t-read {
     font-family: var(--font-serif), Georgia, serif;
-    font-size: 1.0625rem;
-    line-height: 1.8;
-    letter-spacing: -0.003em;
-    font-optical-sizing: auto;
+    font-size: 1.125rem;
+    line-height: 1.78;
+    font-variation-settings: "opsz" 40, "wght" 360;
+    letter-spacing: -0.002em;
     text-wrap: pretty;
   }
 
   @media (min-width: 640px) {
     .t-read {
-      font-size: 1.125rem;
+      font-size: 1.1875rem;
     }
   }
 
@@ -433,23 +473,22 @@
      ne doit jamais peser autant que lui. */
   .t-read-quiet {
     font-family: var(--font-serif), Georgia, serif;
-    font-size: 1rem;
-    line-height: 1.78;
-    letter-spacing: -0.003em;
-    font-optical-sizing: auto;
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    font-variation-settings: "opsz" 40, "wght" 350;
+    letter-spacing: -0.002em;
     text-wrap: pretty;
   }
 
   @media (min-width: 640px) {
     .t-read-quiet {
-      font-size: 1.0625rem;
+      font-size: 1.125rem;
     }
   }
 
   /* Chiffres alignés en colonne — statistiques, durées, compteurs. */
   .tabular {
     font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum", "cv05";
   }
 
   /* Nombre d'un indicateur : serif, parce qu'un résultat scolaire se lit
@@ -461,23 +500,24 @@
     font-family: var(--font-serif), Georgia, serif;
     font-weight: 500;
     font-variant-numeric: tabular-nums lining-nums;
-    letter-spacing: -0.02em;
+    font-variation-settings: "opsz" 72, "wght" 500;
+    letter-spacing: -0.022em;
     line-height: 1;
   }
 
   .t-figure-sm {
     @apply t-figure;
-    font-size: 1.25rem;
+    font-size: 1.375rem;
   }
 
   .t-figure-md {
     @apply t-figure;
-    font-size: 1.75rem;
+    font-size: 2rem;
   }
 
   .t-figure-lg {
     @apply t-figure;
-    font-size: 2.5rem;
+    font-size: 2.875rem;
   }
 
   /* ═══════════════════════════════════════════════════════════════

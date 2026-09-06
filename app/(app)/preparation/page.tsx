@@ -8,7 +8,7 @@ export default function PreparationPage() {
     <Stack className="space-y-8">
       <PageBar
         title="Équilibrer mes matières"
-        meta="Répartir ton temps sans laisser une matière disparaître — la vue d'ensemble que la séance du jour ne donne pas."
+        lede="Répartir ton temps sans laisser une matière disparaître — la vue d'ensemble que la séance du jour ne donne pas."
       />
       <PreparationCommand />
     </Stack>

@@ -86,7 +86,7 @@ export function ConcoursOverview() {
       <div className="space-y-8">
         <PageBar
           title="Concours"
-          meta="Les banques réellement présentes dans ta bibliothèque, avec ce que leur source établit — et rien de plus."
+          lede="Les banques réellement présentes dans ta bibliothèque, avec ce que leur source établit — et rien de plus."
         />
         <div className="space-y-4">
           {banks.map((bank) => (

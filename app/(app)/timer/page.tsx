@@ -6,7 +6,7 @@ export default function TimerPage() {
     <Stack className="space-y-8">
       <PageBar
         title="Chronomètre"
-        meta="Pour le travail qui ne passe pas par un exercice de la banque — un DM, une relecture de cours."
+        lede="Pour le travail qui ne passe pas par un exercice de la banque — un DM, une relecture de cours."
       />
       <Timer />
     </Stack>

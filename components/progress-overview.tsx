@@ -149,7 +149,7 @@ export function ProgressOverview() {
       }
     >
       <div className="space-y-10">
-        <PageBar title="Progression" meta="Observer les faits pour ajuster ton travail." />
+        <PageBar title="Progression" lede="Observer les faits pour ajuster ton travail." />
 
         <TopWeaknesses exercises={exercises} sessions={sessions} chapters={chapters} />
         <ChapterTable byChapter={model.byChapter} bySubject={model.bySubject} />

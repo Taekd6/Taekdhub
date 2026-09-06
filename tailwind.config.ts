@@ -124,7 +124,9 @@ export default {
         surface: "var(--shadow-surface)",
       },
       fontSize: {
-        "2xs": ["0.71875rem", { lineHeight: "1rem" }],
+        // Plancher de l'interface : 12 px. En dessous, une étiquette cesse
+        // d'être lue et devient une texture.
+        "2xs": ["0.75rem", { lineHeight: "1.0625rem" }],
       },
       /*
        * ANIMATIONS — trois, toutes courtes et toutes fonctionnelles.

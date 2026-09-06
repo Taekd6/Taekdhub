@@ -11,7 +11,7 @@ import { ThemePicker } from "@/components/theme-picker";
 export default function SettingsPage() {
   return (
     <Stack className="space-y-8">
-      <PageBar title="Réglages" meta="Ton identité de travail, ton rythme et tes sauvegardes." />
+      <PageBar title="Réglages" lede="Ton identité de travail, ton rythme et tes sauvegardes." />
       <PreferencesForm />
       <ThemePicker />
       <DataBackup />

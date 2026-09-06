@@ -333,9 +333,9 @@ export function FocusView({
           {/* « Pourquoi cet exercice ? » — `explainReasons` ne fabrique rien :
               sans raison réelle transmise, ce bloc ne s'affiche pas du tout. */}
           {explainReasons(reasons ?? []) && (
-            <p className="mt-5 flex items-start gap-2 border-l-2 border-accent/40 py-0.5 pl-3.5 text-[0.8125rem] leading-6 text-muted">
-              <Sparkles size={13} className="mt-1 shrink-0 text-accent" />
-              {explainReasons(reasons ?? [])}
+            <p className="t-lede mt-5 flex items-start gap-2.5 border-l-2 border-accent/35 py-0.5 pl-4">
+              <Sparkles size={14} className="mt-1.5 shrink-0 text-accent" />
+              <span>{explainReasons(reasons ?? [])}</span>
             </p>
           )}
 

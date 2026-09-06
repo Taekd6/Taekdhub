@@ -11,7 +11,7 @@ export default function SessionPage() {
     <Stack className="space-y-8">
       <PageBar
         title="Séance"
-        meta="Une sélection prête à l'emploi, dimensionnée sur le temps que tu as et sur ce qui compte le plus maintenant."
+        lede="Une sélection prête à l'emploi, dimensionnée sur le temps que tu as et sur ce qui compte le plus maintenant."
       />
       <SessionRunner />
     </Stack>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Newsreader } from "next/font/google";
+import { Fraunces, Instrument_Sans } from "next/font/google";
 import { ThemeSync } from "@/components/theme-sync";
 import "katex/dist/katex.min.css";
 import "./globals.css";
@@ -23,34 +23,46 @@ import "./globals.css";
  * `applyThemeMode` (lib/theme.ts), dupliquée ici pour la même raison que
  * l'accent ci-dessus.
  */
-const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('prepahub:preferences');if(!raw)return;var prefs=JSON.parse(raw);var accent=prefs.accent;if(/^#?[0-9a-fA-F]{6}$/.test(accent||'')){var hex=accent.replace('#','');var r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);var lin=function(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);};var L=function(rr,gg,bb){return 0.2126*lin(rr)+0.7152*lin(gg)+0.0722*lin(bb);};var lum=L(r,g,b);var fg=lum>0.45?'0 0 0':'255 255 255';var root=document.documentElement.style;root.setProperty('--accent-rgb',r+' '+g+' '+b);root.setProperty('--accent-fg-rgb',fg);var dk=function(t){var lo=0,hi=1;if(lum<=t)return[r,g,b];for(var i=0;i<24;i++){var m=(lo+hi)/2;if(L(r*m,g*m,b*m)>t){hi=m;}else{lo=m;}}return[Math.round(r*lo),Math.round(g*lo),Math.round(b*lo)];};root.setProperty('--accent-ink-base-rgb',dk(0.163).join(' '));root.setProperty('--accent-deep-base-rgb',dk(0.045).join(' '));}var mode=prefs.themeMode;if(mode==='light'||mode==='dark'){document.documentElement.setAttribute('data-theme',mode);}}catch(e){}})();`;
+const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('prepahub:preferences');if(!raw)return;var prefs=JSON.parse(raw);var accent=prefs.accent;if(/^#?[0-9a-fA-F]{6}$/.test(accent||'')){var hex=accent.replace('#','');var r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);var lin=function(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);};var L=function(rr,gg,bb){return 0.2126*lin(rr)+0.7152*lin(gg)+0.0722*lin(bb);};var lum=L(r,g,b);var fg=lum>Math.sqrt(1.05*0.05)-0.05?'0 0 0':'255 255 255';var root=document.documentElement.style;root.setProperty('--accent-rgb',r+' '+g+' '+b);root.setProperty('--accent-fg-rgb',fg);var dk=function(t){var lo=0,hi=1;if(lum<=t)return[r,g,b];for(var i=0;i<24;i++){var m=(lo+hi)/2;if(L(r*m,g*m,b*m)>t){hi=m;}else{lo=m;}}return[Math.round(r*lo),Math.round(g*lo),Math.round(b*lo)];};root.setProperty('--accent-ink-base-rgb',dk(0.163).join(' '));root.setProperty('--accent-deep-base-rgb',dk(0.045).join(' '));}var mode=prefs.themeMode;if(mode==='light'||mode==='dark'){document.documentElement.setAttribute('data-theme',mode);}}catch(e){}})();`;
 
 /**
  * DEUX FAMILLES, DEUX RÔLES — voir l'en-tête d'app/globals.css.
  *
- * `Inter` porte le CHROME (navigation, contrôles, métadonnées) : il est fait
- * pour être lisible à 13 px et pour disparaître.
+ * `Instrument Sans` porte le CHROME (navigation, contrôles, métadonnées).
+ * Il remplace Inter pour deux raisons mesurables : une hauteur d'x plus
+ * grande (0,74 em contre 0,727), donc un texte qui paraît plus gros à taille
+ * égale — et une construction moins neutre, qui sort l'interface du gris des
+ * outils de productivité sans jamais gêner la lecture d'une étiquette.
  *
- * `Newsreader` porte le CONTENU (titres, énoncés, corrections, grands
- * nombres). C'est un serif de lecture à taille optique variable, et surtout
- * la seule famille de l'app qui s'accorde avec le Computer Modern de KaTeX :
- * un énoncé mathématique cesse de changer de police à chaque formule.
+ * `Fraunces` porte le CONTENU (titres, énoncés, corrections, grands nombres).
+ * C'est un serif à TAILLE OPTIQUE VARIABLE : l'axe `opsz` change réellement
+ * le dessin de la lettre selon le corps. Une seule famille tient donc les
+ * deux registres que la page demande — un titre à 48 px très contrasté,
+ * presque d'affiche, et un énoncé à 19 px robuste et calme — là où il aurait
+ * fallu deux fichiers de police. Seul cet axe est chargé —
+ * voir la note sur les axes écartés juste en dessous.
  *
- * Seuls les poids réellement utilisés sont demandés (400/500 pour le serif,
- * axe variable complet pour Inter) — chaque graisse superflue est un fichier
- * à télécharger avant le premier rendu du texte.
+ * Les deux familles sont variables : un seul fichier par famille couvre
+ * toutes les graisses réellement utilisées.
  */
-const inter = Inter({
+const sans = Instrument_Sans({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans",
 });
 
-const newsreader = Newsreader({
+const serif = Fraunces({
   subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600"],
   style: ["normal", "italic"],
+  // SEUL `opsz` est chargé, et c'est l'axe qui justifie tout le choix (voir
+  // ci-dessus). Les axes décoratifs de Fraunces ont été écartés après mesure
+  // au build : `SOFT` (arrondi des terminaisons) doublait à lui seul le poids
+  // des fichiers de police — 460 ko contre 250 ko — pour un adoucissement
+  // qu'on ne distingue qu'en comparant deux captures côte à côte. `WONK`
+  // (formes alternatives fantaisistes) n'a jamais été chargé : de la
+  // personnalité, pas des pitreries dans un énoncé de mathématiques.
+  axes: ["opsz"],
   variable: "--font-serif",
 });
 
@@ -102,7 +114,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr" className={`${inter.variable} ${newsreader.variable}`}>
+    <html lang="fr" className={`${sans.variable} ${serif.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

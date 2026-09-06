@@ -18,6 +18,16 @@ export interface AccentPreset {
 
 /** Teintes sobres, choisies pour un rendu premium/académique — jamais saturées au point de devenir "gadget". */
 export const ACCENT_PRESETS: AccentPreset[] = [
+  /*
+   * « Miel » remplace le vert fluo en tête de liste, donc comme accent par
+   * défaut. Le fluo tenait d'un fond noir bleuté ; sur le papier chaud du
+   * thème clair, il jurait avec toute la palette, et sa version assombrie
+   * (l'aplat du bouton principal) tombait sur un olive terne. Le miel est de
+   * la même famille de température que le fond : il souligne au lieu de
+   * surligner. Lime reste disponible juste en dessous, et un choix déjà
+   * enregistré n'est pas modifié.
+   */
+  { id: "miel", label: "Miel", hex: "#e0a758" },
   { id: "lime", label: "Lime", hex: "#d4f36b" },
   { id: "azur", label: "Azur", hex: "#8ecbff" },
   { id: "ambre", label: "Ambre", hex: "#f5c26b" },
@@ -94,10 +104,24 @@ export function accentInk(hex: string): [number, number, number] {
   return darkenTo(hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]), INK_MAX_LUMINANCE);
 }
 
+/**
+ * Luminance à laquelle le noir et le blanc contrastent EXACTEMENT autant avec
+ * une couleur donnée : √(1,05 × 0,05) − 0,05. Au-dessus, le noir gagne ;
+ * en dessous, le blanc.
+ *
+ * Le seuil valait 0,45, choisi à vue. Il donnait le bon résultat pour les
+ * pastels très clairs (les seuls préréglages existants), et un résultat
+ * franchement mauvais dès qu'on descendait au milieu de l'échelle : une
+ * teinte à 0,44 recevait du texte BLANC, soit 2,13:1 — illisible — là où le
+ * noir donnait 9,84:1. Le défaut ne s'était jamais vu parce qu'aucune
+ * couleur du produit n'était dans cette zone ; « Miel » y est.
+ */
+const FOREGROUND_CROSSOVER = Math.sqrt(1.05 * 0.05) - 0.05;
+
 /** Noir ou blanc — jamais une autre teinte — selon ce qui contraste le mieux avec `hex`. Retombe sur l'accent par défaut si `hex` n'est pas un hex valide. */
 export function accentForeground(hex: string): [number, number, number] {
   const rgb = hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]);
-  return relativeLuminance(rgb) > 0.45 ? [0, 0, 0] : [255, 255, 255];
+  return relativeLuminance(rgb) > FOREGROUND_CROSSOVER ? [0, 0, 0] : [255, 255, 255];
 }
 
 export function accentForegroundCss(hex: string): string {

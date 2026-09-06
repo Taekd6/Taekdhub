@@ -247,16 +247,20 @@ export function DashboardOverview() {
                 <li key={block.intent} className="flex items-baseline gap-4 py-3.5">
                   <span className="t-figure w-5 shrink-0 text-right text-sm text-subtle">{index + 1}</span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-                      <p className="t-subhead">
-                        {block.label}
-                        <span className="font-normal text-muted"> — {PLAN_INTENT_META[block.intent].description}</span>
+                    <p className="t-subhead">
+                      {block.label}
+                      <span className="font-normal text-muted"> — {PLAN_INTENT_META[block.intent].description}</span>
+                    </p>
+                    {/* La durée est alignée à droite de la ligne de DÉTAIL, pas
+                        de celle du titre : quand le titre passait à la ligne
+                        sur mobile, « 40 min » se retrouvait coincé entre le
+                        titre et son propre détail. */}
+                    <div className="mt-0.5 flex items-baseline gap-3">
+                      <p className="t-meta min-w-0 flex-1 truncate">
+                        {block.focus} · {block.picks.length} exercice{block.picks.length > 1 ? "s" : ""}
                       </p>
                       <span className="t-meta tabular shrink-0">{block.estimatedMinutes} min</span>
                     </div>
-                    <p className="t-meta mt-0.5 truncate">
-                      {block.focus} · {block.picks.length} exercice{block.picks.length > 1 ? "s" : ""}
-                    </p>
                   </div>
                 </li>
               ))}
