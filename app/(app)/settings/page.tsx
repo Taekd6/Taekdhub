@@ -1,20 +1,25 @@
-import { DataBackup } from "@/components/data-backup";
+import { AvailabilityEditor } from "@/components/settings/availability-editor";
+import { DataPanel } from "@/components/settings/data-panel";
+import { PreferencesForm } from "@/components/settings/preferences-form";
+import { SubjectsEditor } from "@/components/settings/subjects-editor";
 import { PageBar, Stack } from "@/components/ui/layout";
-import { PreferencesForm } from "@/components/preferences-form";
-import { ThemePicker } from "@/components/theme-picker";
+
+export const metadata = { title: "Réglages — TaekdHub" };
 
 /**
  * Composition `Stack` : un écran de saisie se lit et se remplit dans une
- * colonne, pas sur 1 140 px — un champ de 900 px de large n'aide personne, et
- * une étiquette perdue à l'autre bout de l'écran non plus.
+ * colonne. Les disponibilités viennent EN PREMIER — c'est le réglage dont
+ * dépendent la charge, le planning et la prochaine action ; le reste est du
+ * confort.
  */
 export default function SettingsPage() {
   return (
-    <Stack className="space-y-8">
-      <PageBar title="Réglages" lede="Ton identité de travail, ton rythme et tes sauvegardes." />
+    <Stack className="space-y-10">
+      <PageBar title="Réglages" lede="Ton temps disponible, tes matières, et tes sauvegardes." />
+      <AvailabilityEditor />
+      <SubjectsEditor />
       <PreferencesForm />
-      <ThemePicker />
-      <DataBackup />
+      <DataPanel />
     </Stack>
   );
 }

@@ -4,12 +4,12 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "TaekdHub",
     short_name: "TaekdHub",
-    description: "Pilote ton travail, consolide tes acquis et avance avec précision en prépa scientifique.",
-    start_url: "/dashboard",
+    description: "Tes tâches, tes échéances et le temps que tu as vraiment — le pilote de ta prépa.",
+    start_url: "/today",
     scope: "/",
     display: "standalone",
-    background_color: "#09090b",
-    theme_color: "#09090b",
+    background_color: "#faf9f6",
+    theme_color: "#faf9f6",
     lang: "fr",
     icons: [
       { src: "/pwa/icon-192", sizes: "192x192", type: "image/png", purpose: "any" },

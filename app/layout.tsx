@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Instrument_Sans } from "next/font/google";
-import { ThemeSync } from "@/components/theme-sync";
-import "katex/dist/katex.min.css";
 import "./globals.css";
 
 /**
@@ -9,7 +7,8 @@ import "./globals.css";
  * React, pour éviter un flash (accent par défaut, ou thème sombre par défaut
  * chez qui a choisi "clair") — même principe pour les deux : petit script
  * inline (ne peut pas importer de module, voir lib/theme.ts pour la version
- * "propre"), `ThemeSync` prend le relais après hydratation.
+ * "propre"). Le magasin (lib/store/store.tsx) prend le relais après
+ * hydratation, et reste seul responsable ensuite.
  *
  * Calcule aussi `--accent-ink-base-rgb` (encre) et `--accent-deep-base-rgb`
  * (aplat du bouton principal en thème clair) — mêmes formules que
@@ -23,7 +22,7 @@ import "./globals.css";
  * `applyThemeMode` (lib/theme.ts), dupliquée ici pour la même raison que
  * l'accent ci-dessus.
  */
-const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('prepahub:preferences');if(!raw)return;var prefs=JSON.parse(raw);var accent=prefs.accent;if(/^#?[0-9a-fA-F]{6}$/.test(accent||'')){var hex=accent.replace('#','');var r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);var lin=function(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);};var L=function(rr,gg,bb){return 0.2126*lin(rr)+0.7152*lin(gg)+0.0722*lin(bb);};var lum=L(r,g,b);var fg=lum>Math.sqrt(1.05*0.05)-0.05?'0 0 0':'255 255 255';var root=document.documentElement.style;root.setProperty('--accent-rgb',r+' '+g+' '+b);root.setProperty('--accent-fg-rgb',fg);var dk=function(t){var lo=0,hi=1;if(lum<=t)return[r,g,b];for(var i=0;i<24;i++){var m=(lo+hi)/2;if(L(r*m,g*m,b*m)>t){hi=m;}else{lo=m;}}return[Math.round(r*lo),Math.round(g*lo),Math.round(b*lo)];};root.setProperty('--accent-ink-base-rgb',dk(0.163).join(' '));root.setProperty('--accent-deep-base-rgb',dk(0.045).join(' '));}var mode=prefs.themeMode;if(mode==='light'||mode==='dark'){document.documentElement.setAttribute('data-theme',mode);}}catch(e){}})();`;
+const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('taekdhub:state');if(!raw)return;var prefs=(JSON.parse(raw)||{}).settings;if(!prefs)return;var accent=prefs.accent;if(/^#?[0-9a-fA-F]{6}$/.test(accent||'')){var hex=accent.replace('#','');var r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);var lin=function(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);};var L=function(rr,gg,bb){return 0.2126*lin(rr)+0.7152*lin(gg)+0.0722*lin(bb);};var lum=L(r,g,b);var fg=lum>Math.sqrt(1.05*0.05)-0.05?'0 0 0':'255 255 255';var root=document.documentElement.style;root.setProperty('--accent-rgb',r+' '+g+' '+b);root.setProperty('--accent-fg-rgb',fg);var dk=function(t){var lo=0,hi=1;if(lum<=t)return[r,g,b];for(var i=0;i<24;i++){var m=(lo+hi)/2;if(L(r*m,g*m,b*m)>t){hi=m;}else{lo=m;}}return[Math.round(r*lo),Math.round(g*lo),Math.round(b*lo)];};root.setProperty('--accent-ink-base-rgb',dk(0.163).join(' '));root.setProperty('--accent-deep-base-rgb',dk(0.045).join(' '));}var mode=prefs.themeMode;if(mode==='light'||mode==='dark'){document.documentElement.setAttribute('data-theme',mode);}}catch(e){}})();`;
 
 /**
  * DEUX FAMILLES, DEUX RÔLES — voir l'en-tête d'app/globals.css.
@@ -73,9 +72,9 @@ const serif = Fraunces({
  * qu'une préversion ne prétende pas être le site de production.
  */
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://taekdhub.vercel.app";
-const TITLE = "TaekdHub — Ton système de travail en prépa";
+const TITLE = "TaekdHub — Le pilote de ta prépa";
 const DESCRIPTION =
-  "TaekdHub regarde ce que tu réussis, ce que tu rates et ce que tu n'obtiens qu'avec des indices, puis te dit quoi travailler maintenant — et pourquoi.";
+  "Tes tâches, tes échéances et le temps que tu as vraiment. TaekdHub te dit quoi faire maintenant, et si ta semaine tient debout.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -120,7 +119,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body>
         {children}
-        <ThemeSync />
       </body>
     </html>
   );

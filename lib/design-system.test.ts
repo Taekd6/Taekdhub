@@ -125,8 +125,13 @@ describe("échelle des filets — un rôle, un token", () => {
   it("l'échelle sémantique est réellement utilisée", () => {
     // Sans ce contrôle, supprimer toutes les bordures du dépôt ferait passer
     // le test précédent — il doit échouer si le système disparaît.
+    //
+    // Le fond en creux se pose de DEUX façons, et les compter séparément
+    // sous-estimait le système : `bg-inset` (utilitaire Tailwind) et `.well`
+    // (la classe du même rôle, app/globals.css), qu'un composant emploie dès
+    // que la zone en creux a aussi un rayon et un espacement.
     expect(collect(/border-line/).length).toBeGreaterThan(20);
-    expect(collect(/bg-inset/).length).toBeGreaterThan(10);
+    expect(collect(/bg-inset|\bwell\b/).length).toBeGreaterThan(10);
   });
 });
 
@@ -207,42 +212,14 @@ describe("la mise en page passe par le système de composition", () => {
     ).toEqual([]);
   });
 
-  it("les trois compositions sont réellement utilisées", () => {
+  it("les compositions du système sont réellement utilisées", () => {
     const sources = allSources();
-    for (const name of ["Workbench", "Split", "Stack"]) {
+    // `Workbench` a été retiré avec la banque d'exercices : plus aucun écran
+    // n'a d'ensemble à parcourir dans un volet persistant (voir l'en-tête de
+    // components/ui/layout.tsx).
+    for (const name of ["Split", "Stack"]) {
       const used = sources.filter(({ file, content }) => file !== "components/ui/layout.tsx" && content.includes(`<${name}`));
       expect(used.length, `Composition inutilisée : ${name}`).toBeGreaterThan(0);
     }
-  });
-});
-
-describe("text-wrap: pretty ne s'applique jamais à une formule centrée", () => {
-  /**
-   * RÉGRESSION MESURÉE AU NAVIGATEUR — pas une précaution théorique.
-   *
-   * `text-wrap: pretty` sur le bloc de lecture (`.t-read`, `.t-read-quiet`)
-   * fait PLANTER le moteur de rendu de Chromium dès que ce bloc contient une
-   * formule centrée (`.katex-display`) : onglet mort, page blanche, aucune
-   * erreur JavaScript. 85 exercices actifs de la banque en contiennent une —
-   * ils étaient tous inouvrables.
-   *
-   * Le correctif tient en deux moitiés qui n'ont de sens qu'ensemble :
-   * `RichMath` marque le bloc qui contient une formule centrée, la feuille de
-   * style y rétablit la césure ordinaire. Supprimer l'une des deux ramène le
-   * plantage sans qu'aucun test unitaire ne le voie — d'où ce garde-fou.
-   */
-  it("la feuille de style neutralise `pretty` sur les blocs marqués", () => {
-    const css = readFileSync(path.resolve(process.cwd(), "app/globals.css"), "utf8");
-    if (!css.includes("text-wrap: pretty")) return;
-    expect(css, "app/globals.css doit rétablir `text-wrap: wrap` sur [data-display-math]").toMatch(
-      /\[data-display-math\][\s\S]{0,200}text-wrap:\s*wrap/
-    );
-  });
-
-  it("RichMath marque les blocs contenant une formule centrée", () => {
-    const source = readFileSync(path.resolve(process.cwd(), "components/rich-math.tsx"), "utf8");
-    expect(source, "components/rich-math.tsx doit poser `data-display-math` sur son conteneur").toContain(
-      "data-display-math"
-    );
   });
 });

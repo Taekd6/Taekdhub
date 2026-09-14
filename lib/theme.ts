@@ -63,7 +63,7 @@ export function relativeLuminance([r, g, b]: [number, number, number]): number {
  * (bouton principal, lueur de fond), qui doit rester la couleur de marque
  * telle quelle, et l'ENCRE (texte, icônes, liens, teintes fines), qui se pose
  * sur le fond de la page. En thème clair, cette seconde famille tombait à
- * **1,20:1** de contraste avec l'accent par défaut — mesuré sur /progress :
+ * **1,20:1** de contraste avec l'accent par défaut — mesuré au navigateur :
  * les icônes de section, les liens « Travailler ce chapitre » et les pastilles
  * de pourcentage étaient à la limite de l'invisible. (15,95:1 en thème sombre,
  * d'où le fait que ça n'ait jamais sauté aux yeux.)

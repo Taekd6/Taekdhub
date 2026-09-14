@@ -6,37 +6,36 @@ import { Wordmark } from "@/components/app-nav";
 /**
  * PAGE D'ACCUEIL PUBLIQUE.
  *
- * Ce que le produit fait RÉELLEMENT, sans un seul chiffre écrit à la main :
- * la page annonçait autrefois « 402 exercices » alors que l'amorçage réel en
- * produisait un tout autre nombre. Un décompte codé en dur se désynchronise
- * dès la première correction de la banque, et la première phrase que lit
- * l'élève devient fausse. La banque est donc DÉCRITE, jamais comptée.
+ * Une page de titre, pas une page d'atterrissage marketing : un énoncé, une
+ * action, puis quatre principes séparés par des filets. Aucune carte, aucun
+ * dégradé, aucune capture d'écran — c'est un outil de travail, il se présente
+ * comme tel.
  *
- * Composition : une page de titre, pas une page d'atterrissage marketing.
- * Un énoncé au centre gauche, deux actions, puis quatre principes séparés par
- * des filets. Aucune carte, aucun dégradé, aucune capture d'écran — c'est un
- * outil de travail, il se présente comme tel.
+ * Chaque principe dit une chose que le produit fait RÉELLEMENT, vérifiable en
+ * ouvrant l'application. Aucun chiffre écrit en dur : la version précédente
+ * annonçait « 402 exercices » et la première phrase lue par l'élève est
+ * devenue fausse dès la correction suivante.
  */
 const PRINCIPES = [
   {
-    titre: "Il sait quoi te faire travailler",
+    titre: "Il sait ce que tu dois faire maintenant",
     texte:
-      "Toute ta banque classée en continu selon tes résultats réels — et chaque recommandation dit pourquoi elle est là.",
+      "Échéances, retard, charge restante et temps réellement disponible : une seule tâche remonte, et elle dit pourquoi elle remonte.",
   },
   {
-    titre: "Un plan adapté au temps que tu as",
+    titre: "Il sait quand ton planning ne tient pas",
     texte:
-      "20 minutes ou 90 : la séance ne fait pas que s'allonger, sa structure change. Réparer d'abord, entretenir ensuite.",
+      "Six heures de travail dans une soirée de quatre, ça ne rentre pas. TaekdHub le dit avant le jeudi soir, pas après.",
   },
   {
-    titre: "Réussir seul n'est pas réussir aidé",
+    titre: "Il compare le prévu au réel",
     texte:
-      "Les indices que tu révèles sont comptés. Un exercice arraché aux indices revient ; une réussite autonome, non.",
+      "Ce que tu avais prévu et ce que tu as fait sont deux choses différentes. La semaine suivante est replanifiée à partir de la seconde.",
   },
   {
-    titre: "Des annales, pas des imitations",
+    titre: "Il n'héberge aucun cours",
     texte:
-      "Un exercice n'est présenté comme sujet de concours que si sa source établit le concours, l'année, l'épreuve et le numéro.",
+      "Tes TD, tes livres et tes annales restent où ils sont. Une tâche dit « exercices 12 à 18 du TD 4 » et, au mieux, y renvoie.",
   },
 ];
 
@@ -51,21 +50,16 @@ export default function Home() {
         <section className="flex min-h-[calc(100vh-14rem)] flex-col justify-center py-16">
           <p className="t-label">Prépa scientifique</p>
           <h1 className="mt-5 max-w-[16ch] font-serif text-[clamp(2.75rem,1.8rem+4.2vw,5rem)] font-normal leading-[1.02] tracking-[-0.03em]">
-            Chaque heure compte.
+            Qu&apos;est-ce que je fais maintenant&nbsp;?
           </h1>
           <p className="t-read mt-7 max-w-[48ch] text-muted">
-            TaekdHub regarde ce que tu réussis, ce que tu rates et ce que tu n&apos;obtiens qu&apos;avec des indices,
-            puis te dit quoi travailler maintenant — et pourquoi.
+            Tes tâches, tes échéances et le temps que tu as vraiment. TaekdHub en fait un plan de travail réaliste — et
+            te dit franchement quand il ne l&apos;est plus.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
-            <Link href="/dashboard">
+            <Link href="/today">
               <Button size="lg">
                 Ouvrir TaekdHub <ArrowRight size={17} />
-              </Button>
-            </Link>
-            <Link href="/exercises">
-              <Button size="lg" variant="secondary">
-                Parcourir la bibliothèque
               </Button>
             </Link>
           </div>
@@ -73,10 +67,6 @@ export default function Home() {
 
         <section className="border-t border-line pb-24">
           <dl className="divide-y divide-line">
-            {/* Deux colonnes en flex plutôt qu'une grille de gabarit : les
-                gabarits de page appartiennent au système de composition
-                (components/ui/layout.tsx), pas aux écrans. Ici il ne s'agit
-                que d'un terme et de sa définition côte à côte. */}
             {PRINCIPES.map(({ titre, texte }) => (
               <div key={titre} className="flex flex-col gap-2 py-7 sm:flex-row sm:gap-10">
                 <dt className="t-heading sm:w-72 sm:shrink-0">{titre}</dt>

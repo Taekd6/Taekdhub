@@ -22,14 +22,14 @@
  *             Sans-serif, compact, discret, contraste modéré. On ne le
  *             regarde pas, on s'en sert.
  *
- *   CONTENU   titres, énoncés, corrections, grands nombres.
- *             Serif de lecture (Newsreader), généreux, contraste maximal.
- *             On le lit longtemps.
+ *   CONTENU   titres, chapeaux, grands nombres.
+ *             Serif de lecture (Fraunces), généreux, contraste maximal.
+ *             C'est ce qu'on lit, pas ce qu'on manipule.
  *
- * Le serif n'est pas décoratif : KaTeX compose les mathématiques en Computer
- * Modern, un serif. Un énoncé mêlant texte sans-serif et formules serif
- * change de police à chaque symbole. Passer la colonne de lecture en serif
- * supprime cette rupture — c'est d'abord une correction de lisibilité.
+ * Le serif n'est pas décoratif : il sépare CE QUE DIT l'application (« Ta
+ * semaine tient debout », « Il te manque 3 h 20 ») de ce avec quoi on agit.
+ * Une phrase composée en serif se lit comme une phrase ; la même en
+ * sans-serif compact se lit comme une étiquette de plus.
  *
  * ─── NEUTRES CHAUDS ──────────────────────────────────────────────────
  *
@@ -131,10 +131,9 @@
     --orange-400-rgb: 214 122 58;
 
     /* ── RYTHME ───────────────────────────────────────────────────
-       Une mesure de lecture, pas « ce que la largeur donne ». 66 caractères
-       est l'optimum admis pour du texte long ; les énoncés y sont composés,
-       quelle que soit la taille de l'écran. */
-    --measure: 34rem;
+       Une mesure de lecture, pas « ce que la largeur donne ». Les écrans de
+       saisie (Réglages) et les paragraphes d'analyse y sont bornés, quelle
+       que soit la largeur de l'écran. */
     --measure-wide: 46rem;
     --shell-max: 1140px;
     --nav-h: 3.5rem;
@@ -349,7 +348,7 @@
        .t-body      texte courant d'interface sans   15 px
        .t-meta      métadonnée, légende      sans    13 px
        .t-label     étiquette de champ/rubrique sans 11.5 px capitales
-       .t-read      CONTENU LU (énoncé, correction) serif 17→18 px / 1.8
+       .t-read      TEXTE LU (accroche d'accueil)   serif 18→19 px / 1.78
   */
   /* Voir la note sur `word-spacing` dans `body` : les rôles serif reprennent
      la chasse d'espace normale de Fraunces. */
@@ -357,7 +356,6 @@
   .t-heading,
   .t-lede,
   .t-read,
-  .t-read-quiet,
   .t-figure,
   .t-wordmark {
     word-spacing: normal;
@@ -439,19 +437,15 @@
   }
 
   /*
-   * Le texte qu'on LIT — et le réglage le plus délicat de toute la feuille.
+   * Le texte qu'on LIT VRAIMENT — l'accroche de la page d'accueil, et rien
+   * d'autre pour l'instant. Un rôle rare, donc, mais qui doit exister : sans
+   * lui, le premier paragraphe qu'un visiteur lit serait composé dans la même
+   * police compacte que les étiquettes de boutons.
    *
-   * Un énoncé de maths n'est jamais composé dans une seule police : KaTeX
-   * insère ses formules en Computer Modern, un caractère clair et très
-   * contrasté. Fraunces à sa coupe « texte » (opsz 14, graisse 400) paraissait
-   * nettement plus gras que les formules au milieu desquelles il se trouve —
-   * comparé côte à côte au navigateur, le déséquilibre sautait aux yeux à
-   * chaque symbole.
-   *
-   * `opsz` 40 et `wght` 360 remontent le contraste et allègent le trait juste
-   * assez pour que le texte et les mathématiques aient la même couleur sur la
-   * page. Le corps réel reste 19 px : la taille optique est un réglage de
-   * DESSIN, indépendant de la taille rendue.
+   * `opsz` 40 et `wght` 360 allègent le trait de Fraunces à ce corps : à sa
+   * coupe « texte » par défaut (opsz 14, graisse 400), un paragraphe de 19 px
+   * paraît nettement trop gras. La taille optique est un réglage de DESSIN,
+   * indépendant de la taille rendue.
    */
   .t-read {
     font-family: var(--font-serif), Georgia, serif;
@@ -465,24 +459,6 @@
   @media (min-width: 640px) {
     .t-read {
       font-size: 1.1875rem;
-    }
-  }
-
-  /* Contenu lu SECONDAIRE — un indice, une correction. Même famille et même
-     interligne que `.t-read`, un cran plus bas : ce qui accompagne l'énoncé
-     ne doit jamais peser autant que lui. */
-  .t-read-quiet {
-    font-family: var(--font-serif), Georgia, serif;
-    font-size: 1.0625rem;
-    line-height: 1.75;
-    font-variation-settings: "opsz" 40, "wght" 350;
-    letter-spacing: -0.002em;
-    text-wrap: pretty;
-  }
-
-  @media (min-width: 640px) {
-    .t-read-quiet {
-      font-size: 1.125rem;
     }
   }
 
@@ -567,92 +543,13 @@
     background: rgb(var(--inset-rgb) / var(--inset-alpha));
   }
 
-  /**
-   * RANGÉE QU'ON VIENT DE QUITTER — le repère qu'on cherche des yeux en
-   * revenant du lecteur. Posé par un `data-` depuis le gestionnaire de la
-   * banque et retiré au bout d'une seconde et demie : rien à nettoyer côté
-   * classes, et l'effet disparaît de lui-même.
-   */
-  [data-just-read] {
-    animation: justRead 1.6s ease-out;
-  }
-
-  @keyframes justRead {
-    from {
-      background-color: rgb(var(--accent-ink-rgb) / 0.14);
-    }
-    to {
-      background-color: transparent;
-    }
-  }
-
-  /* ═══════════════════════════════════════════════════════════════
-     MATHÉMATIQUES
-     ═══════════════════════════════════════════════════════════════ */
-
-  /* Voir le commentaire de `RichMath` : `text-wrap: pretty` fait PLANTER le
-     moteur de rendu de Chromium quand le bloc de lecture contient une
-     formule centrée (`.katex-display`). On revient à la césure ordinaire
-     dans ces blocs-là uniquement — le marqueur est posé par `RichMath`, qui
-     est le seul à produire ce genre de bloc. */
-  [data-display-math],
-  .t-read[data-display-math],
-  .t-read-quiet[data-display-math],
-  .t-lede[data-display-math] {
-    text-wrap: wrap;
-  }
-
-  /* KaTeX compose en Computer Modern, dont l'œil est plus petit que celui de
-     Newsreader : sans compensation, les formules paraissent rétrécies au
-     milieu de la phrase. */
-  .katex {
-    font-size: 1.06em;
-  }
-
-  /* Une formule centrée est un paragraphe à elle seule : elle respire
-     au-dessus et au-dessous, et défile horizontalement plutôt que de forcer
-     toute la page à s'élargir sur mobile. */
-  .katex-display {
-    margin: 1.4em 0 !important;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 0.25rem 0;
-  }
-
-  .katex-display > .katex {
-    white-space: normal;
-  }
-
   /* ═══════════════════════════════════════════════════════════════
      UTILITAIRES
      ═══════════════════════════════════════════════════════════════ */
 
-  .measure {
-    max-width: var(--measure);
-  }
-
+  /* La mesure de lecture des écrans de saisie — voir `Stack`
+     (components/ui/layout.tsx), seul endroit où elle est posée. */
   .measure-wide {
     max-width: var(--measure-wide);
-  }
-
-  .scrollbar-none::-webkit-scrollbar {
-    display: none;
-  }
-
-  .scrollbar-none {
-    scrollbar-width: none;
-  }
-
-  /* Masque le débordement d'une bande défilable horizontalement (onglets,
-     filtres) sans afficher de barre, tout en gardant l'accrochage au doigt. */
-  .rail {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .rail > * {
-    scroll-snap-align: start;
   }
 }

@@ -1,103 +1,143 @@
 # TaekdHub
 
-Système de travail personnel pour prépa scientifique (timer, banque d'exercices, progression, gamification). Next.js 15 + React 19 + TypeScript, données stockées en `localStorage` du navigateur.
+**Le système d'exploitation personnel d'une prépa scientifique.**
 
-**Application en ligne (stable) : [https://taekdhub.vercel.app](https://taekdhub.vercel.app)** — déploiement Vercel automatique depuis la branche `main`.
+TaekdHub répond à une seule question, et il la répond avec des chiffres vérifiables :
 
-## Changer d'ordinateur
+> Avec tout ce que j'ai à faire, mes échéances, mon retard et le temps dont je dispose
+> réellement — qu'est-ce que je devrais faire **maintenant**, et est-ce que ma semaine
+> tient debout ?
 
-Tes données (exercices, chapitres, séances, préférences, progression) vivent dans le `localStorage` du navigateur, pas sur un serveur. Pour les emporter sur une autre machine :
+Next.js 15 · React 19 · TypeScript strict · Tailwind. Toutes les données vivent dans le
+`localStorage` du navigateur : pas de compte, pas de serveur, rien à configurer.
 
-**Sur l'ancien ordinateur — exporter :**
-1. Ouvrir [https://taekdhub.vercel.app](https://taekdhub.vercel.app) → **Réglages** → **Exporter**.
-2. Un fichier `taekdhub-sauvegarde-AAAA-MM-JJ.json` est téléchargé. Il contient **tout** : exercices, chapitres, séances, préférences (dont la couleur d'accent) et l'historique de progression (weekSnapshots). Garde ce fichier (clé USB, cloud, e-mail à toi-même…).
+**En ligne : [taekdhub.vercel.app](https://taekdhub.vercel.app)** — déploiement automatique depuis `main`.
 
-**Sur le nouvel ordinateur — importer :**
-1. Ouvrir [https://taekdhub.vercel.app](https://taekdhub.vercel.app) (aucune installation nécessaire — c'est un site web ; optionnellement « Installer l'application » depuis le navigateur pour l'avoir comme une app).
-2. **Réglages** → **Restaurer** → choisir le fichier `.json`.
-3. Confirmer le remplacement, puis recharger la page. Toutes tes données sont là, à l'identique.
+---
 
-> Le format de sauvegarde est rétrocompatible : un fichier exporté par une ancienne version reste importable (les champs absents sont restaurés à vide sans erreur).
+## Ce que TaekdHub n'est pas
 
-**Pour continuer le développement sur le nouvel ordinateur :**
+Ce n'est **pas une banque d'exercices**, et il ne le redeviendra pas. Les cours, les TD,
+les DM, les livres, les cahiers de calcul et les annales vivent là où ils sont déjà.
 
-```bash
-git clone https://github.com/Taekd6/Taekdhub.git
-cd Taekdhub
-pnpm install
-pnpm dev
-```
+Une tâche dit :
 
-Puis lancer `claude` dans le dossier. Le dépôt GitHub est la source complète — aucune donnée personnelle n'y est stockée (elle reste dans ton navigateur / ta sauvegarde JSON).
+> « Faire les exercices 12 à 18 du TD 4 de maths » — 45 min — pour jeudi
+
+et, au mieux, porte un lien vers la ressource. Le contenu pédagogique reste dehors ;
+TaekdHub **organise le travail**, il ne l'héberge pas.
+
+## Les six écrans
+
+| Écran | La question à laquelle il répond |
+| --- | --- |
+| **Aujourd'hui** | Qu'est-ce que je fais maintenant ? Une tâche, sa durée, la raison pour laquelle c'est elle. |
+| **Calendrier** | À quoi ressemblent mes prochains jours ? Vue jour / semaine / mois. |
+| **Tâches** | Qu'est-ce que j'ai à faire, en entier ? Groupé par urgence, pas par date de saisie. |
+| **Planning** | Est-ce que ça tient ? Charge jour par jour, planification automatique, adaptation au réel. |
+| **Bilan** | Est-ce que j'ai avancé, et que changer ? Prévu / réel, échéances, matières, habitudes. |
+| **Objectifs** | Vers quoi je travaille, et ce qui revient chaque semaine (routines). |
+
+Plus les **Réglages** : disponibilités, matières, apparence, sauvegarde.
+
+## Les cinq idées qui font le produit
+
+1. **Échéance ≠ créneau.** `dueAt` dit *pour quand c'est* ; les créneaux disent *quand
+   je le fais*. Reporter déplace le créneau, jamais l'échéance.
+2. **La capacité est déclarée, donc réelle.** Sans savoir de combien d'heures on dispose,
+   « est-ce que ça tient ? » n'a pas de réponse. Les disponibilités sont le premier réglage.
+3. **Une tâche longue se répartit.** 3 h de DM deviennent 1 h 30 mercredi et 1 h 30 jeudi.
+   Ce qui ne rentre pas n'est pas tassé dans la dernière soirée : c'est **dit**.
+4. **Le temps réel est la seule vérité.** Ce qui était prévu et ce qui a été fait sont deux
+   choses différentes ; les jours suivants sont replanifiés à partir de la seconde.
+5. **Une évaluation est un événement, pas du travail.** Un DS de 4 h a lieu en classe :
+   il apparaît au calendrier, il n'occupe aucune soirée. Ce qui se planifie, c'est
+   « préparer le DS ».
 
 ## Installation
 
 ```bash
 pnpm install
+pnpm dev          # http://localhost:3000
 ```
 
-Node.js 20+ recommandé (testé avec Node 24, pnpm 11).
-
-## Lancement local
+Node 20+ (testé avec Node 22, pnpm 10). Aucune variable d'environnement requise.
 
 ```bash
-pnpm dev
-```
-
-App disponible sur `http://localhost:3000`.
-
-Aucune variable d'environnement n'est requise pour utiliser l'app : les données vivent en `localStorage` par défaut.
-
-## Variables d'environnement (optionnel)
-
-Copier `.env.example` vers `.env.local` pour activer la synchronisation Supabase :
-
-```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-```
-
-Sans ces variables, `lib/supabase/client.ts` désactive proprement le client Supabase et l'app continue de fonctionner en local uniquement.
-
-## Build
-
-```bash
+pnpm check        # tsc --noEmit && eslint && vitest run
 pnpm build
 ```
 
-Génère un build de production statique (toutes les routes sont prérendues). Vérifié avec `tsc --noEmit` et `next build` sans erreur.
+## Architecture
+
+```
+lib/domain/     LOGIQUE MÉTIER — fonctions pures, zéro React, zéro stockage.
+  types.ts        Task, TimeEntry, Goal, Routine, Availability, Settings
+  date.ts         instants ISO ↔ jours locaux (toutes les dates passent par ici)
+  tasks.ts        création, transitions, créneaux, retard, travail restant
+  availability.ts capacité déclarée → créneaux libres réels
+  workload.ts     charge par jour, verdict de faisabilité
+  priority.ts     score + RAISONS, prochaine action
+  scheduling.ts   planification, découpage, report intelligent, adaptation au réel
+  goals.ts        progression d'un objectif (jamais déclarée, toujours calculée)
+  routines.ts     matérialisation idempotente des tâches récurrentes
+  review.ts       bilan hebdomadaire + constats chiffrés
+  habits.ts       justesse des estimations, reports, rythme réel
+
+lib/store/      PERSISTANCE
+  schema.ts       frontière de confiance : rien d'invalide n'en ressort
+  repository.ts   interface `Repository` (localStorage aujourd'hui)
+  store.tsx       magasin React unique, partagé par toute l'application
+
+lib/agent/      INTERFACE AGENT
+  snapshot.ts     instantané structuré et auto-descriptif des données
+
+app/api/agent/  point d'entrée d'analyse (optionnel, voir ci-dessous)
+components/     UI par domaine + système visuel (components/ui)
+```
+
+La séparation n'est pas décorative : **toute** la logique de priorisation, de charge et de
+planification est testable sans navigateur (`lib/**/*.test.ts`, 152 tests), et l'interface
+ne fait que l'afficher.
+
+### Migration vers Supabase
+
+L'application ne connaît que l'interface `Repository` (`load` / `save` / `lastFailure`),
+jamais `localStorage`. Brancher un stockage distant = écrire une seconde implémentation et
+la passer à `<TaekdhubProvider repository={…}>`. L'état persisté est un objet unique et
+versionné (`AppState`, `STATE_VERSION`), qui se range aussi bien dans une colonne `jsonb`
+que dans des tables dérivées.
+
+### Analyse par un agent
+
+`lib/agent/snapshot.ts` produit un instantané **structuré et auto-descriptif** (il embarque
+son propre schéma) : tâches, échéances, disponibilités, charge par jour, temps réellement
+travaillé, habitudes. Aucun chiffre n'y est recalculé — tout vient de `lib/domain`, donc
+un agent et l'écran disent toujours la même chose.
+
+Deux chemins, depuis l'écran **Bilan** :
+
+- une clé `ANTHROPIC_API_KEY` est configurée sur le déploiement → la question part vers
+  `POST /api/agent`, qui n'entrepose rien ;
+- sinon → **Copier le contexte** met l'instantané dans le presse-papiers, à coller dans
+  l'assistant de son choix.
+
+Dans les deux cas, rien ne part sans un clic.
+
+## Sauvegarde et changement d'ordinateur
+
+Les données vivent dans **ce navigateur**, nulle part ailleurs — il n'y a donc aucune
+récupération possible en cas de perte. L'export est la seule vraie assurance.
+
+1. **Réglages → Exporter** : un fichier `taekdhub-sauvegarde-AAAA-MM-JJ.json` est téléchargé.
+2. Sur l'autre machine : **Réglages → Restaurer**, choisir le fichier.
+
+Le format est tolérant : un fichier d'une version plus ancienne (ou plus récente) reste
+importable, et une sauvegarde éditée à la main aussi.
 
 ## Déploiement (Vercel)
 
-1. Importer le repo GitHub `Taekd6/Taekdhub` sur [vercel.com/new](https://vercel.com/new).
-2. Framework détecté automatiquement : Next.js. Aucune config supplémentaire nécessaire.
-3. (Optionnel) Ajouter `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY` dans les Environment Variables du projet Vercel si la sync cloud est souhaitée.
-4. Déployer.
-
-## Structure du projet
-
-```
-app/(app)/dashboard   Tableau de bord
-app/(app)/exercises   Banque d'exercices
-app/(app)/history     Historique des séances
-app/(app)/progress    Progression / statistiques
-app/(app)/session     Séance de travail
-app/(app)/timer       Focus timer
-app/(app)/settings    Réglages
-components/           Composants UI et par domaine (exercises, history, session, ui)
-lib/                  Logique métier : storage (localStorage), progression, recommandations, gamification, supabase/
-supabase/migrations/  Schéma SQL pour la synchronisation cloud optionnelle
-```
-
-## Reprendre le développement avec Claude Code
-
-Le repo GitHub est la source complète : `git clone` + `pnpm install` suffit pour repartir sur n'importe quelle machine.
-
-```bash
-git clone https://github.com/Taekd6/Taekdhub.git
-cd Taekdhub
-pnpm install
-pnpm dev
-```
-
-Ensuite, lancer `claude` dans le dossier du projet. Aucune donnée personnelle ou sauvegarde utilisateur n'est versionnée — le contexte métier (exercices, séances, préférences) vit uniquement dans le `localStorage` du navigateur de chaque utilisateur.
+1. Importer le dépôt sur [vercel.com/new](https://vercel.com/new) — framework détecté
+   automatiquement, aucune configuration.
+2. (Optionnel) ajouter `ANTHROPIC_API_KEY` pour l'analyse par un agent, et
+   `NEXT_PUBLIC_SITE_URL` pour les métadonnées.

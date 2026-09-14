@@ -21,6 +21,7 @@ import { cn } from "@/lib/cn";
  */
 export function Section({
   as: Tag = "section",
+  id,
   variant = "bare",
   label,
   title,
@@ -32,6 +33,8 @@ export function Section({
   children,
 }: {
   as?: "section" | "div" | "article";
+  /** Ancre de la section — pour qu'un lien puisse pointer directement dessus (« Replanifier » → #adapter). */
+  id?: string;
   variant?: "bare" | "panel" | "feature";
   /** Étiquette de rubrique, en capitales discrètes. */
   label?: string;
@@ -50,6 +53,7 @@ export function Section({
 
   return (
     <Tag
+      id={id}
       className={cn(
         framed && "surface",
         variant === "panel" && "p-4 sm:p-5",
