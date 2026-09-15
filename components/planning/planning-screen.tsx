@@ -14,7 +14,7 @@ import { dateFromDayKey, formatDayShort, formatMinutes, formatRelativeDay } from
 import { computeAdaptations, planWork, type PlanProposal } from "@/lib/domain/scheduling";
 import { subjectById } from "@/lib/domain/subjects";
 import { isDeadlineTask, isOpen, isScheduled, remainingMinutes } from "@/lib/domain/tasks";
-import { computeFeasibility, computeWorkload } from "@/lib/domain/workload";
+import { computeFeasibility, computeWorkload, findImpossibleTasks } from "@/lib/domain/workload";
 import { useStore } from "@/lib/store/store";
 import { cn } from "@/lib/cn";
 import type { DayLoad } from "@/lib/domain/workload";
@@ -54,7 +54,8 @@ export function PlanningScreen() {
     // (voir domain/scheduling.ts#planWork). Les lister ici ferait croire qu'il
     // manque quatre heures de travail pour un DS qui, lui, aura bien lieu.
     const unplanned = state.tasks.filter((task) => isOpen(task) && !isScheduled(task) && !isDeadlineTask(task));
-    return { workload, feasibility, adaptations, unplanned };
+    const impossible = findImpossibleTasks(state, now);
+    return { workload, feasibility, adaptations, unplanned, impossible };
   }, [state, now]);
 
   const taskById = useMemo(() => new Map(state.tasks.map((task) => [task.id, task])), [state.tasks]);
@@ -78,8 +79,20 @@ export function PlanningScreen() {
         }
       />
 
-      {/* ── VERDICT ─────────────────────────────────────────────── */}
-      <Section variant="feature" label="Les 7 prochains jours" title={verdictTitle(view.feasibility.feasible, view.feasibility.deficitMinutes)}>
+      {/* ── VERDICT ───────────────────────────────────────────────
+          Le total ne suffit pas : on peut avoir 31 h disponibles dans la
+          semaine et un DM infaisable pour demain. Une tâche impossible À SA
+          DATE l'emporte donc sur le verdict global — c'est elle qui appelle
+          une décision. */}
+      <Section
+        variant="feature"
+        label="Les 7 prochains jours"
+        title={
+          view.impossible.length > 0
+            ? `${view.impossible.length} tâche${view.impossible.length > 1 ? "s" : ""} ne rentre${view.impossible.length > 1 ? "nt" : ""} pas à temps`
+            : verdictTitle(view.feasibility.feasible, view.feasibility.deficitMinutes)
+        }
+      >
         <div className="space-y-4">
           <p className="t-body text-muted">
             {formatMinutes(view.feasibility.requiredMinutes)} de travail à échéance cette semaine, pour{" "}
@@ -100,6 +113,19 @@ export function PlanningScreen() {
               disponibilités, réduire une estimation trop généreuse, ou renoncer à une tâche — TaekdHub ne fera pas
               rentrer 40 heures dans 31.
             </Notice>
+          )}
+
+          {view.impossible.length > 0 && (
+            <div className="space-y-2">
+              {view.impossible.map((item) => (
+                <Notice key={item.task.id} tone="danger" title={item.task.title}>
+                  {formatMinutes(item.remainingMinutes)} de travail restant, {formatMinutes(item.availableMinutes)}{" "}
+                  réellement disponibles d&apos;ici {formatRelativeDay(item.task.dueAt!, now)} —{" "}
+                  <strong className="font-medium text-ink">il manque {formatMinutes(item.missingMinutes)}</strong>. Aucune
+                  planification ne résout ça : réduis l&apos;estimation, libère du temps, ou accepte de rendre partiel.
+                </Notice>
+              ))}
+            </div>
           )}
 
           {view.workload.overdueCount > 0 && (
@@ -257,7 +283,7 @@ export function PlanningScreen() {
         label="À caser"
         title={`${view.unplanned.length} tâche${view.unplanned.length > 1 ? "s" : ""} sans créneau`}
         action={
-          <Link href="/goals" className="t-meta inline-flex items-center gap-1 text-accent hover:underline">
+          <Link href="/goals" className="t-meta inline-flex min-h-11 items-center gap-1 text-accent hover:underline lg:min-h-0">
             Objectifs & routines <ArrowRight size={12} />
           </Link>
         }
@@ -298,7 +324,7 @@ export function LoadTable({ days }: { days: DayLoad[] }) {
           <li key={day.date} className="flex items-center gap-3 px-1 py-3">
             <Link
               href="/calendar"
-              className="w-[5.5rem] shrink-0 text-sm text-muted hover:text-ink"
+              className="flex min-h-11 w-[5.5rem] shrink-0 items-center text-sm text-muted hover:text-ink lg:min-h-0"
               title={`Voir le ${formatDayShort(dateFromDayKey(day.date))}`}
             >
               {capitalize(formatDayShort(dateFromDayKey(day.date)))}

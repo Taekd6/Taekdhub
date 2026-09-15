@@ -309,7 +309,10 @@ function WeekView({
                   type="button"
                   onClick={() => onOpen(task)}
                   className={cn(
-                    "flex w-full items-center gap-1.5 rounded-md border-l-2 px-1.5 py-1 text-left text-2xs",
+                    // 36 px au doigt sur téléphone : ces pastilles sont le
+                    // seul moyen d'ouvrir une tâche depuis la semaine. 44 px
+                    // rendraient une journée chargée illisible en hauteur.
+                    "flex w-full items-center gap-1.5 rounded-md border-l-2 px-1.5 py-1 text-left text-2xs max-lg:min-h-9",
                     isOverdue(task, now)
                       ? "border-rose-400 bg-rose-400/10 text-rose-200"
                       : isDeadlineCategory(task.category)
@@ -327,7 +330,7 @@ function WeekView({
                   key={`${item.task.id}-${item.start}`}
                   type="button"
                   onClick={() => onOpen(item.task)}
-                  className="well row-hover flex w-full items-center gap-1.5 px-1.5 py-1 text-left text-2xs"
+                  className="well row-hover flex w-full items-center gap-1.5 px-1.5 py-1 text-left text-2xs max-lg:min-h-9"
                 >
                   <span className="tabular shrink-0 text-subtle">{timeOf(item.start)}</span>
                   <span className="min-w-0 truncate">{item.task.title}</span>
@@ -338,7 +341,7 @@ function WeekView({
                 <button
                   type="button"
                   onClick={() => onAdd({ dueDate: key })}
-                  className="w-full rounded-md py-1 text-left text-2xs text-subtle hover:text-accent"
+                  className="w-full rounded-md py-1 text-left text-2xs text-subtle hover:text-accent max-lg:min-h-9"
                 >
                   + Ajouter
                 </button>

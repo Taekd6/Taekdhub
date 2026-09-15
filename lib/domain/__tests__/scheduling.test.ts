@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeAdaptations, planWork, splitIntoChunks, suggestPostponement } from "@/lib/domain/scheduling";
+import { computeAdaptations, planWork, splitIntoChunks, suggestPostponeOptions, suggestPostponement } from "@/lib/domain/scheduling";
 import { dayKey } from "@/lib/domain/date";
 import { scheduleTask } from "@/lib/domain/tasks";
 import { computeDayLoad, computeFeasibility, computeWorkload } from "@/lib/domain/workload";
@@ -196,3 +196,126 @@ describe("tâches en retard", () => {
     expect(suggestion!.warning).toBeUndefined();
   });
 });
+
+describe("étalement — un planning humainement crédible", () => {
+  /**
+   * Le défaut le plus visible de la première version : « au plus tôt » pris au
+   * pied de la lettre. Un DM de 3 h à rendre dans trois jours occupait la
+   * soirée entière du jour même. Personne ne travaille comme ça, et un
+   * planning qu'on sait faux ne se suit pas.
+   */
+  it("étale une tâche longue sur des jours différents plutôt que de remplir ce soir", () => {
+    const state = makeState({ tasks: [makeTask({ title: "DM", estimatedMinutes: 180, dueAt: at(3, "23:59") })] });
+    const [assignment] = planWork(state, { now: NOW, days: 7 }).assignments;
+    const days = new Set(assignment.slots.map((item) => dayKey(item.start)));
+    expect(days.size).toBe(assignment.slots.length);
+    expect(assignment.slots.length).toBeGreaterThan(1);
+  });
+
+  it("annonce les séances dans l'ordre chronologique", () => {
+    const state = makeState({
+      tasks: [
+        makeTask({ title: "A", estimatedMinutes: 200, dueAt: at(3) }),
+        makeTask({ title: "B", estimatedMinutes: 200, dueAt: at(3) }),
+        makeTask({ title: "C", estimatedMinutes: 150, dueAt: at(3) }),
+      ],
+    });
+    for (const assignment of planWork(state, { now: NOW, days: 7 }).assignments) {
+      const starts = assignment.slots.map((item) => new Date(item.start).getTime());
+      expect([...starts].sort((a, b) => a - b)).toEqual(starts);
+    }
+  });
+
+  /**
+   * Une journée remplie à 100 % n'a aucune marge : le premier imprévu la fait
+   * déborder. Le planificateur s'en tient donc au seuil « tendu » que
+   * l'application affiche déjà, tant qu'une échéance ne l'oblige pas à aller
+   * au-delà.
+   */
+  it("laisse une marge sur chaque journée tant qu'une échéance ne l'interdit pas", () => {
+    const state = makeState({
+      tasks: Array.from({ length: 5 }, (_, index) =>
+        makeTask({ title: `T${index}`, estimatedMinutes: 120, dueAt: at(6, "23:59") })
+      ),
+    });
+    const plan = planWork(state, { now: NOW, days: 7 });
+    const planned = makeState({
+      ...state,
+      tasks: state.tasks.map((task) => {
+        const assignment = plan.assignments.find((item) => item.taskId === task.id);
+        return assignment ? scheduleTask(task, assignment.slots) : task;
+      }),
+    });
+    const monday = computeDayLoad(planned, today);
+    expect(monday.plannedMinutes).toBeLessThanOrEqual(Math.round(monday.capacityMinutes * 0.9));
+  });
+
+  it("dépasse la marge quand l'échéance l'exige vraiment", () => {
+    // 4 h à rendre demain, 4 h disponibles aujourd'hui : la marge doit céder.
+    const state = makeState({ tasks: [makeTask({ title: "urgent", estimatedMinutes: 240, dueAt: at(0, "23:59") })] });
+    const [assignment] = planWork(state, { now: NOW, days: 7 }).assignments;
+    expect(assignment.minutes).toBe(240);
+    expect(assignment.slots.every((slot) => dayKey(slot.start) === today)).toBe(true);
+  });
+
+  it("replanifie une tâche dont tous les créneaux sont passés — c'est le matin d'après qu'on en a besoin", () => {
+    const missed = scheduleTask(makeTask({ title: "pas faite hier", estimatedMinutes: 90, dueAt: at(2) }), [slot(-1, "18:00", 90)]);
+    const plan = planWork(makeState({ tasks: [missed] }), { now: NOW, days: 7 });
+    expect(plan.assignments.map((item) => item.taskId)).toEqual([missed.id]);
+    expect(dayKey(plan.assignments[0].slots[0].start)).toBe(today);
+  });
+
+  it("écrit les durées en clair, jamais « 240 min »", () => {
+    const state = makeState({ tasks: [makeTask({ title: "énorme", estimatedMinutes: 600, dueAt: at(1, "23:59") })] });
+    const [assignment] = planWork(state, { now: NOW, days: 7 }).assignments;
+    expect(assignment.rationale).toMatch(/\d+ h/);
+    expect(assignment.rationale).not.toMatch(/\d{3,} min/);
+  });
+});
+
+describe("choix du jour de report", () => {
+  it("propose plusieurs jours qui ont réellement la place", () => {
+    const options = suggestPostponeOptions(makeState({ tasks: [] }), makeTask({ title: "TD", estimatedMinutes: 60 }), NOW);
+    expect(options.length).toBe(3);
+    expect(new Set(options.map((option) => option.day)).size).toBe(3);
+  });
+
+  /**
+   * Chaque option est une ALTERNATIVE, pas une étape : la deuxième doit
+   * décrire le calendrier tel qu'il est, pas tel qu'il serait si l'on avait
+   * appliqué la première.
+   */
+  it("calcule chaque option indépendamment des autres", () => {
+    const task = makeTask({ title: "TD", estimatedMinutes: 60 });
+    const options = suggestPostponeOptions(makeState({ tasks: [task] }), task, NOW);
+    for (const option of options) {
+      expect(timeOfFirstSlot(option)).toBe(firstAvailableTimeOn(option.day));
+    }
+  });
+
+  it("saute les jours sans disponibilité", () => {
+    const state = makeState({
+      availability: { weekly: { 0: [{ start: "18:00", end: "20:00" }], 1: [], 2: [], 3: [{ start: "18:00", end: "20:00" }], 4: [], 5: [], 6: [] }, exceptions: [] },
+    });
+    const options = suggestPostponeOptions(state, makeTask({ title: "TD", estimatedMinutes: 60 }), NOW);
+    expect(options.map((option) => option.day)).not.toContain(dayKey(new Date(at(1))));
+  });
+
+  it("avertit quand une option tombe après l'échéance", () => {
+    const state = makeState({
+      availability: { weekly: { 0: [], 1: [], 2: [{ start: "14:00", end: "19:00" }], 3: [{ start: "18:00", end: "22:00" }], 4: [{ start: "18:00", end: "20:00" }], 5: [], 6: [] }, exceptions: [] },
+    });
+    const task = makeTask({ title: "TD", estimatedMinutes: 60, dueAt: at(1, "23:59") });
+    expect(suggestPostponeOptions(state, task, NOW)[0].warning).toBe("Après l'échéance");
+  });
+});
+
+function timeOfFirstSlot(option: { slots: { start: string }[] }): string {
+  return new Date(option.slots[0].start).toTimeString().slice(0, 5);
+}
+
+function firstAvailableTimeOn(day: string): string {
+  const state = makeState();
+  const ranges = state.availability.weekly[(new Date(`${day}T12:00:00`).getDay() + 6) % 7 as 0 | 1 | 2 | 3 | 4 | 5 | 6];
+  return ranges[0].start;
+}

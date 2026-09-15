@@ -13,12 +13,12 @@ import { SubjectDot } from "@/components/tasks/task-bits";
 import { TaskRow } from "@/components/tasks/task-row";
 import { useComposer } from "@/components/tasks/composer";
 import { freeSlotsForDay } from "@/lib/domain/availability";
-import { dayKey, formatDay, formatMinutes, timeOf } from "@/lib/domain/date";
+import { dayKey, formatDay, formatMinutes, formatRelativeDay, timeOf } from "@/lib/domain/date";
 import { computeNextAction } from "@/lib/domain/priority";
 import { computeAdaptations } from "@/lib/domain/scheduling";
 import { subjectById } from "@/lib/domain/subjects";
-import { isOpen, isOverdue, slotsOnDay, sortBySlot } from "@/lib/domain/tasks";
-import { computeDayLoad } from "@/lib/domain/workload";
+import { dueInfo, isOpen, isOverdue, slotsOnDay, sortBySlot } from "@/lib/domain/tasks";
+import { computeDayLoad, findImpossibleTasks } from "@/lib/domain/workload";
 import { useStore } from "@/lib/store/store";
 import { cn } from "@/lib/cn";
 import type { ScoredTask } from "@/lib/domain/priority";
@@ -35,7 +35,8 @@ import type { ScoredTask } from "@/lib/domain/priority";
  *   MAINTENANT   une tâche, sa durée, la raison pour laquelle c'est elle, et
  *                un bouton pour commencer. C'est le seul élément de l'écran
  *                composé en grand.
- *   ENSUITE      ce qui tient encore dans le temps restant de la soirée.
+ *   TON PROGRAMME ce qui est posé au calendrier pour aujourd'hui, à l'heure.
+ *   ENSUITE      ce qui tiendrait encore, au-delà du programme.
  *   PLUS TARD    le reste, replié, pour rassurer sans encombrer.
  *
  * Le rail de droite répond à la question d'après (« où j'en suis ») sans
@@ -91,8 +92,23 @@ export function TodayScreen() {
       .filter((entry) => dayKey(entry.startedAt) === today)
       .reduce((total, entry) => total + entry.minutes, 0);
     const adaptations = computeAdaptations(state, now);
+    const impossible = findImpossibleTasks(state, now);
+    // « Ensuite » ne répète pas le programme : il le prolonge.
+    const plannedIds = new Set(scheduledToday.map((task) => task.id));
+    const beyondPlan = action.next.filter((item) => !plannedIds.has(item.task.id));
 
-    return { load, remainingCapacity, remainingToday, scheduledToday, action, overdue, workedToday, adaptations };
+    return {
+      load,
+      remainingCapacity,
+      remainingToday,
+      scheduledToday,
+      action,
+      beyondPlan,
+      overdue,
+      workedToday,
+      adaptations,
+      impossible,
+    };
   }, [state, today, now]);
 
   if (!ready) return <TodaySkeleton />;
@@ -134,14 +150,17 @@ export function TodayScreen() {
             <div className="border-t border-line pt-6">
               <p className="t-label">En retard</p>
               <p className="t-figure-sm mt-1.5 text-rose-300">{view.overdue.length}</p>
-              <Link href="/tasks?filter=overdue" className="t-meta mt-1 inline-flex items-center gap-1 text-accent hover:underline">
+              <Link
+                href="/tasks?filter=overdue"
+                className="t-meta mt-1 inline-flex min-h-11 items-center gap-1 text-accent hover:underline lg:min-h-0"
+              >
                 Voir <ArrowRight size={12} />
               </Link>
             </div>
           )}
 
           <div className="border-t border-line pt-6">
-            <Link href="/planning" className="t-meta inline-flex items-center gap-1.5 text-accent hover:underline">
+            <Link href="/planning" className="t-meta inline-flex min-h-11 items-center gap-1.5 text-accent hover:underline lg:min-h-0">
               Ma charge des 7 prochains jours <ArrowRight size={12} />
             </Link>
           </div>
@@ -158,6 +177,37 @@ export function TodayScreen() {
             </Button>
           }
         />
+
+        {/* ── CE QUI NE PEUT PAS RENTRER ──────────────────────────
+            La seule information qui vaut d'être donnée AVANT « ce que tu fais
+            maintenant » : aucune organisation ne la résout, il faut décider.
+            La dire le dimanche soir ne sert plus à rien. */}
+        {view.impossible.length > 0 && (
+          <Notice
+            tone="danger"
+            title={
+              view.impossible.length === 1
+                ? `« ${view.impossible[0].task.title} » ne rentre pas avant son échéance`
+                : `${view.impossible.length} tâches ne rentrent pas avant leur échéance`
+            }
+          >
+            {view.impossible.length === 1 ? (
+              <>
+                Il te manque {formatMinutes(view.impossible[0].missingMinutes)}, même en y consacrant tout le temps
+                libre qui reste d&apos;ici {formatRelativeDay(view.impossible[0].task.dueAt!, now)}. Réduis
+                l&apos;ambition, libère du temps, ou préviens.
+              </>
+            ) : (
+              <>
+                {view.impossible
+                  .slice(0, 3)
+                  .map((item) => `${item.task.title} (${formatMinutes(item.missingMinutes)} de trop)`)
+                  .join(" · ")}
+                . Aucune planification ne les fera rentrer : il faut arbitrer.
+              </>
+            )}
+          </Notice>
+        )}
 
         {/* ── ADAPTATION AU RÉEL ──────────────────────────────────
             Ce qui était prévu hier et n'a pas été fait ne disparaît pas en
@@ -221,24 +271,48 @@ export function TodayScreen() {
           )}
         </Section>
 
-        {/* ── ENSUITE ──────────────────────────────────────────── */}
-        {action.next.length > 0 && (
-          <Section label="Ensuite" title="Si tu enchaînes" description="Ce qui tient encore dans le temps qu'il te reste aujourd'hui.">
-            <List>
-              {action.next.map((item) => (
-                <TaskRow key={item.task.id} task={item.task} onOpen={open} showTimer now={now} />
-              ))}
-            </List>
-          </Section>
+        {/* ── ÉCHÉANCES À VENIR ───────────────────────────────────
+            Un DS, une khôlle : des rendez-vous, pas du travail. Ils ne
+            remontent jamais comme « à faire maintenant » (on ne commence pas
+            un DS), mais ils doivent rester sous les yeux — c'est la première
+            chose qu'un élève de prépa veut savoir en ouvrant son agenda. */}
+        {action.upcomingEvents.length > 0 && (
+          <section className="flex flex-wrap items-center gap-x-5 gap-y-2 border-y border-line py-3">
+            <span className="t-label">À venir</span>
+            {action.upcomingEvents.map(({ task }) => {
+              const info = dueInfo(task, now);
+              return (
+                <button
+                  key={task.id}
+                  type="button"
+                  onClick={() => open(task)}
+                  className="flex min-h-11 items-center gap-2 text-left text-sm lg:min-h-0"
+                >
+                  <SubjectDot subject={subjectById(state.subjects, task.subjectId)} />
+                  <span className="font-medium">{task.title}</span>
+                  <span className={cn("t-meta", (info.days ?? 9) <= 1 && "text-amber-300")}>
+                    {formatRelativeDay(task.dueAt!, now)}
+                    {!task.dueDateOnly && ` ${timeOf(task.dueAt!)}`}
+                  </span>
+                </button>
+              );
+            })}
+          </section>
         )}
 
-        {/* ── CE QUI EST POSÉ AUJOURD'HUI ─────────────────────── */}
+        {/* ── CE QUI EST POSÉ AUJOURD'HUI ─────────────────────────
+            Le programme passe AVANT « ensuite » : quand on a pris la peine de
+            planifier sa soirée, c'est le plan qui fait foi, pas une nouvelle
+            proposition faite par-dessus. */}
         {view.scheduledToday.length > 0 && (
           <Section
             label="Ton programme"
             title="Posé dans le calendrier"
             action={
-              <Link href="/calendar" className="t-meta inline-flex items-center gap-1 text-accent hover:underline">
+              <Link
+                href="/calendar"
+                className="t-meta inline-flex min-h-11 items-center gap-1 text-accent hover:underline lg:min-h-0"
+              >
                 Calendrier <ArrowRight size={12} />
               </Link>
             }
@@ -255,7 +329,11 @@ export function TodayScreen() {
                     <span className="tabular w-[4.5rem] shrink-0 text-sm text-muted">
                       {slot ? `${timeOf(slot.start)}–${timeOf(slot.end)}` : ""}
                     </span>
-                    <button type="button" onClick={() => open(task)} className="min-w-0 flex-1 truncate text-left text-[0.9375rem]">
+                    <button
+                      type="button"
+                      onClick={() => open(task)}
+                      className="min-h-11 min-w-0 flex-1 truncate text-left text-[0.9375rem] lg:min-h-0"
+                    >
                       {task.title}
                     </button>
                     <SubjectDot subject={subjectById(state.subjects, task.subjectId)} />
@@ -263,6 +341,24 @@ export function TodayScreen() {
                 );
               })}
             </ul>
+          </Section>
+        )}
+
+        {/* ── ENSUITE ──────────────────────────────────────────────
+            Uniquement ce qui n'est PAS déjà dans le programme du jour : sans
+            ce filtre, la même tâche apparaissait deux fois sur le même écran,
+            une fois avec son heure et une fois sans. */}
+        {view.beyondPlan.length > 0 && (
+          <Section
+            label="Ensuite"
+            title={view.scheduledToday.length > 0 ? "Si tu vas plus loin" : "Si tu enchaînes"}
+            description="Ce qui tient encore dans le temps qu'il te reste aujourd'hui."
+          >
+            <List>
+              {view.beyondPlan.map((item) => (
+                <TaskRow key={item.task.id} task={item.task} onOpen={open} showTimer now={now} />
+              ))}
+            </List>
           </Section>
         )}
 

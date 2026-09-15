@@ -181,3 +181,64 @@ export function stalledTasks(state: AppState, now: Date = new Date(), days = 14)
     .filter((task) => isOpen(task) && task.slots.length === 0 && new Date(task.updatedAt).getTime() < limit)
     .sort((a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime());
 }
+
+/**
+ * ============================================================================
+ * LE CONSEIL D'ESTIMATION — montré, jamais appliqué en douce.
+ * ============================================================================
+ *
+ * TaekdHub mesure l'écart entre ce qui est estimé et ce qui est réellement
+ * passé. La tentation serait de corriger les durées automatiquement : ce
+ * serait une faute. L'élève ne comprendrait plus d'où sortent les chiffres de
+ * son planning, et une estimation qu'on ne maîtrise plus ne s'améliore jamais.
+ *
+ * On affiche donc le constat au moment où il sert — pendant la saisie de la
+ * durée — avec de quoi l'accepter d'un geste. La décision reste à l'élève.
+ *
+ * Trois garde-fous pour ne pas dire n'importe quoi :
+ *   — au moins `MIN_SAMPLES` tâches terminées AVEC leur temps réel ;
+ *   — un écart d'au moins 15 %, sinon le conseil ne vaut pas l'interruption ;
+ *   — un facteur borné (voir `estimationFactor`), pour qu'un historique
+ *     déséquilibré ne double jamais une estimation.
+ */
+export interface EstimationAdvice {
+  /** Durée conseillée, arrondie à 5 minutes près — la précision d'une estimation humaine. */
+  suggestedMinutes: number;
+  /** Nombre de tâches sur lesquelles le conseil s'appuie. */
+  samples: number;
+  /** `true` quand l'élève sous-estime (le conseil est à la hausse). */
+  underestimating: boolean;
+  /** Écart mesuré, en pourcentage absolu. */
+  percent: number;
+  /** Matière concernée — `null` quand le conseil porte sur l'ensemble. */
+  subjectId: string | null;
+}
+
+/** Écart minimal à partir duquel le conseil mérite d'être affiché. */
+const ADVICE_THRESHOLD = 0.15;
+
+export function estimationAdvice(
+  accuracy: EstimationAccuracy[],
+  subjectId: string | undefined,
+  estimatedMinutes: number
+): EstimationAdvice | null {
+  if (!Number.isFinite(estimatedMinutes) || estimatedMinutes <= 0) return null;
+
+  // Le conseil PAR MATIÈRE d'abord : sous-estimer la physique et surestimer
+  // l'anglais est le cas courant, et une moyenne globale les annulerait.
+  const entry = accuracy.find((item) => item.subjectId === (subjectId ?? null) && item.ratio !== null);
+  if (!entry || entry.ratio === null) return null;
+  if (Math.abs(entry.ratio - 1) < ADVICE_THRESHOLD) return null;
+
+  const factor = Math.min(1.6, Math.max(0.7, entry.ratio));
+  const suggested = Math.max(5, Math.round((estimatedMinutes * factor) / 5) * 5);
+  if (suggested === Math.round(estimatedMinutes)) return null;
+
+  return {
+    suggestedMinutes: suggested,
+    samples: entry.samples,
+    underestimating: factor > 1,
+    percent: Math.round(Math.abs(factor - 1) * 100),
+    subjectId: entry.subjectId,
+  };
+}

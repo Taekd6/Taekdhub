@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computeWeeklyReview } from "@/lib/domain/review";
-import { computeHabits, computeEstimationAccuracy, describeEstimationBias, stalledTasks } from "@/lib/domain/habits";
+import { computeHabits, computeEstimationAccuracy, describeEstimationBias, estimationAdvice, stalledTasks } from "@/lib/domain/habits";
 import { computeAllGoalProgress, computeGoalProgress } from "@/lib/domain/goals";
 import { completeTask, scheduleTask } from "@/lib/domain/tasks";
 import { at, makeEntry, makeState, makeTask, NOW, slot } from "./fixtures";
@@ -182,5 +182,43 @@ describe("objectifs", () => {
       tasks: [makeTask({ goalId: "g1", estimatedMinutes: 600 })],
     });
     expect(computeAllGoalProgress(state, NOW)[0].atRisk).toBe(true);
+  });
+});
+
+describe("conseil d'estimation", () => {
+  function completedTasks(count: number, estimated: number, actual: number, subjectId = "physique") {
+    const tasks = Array.from({ length: count }, (_, index) =>
+      completeTask(makeTask({ title: `T${index}`, subjectId, estimatedMinutes: estimated }), NOW)
+    );
+    return makeState({ tasks, timeEntries: tasks.map((task) => makeEntry(actual, { taskId: task.id })) });
+  }
+
+  it("ne conseille RIEN tant qu'il n'y a pas assez de mesures", () => {
+    const accuracy = computeEstimationAccuracy(completedTasks(3, 60, 90));
+    expect(estimationAdvice(accuracy, "physique", 45)).toBeNull();
+  });
+
+  it("ne conseille rien pour un écart négligeable", () => {
+    const accuracy = computeEstimationAccuracy(completedTasks(6, 60, 65));
+    expect(estimationAdvice(accuracy, "physique", 45)).toBeNull();
+  });
+
+  it("conseille une durée plus longue quand l'élève sous-estime", () => {
+    const accuracy = computeEstimationAccuracy(completedTasks(6, 60, 90));
+    const advice = estimationAdvice(accuracy, "physique", 45);
+    expect(advice).not.toBeNull();
+    expect(advice!.suggestedMinutes).toBe(70); // 45 × 1,5 arrondi à 5 min
+    expect(advice!.underestimating).toBe(true);
+    expect(advice!.samples).toBe(6);
+  });
+
+  it("reste borné même avec un historique extrême", () => {
+    const accuracy = computeEstimationAccuracy(completedTasks(6, 10, 300));
+    expect(estimationAdvice(accuracy, "physique", 60)!.suggestedMinutes).toBe(95); // 60 × 1,6 plafonné
+  });
+
+  it("ne conseille que sur la matière mesurée", () => {
+    const accuracy = computeEstimationAccuracy(completedTasks(6, 60, 90, "physique"));
+    expect(estimationAdvice(accuracy, "maths", 45)).toBeNull();
   });
 });

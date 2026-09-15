@@ -118,3 +118,65 @@ describe("prochaine action", () => {
     expect(computeNextAction(state, { now: NOW }).title).toBe("prévue ce soir");
   });
 });
+
+describe("évaluations et lisibilité", () => {
+  /**
+   * L'écran principal proposait « MAINTENANT : DS de maths — environ 80 min
+   * par jour si tu l'étales ». On ne commence pas un DS : c'est un rendez-vous.
+   */
+  it("ne propose JAMAIS une évaluation comme « ce que tu fais maintenant »", () => {
+    const state = makeState({
+      tasks: [
+        makeTask({ title: "DS de maths", category: "eval-ds", estimatedMinutes: 240, dueAt: at(3, "08:00"), priority: 4 }),
+        makeTask({ title: "Réviser pour le DS", category: "org-preparation", estimatedMinutes: 180, dueAt: at(2) }),
+      ],
+    });
+    const action = computeNextAction(state, { now: NOW });
+    expect(action.title).toBe("Réviser pour le DS");
+    expect(action.next.some((item) => item.task.category === "eval-ds")).toBe(false);
+  });
+
+  it("les fait remonter séparément, comme rendez-vous à venir", () => {
+    const state = makeState({
+      tasks: [
+        makeTask({ title: "Khôlle de physique", category: "eval-kholle", dueAt: at(1, "14:00") }),
+        makeTask({ title: "DS de maths", category: "eval-ds", dueAt: at(4, "08:00") }),
+        makeTask({ title: "TD", estimatedMinutes: 60, dueAt: at(2) }),
+      ],
+    });
+    const action = computeNextAction(state, { now: NOW });
+    expect(action.upcomingEvents.map((item) => item.task.title)).toEqual(["Khôlle de physique", "DS de maths"]);
+  });
+
+  it("n'affiche « tout est fait » que s'il ne reste vraiment aucun travail", () => {
+    const onlyEvents = makeState({ tasks: [makeTask({ title: "DS", category: "eval-ds", dueAt: at(2) })] });
+    const action = computeNextAction(onlyEvents, { now: NOW });
+    expect(action.kind).toBe("done-for-today");
+    expect(action.upcomingEvents).toHaveLength(1);
+  });
+
+  it("écrit les durées comme on les dit — jamais « 600 min »", () => {
+    const state = makeState({ tasks: [makeTask({ title: "Annales", estimatedMinutes: 600, dueAt: at(1, "23:59") })] });
+    const action = computeNextAction(state, { now: NOW });
+    expect(action.rationale).toContain("10 h");
+    expect(action.rationale).not.toContain("600 min");
+  });
+
+  /**
+   * L'écran promettait « ensuite, apprendre le chapitre 3 » alors que le
+   * calendrier la plaçait demain : deux réponses différentes à la même
+   * question, dans la même application.
+   */
+  it("ne propose pas « ensuite » une tâche déjà posée un autre jour", () => {
+    const state = makeState({
+      tasks: [
+        makeTask({ title: "maintenant", estimatedMinutes: 45, dueAt: at(1) }),
+        scheduleTask(makeTask({ title: "prévue demain", estimatedMinutes: 45, dueAt: at(2) }), [slot(1, "18:00", 45)]),
+        makeTask({ title: "libre", estimatedMinutes: 30, dueAt: at(3) }),
+      ],
+    });
+    const action = computeNextAction(state, { now: NOW });
+    expect(action.next.map((item) => item.task.title)).not.toContain("prévue demain");
+    expect(action.next.map((item) => item.task.title)).toContain("libre");
+  });
+});

@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { Field, Sheet } from "@/components/ui/sheet";
 import { SegmentedControl } from "@/components/ui/segmented";
-import { CATEGORY_FAMILY_LABELS, CATEGORY_FAMILY_ORDER, CATEGORY_META, categoriesByFamily } from "@/lib/domain/categories";
+import { CATEGORY_FAMILY_LABELS, CATEGORY_FAMILY_ORDER, CATEGORY_META, categoriesByFamily, isDeadlineCategory } from "@/lib/domain/categories";
 import { atTime, dayKey, formatMinutes, fromDateTimeLocalValue, toDateTimeLocalValue } from "@/lib/domain/date";
-import { activeSubjects } from "@/lib/domain/subjects";
+import { computeEstimationAccuracy, estimationAdvice } from "@/lib/domain/habits";
+import { activeSubjects, subjectLabel } from "@/lib/domain/subjects";
 import { effortMinutes } from "@/lib/domain/tasks";
 import { useStore } from "@/lib/store/store";
 import type { ComposerDefaults } from "@/components/tasks/composer";
@@ -100,6 +101,11 @@ export function TaskEditor({
   const [draft, setDraft] = useState<TaskDraft>(() => draftFromTask(task, state.settings.defaultEstimateMinutes));
   const [expanded, setExpanded] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
+
+  // Mesures d'estimation : recalculées seulement quand l'historique change,
+  // pas à chaque frappe dans le formulaire.
+  const accuracy = useMemo(() => computeEstimationAccuracy(state), [state]);
+  const advice = estimationAdvice(accuracy, draft.subjectId || undefined, draft.estimatedMinutes);
 
   // Réinitialise le brouillon quand la feuille change de sujet (nouvelle
   // tâche, ou tâche différente) sans passer par un effet : un `useEffect` de
@@ -236,6 +242,19 @@ export function TaskEditor({
           </Field>
         </div>
 
+        {/* Le piège que cette note referme : « Préparer la khôlle » saisi avec
+            le type « Khôlle ». La tâche devient un rendez-vous, n'est jamais
+            planifiée, et l'élève ne comprend pas pourquoi elle n'apparaît
+            nulle part dans son travail. Une phrase au moment du choix vaut
+            mieux qu'une règle apprise par l'échec. */}
+        {isDeadlineCategory(draft.category) && (
+          <p className="t-meta -mt-1 border-l-2 border-amber-400/50 pl-3">
+            Une évaluation est un <strong className="font-medium text-ink">rendez-vous</strong> : elle apparaît au
+            calendrier mais n&apos;occupe aucun créneau de travail. Pour t&apos;y préparer, crée une tâche à part
+            (type « Préparation » ou « Révision »).
+          </p>
+        )}
+
         <div className="grid grid-cols-[1fr_auto] gap-3">
           <Field label="Échéance" hint={draft.dueDate && !draft.dueTime ? "Toute la journée" : undefined}>
             <Input type="date" value={draft.dueDate} onChange={(event) => patch({ dueDate: event.target.value })} />
@@ -279,6 +298,31 @@ export function TaskEditor({
               className="w-24"
             />
           </div>
+
+          {/* ── CE QUE DISENT TES MESURES ────────────────────────────
+              Affiché, jamais appliqué. TaekdHub sait que tu sous-estimes la
+              physique de 40 % ; corriger tes durées dans ton dos rendrait ton
+              planning incompréhensible et t'empêcherait de progresser en
+              estimation. Le constat arrive au moment où il sert — pendant la
+              saisie — avec un bouton pour l'accepter. Le choix reste à toi. */}
+          {advice && (
+            <p className="t-meta mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span>
+                {formatMinutes(draft.estimatedMinutes)} estimées →{" "}
+                <strong className="font-medium text-ink">environ {formatMinutes(advice.suggestedMinutes)}</strong>{" "}
+                d&apos;après tes {advice.samples} dernières tâches
+                {advice.subjectId ? ` en ${subjectLabel(state.subjects, advice.subjectId)}` : ""} (
+                {advice.underestimating ? "sous-estimées" : "surestimées"} de {advice.percent} %).
+              </span>
+              <button
+                type="button"
+                onClick={() => patch({ estimatedMinutes: advice.suggestedMinutes })}
+                className="rounded text-accent underline-offset-2 hover:underline"
+              >
+                Utiliser
+              </button>
+            </p>
+          )}
         </div>
 
         <Field label="Priorité">

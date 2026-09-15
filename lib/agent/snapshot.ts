@@ -1,12 +1,13 @@
-import { capacityMinutes, rangesForDay } from "@/lib/domain/availability";
+import { capacityMinutes, freeSlotsForDay, rangesForDay } from "@/lib/domain/availability";
 import { categoryLabel } from "@/lib/domain/categories";
 import { dayKey, dayKeyRange, daysBetween, startOfWeek } from "@/lib/domain/date";
 import { computeAllGoalProgress } from "@/lib/domain/goals";
 import { computeHabits, describeEstimationBias } from "@/lib/domain/habits";
 import { computeNextAction, rankOpenTasks } from "@/lib/domain/priority";
 import { computeWeeklyReview } from "@/lib/domain/review";
-import { actualMinutesByTask, isOpen, isOverdue, remainingMinutes } from "@/lib/domain/tasks";
-import { computeFeasibility, computeWorkload } from "@/lib/domain/workload";
+import { actualMinutesByTask, isOpen, isOverdue, remainingMinutes, slotsOnDay } from "@/lib/domain/tasks";
+import { describeRule } from "@/lib/domain/routines";
+import { computeFeasibility, computeWorkload, findImpossibleTasks } from "@/lib/domain/workload";
 import type { AppState } from "@/lib/domain/types";
 
 /**
@@ -49,6 +50,12 @@ export interface AgentSnapshot {
   subjects: { id: string; label: string }[];
   capacity: {
     todayMinutes: number;
+    /**
+     * Ce qu'il reste RÉELLEMENT d'utilisable aujourd'hui, l'heure courante et
+     * les créneaux déjà posés déduits. Sans ce champ, un agent répondait à
+     * « j'ai deux heures ce soir » avec le programme d'une journée entière.
+     */
+    remainingTodayMinutes: number;
     next7DaysMinutes: number;
     weeklyPattern: { date: string; minutes: number; ranges: string[] }[];
   };
@@ -62,7 +69,16 @@ export interface AgentSnapshot {
     deficitMinutes: number;
   };
   nextAction: { taskId?: string; title: string; rationale: string; minutes?: number } | null;
+  /** Rendez-vous imposés (DS, khôlles) : jamais du travail à replacer. */
+  upcomingEvents: { taskId: string; title: string; dueAt: string; daysUntil: number }[];
+  /**
+   * Ce qui NE PEUT PAS être terminé à temps, même en y consacrant tout le
+   * temps restant. Un agent doit le dire au lieu de proposer une organisation
+   * qui n'existe pas.
+   */
+  impossible: { taskId: string; title: string; dueAt: string; remainingMinutes: number; availableMinutes: number; missingMinutes: number }[];
   tasks: AgentTask[];
+  routines: { title: string; rule: string; estimatedMinutes?: number; active: boolean }[];
   goals: { id: string; title: string; status: string; percent: number; targetDate?: string; atRisk: boolean; openTasks: number }[];
   week: {
     plannedMinutes: number;
@@ -123,6 +139,10 @@ const SCHEMA: Record<string, string> = {
   "workload.days.status": "empty | ok | tight (au-delà de 90 % de la capacité) | over (dépassement).",
   "workload.feasible": "Vrai si tout le travail à échéance dans les 7 jours tient dans la capacité déclarée.",
   "capacity": "Temps que l'élève a DÉCLARÉ pouvoir travailler. Ce n'est pas du temps libre théorique.",
+  "capacity.remainingTodayMinutes": "Temps encore utilisable aujourd'hui, heure courante et créneaux déjà posés déduits. C'est le chiffre à utiliser pour « j'ai X ce soir ».",
+  "impossible": "Tâches dont le travail restant dépasse tout le temps libre d'ici leur échéance. Ne propose pas de planning pour elles : propose un arbitrage.",
+  "upcomingEvents": "DS, khôlles, interros : des rendez-vous. On ne les planifie pas, on s'y prépare avec des tâches distinctes.",
+  "routines": "Gabarits récurrents. Ils créent de vraies tâches à l'avance, déjà présentes dans `tasks`.",
   "habits.estimationRatio": "Temps réel / temps estimé sur les tâches terminées. 1,3 = sous-estimation de 30 %. null = pas assez de mesures (5 minimum).",
   "principe": "TaekdHub n'héberge aucun contenu pédagogique : les tâches renvoient à des ressources externes (TD, livres, annales).",
 };
@@ -180,6 +200,14 @@ export function buildSnapshot(state: AppState, now: Date = new Date()): AgentSna
     subjects: state.subjects.filter((subject) => !subject.archived).map((subject) => ({ id: subject.id, label: subject.label })),
     capacity: {
       todayMinutes: capacityMinutes(state.availability, now),
+      remainingTodayMinutes: Math.round(
+        freeSlotsForDay(
+          state.availability,
+          dayKey(now),
+          state.tasks.filter(isOpen).flatMap((task) => slotsOnDay(task, dayKey(now))),
+          now
+        ).reduce((total, slot) => total + slot.minutes, 0)
+      ),
       next7DaysMinutes: workload.totalCapacityMinutes,
       weeklyPattern: dayKeyRange(now, 7).map((key) => ({
         date: key,
@@ -206,7 +234,27 @@ export function buildSnapshot(state: AppState, now: Date = new Date()): AgentSna
     nextAction: next.scored
       ? { taskId: next.scored.task.id, title: next.title, rationale: next.rationale, minutes: next.scored.minutes }
       : { title: next.title, rationale: next.rationale },
+    upcomingEvents: next.upcomingEvents.map((item) => ({
+      taskId: item.task.id,
+      title: item.task.title,
+      dueAt: item.task.dueAt!,
+      daysUntil: daysBetween(now, item.task.dueAt!),
+    })),
+    impossible: findImpossibleTasks(state, now).map((item) => ({
+      taskId: item.task.id,
+      title: item.task.title,
+      dueAt: item.task.dueAt!,
+      remainingMinutes: item.remainingMinutes,
+      availableMinutes: item.availableMinutes,
+      missingMinutes: item.missingMinutes,
+    })),
     tasks,
+    routines: state.routines.map((routine) => ({
+      title: routine.title,
+      rule: describeRule(routine),
+      estimatedMinutes: routine.estimatedMinutes,
+      active: routine.active,
+    })),
     goals: computeAllGoalProgress(state, now).map((progress) => ({
       id: progress.goal.id,
       title: progress.goal.title,
@@ -248,11 +296,12 @@ export function buildSnapshot(state: AppState, now: Date = new Date()): AgentSna
 
 /** Les questions que l'élève pose réellement — proposées telles quelles dans l'interface. */
 export const AGENT_QUESTIONS = [
-  "Est-ce que mon organisation de cette semaine est bonne ?",
-  "Est-ce que je suis en retard ?",
-  "Qu'est-ce que je dois prioriser ?",
+  "Qu'est-ce que je devrais faire aujourd'hui ?",
+  "J'ai 2 heures ce soir, qu'est-ce que je fais ?",
+  "Est-ce que ma semaine est faisable ?",
+  "Qu'est-ce qui est urgent ?",
+  "J'ai pris du retard, comment je rattrape ?",
   "Est-ce que je peux me permettre une soirée plus légère ?",
   "Pourquoi je n'arrive pas à finir mes tâches ?",
-  "Prépare-moi demain.",
   "Analyse ma semaine.",
 ] as const;

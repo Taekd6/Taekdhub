@@ -68,7 +68,7 @@ export function PreferencesForm() {
               step={5}
               value={Math.round(settings.tightLoadRatio * 100)}
               onChange={(event) => saveSettings({ tightLoadRatio: Number(event.target.value) / 100 })}
-              className="w-full max-w-xs accent-[rgb(var(--accent-rgb))]"
+              className="h-11 w-full max-w-xs accent-[rgb(var(--accent-rgb))]"
               aria-label="Seuil de journée tendue, en pourcentage"
             />
           </Field>
@@ -132,7 +132,7 @@ export function PreferencesForm() {
                   type="color"
                   value={accent}
                   onChange={(event) => saveSettings({ accent: event.target.value })}
-                  className="h-6 w-8 cursor-pointer rounded border-0 bg-transparent p-0"
+                  className="h-9 w-11 cursor-pointer rounded border-0 bg-transparent p-0"
                   aria-label="Couleur d'accent personnalisée"
                 />
               </label>

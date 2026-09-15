@@ -1,6 +1,6 @@
-import { freeSlotsForDay, type Slot } from "@/lib/domain/availability";
-import { addMinutes, dayKey, dayKeyRange, daysBetween, formatRelativeDay, timeOf } from "@/lib/domain/date";
-import { isDeadlineTask, isOpen, isScheduled, remainingMinutes, slotsOnDay } from "@/lib/domain/tasks";
+import { capacityMinutes, freeSlotsForDay, type Slot } from "@/lib/domain/availability";
+import { addMinutes, dayKey, dayKeyRange, daysBetween, formatMinutes, formatRelativeDay, timeOf } from "@/lib/domain/date";
+import { isDeadlineTask, isMissedSlot, isOpen, isScheduled, remainingMinutes, slotsOnDay } from "@/lib/domain/tasks";
 import type { AppState, Task, TaskSlot } from "@/lib/domain/types";
 
 /**
@@ -14,12 +14,21 @@ import type { AppState, Task, TaskSlot } from "@/lib/domain/types";
  *
  *   1. Les tâches sont classées par ÉCHÉANCE la plus proche (les évaluations
  *      et les tâches en retard d'abord, à échéance égale la priorité tranche).
- *   2. Chacune est posée AU PLUS TÔT dans les créneaux libres, jamais après
+ *   2. Chacune est posée au plus tôt dans les créneaux libres, jamais après
  *      son échéance — c'est la règle qui garantit qu'un DM pour vendredi n'est
  *      pas proposé samedi.
- *   3. Une tâche longue est DÉCOUPÉE en séances de 45 à 90 minutes, réparties
- *      sur plusieurs jours. C'est la différence entre « tu as 3 h de DM » et
- *      « 1 h 30 mercredi, 1 h 30 jeudi ».
+ *   3. Une tâche longue est DÉCOUPÉE en séances de 45 à 90 minutes, puis ces
+ *      séances sont ÉTALÉES sur des jours différents — une par jour tant qu'il
+ *      reste des jours avant l'échéance.
+ *
+ *      C'est le point qui sépare un planning crédible d'un planning qu'on
+ *      referme. La version précédente posait tout « au plus tôt » : un DM de
+ *      3 h à rendre dans trois jours occupait la soirée entière du jour même
+ *      (18 h → 21 h), et une semaine chargée saturait le lundi à 100 % en
+ *      laissant le week-end vide. Personne ne travaille comme ça, et un
+ *      planning qu'on sait faux ne sert à rien. Une séance par jour, en
+ *      tournant sur les jours disponibles, donne « 1 h 30 aujourd'hui, 1 h 30
+ *      demain » — ce qu'un élève aurait écrit lui-même.
  *   4. Ce qui ne rentre pas n'est PAS posé de force : il ressort en
  *      `unplaced`, avec la raison. Un planning qui ment en tassant tout dans
  *      la dernière soirée est pire que pas de planning du tout.
@@ -71,23 +80,45 @@ export interface PlanOptions {
   replaceExisting?: boolean;
 }
 
-/** Espace de travail interne : les créneaux libres jour par jour, consommés au fur et à mesure. */
+/**
+ * Espace de travail interne : les créneaux libres jour par jour, consommés au
+ * fur et à mesure.
+ *
+ * `softRoom` est la place qu'on s'autorise à remplir AVANT de considérer la
+ * journée comme tendue — la même notion que celle affichée à l'élève
+ * (`tightLoadRatio`, domain/workload.ts). Un premier passage s'y tient, ce qui
+ * laisse à chaque journée sa marge ; on ne la dépasse que lorsqu'une échéance
+ * l'exige vraiment. Sans ce garde-fou, une semaine chargée remplissait les
+ * premiers jours à 100 % et laissait le week-end vide : arithmétiquement
+ * correct, humainement intenable.
+ */
 interface Canvas {
   byDay: Map<string, Slot[]>;
+  softRoom: Map<string, number>;
   keys: string[];
 }
 
 function buildCanvas(state: AppState, keys: string[], now: Date, ignoreTaskIds: Set<string>): Canvas {
   const byDay = new Map<string, Slot[]>();
+  const softRoom = new Map<string, number>();
+  const ratio = Math.min(1, Math.max(0.5, state.settings.tightLoadRatio));
+
   for (const key of keys) {
     const busy: { start: string; end: string }[] = [];
+    let alreadyPlanned = 0;
     for (const task of state.tasks) {
       if (!isOpen(task) || ignoreTaskIds.has(task.id)) continue;
-      for (const slot of slotsOnDay(task, key)) busy.push(slot);
+      for (const slot of slotsOnDay(task, key)) {
+        busy.push(slot);
+        alreadyPlanned += (new Date(slot.end).getTime() - new Date(slot.start).getTime()) / 60_000;
+      }
     }
-    byDay.set(key, freeSlotsForDay(state.availability, key, busy, now));
+    const free = freeSlotsForDay(state.availability, key, busy, now);
+    byDay.set(key, free);
+    const capacity = capacityMinutes(state.availability, key);
+    softRoom.set(key, Math.max(0, capacity * ratio - alreadyPlanned));
   }
-  return { byDay, keys };
+  return { byDay, softRoom, keys };
 }
 
 /** Retire `minutes` du premier créneau libre assez grand d'un jour, et renvoie la portion consommée. */
@@ -102,6 +133,7 @@ function take(canvas: Canvas, key: string, minutes: number): TaskSlot | undefine
     const rest = slot.minutes - minutes;
     if (rest >= MIN_CHUNK_MINUTES) slots[index] = { start: end, end: slot.end, minutes: rest };
     else slots.splice(index, 1);
+    canvas.softRoom.set(key, Math.max(0, (canvas.softRoom.get(key) ?? 0) - minutes));
     return { start: start.toISOString(), end: end.toISOString() };
   }
   return undefined;
@@ -110,6 +142,32 @@ function take(canvas: Canvas, key: string, minutes: number): TaskSlot | undefine
 /** Minutes libres d'un jour, dans l'état courant du canevas. */
 function freeOn(canvas: Canvas, key: string): number {
   return (canvas.byDay.get(key) ?? []).reduce((total, slot) => total + slot.minutes, 0);
+}
+
+/**
+ * Le prochain jour capable d'accueillir `minutes`, en partant de `from` et en
+ * bouclant sur le début de la fenêtre si nécessaire.
+ *
+ * C'est ce qui réalise l'étalement : après avoir posé une séance le jour J, on
+ * repart de J+1 pour la suivante. On ne revient au début que si tous les jours
+ * suivants sont pleins — auquel cas tasser est la seule option restante, et
+ * c'est alors la bonne.
+ */
+function nextDayWithRoom(canvas: Canvas, days: string[], from: number, minutes: number): number {
+  // Premier passage : on respecte la marge de chaque journée.
+  for (let step = 0; step < days.length; step += 1) {
+    const index = (from + step) % days.length;
+    const key = days[index];
+    if (freeOn(canvas, key) >= minutes && (canvas.softRoom.get(key) ?? 0) >= minutes) return index;
+  }
+  // Second passage : plus aucune journée n'a de marge, mais l'échéance, elle,
+  // n'attend pas. On remplit alors jusqu'à la capacité réelle — et la journée
+  // sera signalée « tendue » à l'élève, ce qui est l'information juste.
+  for (let step = 0; step < days.length; step += 1) {
+    const index = (from + step) % days.length;
+    if (freeOn(canvas, days[index]) >= minutes) return index;
+  }
+  return -1;
 }
 
 /**
@@ -172,7 +230,17 @@ export function planWork(state: AppState, options: PlanOptions = {}): PlanPropos
      */
     if (isDeadlineTask(task)) return false;
     if (options.taskIds) return options.taskIds.includes(task.id);
-    return options.replaceExisting ? true : !isScheduled(task);
+    if (options.replaceExisting) return true;
+    /*
+     * Une tâche dont TOUS les créneaux sont passés sans qu'elle soit faite est
+     * candidate au même titre qu'une tâche jamais posée : son planning
+     * n'existe plus que sur le papier.
+     *
+     * Sans cette ligne, « Planifier » ne faisait strictement RIEN le matin où
+     * l'on rouvre l'application après une soirée ratée — c'est-à-dire
+     * exactement le moment où l'on en a besoin (constaté en scénario).
+     */
+    return !isScheduled(task) || isMissedSlot(task, now);
   });
 
   const replanned = new Set(candidates.map((task) => task.id));
@@ -206,16 +274,28 @@ export function planWork(state: AppState, options: PlanOptions = {}): PlanPropos
 
     const placed: TaskSlot[] = [];
     let left = needed;
+    let dayIndex = 0;
     for (const chunk of splitIntoChunks(needed)) {
       if (left <= 0) break;
       const size = Math.min(chunk, left);
-      const key = usableKeys.find((candidate) => freeOn(canvas, candidate) >= size);
-      if (!key) break;
-      const slot = take(canvas, key, size);
+      const index = nextDayWithRoom(canvas, usableKeys, dayIndex, size);
+      if (index === -1) break;
+      const slot = take(canvas, usableKeys[index], size);
       if (!slot) break;
       placed.push(slot);
       left -= size;
+      // Séance suivante : le jour d'APRÈS. C'est tout l'étalement.
+      dayIndex = index + 1;
     }
+
+    /*
+     * Les séances sont triées avant d'être annoncées. Sans cela, une tâche
+     * dont la deuxième séance retombe sur un jour antérieur (parce qu'il y
+     * restait un bout de créneau) s'affichait à l'envers — « mercredi 15:30,
+     * puis lundi 21:30 » — ce qui fait douter de tout le reste de la
+     * proposition.
+     */
+    placed.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
     if (placed.length === 0) {
       unplaced.push({
@@ -253,7 +333,7 @@ function describe(slots: TaskSlot[], now: Date, missing: number): string {
     slots.length === 1
       ? `Placée ${parts[0]}.`
       : `Répartie en ${slots.length} séances : ${parts.join(", ")}.`;
-  return missing > 0 ? `${base} Il reste ${Math.round(missing)} min sans place.` : base;
+  return missing > 0 ? `${base} Il reste ${formatMinutes(missing)} sans place.` : base;
 }
 
 /**
@@ -380,4 +460,61 @@ export function computeAdaptations(state: AppState, now: Date = new Date()): Ada
     doneMinutes: state.timeEntries.reduce((total, entry) => (entry.taskId === task.id ? total + entry.minutes : total), 0),
     suggestion: suggestPostponement(state, task, now),
   }));
+}
+
+/**
+ * PLUSIEURS JOURS POSSIBLES, au lieu d'un seul.
+ *
+ * `suggestPostponement` donne LE meilleur jour. C'est ce qu'il faut quand on
+ * veut aller vite — mais pas quand on sait déjà quelque chose que
+ * l'application ignore (« mercredi j'ai piscine », « je préfère attaquer
+ * samedi matin »). Sans choix, il ne restait qu'à sortir la tâche du
+ * calendrier et à la reposer à la main, c'est-à-dire à renoncer à l'outil
+ * précisément au moment où l'on s'en sert le plus.
+ *
+ * Chaque option est calculée sur un canevas NEUF : ce sont des alternatives
+ * exclusives, pas un empilement. Sans cela, la deuxième option décrivait un
+ * calendrier où la première aurait déjà été appliquée.
+ */
+export function suggestPostponeOptions(
+  state: AppState,
+  task: Task,
+  now: Date = new Date(),
+  count = 3
+): PostponeSuggestion[] {
+  const needed = remainingMinutes(task, state.timeEntries);
+  const keys = dayKeyRange(now, 14);
+  const dueKey = task.dueAt && dayKey(task.dueAt) >= keys[0] ? dayKey(task.dueAt) : undefined;
+
+  const options: PostponeSuggestion[] = [];
+  for (const key of keys) {
+    if (options.length >= count) break;
+    const canvas = buildCanvas(state, keys, now, new Set([task.id]));
+    if (freeOn(canvas, key) < Math.min(needed, MIN_CHUNK_MINUTES)) continue;
+
+    const slots: TaskSlot[] = [];
+    let left = needed;
+    while (left > 0) {
+      const size = Math.min(left, MAX_CHUNK_MINUTES);
+      const slot = take(canvas, key, Math.min(size, freeOn(canvas, key)));
+      if (!slot) break;
+      slots.push(slot);
+      left -= (new Date(slot.end).getTime() - new Date(slot.start).getTime()) / 60_000;
+    }
+    if (slots.length === 0) continue;
+
+    const afterDue = dueKey !== undefined && key > dueKey;
+    options.push({
+      slots,
+      day: key,
+      message: `${capitalize(formatRelativeDay(key, now))} à ${timeOf(slots[0].start)}`,
+      warning: afterDue
+        ? "Après l'échéance"
+        : left > 0
+          ? `${formatMinutes(left)} n'y tiennent pas`
+          : undefined,
+    });
+  }
+
+  return options;
 }

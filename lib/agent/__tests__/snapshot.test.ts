@@ -88,3 +88,58 @@ describe("instantané pour un agent", () => {
     expect(JSON.stringify(buildSnapshot(many, NOW)).length).toBeLessThan(400_000);
   });
 });
+
+describe("ce dont un agent a besoin pour les questions réelles", () => {
+  it("donne le temps encore utilisable AUJOURD'HUI, pas la journée entière", () => {
+    // 20 h 00 un lundi : la soirée déclarée va de 18 h à 22 h.
+    const evening = new Date(new Date(NOW).setHours(20, 0, 0, 0));
+    const snapshot = buildSnapshot(makeState(), evening);
+    expect(snapshot.capacity.todayMinutes).toBe(240);
+    expect(snapshot.capacity.remainingTodayMinutes).toBe(120);
+  });
+
+  it("déduit les créneaux déjà posés du temps restant", () => {
+    const state = makeState({ tasks: [scheduleTask(makeTask({ title: "prévu" }), [slot(0, "18:00", 60)])] });
+    expect(buildSnapshot(state, NOW).capacity.remainingTodayMinutes).toBe(180);
+  });
+
+  it("sépare les rendez-vous du travail", () => {
+    const state = makeState({
+      tasks: [
+        makeTask({ title: "DS de maths", category: "eval-ds", dueAt: at(3, "08:00") }),
+        makeTask({ title: "TD", estimatedMinutes: 60, dueAt: at(2) }),
+      ],
+    });
+    const snapshot = buildSnapshot(state, NOW);
+    expect(snapshot.upcomingEvents.map((item) => item.title)).toEqual(["DS de maths"]);
+    expect(snapshot.nextAction?.title).toBe("TD");
+  });
+
+  it("signale ce qui ne rentre pas, pour qu'un agent arbitre au lieu de planifier", () => {
+    const state = makeState({ tasks: [makeTask({ title: "Annales", estimatedMinutes: 600, dueAt: at(1, "23:59") })] });
+    const [item] = buildSnapshot(state, NOW).impossible;
+    expect(item.title).toBe("Annales");
+    expect(item.missingMinutes).toBeGreaterThan(0);
+  });
+
+  it("expose les routines", () => {
+    const state = makeState({
+      routines: [
+        {
+          id: "r1",
+          title: "Bilan du dimanche",
+          category: "org-bilan",
+          priority: 2,
+          rule: { kind: "weekly", weekdays: [6] },
+          horizonDays: 7,
+          active: true,
+          createdAt: NOW.toISOString(),
+          updatedAt: NOW.toISOString(),
+        },
+      ],
+    });
+    expect(buildSnapshot(state, NOW).routines).toEqual([
+      { title: "Bilan du dimanche", rule: "Dim", estimatedMinutes: undefined, active: true },
+    ]);
+  });
+});

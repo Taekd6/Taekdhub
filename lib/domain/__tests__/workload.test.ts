@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeDayLoad, computeFeasibility, computeWorkload } from "@/lib/domain/workload";
+import { computeDayLoad, computeFeasibility, computeWorkload, findImpossibleTasks } from "@/lib/domain/workload";
 import { dayKey } from "@/lib/domain/date";
 import { scheduleTask } from "@/lib/domain/tasks";
 import { at, makeEntry, makeState, makeTask, NOW, slot } from "./fixtures";
@@ -114,5 +114,57 @@ describe("verdict de faisabilité", () => {
   it("liste les jours en dépassement", () => {
     const state = makeState({ tasks: [scheduleTask(makeTask(), [slot(1, "18:00", 400)])] });
     expect(computeFeasibility(state, NOW, 7, NOW).overloadedDays).toEqual([dayKey(new Date(at(1)))]);
+  });
+});
+
+describe("ce qui ne rentre pas avant l'échéance", () => {
+  /**
+   * Le signal le plus important de l'application, et le seul qui doive être
+   * donné À L'AVANCE : découvrir le dimanche soir qu'un DM était infaisable
+   * depuis jeudi ne laisse plus aucune décision à prendre.
+   */
+  it("repère une tâche qui dépasse tout le temps libre restant avant sa date", () => {
+    // 10 h de travail pour demain, alors que lundi (4 h) et mardi (3 h) n'en offrent que 7.
+    const state = makeState({ tasks: [makeTask({ title: "Annales", estimatedMinutes: 600, dueAt: at(1, "23:59") })] });
+    const [item] = findImpossibleTasks(state, NOW);
+    expect(item.task.title).toBe("Annales");
+    expect(item.availableMinutes).toBe(420);
+    expect(item.missingMinutes).toBe(180);
+  });
+
+  it("ne signale rien quand le travail tient, même de justesse", () => {
+    const state = makeState({ tasks: [makeTask({ title: "tient", estimatedMinutes: 420, dueAt: at(1, "23:59") })] });
+    expect(findImpossibleTasks(state, NOW)).toEqual([]);
+  });
+
+  it("tient compte du temps déjà travaillé", () => {
+    const task = makeTask({ title: "entamée", estimatedMinutes: 600, dueAt: at(1, "23:59") });
+    const state = makeState({ tasks: [task], timeEntries: [makeEntry(300, { taskId: task.id })] });
+    expect(findImpossibleTasks(state, NOW)).toEqual([]);
+  });
+
+  it("compte le temps pris par les AUTRES tâches déjà posées", () => {
+    const busy = scheduleTask(makeTask({ title: "déjà prévu" }), [slot(0, "18:00", 240)]);
+    const state = makeState({ tasks: [busy, makeTask({ title: "serré", estimatedMinutes: 200, dueAt: at(1, "23:59") })] });
+    expect(findImpossibleTasks(state, NOW).map((item) => item.task.title)).toEqual(["serré"]);
+  });
+
+  it("ne juge jamais une évaluation infaisable : elle a lieu, c'est tout", () => {
+    const state = makeState({ tasks: [makeTask({ title: "DS", category: "eval-ds", estimatedMinutes: 600, dueAt: at(1) })] });
+    expect(findImpossibleTasks(state, NOW)).toEqual([]);
+  });
+
+  it("ignore les tâches sans échéance — rien ne peut y être « en retard »", () => {
+    const state = makeState({ tasks: [makeTask({ title: "fond", estimatedMinutes: 5000 })] });
+    expect(findImpossibleTasks(state, NOW)).toEqual([]);
+  });
+});
+
+describe("retard et impossible sont deux états différents", () => {
+  it("ne déclare jamais « impossible » une tâche dont l'échéance est déjà passée", () => {
+    const state = makeState({ tasks: [makeTask({ title: "en retard", estimatedMinutes: 60, dueAt: at(-1, "23:59") })] });
+    expect(findImpossibleTasks(state, NOW)).toEqual([]);
+    // Elle reste bien comptée comme du retard, là où c'est sa place.
+    expect(computeWorkload(state, NOW, 7, NOW).overdueCount).toBe(1);
   });
 });

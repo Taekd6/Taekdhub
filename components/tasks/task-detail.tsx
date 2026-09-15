@@ -6,14 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet } from "@/components/ui/sheet";
-import { Notice } from "@/components/ui/state";
 import { DueBadge, SubjectDot } from "@/components/tasks/task-bits";
 import { categoryLabel } from "@/lib/domain/categories";
-import { formatDay, formatMinutes, formatRelativeDay, timeOf } from "@/lib/domain/date";
-import { suggestPostponement } from "@/lib/domain/scheduling";
+import { formatDay, formatMinutes, timeOf } from "@/lib/domain/date";
+import { suggestPostponeOptions } from "@/lib/domain/scheduling";
 import { subjectById } from "@/lib/domain/subjects";
 import { actualMinutes, effortMinutes, isOpen, remainingMinutes } from "@/lib/domain/tasks";
 import { useStore } from "@/lib/store/store";
+import { cn } from "@/lib/cn";
 import type { Task } from "@/lib/domain/types";
 
 /**
@@ -38,15 +38,15 @@ export function TaskDetail({
   onClose: () => void;
   onEdit: (task: Task) => void;
 }) {
-  const { state, completeTask, reopenTask, cancelTask, deleteTask, logTime, postponeTask, unscheduleTask } = useStore();
+  const { state, completeTask, reopenTask, cancelTask, deleteTask, logTime, postponeTask, scheduleTask, unscheduleTask } = useStore();
   const [customMinutes, setCustomMinutes] = useState("");
   const [logged, setLogged] = useState<number | null>(null);
 
   const live = task ? (state.tasks.find((item) => item.id === task.id) ?? task) : null;
 
-  const suggestion = useMemo(() => {
-    if (!live || !isOpen(live)) return null;
-    return suggestPostponement(state, live);
+  const options = useMemo(() => {
+    if (!live || !isOpen(live)) return [];
+    return suggestPostponeOptions(state, live);
   }, [live, state]);
 
   if (!live) return null;
@@ -199,28 +199,40 @@ export function TaskDetail({
           )}
         </section>
 
-        {/* ── REPORT INTELLIGENT ──────────────────────────────────── */}
-        {openTask && suggestion && (
-          <Notice
-            tone={suggestion.warning ? "warning" : "info"}
-            title="Reporter"
-            action={
-              <Button
-                size="sm"
-                onClick={() => {
-                  postponeTask(live.id, suggestion.slots);
-                  onClose();
-                }}
-              >
-                Placer {formatRelativeDay(suggestion.day)}
-              </Button>
-            }
-          >
-            <span>
-              {suggestion.message}
-              {suggestion.warning && <strong className="block font-medium text-ink">{suggestion.warning}</strong>}
-            </span>
-          </Notice>
+        {/* ── REPORTER ──────────────────────────────────────────────
+            Trois jours qui ont RÉELLEMENT la place, dans l'ordre. Le premier
+            est le meilleur au sens de TaekdHub ; les deux autres existent
+            parce que l'élève sait des choses que l'application ignore. Aucun
+            n'est un « demain » aveugle : chacun est calculé sur les créneaux
+            libres restants. */}
+        {openTask && options.length > 0 && (
+          <section>
+            <p className="t-label">{live.slots.length > 0 ? "Reporter à" : "Placer au calendrier"}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {options.map((option) => (
+                <button
+                  key={option.day}
+                  type="button"
+                  onClick={() => {
+                    // Poser une tâche qui n'avait aucun créneau n'est pas un
+                    // report : ne pas incrémenter le compteur, sans quoi
+                    // l'analyse des habitudes accuserait l'élève de reporter
+                    // des tâches qu'il vient simplement de planifier.
+                    if (live.slots.length > 0) postponeTask(live.id, option.slots);
+                    else scheduleTask(live.id, option.slots);
+                    onClose();
+                  }}
+                  className={cn(
+                    "row-hover min-h-11 rounded-lg border px-3 text-left text-sm",
+                    option.warning ? "border-amber-400/40 text-amber-200" : "border-line text-ink"
+                  )}
+                >
+                  <span className="block font-medium">{option.message}</span>
+                  {option.warning && <span className="block text-2xs">{option.warning}</span>}
+                </button>
+              ))}
+            </div>
+          </section>
         )}
 
         {live.notes && (

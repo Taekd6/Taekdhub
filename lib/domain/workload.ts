@@ -1,4 +1,4 @@
-import { capacityMinutes } from "@/lib/domain/availability";
+import { capacityMinutes, freeSlotsForDay } from "@/lib/domain/availability";
 import { dayKey, dayKeyRange, dateFromDayKey } from "@/lib/domain/date";
 import { effortMinutes, isDeadlineTask, isOpen, isOverdue, isScheduled, remainingMinutes, scheduledMinutesOnDay, slotsOnDay } from "@/lib/domain/tasks";
 import type { AppState, Task } from "@/lib/domain/types";
@@ -217,4 +217,87 @@ export function computeFeasibility(state: AppState, from: Date | string, days: n
 /** Somme des estimations d'une liste — utilisée par l'aperçu « ce qui reste à caser ». */
 export function totalEffort(tasks: Task[]): number {
   return tasks.reduce((total, task) => total + effortMinutes(task), 0);
+}
+
+/**
+ * ============================================================================
+ * L'IMPOSSIBLE — dit avant l'échéance, pas après.
+ * ============================================================================
+ *
+ * Une tâche est IMPOSSIBLE quand le travail qui lui reste dépasse tout le
+ * temps encore libre avant son échéance — même en y consacrant chaque minute
+ * disponible, et sans rien faire d'autre de ce qui est déjà posé.
+ *
+ * C'est le seul signal que l'application doit absolument donner À L'AVANCE :
+ * un élève qui découvre le dimanche soir qu'un DM de 6 h était infaisable
+ * depuis jeudi n'a plus aucune décision à prendre. S'il le sait jeudi, il en a
+ * trois : demander un délai, réduire l'ambition, ou libérer du temps ailleurs.
+ *
+ * La définition est volontairement GÉNÉREUSE (on suppose qu'il pourrait tout
+ * abandonner d'autre) : ainsi, quand TaekdHub dit « impossible », ça l'est
+ * vraiment, et l'alerte garde sa valeur.
+ */
+export interface ImpossibleTask {
+  task: Task;
+  /** Travail restant sur la tâche. */
+  remainingMinutes: number;
+  /** Temps réellement disponible d'ici l'échéance, tout le reste mis de côté. */
+  availableMinutes: number;
+  /** Ce qui manque, au mieux. Toujours > 0. */
+  missingMinutes: number;
+}
+
+export function findImpossibleTasks(state: AppState, now: Date = new Date(), horizonDays = 21): ImpossibleTask[] {
+  const keys = dayKeyRange(now, horizonDays);
+  const horizonEnd = keys[keys.length - 1];
+
+  // Les créneaux posés, par jour, calculés une seule fois : la boucle par
+  // tâche ne fait ensuite qu'en retirer les siens.
+  const busyByDay = new Map<string, { taskId: string; start: string; end: string }[]>();
+  for (const task of state.tasks) {
+    if (!isOpen(task)) continue;
+    for (const slot of task.slots) {
+      const key = dayKey(slot.start);
+      if (key > horizonEnd) continue;
+      const list = busyByDay.get(key) ?? [];
+      list.push({ taskId: task.id, start: slot.start, end: slot.end });
+      busyByDay.set(key, list);
+    }
+  }
+
+  const impossible: ImpossibleTask[] = [];
+  for (const task of state.tasks) {
+    // Une évaluation n'a pas de travail à caser : elle a lieu, point.
+    if (!isOpen(task) || isDeadlineTask(task) || !task.dueAt) continue;
+    const dueKey = dayKey(task.dueAt);
+    if (dueKey > horizonEnd) continue;
+    /*
+     * Une échéance DÉJÀ PASSÉE n'est pas « impossible », elle est manquée.
+     * Ce sont deux états différents, avec deux remèdes différents : on
+     * rattrape un retard, on arbitre un impossible. Les confondre produisait
+     * la phrase « 0 min réellement disponibles d'ici hier », et surtout
+     * noyait le vrai signal sous des alertes qui n'appellent aucune décision.
+     */
+    if (dueKey < keys[0]) continue;
+
+    const remaining = remainingMinutes(task, state.timeEntries);
+    let available = 0;
+    for (const key of keys) {
+      if (key > dueKey) break;
+      const busy = (busyByDay.get(key) ?? []).filter((slot) => slot.taskId !== task.id);
+      available += freeSlotsForDay(state.availability, key, busy, now).reduce((total, slot) => total + slot.minutes, 0);
+    }
+
+    if (remaining > available) {
+      impossible.push({
+        task,
+        remainingMinutes: remaining,
+        availableMinutes: Math.round(available),
+        missingMinutes: Math.round(remaining - available),
+      });
+    }
+  }
+
+  // Le plus urgent d'abord : c'est celui sur lequel une décision est due.
+  return impossible.sort((a, b) => new Date(a.task.dueAt!).getTime() - new Date(b.task.dueAt!).getTime());
 }

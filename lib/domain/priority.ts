@@ -1,5 +1,5 @@
 import { isDeadlineCategory } from "@/lib/domain/categories";
-import { dayKey, daysBetween } from "@/lib/domain/date";
+import { dayKey, daysBetween, formatMinutes, timeOf } from "@/lib/domain/date";
 import { dueInfo, isMissedSlot, isOpen, isOverdue, nextSlot, remainingMinutes } from "@/lib/domain/tasks";
 import type { AppState, Task, TimeEntry } from "@/lib/domain/types";
 
@@ -164,8 +164,8 @@ export function rankOpenTasks(state: AppState, now: Date = new Date()): ScoredTa
 }
 
 export interface NextAction {
-  kind: "now" | "nothing-planned" | "empty" | "done-for-today";
-  /** La tâche à faire maintenant — absente pour `nothing-planned`, `empty` et `done-for-today`. */
+  kind: "now" | "empty" | "done-for-today";
+  /** La tâche à faire maintenant — absente pour `empty` et `done-for-today`. */
   scored?: ScoredTask;
   title: string;
   /** Une phrase, en français, qui justifie la proposition. */
@@ -173,6 +173,15 @@ export interface NextAction {
   /** La suite immédiate : « ensuite », puis « plus tard ». */
   next: ScoredTask[];
   later: ScoredTask[];
+  /**
+   * Les évaluations qui approchent (DS, khôlle…), par ordre de date.
+   *
+   * Séparées du reste, et jamais proposées comme « ce que tu dois faire
+   * maintenant » : on ne « commence » pas un DS, on s'y prépare. La version
+   * précédente affichait « MAINTENANT : DS de maths — environ 80 min par jour
+   * si tu l'étales », ce qui n'a aucun sens et décrédibilisait l'écran entier.
+   */
+  upcomingEvents: ScoredTask[];
 }
 
 /**
@@ -191,20 +200,40 @@ export function computeNextAction(
   const now = options.now ?? new Date();
   const ranked = rankOpenTasks(state, now);
 
-  if (ranked.length === 0) {
+  // Les évaluations sortent du flux de travail : ce sont des rendez-vous.
+  const upcomingEvents = ranked
+    .filter((item) => isDeadlineCategory(item.task.category) && item.task.dueAt)
+    .sort((a, b) => new Date(a.task.dueAt!).getTime() - new Date(b.task.dueAt!).getTime())
+    .slice(0, 3);
+  const workable = ranked.filter((item) => !isDeadlineCategory(item.task.category));
+
+  if (workable.length === 0) {
+    const base = { next: [], later: [], upcomingEvents };
     return state.tasks.length === 0
-      ? { kind: "empty", title: "Rien à faire — pour l'instant", rationale: "Aucune tâche enregistrée. Commence par y mettre ce que tu as à faire cette semaine.", next: [], later: [] }
-      : { kind: "done-for-today", title: "Tout est fait", rationale: "Aucune tâche ouverte. Profites-en, ou ajoute ce qui arrive la semaine prochaine.", next: [], later: [] };
+      ? { ...base, kind: "empty", title: "Rien à faire — pour l'instant", rationale: "Aucune tâche enregistrée. Commence par y mettre ce que tu as à faire cette semaine." }
+      : { ...base, kind: "done-for-today", title: "Tout est fait", rationale: "Aucune tâche ouverte. Profites-en, ou ajoute ce qui arrive la semaine prochaine." };
   }
 
-  const [first, ...rest] = ranked;
+  const [first, ...rest] = workable;
   const budget = options.remainingCapacityMinutes;
 
-  // « Ensuite » : ce qui tient encore dans le temps restant de la journée. Sans
-  // budget connu, on s'en tient à trois propositions.
+  /*
+   * « Ensuite » ne propose que ce qui peut RAISONNABLEMENT être fait ce soir :
+   * une tâche déjà posée un autre jour n'y a pas sa place. L'écran promettait
+   * « ensuite, apprendre le chapitre 3 » alors que le calendrier la plaçait
+   * demain — deux réponses différentes à la même question, dans la même
+   * application.
+   */
+  const eligible = rest.filter((candidate) => {
+    const slot = nextSlot(candidate.task, now);
+    return !slot || dayKey(slot.start) === dayKey(now);
+  });
+
+  // Ce qui tient encore dans le temps restant de la journée. Sans budget
+  // connu, on s'en tient à trois propositions.
   const next: ScoredTask[] = [];
   let used = first.minutes;
-  for (const candidate of rest) {
+  for (const candidate of eligible) {
     if (next.length >= 3) break;
     if (budget !== undefined && used + candidate.minutes > budget) continue;
     next.push(candidate);
@@ -220,29 +249,42 @@ export function computeNextAction(
     rationale: explain(first, now),
     next,
     later,
+    upcomingEvents,
   };
 }
 
-/** Une phrase complète, pas une liste de mots-clés — c'est ce qui rend la proposition crédible. */
+/**
+ * Une phrase complète, pas une liste de mots-clés — c'est ce qui rend la
+ * proposition crédible.
+ *
+ * Toutes les durées passent par `formatMinutes` : « 600 min à placer avant ce
+ * soir » était à la fois juste et illisible. Personne ne compte en minutes
+ * au-delà de l'heure.
+ */
 export function explain(scored: ScoredTask, now: Date = new Date()): string {
   const { task, minutes } = scored;
   const info = dueInfo(task, now);
+  const duration = formatMinutes(minutes);
 
   if (info.state === "overdue") {
     const late = Math.abs(info.days ?? 0);
-    return `En retard de ${late} jour${late > 1 ? "s" : ""} — il reste ${minutes} min de travail dessus.`;
+    return `En retard de ${late} jour${late > 1 ? "s" : ""} — il reste ${duration} de travail dessus.`;
   }
-  if (info.state === "today") return `À rendre aujourd'hui, ${minutes} min estimées.`;
-  if (info.state === "tomorrow") return `À rendre demain : ${minutes} min à placer avant ce soir.`;
-  if (info.state === "soon" && info.days) {
-    const perDay = Math.ceil(minutes / info.days);
-    return `Échéance dans ${info.days} jours — environ ${perDay} min par jour si tu l'étales.`;
-  }
+  if (info.state === "today") return `À rendre aujourd'hui, ${duration} estimées.`;
+  if (info.state === "tomorrow") return `À rendre demain : ${duration} à placer d'ici là.`;
+
+  // Une tâche déjà posée au calendrier parle de son créneau, pas d'une
+  // répartition théorique : l'élève a déjà décidé quand il la ferait.
   const upcoming = nextSlot(task, now);
   if (upcoming && dayKey(upcoming.start) === dayKey(now)) {
-    return `C'est ce que tu avais prévu aujourd'hui : ${minutes} min.`;
+    return `C'est ce que tu avais prévu aujourd'hui, à ${timeOf(upcoming.start)} — ${duration}.`;
   }
-  if (task.postponedCount >= 2) return `Reportée ${task.postponedCount} fois — ${minutes} min suffisent à la sortir de la liste.`;
-  if (task.priority >= 3) return `Priorité ${task.priority === 4 ? "critique" : "haute"}, ${minutes} min estimées.`;
-  return `${minutes} min estimées — rien de plus urgent pour l'instant.`;
+
+  if (info.state === "soon" && info.days) {
+    const perDay = Math.ceil(minutes / info.days / 5) * 5;
+    return `Échéance dans ${info.days} jours — environ ${formatMinutes(perDay)} par jour si tu l'étales.`;
+  }
+  if (task.postponedCount >= 2) return `Reportée ${task.postponedCount} fois — ${duration} suffisent à la sortir de la liste.`;
+  if (task.priority >= 3) return `Priorité ${task.priority === 4 ? "critique" : "haute"}, ${duration} estimées.`;
+  return `${duration} estimées — rien de plus urgent pour l'instant.`;
 }
