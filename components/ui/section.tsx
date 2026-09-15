@@ -83,8 +83,16 @@ export function Section({
               la même ligne que le titre ; `max-w-full` l'empêche de dépasser
               la section quand elle passe à la ligne. Mesuré à 320 px : le
               sélecteur de durée de la séance mesurait 266 px dans une colonne
-              de 246 px, et débordait du cadre. */}
-          {action && <div className="max-w-full shrink-0">{action}</div>}
+              de 246 px, et débordait du cadre.
+
+              `max-sm:w-full` — une action qui est PASSÉE À LA LIGNE a droit à
+              cette ligne. Sans cela elle restait dimensionnée sur son
+              contenu (`shrink-0` ⇒ max-content) : le sélecteur de durée
+              occupait 266 px dans une section de 316 px, ses quatre options
+              tombaient à 62 px de contenu pour 63 px de texte, et « 60 min »
+              s'affichait « 60 m… » sur un téléphone. Il y avait 50 px libres
+              juste à côté. */}
+          {action && <div className="max-w-full shrink-0 max-sm:w-full">{action}</div>}
         </header>
       )}
 

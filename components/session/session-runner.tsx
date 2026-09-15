@@ -393,6 +393,14 @@ export function SessionRunner() {
                     onChange={setBudgetMinutes}
                     options={BUDGET_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
                   />
+                  {/* « ou » — un mot, qui règle une ambiguïté réelle.
+                      Le champ libre est posé juste à droite du sélecteur, avec
+                      le même fond en creux et la même hauteur : il se lisait
+                      comme une CINQUIÈME option du groupe, et la valeur qu'il
+                      affiche (identique au préréglage actif) renforçait la
+                      confusion. Dire qu'il s'agit d'une alternative coûte deux
+                      lettres. */}
+                  <span className="t-meta shrink-0 max-sm:hidden">ou</span>
                   <div className="flex items-center gap-1.5">
                     <Input
                       type="number"
@@ -414,6 +422,7 @@ export function SessionRunner() {
                     onChange={setCountTarget}
                     options={COUNT_PRESETS.map((preset) => ({ value: preset, label: String(preset) }))}
                   />
+                  <span className="t-meta shrink-0 max-sm:hidden">ou</span>
                   <div className="flex items-center gap-1.5">
                     <Input
                       type="number"

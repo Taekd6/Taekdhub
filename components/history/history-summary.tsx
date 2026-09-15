@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Meter } from "@/components/ui/progress";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import type { HistorySummary as HistorySummaryData, ResultCounts } from "@/lib/history";
-import { formatDuration } from "@/lib/utils";
+import { formatSpan } from "@/lib/utils";
 
 /**
  * Purement présentationnel — l'agrégat de temps vient de
@@ -19,7 +19,7 @@ export function HistorySummary({ summary, results }: { summary: HistorySummaryDa
       {/* Empilées, pas en rangée : dans un rail de 18 rem, trois indicateurs
           côte à côte redeviennent illisibles. */}
       <dl className="divide-y divide-line border-y border-line">
-        <SummaryLine label="Temps total" value={formatDuration(summary.totalSeconds)} />
+        <SummaryLine label="Temps total" value={formatSpan(summary.totalSeconds)} />
         <SummaryLine label="Séances" value={String(summary.sessionCount)} />
         <SummaryLine
           label="Réussite"
@@ -51,13 +51,28 @@ export function HistorySummary({ summary, results }: { summary: HistorySummaryDa
       {summary.bySubject.length > 0 && (
         <div>
           <p className="t-label mb-3">Par matière</p>
-          <ul className="space-y-2.5">
+          {/*
+            LA JAUGE PASSE SOUS LA LIGNE, SUR TOUTE LA LARGEUR.
+            Quatre éléments se disputaient les 256 px utiles du rail — pastille,
+            nom, jauge, durée. Résultat mesuré : « Mathématiques » s'affichait
+            « Mathématiq… » sur un écran de 1440 px, et « 5 h 50 » se cassait
+            en deux lignes. Pire, les jauges ne faisaient que 48 px : 6 h 55 et
+            6 h 25 y donnaient deux traits indiscernables, donc la comparaison
+            — leur unique raison d'être — n'avait pas lieu.
+
+            Sur deux lignes, le nom a toute la place, la durée ne se coupe
+            plus, et la jauge fait enfin la largeur du rail : l'écart entre
+            deux matières redevient visible.
+          */}
+          <ul className="space-y-3">
             {summary.bySubject.map(({ subject, seconds }) => (
-              <li key={subject} className="flex items-center gap-3">
-                <SubjectAvatar subject={subject} size="sm" />
-                <span className="min-w-0 flex-1 truncate text-sm">{subject}</span>
-                <Meter value={(seconds / maxSeconds) * 100} className="w-14 shrink-0" tone="neutral" />
-                <span className="tabular w-12 shrink-0 text-right text-2xs text-muted">{formatDuration(seconds)}</span>
+              <li key={subject}>
+                <div className="flex items-baseline gap-2">
+                  <SubjectAvatar subject={subject} size="sm" />
+                  <span className="min-w-0 flex-1 truncate text-sm">{subject}</span>
+                  <span className="tabular shrink-0 whitespace-nowrap text-2xs text-muted">{formatSpan(seconds)}</span>
+                </div>
+                <Meter value={(seconds / maxSeconds) * 100} className="mt-1.5" tone="neutral" />
               </li>
             ))}
           </ul>

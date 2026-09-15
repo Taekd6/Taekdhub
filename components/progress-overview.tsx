@@ -28,7 +28,7 @@ import { computeReadinessBySubject, READINESS_META } from "@/lib/readiness";
 import type { Chapter, WeekSnapshot } from "@/lib/storage";
 import { subjectMeta, subjects, totalSeconds } from "@/lib/study";
 import { compareToPreviousWeek, findPreviousWeekSnapshot } from "@/lib/week-snapshot";
-import { formatDuration } from "@/lib/utils";
+import { formatMinutesSpan, formatSpan } from "@/lib/utils";
 import { cn } from "@/lib/cn";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 
@@ -101,7 +101,7 @@ export function ProgressOverview() {
       rail={
         <div className="space-y-8">
           <dl className="divide-y divide-line border-y border-line">
-            <RailStat label="Temps cumulé" value={formatDuration(model.totalTime)} />
+            <RailStat label="Temps cumulé" value={formatSpan(model.totalTime)} />
             <RailStat
               label="Exercices maîtrisés"
               value={`${model.global.masteredCount}`}
@@ -402,8 +402,18 @@ function withSign(value: number, unit = ""): string {
   return `${value > 0 ? "+" : ""}${value}${unit}`;
 }
 
+/**
+ * Variation de TEMPS — « +2 h 15 », « −5 h », « ±0 ».
+ *
+ * Exprimée dans la même unité que la valeur qu'elle commente : sous un
+ * « 12 h 40 », un détail « −300 min » oblige à faire la division de tête.
+ * Le signe est composé avec le vrai moins typographique (U+2212), qui a la
+ * chasse d'un chiffre — le trait d'union laissait la colonne bancale.
+ */
 function withSignMinutes(seconds: number): string {
-  return withSign(Math.round(seconds / 60), " min");
+  const minutes = Math.round(seconds / 60);
+  if (minutes === 0) return "±0";
+  return `${minutes > 0 ? "+" : "−"}${formatMinutesSpan(Math.abs(minutes))}`;
 }
 
 /**
@@ -441,7 +451,7 @@ function WeekEvolution({
       <StatRow>
         <Stat
           label="Temps travaillé"
-          value={formatDuration(comparison.currentTotalSeconds)}
+          value={formatSpan(comparison.currentTotalSeconds)}
           detail={withSignMinutes(comparison.deltaTotalSeconds)}
           size="sm"
           tone={comparison.deltaTotalSeconds > 0 ? "success" : comparison.deltaTotalSeconds < 0 ? "danger" : undefined}
@@ -471,7 +481,7 @@ function WeekEvolution({
           <Stat
             label="La moins travaillée"
             value={comparison.mostNeglectedSubject.subject}
-            detail={`${formatDuration(comparison.mostNeglectedSubject.currentSeconds)} cette semaine`}
+            detail={`${formatSpan(comparison.mostNeglectedSubject.currentSeconds)} cette semaine`}
             size="sm"
           />
         )}
@@ -561,7 +571,7 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
                   ? "Aucune séance enregistrée pour l'instant."
                   : `${completionRate} % maîtrisé${
                       flaggedCount > 0
-                        ? ` · ${flaggedCount} exercice${flaggedCount > 1 ? "s" : ""} à retravailler · ≈ ${estimatedMinutes} min`
+                        ? ` · ${flaggedCount} exercice${flaggedCount > 1 ? "s" : ""} à retravailler · ≈ ${formatMinutesSpan(estimatedMinutes)}`
                         : ""
                     }`}
               </span>

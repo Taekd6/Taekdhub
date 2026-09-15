@@ -65,7 +65,7 @@ export function Sheet({
             className="animate-rise relative flex max-h-[85vh] flex-col rounded-t-2xl border-t border-line bg-panel"
           >
             <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3">
-              <h2 className="t-title">{title}</h2>
+              <h2 className="t-subhead">{title}</h2>
               <Button variant="ghost" size="icon" aria-label="Fermer" onClick={onClose}>
                 <X size={18} />
               </Button>

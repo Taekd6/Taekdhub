@@ -11,6 +11,7 @@ import { HistorySummary } from "@/components/history/history-summary";
 import { SessionRow } from "@/components/history/session-row";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { defaultHistoryFilters, filterSessions, resultCounts, summarizeSessions, type HistoryFilters as HistoryFiltersState } from "@/lib/history";
+import { formatSpan } from "@/lib/utils";
 
 /** Lignes montées d'un coup — voir `visibleCount`. */
 const HISTORY_PAGE_SIZE = 100;
@@ -45,6 +46,36 @@ export function SessionHistory() {
     [filtered]
   );
 
+  /*
+   * LE JOURNAL EST GROUPÉ PAR JOUR.
+   *
+   * À plat, trente-six lignes portant chacune « 14 sept. 2026, 05:30 » se
+   * lisent comme un export de base de données : la date est répétée sur
+   * chaque ligne, et pourtant on ne voit pas ce qu'a été une journée. Groupé,
+   * la même liste répond à « qu'est-ce que j'ai fait mardi » — et le total du
+   * jour, qui n'existait nulle part, s'y écrit gratuitement.
+   *
+   * Le regroupement se fait APRÈS la pagination (`visibleCount`), jamais
+   * avant : la garde qui plafonne le nombre de lignes montées reste
+   * exactement celle d'avant, et un groupe peut légitimement être coupé au
+   * bord de la page — il se complète en affichant la suite.
+   */
+  const visibleDays = useMemo(() => {
+    const groups: { key: string; date: Date; sessions: typeof sorted; seconds: number }[] = [];
+    for (const session of sorted.slice(0, visibleCount)) {
+      const date = new Date(session.started_at);
+      const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+      const last = groups[groups.length - 1];
+      if (last && last.key === key) {
+        last.sessions.push(session);
+        last.seconds += session.duration_seconds;
+      } else {
+        groups.push({ key, date, sessions: [session], seconds: session.duration_seconds });
+      }
+    }
+    return groups;
+  }, [sorted, visibleCount]);
+
   const updateFilters = (patch: Partial<HistoryFiltersState>) => {
     setFilters((prev) => ({ ...prev, ...patch }));
     setVisibleCount(HISTORY_PAGE_SIZE);
@@ -72,22 +103,11 @@ export function SessionHistory() {
     );
   }
 
-  /*
-   * Le JOURNAL est le contenu ; les agrégats le commentent. Ils étaient
-   * empilés au-dessus de lui, si bien qu'on faisait défiler trois blocs de
-   * synthèse avant d'atteindre la première séance — alors que c'est
-   * précisément la séance qu'on vient chercher. Ils passent dans le rail,
-   * où ils restent visibles pendant qu'on remonte le journal.
-   */
+
   return (
     <Split
       railLabel="Synthèse de la période"
-      rail={
-        <div className="space-y-8">
-          <HistoryFilters filters={filters} onChange={updateFilters} />
-          <HistorySummary summary={summary} results={results} />
-        </div>
-      }
+      rail={<HistorySummary summary={summary} results={results} />}
     >
       <div className="space-y-8">
         <PageBar
@@ -95,17 +115,45 @@ export function SessionHistory() {
           lede="La trace exacte du travail accompli : ce qui a été travaillé, combien de temps, avec quel résultat."
         />
 
-      <Section label="Journal" title={`${sorted.length} séance${sorted.length > 1 ? "s" : ""}`}>
+      {/* Les filtres vivaient dans le rail, donc SOUS le journal sur
+          téléphone : il fallait dépasser cent lignes pour restreindre la
+          liste qu'on est en train de lire. Un filtre appartient au bord de ce
+          qu'il filtre — il est ici l'action de la section, à côté du compte
+          qu'il fait varier. Le rail ne garde que la synthèse. */}
+      <Section
+        label="Journal"
+        title={`${sorted.length} séance${sorted.length > 1 ? "s" : ""}`}
+        action={<HistoryFilters filters={filters} onChange={updateFilters} />}
+      >
         {sorted.length ? (
-          <ul className="divide-y divide-line border-y border-line">
-            {sorted.slice(0, visibleCount).map((session) => {
-              const exercise = session.exercise_id ? exerciseById.get(session.exercise_id) : undefined;
-              const chapter = exercise?.chapter_id ? chapterById.get(exercise.chapter_id) : undefined;
-              return (
-                <SessionRow key={session.id} session={session} exerciseTitle={exercise?.title} chapterLabel={chapter?.label} />
-              );
-            })}
-          </ul>
+          <div className="border-t border-line">
+            {visibleDays.map((day) => (
+              <section key={day.key}>
+                {/* L'en-tête de jour n'est pas une barre teintée : une
+                    étiquette et un total, séparés du jour précédent par le
+                    filet de la liste. C'est ce que fait un relevé. */}
+                <h3 className="flex items-baseline justify-between gap-3 border-b border-line pb-1.5 pt-5 first:pt-3">
+                  <span className="t-label">{formatDayLabel(day.date)}</span>
+                  <span className="t-meta tabular shrink-0">{formatSpan(day.seconds)}</span>
+                </h3>
+                <ul className="divide-y divide-line border-b border-line">
+                  {day.sessions.map((session) => {
+                    const exercise = session.exercise_id ? exerciseById.get(session.exercise_id) : undefined;
+                    const chapter = exercise?.chapter_id ? chapterById.get(exercise.chapter_id) : undefined;
+                    return (
+                      <SessionRow
+                        key={session.id}
+                        session={session}
+                        exerciseTitle={exercise?.title}
+                        chapterLabel={chapter?.label}
+                        dateInHeader
+                      />
+                    );
+                  })}
+                </ul>
+              </section>
+            ))}
+          </div>
         ) : (
           <p className="t-meta border-y border-line py-6 text-center">Aucune séance ne correspond à ces filtres.</p>
         )}
@@ -124,4 +172,22 @@ export function SessionHistory() {
       </div>
     </Split>
   );
+}
+
+const dayFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+
+/**
+ * En-tête d'un jour du journal.
+ *
+ * « Aujourd'hui » et « Hier » plutôt que la date : ce sont les deux jours
+ * qu'on vient réellement vérifier, et les nommer évite de faire le calcul de
+ * tête. Au-delà, la date complète, avec le jour de la semaine — « mardi » est
+ * ce dont on se souvient, pas « 09 ».
+ */
+function formatDayLabel(date: Date): string {
+  const startOfDay = (value: Date) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
+  const days = Math.round((startOfDay(new Date()) - startOfDay(date)) / 86400000);
+  if (days === 0) return "Aujourd'hui";
+  if (days === 1) return "Hier";
+  return dayFormatter.format(date);
 }

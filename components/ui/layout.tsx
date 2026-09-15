@@ -41,6 +41,7 @@ export function PageBar({
   meta,
   lede,
   actions,
+  rank = "display",
   className,
 }: {
   title: React.ReactNode;
@@ -54,13 +55,28 @@ export function PageBar({
    */
   lede?: React.ReactNode;
   actions?: React.ReactNode;
+  /**
+   * `display` (défaut) — le titre EST la question de l'écran, il est composé
+   * en grand.
+   *
+   * `quiet` — le titre n'est qu'une civilité : l'écran a déjà un élément
+   * dominant plus bas, et deux `t-display` empilés ne désignent plus rien.
+   * C'est le cas de l'accueil, où la question n'est pas « qui es-tu » mais
+   * « que fais-tu maintenant » : la salutation passe en titre de section et
+   * sa métadonnée se range sur la même ligne, ce qui rend au bloc « La
+   * séance » les ~120 px qu'il perdait — sur un téléphone, exactement de quoi
+   * ramener le bouton « Commencer » au-dessus de la ligne de flottaison.
+   */
+  rank?: "display" | "quiet";
   className?: string;
 }) {
+  const quiet = rank === "quiet";
+
   return (
     <div className={cn("flex flex-wrap items-end justify-between gap-x-6 gap-y-3", className)}>
-      <div className="min-w-0">
-        <h1 className="t-display">{title}</h1>
-        {meta && <div className="t-meta mt-2">{meta}</div>}
+      <div className={cn("min-w-0", quiet && "flex flex-wrap items-baseline gap-x-3 gap-y-1")}>
+        <h1 className={quiet ? "t-heading" : "t-display"}>{title}</h1>
+        {meta && <div className={cn("t-meta", quiet ? "min-w-0" : "mt-2")}>{meta}</div>}
         {lede && <p className="t-lede mt-2 max-w-[58ch]">{lede}</p>}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}

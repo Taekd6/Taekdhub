@@ -8,6 +8,7 @@ import { PLAN_STORAGE_KEY, serializePlan } from "@/lib/plan";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { cn } from "@/lib/cn";
 export function PreparationCommand() {
   const { exercises, sessions, chapters, preferences, ready } = usePrepahubData(); const router = useRouter(); const [minutes, setMinutes] = useState(preferences.dailyGoalMinutes);
   const snapshot = useMemo(() => computePreparationSnapshot(exercises, sessions, chapters), [exercises, sessions, chapters]); const plan = useMemo(() => computePreparationPlan(exercises, sessions, chapters, minutes), [exercises, sessions, chapters, minutes]);
@@ -37,7 +38,9 @@ export function PreparationCommand() {
 
       {/* Une LIGNE par matière, avec la minute allouée alignée à droite :
           c'est une répartition, et une répartition se lit en colonne. */}
-      <ul className="divide-y divide-line border-y border-line">
+      {/* Même raison qu'à l'accueil : changer le temps disponible redistribue
+          toutes les minutes de la liste. Le fondu signale le recalcul. */}
+      <ul key={minutes} className="animate-fade-in divide-y divide-line border-y border-line">
         {snapshot.subjects.map((state) => {
           const planned = plan.items
             .filter((item) => item.subject === state.subject)
@@ -51,8 +54,21 @@ export function PreparationCommand() {
                   {state.completionRate} % maîtrisé · {state.pending} restant{state.pending > 1 ? "s" : ""}
                 </p>
               </div>
-              <span className={planned ? "t-figure-sm shrink-0" : "t-meta tabular shrink-0"}>
-                {planned ? `${planned} min` : "—"}
+              {/* « 0 min », pas « — ».
+                  Sur l'écran dont la promesse est précisément de ne laisser
+                  aucune matière disparaître, un tiret est le pire signal
+                  possible : il se lit comme une donnée manquante, alors que
+                  c'est une DÉCISION du répartiteur — cette matière n'a rien
+                  ce soir. Et composé dans un autre rôle typographique que ses
+                  voisines, il cassait en plus l'alignement de la colonne. */}
+              <span
+                className={cn(
+                  "t-figure-sm tabular shrink-0 whitespace-nowrap",
+                  planned ? "text-ink" : "text-subtle"
+                )}
+              >
+                {planned}
+                <span className="t-meta"> min</span>
               </span>
             </li>
           );

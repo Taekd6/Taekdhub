@@ -115,7 +115,10 @@ export function Timer() {
         </Button>
       </div>
 
-      <p className="t-meta mt-7 text-2xs">Barre d&apos;espace pour démarrer / pause</p>
+      {/* Un raccourci clavier n'a de sens que là où il existe un clavier.
+          Sur un téléphone, cette ligne occupait une place réelle sous les
+          boutons pour annoncer une touche que l'appareil n'a pas. */}
+      <p className="t-meta mt-7 hidden text-2xs lg:block">Barre d&apos;espace pour démarrer / pause</p>
     </>
   );
 

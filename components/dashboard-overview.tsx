@@ -31,12 +31,13 @@ import {
   PLAN_STORAGE_KEY,
   serializePlan,
 } from "@/lib/plan";
-import { formatDuration, formatMinutes } from "@/lib/utils";
+import { formatMinutesSpan, formatSpan } from "@/lib/utils";
 import { computeWeeklySummary } from "@/lib/week";
 import { computeProgressBySubject } from "@/lib/progress";
 import { cn } from "@/lib/cn";
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+const contestDateFormatter = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
 /**
  * ÉCRAN D'ACCUEIL — « qu'est-ce que je fais maintenant ? »
@@ -103,6 +104,7 @@ export function DashboardOverview() {
       contestDays: preferences.contestDate
         ? Math.max(0, Math.ceil((new Date(preferences.contestDate).getTime() - now.getTime()) / 86400000))
         : null,
+      contestDate: preferences.contestDate ? contestDateFormatter.format(new Date(preferences.contestDate)) : null,
     };
   }, [exercises, sessions, chapters, preferences]);
 
@@ -127,9 +129,10 @@ export function DashboardOverview() {
     );
   }
 
-  const { nextAction, objective, statusLine, upcoming, toConsolidate, weeklySummary, streak, contestDays, resume, subjects } = model;
+  const { nextAction, objective, statusLine, upcoming, toConsolidate, weeklySummary, streak, contestDays, contestDate, resume, subjects } = model;
   const planReason = explainReasons(dailyPlan.blocks[0]?.picks[0]?.reasons ?? []);
   const hasPlan = dailyPlan.blocks.length > 0;
+  const [firstBlock, ...nextBlocks] = dailyPlan.blocks;
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
   const secondaryPicks = nextAction.picks.slice(1);
   const otherSignals = upcoming.filter((item) => item.key !== "chapter");
@@ -157,12 +160,20 @@ export function DashboardOverview() {
           </div>
 
           <dl className="divide-y divide-line border-y border-line">
-            <RailFigure label="Cette semaine" value={formatDuration(weeklySummary.totalSeconds)} detail={`${weeklySummary.progressPercent} % de l'objectif`} />
+            <RailFigure label="Cette semaine" value={formatSpan(weeklySummary.totalSeconds)} detail={`${weeklySummary.progressPercent} % de l'objectif`} />
             {streak > 0 && (
               <RailFigure label="Série" value={`${streak} j`} detail="jours d'affilée" icon={<Flame size={13} className="text-accent" />} />
             )}
             {contestDays !== null && (
-              <RailFigure label="Concours" value={`J−${contestDays}`} detail="avant l'échéance" icon={<Trophy size={13} className="text-accent" />} />
+              /* « J−223 · avant l'échéance » ne disait pas QUELLE échéance.
+                 Un compte à rebours sans sa date oblige à aller la vérifier
+                 dans les réglages pour la resituer dans un calendrier. */
+              <RailFigure
+                label="Concours"
+                value={`J−${contestDays}`}
+                detail={contestDate ?? "avant l'échéance"}
+                icon={<Trophy size={13} className="text-accent" />}
+              />
             )}
           </dl>
 
@@ -211,9 +222,15 @@ export function DashboardOverview() {
       }
     >
       <div className="space-y-10">
-        <BackupReminder />
-
+        {/* EN-TÊTE RÉDUIT À UNE LIGNE.
+            La salutation était composée en `t-display`, au même corps que le
+            titre du bloc « La séance » juste en dessous : deux titres de
+            même poids, donc aucun des deux ne désignait plus l'élément
+            important. Elle passe en `quiet` (voir `PageBar`) et sa date se
+            range sur la même ligne — la décision du jour redevient le seul
+            grand titre de l'écran, et gagne la hauteur correspondante. */}
         <PageBar
+          rank="quiet"
           title={name ? `Bonjour, ${name}.` : "Bonjour."}
           meta={
             <>
@@ -228,7 +245,14 @@ export function DashboardOverview() {
           variant="feature"
           label="La séance"
           title={hasPlan ? "Ce que tu devrais travailler maintenant" : <MathInline text={nextAction.title} />}
-          description={planReason ?? nextAction.description}
+          /* Le chapeau justifie CE QUI EST AFFICHÉ, jamais autre chose.
+             Quand un plan existe mais que sa première recommandation ne porte
+             aucune raison explicite, on retombait sur `nextAction.description`
+             — la justification d'un exercice qui, lui, n'apparaît nulle part
+             sur l'écran (« Tu n'as pas encore travaillé cet exercice. » :
+             lequel ?). Mieux vaut pas de phrase du tout : le bloc
+             « Maintenant » dit déjà l'intention et la matière. */
+          description={hasPlan ? planReason ?? undefined : nextAction.description}
           action={
             <SegmentedControl
               ariaLabel="Durée de la séance"
@@ -239,39 +263,77 @@ export function DashboardOverview() {
           }
         >
           {hasPlan && (
-            /* Le plan se lit comme un SOMMAIRE : un numéro, un intitulé, une
-               durée alignée à droite. Pas trois blocs encadrés dans un bloc
-               encadré — c'est ce motif qui rendait l'ancien écran illisible. */
-            <ol className="divide-y divide-line border-y border-line">
-              {dailyPlan.blocks.map((block, index) => (
-                <li key={block.intent} className="flex items-baseline gap-4 py-3.5">
-                  <span className="t-figure w-5 shrink-0 text-right text-sm text-subtle">{index + 1}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="t-subhead">
-                      {block.label}
-                      <span className="font-normal text-muted"> — {PLAN_INTENT_META[block.intent].description}</span>
-                    </p>
-                    {/* La durée est alignée à droite de la ligne de DÉTAIL, pas
-                        de celle du titre : quand le titre passait à la ligne
-                        sur mobile, « 40 min » se retrouvait coincé entre le
-                        titre et son propre détail. */}
-                    <div className="mt-0.5 flex items-baseline gap-3">
-                      <p className="t-meta min-w-0 flex-1 truncate">
-                        {block.focus} · {block.picks.length} exercice{block.picks.length > 1 ? "s" : ""}
-                      </p>
+            /*
+             * MAINTENANT, PUIS — pas un sommaire de trois lignes égales.
+             *
+             * Le plan se lisait comme une table des matières : trois rangées
+             * de même poids, numérotées, qu'il fallait parcourir pour
+             * comprendre par quoi commencer. Or la question posée en ouvrant
+             * l'application le matin n'est pas « que contient ma séance »,
+             * c'est « je fais quoi, là, tout de suite » — et la réponse
+             * tenait dans la même graisse que le reste.
+             *
+             * Le premier bloc est donc COMPOSÉ comme la réponse : son
+             * intitulé en `t-heading`, sa durée en chiffre serif à droite,
+             * son détail dessous. Ce qui suit reste une liste, en retrait.
+             * Aucune donnée nouvelle, aucun calcul déplacé : exactement les
+             * mêmes `dailyPlan.blocks`, dans le même ordre.
+             */
+            /*
+             * Le `key` sur la durée demandée est la SEULE animation ajoutée à
+             * cet écran, et elle est fonctionnelle : quand on passe de 45 à
+             * 90 minutes, le plan change entièrement — intitulés, durées,
+             * nombre de blocs — mais le texte se substituait d'une image à
+             * l'autre, sans rien signaler. Un fondu de 180 ms dit « ceci
+             * vient d'être recalculé ». Il est annulé par
+             * `prefers-reduced-motion` comme tout le reste (voir
+             * app/globals.css).
+             */
+            <div key={planMinutes} className="animate-fade-in border-y border-line">
+              <div className="flex items-baseline gap-4 py-4">
+                <div className="min-w-0 flex-1">
+                  <p className="t-label mb-1.5">Maintenant</p>
+                  <p className="t-heading">
+                    {firstBlock.label}
+                    <span className="text-muted"> — {PLAN_INTENT_META[firstBlock.intent].description}</span>
+                  </p>
+                  <p className="t-meta mt-1">
+                    {firstBlock.focus} · {firstBlock.picks.length} exercice{firstBlock.picks.length > 1 ? "s" : ""}
+                  </p>
+                </div>
+                <span className="t-figure-sm tabular shrink-0 whitespace-nowrap">
+                  {firstBlock.estimatedMinutes}
+                  <span className="t-meta"> min</span>
+                </span>
+              </div>
+
+              {nextBlocks.length > 0 && (
+                <ol className="border-t border-line pb-1 pt-3">
+                  <li className="t-label mb-1">Puis</li>
+                  {nextBlocks.map((block) => (
+                    <li key={block.intent} className="flex items-baseline gap-3 py-1.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-ink">
+                          {block.label}
+                          <span className="text-muted"> — {PLAN_INTENT_META[block.intent].description}</span>
+                        </p>
+                        <p className="t-meta mt-0.5 truncate text-2xs">
+                          {block.focus} · {block.picks.length} exercice{block.picks.length > 1 ? "s" : ""}
+                        </p>
+                      </div>
                       <span className="t-meta tabular shrink-0">{block.estimatedMinutes} min</span>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ol>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
           )}
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
             <p className="t-meta">
               {hasPlan ? (
                 <>
-                  <span className="font-medium text-ink">{formatMinutes(dailyPlan.totalMinutes)}</span> ·{" "}
+                  <span className="font-medium text-ink">{formatMinutesSpan(dailyPlan.totalMinutes)}</span> ·{" "}
                   {dailyPlan.totalExercises} exercice{dailyPlan.totalExercises > 1 ? "s" : ""}
                   {objective.workedMinutes > 0 && <> · {objective.workedMinutes} min déjà faites aujourd&apos;hui</>}
                 </>
@@ -294,6 +356,12 @@ export function DashboardOverview() {
             )}
           </div>
         </Section>
+
+        {/* Le rappel de sauvegarde est une CORVÉE, pas une décision : posé en
+            tête d'écran, il repoussait la séance d'une centaine de pixels et
+            accueillait chaque semaine par un bandeau orange. Il reste
+            exactement aussi visible, mais APRÈS ce qu'on est venu chercher. */}
+        <BackupReminder />
 
         {/* ── REPRENDRE ─────────────────────────────────────────────
             Ce sur quoi on travaillait hier. Au tout début, il n'y a rien à
@@ -351,9 +419,17 @@ export function DashboardOverview() {
             description="Classés par urgence réelle, chacun justifié par tes tentatives datées."
           >
             <List>
-              {toConsolidate.map(({ chapter, averageMastery, reasons, href, evidence }) => (
+              {toConsolidate.map(({ chapter, averageMastery, reasons, href, evidence }, index) => (
                 <li key={chapter.id}>
                   <Link href={href} className={rowInteractive}>
+                    {/* Le RANG, écrit.
+                        La section annonce « classés par urgence réelle », mais
+                        les maîtrises voisines (0 %, 3 %, 3 %, 4 %) ne
+                        laissaient rien voir de ce classement : cinq lignes
+                        d'apparence interchangeable. Le numéro dit ce que
+                        l'ordre veut dire, exactement comme la liste des
+                        priorités de l'écran Progression. */}
+                    <span className="t-figure w-4 shrink-0 text-right text-sm text-subtle">{index + 1}</span>
                     <div className="min-w-0 flex-1">
                       <p className="t-subhead truncate">{chapter.label}</p>
                       <p className="t-meta mt-0.5 truncate">

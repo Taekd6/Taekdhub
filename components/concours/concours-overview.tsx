@@ -36,7 +36,7 @@ export function ConcoursOverview() {
       <div className="space-y-4">
         <Skeleton className="h-16 w-full" />
         {Array.from({ length: 3 }).map((_, index) => (
-          <Skeleton key={index} className="h-28 w-full rounded-xl" />
+          <Skeleton key={index} className="h-28 w-full" />
         ))}
       </div>
     );
@@ -88,11 +88,18 @@ export function ConcoursOverview() {
           title="Concours"
           lede="Les banques réellement présentes dans ta bibliothèque, avec ce que leur source établit — et rien de plus."
         />
-        <div className="space-y-4">
+        {/* Une LISTE, pas une pile de cartes.
+            Trois `surface` encadrées, empilées, de poids identique : c'est
+            exactement le « tas de cartes » que le système visuel dit vouloir
+            éviter (voir la note en tête d'app/globals.css) — et sur trois
+            banques, le cadre n'apportait aucune information, puisque rien ne
+            distinguait une carte de sa voisine. Les filets et les blancs
+            suffisent à séparer, comme partout ailleurs dans l'application. */}
+        <ul className="divide-y divide-line border-y border-line">
           {banks.map((bank) => (
-            <BankCard key={bank.competition} bank={bank} />
+            <BankRow key={bank.competition} bank={bank} />
           ))}
-        </div>
+        </ul>
       </div>
     </Split>
   );
@@ -111,7 +118,7 @@ function RailStat({ label, value, detail }: { label: string; value: string; deta
   );
 }
 
-function BankCard({ bank }: { bank: ConcoursBank }) {
+function BankRow({ bank }: { bank: ConcoursBank }) {
   const [open, setOpen] = useState(false);
 
   /** Une phrase, pas une grille d'étiquettes : ce que contient la banque se lit. */
@@ -127,8 +134,8 @@ function BankCard({ bank }: { bank: ConcoursBank }) {
     .join(" · ");
 
   return (
-    <article className="surface overflow-hidden">
-      <div className="flex flex-wrap items-start gap-x-6 gap-y-4 p-5">
+    <li>
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-4 pb-4 pt-5">
         <div className="min-w-[14rem] flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="t-heading">{bank.competition}</h2>
@@ -167,7 +174,7 @@ function BankCard({ bank }: { bank: ConcoursBank }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-line px-5 py-3">
+      <div className="flex flex-wrap items-center gap-2 pb-5">
         <Link
           href={`/exercises?competition=${encodeURIComponent(bank.competition)}`}
           className="row-hover inline-flex items-center rounded-lg border border-line px-3 py-1.5 text-[0.8125rem] font-medium text-ink max-lg:min-h-11"
@@ -188,9 +195,13 @@ function BankCard({ bank }: { bank: ConcoursBank }) {
       </div>
 
       {open && (
-        <ul className="animate-fade-in divide-y divide-line border-t border-line">
+        /* Les sessions dépliées sont un ENCART dans la rangée, pas une
+           nouvelle liste de même rang : le fond en creux (`well`) les
+           rattache visuellement à la banque qu'on vient d'ouvrir, sans
+           ajouter un second cadre. */
+        <ul className="well animate-fade-in mb-5 divide-y divide-line">
           {bank.sessions.map((session) => (
-            <li key={session.key} className="flex items-center gap-4 px-5 py-2.5">
+            <li key={session.key} className="flex items-center gap-4 px-3.5 py-2.5">
               <span className="tabular w-14 shrink-0 text-sm text-ink">{session.year ?? "—"}</span>
               <span className="t-meta min-w-0 flex-1 truncate">{session.epreuve ?? "Épreuve inconnue"}</span>
               <span className="t-meta tabular shrink-0">
@@ -200,6 +211,6 @@ function BankCard({ bank }: { bank: ConcoursBank }) {
           ))}
         </ul>
       )}
-    </article>
+    </li>
   );
 }
