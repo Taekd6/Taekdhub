@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lastStorageWriteFailure, localData, normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
+import { lastStorageWriteFailure, localData, normalizePreferences, normalizeSession, normalizeWorkItem, validateBackupPayload } from "@/lib/storage";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -396,5 +396,111 @@ describe("normalize* — un compteur négatif ne franchit jamais la frontière d
     const [exercise] = withWritableStorage({ "prepahub:exercises": JSON.stringify(raw) }, () => localData.exercises());
     expect(exercise.attempts).toBe(0);
     expect(exercise.estimated_minutes).toBeNull();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   MIGRATION — le chantier planning ne doit invalider AUCUNE donnée
+   ══════════════════════════════════════════════════════════════════ */
+
+describe("WorkSession — le nouveau champ ne casse aucune séance existante", () => {
+  /**
+   * §24 du cahier des charges : aucune donnée existante ne doit devenir
+   * invalide. `work_item_id` suit exactement le protocole de `result` et
+   * `hints_used` avant lui — absent d'une séance antérieure, il vaut `null`
+   * et n'est jamais rattaché après coup à un travail qui n'existait pas.
+   */
+  it("une séance enregistrée avant ce chantier reste valide, avec un rattachement nul", () => {
+    const session = normalizeSession(makeRawSession());
+    expect(session.work_item_id).toBeNull();
+    expect(session.duration_seconds).toBe(600);
+  });
+
+  it("un rattachement présent est conservé tel quel", () => {
+    expect(normalizeSession(makeRawSession({ work_item_id: "w-1" })).work_item_id).toBe("w-1");
+  });
+
+  it("un rattachement corrompu retombe à null plutôt que de propager n'importe quoi", () => {
+    expect(normalizeSession(makeRawSession({ work_item_id: 42 })).work_item_id).toBeNull();
+  });
+});
+
+describe("normalizeWorkItem — frontière de confiance du travail planifié", () => {
+  it("un travail vide ne plante pas et reçoit des valeurs sûres", () => {
+    const item = normalizeWorkItem({});
+    expect(item.title).toBe("Travail sans titre");
+    expect(item.kind).toBe("autre");
+    expect(item.status).toBe("à faire");
+    expect(item.estimatedMinutes).toBeGreaterThan(0);
+    expect(item.dueDate).toBeNull();
+  });
+
+  it("une durée nulle est ramenée à au moins une minute — un travail à 0 min serait invisible du planificateur tout en restant affiché", () => {
+    expect(normalizeWorkItem({ estimatedMinutes: 0 }).estimatedMinutes).toBeGreaterThan(0);
+  });
+
+  it("une date d'échéance illisible est écartée, jamais propagée", () => {
+    expect(normalizeWorkItem({ dueDate: "jeudi prochain" }).dueDate).toBeNull();
+    expect(normalizeWorkItem({ dueDate: "2026-13-45" }).dueDate).toBeNull();
+    expect(normalizeWorkItem({ dueDate: "2026-09-17" }).dueDate).toBe("2026-09-17");
+  });
+
+  it("une heure hors format est écartée", () => {
+    expect(normalizeWorkItem({ dueTime: "25:00" }).dueTime).toBeNull();
+    expect(normalizeWorkItem({ dueTime: "08:00" }).dueTime).toBe("08:00");
+  });
+
+  it("une matière inconnue devient « sans matière » plutôt qu'une matière inventée", () => {
+    expect(normalizeWorkItem({ subject: "Philosophie" }).subject).toBeNull();
+    expect(normalizeWorkItem({ subject: "Physique" }).subject).toBe("Physique");
+  });
+
+  it("une date d'achèvement sur un travail non terminé est effacée — elle fausserait le bilan hebdomadaire", () => {
+    const item = normalizeWorkItem({ status: "en cours", completedAt: "2026-09-10T00:00:00.000Z" });
+    expect(item.completedAt).toBeNull();
+  });
+
+  it("les reports malformés sont écartés un par un, sans perdre les valides", () => {
+    const item = normalizeWorkItem({
+      postponements: [
+        { at: "2026-09-14T08:00:00.000Z", fromDate: "2026-09-14", toDate: "2026-09-15" },
+        { at: "n'importe quoi", fromDate: "2026-09-14", toDate: "2026-09-15" },
+        "pas un objet",
+      ],
+    });
+    expect(item.postponements).toHaveLength(1);
+  });
+});
+
+describe("sauvegarde — les échéances voyagent, et une ancienne sauvegarde reste importable", () => {
+  it("une sauvegarde d'avant ce chantier reste valide : `workItems` est simplement absent", () => {
+    const legacy = {
+      version: 1,
+      exportedAt: "2026-09-01T00:00:00.000Z",
+      exercises: [],
+      sessions: [],
+      preferences: { displayName: "Taekd" },
+    };
+    expect(validateBackupPayload(legacy)).toBe(true);
+    expect((legacy as { workItems?: unknown[] }).workItems).toBeUndefined();
+  });
+
+  it("un travail traverse un cycle export → JSON → import sans rien perdre", () => {
+    const original = normalizeWorkItem({
+      id: "w-1",
+      title: "DM de maths",
+      kind: "dm",
+      subject: "Mathématiques",
+      estimatedMinutes: 120,
+      dueDate: "2026-09-17",
+      dueTime: "08:00",
+      status: "en cours",
+      important: true,
+      notBeforeDate: "2026-09-15",
+      chapterIds: ["c-1"],
+      createdAt: "2026-09-14T08:00:00.000Z",
+      postponements: [{ at: "2026-09-14T08:00:00.000Z", fromDate: "2026-09-14", toDate: "2026-09-15" }],
+    });
+    expect(normalizeWorkItem(JSON.parse(JSON.stringify(original)))).toEqual(original);
   });
 });

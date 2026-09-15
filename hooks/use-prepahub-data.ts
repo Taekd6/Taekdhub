@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { lastStorageWriteFailure, localData, type Chapter, type Preferences, type WeekSnapshot } from "@/lib/storage";
+import { lastStorageWriteFailure, localData, type Chapter, type Preferences, type WeekSnapshot, type WorkItem } from "@/lib/storage";
 import { loadSeedBank, reconcileSeedBank, SEED_CONTENT_VERSION, SEED_FLAG_KEY, SEED_VERSION_KEY } from "@/lib/seed";
 import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
@@ -64,6 +64,8 @@ type DataState = {
   sessions: WorkSession[];
   exercises: Exercise[];
   chapters: Chapter[];
+  /** Travaux planifiés et échéances saisis par l'élève — voir `WorkItem` (lib/storage.ts). */
+  workItems: WorkItem[];
   weekSnapshots: WeekSnapshot[];
   lastBackupAt: string | null;
   preferences: Preferences;
@@ -102,6 +104,7 @@ function readAll(): Omit<DataState, "ready" | "writeFailedAt"> {
     sessions,
     exercises,
     chapters: localData.chapters(),
+    workItems: localData.workItems(),
     weekSnapshots,
     lastBackupAt: localData.lastBackupAt(),
     preferences: localData.preferences(),
@@ -113,6 +116,7 @@ export function usePrepahubData() {
     sessions: [],
     exercises: [],
     chapters: [],
+    workItems: [],
     weekSnapshots: [],
     lastBackupAt: null,
     preferences: localData.preferences(),
@@ -163,6 +167,16 @@ export function usePrepahubData() {
     setData((prev) => ({ ...prev, exercises: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
+  /**
+   * Écriture incrémentale, comme les séances et les exercices : un travail
+   * n'est jamais retiré de la liste (il passe au statut « abandonné »), donc
+   * la fusion par identifiant reste correcte — voir lib/storage.ts#mergeStored.
+   */
+  const saveWorkItems = useCallback((workItems: WorkItem[]) => {
+    const stored = localData.mergeWorkItems(workItems);
+    setData((prev) => ({ ...prev, workItems: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
+  }, []);
+
   const saveChapters = useCallback((chapters: Chapter[]) => {
     localData.saveChapters(chapters);
     setData((prev) => ({ ...prev, chapters, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
@@ -173,5 +187,5 @@ export function usePrepahubData() {
     setData((prev) => ({ ...prev, preferences, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
-  return { ...data, refresh, saveSessions, saveExercises, saveChapters, savePreferences };
+  return { ...data, refresh, saveSessions, saveExercises, saveWorkItems, saveChapters, savePreferences };
 }

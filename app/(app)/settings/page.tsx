@@ -1,3 +1,4 @@
+import { CapacityForm } from "@/components/work/capacity-form";
 import { DataBackup } from "@/components/data-backup";
 import { PageBar, Stack } from "@/components/ui/layout";
 import { PreferencesForm } from "@/components/preferences-form";
@@ -11,8 +12,9 @@ import { ThemePicker } from "@/components/theme-picker";
 export default function SettingsPage() {
   return (
     <Stack className="space-y-8">
-      <PageBar title="Réglages" lede="Ton identité de travail, ton rythme et tes sauvegardes." />
+      <PageBar title="Réglages" lede="Ton identité de travail, ton rythme, ton temps disponible et tes sauvegardes." />
       <PreferencesForm />
+      <CapacityForm />
       <ThemePicker />
       <DataBackup />
     </Stack>

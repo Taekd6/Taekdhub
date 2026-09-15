@@ -10,6 +10,7 @@ const preferencesKey = "prepahub:preferences";
 const chaptersKey = "prepahub:chapters";
 const lastBackupKey = "prepahub:last-backup";
 const weekSnapshotsKey = "prepahub:week-snapshots";
+const workItemsKey = "prepahub:work-items";
 
 /**
  * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
@@ -19,14 +20,83 @@ const weekSnapshotsKey = "prepahub:week-snapshots";
  * Absents d'une préférence enregistrée avant leur sprint respectif : retombent sur `defaults` via le
  * merge ci-dessous, comme tout champ ajouté après coup.
  */
-export type Preferences = { displayName: string; dailyGoalMinutes: number; weeklyGoalMinutes: number; contestDate: string; accent: string; themeMode: ThemeMode };
+export type Preferences = {
+  displayName: string;
+  dailyGoalMinutes: number;
+  weeklyGoalMinutes: number;
+  contestDate: string;
+  accent: string;
+  themeMode: ThemeMode;
+  /**
+   * CAPACITÉ DÉCLARÉE de travail personnel, en minutes, du lundi (index 0) au
+   * dimanche (index 6). Toujours 7 entrées.
+   *
+   * À ne JAMAIS confondre avec `dailyGoalMinutes`, qui est un OBJECTIF — ce
+   * que l'élève veut atteindre. La capacité est un PLAFOND : ce dont il
+   * dispose réellement une fois les cours, les colles et les trajets
+   * déduits. Les deux peuvent diverger dans les deux sens (un objectif de
+   * 60 min un samedi où quatre heures sont libres ; un objectif de 60 min un
+   * mardi où il n'y a qu'une demi-heure).
+   *
+   * Sept valeurs et non une seule parce qu'une semaine de prépa n'est pas
+   * uniforme : le mercredi après-midi et le samedi n'ont rien à voir avec le
+   * mardi. Une valeur unique rendait « j'ai 4 h samedi » littéralement
+   * inexprimable, donc impossible à planifier.
+   *
+   * DÉCLARÉE, pas mesurée : c'est l'élève qui la pose. TaekdHub peut la lui
+   * SUGGÉRER depuis son historique (voir lib/capacity.ts#suggestCapacityFromHistory)
+   * mais ne l'écrit jamais tout seul — on n'affirme pas connaître son emploi
+   * du temps.
+   *
+   * Absent d'une préférence enregistrée avant ce chantier : retombe sur
+   * `defaults` via le merge de `normalizePreferences`, comme tout champ
+   * ajouté après coup.
+   */
+  capacityByWeekday: number[];
+  /**
+   * Part de la capacité quotidienne gardée en MARGE, en pourcentage (0–50).
+   *
+   * Planifier 100 % d'une journée est la façon la plus sûre de produire un
+   * planning que personne ne tient : un exercice dure plus longtemps que
+   * prévu, un cours déborde, un trajet s'allonge, et tout le reste de la
+   * journée est déjà en retard. La capacité PLANIFIABLE est donc
+   * systématiquement inférieure à la capacité déclarée — voir
+   * lib/capacity.ts#plannableMinutes.
+   */
+  planningMarginPercent: number;
+};
+
+/**
+ * Capacité par défaut, du lundi au dimanche. Ce sont des VALEURS DE DÉPART
+ * affichées telles quelles dans Réglages pour que l'élève les corrige, pas
+ * une mesure de son emploi du temps : deux heures de travail personnel en
+ * semaine, davantage le week-end. Toute phrase de l'interface qui s'appuie
+ * dessus doit dire « ta capacité », jamais « d'après tes habitudes » — voir
+ * lib/capacity.ts, qui distingue explicitement la capacité DÉCLARÉE de la
+ * capacité SUGGÉRÉE depuis l'historique.
+ */
+export const DEFAULT_CAPACITY_BY_WEEKDAY: number[] = [120, 120, 120, 120, 120, 240, 180];
+/** 20 % : un cinquième de la journée laissé libre. Réglable entre 0 et 50 % (voir `planningMarginPercent`). */
+export const DEFAULT_PLANNING_MARGIN_PERCENT = 20;
+export const MAX_PLANNING_MARGIN_PERCENT = 50;
+/** Plafond par jour — 16 h. Au-delà, c'est une saisie erronée, pas une journée de travail. */
+export const MAX_DAILY_CAPACITY_MINUTES = 960;
 // `dailyGoalMinutes: 60` correspond exactement au plus haut des trois préréglages du
 // Dashboard/Réglages (PLAN_DURATION_PRESETS = [30, 45, 60], lib/plan.ts) : un premier
 // objectif ambitieux mais tenable, jamais un chiffre hors de tout préréglage cliquable
 // (l'ancien défaut de 240 min produisait un "Commencer une séance de 240 min" absurde
 // dès la toute première visite, avant tout réglage par l'élève). `weeklyGoalMinutes: 300`
 // reste cohérent avec ce nouveau quotidien (5 × 60 min ≈ une semaine de cours).
-const defaults: Preferences = { displayName: "", dailyGoalMinutes: 60, weeklyGoalMinutes: 300, contestDate: "", accent: DEFAULT_ACCENT, themeMode: DEFAULT_THEME_MODE };
+const defaults: Preferences = {
+  displayName: "",
+  dailyGoalMinutes: 60,
+  weeklyGoalMinutes: 300,
+  contestDate: "",
+  accent: DEFAULT_ACCENT,
+  themeMode: DEFAULT_THEME_MODE,
+  capacityByWeekday: DEFAULT_CAPACITY_BY_WEEKDAY,
+  planningMarginPercent: DEFAULT_PLANNING_MARGIN_PERCENT,
+};
 
 /**
  * Chapitre/thème (Sprint 3D) — créé et géré par l'utilisateur, jamais
@@ -73,6 +143,134 @@ export interface WeekSnapshot {
   masteredCount: number;
   completionRate: number;
   bySubjectProgress: WeekSnapshotSubjectProgress[];
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   TRAVAIL PLANIFIABLE — le modèle du « quand »
+   ══════════════════════════════════════════════════════════════════
+
+   TaekdHub savait répondre à « quoi travailler » (lib/recommendation.ts) et
+   « combien de temps » (lib/plan.ts). Il ne savait pas répondre à « pour
+   quand ». `WorkItem` est le seul concept ajouté pour ça, et il est
+   volontairement AU-DESSUS de la banque, pas dedans :
+
+     RESSOURCE            un exercice, un chapitre. Existe déjà, ne bouge pas.
+     TRAVAIL PLANIFIABLE  `WorkItem` — « préparer le DS de physique »,
+                          « faire le DM de maths », « réviser les intégrales ».
+     ÉCHÉANCE             `WorkItem.dueDate` — le jour pour lequel c'est dû.
+
+   Un exercice n'est donc JAMAIS une échéance : il est le contenu qu'on
+   servira à l'intérieur du temps qu'un `WorkItem` réserve. C'est ce qui
+   permet à « DM de maths jeudi » d'exister sans qu'aucun exercice de la
+   banque ne lui corresponde.
+*/
+
+/**
+ * Nature du travail. Six valeurs, en français comme tous les domaines
+ * persistés du projet (`ExerciseStatus`, `AttemptResult`…), et pas une de
+ * plus : ce qui se distingue ici doit se distinguer pour l'ÉLÈVE, pas pour
+ * le modèle.
+ *
+ * `exercices` et `chapitre` sont les deux seuls types dont TaekdHub sait
+ * choisir le contenu tout seul (le moteur de recommandation sait ce qu'est
+ * un exercice et ce qu'est un chapitre). `dm`, `ds`, `concours` et `autre`
+ * sont du travail dont l'élève seul connaît le contenu — TaekdHub en
+ * réserve le temps et suit sa progression, sans prétendre savoir ce qu'il y
+ * a dedans.
+ */
+export type WorkItemKind = "dm" | "ds" | "exercices" | "chapitre" | "concours" | "autre";
+export const WORK_ITEM_KINDS: readonly WorkItemKind[] = ["dm", "ds", "exercices", "chapitre", "concours", "autre"];
+
+/**
+ * Cycle de vie. « abandonné » EST le mécanisme de suppression : voir la note
+ * de `mergeStored` — la fusion par identifiant n'est correcte que parce que
+ * rien, dans toute l'application, n'est jamais réellement supprimé. Retirer
+ * physiquement une ligne rouvrirait exactement le scénario de perte que
+ * cette fusion referme (une copie React périmée réécrivant la liste sans
+ * elle… ou avec elle). Un travail abandonné est filtré partout à l'affichage
+ * et ignoré par tous les moteurs : pour l'élève, il a disparu.
+ */
+export type WorkItemStatus = "à faire" | "en cours" | "terminé" | "abandonné";
+export const WORK_ITEM_STATUSES: readonly WorkItemStatus[] = ["à faire", "en cours", "terminé", "abandonné"];
+
+/** Un report subi par un travail — conservé pour le bilan hebdomadaire (« 2 reports cette semaine »), jamais pour recalculer quoi que ce soit. */
+export interface WorkItemPostponement {
+  /** ISO — quand le report a été décidé. */
+  at: string;
+  /** "AAAA-MM-JJ" — le jour d'où le travail a été retiré. */
+  fromDate: string;
+  /** "AAAA-MM-JJ" — le premier jour où il redevient planifiable. */
+  toDate: string;
+}
+
+export interface WorkItem {
+  id: string;
+  title: string;
+  kind: WorkItemKind;
+  /** `null` pour un travail qui ne relève d'aucune matière (« ranger mes fiches »). */
+  subject: Subject | null;
+  /**
+   * Durée totale estimée, en MINUTES. Toujours > 0.
+   *
+   * Posée par l'élève, éventuellement à partir de la suggestion de
+   * lib/estimation.ts — qui reste une SUGGESTION : elle est pré-remplie dans
+   * le champ, jamais imposée, et jamais réécrite après coup.
+   *
+   * Le temps RÉELLEMENT fait n'est pas stocké ici. Il se somme à la demande
+   * depuis les `WorkSession` portant ce `work_item_id` (voir
+   * lib/work-items.ts#doneMinutes) — même règle que `Exercise`, qui ne
+   * stocke aucune durée cumulée depuis le Sprint 2.6, et pour la même
+   * raison : deux sources de vérité pour une même durée finissent toujours
+   * par diverger.
+   */
+  estimatedMinutes: number;
+  /**
+   * Jour d'échéance, "AAAA-MM-JJ" en heure LOCALE — un jour, pas un instant.
+   * `null` pour un travail sans date (« réviser les intégrales, un jour ») :
+   * il reste planifiable, mais après tout ce qui est daté.
+   *
+   * N'est JAMAIS modifiée par un report : voir `notBeforeDate`.
+   */
+  dueDate: string | null;
+  /**
+   * "HH:MM" — l'heure quand l'élève l'a précisée (« DS lundi 8 h »).
+   * Purement informative : elle s'affiche, elle n'entre dans aucun calcul.
+   * Un DS à 8 h et un DM à rendre le soir se préparent tous deux la veille.
+   */
+  dueTime: string | null;
+  status: WorkItemStatus;
+  /**
+   * `true` quand l'élève a explicitement marqué ce travail comme important.
+   *
+   * C'est une DÉCLARATION, pas un score : le score de priorité, lui, est
+   * recalculé à chaque affichage (lib/deadlines.ts) parce qu'il dépend de la
+   * date du jour. Stocker une priorité la rendrait fausse dès le lendemain.
+   */
+  important: boolean;
+  /**
+   * « Ne pas planifier avant ce jour » ("AAAA-MM-JJ"), ou `null`.
+   *
+   * C'est EXACTEMENT ce qu'un report écrit, et c'est tout ce qu'il écrit.
+   * L'échéance, elle, n'est jamais touchée : reporter son travail ne déplace
+   * pas la date du DS. C'est la distinction que l'interface doit rendre
+   * évidente — et la raison pour laquelle un report peut parfaitement rendre
+   * un travail infaisable, ce que le planificateur dira au lieu de le
+   * masquer (voir lib/planning.ts).
+   */
+  notBeforeDate: string | null;
+  /**
+   * Chapitres concernés — la PORTÉE du travail, pas son contenu.
+   *
+   * Aucun `exerciseIds` volontairement : figer une liste d'exercices à la
+   * création reviendrait à décider du « quoi » des semaines à l'avance, en
+   * court-circuitant le moteur de recommandation. La portée (matière +
+   * chapitres) est passée au moteur au moment de travailler, et c'est lui
+   * qui choisit — voir lib/planning.ts.
+   */
+  chapterIds: string[];
+  createdAt: string;
+  completedAt: string | null;
+  postponements: WorkItemPostponement[];
 }
 
 /**
@@ -216,6 +414,72 @@ export function normalizeSession(raw: unknown): WorkSession {
       typeof item.hints_used === "number" && Number.isFinite(item.hints_used) && item.hints_used >= 0
         ? Math.round(item.hints_used)
         : null,
+    // Absent de toute séance antérieure à ce champ : `null`, jamais rattaché
+    // après coup à un travail planifié qui n'existait pas encore. Voir la doc
+    // du champ dans lib/supabase/types.ts.
+    work_item_id: typeof item.work_item_id === "string" ? item.work_item_id : null,
+  };
+}
+
+/** Un jour "AAAA-MM-JJ" réellement exploitable, ou `null` — même frontière de confiance qu'`isoDate`, pour les champs qui portent un JOUR et non un instant. */
+function calendarDay(value: unknown): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  return Number.isNaN(new Date(`${value}T00:00:00`).getTime()) ? null : value;
+}
+
+/** "HH:MM" sur 24 h, ou `null`. Purement informatif — voir `WorkItem.dueTime`. */
+function clockTime(value: unknown): string | null {
+  if (typeof value !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) return null;
+  return value;
+}
+
+/**
+ * Ramène un travail planifié potentiellement corrompu (édition manuelle du
+ * localStorage, sauvegarde tronquée) vers une forme valide. Même contrat que
+ * `normalizeSession`/`normalizeExercise` : rien d'invalide ne ressort d'ici.
+ *
+ * Un travail sans titre exploitable reçoit un libellé neutre plutôt que
+ * d'être écarté : l'élève l'a créé, il doit pouvoir le retrouver et le
+ * corriger — le faire disparaître silencieusement serait pire.
+ */
+export function normalizeWorkItem(raw: unknown): WorkItem {
+  const item = isRecord(raw) ? raw : {};
+  const createdAt = isoDate(item.created_at) ?? isoDate(item.createdAt) ?? new Date().toISOString();
+  const status = (WORK_ITEM_STATUSES as string[]).includes(item.status as string)
+    ? (item.status as WorkItemStatus)
+    : "à faire";
+  return {
+    id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
+    title: typeof item.title === "string" && item.title.trim() ? item.title.trim() : "Travail sans titre",
+    kind: (WORK_ITEM_KINDS as string[]).includes(item.kind as string) ? (item.kind as WorkItemKind) : "autre",
+    // `migrateSubject` imposerait une matière par défaut ; ici l'absence de
+    // matière est une valeur légitime, elle doit survivre à la normalisation.
+    subject: (subjects as string[]).includes(item.subject as string) ? (item.subject as Subject) : null,
+    // Jamais 0 ni négatif : une durée nulle rendrait le travail invisible
+    // pour le planificateur tout en restant affiché comme « à faire ».
+    estimatedMinutes: Math.max(1, nonNegativeInteger(item.estimatedMinutes) ?? 30),
+    dueDate: calendarDay(item.dueDate),
+    dueTime: clockTime(item.dueTime),
+    status,
+    important: item.important === true,
+    notBeforeDate: calendarDay(item.notBeforeDate),
+    chapterIds: Array.isArray(item.chapterIds) ? item.chapterIds.filter((id): id is string => typeof id === "string") : [],
+    createdAt,
+    // Une date d'achèvement n'a de sens que sur un travail terminé — un
+    // `completedAt` traînant sur un travail rouvert fausserait le bilan
+    // hebdomadaire, qui compte les travaux terminés dans la semaine.
+    completedAt: status === "terminé" ? (isoDate(item.completedAt) ?? createdAt) : null,
+    postponements: Array.isArray(item.postponements)
+      ? item.postponements
+          .map((entry): WorkItemPostponement | null => {
+            if (!isRecord(entry)) return null;
+            const at = isoDate(entry.at);
+            const fromDate = calendarDay(entry.fromDate);
+            const toDate = calendarDay(entry.toDate);
+            return at && fromDate && toDate ? { at, fromDate, toDate } : null;
+          })
+          .filter((entry): entry is WorkItemPostponement => entry !== null)
+      : [],
   };
 }
 
@@ -345,7 +609,32 @@ function normalizeWeekSnapshot(raw: unknown): WeekSnapshot | null {
 export function normalizePreferences(raw: unknown): Preferences {
   const item = isRecord(raw) ? raw : {};
   const merged = { ...defaults, ...item };
-  return { ...merged, themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE };
+  return {
+    ...merged,
+    themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE,
+    // Un tableau de capacité de longueur ≠ 7, ou contenant autre chose que
+    // des nombres, ferait lire `undefined` au planificateur pour un jour de
+    // la semaine — et toute la journée deviendrait « capacité 0 », donc
+    // « rien n'est casable ». Le tableau est donc reconstruit poste par
+    // poste : chaque jour valide est conservé, chaque jour douteux retombe
+    // sur son défaut, et la longueur est garantie.
+    capacityByWeekday: normalizeCapacityByWeekday(item.capacityByWeekday),
+    planningMarginPercent: normalizeMarginPercent(item.planningMarginPercent),
+  };
+}
+
+function normalizeCapacityByWeekday(raw: unknown): number[] {
+  const list = Array.isArray(raw) ? raw : [];
+  return DEFAULT_CAPACITY_BY_WEEKDAY.map((fallback, index) => {
+    const value = list[index];
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return fallback;
+    return Math.min(MAX_DAILY_CAPACITY_MINUTES, Math.round(value));
+  });
+}
+
+function normalizeMarginPercent(raw: unknown): number {
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) return DEFAULT_PLANNING_MARGIN_PERCENT;
+  return Math.min(MAX_PLANNING_MARGIN_PERCENT, Math.round(raw));
 }
 
 /**
@@ -493,6 +782,22 @@ export const localData = {
   /** Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`), ou `null` si aucune n'a jamais été faite. */
   lastBackupAt: (): string | null => (typeof window === "undefined" ? null : localStorage.getItem(lastBackupKey)),
   saveLastBackupAt: (iso: string): boolean => writeKey(lastBackupKey, iso),
+  workItems: (): WorkItem[] => (typeof window === "undefined" ? [] : readList(workItemsKey).map(normalizeWorkItem)),
+  /** REMPLACE intégralement les travaux stockés — restauration d'une sauvegarde uniquement, voir `mergeWorkItems`. */
+  saveWorkItems: (items: WorkItem[]): boolean => writeKey(workItemsKey, JSON.stringify(items)),
+  /**
+   * Écriture incrémentale sûre — même contrat que `mergeSessions`/`mergeExercises`.
+   *
+   * Utilisable ici pour la même raison qu'ailleurs, et à une seule condition :
+   * un travail n'est JAMAIS retiré de la liste, il passe au statut
+   * « abandonné » (voir `WorkItemStatus`). Supprimer physiquement une ligne
+   * casserait l'invariant sur lequel `mergeStored` repose.
+   */
+  mergeWorkItems: (items: WorkItem[]): WorkItem[] => {
+    const merged = mergeStored(workItemsKey, items, normalizeWorkItem);
+    writeKey(workItemsKey, JSON.stringify(merged));
+    return merged;
+  },
   weekSnapshots: (): WeekSnapshot[] =>
     typeof window === "undefined" ? [] : readList(weekSnapshotsKey).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
   saveWeekSnapshots: (items: WeekSnapshot[]): boolean => writeKey(weekSnapshotsKey, JSON.stringify(items)),
@@ -536,6 +841,11 @@ export function exportBackup(): void {
       // fantômes (chapter_id pointant vers un catalogue vide).
       chapters: localData.chapters(),
       weekSnapshots: localData.weekSnapshots(),
+      // Les échéances et les travaux planifiés sont de la saisie MANUELLE de
+      // l'élève — la donnée la moins reconstituable de tout le fichier. Une
+      // sauvegarde qui les oublierait perdrait exactement ce qu'aucun
+      // amorçage ne peut recréer.
+      workItems: localData.workItems(),
     },
     null,
     2
@@ -574,6 +884,8 @@ export interface BackupPayload {
   /** Optionnel : une sauvegarde exportée avant l'ajout des chapitres à l'export n'a pas ce champ ; restauré à `[]` dans ce cas (voir components/data-backup.tsx#confirmImport). */
   chapters?: Chapter[];
   weekSnapshots?: WeekSnapshot[];
+  /** Optionnel : une sauvegarde exportée avant ce chantier n'a pas ce champ ; restauré à `[]` dans ce cas (voir components/data-backup.tsx#confirmImport). */
+  workItems?: WorkItem[];
 }
 
 /**

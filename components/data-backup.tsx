@@ -50,6 +50,10 @@ export function DataBackup() {
     localData.saveChapters(pendingImport.chapters ?? []);
     // Sauvegarde d'avant le Sprint 2.1 : pas de weekSnapshots dans le fichier, restaurés à [] proprement.
     localData.saveWeekSnapshots(pendingImport.weekSnapshots ?? []);
+    // Sauvegarde exportée avant l'arrivée des échéances : pas de `workItems`
+    // dans le fichier, restaurés à [] — jamais reconstitués à partir d'autre
+    // chose, il n'y a rien dont les déduire.
+    localData.saveWorkItems(pendingImport.workItems ?? []);
     setPendingImport(null);
     setMessage("Sauvegarde restaurée. Recharge la page.");
   }

@@ -72,6 +72,7 @@ export function SessionRunner() {
   const [planSelection, setPlanSelection] = useState<ExerciseRecommendation[] | null>(null);
   /** D'où vient `planSelection` — distingue uniquement le texte affiché à l'écran d'aperçu (voir StoredPlan.source, lib/plan.ts) ; la mécanique de séance est identique dans les deux cas. */
   const [planSource, setPlanSource] = useState<"plan-du-jour" | "libre">("plan-du-jour");
+  const [planWorkItemId, setPlanWorkItemId] = useState<string | null>(null);
   const initialized = useRef(false);
 
   // Décide une seule fois, au montage, entre reprendre un focus interrompu
@@ -94,6 +95,20 @@ export function SessionRunner() {
     // calcul par défaut. Ignoré si absent/invalide : comportement inchangé.
     const minutesParam = Number(params.get("minutes"));
     const requestedMinutes = Number.isFinite(minutesParam) && minutesParam > 0 ? Math.round(minutesParam) : null;
+
+    /*
+     * `?travail=<id>` (chantier planning) : la séance sert un travail
+     * planifié. L'identifiant ne change RIEN à la sélection d'exercices —
+     * c'est toujours `recommendExercises` qui décide du contenu, avec la
+     * matière et le budget que le créneau lui donne. Il ne fait que voyager
+     * jusqu'aux `WorkSession` enregistrées, pour que le temps passé compte
+     * sur ce travail.
+     *
+     * C'est la séparation de tout ce chantier, rendue littérale : le planning
+     * dit QUAND et COMBIEN, le moteur de recommandation dit QUOI.
+     */
+    const workItemParam = params.get("travail");
+    if (workItemParam) setPlanWorkItemId(workItemParam);
 
     const pendingId = findPersistedSessionSuffix(FOCUS_TIMER_PREFIX);
     const pending = pendingId ? exercises.find((item) => item.id === pendingId && !item.archived) : undefined;
@@ -124,6 +139,10 @@ export function SessionRunner() {
         if (picks.length > 0) {
           setPlanSelection(picks);
           setPlanSource(stored.source ?? "plan-du-jour");
+          // Le travail planifié que cette séance sert, s'il y en a un : il
+          // sera inscrit sur chaque `WorkSession` enregistrée, et c'est ce
+          // qui fera avancer le travail dans le planning.
+          setPlanWorkItemId(stored.workItemId ?? null);
           setBudgetMinutes(stored.requestedMinutes);
           setPhase("preview");
           return;
@@ -257,6 +276,7 @@ export function SessionRunner() {
         update={update}
         sessions={sessions}
         saveSessions={saveSessions}
+        workItemId={planWorkItemId}
         onClose={handleExerciseWorked}
         reasons={current.reasons}
         progress={{ index: currentIndex, total: recommendations.length }}

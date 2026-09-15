@@ -16,6 +16,7 @@ import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
 import { computeChaptersToConsolidate, type ChapterConsolidation } from "@/lib/next-action";
 import { comfortDifficulty, computeWorkingLevel } from "@/lib/recommendation";
+import { computeWeeklyReview } from "@/lib/weekly-review";
 import {
   computeGlobalProgress,
   computeProgressBySubject,
@@ -25,7 +26,7 @@ import {
   type ChapterProgress,
 } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META } from "@/lib/readiness";
-import type { Chapter, WeekSnapshot } from "@/lib/storage";
+import type { Chapter, Preferences, WeekSnapshot, WorkItem } from "@/lib/storage";
 import { subjectMeta, subjects, totalSeconds } from "@/lib/study";
 import { compareToPreviousWeek, findPreviousWeekSnapshot } from "@/lib/week-snapshot";
 import { formatMinutesSpan, formatSpan } from "@/lib/utils";
@@ -58,7 +59,7 @@ import type { Exercise, WorkSession } from "@/lib/supabase/types";
  * lib/gamification.ts, exactement comme avant.
  */
 export function ProgressOverview() {
-  const { sessions, exercises, chapters, weekSnapshots, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, weekSnapshots, workItems, preferences, ready } = usePrepahubData();
 
   const model = useMemo(
     () => ({
@@ -153,6 +154,10 @@ export function ProgressOverview() {
 
         <TopWeaknesses exercises={exercises} sessions={sessions} chapters={chapters} />
         <ChapterTable byChapter={model.byChapter} bySubject={model.bySubject} />
+        {/* LE BILAN EN PREMIER — c'est la seule section de l'écran qui
+            INTERPRÈTE au lieu de mesurer, et donc la seule qui dise quoi
+            faire ensuite. Tout ce qui la suit permet de la vérifier. */}
+        <WeeklyReviewSection workItems={workItems} sessions={sessions} exercises={exercises} preferences={preferences} />
         <DsReadiness exercises={exercises} sessions={sessions} />
         <WeekEvolution exercises={exercises} sessions={sessions} weekSnapshots={weekSnapshots} />
         <WorkingLevel exercises={exercises} sessions={sessions} />
@@ -585,6 +590,79 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
           );
         })}
       </ul>
+    </Section>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   BILAN DE LA SEMAINE
+   ══════════════════════════════════════════════════════════════════ */
+
+/**
+ * « Mesure → interprétation → action », dans cet ordre et sur trois niveaux
+ * typographiques.
+ *
+ * Le reproche fait à cet écran était juste : il mesurait beaucoup et
+ * n'interprétait presque rien. « 45 min », « 1 % », « 8 exercices » sont
+ * exacts et inutilisables à sept heures du matin. Cette section ajoute la
+ * couche manquante — quelques chiffres, quelques CONSTATS, et UN conseil.
+ *
+ * Elle n'affiche rigoureusement rien qui ne sorte d'un calcul de
+ * lib/weekly-review.ts : une semaine sans rien de notable produit une liste
+ * de constats vide et aucun conseil, et c'est le comportement voulu. Un
+ * conseil générique ne vaut pas mieux que pas de conseil — il vaut moins,
+ * parce qu'il apprend à ignorer les suivants.
+ */
+function WeeklyReviewSection({
+  workItems,
+  sessions,
+  exercises,
+  preferences,
+}: {
+  workItems: WorkItem[];
+  sessions: WorkSession[];
+  exercises: Exercise[];
+  preferences: Preferences;
+}) {
+  const review = useMemo(
+    () => computeWeeklyReview(workItems, sessions, exercises, preferences),
+    [workItems, sessions, exercises, preferences]
+  );
+
+  if (review.totalMinutes === 0 && review.findings.length === 0) return null;
+
+  return (
+    <Section label="Cette semaine" title="Ton bilan" description="Ce que les données de la semaine permettent réellement de dire — et rien d'autre.">
+      <StatRow>
+        <Stat label="Travaillé" value={formatSpan(review.totalMinutes * 60)} size="sm" />
+        {review.bySubject.slice(0, 2).map((entry) => (
+          <Stat key={entry.subject} label={entry.subject} value={formatSpan(entry.minutes * 60)} size="sm" />
+        ))}
+        {review.completedCount > 0 && <Stat label="Travaux terminés" value={review.completedCount} size="sm" />}
+        {review.postponedCount > 0 && <Stat label="Reports" value={review.postponedCount} size="sm" />}
+      </StatRow>
+
+      {review.findings.length > 0 && (
+        <div className="mt-6">
+          <p className="t-label mb-2">À retenir</p>
+          {/* Des constats, pas des métriques : chacun est une phrase complète,
+              et chacun cite le chiffre dont il sort. */}
+          <ul className="divide-y divide-line border-y border-line">
+            {review.findings.map((finding) => (
+              <li key={finding.key} className="py-2.5 text-sm text-ink">
+                {finding.sentence}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {review.advice && (
+        <div className="mt-6 border-t border-line pt-4">
+          <p className="t-label mb-1.5">Pour la suite</p>
+          <p className="t-lede">{review.advice}</p>
+        </div>
+      )}
     </Section>
   );
 }

@@ -10,6 +10,7 @@ import { HistoryFilters } from "@/components/history/history-filters";
 import { HistorySummary } from "@/components/history/history-summary";
 import { SessionRow } from "@/components/history/session-row";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { buildWeeklyPlan } from "@/lib/planning";
 import { defaultHistoryFilters, filterSessions, resultCounts, summarizeSessions, type HistoryFilters as HistoryFiltersState } from "@/lib/history";
 import { formatSpan } from "@/lib/utils";
 
@@ -23,7 +24,7 @@ const HISTORY_PAGE_SIZE = 100;
  * que les assembler.
  */
 export function SessionHistory() {
-  const { sessions, exercises, chapters, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, workItems, preferences, ready } = usePrepahubData();
   const [filters, setFilters] = useState<HistoryFiltersState>(defaultHistoryFilters);
   // Combien de lignes sont réellement montées dans le DOM.
   //
@@ -60,6 +61,21 @@ export function SessionHistory() {
    * exactement celle d'avant, et un groupe peut légitimement être coupé au
    * bord de la page — il se complète en affichant la suite.
    */
+  /*
+   * PRÉVU vs RÉALISÉ — pour AUJOURD'HUI seulement, et c'est délibéré.
+   *
+   * Le planning n'est pas persisté : il est recalculé à chaque affichage
+   * (voir lib/planning.ts). On ne peut donc pas savoir ce qui était prévu
+   * un mardi passé — et l'inventer à partir du planning d'aujourd'hui serait
+   * exactement le genre d'affirmation que ce produit s'interdit. Le journal
+   * reste donc un historique de ce qui a EU LIEU ; seule la journée en cours
+   * peut honnêtement afficher les deux chiffres côte à côte.
+   */
+  const plannedToday = useMemo(
+    () => buildWeeklyPlan(workItems, sessions, preferences, new Date()).days[0]?.load.plannedMinutes ?? 0,
+    [workItems, sessions, preferences]
+  );
+
   const visibleDays = useMemo(() => {
     const groups: { key: string; date: Date; sessions: typeof sorted; seconds: number }[] = [];
     for (const session of sorted.slice(0, visibleCount)) {
@@ -134,7 +150,12 @@ export function SessionHistory() {
                     filet de la liste. C'est ce que fait un relevé. */}
                 <h3 className="flex items-baseline justify-between gap-3 border-b border-line pb-1.5 pt-5 first:pt-3">
                   <span className="t-label">{formatDayLabel(day.date)}</span>
-                  <span className="t-meta tabular shrink-0">{formatSpan(day.seconds)}</span>
+                  <span className="t-meta tabular shrink-0 whitespace-nowrap">
+                    {formatSpan(day.seconds)}
+                    {isToday(day.date) && plannedToday > 0 && (
+                      <span className="text-subtle"> réalisées · {formatSpan(plannedToday * 60)} prévues</span>
+                    )}
+                  </span>
                 </h3>
                 <ul className="divide-y divide-line border-b border-line">
                   {day.sessions.map((session) => {
@@ -190,4 +211,9 @@ function formatDayLabel(date: Date): string {
   if (days === 0) return "Aujourd'hui";
   if (days === 1) return "Hier";
   return dayFormatter.format(date);
+}
+
+/** Le jour en cours — seul jour pour lequel « prévu » est une donnée connue et non une reconstitution. */
+function isToday(date: Date): boolean {
+  return date.toLocaleDateString("en-CA") === new Date().toLocaleDateString("en-CA");
 }

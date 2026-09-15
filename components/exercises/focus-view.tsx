@@ -50,11 +50,20 @@ export function FocusView({
   progress,
   onPrev,
   onNext,
+  workItemId = null,
 }: {
   item: Exercise;
   update: (id: string, patch: Partial<Exercise>) => void;
   sessions: WorkSession[];
   saveSessions: (sessions: WorkSession[]) => void;
+  /**
+   * Travail planifié que cette séance sert, quand le lecteur a été ouvert
+   * depuis un créneau du planning — `null` quand il est ouvert depuis la
+   * banque, par curiosité. Purement transmis : le lecteur ne fait que
+   * l'inscrire sur la `WorkSession` qu'il enregistre, il n'en lit jamais
+   * rien.
+   */
+  workItemId?: string | null;
   /** Appelé à la fermeture du focus, avec le résultat choisi — `null`/`undefined` si aucune séance n'a été enregistrée (rien à qualifier) ou si l'utilisateur a passé l'étape. */
   onClose: (result?: AttemptResult | null) => void;
   /**
@@ -172,6 +181,7 @@ export function FocusView({
       // 0 est une information à part entière (il s'en est sorti seul), pas
       // une absence de donnée — voir lib/supabase/types.ts#hints_used.
       hints_used: hintCount,
+      work_item_id: workItemId,
     });
     // `hintCount` DOIT figurer ici : sans lui, `endSession` capture la valeur
     // du premier rendu (0) et l'enregistre telle quelle, quels que soient les
@@ -179,7 +189,7 @@ export function FocusView({
     // sauvegardée comme autonome. Bug trouvé en test bout-en-bout (3 indices
     // révélés, `hints_used: 0` persisté), invisible au typecheck comme aux
     // tests unitaires : seul le parcours réel le montrait.
-  }, [stop, item, onClose, hintCount]);
+  }, [stop, item, onClose, hintCount, workItemId]);
 
   // Sauvegarde réellement la séance — avec le résultat choisi, ou `null` si
   // l'utilisateur a préféré passer cette étape (Échap depuis l'écran de

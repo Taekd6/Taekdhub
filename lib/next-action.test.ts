@@ -65,6 +65,7 @@ function makeSession(exerciseId: string | null, overrides: Partial<WorkSession> 
     created_at: "2026-08-10T08:10:00.000Z",
     result: null,
     hints_used: null,
+    work_item_id: null,
     ...overrides,
   };
 }
