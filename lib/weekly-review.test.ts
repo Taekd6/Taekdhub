@@ -202,3 +202,73 @@ describe("matière délaissée — réutilise le calcul existant de lib/week.ts,
     expect(review.findings.find((finding) => finding.key === "matiere-delaissee")?.sentence).toContain("Chimie");
   });
 });
+
+describe("enrichissement analytique du bilan", () => {
+  it("annonce le volume de la semaine et son écart, « à ce stade »", () => {
+    const sessions = [session("2026-09-15T09:00:00", 180), session("2026-09-08T09:00:00", 120)];
+    const finding = computeWeeklyReview([], sessions, [], prefs(), NOW).findings.find((entry) => entry.key === "volume")!;
+    expect(finding.sentence).toContain("3 h");
+    expect(finding.sentence).toContain("+1 h");
+    expect(finding.sentence).toContain("à ce stade");
+  });
+
+  it("dit « première semaine mesurée » plutôt qu'un écart inventé", () => {
+    const finding = computeWeeklyReview([], [session("2026-09-15T09:00:00", 60)], [], prefs(), NOW).findings.find((entry) => entry.key === "volume")!;
+    expect(finding.sentence).toContain("première semaine mesurée");
+  });
+
+  it("aucune séance des deux semaines : aucun constat de volume", () => {
+    expect(computeWeeklyReview([], [], [], prefs(), NOW).findings.some((entry) => entry.key === "volume")).toBe(false);
+  });
+
+  it("signale une matière qui porte une échéance ouverte mais reçoit peu de temps", () => {
+    const items = [item("ds", { title: "DS de physique", kind: "ds", subject: "Physique", dueDate: "2026-09-25", estimatedMinutes: 60 })];
+    const sessions = [
+      session("2026-09-15T09:00:00", 240, "Mathématiques"),
+      session("2026-09-16T09:00:00", 30, "Physique"),
+    ];
+    const review = computeWeeklyReview(items, sessions, [], prefs(), NOW);
+    const finding = review.findings.find((entry) => entry.key === "matiere-sous-servie")!;
+    expect(finding.sentence).toContain("Physique");
+    expect(finding.sentence).toContain("11 %");
+  });
+
+  it("ne signale RIEN quand la matière reçoit une part normale du temps", () => {
+    const items = [item("ds", { kind: "ds", subject: "Physique", dueDate: "2026-09-25", estimatedMinutes: 60 })];
+    const sessions = [
+      session("2026-09-15T09:00:00", 120, "Mathématiques"),
+      session("2026-09-16T09:00:00", 120, "Physique"),
+    ];
+    expect(computeWeeklyReview(items, sessions, [], prefs(), NOW).findings.some((entry) => entry.key === "matiere-sous-servie")).toBe(false);
+  });
+
+  it("ne signale rien non plus quand la matière n'a aucune échéance ouverte", () => {
+    const sessions = [
+      session("2026-09-15T09:00:00", 240, "Mathématiques"),
+      session("2026-09-16T09:00:00", 30, "Physique"),
+    ];
+    expect(computeWeeklyReview([], sessions, [], prefs(), NOW).findings.some((entry) => entry.key === "matiere-sous-servie")).toBe(false);
+  });
+});
+
+describe("cohérence des chiffres affichés ensemble", () => {
+  /**
+   * DÉFAUT CONSTATÉ À L'ÉCRAN : le bandeau du bilan annonçait « 15 h 40
+   * travaillées » pendant que la courbe du rythme, juste en dessous, en
+   * affichait 3 h 55 — parce que le bilan retenait toute la semaine
+   * calendaire quand les séries s'arrêtent à maintenant. Deux nombres
+   * contradictoires sur le même écran suffisent à discréditer les deux.
+   */
+  it("le total de la semaine s'arrête à maintenant, comme les séries temporelles", () => {
+    const sessions = [session("2026-09-15T09:00:00", 60), session("2026-09-19T09:00:00", 300)];
+    expect(computeWeeklyReview([], sessions, [], prefs(), NOW).totalMinutes).toBe(60);
+  });
+
+  it("la ventilation par matière suit la même borne", () => {
+    const sessions = [
+      session("2026-09-15T09:00:00", 60, "Mathématiques"),
+      session("2026-09-19T09:00:00", 300, "Physique"),
+    ];
+    expect(computeWeeklyReview([], sessions, [], prefs(), NOW).bySubject).toEqual([{ subject: "Mathématiques", minutes: 60 }]);
+  });
+});

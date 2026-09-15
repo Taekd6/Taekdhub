@@ -11,6 +11,8 @@ const chaptersKey = "prepahub:chapters";
 const lastBackupKey = "prepahub:last-backup";
 const weekSnapshotsKey = "prepahub:week-snapshots";
 const workItemsKey = "prepahub:work-items";
+const gradesKey = "prepahub:grades";
+const dayPlansKey = "prepahub:day-plans";
 
 /**
  * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
@@ -143,6 +145,76 @@ export interface WeekSnapshot {
   masteredCount: number;
   completionRate: number;
   bySubjectProgress: WeekSnapshotSubjectProgress[];
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   RÉSULTATS SCOLAIRES — la seule mesure qui ne vient pas de TaekdHub
+   ══════════════════════════════════════════════════════════════════
+
+   Tout le reste de ce fichier décrit ce que l'élève fait DANS
+   l'application. Une note de DS, elle, est rendue par un professeur : c'est
+   la seule donnée qui juge le travail depuis l'extérieur, et donc la seule
+   qui permette de confronter l'effort au résultat.
+
+   Volontairement minimal : une note, sur quoi, quand, dans quelle matière.
+   Ni coefficient, ni moyenne de classe, ni appréciation — rien dont on ne
+   saurait quoi faire, et rien qui transformerait la saisie en corvée.
+*/
+
+/** Nature de l'épreuve — reprend le vocabulaire déjà employé par `ExerciseType` et `WorkItemKind`, sans en inventer un troisième. */
+export type GradeKind = "ds" | "dm" | "interro" | "colle" | "concours" | "autre";
+export const GRADE_KINDS: readonly GradeKind[] = ["ds", "dm", "interro", "colle", "concours", "autre"];
+
+export interface Grade {
+  id: string;
+  subject: Subject;
+  /** Ce sur quoi portait l'épreuve — « Suites et séries », « DS n°3 ». Facultatif à la saisie, jamais vide en mémoire. */
+  title: string;
+  kind: GradeKind;
+  /** "AAAA-MM-JJ" — le jour de l'épreuve, pas celui de la saisie. */
+  date: string;
+  /** Note obtenue. Décimales permises (11,5). Toujours ≥ 0 et ≤ `maxScore`. */
+  score: number;
+  /** Barème. 20 dans l'immense majorité des cas, mais une colle sur 10 ou un concours blanc sur 40 existent. */
+  maxScore: number;
+  createdAt: string;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CE QUI ÉTAIT PRÉVU — la seule donnée du planning qui doit survivre
+   ══════════════════════════════════════════════════════════════════
+
+   Le planning n'est PAS persisté : il est recalculé à chaque affichage
+   (voir lib/planning.ts), et c'est ce qui le garde toujours juste. Mais du
+   coup, une fois la journée passée, plus rien ne dit ce qui y était prévu —
+   donc « est-ce que je réalise ce que je planifie ? » est structurellement
+   sans réponse.
+
+   Un seul nombre par jour suffit à y répondre, et il est irrécupérable
+   autrement. C'est la seule statistique dérivée persistée de tout le
+   produit, et voici pourquoi elle l'est à ces conditions précises :
+
+   ENREGISTRÉ LA VEILLE. Le plan d'une journée est capté le jour PRÉCÉDENT,
+   jamais le jour même. Capté le matin même, il serait déjà amputé du
+   travail fait dans la nuit ; capté le soir, il ne resterait presque rien à
+   prévoir et la journée afficherait « 300 % réalisé ». La veille, la
+   journée est intacte : le nombre mesure vraiment une INTENTION.
+
+   JAMAIS RÉÉCRIT. Une intention ne se révise pas après coup — c'est tout
+   son intérêt comme point de comparaison.
+
+   JAMAIS RECONSTITUÉ. Un jour où l'application n'a pas été ouverte la
+   veille n'a pas d'enregistrement, et reste simplement hors de la
+   comparaison. On dit alors sur combien de jours elle porte plutôt que de
+   combler le trou.
+*/
+export interface DayPlanRecord {
+  /** "AAAA-MM-JJ" — le jour PLANIFIÉ. */
+  date: string;
+  /** Minutes que le planning réservait pour ce jour-là, au moment de la capture. */
+  plannedMinutes: number;
+  /** Horodatage ISO de la capture — toujours la veille du jour planifié. Conservé pour pouvoir vérifier cette promesse. */
+  capturedAt: string;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -600,6 +672,48 @@ function normalizeWeekSnapshot(raw: unknown): WeekSnapshot | null {
 }
 
 /**
+ * Ramène une note potentiellement corrompue vers une forme valide, ou
+ * l'écarte (`null`) quand elle ne veut plus rien dire — contrairement à un
+ * travail planifié, une note sans date ni barème exploitable n'est pas
+ * réparable : la garder avec des valeurs inventées fausserait une moyenne.
+ */
+export function normalizeGrade(raw: unknown): Grade | null {
+  const item = isRecord(raw) ? raw : {};
+  const date = calendarDay(item.date);
+  if (!date) return null;
+  if (!(subjects as string[]).includes(item.subject as string)) return null;
+
+  const maxScore = typeof item.maxScore === "number" && Number.isFinite(item.maxScore) && item.maxScore > 0 ? item.maxScore : 20;
+  const rawScore = typeof item.score === "number" && Number.isFinite(item.score) ? item.score : null;
+  if (rawScore === null) return null;
+
+  return {
+    id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
+    subject: item.subject as Subject,
+    title: typeof item.title === "string" && item.title.trim() ? item.title.trim() : "",
+    kind: (GRADE_KINDS as string[]).includes(item.kind as string) ? (item.kind as GradeKind) : "autre",
+    date,
+    // Bornée au barème : une note de 25/20 vient forcément d'une saisie ou
+    // d'un fichier abîmé, et elle contaminerait toutes les moyennes.
+    score: Math.max(0, Math.min(maxScore, rawScore)),
+    maxScore,
+    createdAt: isoDate(item.createdAt) ?? new Date().toISOString(),
+  };
+}
+
+/** Voir `DayPlanRecord` — un enregistrement sans jour valide n'a aucun sens et disparaît. */
+export function normalizeDayPlanRecord(raw: unknown): DayPlanRecord | null {
+  const item = isRecord(raw) ? raw : {};
+  const date = calendarDay(item.date);
+  if (!date) return null;
+  return {
+    date,
+    plannedMinutes: nonNegativeInteger(item.plannedMinutes) ?? 0,
+    capturedAt: isoDate(item.capturedAt) ?? `${date}T00:00:00.000Z`,
+  };
+}
+
+/**
  * Fusionne une préférence potentiellement partielle/corrompue (import, ancienne
  * sauvegarde, édition manuelle du localStorage) avec `defaults` — même principe
  * que `normalizeExercise`/`normalizeChapter` : un champ absent ou invalide
@@ -798,9 +912,25 @@ export const localData = {
     writeKey(workItemsKey, JSON.stringify(merged));
     return merged;
   },
+  grades: (): Grade[] =>
+    typeof window === "undefined" ? [] : readList(gradesKey).map(normalizeGrade).filter((item): item is Grade => item !== null),
+  /** REMPLACE intégralement les notes — restauration d'une sauvegarde uniquement, voir `mergeGrades`. */
+  saveGrades: (items: Grade[]): boolean => writeKey(gradesKey, JSON.stringify(items)),
+  /**
+   * Écriture incrémentale. Une note SE SUPPRIME (contrairement à une séance
+   * ou un exercice) : on saisit 14 au lieu de 4, on corrige. La fusion par
+   * identifiant ressusciterait la note effacée depuis une copie React
+   * périmée — `saveGrades` remplace donc, comme `saveChapters`, qui a
+   * exactement le même profil.
+   */
   weekSnapshots: (): WeekSnapshot[] =>
     typeof window === "undefined" ? [] : readList(weekSnapshotsKey).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
   saveWeekSnapshots: (items: WeekSnapshot[]): boolean => writeKey(weekSnapshotsKey, JSON.stringify(items)),
+  dayPlans: (): DayPlanRecord[] =>
+    typeof window === "undefined"
+      ? []
+      : readList(dayPlansKey).map(normalizeDayPlanRecord).filter((item): item is DayPlanRecord => item !== null),
+  saveDayPlans: (items: DayPlanRecord[]): boolean => writeKey(dayPlansKey, JSON.stringify(items)),
 };
 
 /**
@@ -846,6 +976,12 @@ export function exportBackup(): void {
       // sauvegarde qui les oublierait perdrait exactement ce qu'aucun
       // amorçage ne peut recréer.
       workItems: localData.workItems(),
+      // Les notes sont saisies à la main et ne se recalculent pas : une
+      // sauvegarde qui les oublierait perdrait un trimestre de résultats.
+      grades: localData.grades(),
+      // Les intentions de planning passées ne sont pas reconstituables non
+      // plus — voir `DayPlanRecord`.
+      dayPlans: localData.dayPlans(),
     },
     null,
     2
@@ -886,6 +1022,10 @@ export interface BackupPayload {
   weekSnapshots?: WeekSnapshot[];
   /** Optionnel : une sauvegarde exportée avant ce chantier n'a pas ce champ ; restauré à `[]` dans ce cas (voir components/data-backup.tsx#confirmImport). */
   workItems?: WorkItem[];
+  /** Optionnel, même raison — voir `Grade`. */
+  grades?: Grade[];
+  /** Optionnel, même raison — voir `DayPlanRecord`. */
+  dayPlans?: DayPlanRecord[];
 }
 
 /**

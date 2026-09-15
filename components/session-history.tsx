@@ -152,8 +152,16 @@ export function SessionHistory() {
                   <span className="t-label">{formatDayLabel(day.date)}</span>
                   <span className="t-meta tabular shrink-0 whitespace-nowrap">
                     {formatSpan(day.seconds)}
+                    {/* Les mots disparaissent sous `sm` : à 320 px, « 3 h 55
+                        réalisées · 4 h 30 prévues » mesurait 210 px dans une
+                        rangée qui n'en offre que ~180, et faisait déborder
+                        toute la page horizontalement. Les deux chiffres, eux,
+                        restent — c'est l'information. */}
                     {isToday(day.date) && plannedToday > 0 && (
-                      <span className="text-subtle"> réalisées · {formatSpan(plannedToday * 60)} prévues</span>
+                      <span className="text-subtle">
+                        <span className="hidden sm:inline"> réalisées</span> · {formatSpan(plannedToday * 60)}
+                        <span className="hidden sm:inline"> prévues</span>
+                      </span>
                     )}
                   </span>
                 </h3>

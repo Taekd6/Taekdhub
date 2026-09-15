@@ -1,16 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { useMemo } from "react";
+import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Meter } from "@/components/ui/progress";
 import { Section } from "@/components/ui/section";
 import { Stat, StatRow } from "@/components/ui/stat";
 import { Skeleton } from "@/components/ui/state";
 import { PageBar, Split } from "@/components/ui/layout";
-import { Heatmap } from "@/components/heatmap";
+import { RhythmSection } from "@/components/progress/rhythm-section";
+import { WeekSection } from "@/components/progress/week-section";
+import { ConsistencySection } from "@/components/progress/consistency-section";
+import { SubjectsSection } from "@/components/progress/subjects-section";
+import { MasterySection } from "@/components/progress/mastery-section";
+import { GradesSection } from "@/components/progress/grades-section";
+import { WorkAndResults } from "@/components/progress/work-and-results";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
@@ -23,14 +28,12 @@ import {
   masteryDistribution,
   progressByChapter,
   statusDistribution,
-  type ChapterProgress,
 } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META } from "@/lib/readiness";
 import type { Chapter, Preferences, WeekSnapshot, WorkItem } from "@/lib/storage";
-import { subjectMeta, subjects, totalSeconds } from "@/lib/study";
+import { totalSeconds } from "@/lib/study";
 import { compareToPreviousWeek, findPreviousWeekSnapshot } from "@/lib/week-snapshot";
 import { formatMinutesSpan, formatSpan } from "@/lib/utils";
-import { cn } from "@/lib/cn";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -59,7 +62,7 @@ import type { Exercise, WorkSession } from "@/lib/supabase/types";
  * lib/gamification.ts, exactement comme avant.
  */
 export function ProgressOverview() {
-  const { sessions, exercises, chapters, weekSnapshots, workItems, preferences, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, weekSnapshots, workItems, grades, dayPlans, preferences, saveGrades, ready } = usePrepahubData();
 
   const model = useMemo(
     () => ({
@@ -112,36 +115,14 @@ export function ProgressOverview() {
             <RailStat label="Série actuelle" value={`${model.streak} j`} />
           </dl>
 
-          <div>
-            <p className="t-label mb-3">Constance · 84 jours</p>
-            <Heatmap workByDay={model.workByDay} />
-            <p className="t-meta mt-3 text-2xs">Chaque case représente une journée de travail enregistrée.</p>
-          </div>
-
-          <div>
-            <p className="t-label mb-3">Par maîtrise déclarée</p>
-            <Distribution
-              rows={model.mastery.map((entry) => ({
-                key: String(entry.mastery),
-                label: `${entry.mastery} %`,
-                count: entry.count,
-                percentage: entry.percentage,
-              }))}
-            />
-          </div>
-
-          <div>
-            <p className="t-label mb-3">Par statut</p>
-            <Distribution
-              rows={model.status.map((entry) => ({
-                key: entry.status,
-                label: entry.status,
-                count: entry.count,
-                percentage: entry.percentage,
-              }))}
-            />
-          </div>
-
+          {/* La heatmap est DESCENDUE dans le flux principal (« Ta
+              régularité ») : c'est un constat qu'on lit, pas un repère qu'on
+              consulte du coin de l'œil. Les deux distributions qui vivaient
+              ici — « par maîtrise déclarée » et « par statut » — ont été
+              retirées : elles décrivaient l'état brut de la banque, ce que la
+              section « Tes progrès » dit désormais mieux, et en le
+              rapportant à une évolution. Deux façons de montrer la même chose
+              valent moins qu'une seule qui conclut. */}
           <div>
             <p className="t-label mb-3">Ce qui mérite ton attention</p>
             <ExerciseBankStats exercises={exercises} sessions={sessions} layout="rail" />
@@ -152,14 +133,44 @@ export function ProgressOverview() {
       <div className="space-y-10">
         <PageBar title="Progression" lede="Observer les faits pour ajuster ton travail." />
 
-        <TopWeaknesses exercises={exercises} sessions={sessions} chapters={chapters} />
-        <ChapterTable byChapter={model.byChapter} bySubject={model.bySubject} />
-        {/* LE BILAN EN PREMIER — c'est la seule section de l'écran qui
-            INTERPRÈTE au lieu de mesurer, et donc la seule qui dise quoi
-            faire ensuite. Tout ce qui la suit permet de la vérifier. */}
+        {/*
+          ORDRE DE LECTURE — celui d'un dimanche soir, pas celui du modèle de
+          données.
+
+            LE BILAN      ce qu'il faut retenir, et quoi faire ensuite.
+            LE RYTHME     ai-je assez travaillé ?
+            LA SEMAINE    ai-je fait ce que j'avais prévu ?
+            LA RÉGULARITÉ est-ce que je m'y mets souvent ?
+            LES MATIÈRES  où part mon temps ?
+            LES PROGRÈS   est-ce que je monte ?
+            LES RÉSULTATS qu'en disent mes notes ?
+            À TRAVAILLER  par quoi je reprends.
+
+          La conclusion vient d'abord, les mesures qui la fondent ensuite : un
+          élève qui n'a que deux minutes doit pouvoir s'arrêter après la
+          première section sans rien manquer d'actionnable.
+        */}
         <WeeklyReviewSection workItems={workItems} sessions={sessions} exercises={exercises} preferences={preferences} />
-        <DsReadiness exercises={exercises} sessions={sessions} />
+        <RhythmSection sessions={sessions} preferences={preferences} />
+        <WeekSection dayPlans={dayPlans} sessions={sessions} />
+        <ConsistencySection sessions={sessions} />
+        <SubjectsSection sessions={sessions} />
+        <MasterySection exercises={exercises} sessions={sessions} chapters={chapters} weekSnapshots={weekSnapshots} />
+        <GradesSection grades={grades} onSave={saveGrades} />
+        <WorkAndResults sessions={sessions} grades={grades} />
         <WeekEvolution exercises={exercises} sessions={sessions} weekSnapshots={weekSnapshots} />
+
+        {/* À TRAVAILLER — la sortie de la page, et elle ne recalcule rien :
+            ces deux sections appellent le moteur de recommandation existant.
+            Aucun second moteur n'est introduit par ce chantier. */}
+        {/* `ChapterTable` a été retirée : elle dépliait TOUS les chapitres de
+            toutes les matières, soit plusieurs milliers de pixels, pour dire
+            ce que « Tes progrès » dit maintenant en trois listes courtes
+            (fragiles, solides, non mesurés) et en le rapportant à une
+            évolution. Deux inventaires du même objet sur la même page valent
+            moins qu'un seul qui conclut. */}
+        <TopWeaknesses exercises={exercises} sessions={sessions} chapters={chapters} />
+        <DsReadiness exercises={exercises} sessions={sessions} />
         <WorkingLevel exercises={exercises} sessions={sessions} />
       </div>
     </Split>
@@ -257,145 +268,7 @@ function TopWeaknesses({
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   TABLEAU PAR CHAPITRE
-   ══════════════════════════════════════════════════════════════════ */
 
-/**
- * Le remplaçant du mur de tuiles.
- *
- * Chaque matière est un groupe repliable ; à l'intérieur, les chapitres sont
- * triés du PLUS FAIBLE au plus solide. C'est le seul ordre qui serve la
- * question posée — l'ordre alphabétique et l'ordre par taille supposent tous
- * deux qu'on sache déjà quel chapitre on cherche.
- *
- * Seule la première matière est ouverte au chargement : trois matières
- * dépliées, c'est de nouveau cinquante lignes d'un coup.
- */
-function ChapterTable({ byChapter, bySubject }: { byChapter: ChapterProgress[]; bySubject: ReturnType<typeof computeProgressBySubject> }) {
-  const groups = useMemo(
-    () =>
-      subjects
-        .map((subject) => ({
-          subject,
-          summary: bySubject.find((entry) => entry.subject === subject),
-          chapters: byChapter
-            .filter((entry) => entry.chapter.subject === subject)
-            .sort((a, b) => a.averageMastery - b.averageMastery || b.total - a.total),
-        }))
-        .filter((group) => group.chapters.length > 0),
-    [byChapter, bySubject]
-  );
-
-  const [open, setOpen] = useState<string | null>(groups[0]?.subject ?? null);
-
-  if (groups.length === 0) {
-    return (
-      <Section label="Par chapitre" title="Chapitre par chapitre">
-        <p className="t-meta">Crée des chapitres depuis un exercice pour voir leur progression ici.</p>
-      </Section>
-    );
-  }
-
-  return (
-    <Section
-      label="Par chapitre"
-      title="Chapitre par chapitre"
-      description="Du plus fragile au plus solide, dans chaque matière. Clique une ligne pour en ouvrir les exercices."
-    >
-      <div className="border-t border-line">
-        {groups.map(({ subject, summary, chapters: rows }) => {
-          const expanded = open === subject;
-          return (
-            <div key={subject} className="border-b border-line">
-              <button
-                type="button"
-                onClick={() => setOpen(expanded ? null : subject)}
-                aria-expanded={expanded}
-                className="row-hover flex w-full items-center gap-3 rounded-md px-1 py-3 text-left max-lg:min-h-[3.25rem]"
-              >
-                <span
-                  className={cn(
-                    "grid h-6 w-6 shrink-0 place-items-center rounded-md text-[0.6875rem] font-semibold",
-                    subjectMeta[subject].className
-                  )}
-                >
-                  {subjectMeta[subject].short}
-                </span>
-                <span className="t-subhead min-w-0 flex-1 truncate">{subject}</span>
-                <span className="t-meta tabular shrink-0">
-                  {rows.length} chapitre{rows.length > 1 ? "s" : ""}
-                </span>
-                {summary && (
-                  <span className="tabular hidden w-16 shrink-0 text-right text-sm text-muted sm:block">
-                    {summary.completionRate} %
-                  </span>
-                )}
-                <ChevronDown
-                  size={15}
-                  className={cn("shrink-0 text-subtle transition-transform duration-150", expanded && "rotate-180")}
-                />
-              </button>
-
-              {expanded && (
-                <ul className="animate-fade-in pb-2">
-                  {rows.map(({ chapter, total, mastered, averageMastery, completionRate }) => (
-                    <li key={chapter.id}>
-                      <Link
-                        href={`/exercises?chapter=${encodeURIComponent(chapter.id)}`}
-                        className="row-hover flex items-center gap-3 rounded-md py-2 pl-10 pr-1 max-lg:min-h-11"
-                      >
-                        <span className="min-w-0 flex-1 truncate text-sm text-ink">{chapter.label}</span>
-                        <span className="t-meta tabular hidden w-16 shrink-0 text-right sm:block">
-                          {mastered} / {total}
-                        </span>
-                        {/* La barre porte la MAÎTRISE MOYENNE (un continuum),
-                            le chiffre le taux d'exercices achevés : deux
-                            informations différentes, pas la même deux fois. */}
-                        <Meter
-                          value={averageMastery}
-                          className="w-20 shrink-0 sm:w-28"
-                          tone={averageMastery >= 70 ? "success" : averageMastery >= 35 ? "warning" : "danger"}
-                        />
-                        <span
-                          className={cn(
-                            "tabular w-10 shrink-0 text-right text-xs",
-                            completionRate >= 70 ? "text-emerald-300" : completionRate > 0 ? "text-amber-300" : "text-subtle"
-                          )}
-                        >
-                          {completionRate} %
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </Section>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   RÉPARTITIONS
-   ══════════════════════════════════════════════════════════════════ */
-
-/** Une distribution = des lignes étiquette / barre / compte. Le titre est posé par l'appelant. */
-function Distribution({ rows }: { rows: { key: string; label: string; count: number; percentage: number }[] }) {
-  return (
-    <ul className="space-y-2">
-      {rows.map((row) => (
-        <li key={row.key} className="flex items-center gap-2.5">
-          <span className="w-14 shrink-0 text-2xs capitalize text-muted">{row.label}</span>
-          <Meter value={row.percentage} className="flex-1" tone="neutral" />
-          <span className="tabular w-7 shrink-0 text-right text-2xs text-muted">{row.count}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 /* ══════════════════════════════════════════════════════════════════
    ÉVOLUTION / NIVEAU / DS

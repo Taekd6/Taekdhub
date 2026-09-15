@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
+import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { suggestCapacityFromHistory, WEEKDAY_LABELS } from "@/lib/capacity";
 import { localData, MAX_DAILY_CAPACITY_MINUTES } from "@/lib/storage";
@@ -59,6 +60,19 @@ export function CapacityForm() {
   }
 
   const plannableWeek = capacity.reduce((sum, value) => sum + Math.floor((value * Math.max(0, 100 - margin)) / 100), 0);
+
+  /*
+   * ATTENDRE `ready` AVANT DE RENDRE — divergence d'hydratation constatée
+   * sur le build de production (React #418), invisible en développement.
+   *
+   * `localData.preferences()` lit le localStorage dès le premier rendu côté
+   * CLIENT, mais renvoie les valeurs par défaut côté SERVEUR, qui n'y a pas
+   * accès. Le serveur écrivait donc « il te reste 16 h planifiables » et le
+   * client « 19 h 30 » : React signalait le texte divergent et jetait le
+   * rendu serveur. Les autres écrans qui affichent des données locales
+   * attendent déjà `ready` pour cette raison (voir components/timer.tsx).
+   */
+  if (!ready) return <Skeleton className="h-64 w-full rounded-xl" />;
 
   return (
     <Section

@@ -54,6 +54,10 @@ export function DataBackup() {
     // dans le fichier, restaurés à [] — jamais reconstitués à partir d'autre
     // chose, il n'y a rien dont les déduire.
     localData.saveWorkItems(pendingImport.workItems ?? []);
+    // Notes et intentions de planning : saisies ou captées, jamais
+    // reconstituables. Absentes d'une sauvegarde antérieure → [].
+    localData.saveGrades(pendingImport.grades ?? []);
+    localData.saveDayPlans(pendingImport.dayPlans ?? []);
     setPendingImport(null);
     setMessage("Sauvegarde restaurée. Recharge la page.");
   }

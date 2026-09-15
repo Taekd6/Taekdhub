@@ -3,6 +3,8 @@ import { computeWorkItemPriority, sortByPriority } from "@/lib/deadlines";
 import { dayKey, subjects, totalSeconds } from "@/lib/study";
 import { activeWorkItems } from "@/lib/work-items";
 import { sessionsInWeek, startOfWeek, timeBySubjectInWeek, neglectedSubjects } from "@/lib/week";
+import { computeWeeklyComparison, computeSubjectDistribution } from "@/lib/analytics/work-time";
+import { withSignMinutes } from "@/lib/analytics/trend";
 import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 import type { Preferences, WorkItem } from "@/lib/storage";
 
@@ -30,7 +32,15 @@ import type { Preferences, WorkItem } from "@/lib/storage";
 
 /** Un constat — une phrase, et la clé qui dit de quel calcul elle sort. */
 export interface WeeklyFinding {
-  key: "jour-le-plus-charge" | "reports" | "biais-estimation" | "echeance-a-risque" | "matiere-delaissee" | "travaux-termines";
+  key:
+    | "volume"
+    | "jour-le-plus-charge"
+    | "reports"
+    | "biais-estimation"
+    | "echeance-a-risque"
+    | "matiere-sous-servie"
+    | "matiere-delaissee"
+    | "travaux-termines";
   sentence: string;
 }
 
@@ -52,6 +62,8 @@ export interface WeeklyReview {
 
 /** Il faut au moins deux journées travaillées pour qu'un « jour le plus chargé » veuille dire quelque chose. */
 const MIN_DAYS_FOR_BUSIEST = 2;
+/** En dessous de cette part du temps de la semaine, une matière qui porte une échéance ouverte est signalée comme sous-servie. */
+const UNDERSERVED_SHARE_PERCENT = 20;
 
 export function computeWeeklyReview(
   workItems: WorkItem[],
@@ -61,10 +73,21 @@ export function computeWeeklyReview(
   now: Date = new Date()
 ): WeeklyReview {
   const weekStart = startOfWeek(now);
-  const weekSessions = sessionsInWeek(sessions, weekStart);
+  /*
+   * Les séances POSTÉRIEURES à l'instant de référence sont écartées.
+   *
+   * Incohérence constatée à l'écran : le bandeau du bilan annonçait
+   * « 15 h 40 travaillées » pendant que la courbe du rythme, juste en
+   * dessous, en affichait 3 h 55 — parce que `sessionsInWeek` retient toute
+   * la semaine calendaire quand les séries temporelles s'arrêtent à
+   * maintenant. Deux nombres contradictoires sur le même écran suffisent à
+   * discréditer les deux.
+   */
+  const weekSessions = sessionsInWeek(sessions, weekStart).filter((session) => new Date(session.started_at) <= now);
   const totalMinutes = Math.floor(totalSeconds(weekSessions) / 60);
 
-  const bySubject = timeBySubjectInWeek(sessions, weekStart)
+  const upToNow = sessions.filter((session) => new Date(session.started_at) <= now);
+  const bySubject = timeBySubjectInWeek(upToNow, weekStart)
     .map(({ subject, seconds }) => ({ subject, minutes: Math.floor(seconds / 60) }))
     .filter((entry) => entry.minutes > 0)
     .sort((a, b) => b.minutes - a.minutes);
@@ -113,6 +136,24 @@ export function computeWeeklyReview(
   // ce qui est une information en soi.
   const findings: WeeklyFinding[] = [];
 
+  /*
+   * CE QUI A CHANGÉ, en tête — c'est la première chose qu'on vient vérifier.
+   *
+   * L'écart est présenté « à ce stade de la semaine » : comparer un mercredi
+   * à une semaine complète produirait une baisse tous les mercredis, et
+   * l'élève apprendrait vite à ignorer la ligne.
+   */
+  const comparison = computeWeeklyComparison(sessions, now);
+  if (comparison.currentMinutes > 0 || comparison.previousMinutes > 0) {
+    findings.push({
+      key: "volume",
+      sentence:
+        comparison.previousMinutes > 0
+          ? `${formatShort(comparison.currentMinutes)} travaillées, ${withSignMinutes(comparison.deltaMinutes)} par rapport à la semaine précédente à ce stade.`
+          : `${formatShort(comparison.currentMinutes)} travaillées — première semaine mesurée.`,
+    });
+  }
+
   if (completed.length > 0) {
     findings.push({
       key: "travaux-termines",
@@ -153,6 +194,30 @@ export function computeWeeklyReview(
 
   if (strongestBias) findings.push({ key: "biais-estimation", sentence: strongestBias.sentence });
 
+  /*
+   * UNE MATIÈRE SOUS-SERVIE — la part du temps confrontée aux échéances
+   * réellement ouvertes dans cette matière.
+   *
+   * C'est le seul constat qui croise deux moteurs, et il n'est produit que
+   * quand les deux ont de quoi parler : une matière qui porte une échéance
+   * ouverte mais reçoit moins d'un cinquième du temps de la semaine. En
+   * dessous de ce seuil, l'écart relève du bruit hebdomadaire, pas d'un
+   * déséquilibre — et l'annoncer chaque semaine le rendrait invisible.
+   */
+  const distribution = computeSubjectDistribution(sessions, weekStart, now);
+  const openBySubject = new Map<Subject, number>();
+  for (const item of activeWorkItems(workItems)) {
+    if (item.subject) openBySubject.set(item.subject, (openBySubject.get(item.subject) ?? 0) + 1);
+  }
+  const underserved = distribution.find((entry) => (openBySubject.get(entry.subject) ?? 0) > 0 && entry.percent < UNDERSERVED_SHARE_PERCENT);
+  if (underserved && distribution.length > 1) {
+    const open = openBySubject.get(underserved.subject) ?? 0;
+    findings.push({
+      key: "matiere-sous-servie",
+      sentence: `${underserved.subject} représente ${underserved.percent} % de ton temps cette semaine, alors que ${open} échéance${open > 1 ? "s y sont ouvertes" : " y est ouverte"}.`,
+    });
+  }
+
   if (neglected.length > 0) {
     const first = neglected[0];
     findings.push({
@@ -170,7 +235,7 @@ export function computeWeeklyReview(
     postponedCount: postponements.length,
     atRisk,
     findings,
-    advice: deriveAdvice({ atRisk, neglected, strongestBias, busiestDay }),
+    advice: deriveAdvice({ atRisk, neglected, strongestBias, busiestDay, underserved: underserved ?? null }),
   };
 }
 
@@ -188,6 +253,7 @@ function deriveAdvice(input: {
   neglected: { subject: Subject; pendingCount: number }[];
   strongestBias: EstimationBias | null;
   busiestDay: { date: string; minutes: number } | null;
+  underserved: { subject: Subject; percent: number } | null;
 }): string | null {
   const [risk] = input.atRisk;
   if (risk) {
@@ -197,6 +263,9 @@ function deriveAdvice(input: {
   }
   const [neglected] = input.neglected;
   if (neglected) return `Prévois une séance de ${neglected.subject} : c'est la seule matière sans aucun travail cette semaine.`;
+  if (input.underserved) {
+    return `Prévois une séance supplémentaire de ${input.underserved.subject} : elle porte des échéances ouvertes et n'a reçu que ${input.underserved.percent} % de ton temps cette semaine.`;
+  }
   if (input.strongestBias && input.strongestBias.deviationPercent > 0) {
     return `Ajoute environ ${input.strongestBias.deviationPercent} % à tes prochaines estimations de ${input.strongestBias.subject} : c'est l'écart que tes travaux terminés montrent.`;
   }
