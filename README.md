@@ -175,3 +175,69 @@ au-delà côté serveur), la génération plafonnée à 1 200 jetons, et l'effor
 réglé au minimum — produire un indice à partir d'un corrigé fourni ne demande
 pas de longue délibération. Aucun appel n'est déclenché par un rendu React :
 seul un clic sur un palier appelle le modèle.
+
+## Budget de stockage local — mesures et chantier recommandé
+
+TaekdHub vit intégralement dans le `localStorage`, dont le quota est d'environ
+5 Mo par origine sur la plupart des navigateurs. Voici où va cet espace,
+**mesuré** et non estimé.
+
+### Ce qui occupe l'espace aujourd'hui
+
+| Clé | Poids |
+|---|---|
+| `prepahub:exercises` (537 fiches, 2 740 o par fiche) | **2,81 Mo** |
+| `prepahub:chapters` (52 chapitres) | 0,01 Mo |
+| **Total au premier démarrage** | **2,82 Mo** |
+
+Sur les 2 740 octets d'une fiche, **1 656 sont du contenu** — énoncé (480),
+corrigé (713), indices (463). Soit 60 % du poids total de la banque.
+
+### Ce qui grossit avec le temps
+
+Poids unitaires mesurés en UTF-16, l'unité réellement facturée :
+
+| Donnée | Par enregistrement | Par année scolaire |
+|---|---|---|
+| Séance | 742 o | **1,03 Mo** |
+| Travail / échéance | 828 o | 0,16 Mo |
+| Instantané hebdomadaire | 1 982 o | 0,10 Mo |
+| Intention de planning | 164 o | 0,06 Mo |
+| Note | 402 o | 0,02 Mo |
+| **Total** | | **1,37 Mo/an** |
+
+Les **séances représentent les trois quarts de la croissance**. Tout le reste
+est marginal.
+
+### Le risque est réel, mais pas immédiat
+
+- fin de la première année : **4,19 Mo** — sous le plafond, mais à l'étroit ;
+- fin de la seconde année : **5,56 Mo** — plafond dépassé.
+
+Le point de rupture tombe donc vers le **seizième mois d'usage**, c'est-à-dire
+en deuxième année de prépa. Rien ne justifie d'y toucher maintenant : l'écriture
+échoue proprement (`writeKey` renvoie `false`, `<StorageAlert>` le dit, la
+restauration s'arrête net et rend compte — voir `restoreBackup`).
+
+### La stratégie recommandée, le jour venu
+
+**Ne pas élaguer les données de l'élève.** Ses séances, ses notes et ses
+échéances sont précisément ce qu'aucun amorçage ne peut recréer, et les
+compacter casserait la rétro-agrégation (`computeWorkTimeSeries` recalcule
+n'importe quelle période à la demande), le journal et les taux de réussite.
+
+Deux leviers, par ordre de rendement :
+
+1. **Ne persister que l'écart à la banque livrée.** Le contenu des 537 fiches
+   (60 % des 2,81 Mo) est déjà dans le dataset embarqué ; seul l'état de
+   l'élève — statut, maîtrise, tentatives, notes personnelles, favoris — a
+   besoin d'être stocké. Cela supprimerait l'essentiel du coût FIXE et
+   repousserait le plafond de plusieurs années. Chantier non trivial : touche
+   `mergeStored`, `reconcileSeedBank` et le format de sauvegarde, qui doit
+   rester rétro-compatible.
+2. **Cesser d'écrire `WorkSession.note`** pour les nouvelles séances. Le champ
+   recopie le titre de l'exercice (« Exercice focus : … ») alors que
+   `exercise_id` porte déjà le lien ; il pèse environ 15 % d'une séance, donc
+   ~0,15 Mo/an. Non destructif : les séances existantes gardent leur note.
+
+Ces deux leviers sont additifs et aucun ne supprime de donnée.

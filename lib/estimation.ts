@@ -149,24 +149,6 @@ export function computeEstimationBias(
   };
 }
 
-/**
- * Corrige une estimation saisie par le biais réellement mesuré — le service
- * du cahier des charges : « 45 min estimées → environ 1 h 10 d'après tes
- * dernières tâches de physique ».
- *
- * `null` sans biais mesuré : on ne corrige jamais une estimation au nom
- * d'une tendance qu'on n'a pas constatée.
- */
-export function adjustEstimate(minutes: number, bias: EstimationBias | null): { minutes: number; sentence: string } | null {
-  if (!bias || minutes <= 0) return null;
-  const adjusted = Math.round((minutes * (100 + bias.deviationPercent)) / 100 / 5) * 5;
-  if (adjusted === minutes) return null;
-  return {
-    minutes: adjusted,
-    sentence: `${formatShort(minutes)} estimées → environ ${formatShort(adjusted)} d'après tes derniers travaux de ${bias.subject}.`,
-  };
-}
-
 function formatShort(minutes: number): string {
   const total = Math.max(0, Math.round(minutes));
   const h = Math.floor(total / 60);

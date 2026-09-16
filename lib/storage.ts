@@ -895,13 +895,21 @@ export function lastStorageWriteFailure(): { key: string; at: string } | null {
  * réellement — sur un quota de 5 Mo par origine. Plus de la moitié du budget
  * est consommée avant la première séance.
  *
- * Et le reste s'accumule sans jamais être élagué. Sur une année scolaire
- * (4 séances/jour à 592 o, 5 travaux/semaine à 946 o, 52 instantanés à
- * 1 754 o, 365 intentions de planning à 164 o), le stockage atteint environ
- * 3,96 Mo — avant les énoncés recopiés à la main et les feuilles importées.
- * Un élève actif touche donc le plafond AVANT la fin de l'année. C'est la
- * raison d'être de tout ce qui suit : l'échec d'écriture n'est pas un cas
- * limite, c'est une échéance.
+ * Et le reste s'accumule sans jamais être élagué. Poids unitaires MESURÉS au
+ * navigateur (UTF-16) : une séance 742 o, un travail 828 o, un instantané
+ * 1 982 o, une note 402 o, une intention de planning 164 o. Sur une année
+ * scolaire (4 séances/jour, 5 travaux/semaine sur 40 semaines, 52
+ * instantanés, 365 intentions, 60 notes), cela fait 1,37 Mo/an, dont les
+ * SÉANCES à elles seules représentent 1,03 Mo — les trois quarts de la
+ * croissance.
+ *
+ * Donc : 4,19 Mo à la fin de la première année, 5,56 Mo à la fin de la
+ * seconde. Le plafond n'est pas atteint en première année ; il l'est vers le
+ * seizième mois d'usage, c'est-à-dire en plein deuxième année de prépa.
+ * L'échec d'écriture n'est pas un cas limite, c'est une échéance — et c'est
+ * la raison d'être de tout ce qui suit. Voir le README pour la stratégie
+ * recommandée (ne rien élaguer : ne persister que l'écart à la banque
+ * livrée, dont 60 % du poids est du contenu déjà présent dans le dataset).
  *
  * Renvoie `false` au lieu de lever : la valeur déjà stockée reste intacte
  * (setItem est atomique), l'appelant décide quoi faire, et

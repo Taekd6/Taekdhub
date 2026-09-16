@@ -1,5 +1,3 @@
-import { computeTrend, type Trend } from "@/lib/analytics/trend";
-import { startOfWeek } from "@/lib/week";
 import type { WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -89,43 +87,4 @@ export function describeSampleSize(stats: OutcomeStats): string | null {
     return `Calculé sur ${stats.evaluated} tentative${stats.evaluated > 1 ? "s" : ""} — échantillon encore limité.`;
   }
   return null;
-}
-
-export interface SuccessRatePoint {
-  /** Lundi de la semaine, "AAAA-MM-JJ". */
-  key: string;
-  start: Date;
-  /** `null` pour une semaine sans aucune tentative évaluable — un trou, pas un zéro. */
-  rate: number | null;
-  evaluated: number;
-}
-
-/**
- * Évolution hebdomadaire du taux de réussite.
- *
- * Une semaine sans tentative notée vaut `null`, JAMAIS 0 % : « aucune
- * tentative » et « toutes ratées » sont deux situations opposées, et les
- * confondre ferait plonger la courbe à chaque semaine de vacances. La
- * tendance ne porte donc que sur les semaines réellement mesurées.
- */
-export function computeSuccessRateTrend(
-  sessions: WorkSession[],
-  weeks: number,
-  now: Date = new Date()
-): { points: SuccessRatePoint[]; trend: Trend } {
-  const points: SuccessRatePoint[] = [];
-  for (let offset = weeks - 1; offset >= 0; offset -= 1) {
-    const reference = new Date(now);
-    reference.setDate(reference.getDate() - offset * 7);
-    const start = startOfWeek(reference);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    const stats = computeExerciseOutcomeStats(sessions, start, end < now ? end : now);
-    points.push({ key: start.toLocaleDateString("en-CA"), start, rate: stats.successRate, evaluated: stats.evaluated });
-  }
-
-  const measured = points.filter((point) => point.rate !== null).map((point) => point.rate as number);
-  // Bruit absolu de 5 points de pourcentage : sur un taux, 5 % relatifs
-  // n'ont pas de sens (5 % de 80 % valent 4 points, 5 % de 20 % en valent 1).
-  return { points, trend: computeTrend(measured, { absoluteNoise: 5, zeroIsMeasurement: true }) };
 }

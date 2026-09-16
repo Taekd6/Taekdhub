@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjustEstimate, computeEstimationBias, ESTIMATION_MIN_SAMPLES, suggestEstimate } from "@/lib/estimation";
+import { computeEstimationBias, ESTIMATION_MIN_SAMPLES, suggestEstimate } from "@/lib/estimation";
 import type { WorkItem } from "@/lib/storage";
 import type { WorkSession } from "@/lib/supabase/types";
 
@@ -60,7 +60,6 @@ describe("SCÉNARIO 8 — aucune donnée historique, aucune estimation mensongè
 
   it("aucun biais mesurable ne produit aucune phrase", () => {
     expect(computeEstimationBias("Physique", [item("a")], [session("a", 70)])).toBeNull();
-    expect(adjustEstimate(45, null)).toBeNull();
   });
 });
 
@@ -125,18 +124,4 @@ describe("biais d'estimation — mesuré, jamais supposé", () => {
   });
 });
 
-describe("correction d'une estimation saisie — le service du cahier des charges", () => {
-  it("« 45 min estimées → environ 1 h 10 d'après tes derniers travaux de Physique »", () => {
-    const items = [item("a", { estimatedMinutes: 60 }), item("b", { estimatedMinutes: 60 })];
-    const bias = computeEstimationBias("Physique", items, [session("a", 93), session("b", 93)])!;
-    const adjusted = adjustEstimate(45, bias)!;
-    expect(adjusted.minutes).toBe(70);
-    expect(adjusted.sentence).toBe("45 min estimées → environ 1 h 10 d'après tes derniers travaux de Physique.");
-  });
 
-  it("ne propose rien quand la correction ne change rien", () => {
-    const items = [item("a", { estimatedMinutes: 60 }), item("b", { estimatedMinutes: 60 })];
-    const bias = computeEstimationBias("Physique", items, [session("a", 72), session("b", 72)])!;
-    expect(adjustEstimate(0, bias)).toBeNull();
-  });
-});

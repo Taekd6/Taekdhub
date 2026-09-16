@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computeSubjectDistribution, computeWeeklyComparison, computeWorkTimeSeries, minutesBetween } from "@/lib/analytics/work-time";
-import { computeExerciseOutcomeStats, computeSuccessRateTrend, describeSampleSize, OUTCOME_SOLID_SAMPLE } from "@/lib/analytics/outcomes";
+import { computeExerciseOutcomeStats, describeSampleSize, OUTCOME_SOLID_SAMPLE } from "@/lib/analytics/outcomes";
 import { computeConsistency, currentStreak } from "@/lib/analytics/consistency";
 import { computePlanningAccuracy, computeWeekPlanVsActual, describePlanningAccuracy } from "@/lib/analytics/planning";
 import { computeChapterMastery, computeMasteryTrend } from "@/lib/analytics/mastery";
@@ -198,20 +198,6 @@ describe("taux de réussite — définition explicite du dénominateur", () => {
       NOW
     );
     expect(describeSampleSize(many)).toBeNull();
-  });
-});
-
-describe("évolution de la réussite", () => {
-  it("une semaine sans tentative notée vaut null, pas 0 %", () => {
-    const sessions = [session("2026-09-16T10:00:00", 20, { exercise_id: "a", result: "réussi" })];
-    const { points } = computeSuccessRateTrend(sessions, 3, NOW);
-    expect(points[points.length - 1].rate).toBe(100);
-    expect(points[0].rate).toBeNull();
-  });
-
-  it("les semaines vides ne font pas plonger la tendance", () => {
-    const sessions = [session("2026-09-16T10:00:00", 20, { exercise_id: "a", result: "réussi" })];
-    expect(computeSuccessRateTrend(sessions, 6, NOW).trend.direction).toBe("insuffisant");
   });
 });
 
