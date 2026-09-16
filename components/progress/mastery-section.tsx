@@ -69,7 +69,7 @@ export function MasterySection({
         {week.evaluated === 0 ? (
           <p className="t-meta">
             {week.exercisesWorked > 0
-              ? `${week.exercisesWorked} exercice${week.exercisesWorked > 1 ? "s" : ""} travaillé${week.exercisesWorked > 1 ? "s" : ""}, aucun résultat déclaré — le taux de réussite ne se calcule que sur les tentatives notées.`
+              ? "Du travail enregistré cette semaine, mais aucun résultat déclaré — le taux de réussite ne se calcule que sur les tentatives notées."
               : "Aucune tentative cette semaine."}
           </p>
         ) : (
@@ -196,12 +196,11 @@ function ChapterList({ title, rows }: { title: string; rows: ReturnType<typeof c
                     « maîtrisé ». Les deux notions sont distinctes par
                     construction dans ce modèle (voir `Exercise.mastery`), et
                     les afficher côte à côte donnait des lignes qui se
-                    contredisaient à l'œil — « 0 / 6 maîtrisés · 75 % ». Le
-                    compte d'exercices situe le chapitre sans créer cette
-                    fausse contradiction. */}
-                <span className="t-meta mt-0.5 block truncate text-2xs">
-                  {row.subject} · {row.total} exercice{row.total > 1 ? "s" : ""}
-                </span>
+                    contredisaient à l'œil — « 0 / 6 maîtrisés · 75 % ».
+                    Le compte de fiches qui les remplaçait a disparu à son
+                    tour : il situait le chapitre par son STOCK, sur un écran
+                    qui suit une progression. Reste la matière. */}
+                <span className="t-meta mt-0.5 block truncate text-2xs">{row.subject}</span>
               </span>
               <Meter value={row.rate} className="w-16 shrink-0 max-sm:hidden" tone="neutral" />
               <span className="tabular w-12 shrink-0 whitespace-nowrap text-right text-sm text-ink" title="Maîtrise moyenne des exercices de ce chapitre">

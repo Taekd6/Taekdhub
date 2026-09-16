@@ -474,9 +474,11 @@ export function DashboardOverview() {
                     {firstBlock.label}
                     <span className="text-muted"> — {PLAN_INTENT_META[firstBlock.intent].description}</span>
                   </p>
-                  <p className="t-meta mt-1">
-                    {firstBlock.focus} · {firstBlock.picks.length} exercice{firstBlock.picks.length > 1 ? "s" : ""}
-                  </p>
+                  {/* Le nombre de fiches ne figure plus ici : ce qui décide de
+                      se mettre au travail, c'est le sujet et la durée. Le
+                      décompte reste sur l'écran de séance, où l'on règle
+                      justement la taille de la séance. */}
+                  <p className="t-meta mt-1">{firstBlock.focus}</p>
                 </div>
                 <span className="t-figure-sm tabular shrink-0 whitespace-nowrap">
                   {firstBlock.estimatedMinutes}
@@ -494,9 +496,7 @@ export function DashboardOverview() {
                           {block.label}
                           <span className="text-muted"> — {PLAN_INTENT_META[block.intent].description}</span>
                         </p>
-                        <p className="t-meta mt-0.5 truncate text-2xs">
-                          {block.focus} · {block.picks.length} exercice{block.picks.length > 1 ? "s" : ""}
-                        </p>
+                        <p className="t-meta mt-0.5 truncate text-2xs">{block.focus}</p>
                       </div>
                       <span className="t-meta tabular shrink-0">{block.estimatedMinutes} min</span>
                     </li>
@@ -515,12 +515,11 @@ export function DashboardOverview() {
                 </>
               ) : hasPlan ? (
                 <>
-                  <span className="font-medium text-ink">{formatMinutesSpan(dailyPlan.totalMinutes)}</span> ·{" "}
-                  {dailyPlan.totalExercises} exercice{dailyPlan.totalExercises > 1 ? "s" : ""}
+                  <span className="font-medium text-ink">{formatMinutesSpan(dailyPlan.totalMinutes)}</span>
                   {objective.workedMinutes > 0 && <> · {objective.workedMinutes} min déjà faites aujourd&apos;hui</>}
                 </>
               ) : nextAction.kind === "empty-bank" ? (
-                "Ajoute des exercices pour que TaekdHub puisse te construire une séance."
+                "Ta banque est vide — TaekdHub ne peut rien te proposer tant qu'elle l'est."
               ) : (
                 "Rien à planifier pour l'instant — ta banque est à jour."
               )}
@@ -578,16 +577,25 @@ export function DashboardOverview() {
           </Section>
         ) : (
           subjects.length > 0 && (
-            <Section label="Explorer" title="Ou entre par une matière" description="La banque entière, rangée par chapitre.">
+            /*
+             * PAS UNE VITRINE DE LA BANQUE.
+             *
+             * Ce bloc annonçait « La banque entière, rangée par chapitre » et
+             * listait « 321 exercices · 7 % maîtrisés » par matière : sur
+             * l'écran le plus consulté du produit, un inventaire. Il mène
+             * désormais au SUIVI de la matière, et ne montre que
+             * l'avancement — un pourcentage, pas un stock de fiches.
+             */
+            <Section label="Explorer" title="Ou entre par une matière" description="Où tu en es, matière par matière.">
               <List>
                 {subjects.map((entry) => (
                   <li key={entry.subject}>
-                    <Link href={`/exercises?subject=${encodeURIComponent(entry.subject)}`} className={rowInteractive}>
+                    <Link href={`/preparation?subject=${encodeURIComponent(entry.subject)}`} className={rowInteractive}>
                       <SubjectAvatar subject={entry.subject} size="sm" />
                       <div className="min-w-0 flex-1">
                         <p className="t-subhead truncate">{entry.subject}</p>
                         <p className="t-meta mt-0.5">
-                          {entry.total} exercice{entry.total > 1 ? "s" : ""} · {entry.completionRate} % maîtrisés
+                          {entry.completionRate > 0 ? `${entry.completionRate} % acquis` : "Pas encore mesuré"}
                         </p>
                       </div>
                       <ChevronRight size={15} className="shrink-0 text-subtle" />

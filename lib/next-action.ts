@@ -166,7 +166,10 @@ export function computeUpcoming(exercises: Exercise[], sessions: WorkSession[], 
     items.push({
       key: "subject",
       label: neglected.subject,
-      detail: `${neglected.pendingCount} exercice${neglected.pendingCount > 1 ? "s" : ""} en attente, rien cette semaine`,
+      // Le SIGNAL est « tu n'as rien fait dans cette matière », pas « il te
+      // reste N fiches » : le stock disponible ne rend pas l'oubli plus grave,
+      // et l'afficher ramenait un inventaire sur l'écran d'accueil.
+      detail: "Aucune séance cette semaine",
       href: `/session?subject=${encodeURIComponent(neglected.subject)}`,
     });
   }
