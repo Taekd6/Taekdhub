@@ -148,11 +148,15 @@ describe("le conseil découle d'un constat, ou n'existe pas", () => {
     expect(advice).toContain("samedi");
   });
 
-  it("sans échéance à risque, le conseil porte sur la journée la plus chargée", () => {
+  it("la journée la plus chargée reste un CONSTAT, mais ne produit plus de conseil", () => {
     const sessions = [session("2026-09-15T09:00:00", 160), session("2026-09-16T09:00:00", 60)];
-    expect(computeWeeklyReview([], sessions, [], prefs(), NOW).advice).toBe(
-      "Prévois davantage de marge le mardi : c'est ta journée la plus chargée."
-    );
+    const review = computeWeeklyReview([], sessions, [], prefs(), NOW);
+    // Le fait est mesuré, daté, et reste affiché.
+    expect(review.findings.map((finding) => finding.key)).toContain("jour-le-plus-charge");
+    // Mais « prévois davantage de marge le mardi » érigeait UNE semaine, et
+    // deux journées comparables, en habitude à corriger — et désignait un
+    // jour déjà passé. Aucun conseil vaut mieux qu'un conseil non fondé.
+    expect(review.advice).toBeNull();
   });
 
   it("une semaine sans rien de notable ne produit AUCUN conseil plutôt qu'un conseil générique", () => {

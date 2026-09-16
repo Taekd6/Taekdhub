@@ -243,9 +243,14 @@ describe("régularité — des jours actifs, jamais un classement de volume", ()
     expect(consistency.weeks[consistency.weeks.length - 1].partial).toBe(true);
   });
 
-  it("aucune séance : aucune tendance de régularité", () => {
+  it("aucune séance : aucune tendance de régularité, et AUCUNE moyenne", () => {
     expect(computeConsistency([], 4, NOW).trend.direction).toBe("insuffisant");
-    expect(computeConsistency([], 4, NOW).averageActiveDays).toBe(0);
+    // `null`, pas 0. Sans la moindre séance, il n'y a pas de semaine
+    // observée : « 0 jour actif en moyenne » serait un verdict sur des
+    // semaines qui n'ont jamais existé. L'interface (consistency-section.tsx)
+    // omet alors la phrase au lieu d'afficher un zéro trompeur.
+    expect(computeConsistency([], 4, NOW).averageActiveDays).toBeNull();
+    expect(computeConsistency([], 4, NOW).comparableWeeks).toBe(0);
   });
 
   it("la série en cours compte les jours consécutifs, aujourd'hui inclus s'il est actif", () => {
@@ -394,5 +399,151 @@ describe("chapitres — un chapitre jamais commencé n'est PAS un chapitre faibl
     expect(board.fragile).toEqual([]);
     expect(board.solid).toEqual([]);
     expect(board.untouched).toEqual([]);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LOT ③ — VÉRACITÉ : ne jamais affirmer plus que la donnée ne porte
+   ═══════════════════════════════════════════════════════════════════════ */
+
+describe("les séries s'arrêtent à la PREMIÈRE SÉANCE, pas au bord de la fenêtre", () => {
+  /** Compte ouvert il y a deux semaines : 4 h la première, 6 h la seconde. */
+  const jeune = [
+    ...["08", "09", "10", "11"].map((d) => session(`2026-09-${d}T10:00:00`, 60)),
+    ...["14", "15", "16", "17", "18", "19"].map((d) => session(`2026-09-${d}T10:00:00`, 60)),
+  ];
+
+  it("les semaines antérieures au compte sont marquées non mesurées", () => {
+    const series = computeWorkTimeSeries(jeune, "semaine", 6, NOW);
+    expect(series.map((point) => point.measured)).toEqual([false, false, false, false, true, true]);
+  });
+
+  it("la tendance de rythme ne s'appuie plus sur des semaines qui n'ont jamais existé", () => {
+    const trend = computeWeeklyComparison(jeune, NOW).trend;
+    // Une seule semaine complète RÉELLEMENT observée : il n'y a pas de rythme à qualifier.
+    expect(trend.confidence).not.toBe("élevée");
+    expect(trend.samples).toBeLessThanOrEqual(1);
+  });
+
+  it("la régularité ne moyenne plus sur des semaines vides d'avant le compte", () => {
+    const consistency = computeConsistency(jeune, 12, NOW);
+    expect(consistency.comparableWeeks).toBe(1);
+    expect(consistency.trend.confidence).not.toBe("élevée");
+  });
+
+  it("un compte ancien garde bien toutes ses semaines", () => {
+    const ancien = Array.from({ length: 42 }, (_, index) => {
+      const date = new Date("2026-09-20T10:00:00");
+      date.setDate(date.getDate() - index);
+      return session(date.toISOString(), 60);
+    });
+    expect(computeWorkTimeSeries(ancien, "semaine", 6, NOW).every((point) => point.measured)).toBe(true);
+  });
+
+  it("aucune séance : aucun point mesuré, donc aucune tendance", () => {
+    expect(computeWorkTimeSeries([], "semaine", 6, NOW).every((point) => !point.measured)).toBe(true);
+    expect(computeWeeklyComparison([], NOW).trend.direction).toBe("insuffisant");
+  });
+});
+
+describe("« à ce stade » compare enfin à ce stade", () => {
+  /** Mercredi 16 septembre, 20 h. */
+  const MERCREDI = new Date("2026-09-16T20:00:00");
+
+  it("un rythme strictement identique donne un écart NUL, pas une chute", () => {
+    const precedente = ["07", "08", "09", "10", "11", "12", "13"].map((d) => session(`2026-09-${d}T10:00:00`, 60));
+    const courante = ["14", "15", "16"].map((d) => session(`2026-09-${d}T10:00:00`, 60));
+    const comparison = computeWeeklyComparison([...precedente, ...courante], MERCREDI);
+    expect(comparison.currentMinutes).toBe(180);
+    expect(comparison.previousMinutes).toBe(180);
+    expect(comparison.deltaMinutes).toBe(0);
+  });
+
+  it("le total RÉEL de la semaine précédente reste disponible à part", () => {
+    const precedente = ["07", "08", "09", "10", "11", "12", "13"].map((d) => session(`2026-09-${d}T10:00:00`, 60));
+    const courante = ["14", "15", "16"].map((d) => session(`2026-09-${d}T10:00:00`, 60));
+    expect(computeWeeklyComparison([...precedente, ...courante], MERCREDI).previousTotalMinutes).toBe(420);
+  });
+
+  it("travailler davantage se voit comme une hausse, le mercredi comme le dimanche", () => {
+    const precedente = ["07", "08", "09"].map((d) => session(`2026-09-${d}T10:00:00`, 60));
+    const courante = ["14", "15", "16"].map((d) => session(`2026-09-${d}T10:00:00`, 90));
+    expect(computeWeeklyComparison([...precedente, ...courante], MERCREDI).deltaMinutes).toBe(90);
+  });
+});
+
+describe("série mensuelle — un 31 ne fait plus sauter un mois", () => {
+  it("trois mois distincts depuis le 31 mars", () => {
+    const keys = computeWorkTimeSeries([], "mois", 3, new Date("2026-03-31T12:00:00")).map((point) => point.key);
+    expect(keys).toEqual(["2026-01", "2026-02", "2026-03"]);
+  });
+
+  it("depuis le 31 mai non plus", () => {
+    const keys = computeWorkTimeSeries([], "mois", 3, new Date("2026-05-31T12:00:00")).map((point) => point.key);
+    expect(keys).toEqual(["2026-03", "2026-04", "2026-05"]);
+  });
+
+  it("les minutes ne sont plus comptées deux fois", () => {
+    const series = computeWorkTimeSeries([session("2026-03-10T10:00:00", 120)], "mois", 3, new Date("2026-03-31T12:00:00"));
+    expect(series.reduce((sum, point) => sum + point.minutes, 0)).toBe(120);
+  });
+});
+
+describe("prévu vs réalisé — un jour sans rien de prévu n'a pas de taux", () => {
+  function plan(date: string, plannedMinutes: number): DayPlanRecord {
+    return { date, plannedMinutes, capturedAt: `${date}T20:00:00.000Z` };
+  }
+
+  it("six jours à 0 prévu ne fabriquent plus « 700 % »", () => {
+    const dayPlans = ["14", "15", "16", "17", "18", "19", "20"].map((d, index) => plan(`2026-09-${d}`, index === 6 ? 60 : 0));
+    const sessions = ["14", "15", "16", "17", "18", "19", "20"].map((d) => session(`2026-09-${d}T10:00:00`, 60));
+    const accuracy = computePlanningAccuracy(dayPlans, sessions, 7, NOW);
+    expect(accuracy.daysCompared).toBe(1);
+    expect(accuracy.daysWithoutPlan).toBe(6);
+    expect(accuracy.completionPercent).toBe(100);
+  });
+
+  it("un jour SANS enregistrement et un jour À ZÉRO restent comptés séparément", () => {
+    const dayPlans = [plan("2026-09-19", 0), plan("2026-09-20", 90)];
+    const accuracy = computePlanningAccuracy(dayPlans, [session("2026-09-20T10:00:00", 90)], 7, NOW);
+    expect(accuracy.daysWithoutPlan).toBe(1);
+    expect(accuracy.daysWithoutRecord).toBe(5);
+    expect(accuracy.completionPercent).toBe(100);
+  });
+});
+
+describe("une série ne compte qu'UNE fois — gamification et analytics ne peuvent plus diverger", () => {
+  it("une journée de moins d'une minute ne tient pas la série, des deux côtés", () => {
+    const courte = [session("2026-09-20T10:00:00", 0.33), session("2026-09-19T10:00:00", 60)];
+    expect(currentStreak(courte, NOW)).toBe(1);
+  });
+
+  it("plusieurs séances courtes qui CUMULENT plus d'une minute font bien un jour actif", () => {
+    const cumul = [
+      session("2026-09-20T10:00:00", 0.5),
+      session("2026-09-20T11:00:00", 0.5),
+      session("2026-09-20T12:00:00", 0.5),
+      session("2026-09-19T10:00:00", 60),
+    ];
+    expect(currentStreak(cumul, NOW)).toBe(2);
+  });
+});
+
+describe("un zéro MESURÉ n'est pas une absence de données", () => {
+  it("une matière à 0 % de fiches maîtrisées sur plusieurs semaines garde ses mesures", () => {
+    const snapshots: WeekSnapshot[] = ["2026-08-24", "2026-08-31", "2026-09-07", "2026-09-14"].map((weekStart) => ({
+      weekStart: `${weekStart}T00:00:00.000Z`,
+      capturedAt: `${weekStart}T20:00:00.000Z`,
+      totalSeconds: 0,
+      bySubject: [],
+      activeCount: 10,
+      masteredCount: 0,
+      completionRate: 0,
+      bySubjectProgress: [{ subject: "Mathématiques", total: 10, mastered: 0, completionRate: 0 }],
+    }));
+    const trend = computeMasteryTrend("Mathématiques", snapshots, [], NOW).trend;
+    // Cinq mesures réelles à 0 % : « stable » est le bon verdict, pas « aucune donnée ».
+    expect(trend.direction).toBe("stable");
+    expect(trend.samples).toBe(5);
   });
 });

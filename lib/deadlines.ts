@@ -266,7 +266,7 @@ export function explainPriority(priority: WorkItemPriority): string | null {
 
   // Un travail dont tout le temps estimé est passé n'attend plus du travail,
   // il attend une DÉCISION : le clore, ou rallonger l'estimation. Lui dire
-  // « la charge tient dans ton rythme » serait absurde.
+  // « ça tient dans ta capacité » serait absurde.
   if (remaining === 0) return "Le temps que tu avais estimé est déjà passé — tu peux le marquer terminé.";
   if (overdue) return `${priority.reasons[0]}, ${formatShort(remaining)} restent à faire.`;
   if (feasibility.level === "non casable") return feasibility.reason;
@@ -274,7 +274,12 @@ export function explainPriority(priority: WorkItemPriority): string | null {
   if (days === 1) return `À rendre demain — ${formatShort(remaining)} restent à faire.`;
   if (feasibility.level === "juste") return feasibility.reason;
   if (days === null) return `Sans échéance — ${formatShort(remaining)} à faire quand tu auras le temps.`;
-  return `Échéance dans ${days} jours, ${formatShort(remaining)} à faire : la charge tient dans ton rythme.`;
+  // « TA CAPACITÉ », jamais « ton rythme ». `availableMinutes` vient de
+  // `Preferences.capacityByWeekday` — une valeur DÉCLARÉE, dont les défauts
+  // s'appliquent tant que l'élève n'a rien réglé. La phrase s'affichait donc
+  // mot pour mot avec zéro séance enregistrée. lib/storage.ts pose la règle
+  // noir sur blanc : « doit dire "ta capacité", jamais "d'après tes habitudes" ».
+  return `Échéance dans ${days} jours, ${formatShort(remaining)} à faire : ça tient dans la capacité que tu as déclarée.`;
 }
 
 /**

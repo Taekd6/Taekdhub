@@ -44,16 +44,30 @@ export function weekBounds(weekStart: Date): { start: Date; end: Date } {
  * quelconque, notamment déjà écoulée (voir lib/week-snapshot.ts, qui fige
  * l'état d'une semaine passée une fois qu'elle est terminée).
  */
-export function sessionsInWeek(sessions: WorkSession[], weekStart: Date): WorkSession[] {
+export function sessionsInWeek(sessions: WorkSession[], weekStart: Date, now: Date = new Date()): WorkSession[] {
   const { start, end } = weekBounds(weekStart);
   return sessions.filter((session) => {
     const startedAt = new Date(session.started_at);
-    return startedAt >= start && startedAt < end;
+    /*
+     * BORNE HAUTE À MAINTENANT, en plus de la fin de semaine.
+     *
+     * Une séance datée DANS LE FUTUR (horloge décalée, sauvegarde importée
+     * depuis un appareil en avance, fuseau) était comptée ici mais pas par
+     * `computeWeeklyReview` ni `computeWeeklyComparison`, qui filtrent tous
+     * deux à `<= now`. Le même fait s'affichait donc avec deux valeurs :
+     * « 5 h 30 cette semaine » sur l'accueil, « 1 h 30 » sur Progression, et
+     * « 100 % de l'objectif » contre « 30 % ». Le filtre appartient à la
+     * définition de « cette semaine », pas à chacun de ses appelants.
+     *
+     * Sans effet sur une semaine déjà écoulée (lib/week-snapshot.ts) : sa
+     * borne de fin est alors antérieure à `now`.
+     */
+    return startedAt >= start && startedAt < end && startedAt <= now;
   });
 }
 
 function sessionsThisWeek(sessions: WorkSession[], now: Date): WorkSession[] {
-  return sessionsInWeek(sessions, startOfWeek(now));
+  return sessionsInWeek(sessions, startOfWeek(now), now);
 }
 
 export interface SubjectWeekTime {
@@ -62,8 +76,8 @@ export interface SubjectWeekTime {
 }
 
 /** Temps investi durant une semaine donnée, par matière, dans l'ordre de lib/study.ts#subjects. */
-export function timeBySubjectInWeek(sessions: WorkSession[], weekStart: Date): SubjectWeekTime[] {
-  const weekSessions = sessionsInWeek(sessions, weekStart);
+export function timeBySubjectInWeek(sessions: WorkSession[], weekStart: Date, now: Date = new Date()): SubjectWeekTime[] {
+  const weekSessions = sessionsInWeek(sessions, weekStart, now);
   return subjects.map((subject) => ({
     subject,
     seconds: totalSeconds(weekSessions.filter((session) => session.subject === subject)),
@@ -72,7 +86,7 @@ export function timeBySubjectInWeek(sessions: WorkSession[], weekStart: Date): S
 
 /** Temps investi cette semaine, par matière, dans l'ordre de lib/study.ts#subjects. */
 export function weeklyTimeBySubject(sessions: WorkSession[], now: Date = new Date()): SubjectWeekTime[] {
-  return timeBySubjectInWeek(sessions, startOfWeek(now));
+  return timeBySubjectInWeek(sessions, startOfWeek(now), now);
 }
 
 export interface NeglectedSubject {

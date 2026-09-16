@@ -62,8 +62,19 @@ export interface WeeklyReview {
 
 /** Il faut au moins deux journées travaillées pour qu'un « jour le plus chargé » veuille dire quelque chose. */
 const MIN_DAYS_FOR_BUSIEST = 2;
-/** En dessous de cette part du temps de la semaine, une matière qui porte une échéance ouverte est signalée comme sous-servie. */
-const UNDERSERVED_SHARE_PERCENT = 20;
+/**
+ * Une matière est « sous-servie » quand elle reçoit moins de cette FRACTION
+ * de la part équitable — la part équitable valant 100 % / nombre de matières
+ * réellement travaillées cette semaine.
+ *
+ * C'était un seuil ABSOLU de 20 %, ce qui n'a pas de sens pour un produit
+ * qui compte sept matières : une répartition parfaitement équilibrée en
+ * donne 14 % à chacune, donc TOUTES étaient candidates. Combiné au
+ * `.find()` sur une liste triée par volume DÉCROISSANT, le constat désignait
+ * la matière la MIEUX servie de la semaine : « Mathématiques représente
+ * 17 % de ton temps », sur une semaine où les maths arrivaient en tête.
+ */
+const UNDERSERVED_FAIR_SHARE_RATIO = 0.6;
 
 export function computeWeeklyReview(
   workItems: WorkItem[],
@@ -84,13 +95,24 @@ export function computeWeeklyReview(
    * discréditer les deux.
    */
   const weekSessions = sessionsInWeek(sessions, weekStart).filter((session) => new Date(session.started_at) <= now);
-  const totalMinutes = Math.floor(totalSeconds(weekSessions) / 60);
-
   const upToNow = sessions.filter((session) => new Date(session.started_at) <= now);
   const bySubject = timeBySubjectInWeek(upToNow, weekStart)
     .map(({ subject, seconds }) => ({ subject, minutes: Math.floor(seconds / 60) }))
     .filter((entry) => entry.minutes > 0)
     .sort((a, b) => b.minutes - a.minutes);
+
+  /*
+   * LE TOTAL EST LA SOMME DE CE QUI EST AFFICHÉ, et pas un second calcul.
+   *
+   * `Math.floor` appliqué une fois au cumul global, puis une fois par
+   * matière, produisait deux chiffres incompatibles sur le MÊME bloc : deux
+   * séances de 59 min 40 donnaient « 119 min » au total pour « 59 + 59 » en
+   * détail. L'écart croît avec le nombre de matières (jusqu'à −6 min), et
+   * rien à l'écran ne l'explique. On additionne donc les lignes réellement
+   * montrées : le total peut perdre quelques secondes d'arrondi, il ne peut
+   * plus contredire son propre détail.
+   */
+  const totalMinutes = bySubject.reduce((sum, entry) => sum + entry.minutes, 0);
 
   // ── Journée la plus chargée ────────────────────────────────────────
   const minutesByDay = new Map<string, number>();
@@ -119,7 +141,16 @@ export function computeWeeklyReview(
   // ── Échéances encore ouvertes qui ne tiennent plus ─────────────────
   const atRisk = sortByPriority(activeWorkItems(workItems).map((item) => computeWorkItemPriority(item, sessions, preferences, now)))
     .filter((priority) => priority.feasibility.level === "non casable" || priority.feasibility.level === "juste")
-    .map((priority) => ({ item: priority.item, remainingMinutes: priority.remainingMinutes, reason: priority.feasibility.reason }));
+    .map((priority) => ({
+      item: priority.item,
+      remainingMinutes: priority.remainingMinutes,
+      reason: priority.feasibility.reason,
+      // Le NIVEAU voyage avec le constat : « juste » et « non casable » sont
+      // deux situations opposées, et le conseil les traitait pareil.
+      level: priority.feasibility.level,
+      // Ce qui MANQUE réellement — 0 partout sauf en « non casable ».
+      shortfallMinutes: priority.feasibility.shortfallMinutes,
+    }));
 
   // ── Biais d'estimation le plus marqué ──────────────────────────────
   let strongestBias: EstimationBias | null = null;
@@ -145,19 +176,32 @@ export function computeWeeklyReview(
    */
   const comparison = computeWeeklyComparison(sessions, now);
   if (comparison.currentMinutes > 0 || comparison.previousMinutes > 0) {
+    /*
+     * « Première semaine mesurée » se disait dès que la semaine PRÉCÉDENTE
+     * était vide — ce qui n'a rien à voir. Un élève inscrit depuis la
+     * rentrée, revenant après une semaine de vacances, s'entendait annoncer
+     * qu'il démarrait. La seule condition honnête est : aucune séance
+     * enregistrée AVANT le lundi de cette semaine.
+     */
+    const isFirstMeasuredWeek = !sessions.some((session) => {
+      const started = new Date(session.started_at);
+      return started < weekStart && started <= now;
+    });
     findings.push({
       key: "volume",
-      sentence:
-        comparison.previousMinutes > 0
+      sentence: isFirstMeasuredWeek
+        ? `${formatShort(comparison.currentMinutes)} travaillées — première semaine mesurée.`
+        : comparison.previousMinutes > 0
           ? `${formatShort(comparison.currentMinutes)} travaillées, ${withSignMinutes(comparison.deltaMinutes)} par rapport à la semaine précédente à ce stade.`
-          : `${formatShort(comparison.currentMinutes)} travaillées — première semaine mesurée.`,
+          : `${formatShort(comparison.currentMinutes)} travaillées — rien n'avait été enregistré la semaine précédente.`,
     });
   }
 
   if (completed.length > 0) {
     findings.push({
       key: "travaux-termines",
-      sentence: `${completed.length} travail${completed.length > 1 ? "x" : ""} terminé${completed.length > 1 ? "s" : ""} cette semaine.`,
+      // « travaux », pas « travailx » : le pluriel de « travail » est irrégulier.
+      sentence: `${completed.length} ${completed.length > 1 ? "travaux terminés" : "travail terminé"} cette semaine.`,
     });
   }
 
@@ -209,7 +253,19 @@ export function computeWeeklyReview(
   for (const item of activeWorkItems(workItems)) {
     if (item.subject) openBySubject.set(item.subject, (openBySubject.get(item.subject) ?? 0) + 1);
   }
-  const underserved = distribution.find((entry) => (openBySubject.get(entry.subject) ?? 0) > 0 && entry.percent < UNDERSERVED_SHARE_PERCENT);
+  /*
+   * La part équitable dépend du nombre de matières RÉELLEMENT travaillées
+   * cette semaine — pas des sept du catalogue : une semaine à trois matières
+   * n'a pas le même équilibre attendu qu'une semaine à six.
+   *
+   * Et parmi les candidates, on retient la PLUS sous-servie, pas la
+   * première venue : `distribution` est triée par volume décroissant, donc
+   * un `.find()` y prenait exactement la moins concernée.
+   */
+  const fairShare = distribution.length > 0 ? 100 / distribution.length : 0;
+  const underserved = distribution
+    .filter((entry) => (openBySubject.get(entry.subject) ?? 0) > 0 && entry.percent < fairShare * UNDERSERVED_FAIR_SHARE_RATIO)
+    .reduce<(typeof distribution)[number] | null>((worst, entry) => (worst === null || entry.percent < worst.percent ? entry : worst), null);
   if (underserved && distribution.length > 1) {
     const open = openBySubject.get(underserved.subject) ?? 0;
     findings.push({
@@ -249,7 +305,7 @@ export function computeWeeklyReview(
  * parce qu'il apprend à ignorer les suivants.
  */
 function deriveAdvice(input: {
-  atRisk: { item: WorkItem; remainingMinutes: number }[];
+  atRisk: { item: WorkItem; remainingMinutes: number; level: string; shortfallMinutes: number }[];
   neglected: { subject: Subject; pendingCount: number }[];
   strongestBias: EstimationBias | null;
   busiestDay: { date: string; minutes: number } | null;
@@ -257,9 +313,22 @@ function deriveAdvice(input: {
 }): string | null {
   const [risk] = input.atRisk;
   if (risk) {
-    return risk.item.dueDate
-      ? `Réserve ${formatShort(risk.remainingMinutes)} avant ${weekdayName(risk.item.dueDate)} pour « ${risk.item.title} » — c'est ce qui manque aujourd'hui.`
-      : `Réserve ${formatShort(risk.remainingMinutes)} pour « ${risk.item.title} », qui n'a encore aucune place dans ton planning.`;
+    /*
+     * « C'EST CE QUI MANQUE » NE SE DIT QUE QUAND QUELQUE CHOSE MANQUE.
+     *
+     * `atRisk` inclut le niveau « juste », où RIEN ne manque par définition
+     * — la marge est seulement mince. Et même en « non casable », la phrase
+     * citait `remainingMinutes` (tout le reste à faire) là où le manque réel
+     * est `shortfallMinutes`. Deux chiffres différents sous le même mot,
+     * dans un module dont l'en-tête promet que chaque phrase cite le sien.
+     */
+    if (!risk.item.dueDate) {
+      return `Réserve ${formatShort(risk.remainingMinutes)} pour « ${risk.item.title} », qui n'a encore aucune place dans ton planning.`;
+    }
+    if (risk.level === "non casable" && risk.shortfallMinutes > 0) {
+      return `Il manque ${formatShort(risk.shortfallMinutes)} pour tenir « ${risk.item.title} » avant ${weekdayName(risk.item.dueDate)} : avance-le, ou revois son ampleur.`;
+    }
+    return `Réserve ${formatShort(risk.remainingMinutes)} avant ${weekdayName(risk.item.dueDate)} pour « ${risk.item.title} » — la marge est mince.`;
   }
   const [neglected] = input.neglected;
   if (neglected) return `Prévois une séance de ${neglected.subject} : c'est la seule matière sans aucun travail cette semaine.`;
@@ -269,7 +338,14 @@ function deriveAdvice(input: {
   if (input.strongestBias && input.strongestBias.deviationPercent > 0) {
     return `Ajoute environ ${input.strongestBias.deviationPercent} % à tes prochaines estimations de ${input.strongestBias.subject} : c'est l'écart que tes travaux terminés montrent.`;
   }
-  if (input.busiestDay) return `Prévois davantage de marge le ${weekdayName(input.busiestDay.date)} : c'est ta journée la plus chargée.`;
+  /*
+   * Le CONSTAT « dimanche était ta journée la plus chargée » est un fait sur
+   * la semaine écoulée, et il reste. Le CONSEIL qui en découlait, lui,
+   * transformait une observation sur DEUX journées comparables en une
+   * habitude à corriger, et désignait un jour déjà passé — parfois
+   * aujourd'hui même. Une semaine ne suffit pas à établir une habitude ;
+   * l'affirmer est exactement le saut que ce module s'interdit ailleurs.
+   */
   return null;
 }
 

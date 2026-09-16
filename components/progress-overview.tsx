@@ -325,14 +325,27 @@ function WeekEvolution({
   }
 
   return (
-    <Section label="Mémoire" title="Évolution" description="Par rapport à la semaine précédente.">
+    <Section
+      label="Mémoire"
+      title="Évolution"
+      /* « À CE STADE », comme partout ailleurs. La section mettait le total
+         de la semaine EN COURS face à celui de la semaine précédente
+         COMPLÈTE : chaque lundi matin, l'écran annonçait en rouge la perte de
+         tout le travail de la semaine passée (« 0 min · −7 h »). Le chiffre
+         est juste, c'est la comparaison qui ne l'était pas — on le dit. */
+      description="Par rapport à la semaine précédente, à ce stade de la semaine."
+    >
       <StatRow>
         <Stat
           label="Temps travaillé"
           value={formatSpan(comparison.currentTotalSeconds)}
           detail={withSignMinutes(comparison.deltaTotalSeconds)}
           size="sm"
-          tone={comparison.deltaTotalSeconds > 0 ? "success" : comparison.deltaTotalSeconds < 0 ? "danger" : undefined}
+          /* Plus de ROUGE sur un écart négatif : une semaine en cours est
+             par construction en retard sur une semaine terminée, et teinter
+             ce fait en alerte transforme une mécanique de calendrier en
+             reproche. Le signe suffit à le dire. */
+          tone={comparison.deltaTotalSeconds > 0 ? "success" : undefined}
         />
         <Stat
           label="Exercices maîtrisés"

@@ -176,20 +176,46 @@ export function buildWeeklyPlan(
     const notBefore = item.notBeforeDate ? new Date(`${item.notBeforeDate}T00:00:00`) : today;
     const start = notBefore > today ? notBefore : today;
     const days = daysUntilDue(item, now);
+    /*
+     * L'ÉCHÉANCE EST-ELLE SEULEMENT DANS LE CHAMP DE VISION DU PLANNING ?
+     *
+     * Régression corrigée ici, et elle était grave. La fenêtre de placement
+     * est bornée à `PLANNING_HORIZON_DAYS` (14 jours), mais la règle 4 plus
+     * bas ne testait que `days >= 0` : tout travail dont le reste à faire
+     * dépassait la capacité de DEUX SEMAINES ressortait dans `unplaceable`
+     * avec « ne trouvent pas de place avant l'échéance », y compris pour une
+     * échéance à quarante jours. Un concours blanc de 2 000 min dû dans
+     * 40 jours était déclaré infaisable alors que `computeFeasibility` le
+     * disait « casable » sur les 3 120 min réellement disponibles : les deux
+     * moteurs se contredisaient sur le même travail, en tête de l'écran
+     * Échéances, et `postponeWorkItem` en héritait un `breaksDeadline` faux.
+     *
+     * Un planning de 14 jours ne SAIT RIEN de ce qui se passe au jour 40. Il
+     * ne doit donc rien en dire : c'est `computeFeasibility` (lib/deadlines.ts),
+     * qui cumule la capacité jusqu'à l'échéance réelle, qui fait autorité
+     * au-delà de l'horizon. Ne rien affirmer est ici la seule réponse
+     * honnête — et c'est la même règle que « retard ≠ impossible », dans
+     * l'autre sens : LOIN ≠ IMPOSSIBLE.
+     */
+    const due = item.dueDate ? new Date(`${item.dueDate}T00:00:00`) : null;
+    const dueBeyondHorizon = due !== null && due > horizon[horizon.length - 1];
     const window = horizon.filter((date) => {
       if (date < start) return false;
       if (days === null) return true; // sans échéance : tout l'horizon
       if (days < 0) return true; // en retard : l'échéance est passée, on rattrape dès que possible
-      const due = new Date(`${item.dueDate}T00:00:00`);
-      return date <= due;
+      return due === null || date <= due;
     });
 
     if (window.length === 0) {
-      unplaceable.push({
-        item,
-        missingMinutes: remaining,
-        reason: `Aucun jour disponible avant l'échéance : il reste ${formatShort(remaining)} à faire.`,
-      });
+      // Même garde : si l'échéance est au-delà de l'horizon, l'absence de
+      // jour disponible DANS l'horizon ne dit rien sur l'échéance elle-même.
+      if (!dueBeyondHorizon) {
+        unplaceable.push({
+          item,
+          missingMinutes: remaining,
+          reason: `Aucun jour disponible avant l'échéance : il reste ${formatShort(remaining)} à faire.`,
+        });
+      }
       continue;
     }
 
@@ -248,8 +274,9 @@ export function buildWeeklyPlan(
       remaining -= minutes;
     }
 
-    // Règle 4 — ce qui n'est pas entré se dit, avec son chiffre.
-    if (remaining > 0 && item.dueDate && (days ?? 0) >= 0) {
+    // Règle 4 — ce qui n'est pas entré se dit, avec son chiffre. Uniquement
+    // pour une échéance que l'horizon atteint réellement : voir `dueBeyondHorizon`.
+    if (remaining > 0 && item.dueDate && (days ?? 0) >= 0 && !dueBeyondHorizon) {
       unplaceable.push({
         item,
         missingMinutes: remaining,

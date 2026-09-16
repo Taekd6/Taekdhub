@@ -1,3 +1,4 @@
+import { currentStreak } from "@/lib/analytics/consistency";
 import { ASSISTED_HINTS_THRESHOLD } from "@/lib/recommendation";
 import { completedExercises, dayKey } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
@@ -166,18 +167,18 @@ export function xpProgressInLevel(xp: number): { current: number; needed: number
  *   que la journée n'était pas finie.
  */
 export function computeStreak(sessions: WorkSession[], now: Date = new Date()): number {
-  const workByDay = workByDayMap(sessions);
-  const counts = (date: Date) => secondsToWholeMinutes(workByDay[dayKey(date)] ?? 0) > 0;
-
-  const cursor = new Date(now);
-  if (!counts(cursor)) cursor.setDate(cursor.getDate() - 1);
-
-  let streak = 0;
-  while (counts(cursor)) {
-    streak++;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
+  /*
+   * UNE SEULE IMPLÉMENTATION, désormais.
+   *
+   * Ce calcul existait ici ET dans lib/analytics/consistency.ts#currentStreak,
+   * avec deux seuils différents — et l'écran Progression affichait les DEUX,
+   * à quelques centaines de pixels d'écart, avec deux nombres. Les règles
+   * documentées au-dessus (seuil d'une minute cumulée, décompte démarrant à
+   * hier tant que la journée n'a rien enregistré) sont inchangées : elles
+   * vivent maintenant dans `activeDayKeys` + `currentStreak`, qui les
+   * appliquent à l'identique pour la série comme pour la heatmap.
+   */
+  return currentStreak(sessions, now);
 }
 
 export function workByDayMap(sessions: WorkSession[]): Record<string, number> {

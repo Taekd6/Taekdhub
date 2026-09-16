@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accentForeground, ACCENT_PRESETS, applyThemeMode, hexToRgb, relativeLuminance } from "@/lib/theme";
+import { accentForeground, accentInk, ACCENT_PRESETS, applyThemeMode, hexToRgb, relativeLuminance } from "@/lib/theme";
 
 /**
  * Sprint personnalisation (Phase 11) — couvre le mode d'apparence
@@ -100,5 +100,36 @@ describe("texte posé sur l'accent — noir ou blanc, le plus lisible des deux",
       const other: [number, number, number] = chosen[0] === 0 ? [255, 255, 255] : [0, 0, 0];
       expect(contrast(rgb, chosen), `gris ${value}`).toBeGreaterThanOrEqual(contrast(rgb, other));
     }
+  });
+});
+
+describe("l'encre d'accent tient le contraste AA sur la surface la plus sombre du thème clair", () => {
+  /**
+   * Le plafond de luminance existe précisément pour ça ; il avait été calibré
+   * sur un canvas (#f4f5f7) que la palette n'utilise plus, et ne tenait donc
+   * plus sa promesse — 4,22:1 mesuré au navigateur sur le badge « Important »
+   * et sur l'option retenue du sélecteur de thème.
+   */
+  const DARKEST_LIGHT_SURFACE: [number, number, number] = [241, 237, 228];
+
+  function contrastRatio(a: [number, number, number], b: [number, number, number]): number {
+    const [high, low] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+    return (high + 0.05) / (low + 0.05);
+  }
+
+  it("chaque accent proposé passe 4,5:1, pas seulement celui par défaut", () => {
+    for (const preset of ACCENT_PRESETS) {
+      const ratio = contrastRatio(accentInk(preset.hex), DARKEST_LIGHT_SURFACE);
+      expect(ratio, `${preset.label} (${preset.hex}) : ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("un accent saisi à la main, même très clair, est ramené sous le seuil", () => {
+    expect(contrastRatio(accentInk("#ffff00"), DARKEST_LIGHT_SURFACE)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(accentInk("#ffffff"), DARKEST_LIGHT_SURFACE)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("une teinte déjà assez sombre n'est pas assombrie inutilement", () => {
+    expect(accentInk("#402d10")).toEqual(hexToRgb("#402d10"));
   });
 });

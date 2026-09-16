@@ -23,6 +23,39 @@ export interface TimePoint {
   /** Début de la période, pour l'affichage (nom du jour, du mois…). */
   start: Date;
   minutes: number;
+  /**
+   * La période est-elle RÉELLEMENT observée, c'est-à-dire postérieure à la
+   * première séance enregistrée ?
+   *
+   * `false` signifie « TaekdHub n'existait pas encore », ce qui n'est pas la
+   * même chose que « zéro minute travaillée ». Sans cette distinction, un
+   * compte créé il y a deux semaines produisait la série
+   * [0, 0, 0, 0, 240, 360] et `computeTrend` y lisait « en hausse, confiance
+   * élevée » — une affirmation appuyée sur quatre semaines qui n'ont jamais
+   * existé. Toute tendance DOIT donc être calculée sur les seuls points
+   * `measured`.
+   *
+   * Les périodes non mesurées restent dans la série : les retirer ferait
+   * commencer la courbe au milieu de l'axe. C'est leur poids dans le verdict
+   * qu'on retire, pas leur présence.
+   */
+  measured: boolean;
+}
+
+/** Début de la première période réellement observée, ou `null` si aucune séance n'est enregistrée. */
+export function firstMeasuredStart(sessions: WorkSession[], granularity: TimeGranularity, now: Date = new Date()): Date | null {
+  let earliest: Date | null = null;
+  for (const session of sessions) {
+    const started = new Date(session.started_at);
+    if (Number.isNaN(started.getTime()) || started > now) continue;
+    if (!earliest || started < earliest) earliest = started;
+  }
+  return earliest ? periodStart(earliest, granularity) : null;
+}
+
+/** Les seuls points sur lesquels une tendance peut honnêtement se prononcer — voir `TimePoint.measured`. */
+export function measuredMinutes(points: TimePoint[]): number[] {
+  return points.filter((point) => point.measured).map((point) => point.minutes);
 }
 
 export type TimeGranularity = "jour" | "semaine" | "mois";
@@ -43,7 +76,21 @@ function stepBack(date: Date, granularity: TimeGranularity, steps: number): Date
   const next = new Date(date);
   if (granularity === "jour") next.setDate(next.getDate() - steps);
   else if (granularity === "semaine") next.setDate(next.getDate() - steps * 7);
-  else next.setMonth(next.getMonth() - steps);
+  else {
+    /*
+     * `setMonth(getMonth() - steps)` DÉBORDE quand le jour du mois n'existe
+     * pas dans le mois visé : un 31 mars moins un mois donne le 3 mars
+     * (février n'ayant pas 31 jours). La série mensuelle perdait alors un
+     * mois et en dupliquait un autre — ["2026-01", "2026-03", "2026-03"] —
+     * en doublant au passage les minutes du mois répété.
+     *
+     * On recule donc sur le PREMIER du mois, où le débordement ne peut pas
+     * se produire. Le jour exact n'a aucune importance ici : seule la clé
+     * "AAAA-MM" est lue en sortie.
+     */
+    next.setDate(1);
+    next.setMonth(next.getMonth() - steps);
+  }
   return next;
 }
 
@@ -71,12 +118,20 @@ export function computeWorkTimeSeries(
     minutesByKey.set(key, (minutesByKey.get(key) ?? 0) + session.duration_seconds / 60);
   }
 
+  // Avant la première séance, il n'y a pas « zéro minute » : il n'y a rien.
+  const firstStart = firstMeasuredStart(sessions, granularity, now);
+
   const points: TimePoint[] = [];
   for (let offset = count - 1; offset >= 0; offset -= 1) {
     const reference = stepBack(now, granularity, offset);
     const start = periodStart(reference, granularity);
     const key = periodKey(reference, granularity);
-    points.push({ key, start, minutes: Math.round(minutesByKey.get(key) ?? 0) });
+    points.push({
+      key,
+      start,
+      minutes: Math.round(minutesByKey.get(key) ?? 0),
+      measured: firstStart !== null && start >= firstStart,
+    });
   }
   return points;
 }
@@ -112,10 +167,24 @@ export function computeSubjectDistribution(sessions: WorkSession[], since: Date 
 }
 
 export interface WeeklyComparison {
+  /** Minutes de la semaine EN COURS, du lundi à maintenant. */
   currentMinutes: number;
+  /**
+   * Minutes de la semaine précédente AU MÊME STADE — c'est-à-dire de son
+   * lundi jusqu'au même jour à la même heure, pas son total.
+   *
+   * C'était le total de ses sept jours, alors que les deux écrans qui
+   * l'affichent annoncent « à ce stade ». Un mercredi soir, un élève ayant
+   * travaillé exactement au même rythme lisait « −4 h » : 180 min de semaine
+   * partielle mises en face de 420 min de semaine complète. La phrase
+   * certifiait une comparaison qui n'avait pas été faite.
+   */
   previousMinutes: number;
+  /** `currentMinutes − previousMinutes`, donc un écart À STADE ÉGAL. */
   deltaMinutes: number;
-  /** Tendance calculée sur les `weeks` dernières semaines COMPLÈTES ou en cours — voir `computeTrend`. */
+  /** Total RÉEL des sept jours de la semaine précédente — pour un bilan de fin de semaine, jamais pour l'écart ci-dessus. */
+  previousTotalMinutes: number;
+  /** Tendance calculée sur les seules semaines complètes ET réellement observées — voir `TimePoint.measured`. */
   trend: Trend;
 }
 
@@ -138,15 +207,31 @@ export const RHYTHM_WEEKS = 6;
 export function computeWeeklyComparison(sessions: WorkSession[], now: Date = new Date()): WeeklyComparison {
   const series = computeWorkTimeSeries(sessions, "semaine", RHYTHM_WEEKS, now);
   const current = series[series.length - 1]?.minutes ?? 0;
-  const previous = series[series.length - 2]?.minutes ?? 0;
+
+  /*
+   * LE MÊME STADE, littéralement : le lundi de la semaine dernière jusqu'à
+   * cet instant moins sept jours. Aucune approximation par fraction de
+   * semaine — on redécoupe les séances, ce qui reste exact un jour férié,
+   * un lundi à 8 h comme un dimanche à 23 h.
+   */
+  const weekStart = startOfWeek(now);
+  const previousStart = new Date(weekStart);
+  previousStart.setDate(previousStart.getDate() - 7);
+  const sameStage = new Date(now);
+  sameStage.setDate(sameStage.getDate() - 7);
+  const previous = minutesBetween(sessions, previousStart, sameStage);
+
   return {
     currentMinutes: current,
     previousMinutes: previous,
     deltaMinutes: current - previous,
-    // La semaine en cours est incomplète : elle fausserait la tendance de
-    // rythme vers le bas tous les lundis. On la retire de la série qui sert
-    // à qualifier la direction, tout en la gardant pour l'écart brut.
-    trend: computeTrend(series.slice(0, -1).map((point) => point.minutes)),
+    previousTotalMinutes: series[series.length - 2]?.minutes ?? 0,
+    // Deux filtres, deux raisons distinctes :
+    //  — `slice(0, -1)` retire la semaine EN COURS, incomplète : elle
+    //    tirerait la tendance vers le bas tous les lundis ;
+    //  — `measuredMinutes` retire les semaines ANTÉRIEURES au compte, qui
+    //    ne sont pas des zéros mais des absences (voir `TimePoint.measured`).
+    trend: computeTrend(measuredMinutes(series.slice(0, -1))),
   };
 }
 

@@ -125,7 +125,23 @@ export function compareToPreviousWeek(exercises: Exercise[], sessions: WorkSessi
     const currentRate = currentBySubject.find((entry) => entry.subject === subject)?.completionRate ?? 0;
     return { subject, previousCompletionRate: previousRate, currentCompletionRate: currentRate, deltaCompletionRate: currentRate - previousRate };
   });
-  const mostImprovedSubject = masteryDeltas.filter((delta) => delta.deltaCompletionRate > 0).sort((a, b) => b.deltaCompletionRate - a.deltaCompletionRate)[0] ?? null;
+  /*
+   * UNE ÉGALITÉ NE DÉSIGNE PERSONNE.
+   *
+   * Le tri seul faisait trancher l'ordre du tableau `subjects` : deux
+   * matières passant toutes deux de 0 à 50 % affichaient « A le plus
+   * progressé : Mathématiques » — un verdict produit par lib/study.ts, pas
+   * par les données. C'est exactement la règle que lib/weekly-review.ts
+   * applique déjà à la « journée la plus chargée » (comparaison STRICTE) ;
+   * elle vaut ici aussi.
+   */
+  const improvedRanked = masteryDeltas
+    .filter((delta) => delta.deltaCompletionRate > 0)
+    .sort((a, b) => b.deltaCompletionRate - a.deltaCompletionRate);
+  const mostImprovedSubject =
+    improvedRanked.length > 0 && (improvedRanked.length === 1 || improvedRanked[0].deltaCompletionRate > improvedRanked[1].deltaCompletionRate)
+      ? improvedRanked[0]
+      : null;
 
   const timeDeltas: SubjectTimeDelta[] = subjects.map((subject) => {
     const previousSecondsValue = previous.bySubject.find((entry) => entry.subject === subject)?.seconds ?? 0;
@@ -133,10 +149,15 @@ export function compareToPreviousWeek(exercises: Exercise[], sessions: WorkSessi
     return { subject, previousSeconds: previousSecondsValue, currentSeconds: currentSecondsValue, deltaSeconds: currentSecondsValue - previousSecondsValue };
   });
   const pendingSubjects = new Set(currentBySubject.filter((entry) => entry.total - entry.mastered > 0).map((entry) => entry.subject));
+  // Même règle : trois matières à 0 seconde ne font pas de la première du
+  // catalogue « la moins travaillée ».
+  const neglectedRanked = timeDeltas
+    .filter((delta) => pendingSubjects.has(delta.subject))
+    .sort((a, b) => a.currentSeconds - b.currentSeconds || a.deltaSeconds - b.deltaSeconds);
   const mostNeglectedSubject =
-    timeDeltas
-      .filter((delta) => pendingSubjects.has(delta.subject))
-      .sort((a, b) => a.currentSeconds - b.currentSeconds || a.deltaSeconds - b.deltaSeconds)[0] ?? null;
+    neglectedRanked.length > 0 && (neglectedRanked.length === 1 || neglectedRanked[0].currentSeconds < neglectedRanked[1].currentSeconds)
+      ? neglectedRanked[0]
+      : null;
 
   return {
     previous,

@@ -127,5 +127,5 @@ export function computeSuccessRateTrend(
   const measured = points.filter((point) => point.rate !== null).map((point) => point.rate as number);
   // Bruit absolu de 5 points de pourcentage : sur un taux, 5 % relatifs
   // n'ont pas de sens (5 % de 80 % valent 4 points, 5 % de 20 % en valent 1).
-  return { points, trend: computeTrend(measured, { absoluteNoise: 5 }) };
+  return { points, trend: computeTrend(measured, { absoluteNoise: 5, zeroIsMeasurement: true }) };
 }

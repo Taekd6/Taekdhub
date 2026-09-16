@@ -137,10 +137,15 @@ export function computeEstimationBias(
     subject,
     samples: relevant.length,
     deviationPercent: deviation,
+    // « TYPIQUEMENT », pas « en moyenne » : le calcul ci-dessus est une
+    // MÉDIANE de ratios, choisie précisément pour qu'un travail aberrant ne
+    // déplace pas le verdict. Dire « en moyenne » nommait un calcul qui n'a
+    // pas été fait — et la phrase est reprise telle quelle par le bilan
+    // hebdomadaire.
     sentence:
       deviation > 0
-        ? `Tu as sous-estimé tes travaux de ${subject} de ${deviation} % en moyenne, sur ${relevant.length} travaux terminés.`
-        : `Tu as surestimé tes travaux de ${subject} de ${Math.abs(deviation)} % en moyenne, sur ${relevant.length} travaux terminés.`,
+        ? `Tu as sous-estimé tes travaux de ${subject} de ${deviation} % typiquement, sur ${relevant.length} travaux terminés.`
+        : `Tu as surestimé tes travaux de ${subject} de ${Math.abs(deviation)} % typiquement, sur ${relevant.length} travaux terminés.`,
   };
 }
 

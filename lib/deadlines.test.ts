@@ -168,6 +168,6 @@ describe("explication — jamais une phrase sans donnée derrière", () => {
 
   it("une échéance confortable est annoncée comme telle, sans alarmisme", () => {
     const priority = computeWorkItemPriority(item({ dueDate: "2026-09-20", estimatedMinutes: 60 }), [], prefs(), NOW);
-    expect(explainPriority(priority)).toContain("la charge tient dans ton rythme");
+    expect(explainPriority(priority)).toContain("ça tient dans la capacité que tu as déclarée");
   });
 });

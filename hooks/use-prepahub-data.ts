@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { lastStorageWriteFailure, localData, type Chapter, type DayPlanRecord, type Grade, type Preferences, type WeekSnapshot, type WorkItem } from "@/lib/storage";
+import { lastStorageWriteFailure, localData, readFlag, writeFlag, type Chapter, type DayPlanRecord, type Grade, type Preferences, type WeekSnapshot, type WorkItem } from "@/lib/storage";
 import { buildWeeklyPlan } from "@/lib/planning";
 import { dayKey } from "@/lib/study";
 import { loadSeedBank, reconcileSeedBank, SEED_CONTENT_VERSION, SEED_FLAG_KEY, SEED_VERSION_KEY } from "@/lib/seed";
@@ -17,7 +17,7 @@ import type { Exercise, WorkSession } from "@/lib/supabase/types";
 async function maybeSeedBank(): Promise<void> {
   if (typeof window === "undefined") return;
 
-  const hasSeedFlag = Boolean(localStorage.getItem(SEED_FLAG_KEY));
+  const hasSeedFlag = Boolean(readFlag(SEED_FLAG_KEY));
   const localExercises = localData.exercises();
 
   if (!hasSeedFlag && localExercises.length === 0) {
@@ -32,8 +32,8 @@ async function maybeSeedBank(): Promise<void> {
       // rendait l'échec totalement invisible.
       if (!localData.saveExercises(exercises)) return;
       localData.saveChapters(chapters);
-      localStorage.setItem(SEED_FLAG_KEY, new Date().toISOString());
-      localStorage.setItem(SEED_VERSION_KEY, String(SEED_CONTENT_VERSION));
+      writeFlag(SEED_FLAG_KEY, new Date().toISOString());
+      writeFlag(SEED_VERSION_KEY, String(SEED_CONTENT_VERSION));
     } catch {
       // Amorçage best-effort : en cas d'échec, réessai au prochain montage.
     }
@@ -43,7 +43,7 @@ async function maybeSeedBank(): Promise<void> {
   // Banque existante (y compris une ancienne installation sans version) :
   // on applique réellement toute version de contenu manquante. La
   // réconciliation préserve la progression, les favoris, les notes et les IDs.
-  const applied = Number(localStorage.getItem(SEED_VERSION_KEY) ?? 0);
+  const applied = Number(readFlag(SEED_VERSION_KEY) ?? 0);
   if (applied >= SEED_CONTENT_VERSION) return;
 
   try {
@@ -55,8 +55,8 @@ async function maybeSeedBank(): Promise<void> {
     // aurait perdu la réconciliation tout en jurant qu'elle a eu lieu.
     if (!localData.saveExercises(merged.exercises)) return;
     localData.saveChapters(merged.chapters);
-    localStorage.setItem(SEED_VERSION_KEY, String(SEED_CONTENT_VERSION));
-    if (!hasSeedFlag) localStorage.setItem(SEED_FLAG_KEY, new Date().toISOString());
+    writeFlag(SEED_VERSION_KEY, String(SEED_CONTENT_VERSION));
+    if (!hasSeedFlag) writeFlag(SEED_FLAG_KEY, new Date().toISOString());
   } catch {
     // Même règle que l'amorçage : en cas d'échec, on retentera au prochain montage.
   }

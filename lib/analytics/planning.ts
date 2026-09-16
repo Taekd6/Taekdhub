@@ -42,10 +42,20 @@ export interface PlanningAccuracy {
   actualMinutes: number;
   /** `null` tant qu'aucun jour n'est comparable, ou si rien n'était prévu. */
   completionPercent: number | null;
-  /** Jours de la période effectivement comparables. */
+  /** Jours de la période effectivement comparables : une intention enregistrée ET NON NULLE. */
   daysCompared: number;
   /** Jours de la période sans intention enregistrée — dits, jamais comptés comme zéro. */
   daysWithoutRecord: number;
+  /**
+   * Jours où une intention a bien été enregistrée, mais À ZÉRO minute.
+   *
+   * Comptés à part, et surtout EXCLUS du taux : un jour sans rien de prévu
+   * n'a pas de taux de réalisation. Les inclure mettait leurs minutes
+   * travaillées au numérateur avec zéro au dénominateur — six jours à
+   * 0 prévu suivis d'un jour à 60 min prévues et 1 h faite chaque jour
+   * donnaient « 700 % du temps prévu a été réalisé sur 7 jours ».
+   */
+  daysWithoutPlan: number;
 }
 
 /** Au moins trois jours comparables pour qu'un pourcentage de réalisation veuille dire quelque chose. */
@@ -86,7 +96,9 @@ export function computePlanningAccuracy(
     });
   }
 
-  const comparable = list.filter((day) => day.plannedMinutes !== null);
+  // Une intention À ZÉRO est une intention enregistrée, mais ce n'est pas une
+  // prévision comparable — voir `daysWithoutPlan`.
+  const comparable = list.filter((day) => day.plannedMinutes !== null && day.plannedMinutes > 0);
   const planned = comparable.reduce((sum, day) => sum + (day.plannedMinutes ?? 0), 0);
   const actual = comparable.reduce((sum, day) => sum + day.actualMinutes, 0);
 
@@ -96,7 +108,8 @@ export function computePlanningAccuracy(
     actualMinutes: actual,
     completionPercent: planned > 0 ? Math.round((actual / planned) * 100) : null,
     daysCompared: comparable.length,
-    daysWithoutRecord: list.length - comparable.length,
+    daysWithoutRecord: list.filter((day) => day.plannedMinutes === null).length,
+    daysWithoutPlan: list.filter((day) => day.plannedMinutes === 0).length,
   };
 }
 

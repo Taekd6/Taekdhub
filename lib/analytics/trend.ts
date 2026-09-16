@@ -86,7 +86,24 @@ export const TREND_NOISE_PERCENT = 5;
  * qu'en pourcentage — indispensable pour une note sur 20, où 5 % de 10
  * valent un demi-point mais 5 % de 2 ne valent rien.
  */
-export function computeTrend(values: number[], options: { absoluteNoise?: number } = {}): Trend {
+export function computeTrend(
+  values: number[],
+  options: {
+    absoluteNoise?: number;
+    /**
+     * `true` quand un ZÉRO est une MESURE et non une absence — une note de
+     * 0/20, un taux de maîtrise de 0 %, un taux de réussite de 0 %.
+     *
+     * Le garde-fou « tout à zéro » ci-dessous protège les séries de VOLUME
+     * (minutes, jours actifs), où zéro veut dire « rien n'a été enregistré ».
+     * Appliqué aux séries de RÉSULTAT, il inversait exactement la règle qu'il
+     * défend : quatre notes de 0/20 sont quatre mesures réelles, et l'écran
+     * répondait « Pas encore de données », `samples: 0`, en masquant la
+     * courbe. Le zéro était nié au lieu d'être dit.
+     */
+    zeroIsMeasurement?: boolean;
+  } = {}
+): Trend {
   const points = values.filter((value) => Number.isFinite(value));
 
   /*
@@ -102,7 +119,7 @@ export function computeTrend(values: number[], options: { absoluteNoise?: number
    * jamais été enregistré ». C'est un état vide, et il doit se dire comme
    * tel.
    */
-  if (points.length > 0 && points.every((value) => value === 0)) {
+  if (!options.zeroIsMeasurement && points.length > 0 && points.every((value) => value === 0)) {
     return { direction: "insuffisant", delta: null, deltaPercent: null, samples: 0, confidence: "faible", first: null, last: null };
   }
 

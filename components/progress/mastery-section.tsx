@@ -97,7 +97,15 @@ export function MasterySection({
       {active && mastery && (
         <div className="mt-7">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-            <p className="t-label">Maîtrise · {active}</p>
+            {/* « FICHES MAÎTRISÉES », et non « maîtrise ».
+                Deux grandeurs DIFFÉRENTES portaient le même mot dans cette
+                même section : la courbe montre la PART DES FICHES au statut
+                « maîtrisé » (completionRate), les lignes de chapitre plus bas
+                montrent la MOYENNE de `Exercise.mastery`. Cinq fiches à 60 %
+                dont aucune terminée donnaient « 0 % » ici et « 60 % » à
+                quelques centimètres. Les deux chiffres sont justes ; c'est le
+                mot qui les confondait. */}
+            <p className="t-label">Fiches maîtrisées · {active}</p>
             {subjectsWithWork.length > 1 && (
               /* UNE matière à la fois. Cinq courbes superposées deviennent
                  illisibles avant d'être informatives — c'est le filtre qui
@@ -116,8 +124,12 @@ export function MasterySection({
 
           {mastery.trend.direction === "insuffisant" ? (
             <Insufficient
-              what={`${mastery.currentRate} % de maîtrise en ${active} aujourd'hui — une seule mesure, donc pas encore de courbe.`}
-              how="TaekdHub fige un point par semaine écoulée : l'évolution apparaîtra la semaine prochaine."
+              what={`${mastery.currentRate} % des fiches de ${active} sont maîtrisées aujourd'hui — pas encore assez de mesures pour tracer une évolution.`}
+              how={
+                mastery.currentRate === 0
+                  ? "La courbe démarrera au premier exercice passé en « maîtrisé » : c'est ce qu'elle compte."
+                  : "TaekdHub fige un point par semaine écoulée : l'évolution apparaîtra la semaine prochaine."
+              }
             />
           ) : (
             <>
@@ -126,7 +138,7 @@ export function MasterySection({
                 min={0}
                 max={100}
                 formatValue={(value) => `${value} %`}
-                ariaLabel={`Maîtrise en ${active} : ${mastery.points.map((point) => `${pointLabel(point.start)} ${point.rate} %`).join(", ")}.`}
+                ariaLabel={`Fiches maîtrisées en ${active} : ${mastery.points.map((point) => `${pointLabel(point.start)} ${point.rate} %`).join(", ")}.`}
               />
               <p className="t-body mt-4">
                 {mastery.points[0].rate} % → <span className="font-medium">{mastery.currentRate} %</span>, soit{" "}

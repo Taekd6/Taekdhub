@@ -70,6 +70,14 @@ export function SessionHistory() {
    * exactement le genre d'affirmation que ce produit s'interdit. Le journal
    * reste donc un historique de ce qui a EU LIEU ; seule la journée en cours
    * peut honnêtement afficher les deux chiffres côte à côte.
+   *
+   * ATTENTION AU LIBELLÉ, et c'est tout l'objet de la correction : ce nombre
+   * est le RESTE À CASER, pas l'intention de la journée. `buildWeeklyPlan`
+   * ampute déjà la capacité d'aujourd'hui du temps déjà travaillé
+   * (lib/planning.ts#remainingPlannableToday). L'afficher comme « prévues »
+   * en face de « réalisées » présentait les deux nombres comme les deux
+   * termes d'une même comparaison — alors qu'ils n'ont pas le même
+   * périmètre, et que le second DÉCROÎT à mesure que le premier croît.
    */
   const plannedToday = useMemo(
     () => buildWeeklyPlan(workItems, sessions, preferences, new Date()).days[0]?.load.plannedMinutes ?? 0,
@@ -160,7 +168,7 @@ export function SessionHistory() {
                     {isToday(day.date) && plannedToday > 0 && (
                       <span className="text-subtle">
                         <span className="hidden sm:inline"> réalisées</span> · {formatSpan(plannedToday * 60)}
-                        <span className="hidden sm:inline"> prévues</span>
+                        <span className="hidden sm:inline"> encore au planning</span>
                       </span>
                     )}
                   </span>

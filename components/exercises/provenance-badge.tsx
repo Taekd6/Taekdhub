@@ -56,9 +56,24 @@ export function ProvenanceBadge({ exercise, className }: { exercise: Exercise; c
         // de liste, ce badge est répété des dizaines de fois — un aplat le
         // faisait passer devant le titre de l'exercice qu'il qualifie.
         "inline-flex shrink-0 items-center gap-1 rounded-[0.3125rem] border px-1.5 text-2xs leading-[1.15rem]",
+        /*
+         * PAS D'OPACITÉ SUR LE TEXTE, ni ici ni sur les segments ci-dessous.
+         *
+         * Le token `amber-200` est déjà redéfini par thème (app/globals.css :
+         * rgb(155 90 12) en clair), donc la COULEUR était bonne. Ce sont les
+         * opacités empilées qui cassaient la lisibilité : `/85` sur le
+         * conteneur, multiplié par `opacity-75` et `opacity-60` sur les
+         * segments internes. Mesuré au navigateur en thème clair :
+         * 3,03:1 pour les détails et 2,07:1 pour « session inconnue », là où
+         * WCAG AA exige 4,5:1 sur du texte de 12 px.
+         *
+         * La hiérarchie interne du badge ne passe donc plus par la
+         * transparence mais par la GRAISSE : le nom du concours en `medium`,
+         * le reste en poids normal. Même lecture, sans effacer le texte.
+         */
         verified
           ? "border-amber-400/35 bg-amber-400/[0.10] text-amber-200"
-          : "border-amber-400/20 bg-amber-400/[0.06] text-amber-200/85",
+          : "border-amber-400/20 bg-amber-400/[0.06] text-amber-200",
         className
       )}
       title={
@@ -69,8 +84,8 @@ export function ProvenanceBadge({ exercise, className }: { exercise: Exercise; c
     >
       <Award size={10} aria-hidden />
       <span className="font-medium">{exercise.competition}</span>
-      {details && <span className="opacity-75">· {details}</span>}
-      {!verified && <span className="opacity-60">· session inconnue</span>}
+      {details && <span className="font-normal">· {details}</span>}
+      {!verified && <span className="font-normal">· session inconnue</span>}
     </span>
   );
 }

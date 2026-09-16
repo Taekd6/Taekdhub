@@ -1,5 +1,5 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
-import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, THEME_MODES, type ThemeMode } from "@/lib/theme";
+import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, THEME_MODES, hexToRgb, type ThemeMode } from "@/lib/theme";
 import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, Filiere, LicenseStatus, Mastery, ProgrammeLevel, Provenance, Subject, WorkSession } from "@/lib/supabase/types";
 
 const ATTEMPT_RESULTS: readonly AttemptResult[] = ["réussi", "partiel", "échoué"];
@@ -407,6 +407,12 @@ function nonNegativeInteger(raw: unknown): number | null {
   return Math.round(raw);
 }
 
+/** Comme `nonNegativeInteger`, mais pour ce qui ne peut pas valoir zéro sans casser un calcul en aval (un objectif sert de DÉNOMINATEUR). */
+function positiveInteger(raw: unknown): number | null {
+  const value = nonNegativeInteger(raw);
+  return value === null || value === 0 ? null : value;
+}
+
 /**
  * Correspondances des anciennes valeurs vers le modèle actuel — appliquées
  * une seule fois, à la lecture, pour que les données locales et les
@@ -427,6 +433,25 @@ function migrateSubject(raw: unknown): Subject {
     if (raw in LEGACY_SUBJECT_MAP) return LEGACY_SUBJECT_MAP[raw];
   }
   return "Mathématiques";
+}
+
+/**
+ * Comme `migrateSubject`, mais pour les modèles où l'absence de matière est
+ * LÉGITIME (`WorkItem.subject`) ou disqualifiante (`Grade`) — on ne veut pas
+ * y retomber silencieusement sur « Mathématiques ».
+ *
+ * Séances, exercices, chapitres et instantanés migraient déjà une matière
+ * renommée ; les notes et les travaux, arrivés après le renommage
+ * « Informatique » → « Informatique TC », ne le faisaient pas. Aucune donnée
+ * n'était menacée AUJOURD'HUI, mais le prochain renommage dans lib/study.ts
+ * aurait détruit un trimestre de notes en silence : `normalizeGrade`
+ * renvoyait `null`, `localData.grades()` filtre les `null`, et `saveGrades`
+ * REMPLACE — la note disparaissait définitivement à l'écriture suivante.
+ */
+function migrateSubjectOrNull(raw: unknown): Subject | null {
+  if (typeof raw !== "string") return null;
+  if ((subjects as string[]).includes(raw)) return raw as Subject;
+  return LEGACY_SUBJECT_MAP[raw] ?? null;
 }
 
 function migrateStatus(raw: unknown): ExerciseStatus {
@@ -526,7 +551,7 @@ export function normalizeWorkItem(raw: unknown): WorkItem {
     kind: (WORK_ITEM_KINDS as string[]).includes(item.kind as string) ? (item.kind as WorkItemKind) : "autre",
     // `migrateSubject` imposerait une matière par défaut ; ici l'absence de
     // matière est une valeur légitime, elle doit survivre à la normalisation.
-    subject: (subjects as string[]).includes(item.subject as string) ? (item.subject as Subject) : null,
+    subject: migrateSubjectOrNull(item.subject),
     // Jamais 0 ni négatif : une durée nulle rendrait le travail invisible
     // pour le planificateur tout en restant affiché comme « à faire ».
     estimatedMinutes: Math.max(1, nonNegativeInteger(item.estimatedMinutes) ?? 30),
@@ -681,7 +706,8 @@ export function normalizeGrade(raw: unknown): Grade | null {
   const item = isRecord(raw) ? raw : {};
   const date = calendarDay(item.date);
   if (!date) return null;
-  if (!(subjects as string[]).includes(item.subject as string)) return null;
+  const subject = migrateSubjectOrNull(item.subject);
+  if (!subject) return null;
 
   const maxScore = typeof item.maxScore === "number" && Number.isFinite(item.maxScore) && item.maxScore > 0 ? item.maxScore : 20;
   const rawScore = typeof item.score === "number" && Number.isFinite(item.score) ? item.score : null;
@@ -689,7 +715,7 @@ export function normalizeGrade(raw: unknown): Grade | null {
 
   return {
     id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
-    subject: item.subject as Subject,
+    subject,
     title: typeof item.title === "string" && item.title.trim() ? item.title.trim() : "",
     kind: (GRADE_KINDS as string[]).includes(item.kind as string) ? (item.kind as GradeKind) : "autre",
     date,
@@ -722,9 +748,40 @@ export function normalizeDayPlanRecord(raw: unknown): DayPlanRecord | null {
  */
 export function normalizePreferences(raw: unknown): Preferences {
   const item = isRecord(raw) ? raw : {};
-  const merged = { ...defaults, ...item };
+  /*
+   * LISTE BLANCHE, et non un `{ ...defaults, ...item }`.
+   *
+   * L'étalement recopiait `item` TEL QUEL par-dessus les défauts : seuls
+   * trois champs étaient ensuite revalidés, les cinq autres passaient avec
+   * n'importe quel type, et toute clé étrangère présente dans l'objet
+   * entrait dans les préférences. Deux conséquences dont on ne se relève
+   * pas depuis l'interface :
+   *
+   *   — `accent: 42` → lib/theme.ts#hexToRgb fait `hex.trim()` sur un
+   *     nombre, ce qui LÈVE. `ThemeSync` étant monté dans app/layout.tsx,
+   *     l'effet plante sur TOUTES les routes, /settings comprise : plus
+   *     aucun moyen d'exporter ni de réparer sans la console du navigateur.
+   *   — `contestDate: "pas-une-date"` → `Intl.DateTimeFormat#format` lève
+   *     `RangeError: Invalid time value` sur l'accueil.
+   *
+   * Le vecteur n'est pas théorique : `validateBackupPayload` n'inspecte
+   * `preferences` que par `isRecord`, donc un fichier de sauvegarde édité à
+   * la main, tronqué ou fusionné suffit. Chaque champ est désormais validé
+   * par le même helper que le reste du module, et RIEN d'autre que les huit
+   * clés connues ne ressort d'ici.
+   */
   return {
-    ...merged,
+    displayName: typeof item.displayName === "string" ? item.displayName : defaults.displayName,
+    // Un objectif nul ou négatif produirait des divisions par zéro (« Infinity % »)
+    // dans computeDailyObjective ; `JSON.stringify(NaN)` valant `null`, le cas
+    // survit à un aller-retour de sauvegarde et doit donc être fermé ici.
+    dailyGoalMinutes: positiveInteger(item.dailyGoalMinutes) ?? defaults.dailyGoalMinutes,
+    weeklyGoalMinutes: positiveInteger(item.weeklyGoalMinutes) ?? defaults.weeklyGoalMinutes,
+    // "" = pas de concours renseigné, seule autre valeur admise qu'un jour calendaire.
+    contestDate: calendarDay(item.contestDate) ?? defaults.contestDate,
+    // Validé par le MÊME analyseur que celui qui l'utilisera (lib/theme.ts),
+    // pour qu'une valeur acceptée ici ne puisse pas faire échouer celui-là.
+    accent: typeof item.accent === "string" && hexToRgb(item.accent) ? item.accent : defaults.accent,
     themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE,
     // Un tableau de capacité de longueur ≠ 7, ou contenant autre chose que
     // des nombres, ferait lire `undefined` au planificateur pour un jour de
@@ -788,6 +845,32 @@ function readRecord(key: string): unknown {
  */
 let lastWriteFailure: { key: string; at: string } | null = null;
 
+/**
+ * Lecture/écriture BLINDÉES d'un drapeau brut (pas de JSON, pas de liste) —
+ * pour les clés techniques hors `localData` : drapeau et version d'amorçage.
+ *
+ * hooks/use-prepahub-data.ts les manipulait par `localStorage` direct :
+ * `getItem` hors de son `try` faisait rejeter `maybeSeedBank` quand le
+ * stockage est bloqué, et un `setItem` refusé laissait la version NON
+ * marquée — donc la réconciliation de toute la banque rejouée à chaque
+ * montage de composant, indéfiniment, sans que `lastStorageWriteFailure`
+ * n'en sache rien. Ces deux fonctions ferment les deux cas d'un coup.
+ */
+export function readFlag(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/** Voir `readFlag`. Renvoie `false` sans lever, et enregistre l'échec comme toute autre écriture. */
+export function writeFlag(key: string, value: string): boolean {
+  if (typeof window === "undefined") return false;
+  return writeKey(key, value);
+}
+
 /** Voir `writeKey` — consommé par hooks/use-prepahub-data.ts pour que l'échec cesse d'être invisible. */
 export function lastStorageWriteFailure(): { key: string; at: string } | null {
   return lastWriteFailure;
@@ -806,10 +889,19 @@ export function lastStorageWriteFailure(): { key: string; at: string } | null {
  * affiché, la séance ET le résultat sont perdus, sans le moindre message.
  * Chaque nouveau clic reproduisait exactement le même échec.
  *
- * Ce n'est pas une hypothèse d'école : la banque amorcée sérialise à elle
- * seule ~1,20 million de caractères, soit ~2,3 Mo en UTF-16 — l'unité que
- * les navigateurs facturent réellement — sur un quota de 5 Mo par origine.
- * Presque la moitié du budget est consommée avant la première séance.
+ * Ce n'est pas une hypothèse d'école, et les chiffres ci-dessous sont
+ * MESURÉS, pas estimés : la banque amorcée sérialise à elle seule 1 471 490
+ * caractères, soit 2,81 Mo en UTF-16 — l'unité que les navigateurs facturent
+ * réellement — sur un quota de 5 Mo par origine. Plus de la moitié du budget
+ * est consommée avant la première séance.
+ *
+ * Et le reste s'accumule sans jamais être élagué. Sur une année scolaire
+ * (4 séances/jour à 592 o, 5 travaux/semaine à 946 o, 52 instantanés à
+ * 1 754 o, 365 intentions de planning à 164 o), le stockage atteint environ
+ * 3,96 Mo — avant les énoncés recopiés à la main et les feuilles importées.
+ * Un élève actif touche donc le plafond AVANT la fin de l'année. C'est la
+ * raison d'être de tout ce qui suit : l'échec d'écriture n'est pas un cas
+ * limite, c'est une échéance.
  *
  * Renvoie `false` au lieu de lever : la valeur déjà stockée reste intacte
  * (setItem est atomique), l'appelant décide quoi faire, et
@@ -840,7 +932,7 @@ function writeKey(key: string, value: string): boolean {
  * il suffit qu'une copie soit périmée — ou pas encore chargée — pour effacer
  * tout le reste. Cas réel reproductible : components/timer.tsx n'attend pas
  * `ready`, donc tant que `maybeSeedBank()` n'a pas résolu (import dynamique
- * de 1,35 Mo de JSON + reconstruction de 477 exercices), `sessions` vaut
+ * de 1,35 Mo de JSON + reconstruction de 537 exercices), `sessions` vaut
  * encore `[]` ; or `useWorkTimer` restaure un chrono persisté dès le premier
  * effet, donc le bouton « Terminer » est cliquable immédiatement. Un
  * rechargement en pleine séance suivi de « Terminer » écrivait
@@ -858,11 +950,33 @@ function writeKey(key: string, value: string): boolean {
  *
  * Les entrées du disque sont comparées à l'état BRUT (pas de `normalize*` sur
  * toute la liste) : `update` est appelé à chaque frappe dans le champ énoncé
- * (components/exercises/exercise-detail.tsx), et normaliser 477 exercices à
+ * (components/exercises/exercise-detail.tsx), et normaliser 537 exercices à
  * chaque touche coûtait trois fois le prix de l'écriture elle-même. Seules
  * les entrées réellement absentes de la liste entrante — zéro dans le cas
  * courant — sont normalisées.
  */
+/**
+ * Fusionne, écrit, et renvoie CE QUI EST RÉELLEMENT SUR LE DISQUE.
+ *
+ * Les trois `merge*` jetaient le booléen de `writeKey` et renvoyaient la
+ * liste VOULUE. hooks/use-prepahub-data.ts la posait alors dans l'état React
+ * sous un commentaire affirmant « la liste réellement enregistrée » — ce qui
+ * était faux dès que l'écriture était refusée (quota) : l'écran montrait une
+ * séance que le disque n'avait pas, et le prochain enregistrement se
+ * construisait sur cet état fantôme.
+ *
+ * En cas de refus, on relit le disque plutôt que de renvoyer l'intention.
+ * `setItem` étant atomique, la valeur précédente est intacte, donc cette
+ * relecture est exacte. Elle ne coûte que sur le chemin d'échec, qui est
+ * rare ; `lastStorageWriteFailure` (→ `writeFailedAt` → `<StorageAlert>`)
+ * dit à l'élève ce qui vient de se passer.
+ */
+function mergeAndStore<T extends { id: string }>(key: string, incoming: T[], normalize: (raw: unknown) => T): T[] {
+  const merged = mergeStored(key, incoming, normalize);
+  if (writeKey(key, JSON.stringify(merged))) return merged;
+  return readList(key).map(normalize);
+}
+
 function mergeStored<T extends { id: string }>(key: string, incoming: T[], normalize: (raw: unknown) => T): T[] {
   const incomingIds = new Set(incoming.map((item) => item.id));
   const unseen = readList(key).filter((raw) => !(isRecord(raw) && typeof raw.id === "string" && incomingIds.has(raw.id)));
@@ -875,26 +989,40 @@ export const localData = {
   saveSessions: (items: WorkSession[]): boolean => writeKey(sessionsKey, JSON.stringify(items)),
   /** Écriture incrémentale sûre : fusionne avec le disque (voir `mergeById`) et renvoie la liste réellement enregistrée. */
   mergeSessions: (items: WorkSession[]): WorkSession[] => {
-    const merged = mergeStored(sessionsKey, items, normalizeSession);
-    writeKey(sessionsKey, JSON.stringify(merged));
-    return merged;
+    return mergeAndStore(sessionsKey, items, normalizeSession);
   },
   exercises: (): Exercise[] => (typeof window === "undefined" ? [] : readList(exercisesKey).map(normalizeExercise)),
   /** REMPLACE intégralement la banque stockée — amorçage/réconciliation/restauration, voir `mergeExercises` pour une écriture incrémentale. */
   saveExercises: (items: Exercise[]): boolean => writeKey(exercisesKey, JSON.stringify(items)),
   /** Écriture incrémentale sûre : fusionne avec le disque (voir `mergeById`) et renvoie la liste réellement enregistrée. */
   mergeExercises: (items: Exercise[]): Exercise[] => {
-    const merged = mergeStored(exercisesKey, items, normalizeExercise);
-    writeKey(exercisesKey, JSON.stringify(merged));
-    return merged;
+    return mergeAndStore(exercisesKey, items, normalizeExercise);
   },
   chapters: (): Chapter[] =>
     typeof window === "undefined" ? [] : readList(chaptersKey).map(normalizeChapter).filter((item): item is Chapter => item !== null),
   saveChapters: (items: Chapter[]): boolean => writeKey(chaptersKey, JSON.stringify(items)),
   preferences: (): Preferences => (typeof window === "undefined" ? defaults : normalizePreferences(readRecord(preferencesKey))),
   savePreferences: (preferences: Preferences): boolean => writeKey(preferencesKey, JSON.stringify(preferences)),
-  /** Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`), ou `null` si aucune n'a jamais été faite. */
-  lastBackupAt: (): string | null => (typeof window === "undefined" ? null : localStorage.getItem(lastBackupKey)),
+  /**
+   * Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`),
+   * ou `null` si aucune n'a jamais été faite.
+   *
+   * BLINDÉ comme `readList`/`readRecord`, et pas par excès de prudence :
+   * `localStorage.getItem` LÈVE quand le stockage est bloqué (Safari « bloquer
+   * tous les cookies », certains modes privés, iframe tierce). C'était le
+   * seul accès du module qui ne l'était pas — et il est appelé depuis
+   * `readAll()`, donc `refresh()` levait, `setData` n'était jamais appelé et
+   * `ready` ne passait JAMAIS à `true` : toutes les pages restaient figées
+   * sur leurs squelettes, sans un message.
+   */
+  lastBackupAt: (): string | null => {
+    if (typeof window === "undefined") return null;
+    try {
+      return localStorage.getItem(lastBackupKey);
+    } catch {
+      return null;
+    }
+  },
   saveLastBackupAt: (iso: string): boolean => writeKey(lastBackupKey, iso),
   workItems: (): WorkItem[] => (typeof window === "undefined" ? [] : readList(workItemsKey).map(normalizeWorkItem)),
   /** REMPLACE intégralement les travaux stockés — restauration d'une sauvegarde uniquement, voir `mergeWorkItems`. */
@@ -908,9 +1036,7 @@ export const localData = {
    * casserait l'invariant sur lequel `mergeStored` repose.
    */
   mergeWorkItems: (items: WorkItem[]): WorkItem[] => {
-    const merged = mergeStored(workItemsKey, items, normalizeWorkItem);
-    writeKey(workItemsKey, JSON.stringify(merged));
-    return merged;
+    return mergeAndStore(workItemsKey, items, normalizeWorkItem);
   },
   grades: (): Grade[] =>
     typeof window === "undefined" ? [] : readList(gradesKey).map(normalizeGrade).filter((item): item is Grade => item !== null),
@@ -957,6 +1083,74 @@ export function daysSinceBackup(lastBackupAt: string | null, now: Date = new Dat
  * dupliquer le mécanisme de sauvegarde. Enregistre l'horodatage à chaque
  * export réussi, seule donnée nouvelle introduite par le rappel.
  */
+/**
+ * Résultat d'une restauration — voir `restoreBackup`.
+ *
+ * Existe parce qu'un booléen ne suffit pas : l'élève doit savoir CE QUI est
+ * passé et ce qui ne l'est pas, sinon « échec » est aussi inexploitable que
+ * l'ancien « réussi » inconditionnel.
+ */
+export interface RestoreOutcome {
+  /** Vrai seulement si les HUIT collections ont été écrites. */
+  ok: boolean;
+  /** Collections réellement écrites, dans l'ordre de tentative. */
+  restored: string[];
+  /** La collection sur laquelle on s'est arrêté, `null` si tout est passé. */
+  failedAt: string | null;
+  /** Vrai quand l'échec est survenu AVANT toute écriture : l'appareil est exactement dans son état d'avant. */
+  intact: boolean;
+}
+
+/**
+ * Restaure une sauvegarde, et DIT LA VÉRITÉ sur ce qui a été écrit.
+ *
+ * L'ancienne version (components/data-backup.tsx) enchaînait huit écritures
+ * sans lire un seul des huit booléens de `writeKey`, puis affichait
+ * « Sauvegarde restaurée » quoi qu'il arrive. Sur un stockage saturé — le cas
+ * NORMAL ici, puisqu'on réécrit une banque de ~2,8 Mo par-dessus une autre —
+ * l'élève se retrouvait avec un mélange de deux appareils : des séances
+ * important d'un fichier, des exercices restés ceux de la machine, ses notes
+ * effacées et jamais remplacées, et la certitude que tout était en place.
+ *
+ * DEUX RÈGLES, et elles suffisent :
+ *
+ *  1. LA BANQUE D'ABORD. C'est de loin la plus grosse écriture, donc celle
+ *     qui échoue en premier ; la tenter en tête garantit que le refus le plus
+ *     probable survient quand RIEN n'a encore été touché (`intact: true`).
+ *  2. ON S'ARRÊTE AU PREMIER REFUS. Poursuivre ne « sauve » rien : cela
+ *     fabrique un état mi-fichier mi-appareil, avec des `exercise_id`
+ *     orphelins. Mieux vaut un état cohérent d'avant qu'un état incohérent
+ *     d'après.
+ *
+ * Les préférences passent en dernier : ce sont les plus petites, et les
+ * seules dont la perte ne coûte que quelques clics.
+ *
+ * Fonction impure par nature (elle écrit), mais sans aucune dépendance React
+ * ni DOM — c'est ce qui la rend testable, ce que le gestionnaire de clic
+ * qu'elle remplace n'était pas.
+ */
+export function restoreBackup(payload: BackupPayload): RestoreOutcome {
+  const steps: Array<[string, () => boolean]> = [
+    ["les exercices", () => localData.saveExercises(payload.exercises)],
+    // Juste après la banque : les exercices y renvoient par `chapter_id`, les
+    // séparer d'une écriture ratée laisserait des chapitres fantômes.
+    ["les chapitres", () => localData.saveChapters(payload.chapters ?? [])],
+    ["les séances", () => localData.saveSessions(payload.sessions)],
+    ["les échéances", () => localData.saveWorkItems(payload.workItems ?? [])],
+    ["les notes", () => localData.saveGrades(payload.grades ?? [])],
+    ["le planning", () => localData.saveDayPlans(payload.dayPlans ?? [])],
+    ["les bilans de semaine", () => localData.saveWeekSnapshots(payload.weekSnapshots ?? [])],
+    ["les réglages", () => localData.savePreferences(normalizePreferences(payload.preferences))],
+  ];
+
+  const restored: string[] = [];
+  for (const [label, write] of steps) {
+    if (!write()) return { ok: false, restored, failedAt: label, intact: restored.length === 0 };
+    restored.push(label);
+  }
+  return { ok: true, restored, failedAt: null, intact: false };
+}
+
 export function exportBackup(): void {
   const data = JSON.stringify(
     {
@@ -1076,5 +1270,22 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   // Idem : absent d'une sauvegarde exportée avant l'ajout des chapitres à
   // l'export ; chaque entrée est revalidée par `normalizeChapter` à la lecture.
   if (data.chapters !== undefined && !Array.isArray(data.chapters)) return false;
+  /*
+   * Les trois collections des chantiers Planning et Analytics ÉCHAPPAIENT à
+   * cette validation — oubli, pas décision. Un fichier dont `workItems` est
+   * une chaîne (sauvegarde tronquée, fusion de deux fichiers, édition
+   * manuelle) était donc accepté, écrit tel quel, puis relu `[]` par
+   * `readList` : toutes les échéances de l'appareil effacées et remplacées
+   * par rien, sans un mot. C'est précisément la donnée que `exportBackup`
+   * décrit comme la moins reconstituable du fichier.
+   *
+   * Même règle que ci-dessus : `undefined` reste valide (sauvegarde
+   * antérieure à ces chantiers), la forme fine de chaque entrée reste du
+   * ressort de `normalizeWorkItem`/`normalizeGrade`/`normalizeDayPlanRecord`
+   * à la lecture.
+   */
+  if (data.workItems !== undefined && !Array.isArray(data.workItems)) return false;
+  if (data.grades !== undefined && !Array.isArray(data.grades)) return false;
+  if (data.dayPlans !== undefined && !Array.isArray(data.dayPlans)) return false;
   return true;
 }

@@ -113,7 +113,8 @@ export function computeGradeTrend(grades: Grade[], subject: Subject | null = nul
     // Bruit absolu d'un demi-point sur 20 : en relatif, un écart de 5 %
     // vaudrait 0,5 point à 10/20 mais 0,9 à 18/20, alors qu'un demi-point
     // est un demi-point partout.
-    trend: computeTrend(scoped.map(normalizedScore), { absoluteNoise: 0.5 }),
+    trend: // Un 0/20 est un RÉSULTAT, pas une absence de note — voir `zeroIsMeasurement`.
+    computeTrend(scoped.map(normalizedScore), { absoluteNoise: 0.5, zeroIsMeasurement: true }),
     stats: computeGradeStats(scoped),
   };
 }

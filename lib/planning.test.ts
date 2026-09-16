@@ -338,3 +338,68 @@ describe("un travail en retard se rattrape, il ne se lisse pas", () => {
     expect(daysFor(plan, "w-1").length).toBeGreaterThan(2);
   });
 });
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LOT ② — LOIN ≠ IMPOSSIBLE
+   Le planning ne voit que PLANNING_HORIZON_DAYS jours. Il ne doit donc rien
+   affirmer sur ce qui se passe au-delà.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+describe("buildWeeklyPlan — une échéance au-delà de l'horizon n'est jamais déclarée infaisable", () => {
+  /** 40 jours : bien au-delà des 14 de l'horizon, largement casable en capacité cumulée. */
+  const lointain = item({ id: "w-loin", title: "Concours blanc", estimatedMinutes: 2000, dueDate: "2026-10-24" });
+
+  it("ne ressort pas dans `unplaceable`, même si 14 jours n'y suffisent pas", () => {
+    const plan = buildWeeklyPlan([lointain], [], prefs(), NOW);
+    expect(plan.unplaceable).toEqual([]);
+  });
+
+  it("le planning et la faisabilité ne se contredisent plus sur le même travail", () => {
+    const plan = buildWeeklyPlan([lointain], [], prefs(), NOW);
+    const priority = plan.priorities.find((entry) => entry.item.id === "w-loin");
+    expect(priority?.feasibility.level).toBe("casable");
+    expect(plan.unplaceable.map((entry) => entry.item.id)).not.toContain("w-loin");
+  });
+
+  it("il est tout de même PLANIFIÉ sur l'horizon — ne rien dire n'est pas ne rien faire", () => {
+    const plan = buildWeeklyPlan([lointain], [], prefs(), NOW);
+    const planned = plan.days.reduce((total, day) => total + day.slots.reduce((sum, slot) => sum + slot.minutes, 0), 0);
+    expect(planned).toBeGreaterThan(0);
+  });
+
+  it("reporter un tel travail ne prétend plus casser son échéance", () => {
+    const outcome = postponeWorkItem([lointain], [], prefs(), "w-loin", "demain", NOW);
+    expect(outcome?.breaksDeadline).toBe(false);
+  });
+});
+
+describe("buildWeeklyPlan — ce qui tombe DANS l'horizon reste dit, sans adoucissement", () => {
+  it("un travail réellement trop gros pour ses trois jours ressort toujours avec son chiffre", () => {
+    // 600 min à faire pour jeudi, avec 60 min/jour : le constat est vrai, il doit rester.
+    const plan = buildWeeklyPlan([item({ estimatedMinutes: 600, dueDate: "2026-09-17" })], [], prefs(), NOW);
+    expect(plan.unplaceable).toHaveLength(1);
+    expect(plan.unplaceable[0].missingMinutes).toBeGreaterThan(0);
+  });
+
+  it("une échéance pile au DERNIER jour de l'horizon est encore dans le champ de vision", () => {
+    // Horizon = aujourd'hui + 13 jours → 2026-09-27 inclus.
+    const dernier = item({ estimatedMinutes: 5000, dueDate: "2026-09-27" });
+    expect(buildWeeklyPlan([dernier], [], prefs(), NOW).unplaceable).toHaveLength(1);
+  });
+
+  it("le lendemain de ce dernier jour, le planning se tait", () => {
+    const horsChamp = item({ estimatedMinutes: 5000, dueDate: "2026-09-28" });
+    expect(buildWeeklyPlan([horsChamp], [], prefs(), NOW).unplaceable).toEqual([]);
+  });
+
+  it("un travail EN RETARD reste traité comme avant (l'horizon ne le concerne pas)", () => {
+    const enRetard = item({ estimatedMinutes: 120, dueDate: "2026-09-10" });
+    const plan = buildWeeklyPlan([enRetard], [], prefs(), NOW);
+    expect(plan.unplaceable).toEqual([]);
+    expect(plan.days[0].slots.length).toBeGreaterThan(0);
+  });
+
+  it(`l'horizon vaut bien ${PLANNING_HORIZON_DAYS} jours — la garde est adossée à la constante, pas à une date`, () => {
+    expect(buildWeeklyPlan([], [], prefs(), NOW).days).toHaveLength(PLANNING_HORIZON_DAYS);
+  });
+});

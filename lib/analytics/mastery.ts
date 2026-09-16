@@ -85,7 +85,8 @@ export function computeMasteryTrend(
     // paliers entiers (un exercice de plus sur une centaine), et un seuil
     // relatif de 5 % rendrait toute progression réelle « stable » en début
     // d'année, quand le taux est proche de zéro.
-    trend: computeTrend(withCurrent.map((point) => point.rate), { absoluteNoise: 1 }),
+    trend: // 0 % de fiches maîtrisées est une mesure : la matière a été observée, rien n’y est encore acquis.
+    computeTrend(withCurrent.map((point) => point.rate), { absoluteNoise: 1, zeroIsMeasurement: true }),
     currentRate,
   };
 }
