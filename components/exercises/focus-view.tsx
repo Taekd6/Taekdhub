@@ -15,7 +15,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
@@ -24,6 +24,10 @@ import { MasteryPicker } from "@/components/exercises/exercise-badges";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { MathInline, RichMath } from "@/components/rich-math";
 import { ProvenanceBadge } from "@/components/exercises/provenance-badge";
+import { HintLadder } from "@/components/ai/hint-ladder";
+import { buildAIContext } from "@/lib/ai/context";
+import { totalHintsUsed } from "@/lib/ai/ladder";
+import type { Chapter } from "@/lib/storage";
 import { useWorkTimer } from "@/hooks/use-work-timer";
 import { explainReasons } from "@/lib/recommendation";
 import { formatDuration, secondsToWholeMinutes } from "@/lib/utils";
@@ -51,6 +55,8 @@ export function FocusView({
   onPrev,
   onNext,
   workItemId = null,
+  exercises = [],
+  chapters = [],
 }: {
   item: Exercise;
   update: (id: string, patch: Partial<Exercise>) => void;
@@ -81,6 +87,15 @@ export function FocusView({
   /** Position dans la séance en cours (« 2 / 5 ») — absent hors séance, l'exercice étant alors ouvert seul depuis la banque. */
   progress?: { index: number; total: number };
   /**
+   * Banque et catalogue de chapitres — servent UNIQUEMENT à construire le
+   * contexte du Copilot IA (lib/ai/context.ts), qui a besoin du libellé du
+   * chapitre et de la maîtrise moyenne de ses fiches voisines. Facultatifs :
+   * sans eux, l'échelle d'indices se construit avec ce qu'elle a, et le
+   * lecteur fonctionne exactement comme avant.
+   */
+  exercises?: Exercise[];
+  chapters?: Chapter[];
+  /**
    * Exercice précédent/suivant de la liste d'où l'on vient (banque filtrée,
    * chapitre…). Absents en séance : là, l'ordre est décidé par le plan et on
    * n'a pas à pouvoir le contourner — c'est `SessionRunner` qui avance, une
@@ -95,6 +110,16 @@ export function FocusView({
 }) {
   const [correctionVisible, setCorrectionVisible] = useState(false);
   const [hintCount, setHintCount] = useState(0);
+  /*
+   * Aides IA reçues sur CETTE tentative — comptées à part des indices du
+   * professeur, mais additionnées au moment d'enregistrer la séance.
+   *
+   * Ne pas les compter ferait passer pour autonome un élève ayant gravi cinq
+   * paliers, et le moteur de recommandation (`ASSISTED_HINTS_THRESHOLD`,
+   * lib/recommendation.ts) lui proposerait un cran au-dessus sur cette
+   * fausse base. Une aide est une aide — voir lib/ai/ladder.ts#totalHintsUsed.
+   */
+  const [aiHintCount, setAiHintCount] = useState(0);
   const { seconds, running, start, toggle, stop } = useWorkTimer<{ exerciseId: string }>(focusTimerKey(item.id), {
     exerciseId: item.id,
   });
@@ -130,6 +155,17 @@ export function FocusView({
   // attente d'un résultat — voir `endSession`/`commitResult` ci-dessous.
   // `null` : soit le focus est toujours en cours, soit aucune séance n'a
   // jamais démarré (rien à qualifier).
+  /*
+   * Contexte du Copilot — recalculé seulement quand l'exercice, la banque ou
+   * l'historique changent, jamais à chaque rendu : c'est une sérialisation de
+   * plusieurs kilo-octets, et elle n'a aucune raison de repartir parce qu'un
+   * chronomètre a avancé d'une seconde.
+   */
+  const aiContext = useMemo(
+    () => buildAIContext(item, exercises, sessions, chapters),
+    [item, exercises, sessions, chapters]
+  );
+
   const [draftSession, setDraftSession] = useState<WorkSession | null>(null);
 
   /*
@@ -180,7 +216,7 @@ export function FocusView({
       // moment où la séance se ferme, donc reflète bien CETTE tentative.
       // 0 est une information à part entière (il s'en est sorti seul), pas
       // une absence de donnée — voir lib/supabase/types.ts#hints_used.
-      hints_used: hintCount,
+      hints_used: totalHintsUsed(hintCount, aiHintCount),
       work_item_id: workItemId,
     });
     // `hintCount` DOIT figurer ici : sans lui, `endSession` capture la valeur
@@ -189,7 +225,9 @@ export function FocusView({
     // sauvegardée comme autonome. Bug trouvé en test bout-en-bout (3 indices
     // révélés, `hints_used: 0` persisté), invisible au typecheck comme aux
     // tests unitaires : seul le parcours réel le montrait.
-  }, [stop, item, onClose, hintCount, workItemId]);
+    // Même raison pour `aiHintCount` que pour `hintCount` : sans lui dans les
+    // dépendances, on enregistrerait la valeur du premier rendu.
+  }, [stop, item, onClose, hintCount, aiHintCount, workItemId]);
 
   // Sauvegarde réellement la séance — avec le résultat choisi, ou `null` si
   // l'utilisateur a préféré passer cette étape (Échap depuis l'écran de
@@ -455,6 +493,12 @@ export function FocusView({
               <RichMath text={item.correction} className="t-read-quiet text-muted" />
             </section>
           )}
+
+          {/* LE COACH, après l'énoncé et les indices du professeur, avant la
+              qualification de la fiche. Il ne s'affiche que si un Copilot est
+              réellement configuré côté serveur ; sinon le composant ne rend
+              rien du tout et l'écran est exactement celui d'avant. */}
+          <HintLadder context={aiContext} onHintUsed={setAiHintCount} />
 
           {/* ── OÙ J'EN SUIS ─────────────────────────────────────
               Après le contenu, jamais avant : on qualifie un exercice une

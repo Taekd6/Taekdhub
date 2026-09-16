@@ -101,3 +101,77 @@ pnpm dev
 ```
 
 Ensuite, lancer `claude` dans le dossier du projet. Aucune donnée personnelle ou sauvegarde utilisateur n'est versionnée — le contexte métier (exercices, séances, préférences) vit uniquement dans le `localStorage` du navigateur de chaque utilisateur.
+
+## Copilot IA (facultatif)
+
+TaekdHub fonctionne **entièrement sans IA**. Le coach de raisonnement est une
+couche additionnelle : sans clé configurée, il ne s'affiche pas, et le reste de
+l'application est inchangé — banque, séances, planning, progression, sauvegarde.
+
+### Ce que fait le Copilot
+
+Une **échelle d'indices à six paliers** dans le lecteur d'exercice, du plus
+discret au plus explicite : reformuler la question → identifier la notion → la
+propriété et son hypothèse → la première étape → résolution guidée → solution
+complète. Chaque palier est une question avant d'être une aide, et le palier
+demandé est un plafond que le modèle ne peut pas dépasser (contraint par le
+prompt, par le schéma de sortie, et refusé à la validation s'il le fait quand
+même).
+
+Le modèle s'appuie sur **l'énoncé, les indices du professeur et le corrigé de
+la fiche** plutôt que sur sa connaissance générale. Sans corrigé, il doit le
+dire au lieu d'en inventer un.
+
+Les indices IA sont comptés dans `hints_used` de la séance, au même titre que
+les indices du professeur : ne pas les compter ferait passer pour autonome un
+élève ayant gravi cinq paliers, et fausserait le moteur de recommandation.
+
+### Configuration en local
+
+```bash
+cp .env.example .env.local
+# puis, dans .env.local :
+TAEKDHUB_AI_API_KEY=sk-ant-...
+```
+
+Puis `pnpm dev` (ou `pnpm build && pnpm start`). Vérification rapide :
+
+```bash
+curl -s http://localhost:3000/api/ai     # {"configured":true}
+```
+
+`{"configured":false}` signifie que la variable n'est pas lue — vérifie qu'elle
+est bien dans `.env.local` (et non `.env.example`) et que le serveur a été
+relancé après l'avoir ajoutée.
+
+### Configuration sur Vercel
+
+1. **Settings → Environment Variables** → ajouter `TAEKDHUB_AI_API_KEY`
+   (et, si besoin, `TAEKDHUB_AI_MODEL`). Cocher les environnements voulus.
+   Ne **jamais** préfixer par `NEXT_PUBLIC_`.
+2. Redéployer : les variables ne sont lues qu'au démarrage d'une instance.
+
+La route `/api/ai` est un *route handler* Node.js, donc déployée
+automatiquement en fonction serverless par Vercel — aucune configuration
+supplémentaire.
+
+### Conséquence sur l'hébergement statique
+
+Avant le Copilot, les 23 pages de TaekdHub étaient intégralement statiques.
+Elles le restent : le build ne marque en dynamique (`ƒ`) que `/api/ai`. Une
+clé d'API ne peut pas vivre dans le navigateur, donc un point d'exécution
+serveur est nécessaire — c'est le seul, et il n'existe que si quelqu'un
+l'appelle.
+
+Sur un hébergeur **purement statique** (GitHub Pages, `output: "export"`), la
+route n'existe pas : la sonde de disponibilité échoue, le coach ne s'affiche
+pas, et l'application reste complète. C'est le comportement voulu.
+
+### Coût
+
+Le prompt système est stable et marqué cacheable ; seul le contexte de
+l'exercice varie. Le contexte est borné (24 000 caractères au maximum, refusé
+au-delà côté serveur), la génération plafonnée à 1 200 jetons, et l'effort
+réglé au minimum — produire un indice à partir d'un corrigé fourni ne demande
+pas de longue délibération. Aucun appel n'est déclenché par un rendu React :
+seul un clic sur un palier appelle le modèle.

@@ -54,7 +54,7 @@ type SizingMode = "time" | "count";
  * `/session` sans paramètre garde exactement le comportement d'avant.
  */
 export function SessionRunner() {
-  const { exercises, sessions, preferences, saveSessions, saveExercises, ready } = usePrepahubData();
+  const { exercises, sessions, chapters, preferences, saveSessions, saveExercises, ready } = usePrepahubData();
   const [phase, setPhase] = useState<Phase>("loading");
   const [recommendations, setRecommendations] = useState<ExerciseRecommendation[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -276,6 +276,8 @@ export function SessionRunner() {
         update={update}
         sessions={sessions}
         saveSessions={saveSessions}
+        exercises={exercises}
+        chapters={chapters}
         workItemId={planWorkItemId}
         onClose={handleExerciseWorked}
         reasons={current.reasons}
