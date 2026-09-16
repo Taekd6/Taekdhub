@@ -75,14 +75,18 @@ export function ContestHub() {
                 <SubjectAvatar subject={line.subject} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="t-subhead truncate">{line.subject}</p>
+                  {/* « NON MESURÉ » plutôt que « 0 % acquis » : sans fiche
+                      rattachée, l'avancement n'existe pas, il n'est pas nul. */}
                   <p className="t-meta mt-0.5">
-                    {line.completionRate} % acquis · maîtrise moyenne {line.averageMastery} %
+                    {line.measured
+                      ? `${line.completionRate} % acquis · maîtrise moyenne ${line.averageMastery} %`
+                      : "Avancement non mesuré — aucune fiche rattachée"}
                     {line.fragileChapters > 0
                       ? ` · ${line.fragileChapters} chapitre${line.fragileChapters > 1 ? "s" : ""} à consolider`
                       : ""}
                   </p>
                 </div>
-                <Meter value={line.completionRate} className="w-16 shrink-0 max-sm:hidden" tone="neutral" />
+                {line.measured && <Meter value={line.completionRate} className="w-16 shrink-0 max-sm:hidden" tone="neutral" />}
                 <span
                   className={cn(
                     "t-figure-sm tabular shrink-0 whitespace-nowrap",
@@ -188,7 +192,7 @@ export function ContestHub() {
             `?provenance=` n'existe pas côté banque, et inventer un filtre qui
             n'est pas implémenté produirait un lien qui ne filtre rien tout en
             prétendant le contraire. */}
-        <Link href="/exercises" className="t-meta mt-4 inline-flex items-center gap-1.5 text-accent hover:underline">
+        <Link href="/exercises" className="t-meta mt-4 inline-flex min-h-6 items-center gap-1.5 text-accent hover:underline max-lg:min-h-11">
           Ouvrir la banque d&apos;exercices <ArrowRight size={14} aria-hidden />
         </Link>
       </Section>

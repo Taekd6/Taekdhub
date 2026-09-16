@@ -1,4 +1,5 @@
 import { resultCounts, type ResultCounts } from "@/lib/history";
+import { assessChapter } from "@/lib/analytics/mastery";
 import { progressByChapter, type ChapterProgress } from "@/lib/progress";
 import { ASSISTED_HINTS_THRESHOLD, computeExerciseBankStats, explainReasons, recommendExercises, type ExerciseRecommendation } from "@/lib/recommendation";
 import type { Chapter } from "@/lib/storage";
@@ -269,59 +270,22 @@ export function computeChaptersToConsolidate(
       const chapterExercises = active.filter((exercise) => exercise.chapter_id === entry.chapter.id);
       if (!hasChapterEngagement(chapterExercises)) return null;
 
-      const reasons: string[] = [];
-      if (entry.averageMastery < 50) reasons.push("Maîtrise faible");
-
-      const exerciseIds = new Set(chapterExercises.map((exercise) => exercise.id));
-      const recentAttempts = sessions
-        .filter((session) => session.exercise_id && exerciseIds.has(session.exercise_id) && session.result)
-        .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
-        .slice(0, CHAPTER_RECENT_ATTEMPTS_WINDOW);
-      const failureCount = recentAttempts.filter((attempt) => attempt.result === "échoué").length;
-      if (failureCount >= 2) reasons.push(`${failureCount} échecs récents`);
-      else if (recentAttempts[0]?.result === "échoué") reasons.push("Échec récent");
-
-      // Recours répété aux indices SUR L'ENSEMBLE du chapitre : un élève qui
-      // ne s'en sort qu'aidé, exercice après exercice, révèle une fragilité
-      // que ni `result` (il a « réussi ») ni `mastery` (qu'il a pu monter
-      // lui-même) ne montrent. C'est le seul endroit où ce signal se lit à
-      // l'échelle d'un chapitre — au niveau d'un exercice isolé, il est trop
-      // ponctuel pour conclure.
-      const assistedCount = recentAttempts.filter(
-        (attempt) => attempt.result === "réussi" && attempt.hints_used !== null && attempt.hints_used >= ASSISTED_HINTS_THRESHOLD
-      ).length;
-      if (assistedCount >= 2) reasons.push(`${assistedCount} réussites avec indices`);
-
-      // Même logique, pour le résultat le plus fréquent de tous : plusieurs
-      // exercices rendus à moitié sur un même chapitre disent quelque chose
-      // qu'aucun autre champ ne dit. Sans cette raison, un chapitre où rien
-      // n'aboutit jamais complètement mais où l'élève n'échoue pas
-      // franchement — et dont la maîtrise déclarée reste au-dessus de 50 —
-      // n'apparaissait tout simplement pas dans "À consolider".
-      const partialCount = recentAttempts.filter((attempt) => attempt.result === "partiel").length;
-      if (partialCount >= 2) reasons.push(`${partialCount} exercices à moitié traités`);
-
-      const lastWorkedTimestamps = chapterExercises
-        .map((exercise) => exercise.last_worked_at)
-        .filter((value): value is string => value !== null)
-        .map((value) => new Date(value).getTime());
-      if (lastWorkedTimestamps.length > 0) {
-        const days = Math.floor((now.getTime() - Math.max(...lastWorkedTimestamps)) / 86400000);
-        if (days >= CHAPTER_STALE_DAYS) reasons.push(`Non travaillé depuis ${days} j`);
-      }
+      // LE VERDICT VIENT DE `assessChapter` (lib/analytics/mastery.ts), et de
+      // lui seul. Ce bloc en tenait une seconde version, avec un seuil de
+      // maîtrise différent (50 au lieu de 70) : un chapitre à 75 % avec deux
+      // échecs récents s'affichait « à consolider » ici et « acquis » dans le
+      // hub, le même jour. Reproduit, puis fermé — voir lib/hub.test.ts.
+      const assessment = assessChapter(chapterExercises, sessions, entry.averageMastery, now);
+      const reasons = assessment.reasons;
 
       const candidate = chapterExercises.find((exercise) => exercise.status !== "maîtrisé") ?? chapterExercises[0];
-      const oldestAttempt = recentAttempts[recentAttempts.length - 1];
 
       return {
         chapter: entry.chapter,
         averageMastery: entry.averageMastery,
         reasons,
         href: candidate ? `/exercises?focus=${candidate.id}` : "/exercises",
-        evidence: {
-          attempts: recentAttempts.length,
-          sinceDays: oldestAttempt ? Math.floor((now.getTime() - new Date(oldestAttempt.started_at).getTime()) / 86400000) : null,
-        },
+        evidence: { attempts: assessment.attempts, sinceDays: assessment.sinceDays },
       };
     })
     .filter((entry): entry is ChapterConsolidation => entry !== null && entry.reasons.length > 0)

@@ -12,7 +12,7 @@ import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { buildSubjectHub, hubSubjects, HUB_RECENT_DAYS, HUB_WINDOW_DAYS } from "@/lib/hub";
 import { describeConfidence } from "@/lib/analytics/trend";
-import { formatAverage } from "@/lib/grades";
+import { formatAverage, GRADE_KIND_META } from "@/lib/grades";
 import { subjects as allSubjects, subjectMeta } from "@/lib/study";
 import { formatSpan } from "@/lib/utils";
 import { cn } from "@/lib/cn";
@@ -59,9 +59,10 @@ export function SubjectHub() {
     );
   }
 
-  const { progress, workload, chapters: board, deadlines, grades: gradeStats, gradeTrend, nextChapter } = model;
+  const { progress, workload, chapters: board, deadlines, grades: gradeStats, gradesByKind, gradeTrend, nextChapter, measured } = model;
   const rhythm = describeConfidence(workload.trend);
   const chapterCount = board.fragile.length + board.solid.length + board.untouched.length;
+
 
   return (
     <div className="space-y-9">
@@ -95,8 +96,13 @@ export function SubjectHub() {
         description="Ce qui est acquis dans cette matière, et le temps que tu y as réellement mis."
       >
         <StatRow>
-          <Stat label="Maîtrise moyenne" value={`${progress.averageMastery} %`} size="sm" />
-          <Stat label="Progression" value={`${progress.completionRate} %`} size="sm" />
+          {/* « NON MESURÉ », pas « 0 % ». Sans aucune fiche rattachée, un zéro
+              se lit comme « tu n'as rien acquis » alors que la vérité est
+              « rien n'est mesuré ici ». Le zéro est réservé aux mesures
+              réelles — même règle que `sharePercent`, `average` et `Trend`
+              partout ailleurs. */}
+          <Stat label="Maîtrise moyenne" value={measured ? `${progress.averageMastery} %` : "non mesuré"} size="sm" />
+          <Stat label="Progression" value={measured ? `${progress.completionRate} %` : "non mesuré"} size="sm" />
           <Stat label={`Ces ${HUB_RECENT_DAYS} jours`} value={formatSpan(workload.recentMinutes * 60)} size="sm" />
           <Stat
             label={`Sur ${HUB_WINDOW_DAYS} jours`}
@@ -105,7 +111,14 @@ export function SubjectHub() {
             size="sm"
           />
         </StatRow>
-        <Meter value={progress.completionRate} className="mt-5" tone="neutral" />
+        {measured && <Meter value={progress.completionRate} className="mt-5" tone="neutral" />}
+        {!measured && (
+          <p className="t-meta mt-4">
+            {progress.total === 0
+              ? `Aucune fiche n'est rattachée à ${active} : l'avancement ne peut pas être mesuré, seul le temps l'est.`
+              : `Rien n'a encore été travaillé en ${active} : l'avancement se mesurera dès la première fiche ouverte.`}
+          </p>
+        )}
         {workload.trend.direction !== "insuffisant" ? (
           <p className="t-meta mt-3">
             Sur les semaines mesurées, ton volume en {active} est{" "}
@@ -172,18 +185,23 @@ export function SubjectHub() {
 
       {/* ── RÉSULTATS — seulement s'il y en a ────────────────────── */}
       {gradeStats.count > 0 && (
-        <Section label="Les résultats" title="Notes" description="Ce qu'un professeur a évalué — la seule mesure qui ne vienne pas de TaekdHub.">
+        <Section
+          label="Les résultats"
+          title="Notes"
+          description="Ce qu'un professeur a évalué — la seule mesure qui ne vienne pas de TaekdHub. Une moyenne par nature d'épreuve : un DM et un DS ne se passent pas dans les mêmes conditions."
+        >
+          {/* UNE MOYENNE PAR NATURE. Agréger un DM fait à la maison et un DS
+              en trois heures produit un nombre que rien ne porte. */}
           <StatRow>
-            <Stat label="Moyenne" value={gradeStats.average !== null ? `${formatAverage(gradeStats.average)}/20` : "—"} size="sm" />
-            <Stat label="Notes enregistrées" value={gradeStats.count} size="sm" />
-            {gradeStats.latest && (
+            {gradesByKind.map(({ kind, stats }) => (
               <Stat
-                label="Dernière"
-                value={`${formatAverage((gradeStats.latest.score / gradeStats.latest.maxScore) * 20)}/20`}
-                detail={gradeStats.latest.title || undefined}
+                key={kind}
+                label={GRADE_KIND_META[kind].label}
+                value={stats.average !== null ? `${formatAverage(stats.average)}/20` : "—"}
+                detail={`${stats.count} note${stats.count > 1 ? "s" : ""}`}
                 size="sm"
               />
-            )}
+            ))}
           </StatRow>
           {gradeTrend.trend.direction !== "insuffisant" && (
             <p className="t-meta mt-3">
@@ -198,11 +216,28 @@ export function SubjectHub() {
       {/* ── LA SORTIE ───────────────────────────────────────────── */}
       <Section label="Et maintenant" title="À travailler ensuite">
         {nextChapter ? (
-          <p className="t-body">
-            <span className="font-medium text-ink">{nextChapter.chapter.label}</span> est le chapitre commencé le plus
-            faible de cette matière — {nextChapter.rate} % de maîtrise
-            {nextChapter.untouched > 0 ? `, et ${nextChapter.untouched} de ses fiches n'ont jamais été ouvertes` : ""}.
-          </p>
+          /* MATIÈRE → CHAPITRE → RAISON, et jamais une fiche précise. Les
+             raisons sont celles du verdict partagé avec l'accueil
+             (`assessChapter`) : les deux écrans disent donc la même chose du
+             même chapitre, avec les mêmes mots. */
+          <div>
+            <p className="t-body">
+              <span className="text-muted">{active}</span> —{" "}
+              <span className="font-medium text-ink">{nextChapter.chapter.label}</span>
+            </p>
+            <ul className="mt-2 space-y-1">
+              {nextChapter.assessment.reasons.map((reason) => (
+                <li key={reason} className="t-meta">
+                  {reason}
+                </li>
+              ))}
+            </ul>
+            <p className="t-meta mt-2 text-2xs">
+              {nextChapter.assessment.attempts > 0
+                ? `Verdict établi sur ${nextChapter.assessment.attempts} tentative${nextChapter.assessment.attempts > 1 ? "s" : ""} notée${nextChapter.assessment.attempts > 1 ? "s" : ""}${nextChapter.assessment.sinceDays !== null ? `, depuis ${nextChapter.assessment.sinceDays} j` : ""}.`
+                : "Aucune tentative notée sur ce chapitre — le verdict repose sur la maîtrise déclarée."}
+            </p>
+          </div>
         ) : board.untouched.length > 0 ? (
           <p className="t-body">
             Rien de fragile parmi ce que tu as commencé. Il reste{" "}
@@ -215,7 +250,7 @@ export function SubjectHub() {
         {/* LE SEUL LIEN VERS LA BANQUE. On suit ici, on travaille là-bas. */}
         <Link
           href={`/exercises?subject=${encodeURIComponent(active)}`}
-          className="t-meta mt-4 inline-flex items-center gap-1.5 text-accent hover:underline"
+          className="t-meta mt-4 inline-flex min-h-6 items-center gap-1.5 text-accent hover:underline max-lg:min-h-11"
         >
           Ouvrir la banque en {active} <ArrowRight size={14} aria-hidden />
         </Link>
@@ -225,6 +260,9 @@ export function SubjectHub() {
 }
 
 /** Un groupe de chapitres — le taux et le compte, jamais la liste des fiches. */
+/** Au-delà, une liste de chapitres cesse d'être un repère et devient un mur — on replie le reste derrière un compte. */
+const CHAPTERS_SHOWN = 6;
+
 function ChapterGroup({
   title,
   rows,
@@ -236,6 +274,10 @@ function ChapterGroup({
   empty: string;
   muted?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? rows : rows.slice(0, CHAPTERS_SHOWN);
+  const hidden = rows.length - shown.length;
+
   return (
     <div>
       <p className="t-label">{title}</p>
@@ -243,7 +285,7 @@ function ChapterGroup({
         <p className="t-meta mt-1.5 text-2xs">{empty}</p>
       ) : (
         <ul className="mt-2 divide-y divide-line border-y border-line">
-          {rows.map((row) => (
+          {shown.map((row) => (
             <li key={row.chapter.id} className="flex items-center gap-3 py-2.5">
               <span className={cn("min-w-0 flex-1 truncate text-sm", muted ? "text-muted" : "text-ink")}>
                 {row.chapter.label}
@@ -253,10 +295,24 @@ function ChapterGroup({
                 </span>
               </span>
               {!muted && <Meter value={row.rate} className="w-16 shrink-0 max-sm:hidden" tone="neutral" />}
-              <span className="tabular w-12 shrink-0 whitespace-nowrap text-right text-sm text-ink">{row.rate} %</span>
+              {/* « — » et non « 0 % » en face d'un chapitre rangé sous « non
+                  mesurés » : le taux y serait une mesure de rien, et la ligne
+                  se contredirait elle-même. */}
+              <span className="tabular w-12 shrink-0 whitespace-nowrap text-right text-sm text-ink">
+                {muted ? "—" : `${row.rate} %`}
+              </span>
             </li>
           ))}
         </ul>
+      )}
+      {hidden > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="t-meta mt-2 inline-flex min-h-6 items-center text-2xs text-accent hover:underline max-lg:min-h-11"
+        >
+          Voir les {hidden} autres
+        </button>
       )}
     </div>
   );

@@ -335,13 +335,13 @@ export function DashboardOverview() {
           )}
 
           <div className="flex flex-col items-start gap-2">
-            <Link href="/echeances" className="t-meta inline-flex items-center gap-1.5 rounded hover:text-ink max-lg:min-h-11">
+            <Link href="/echeances" className="t-meta inline-flex min-h-6 items-center gap-1.5 rounded hover:text-ink max-lg:min-h-11">
               <CalendarClock size={14} /> Mes échéances
             </Link>
-            <Link href="/preparation" className="t-meta inline-flex items-center gap-1.5 rounded hover:text-ink max-lg:min-h-11">
+            <Link href="/preparation" className="t-meta inline-flex min-h-6 items-center gap-1.5 rounded hover:text-ink max-lg:min-h-11">
               <LayoutList size={14} /> Suivi par matière
             </Link>
-            <Link href="/progress" className="t-meta inline-flex items-center gap-1 rounded hover:text-ink max-lg:min-h-11">
+            <Link href="/progress" className="t-meta inline-flex min-h-6 items-center gap-1 rounded hover:text-ink max-lg:min-h-11">
               Ma progression <ChevronRight size={14} />
             </Link>
           </div>

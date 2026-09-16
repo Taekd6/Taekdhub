@@ -1,7 +1,7 @@
 import { progressByChapter, type ChapterProgress } from "@/lib/progress";
 import { computeTrend, type Trend } from "@/lib/analytics/trend";
 import type { Chapter, WeekSnapshot } from "@/lib/storage";
-import type { Exercise, Subject } from "@/lib/supabase/types";
+import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
  * MAÎTRISE — « est-ce que je progresse ? ».
@@ -100,6 +100,8 @@ export interface ChapterMasteryRow {
   mastered: number;
   /** Fiches jamais travaillées : ce qui distingue « je rate » de « je n'ai pas commencé ». */
   untouched: number;
+  /** Le verdict partagé avec l'accueil, avec ses raisons — voir `assessChapter`. */
+  assessment: ChapterAssessment;
 }
 
 export interface ChapterMasteryBoard {
@@ -114,6 +116,92 @@ export interface ChapterMasteryBoard {
 /** Au-dessus de ce taux, un chapitre est tenu pour acquis. */
 export const CHAPTER_SOLID_RATE = 70;
 
+/** Fenêtre de tentatives examinées à l'échelle d'un chapitre — plus large que pour un exercice isolé, puisqu'elle se répartit sur plusieurs fiches. */
+export const CHAPTER_RECENT_ATTEMPTS = 5;
+/** Au-delà, un chapitre encore incomplet et non retravaillé mérite d'être signalé. */
+export const CHAPTER_STALE_DAYS = 7;
+/** Au-delà de ce nombre d'indices, une réussite cesse d'être une preuve d'autonomie — même seuil que le moteur de recommandation. */
+const ASSISTED_HINTS = 2;
+
+export interface ChapterAssessment {
+  /** Pourquoi ce chapitre mérite de l'attention — vide quand il n'y a rien à dire. */
+  reasons: string[];
+  /** `true` dès qu'au moins une raison existe. */
+  fragile: boolean;
+  /** Tentatives notées examinées, pour que le verdict soit contestable. */
+  attempts: number;
+  /** Ancienneté de la plus récente tentative examinée, en jours — `null` si aucune. */
+  sinceDays: number | null;
+}
+
+/**
+ * LE VERDICT SUR UN CHAPITRE — une seule définition, pour toute l'application.
+ *
+ * Il y en avait DEUX, et elles se contredisaient à l'écran :
+ *
+ *   — l'accueil signalait « à consolider » sur `averageMastery < 50`, les
+ *     échecs récents, les réussites arrachées aux indices et l'ancienneté ;
+ *   — les hubs rangeaient en « acquis » tout chapitre au-dessus de 70 %, sans
+ *     rien regarder d'autre.
+ *
+ * Un chapitre à 75 % avec deux échecs récents était donc « à consolider » sur
+ * l'accueil ET « acquis » dans le hub, le même jour. Reproduit, puis fermé
+ * ici : les deux écrans lisent désormais cette fonction.
+ *
+ * Le seuil retenu est 70 % (`CHAPTER_SOLID_RATE`), le plus exigeant des deux —
+ * on ne relâche pas une exigence pour faire converger deux calculs.
+ *
+ * Fonction pure.
+ */
+export function assessChapter(
+  chapterExercises: Exercise[],
+  sessions: WorkSession[],
+  averageMastery: number,
+  now: Date = new Date()
+): ChapterAssessment {
+  const reasons: string[] = [];
+  if (averageMastery < CHAPTER_SOLID_RATE) reasons.push("Maîtrise encore faible");
+
+  const ids = new Set(chapterExercises.map((exercise) => exercise.id));
+  const recent = sessions
+    .filter((session) => session.exercise_id && ids.has(session.exercise_id) && session.result)
+    .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
+    .slice(0, CHAPTER_RECENT_ATTEMPTS);
+
+  const failures = recent.filter((attempt) => attempt.result === "échoué").length;
+  if (failures >= 2) reasons.push(`${failures} échecs récents`);
+  else if (recent[0]?.result === "échoué") reasons.push("Échec récent");
+
+  // Un élève qui ne s'en sort qu'aidé, exercice après exercice, révèle une
+  // fragilité que ni `result` (il a « réussi ») ni `mastery` (qu'il a pu
+  // monter lui-même) ne montrent.
+  const assisted = recent.filter(
+    (attempt) => attempt.result === "réussi" && attempt.hints_used !== null && attempt.hints_used >= ASSISTED_HINTS
+  ).length;
+  if (assisted >= 2) reasons.push(`${assisted} réussites avec indices`);
+
+  const partial = recent.filter((attempt) => attempt.result === "partiel").length;
+  if (partial >= 2) reasons.push(`${partial} exercices à moitié traités`);
+
+  const lastWorked = chapterExercises
+    .map((exercise) => exercise.last_worked_at)
+    .filter((value): value is string => value !== null)
+    .map((value) => new Date(value).getTime())
+    .filter((time) => !Number.isNaN(time));
+  if (lastWorked.length > 0) {
+    const days = Math.floor((now.getTime() - Math.max(...lastWorked)) / 86400000);
+    if (days >= CHAPTER_STALE_DAYS) reasons.push(`Non travaillé depuis ${days} j`);
+  }
+
+  const oldest = recent[recent.length - 1];
+  return {
+    reasons,
+    fragile: reasons.length > 0,
+    attempts: recent.length,
+    sinceDays: oldest ? Math.max(0, Math.floor((now.getTime() - new Date(oldest.started_at).getTime()) / 86400000)) : null,
+  };
+}
+
 /**
  * Le tableau des chapitres, rangé par ce qu'il y a à en faire.
  *
@@ -123,7 +211,13 @@ export const CHAPTER_SOLID_RATE = 70;
  * « points faibles » de tout le programme de l'année dès la première
  * ouverture, et la rendrait inutilisable.
  */
-export function computeChapterMastery(exercises: Exercise[], chapters: Chapter[], limit = 5): ChapterMasteryBoard {
+export function computeChapterMastery(
+  exercises: Exercise[],
+  chapters: Chapter[],
+  limit = 5,
+  sessions: WorkSession[] = [],
+  now: Date = new Date()
+): ChapterMasteryBoard {
   const rows: ChapterMasteryRow[] = progressByChapter(exercises, chapters).map((entry) => {
     const chapterExercises = exercises.filter((exercise) => !exercise.archived && exercise.chapter_id === entry.chapter.id);
     return {
@@ -133,6 +227,10 @@ export function computeChapterMastery(exercises: Exercise[], chapters: Chapter[]
       total: entry.total,
       mastered: entry.mastered,
       untouched: chapterExercises.filter((exercise) => exercise.attempts === 0 && exercise.last_worked_at === null).length,
+      // Le MÊME verdict que celui de l'accueil — voir `assessChapter`. Sans
+      // les séances, il se réduit au seuil de maîtrise, ce qui reste
+      // strictement l'ancien comportement : aucun appelant ne régresse.
+      assessment: assessChapter(chapterExercises, sessions, entry.averageMastery, now),
     };
   });
 
@@ -140,8 +238,8 @@ export function computeChapterMastery(exercises: Exercise[], chapters: Chapter[]
   const never = rows.filter((row) => row.total > 0 && row.untouched === row.total);
 
   return {
-    fragile: started.filter((row) => row.rate < CHAPTER_SOLID_RATE).sort((a, b) => a.rate - b.rate).slice(0, limit),
-    solid: started.filter((row) => row.rate >= CHAPTER_SOLID_RATE).sort((a, b) => b.rate - a.rate).slice(0, limit),
+    fragile: started.filter((row) => row.assessment.fragile).sort((a, b) => a.rate - b.rate).slice(0, limit),
+    solid: started.filter((row) => !row.assessment.fragile).sort((a, b) => b.rate - a.rate).slice(0, limit),
     untouched: never.sort((a, b) => b.total - a.total).slice(0, limit),
   };
 }

@@ -205,7 +205,7 @@ describe("computeChaptersToConsolidate", () => {
     const items = computeChaptersToConsolidate([exercise], [], chapters, NOW);
     expect(items).toHaveLength(1);
     expect(items[0].chapter.label).toBe("Suites");
-    expect(items[0].reasons).toContain("Maîtrise faible");
+    expect(items[0].reasons).toContain("Maîtrise encore faible");
     expect(items[0].href).toBe(`/exercises?focus=${exercise.id}`);
   });
 
@@ -299,7 +299,7 @@ describe("computeChaptersToConsolidate", () => {
     ];
     const items = computeChaptersToConsolidate([exercise], sessions, chapters, NOW);
     expect(items).toHaveLength(1);
-    expect(items[0].reasons).toContain("Maîtrise faible");
+    expect(items[0].reasons).toContain("Maîtrise encore faible");
     expect(items[0].reasons.some((reason) => reason.includes("à moitié"))).toBe(false);
   });
 

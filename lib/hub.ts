@@ -7,6 +7,7 @@ import { computeGradeStats, computeGradeTrend, type GradeStats, type GradeTrend 
 import { computeProgressBySubject, type SubjectProgress } from "@/lib/progress";
 import { activeWorkItems } from "@/lib/work-items";
 import { subjects } from "@/lib/study";
+import { GRADE_KINDS } from "@/lib/storage";
 import type { Chapter, Grade, GradeKind, Preferences, WorkItem, WorkItemKind } from "@/lib/storage";
 import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
 
@@ -65,11 +66,31 @@ export interface HubSubjectModel {
   subject: Subject;
   /** Avancement de la matière — repris tel quel de lib/progress.ts. */
   progress: SubjectProgress;
+  /**
+   * Y a-t-il seulement de quoi MESURER un avancement ?
+   *
+   * Le critère n'est pas « la matière contient des fiches » mais « au moins
+   * une fiche a été engagée ». Sur une banque fraîchement amorcée, les deux
+   * diffèrent : 321 fiches de maths jamais ouvertes donnent une maîtrise
+   * moyenne de 0 %, ce qui s'affiche comme un échec alors que rien n'a été
+   * tenté. Un zéro non mesuré est aussi trompeur qu'un zéro inventé — même
+   * règle que partout ailleurs dans ce produit.
+   */
+  measured: boolean;
   workload: HubWorkload;
   chapters: HubChapters;
   /** Échéances ouvertes DE CETTE MATIÈRE, les plus prioritaires d'abord. */
   deadlines: WorkItemPriority[];
-  /** Notes de la matière — `count: 0` quand il n'y en a pas, et l'interface se tait alors. */
+  /**
+   * Notes de la matière, VENTILÉES PAR NATURE.
+   *
+   * Une moyenne unique mélangeant un DM fait à la maison et un DS en trois
+   * heures dit quelque chose que le modèle ne porte pas : ce ne sont pas les
+   * mêmes conditions, et l'élève le sait mieux que l'application. Chaque
+   * nature garde donc sa propre moyenne, et l'interface les montre séparées.
+   */
+  gradesByKind: { kind: GradeKind; stats: GradeStats }[];
+  /** Toutes natures confondues — affiché UNIQUEMENT quand une seule nature existe, sinon il mentirait par agrégation. */
   grades: GradeStats;
   gradeTrend: GradeTrend;
   /**
@@ -133,7 +154,7 @@ export function buildSubjectHub(
 
   // `computeChapterMastery` fait déjà le tri fragile/solide/non mesuré, et
   // c'est SON tri qui fait foi. On le borne à la matière en amont.
-  const board = computeChapterMastery(subjectExercises, subjectChapters, Number.MAX_SAFE_INTEGER);
+  const board = computeChapterMastery(subjectExercises, subjectChapters, Number.MAX_SAFE_INTEGER, sessions, now);
 
   const deadlines = sortByPriority(
     activeWorkItems(workItems)
@@ -142,13 +163,24 @@ export function buildSubjectHub(
   );
 
   const subjectGrades = grades.filter((grade) => grade.subject === subject);
+  const kinds = GRADE_KINDS.filter((kind) => subjectGrades.some((grade) => grade.kind === kind));
+  const gradesByKind = kinds.map((kind) => ({
+    kind,
+    stats: computeGradeStats(subjectGrades.filter((grade) => grade.kind === kind)),
+  }));
 
   return {
     subject,
     progress,
+    // Même critère d'engagement que lib/next-action.ts#hasChapterEngagement,
+    // appliqué à l'échelle de la matière.
+    measured: subjectExercises.some(
+      (exercise) => !exercise.archived && (exercise.attempts > 0 || exercise.status !== "à faire" || exercise.last_worked_at !== null)
+    ),
     workload,
     chapters: { fragile: board.fragile, solid: board.solid, untouched: board.untouched },
     deadlines,
+    gradesByKind,
     grades: computeGradeStats(subjectGrades),
     gradeTrend: computeGradeTrend(grades, subject),
     // Le chapitre RÉELLEMENT commencé et le plus faible. Un chapitre jamais
@@ -179,6 +211,8 @@ const CONTEST_GRADE_KINDS: GradeKind[] = ["ds", "concours"];
 
 export interface ContestSubjectLine {
   subject: Subject;
+  /** `false` quand aucune fiche n'est rattachée : l'avancement n'est alors pas mesurable, et 0 % serait un mensonge. */
+  measured: boolean;
   /** Part des chapitres acquis, 0–100 — l'avancement, pas un compte de fiches. */
   completionRate: number;
   averageMastery: number;
@@ -240,10 +274,18 @@ export function buildContestHub(
     const board = computeChapterMastery(
       exercises.filter((exercise) => exercise.subject === subject),
       chapters.filter((chapter) => chapter.subject === subject),
-      Number.MAX_SAFE_INTEGER
+      Number.MAX_SAFE_INTEGER,
+      sessions,
+      now
     );
     return {
       subject,
+      measured: exercises.some(
+        (exercise) =>
+          !exercise.archived &&
+          exercise.subject === subject &&
+          (exercise.attempts > 0 || exercise.status !== "à faire" || exercise.last_worked_at !== null)
+      ),
       completionRate: entry?.completionRate ?? 0,
       averageMastery: entry?.averageMastery ?? 0,
       windowMinutes: minutesBetween(own, daysAgo(now, HUB_WINDOW_DAYS), now),
@@ -266,7 +308,9 @@ export function buildContestHub(
       computeChapterMastery(
         exercises.filter((exercise) => exercise.subject === subject),
         chapters.filter((chapter) => chapter.subject === subject),
-        Number.MAX_SAFE_INTEGER
+        Number.MAX_SAFE_INTEGER,
+        sessions,
+        now
       ).fragile.map((row) => ({ subject, row }))
     )
     .sort((a, b) => a.row.rate - b.row.rate)
