@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CalendarClock, ChevronRight, Flame, Scale, Trophy } from "lucide-react";
+import { ArrowRight, CalendarClock, ChevronRight, Flame, LayoutList, Trophy } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { Button } from "@/components/ui/button";
@@ -57,10 +57,11 @@ const contestDateFormatter = new Intl.DateTimeFormat("fr-FR", { day: "numeric", 
  *
  * 2. UNE SEULE RÉPONSE. Le tableau de bord répondait DEUX FOIS à la même
  *    question, avec deux moteurs : « Plan du jour » (lib/plan.ts) et
- *    « Préparation globale » (lib/preparation-os.ts), chacun avec son
- *    sélecteur de durée et son bouton « commencer », l'un sous l'autre. La
- *    préparation par matière garde toute sa valeur — mais comme un ARBITRAGE
- *    que l'on va consulter (/preparation), pas comme un second départ.
+ *    « Préparation globale », chacun avec son sélecteur de durée et son
+ *    bouton « commencer », l'un sous l'autre. Le second est devenu le SUIVI
+ *    par matière (/preparation) : un espace que l'on va CONSULTER, qui ne
+ *    propose plus d'exercices et ne démarre plus de séance. L'accueil reste
+ *    le seul endroit d'où l'on part travailler.
  */
 export function DashboardOverview() {
   const { sessions, exercises, chapters, workItems, preferences, ready } = usePrepahubData();
@@ -338,7 +339,7 @@ export function DashboardOverview() {
               <CalendarClock size={14} /> Mes échéances
             </Link>
             <Link href="/preparation" className="t-meta inline-flex items-center gap-1.5 rounded hover:text-ink max-lg:min-h-11">
-              <Scale size={14} /> Équilibrer mes matières
+              <LayoutList size={14} /> Suivi par matière
             </Link>
             <Link href="/progress" className="t-meta inline-flex items-center gap-1 rounded hover:text-ink max-lg:min-h-11">
               Ma progression <ChevronRight size={14} />
