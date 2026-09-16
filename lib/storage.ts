@@ -1,5 +1,5 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
-import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, THEME_MODES, type ThemeMode } from "@/lib/theme";
+import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, THEME_MODES, hexToRgb, type ThemeMode } from "@/lib/theme";
 import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, Filiere, LicenseStatus, Mastery, ProgrammeLevel, Provenance, Subject, WorkSession } from "@/lib/supabase/types";
 
 const ATTEMPT_RESULTS: readonly AttemptResult[] = ["réussi", "partiel", "échoué"];
@@ -10,6 +10,9 @@ const preferencesKey = "prepahub:preferences";
 const chaptersKey = "prepahub:chapters";
 const lastBackupKey = "prepahub:last-backup";
 const weekSnapshotsKey = "prepahub:week-snapshots";
+const workItemsKey = "prepahub:work-items";
+const gradesKey = "prepahub:grades";
+const dayPlansKey = "prepahub:day-plans";
 
 /**
  * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
@@ -19,14 +22,83 @@ const weekSnapshotsKey = "prepahub:week-snapshots";
  * Absents d'une préférence enregistrée avant leur sprint respectif : retombent sur `defaults` via le
  * merge ci-dessous, comme tout champ ajouté après coup.
  */
-export type Preferences = { displayName: string; dailyGoalMinutes: number; weeklyGoalMinutes: number; contestDate: string; accent: string; themeMode: ThemeMode };
+export type Preferences = {
+  displayName: string;
+  dailyGoalMinutes: number;
+  weeklyGoalMinutes: number;
+  contestDate: string;
+  accent: string;
+  themeMode: ThemeMode;
+  /**
+   * CAPACITÉ DÉCLARÉE de travail personnel, en minutes, du lundi (index 0) au
+   * dimanche (index 6). Toujours 7 entrées.
+   *
+   * À ne JAMAIS confondre avec `dailyGoalMinutes`, qui est un OBJECTIF — ce
+   * que l'élève veut atteindre. La capacité est un PLAFOND : ce dont il
+   * dispose réellement une fois les cours, les colles et les trajets
+   * déduits. Les deux peuvent diverger dans les deux sens (un objectif de
+   * 60 min un samedi où quatre heures sont libres ; un objectif de 60 min un
+   * mardi où il n'y a qu'une demi-heure).
+   *
+   * Sept valeurs et non une seule parce qu'une semaine de prépa n'est pas
+   * uniforme : le mercredi après-midi et le samedi n'ont rien à voir avec le
+   * mardi. Une valeur unique rendait « j'ai 4 h samedi » littéralement
+   * inexprimable, donc impossible à planifier.
+   *
+   * DÉCLARÉE, pas mesurée : c'est l'élève qui la pose. TaekdHub peut la lui
+   * SUGGÉRER depuis son historique (voir lib/capacity.ts#suggestCapacityFromHistory)
+   * mais ne l'écrit jamais tout seul — on n'affirme pas connaître son emploi
+   * du temps.
+   *
+   * Absent d'une préférence enregistrée avant ce chantier : retombe sur
+   * `defaults` via le merge de `normalizePreferences`, comme tout champ
+   * ajouté après coup.
+   */
+  capacityByWeekday: number[];
+  /**
+   * Part de la capacité quotidienne gardée en MARGE, en pourcentage (0–50).
+   *
+   * Planifier 100 % d'une journée est la façon la plus sûre de produire un
+   * planning que personne ne tient : un exercice dure plus longtemps que
+   * prévu, un cours déborde, un trajet s'allonge, et tout le reste de la
+   * journée est déjà en retard. La capacité PLANIFIABLE est donc
+   * systématiquement inférieure à la capacité déclarée — voir
+   * lib/capacity.ts#plannableMinutes.
+   */
+  planningMarginPercent: number;
+};
+
+/**
+ * Capacité par défaut, du lundi au dimanche. Ce sont des VALEURS DE DÉPART
+ * affichées telles quelles dans Réglages pour que l'élève les corrige, pas
+ * une mesure de son emploi du temps : deux heures de travail personnel en
+ * semaine, davantage le week-end. Toute phrase de l'interface qui s'appuie
+ * dessus doit dire « ta capacité », jamais « d'après tes habitudes » — voir
+ * lib/capacity.ts, qui distingue explicitement la capacité DÉCLARÉE de la
+ * capacité SUGGÉRÉE depuis l'historique.
+ */
+export const DEFAULT_CAPACITY_BY_WEEKDAY: number[] = [120, 120, 120, 120, 120, 240, 180];
+/** 20 % : un cinquième de la journée laissé libre. Réglable entre 0 et 50 % (voir `planningMarginPercent`). */
+export const DEFAULT_PLANNING_MARGIN_PERCENT = 20;
+export const MAX_PLANNING_MARGIN_PERCENT = 50;
+/** Plafond par jour — 16 h. Au-delà, c'est une saisie erronée, pas une journée de travail. */
+export const MAX_DAILY_CAPACITY_MINUTES = 960;
 // `dailyGoalMinutes: 60` correspond exactement au plus haut des trois préréglages du
 // Dashboard/Réglages (PLAN_DURATION_PRESETS = [30, 45, 60], lib/plan.ts) : un premier
 // objectif ambitieux mais tenable, jamais un chiffre hors de tout préréglage cliquable
 // (l'ancien défaut de 240 min produisait un "Commencer une séance de 240 min" absurde
 // dès la toute première visite, avant tout réglage par l'élève). `weeklyGoalMinutes: 300`
 // reste cohérent avec ce nouveau quotidien (5 × 60 min ≈ une semaine de cours).
-const defaults: Preferences = { displayName: "", dailyGoalMinutes: 60, weeklyGoalMinutes: 300, contestDate: "", accent: DEFAULT_ACCENT, themeMode: DEFAULT_THEME_MODE };
+const defaults: Preferences = {
+  displayName: "",
+  dailyGoalMinutes: 60,
+  weeklyGoalMinutes: 300,
+  contestDate: "",
+  accent: DEFAULT_ACCENT,
+  themeMode: DEFAULT_THEME_MODE,
+  capacityByWeekday: DEFAULT_CAPACITY_BY_WEEKDAY,
+  planningMarginPercent: DEFAULT_PLANNING_MARGIN_PERCENT,
+};
 
 /**
  * Chapitre/thème (Sprint 3D) — créé et géré par l'utilisateur, jamais
@@ -73,6 +145,204 @@ export interface WeekSnapshot {
   masteredCount: number;
   completionRate: number;
   bySubjectProgress: WeekSnapshotSubjectProgress[];
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   RÉSULTATS SCOLAIRES — la seule mesure qui ne vient pas de TaekdHub
+   ══════════════════════════════════════════════════════════════════
+
+   Tout le reste de ce fichier décrit ce que l'élève fait DANS
+   l'application. Une note de DS, elle, est rendue par un professeur : c'est
+   la seule donnée qui juge le travail depuis l'extérieur, et donc la seule
+   qui permette de confronter l'effort au résultat.
+
+   Volontairement minimal : une note, sur quoi, quand, dans quelle matière.
+   Ni coefficient, ni moyenne de classe, ni appréciation — rien dont on ne
+   saurait quoi faire, et rien qui transformerait la saisie en corvée.
+*/
+
+/** Nature de l'épreuve — reprend le vocabulaire déjà employé par `ExerciseType` et `WorkItemKind`, sans en inventer un troisième. */
+export type GradeKind = "ds" | "dm" | "interro" | "colle" | "concours" | "autre";
+export const GRADE_KINDS: readonly GradeKind[] = ["ds", "dm", "interro", "colle", "concours", "autre"];
+
+export interface Grade {
+  id: string;
+  subject: Subject;
+  /** Ce sur quoi portait l'épreuve — « Suites et séries », « DS n°3 ». Facultatif à la saisie, jamais vide en mémoire. */
+  title: string;
+  kind: GradeKind;
+  /** "AAAA-MM-JJ" — le jour de l'épreuve, pas celui de la saisie. */
+  date: string;
+  /** Note obtenue. Décimales permises (11,5). Toujours ≥ 0 et ≤ `maxScore`. */
+  score: number;
+  /** Barème. 20 dans l'immense majorité des cas, mais une colle sur 10 ou un concours blanc sur 40 existent. */
+  maxScore: number;
+  createdAt: string;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CE QUI ÉTAIT PRÉVU — la seule donnée du planning qui doit survivre
+   ══════════════════════════════════════════════════════════════════
+
+   Le planning n'est PAS persisté : il est recalculé à chaque affichage
+   (voir lib/planning.ts), et c'est ce qui le garde toujours juste. Mais du
+   coup, une fois la journée passée, plus rien ne dit ce qui y était prévu —
+   donc « est-ce que je réalise ce que je planifie ? » est structurellement
+   sans réponse.
+
+   Un seul nombre par jour suffit à y répondre, et il est irrécupérable
+   autrement. C'est la seule statistique dérivée persistée de tout le
+   produit, et voici pourquoi elle l'est à ces conditions précises :
+
+   ENREGISTRÉ LA VEILLE. Le plan d'une journée est capté le jour PRÉCÉDENT,
+   jamais le jour même. Capté le matin même, il serait déjà amputé du
+   travail fait dans la nuit ; capté le soir, il ne resterait presque rien à
+   prévoir et la journée afficherait « 300 % réalisé ». La veille, la
+   journée est intacte : le nombre mesure vraiment une INTENTION.
+
+   JAMAIS RÉÉCRIT. Une intention ne se révise pas après coup — c'est tout
+   son intérêt comme point de comparaison.
+
+   JAMAIS RECONSTITUÉ. Un jour où l'application n'a pas été ouverte la
+   veille n'a pas d'enregistrement, et reste simplement hors de la
+   comparaison. On dit alors sur combien de jours elle porte plutôt que de
+   combler le trou.
+*/
+export interface DayPlanRecord {
+  /** "AAAA-MM-JJ" — le jour PLANIFIÉ. */
+  date: string;
+  /** Minutes que le planning réservait pour ce jour-là, au moment de la capture. */
+  plannedMinutes: number;
+  /** Horodatage ISO de la capture — toujours la veille du jour planifié. Conservé pour pouvoir vérifier cette promesse. */
+  capturedAt: string;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   TRAVAIL PLANIFIABLE — le modèle du « quand »
+   ══════════════════════════════════════════════════════════════════
+
+   TaekdHub savait répondre à « quoi travailler » (lib/recommendation.ts) et
+   « combien de temps » (lib/plan.ts). Il ne savait pas répondre à « pour
+   quand ». `WorkItem` est le seul concept ajouté pour ça, et il est
+   volontairement AU-DESSUS de la banque, pas dedans :
+
+     RESSOURCE            un exercice, un chapitre. Existe déjà, ne bouge pas.
+     TRAVAIL PLANIFIABLE  `WorkItem` — « préparer le DS de physique »,
+                          « faire le DM de maths », « réviser les intégrales ».
+     ÉCHÉANCE             `WorkItem.dueDate` — le jour pour lequel c'est dû.
+
+   Un exercice n'est donc JAMAIS une échéance : il est le contenu qu'on
+   servira à l'intérieur du temps qu'un `WorkItem` réserve. C'est ce qui
+   permet à « DM de maths jeudi » d'exister sans qu'aucun exercice de la
+   banque ne lui corresponde.
+*/
+
+/**
+ * Nature du travail. Six valeurs, en français comme tous les domaines
+ * persistés du projet (`ExerciseStatus`, `AttemptResult`…), et pas une de
+ * plus : ce qui se distingue ici doit se distinguer pour l'ÉLÈVE, pas pour
+ * le modèle.
+ *
+ * `exercices` et `chapitre` sont les deux seuls types dont TaekdHub sait
+ * choisir le contenu tout seul (le moteur de recommandation sait ce qu'est
+ * un exercice et ce qu'est un chapitre). `dm`, `ds`, `concours` et `autre`
+ * sont du travail dont l'élève seul connaît le contenu — TaekdHub en
+ * réserve le temps et suit sa progression, sans prétendre savoir ce qu'il y
+ * a dedans.
+ */
+export type WorkItemKind = "dm" | "ds" | "exercices" | "chapitre" | "concours" | "autre";
+export const WORK_ITEM_KINDS: readonly WorkItemKind[] = ["dm", "ds", "exercices", "chapitre", "concours", "autre"];
+
+/**
+ * Cycle de vie. « abandonné » EST le mécanisme de suppression : voir la note
+ * de `mergeStored` — la fusion par identifiant n'est correcte que parce que
+ * rien, dans toute l'application, n'est jamais réellement supprimé. Retirer
+ * physiquement une ligne rouvrirait exactement le scénario de perte que
+ * cette fusion referme (une copie React périmée réécrivant la liste sans
+ * elle… ou avec elle). Un travail abandonné est filtré partout à l'affichage
+ * et ignoré par tous les moteurs : pour l'élève, il a disparu.
+ */
+export type WorkItemStatus = "à faire" | "en cours" | "terminé" | "abandonné";
+export const WORK_ITEM_STATUSES: readonly WorkItemStatus[] = ["à faire", "en cours", "terminé", "abandonné"];
+
+/** Un report subi par un travail — conservé pour le bilan hebdomadaire (« 2 reports cette semaine »), jamais pour recalculer quoi que ce soit. */
+export interface WorkItemPostponement {
+  /** ISO — quand le report a été décidé. */
+  at: string;
+  /** "AAAA-MM-JJ" — le jour d'où le travail a été retiré. */
+  fromDate: string;
+  /** "AAAA-MM-JJ" — le premier jour où il redevient planifiable. */
+  toDate: string;
+}
+
+export interface WorkItem {
+  id: string;
+  title: string;
+  kind: WorkItemKind;
+  /** `null` pour un travail qui ne relève d'aucune matière (« ranger mes fiches »). */
+  subject: Subject | null;
+  /**
+   * Durée totale estimée, en MINUTES. Toujours > 0.
+   *
+   * Posée par l'élève, éventuellement à partir de la suggestion de
+   * lib/estimation.ts — qui reste une SUGGESTION : elle est pré-remplie dans
+   * le champ, jamais imposée, et jamais réécrite après coup.
+   *
+   * Le temps RÉELLEMENT fait n'est pas stocké ici. Il se somme à la demande
+   * depuis les `WorkSession` portant ce `work_item_id` (voir
+   * lib/work-items.ts#doneMinutes) — même règle que `Exercise`, qui ne
+   * stocke aucune durée cumulée depuis le Sprint 2.6, et pour la même
+   * raison : deux sources de vérité pour une même durée finissent toujours
+   * par diverger.
+   */
+  estimatedMinutes: number;
+  /**
+   * Jour d'échéance, "AAAA-MM-JJ" en heure LOCALE — un jour, pas un instant.
+   * `null` pour un travail sans date (« réviser les intégrales, un jour ») :
+   * il reste planifiable, mais après tout ce qui est daté.
+   *
+   * N'est JAMAIS modifiée par un report : voir `notBeforeDate`.
+   */
+  dueDate: string | null;
+  /**
+   * "HH:MM" — l'heure quand l'élève l'a précisée (« DS lundi 8 h »).
+   * Purement informative : elle s'affiche, elle n'entre dans aucun calcul.
+   * Un DS à 8 h et un DM à rendre le soir se préparent tous deux la veille.
+   */
+  dueTime: string | null;
+  status: WorkItemStatus;
+  /**
+   * `true` quand l'élève a explicitement marqué ce travail comme important.
+   *
+   * C'est une DÉCLARATION, pas un score : le score de priorité, lui, est
+   * recalculé à chaque affichage (lib/deadlines.ts) parce qu'il dépend de la
+   * date du jour. Stocker une priorité la rendrait fausse dès le lendemain.
+   */
+  important: boolean;
+  /**
+   * « Ne pas planifier avant ce jour » ("AAAA-MM-JJ"), ou `null`.
+   *
+   * C'est EXACTEMENT ce qu'un report écrit, et c'est tout ce qu'il écrit.
+   * L'échéance, elle, n'est jamais touchée : reporter son travail ne déplace
+   * pas la date du DS. C'est la distinction que l'interface doit rendre
+   * évidente — et la raison pour laquelle un report peut parfaitement rendre
+   * un travail infaisable, ce que le planificateur dira au lieu de le
+   * masquer (voir lib/planning.ts).
+   */
+  notBeforeDate: string | null;
+  /**
+   * Chapitres concernés — la PORTÉE du travail, pas son contenu.
+   *
+   * Aucun `exerciseIds` volontairement : figer une liste d'exercices à la
+   * création reviendrait à décider du « quoi » des semaines à l'avance, en
+   * court-circuitant le moteur de recommandation. La portée (matière +
+   * chapitres) est passée au moteur au moment de travailler, et c'est lui
+   * qui choisit — voir lib/planning.ts.
+   */
+  chapterIds: string[];
+  createdAt: string;
+  completedAt: string | null;
+  postponements: WorkItemPostponement[];
 }
 
 /**
@@ -137,6 +407,12 @@ function nonNegativeInteger(raw: unknown): number | null {
   return Math.round(raw);
 }
 
+/** Comme `nonNegativeInteger`, mais pour ce qui ne peut pas valoir zéro sans casser un calcul en aval (un objectif sert de DÉNOMINATEUR). */
+function positiveInteger(raw: unknown): number | null {
+  const value = nonNegativeInteger(raw);
+  return value === null || value === 0 ? null : value;
+}
+
 /**
  * Correspondances des anciennes valeurs vers le modèle actuel — appliquées
  * une seule fois, à la lecture, pour que les données locales et les
@@ -157,6 +433,25 @@ function migrateSubject(raw: unknown): Subject {
     if (raw in LEGACY_SUBJECT_MAP) return LEGACY_SUBJECT_MAP[raw];
   }
   return "Mathématiques";
+}
+
+/**
+ * Comme `migrateSubject`, mais pour les modèles où l'absence de matière est
+ * LÉGITIME (`WorkItem.subject`) ou disqualifiante (`Grade`) — on ne veut pas
+ * y retomber silencieusement sur « Mathématiques ».
+ *
+ * Séances, exercices, chapitres et instantanés migraient déjà une matière
+ * renommée ; les notes et les travaux, arrivés après le renommage
+ * « Informatique » → « Informatique TC », ne le faisaient pas. Aucune donnée
+ * n'était menacée AUJOURD'HUI, mais le prochain renommage dans lib/study.ts
+ * aurait détruit un trimestre de notes en silence : `normalizeGrade`
+ * renvoyait `null`, `localData.grades()` filtre les `null`, et `saveGrades`
+ * REMPLACE — la note disparaissait définitivement à l'écriture suivante.
+ */
+function migrateSubjectOrNull(raw: unknown): Subject | null {
+  if (typeof raw !== "string") return null;
+  if ((subjects as string[]).includes(raw)) return raw as Subject;
+  return LEGACY_SUBJECT_MAP[raw] ?? null;
 }
 
 function migrateStatus(raw: unknown): ExerciseStatus {
@@ -216,6 +511,72 @@ export function normalizeSession(raw: unknown): WorkSession {
       typeof item.hints_used === "number" && Number.isFinite(item.hints_used) && item.hints_used >= 0
         ? Math.round(item.hints_used)
         : null,
+    // Absent de toute séance antérieure à ce champ : `null`, jamais rattaché
+    // après coup à un travail planifié qui n'existait pas encore. Voir la doc
+    // du champ dans lib/supabase/types.ts.
+    work_item_id: typeof item.work_item_id === "string" ? item.work_item_id : null,
+  };
+}
+
+/** Un jour "AAAA-MM-JJ" réellement exploitable, ou `null` — même frontière de confiance qu'`isoDate`, pour les champs qui portent un JOUR et non un instant. */
+function calendarDay(value: unknown): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  return Number.isNaN(new Date(`${value}T00:00:00`).getTime()) ? null : value;
+}
+
+/** "HH:MM" sur 24 h, ou `null`. Purement informatif — voir `WorkItem.dueTime`. */
+function clockTime(value: unknown): string | null {
+  if (typeof value !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) return null;
+  return value;
+}
+
+/**
+ * Ramène un travail planifié potentiellement corrompu (édition manuelle du
+ * localStorage, sauvegarde tronquée) vers une forme valide. Même contrat que
+ * `normalizeSession`/`normalizeExercise` : rien d'invalide ne ressort d'ici.
+ *
+ * Un travail sans titre exploitable reçoit un libellé neutre plutôt que
+ * d'être écarté : l'élève l'a créé, il doit pouvoir le retrouver et le
+ * corriger — le faire disparaître silencieusement serait pire.
+ */
+export function normalizeWorkItem(raw: unknown): WorkItem {
+  const item = isRecord(raw) ? raw : {};
+  const createdAt = isoDate(item.created_at) ?? isoDate(item.createdAt) ?? new Date().toISOString();
+  const status = (WORK_ITEM_STATUSES as string[]).includes(item.status as string)
+    ? (item.status as WorkItemStatus)
+    : "à faire";
+  return {
+    id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
+    title: typeof item.title === "string" && item.title.trim() ? item.title.trim() : "Travail sans titre",
+    kind: (WORK_ITEM_KINDS as string[]).includes(item.kind as string) ? (item.kind as WorkItemKind) : "autre",
+    // `migrateSubject` imposerait une matière par défaut ; ici l'absence de
+    // matière est une valeur légitime, elle doit survivre à la normalisation.
+    subject: migrateSubjectOrNull(item.subject),
+    // Jamais 0 ni négatif : une durée nulle rendrait le travail invisible
+    // pour le planificateur tout en restant affiché comme « à faire ».
+    estimatedMinutes: Math.max(1, nonNegativeInteger(item.estimatedMinutes) ?? 30),
+    dueDate: calendarDay(item.dueDate),
+    dueTime: clockTime(item.dueTime),
+    status,
+    important: item.important === true,
+    notBeforeDate: calendarDay(item.notBeforeDate),
+    chapterIds: Array.isArray(item.chapterIds) ? item.chapterIds.filter((id): id is string => typeof id === "string") : [],
+    createdAt,
+    // Une date d'achèvement n'a de sens que sur un travail terminé — un
+    // `completedAt` traînant sur un travail rouvert fausserait le bilan
+    // hebdomadaire, qui compte les travaux terminés dans la semaine.
+    completedAt: status === "terminé" ? (isoDate(item.completedAt) ?? createdAt) : null,
+    postponements: Array.isArray(item.postponements)
+      ? item.postponements
+          .map((entry): WorkItemPostponement | null => {
+            if (!isRecord(entry)) return null;
+            const at = isoDate(entry.at);
+            const fromDate = calendarDay(entry.fromDate);
+            const toDate = calendarDay(entry.toDate);
+            return at && fromDate && toDate ? { at, fromDate, toDate } : null;
+          })
+          .filter((entry): entry is WorkItemPostponement => entry !== null)
+      : [],
   };
 }
 
@@ -336,6 +697,49 @@ function normalizeWeekSnapshot(raw: unknown): WeekSnapshot | null {
 }
 
 /**
+ * Ramène une note potentiellement corrompue vers une forme valide, ou
+ * l'écarte (`null`) quand elle ne veut plus rien dire — contrairement à un
+ * travail planifié, une note sans date ni barème exploitable n'est pas
+ * réparable : la garder avec des valeurs inventées fausserait une moyenne.
+ */
+export function normalizeGrade(raw: unknown): Grade | null {
+  const item = isRecord(raw) ? raw : {};
+  const date = calendarDay(item.date);
+  if (!date) return null;
+  const subject = migrateSubjectOrNull(item.subject);
+  if (!subject) return null;
+
+  const maxScore = typeof item.maxScore === "number" && Number.isFinite(item.maxScore) && item.maxScore > 0 ? item.maxScore : 20;
+  const rawScore = typeof item.score === "number" && Number.isFinite(item.score) ? item.score : null;
+  if (rawScore === null) return null;
+
+  return {
+    id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
+    subject,
+    title: typeof item.title === "string" && item.title.trim() ? item.title.trim() : "",
+    kind: (GRADE_KINDS as string[]).includes(item.kind as string) ? (item.kind as GradeKind) : "autre",
+    date,
+    // Bornée au barème : une note de 25/20 vient forcément d'une saisie ou
+    // d'un fichier abîmé, et elle contaminerait toutes les moyennes.
+    score: Math.max(0, Math.min(maxScore, rawScore)),
+    maxScore,
+    createdAt: isoDate(item.createdAt) ?? new Date().toISOString(),
+  };
+}
+
+/** Voir `DayPlanRecord` — un enregistrement sans jour valide n'a aucun sens et disparaît. */
+export function normalizeDayPlanRecord(raw: unknown): DayPlanRecord | null {
+  const item = isRecord(raw) ? raw : {};
+  const date = calendarDay(item.date);
+  if (!date) return null;
+  return {
+    date,
+    plannedMinutes: nonNegativeInteger(item.plannedMinutes) ?? 0,
+    capturedAt: isoDate(item.capturedAt) ?? `${date}T00:00:00.000Z`,
+  };
+}
+
+/**
  * Fusionne une préférence potentiellement partielle/corrompue (import, ancienne
  * sauvegarde, édition manuelle du localStorage) avec `defaults` — même principe
  * que `normalizeExercise`/`normalizeChapter` : un champ absent ou invalide
@@ -344,8 +748,64 @@ function normalizeWeekSnapshot(raw: unknown): WeekSnapshot | null {
  */
 export function normalizePreferences(raw: unknown): Preferences {
   const item = isRecord(raw) ? raw : {};
-  const merged = { ...defaults, ...item };
-  return { ...merged, themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE };
+  /*
+   * LISTE BLANCHE, et non un `{ ...defaults, ...item }`.
+   *
+   * L'étalement recopiait `item` TEL QUEL par-dessus les défauts : seuls
+   * trois champs étaient ensuite revalidés, les cinq autres passaient avec
+   * n'importe quel type, et toute clé étrangère présente dans l'objet
+   * entrait dans les préférences. Deux conséquences dont on ne se relève
+   * pas depuis l'interface :
+   *
+   *   — `accent: 42` → lib/theme.ts#hexToRgb fait `hex.trim()` sur un
+   *     nombre, ce qui LÈVE. `ThemeSync` étant monté dans app/layout.tsx,
+   *     l'effet plante sur TOUTES les routes, /settings comprise : plus
+   *     aucun moyen d'exporter ni de réparer sans la console du navigateur.
+   *   — `contestDate: "pas-une-date"` → `Intl.DateTimeFormat#format` lève
+   *     `RangeError: Invalid time value` sur l'accueil.
+   *
+   * Le vecteur n'est pas théorique : `validateBackupPayload` n'inspecte
+   * `preferences` que par `isRecord`, donc un fichier de sauvegarde édité à
+   * la main, tronqué ou fusionné suffit. Chaque champ est désormais validé
+   * par le même helper que le reste du module, et RIEN d'autre que les huit
+   * clés connues ne ressort d'ici.
+   */
+  return {
+    displayName: typeof item.displayName === "string" ? item.displayName : defaults.displayName,
+    // Un objectif nul ou négatif produirait des divisions par zéro (« Infinity % »)
+    // dans computeDailyObjective ; `JSON.stringify(NaN)` valant `null`, le cas
+    // survit à un aller-retour de sauvegarde et doit donc être fermé ici.
+    dailyGoalMinutes: positiveInteger(item.dailyGoalMinutes) ?? defaults.dailyGoalMinutes,
+    weeklyGoalMinutes: positiveInteger(item.weeklyGoalMinutes) ?? defaults.weeklyGoalMinutes,
+    // "" = pas de concours renseigné, seule autre valeur admise qu'un jour calendaire.
+    contestDate: calendarDay(item.contestDate) ?? defaults.contestDate,
+    // Validé par le MÊME analyseur que celui qui l'utilisera (lib/theme.ts),
+    // pour qu'une valeur acceptée ici ne puisse pas faire échouer celui-là.
+    accent: typeof item.accent === "string" && hexToRgb(item.accent) ? item.accent : defaults.accent,
+    themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE,
+    // Un tableau de capacité de longueur ≠ 7, ou contenant autre chose que
+    // des nombres, ferait lire `undefined` au planificateur pour un jour de
+    // la semaine — et toute la journée deviendrait « capacité 0 », donc
+    // « rien n'est casable ». Le tableau est donc reconstruit poste par
+    // poste : chaque jour valide est conservé, chaque jour douteux retombe
+    // sur son défaut, et la longueur est garantie.
+    capacityByWeekday: normalizeCapacityByWeekday(item.capacityByWeekday),
+    planningMarginPercent: normalizeMarginPercent(item.planningMarginPercent),
+  };
+}
+
+function normalizeCapacityByWeekday(raw: unknown): number[] {
+  const list = Array.isArray(raw) ? raw : [];
+  return DEFAULT_CAPACITY_BY_WEEKDAY.map((fallback, index) => {
+    const value = list[index];
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return fallback;
+    return Math.min(MAX_DAILY_CAPACITY_MINUTES, Math.round(value));
+  });
+}
+
+function normalizeMarginPercent(raw: unknown): number {
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) return DEFAULT_PLANNING_MARGIN_PERCENT;
+  return Math.min(MAX_PLANNING_MARGIN_PERCENT, Math.round(raw));
 }
 
 /**
@@ -385,6 +845,32 @@ function readRecord(key: string): unknown {
  */
 let lastWriteFailure: { key: string; at: string } | null = null;
 
+/**
+ * Lecture/écriture BLINDÉES d'un drapeau brut (pas de JSON, pas de liste) —
+ * pour les clés techniques hors `localData` : drapeau et version d'amorçage.
+ *
+ * hooks/use-prepahub-data.ts les manipulait par `localStorage` direct :
+ * `getItem` hors de son `try` faisait rejeter `maybeSeedBank` quand le
+ * stockage est bloqué, et un `setItem` refusé laissait la version NON
+ * marquée — donc la réconciliation de toute la banque rejouée à chaque
+ * montage de composant, indéfiniment, sans que `lastStorageWriteFailure`
+ * n'en sache rien. Ces deux fonctions ferment les deux cas d'un coup.
+ */
+export function readFlag(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/** Voir `readFlag`. Renvoie `false` sans lever, et enregistre l'échec comme toute autre écriture. */
+export function writeFlag(key: string, value: string): boolean {
+  if (typeof window === "undefined") return false;
+  return writeKey(key, value);
+}
+
 /** Voir `writeKey` — consommé par hooks/use-prepahub-data.ts pour que l'échec cesse d'être invisible. */
 export function lastStorageWriteFailure(): { key: string; at: string } | null {
   return lastWriteFailure;
@@ -403,10 +889,27 @@ export function lastStorageWriteFailure(): { key: string; at: string } | null {
  * affiché, la séance ET le résultat sont perdus, sans le moindre message.
  * Chaque nouveau clic reproduisait exactement le même échec.
  *
- * Ce n'est pas une hypothèse d'école : la banque amorcée sérialise à elle
- * seule ~1,20 million de caractères, soit ~2,3 Mo en UTF-16 — l'unité que
- * les navigateurs facturent réellement — sur un quota de 5 Mo par origine.
- * Presque la moitié du budget est consommée avant la première séance.
+ * Ce n'est pas une hypothèse d'école, et les chiffres ci-dessous sont
+ * MESURÉS, pas estimés : la banque amorcée sérialise à elle seule 1 471 490
+ * caractères, soit 2,81 Mo en UTF-16 — l'unité que les navigateurs facturent
+ * réellement — sur un quota de 5 Mo par origine. Plus de la moitié du budget
+ * est consommée avant la première séance.
+ *
+ * Et le reste s'accumule sans jamais être élagué. Poids unitaires MESURÉS au
+ * navigateur (UTF-16) : une séance 742 o, un travail 828 o, un instantané
+ * 1 982 o, une note 402 o, une intention de planning 164 o. Sur une année
+ * scolaire (4 séances/jour, 5 travaux/semaine sur 40 semaines, 52
+ * instantanés, 365 intentions, 60 notes), cela fait 1,37 Mo/an, dont les
+ * SÉANCES à elles seules représentent 1,03 Mo — les trois quarts de la
+ * croissance.
+ *
+ * Donc : 4,19 Mo à la fin de la première année, 5,56 Mo à la fin de la
+ * seconde. Le plafond n'est pas atteint en première année ; il l'est vers le
+ * seizième mois d'usage, c'est-à-dire en plein deuxième année de prépa.
+ * L'échec d'écriture n'est pas un cas limite, c'est une échéance — et c'est
+ * la raison d'être de tout ce qui suit. Voir le README pour la stratégie
+ * recommandée (ne rien élaguer : ne persister que l'écart à la banque
+ * livrée, dont 60 % du poids est du contenu déjà présent dans le dataset).
  *
  * Renvoie `false` au lieu de lever : la valeur déjà stockée reste intacte
  * (setItem est atomique), l'appelant décide quoi faire, et
@@ -437,7 +940,7 @@ function writeKey(key: string, value: string): boolean {
  * il suffit qu'une copie soit périmée — ou pas encore chargée — pour effacer
  * tout le reste. Cas réel reproductible : components/timer.tsx n'attend pas
  * `ready`, donc tant que `maybeSeedBank()` n'a pas résolu (import dynamique
- * de 1,35 Mo de JSON + reconstruction de 477 exercices), `sessions` vaut
+ * de 1,35 Mo de JSON + reconstruction de 537 exercices), `sessions` vaut
  * encore `[]` ; or `useWorkTimer` restaure un chrono persisté dès le premier
  * effet, donc le bouton « Terminer » est cliquable immédiatement. Un
  * rechargement en pleine séance suivi de « Terminer » écrivait
@@ -455,11 +958,33 @@ function writeKey(key: string, value: string): boolean {
  *
  * Les entrées du disque sont comparées à l'état BRUT (pas de `normalize*` sur
  * toute la liste) : `update` est appelé à chaque frappe dans le champ énoncé
- * (components/exercises/exercise-detail.tsx), et normaliser 477 exercices à
+ * (components/exercises/exercise-detail.tsx), et normaliser 537 exercices à
  * chaque touche coûtait trois fois le prix de l'écriture elle-même. Seules
  * les entrées réellement absentes de la liste entrante — zéro dans le cas
  * courant — sont normalisées.
  */
+/**
+ * Fusionne, écrit, et renvoie CE QUI EST RÉELLEMENT SUR LE DISQUE.
+ *
+ * Les trois `merge*` jetaient le booléen de `writeKey` et renvoyaient la
+ * liste VOULUE. hooks/use-prepahub-data.ts la posait alors dans l'état React
+ * sous un commentaire affirmant « la liste réellement enregistrée » — ce qui
+ * était faux dès que l'écriture était refusée (quota) : l'écran montrait une
+ * séance que le disque n'avait pas, et le prochain enregistrement se
+ * construisait sur cet état fantôme.
+ *
+ * En cas de refus, on relit le disque plutôt que de renvoyer l'intention.
+ * `setItem` étant atomique, la valeur précédente est intacte, donc cette
+ * relecture est exacte. Elle ne coûte que sur le chemin d'échec, qui est
+ * rare ; `lastStorageWriteFailure` (→ `writeFailedAt` → `<StorageAlert>`)
+ * dit à l'élève ce qui vient de se passer.
+ */
+function mergeAndStore<T extends { id: string }>(key: string, incoming: T[], normalize: (raw: unknown) => T): T[] {
+  const merged = mergeStored(key, incoming, normalize);
+  if (writeKey(key, JSON.stringify(merged))) return merged;
+  return readList(key).map(normalize);
+}
+
 function mergeStored<T extends { id: string }>(key: string, incoming: T[], normalize: (raw: unknown) => T): T[] {
   const incomingIds = new Set(incoming.map((item) => item.id));
   const unseen = readList(key).filter((raw) => !(isRecord(raw) && typeof raw.id === "string" && incomingIds.has(raw.id)));
@@ -472,30 +997,74 @@ export const localData = {
   saveSessions: (items: WorkSession[]): boolean => writeKey(sessionsKey, JSON.stringify(items)),
   /** Écriture incrémentale sûre : fusionne avec le disque (voir `mergeById`) et renvoie la liste réellement enregistrée. */
   mergeSessions: (items: WorkSession[]): WorkSession[] => {
-    const merged = mergeStored(sessionsKey, items, normalizeSession);
-    writeKey(sessionsKey, JSON.stringify(merged));
-    return merged;
+    return mergeAndStore(sessionsKey, items, normalizeSession);
   },
   exercises: (): Exercise[] => (typeof window === "undefined" ? [] : readList(exercisesKey).map(normalizeExercise)),
   /** REMPLACE intégralement la banque stockée — amorçage/réconciliation/restauration, voir `mergeExercises` pour une écriture incrémentale. */
   saveExercises: (items: Exercise[]): boolean => writeKey(exercisesKey, JSON.stringify(items)),
   /** Écriture incrémentale sûre : fusionne avec le disque (voir `mergeById`) et renvoie la liste réellement enregistrée. */
   mergeExercises: (items: Exercise[]): Exercise[] => {
-    const merged = mergeStored(exercisesKey, items, normalizeExercise);
-    writeKey(exercisesKey, JSON.stringify(merged));
-    return merged;
+    return mergeAndStore(exercisesKey, items, normalizeExercise);
   },
   chapters: (): Chapter[] =>
     typeof window === "undefined" ? [] : readList(chaptersKey).map(normalizeChapter).filter((item): item is Chapter => item !== null),
   saveChapters: (items: Chapter[]): boolean => writeKey(chaptersKey, JSON.stringify(items)),
   preferences: (): Preferences => (typeof window === "undefined" ? defaults : normalizePreferences(readRecord(preferencesKey))),
   savePreferences: (preferences: Preferences): boolean => writeKey(preferencesKey, JSON.stringify(preferences)),
-  /** Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`), ou `null` si aucune n'a jamais été faite. */
-  lastBackupAt: (): string | null => (typeof window === "undefined" ? null : localStorage.getItem(lastBackupKey)),
+  /**
+   * Horodatage ISO de la dernière sauvegarde exportée (voir `exportBackup`),
+   * ou `null` si aucune n'a jamais été faite.
+   *
+   * BLINDÉ comme `readList`/`readRecord`, et pas par excès de prudence :
+   * `localStorage.getItem` LÈVE quand le stockage est bloqué (Safari « bloquer
+   * tous les cookies », certains modes privés, iframe tierce). C'était le
+   * seul accès du module qui ne l'était pas — et il est appelé depuis
+   * `readAll()`, donc `refresh()` levait, `setData` n'était jamais appelé et
+   * `ready` ne passait JAMAIS à `true` : toutes les pages restaient figées
+   * sur leurs squelettes, sans un message.
+   */
+  lastBackupAt: (): string | null => {
+    if (typeof window === "undefined") return null;
+    try {
+      return localStorage.getItem(lastBackupKey);
+    } catch {
+      return null;
+    }
+  },
   saveLastBackupAt: (iso: string): boolean => writeKey(lastBackupKey, iso),
+  workItems: (): WorkItem[] => (typeof window === "undefined" ? [] : readList(workItemsKey).map(normalizeWorkItem)),
+  /** REMPLACE intégralement les travaux stockés — restauration d'une sauvegarde uniquement, voir `mergeWorkItems`. */
+  saveWorkItems: (items: WorkItem[]): boolean => writeKey(workItemsKey, JSON.stringify(items)),
+  /**
+   * Écriture incrémentale sûre — même contrat que `mergeSessions`/`mergeExercises`.
+   *
+   * Utilisable ici pour la même raison qu'ailleurs, et à une seule condition :
+   * un travail n'est JAMAIS retiré de la liste, il passe au statut
+   * « abandonné » (voir `WorkItemStatus`). Supprimer physiquement une ligne
+   * casserait l'invariant sur lequel `mergeStored` repose.
+   */
+  mergeWorkItems: (items: WorkItem[]): WorkItem[] => {
+    return mergeAndStore(workItemsKey, items, normalizeWorkItem);
+  },
+  grades: (): Grade[] =>
+    typeof window === "undefined" ? [] : readList(gradesKey).map(normalizeGrade).filter((item): item is Grade => item !== null),
+  /** REMPLACE intégralement les notes — restauration d'une sauvegarde uniquement, voir `mergeGrades`. */
+  saveGrades: (items: Grade[]): boolean => writeKey(gradesKey, JSON.stringify(items)),
+  /**
+   * Écriture incrémentale. Une note SE SUPPRIME (contrairement à une séance
+   * ou un exercice) : on saisit 14 au lieu de 4, on corrige. La fusion par
+   * identifiant ressusciterait la note effacée depuis une copie React
+   * périmée — `saveGrades` remplace donc, comme `saveChapters`, qui a
+   * exactement le même profil.
+   */
   weekSnapshots: (): WeekSnapshot[] =>
     typeof window === "undefined" ? [] : readList(weekSnapshotsKey).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
   saveWeekSnapshots: (items: WeekSnapshot[]): boolean => writeKey(weekSnapshotsKey, JSON.stringify(items)),
+  dayPlans: (): DayPlanRecord[] =>
+    typeof window === "undefined"
+      ? []
+      : readList(dayPlansKey).map(normalizeDayPlanRecord).filter((item): item is DayPlanRecord => item !== null),
+  saveDayPlans: (items: DayPlanRecord[]): boolean => writeKey(dayPlansKey, JSON.stringify(items)),
 };
 
 /**
@@ -522,6 +1091,74 @@ export function daysSinceBackup(lastBackupAt: string | null, now: Date = new Dat
  * dupliquer le mécanisme de sauvegarde. Enregistre l'horodatage à chaque
  * export réussi, seule donnée nouvelle introduite par le rappel.
  */
+/**
+ * Résultat d'une restauration — voir `restoreBackup`.
+ *
+ * Existe parce qu'un booléen ne suffit pas : l'élève doit savoir CE QUI est
+ * passé et ce qui ne l'est pas, sinon « échec » est aussi inexploitable que
+ * l'ancien « réussi » inconditionnel.
+ */
+export interface RestoreOutcome {
+  /** Vrai seulement si les HUIT collections ont été écrites. */
+  ok: boolean;
+  /** Collections réellement écrites, dans l'ordre de tentative. */
+  restored: string[];
+  /** La collection sur laquelle on s'est arrêté, `null` si tout est passé. */
+  failedAt: string | null;
+  /** Vrai quand l'échec est survenu AVANT toute écriture : l'appareil est exactement dans son état d'avant. */
+  intact: boolean;
+}
+
+/**
+ * Restaure une sauvegarde, et DIT LA VÉRITÉ sur ce qui a été écrit.
+ *
+ * L'ancienne version (components/data-backup.tsx) enchaînait huit écritures
+ * sans lire un seul des huit booléens de `writeKey`, puis affichait
+ * « Sauvegarde restaurée » quoi qu'il arrive. Sur un stockage saturé — le cas
+ * NORMAL ici, puisqu'on réécrit une banque de ~2,8 Mo par-dessus une autre —
+ * l'élève se retrouvait avec un mélange de deux appareils : des séances
+ * important d'un fichier, des exercices restés ceux de la machine, ses notes
+ * effacées et jamais remplacées, et la certitude que tout était en place.
+ *
+ * DEUX RÈGLES, et elles suffisent :
+ *
+ *  1. LA BANQUE D'ABORD. C'est de loin la plus grosse écriture, donc celle
+ *     qui échoue en premier ; la tenter en tête garantit que le refus le plus
+ *     probable survient quand RIEN n'a encore été touché (`intact: true`).
+ *  2. ON S'ARRÊTE AU PREMIER REFUS. Poursuivre ne « sauve » rien : cela
+ *     fabrique un état mi-fichier mi-appareil, avec des `exercise_id`
+ *     orphelins. Mieux vaut un état cohérent d'avant qu'un état incohérent
+ *     d'après.
+ *
+ * Les préférences passent en dernier : ce sont les plus petites, et les
+ * seules dont la perte ne coûte que quelques clics.
+ *
+ * Fonction impure par nature (elle écrit), mais sans aucune dépendance React
+ * ni DOM — c'est ce qui la rend testable, ce que le gestionnaire de clic
+ * qu'elle remplace n'était pas.
+ */
+export function restoreBackup(payload: BackupPayload): RestoreOutcome {
+  const steps: Array<[string, () => boolean]> = [
+    ["les exercices", () => localData.saveExercises(payload.exercises)],
+    // Juste après la banque : les exercices y renvoient par `chapter_id`, les
+    // séparer d'une écriture ratée laisserait des chapitres fantômes.
+    ["les chapitres", () => localData.saveChapters(payload.chapters ?? [])],
+    ["les séances", () => localData.saveSessions(payload.sessions)],
+    ["les échéances", () => localData.saveWorkItems(payload.workItems ?? [])],
+    ["les notes", () => localData.saveGrades(payload.grades ?? [])],
+    ["le planning", () => localData.saveDayPlans(payload.dayPlans ?? [])],
+    ["les bilans de semaine", () => localData.saveWeekSnapshots(payload.weekSnapshots ?? [])],
+    ["les réglages", () => localData.savePreferences(normalizePreferences(payload.preferences))],
+  ];
+
+  const restored: string[] = [];
+  for (const [label, write] of steps) {
+    if (!write()) return { ok: false, restored, failedAt: label, intact: restored.length === 0 };
+    restored.push(label);
+  }
+  return { ok: true, restored, failedAt: null, intact: false };
+}
+
 export function exportBackup(): void {
   const data = JSON.stringify(
     {
@@ -536,6 +1173,17 @@ export function exportBackup(): void {
       // fantômes (chapter_id pointant vers un catalogue vide).
       chapters: localData.chapters(),
       weekSnapshots: localData.weekSnapshots(),
+      // Les échéances et les travaux planifiés sont de la saisie MANUELLE de
+      // l'élève — la donnée la moins reconstituable de tout le fichier. Une
+      // sauvegarde qui les oublierait perdrait exactement ce qu'aucun
+      // amorçage ne peut recréer.
+      workItems: localData.workItems(),
+      // Les notes sont saisies à la main et ne se recalculent pas : une
+      // sauvegarde qui les oublierait perdrait un trimestre de résultats.
+      grades: localData.grades(),
+      // Les intentions de planning passées ne sont pas reconstituables non
+      // plus — voir `DayPlanRecord`.
+      dayPlans: localData.dayPlans(),
     },
     null,
     2
@@ -574,6 +1222,12 @@ export interface BackupPayload {
   /** Optionnel : une sauvegarde exportée avant l'ajout des chapitres à l'export n'a pas ce champ ; restauré à `[]` dans ce cas (voir components/data-backup.tsx#confirmImport). */
   chapters?: Chapter[];
   weekSnapshots?: WeekSnapshot[];
+  /** Optionnel : une sauvegarde exportée avant ce chantier n'a pas ce champ ; restauré à `[]` dans ce cas (voir components/data-backup.tsx#confirmImport). */
+  workItems?: WorkItem[];
+  /** Optionnel, même raison — voir `Grade`. */
+  grades?: Grade[];
+  /** Optionnel, même raison — voir `DayPlanRecord`. */
+  dayPlans?: DayPlanRecord[];
 }
 
 /**
@@ -624,5 +1278,22 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   // Idem : absent d'une sauvegarde exportée avant l'ajout des chapitres à
   // l'export ; chaque entrée est revalidée par `normalizeChapter` à la lecture.
   if (data.chapters !== undefined && !Array.isArray(data.chapters)) return false;
+  /*
+   * Les trois collections des chantiers Planning et Analytics ÉCHAPPAIENT à
+   * cette validation — oubli, pas décision. Un fichier dont `workItems` est
+   * une chaîne (sauvegarde tronquée, fusion de deux fichiers, édition
+   * manuelle) était donc accepté, écrit tel quel, puis relu `[]` par
+   * `readList` : toutes les échéances de l'appareil effacées et remplacées
+   * par rien, sans un mot. C'est précisément la donnée que `exportBackup`
+   * décrit comme la moins reconstituable du fichier.
+   *
+   * Même règle que ci-dessus : `undefined` reste valide (sauvegarde
+   * antérieure à ces chantiers), la forme fine de chaque entrée reste du
+   * ressort de `normalizeWorkItem`/`normalizeGrade`/`normalizeDayPlanRecord`
+   * à la lecture.
+   */
+  if (data.workItems !== undefined && !Array.isArray(data.workItems)) return false;
+  if (data.grades !== undefined && !Array.isArray(data.grades)) return false;
+  if (data.dayPlans !== undefined && !Array.isArray(data.dayPlans)) return false;
   return true;
 }

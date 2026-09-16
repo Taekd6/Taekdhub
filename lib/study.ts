@@ -45,7 +45,16 @@ export function totalSeconds(sessions: WorkSession[]) { return sessions.reduce((
 /** Temps déjà investi aujourd'hui (toutes matières confondues), en secondes — source unique, réutilisée par le Dashboard et par la séance bornée par le temps (lib/recommendation.ts côté appelant). */
 export function todaySeconds(sessions: WorkSession[], now: Date = new Date()): number {
   const today = dayKey(now);
-  return totalSeconds(sessions.filter((session) => dayKey(session.started_at) === today));
+  return totalSeconds(
+    sessions.filter((session) => {
+      // Aujourd'hui, ET déjà passé. Une séance datée à 23 h et lue à midi
+      // (horloge décalée, sauvegarde importée) faisait afficher « 90 min
+      // travaillées » et un anneau « Objectif du jour » à 100 % avant même
+      // d'avoir commencé.
+      if (dayKey(session.started_at) !== today) return false;
+      return new Date(session.started_at) <= now;
+    })
+  );
 }
 
 /**

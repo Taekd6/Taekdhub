@@ -1,35 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { useMemo } from "react";
+import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Meter } from "@/components/ui/progress";
 import { Section } from "@/components/ui/section";
 import { Stat, StatRow } from "@/components/ui/stat";
 import { Skeleton } from "@/components/ui/state";
 import { PageBar, Split } from "@/components/ui/layout";
-import { Heatmap } from "@/components/heatmap";
+import { WeekSection } from "@/components/progress/week-section";
+import { ConsistencySection } from "@/components/progress/consistency-section";
+import { EvolutionOverview } from "@/components/progress/evolution-overview";
+import { WorkTimeSection } from "@/components/progress/work-time-section";
+import { SubjectEvolution } from "@/components/progress/subject-evolution";
+import { MasterySection } from "@/components/progress/mastery-section";
+import { GradesSection } from "@/components/progress/grades-section";
+import { WorkAndResults } from "@/components/progress/work-and-results";
 import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
 import { computeChaptersToConsolidate, type ChapterConsolidation } from "@/lib/next-action";
 import { comfortDifficulty, computeWorkingLevel } from "@/lib/recommendation";
+import { computeWeeklyReview } from "@/lib/weekly-review";
 import {
   computeGlobalProgress,
   computeProgressBySubject,
   masteryDistribution,
   progressByChapter,
   statusDistribution,
-  type ChapterProgress,
 } from "@/lib/progress";
 import { computeReadinessBySubject, READINESS_META } from "@/lib/readiness";
-import type { Chapter, WeekSnapshot } from "@/lib/storage";
-import { subjectMeta, subjects, totalSeconds } from "@/lib/study";
+import type { Chapter, Preferences, WeekSnapshot, WorkItem } from "@/lib/storage";
+import { totalSeconds } from "@/lib/study";
 import { compareToPreviousWeek, findPreviousWeekSnapshot } from "@/lib/week-snapshot";
-import { formatDuration } from "@/lib/utils";
-import { cn } from "@/lib/cn";
+import { formatMinutesSpan, formatSpan } from "@/lib/utils";
 import type { Exercise, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -58,11 +63,16 @@ import type { Exercise, WorkSession } from "@/lib/supabase/types";
  * lib/gamification.ts, exactement comme avant.
  */
 export function ProgressOverview() {
-  const { sessions, exercises, chapters, weekSnapshots, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, weekSnapshots, workItems, grades, dayPlans, preferences, saveGrades, ready } = usePrepahubData();
 
   const model = useMemo(
     () => ({
       global: computeGlobalProgress(exercises),
+      // Au moins une fiche engagée ? Même critère que lib/hub.ts et que
+      // `hasChapterEngagement` : c'est ce qui distingue « 0 % » de « non mesuré ».
+      engaged: exercises.some(
+        (exercise) => !exercise.archived && (exercise.attempts > 0 || exercise.status !== "à faire" || exercise.last_worked_at !== null)
+      ),
       bySubject: computeProgressBySubject(exercises),
       byChapter: progressByChapter(exercises, chapters),
       mastery: masteryDistribution(exercises),
@@ -101,46 +111,31 @@ export function ProgressOverview() {
       rail={
         <div className="space-y-8">
           <dl className="divide-y divide-line border-y border-line">
-            <RailStat label="Temps cumulé" value={formatDuration(model.totalTime)} />
+            <RailStat label="Temps cumulé" value={formatSpan(model.totalTime)} />
             <RailStat
               label="Exercices maîtrisés"
               value={`${model.global.masteredCount}`}
               detail={`sur ${model.global.activeCount} actifs`}
             />
-            <RailStat label="Progression globale" value={`${model.global.completionRate} %`} />
+            {/* « non mesuré » plutôt que « 0 % » tant qu'AUCUNE fiche n'a été
+                engagée : sur une banque de 534 exercices fraîchement amorcée,
+                un zéro se lit comme un échec alors que rien n'a été tenté.
+                Même critère que les hubs (lib/hub.ts). */}
+            <RailStat
+              label="Progression globale"
+              value={model.engaged ? `${model.global.completionRate} %` : "non mesuré"}
+            />
             <RailStat label="Série actuelle" value={`${model.streak} j`} />
           </dl>
 
-          <div>
-            <p className="t-label mb-3">Constance · 84 jours</p>
-            <Heatmap workByDay={model.workByDay} />
-            <p className="t-meta mt-3 text-2xs">Chaque case représente une journée de travail enregistrée.</p>
-          </div>
-
-          <div>
-            <p className="t-label mb-3">Par maîtrise déclarée</p>
-            <Distribution
-              rows={model.mastery.map((entry) => ({
-                key: String(entry.mastery),
-                label: `${entry.mastery} %`,
-                count: entry.count,
-                percentage: entry.percentage,
-              }))}
-            />
-          </div>
-
-          <div>
-            <p className="t-label mb-3">Par statut</p>
-            <Distribution
-              rows={model.status.map((entry) => ({
-                key: entry.status,
-                label: entry.status,
-                count: entry.count,
-                percentage: entry.percentage,
-              }))}
-            />
-          </div>
-
+          {/* La heatmap est DESCENDUE dans le flux principal (« Ta
+              régularité ») : c'est un constat qu'on lit, pas un repère qu'on
+              consulte du coin de l'œil. Les deux distributions qui vivaient
+              ici — « par maîtrise déclarée » et « par statut » — ont été
+              retirées : elles décrivaient l'état brut de la banque, ce que la
+              section « Tes progrès » dit désormais mieux, et en le
+              rapportant à une évolution. Deux façons de montrer la même chose
+              valent moins qu'une seule qui conclut. */}
           <div>
             <p className="t-label mb-3">Ce qui mérite ton attention</p>
             <ExerciseBankStats exercises={exercises} sessions={sessions} layout="rail" />
@@ -149,12 +144,60 @@ export function ProgressOverview() {
       }
     >
       <div className="space-y-10">
-        <PageBar title="Progression" lede="Observer les faits pour ajuster ton travail." />
+        <PageBar title="Mon évolution" lede="Comprends ton rythme de travail et ta progression." />
 
-        <TopWeaknesses exercises={exercises} sessions={sessions} chapters={chapters} />
-        <ChapterTable byChapter={model.byChapter} bySubject={model.bySubject} />
-        <DsReadiness exercises={exercises} sessions={sessions} />
+        {/*
+          ORDRE DE LECTURE — celui d'un dimanche soir, pas celui du modèle de
+          données.
+
+            LE BILAN      ce qu'il faut retenir, et quoi faire ensuite.
+            LE RYTHME     ai-je assez travaillé ?
+            LA SEMAINE    ai-je fait ce que j'avais prévu ?
+            LA RÉGULARITÉ est-ce que je m'y mets souvent ?
+            LES MATIÈRES  où part mon temps ?
+            LES PROGRÈS   est-ce que je monte ?
+            LES RÉSULTATS qu'en disent mes notes ?
+            À TRAVAILLER  par quoi je reprends.
+
+          La conclusion vient d'abord, les mesures qui la fondent ensuite : un
+          élève qui n'a que deux minutes doit pouvoir s'arrêter après la
+          première section sans rien manquer d'actionnable.
+        */}
+        <WeeklyReviewSection workItems={workItems} sessions={sessions} exercises={exercises} preferences={preferences} />
+
+        {/* VUE D'ENSEMBLE — cinq chiffres, juste sous le bilan : de quoi
+            répondre à « où j'en suis » sans faire défiler. */}
+        <EvolutionOverview sessions={sessions} exercises={exercises} chapters={chapters} />
+
+        {/* LE TEMPS, la figure principale. Remplace l'ancienne « RhythmSection »,
+            qui ne savait regarder qu'à la semaine : ici le pas est le jour, et
+            la fenêtre se choisit (7 j / 30 j / 3 mois). L'objectif hebdomadaire
+            qu'elle portait a suivi, il n'est pas perdu. */}
+        <WorkTimeSection sessions={sessions} preferences={preferences} />
+
+        {/* LES MATIÈRES. Remplace l'ancienne « SubjectsSection », qui montrait
+            deux répartitions figées (cette semaine, depuis le début) sans
+            jamais dire ce qui BOUGE. */}
+        <SubjectEvolution sessions={sessions} exercises={exercises} chapters={chapters} snapshots={weekSnapshots} />
+
+        <MasterySection exercises={exercises} sessions={sessions} chapters={chapters} weekSnapshots={weekSnapshots} />
+        <GradesSection grades={grades} onSave={saveGrades} />
+        <ConsistencySection sessions={sessions} />
+        <WeekSection dayPlans={dayPlans} sessions={sessions} />
+        <WorkAndResults sessions={sessions} grades={grades} />
         <WeekEvolution exercises={exercises} sessions={sessions} weekSnapshots={weekSnapshots} />
+
+        {/* À TRAVAILLER — la sortie de la page, et elle ne recalcule rien :
+            ces deux sections appellent le moteur de recommandation existant.
+            Aucun second moteur n'est introduit par ce chantier. */}
+        {/* `ChapterTable` a été retirée : elle dépliait TOUS les chapitres de
+            toutes les matières, soit plusieurs milliers de pixels, pour dire
+            ce que « Tes progrès » dit maintenant en trois listes courtes
+            (fragiles, solides, non mesurés) et en le rapportant à une
+            évolution. Deux inventaires du même objet sur la même page valent
+            moins qu'un seul qui conclut. */}
+        <TopWeaknesses exercises={exercises} sessions={sessions} chapters={chapters} />
+        <DsReadiness exercises={exercises} sessions={sessions} />
         <WorkingLevel exercises={exercises} sessions={sessions} />
       </div>
     </Split>
@@ -252,145 +295,7 @@ function TopWeaknesses({
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   TABLEAU PAR CHAPITRE
-   ══════════════════════════════════════════════════════════════════ */
 
-/**
- * Le remplaçant du mur de tuiles.
- *
- * Chaque matière est un groupe repliable ; à l'intérieur, les chapitres sont
- * triés du PLUS FAIBLE au plus solide. C'est le seul ordre qui serve la
- * question posée — l'ordre alphabétique et l'ordre par taille supposent tous
- * deux qu'on sache déjà quel chapitre on cherche.
- *
- * Seule la première matière est ouverte au chargement : trois matières
- * dépliées, c'est de nouveau cinquante lignes d'un coup.
- */
-function ChapterTable({ byChapter, bySubject }: { byChapter: ChapterProgress[]; bySubject: ReturnType<typeof computeProgressBySubject> }) {
-  const groups = useMemo(
-    () =>
-      subjects
-        .map((subject) => ({
-          subject,
-          summary: bySubject.find((entry) => entry.subject === subject),
-          chapters: byChapter
-            .filter((entry) => entry.chapter.subject === subject)
-            .sort((a, b) => a.averageMastery - b.averageMastery || b.total - a.total),
-        }))
-        .filter((group) => group.chapters.length > 0),
-    [byChapter, bySubject]
-  );
-
-  const [open, setOpen] = useState<string | null>(groups[0]?.subject ?? null);
-
-  if (groups.length === 0) {
-    return (
-      <Section label="Par chapitre" title="Chapitre par chapitre">
-        <p className="t-meta">Crée des chapitres depuis un exercice pour voir leur progression ici.</p>
-      </Section>
-    );
-  }
-
-  return (
-    <Section
-      label="Par chapitre"
-      title="Chapitre par chapitre"
-      description="Du plus fragile au plus solide, dans chaque matière. Clique une ligne pour en ouvrir les exercices."
-    >
-      <div className="border-t border-line">
-        {groups.map(({ subject, summary, chapters: rows }) => {
-          const expanded = open === subject;
-          return (
-            <div key={subject} className="border-b border-line">
-              <button
-                type="button"
-                onClick={() => setOpen(expanded ? null : subject)}
-                aria-expanded={expanded}
-                className="row-hover flex w-full items-center gap-3 rounded-md px-1 py-3 text-left max-lg:min-h-[3.25rem]"
-              >
-                <span
-                  className={cn(
-                    "grid h-6 w-6 shrink-0 place-items-center rounded-md text-[0.6875rem] font-semibold",
-                    subjectMeta[subject].className
-                  )}
-                >
-                  {subjectMeta[subject].short}
-                </span>
-                <span className="t-subhead min-w-0 flex-1 truncate">{subject}</span>
-                <span className="t-meta tabular shrink-0">
-                  {rows.length} chapitre{rows.length > 1 ? "s" : ""}
-                </span>
-                {summary && (
-                  <span className="tabular hidden w-16 shrink-0 text-right text-sm text-muted sm:block">
-                    {summary.completionRate} %
-                  </span>
-                )}
-                <ChevronDown
-                  size={15}
-                  className={cn("shrink-0 text-subtle transition-transform duration-150", expanded && "rotate-180")}
-                />
-              </button>
-
-              {expanded && (
-                <ul className="animate-fade-in pb-2">
-                  {rows.map(({ chapter, total, mastered, averageMastery, completionRate }) => (
-                    <li key={chapter.id}>
-                      <Link
-                        href={`/exercises?chapter=${encodeURIComponent(chapter.id)}`}
-                        className="row-hover flex items-center gap-3 rounded-md py-2 pl-10 pr-1 max-lg:min-h-11"
-                      >
-                        <span className="min-w-0 flex-1 truncate text-sm text-ink">{chapter.label}</span>
-                        <span className="t-meta tabular hidden w-16 shrink-0 text-right sm:block">
-                          {mastered} / {total}
-                        </span>
-                        {/* La barre porte la MAÎTRISE MOYENNE (un continuum),
-                            le chiffre le taux d'exercices achevés : deux
-                            informations différentes, pas la même deux fois. */}
-                        <Meter
-                          value={averageMastery}
-                          className="w-20 shrink-0 sm:w-28"
-                          tone={averageMastery >= 70 ? "success" : averageMastery >= 35 ? "warning" : "danger"}
-                        />
-                        <span
-                          className={cn(
-                            "tabular w-10 shrink-0 text-right text-xs",
-                            completionRate >= 70 ? "text-emerald-300" : completionRate > 0 ? "text-amber-300" : "text-subtle"
-                          )}
-                        >
-                          {completionRate} %
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </Section>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   RÉPARTITIONS
-   ══════════════════════════════════════════════════════════════════ */
-
-/** Une distribution = des lignes étiquette / barre / compte. Le titre est posé par l'appelant. */
-function Distribution({ rows }: { rows: { key: string; label: string; count: number; percentage: number }[] }) {
-  return (
-    <ul className="space-y-2">
-      {rows.map((row) => (
-        <li key={row.key} className="flex items-center gap-2.5">
-          <span className="w-14 shrink-0 text-2xs capitalize text-muted">{row.label}</span>
-          <Meter value={row.percentage} className="flex-1" tone="neutral" />
-          <span className="tabular w-7 shrink-0 text-right text-2xs text-muted">{row.count}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 /* ══════════════════════════════════════════════════════════════════
    ÉVOLUTION / NIVEAU / DS
@@ -402,8 +307,18 @@ function withSign(value: number, unit = ""): string {
   return `${value > 0 ? "+" : ""}${value}${unit}`;
 }
 
+/**
+ * Variation de TEMPS — « +2 h 15 », « −5 h », « ±0 ».
+ *
+ * Exprimée dans la même unité que la valeur qu'elle commente : sous un
+ * « 12 h 40 », un détail « −300 min » oblige à faire la division de tête.
+ * Le signe est composé avec le vrai moins typographique (U+2212), qui a la
+ * chasse d'un chiffre — le trait d'union laissait la colonne bancale.
+ */
 function withSignMinutes(seconds: number): string {
-  return withSign(Math.round(seconds / 60), " min");
+  const minutes = Math.round(seconds / 60);
+  if (minutes === 0) return "±0";
+  return `${minutes > 0 ? "+" : "−"}${formatMinutesSpan(Math.abs(minutes))}`;
 }
 
 /**
@@ -437,14 +352,27 @@ function WeekEvolution({
   }
 
   return (
-    <Section label="Mémoire" title="Évolution" description="Par rapport à la semaine précédente.">
+    <Section
+      label="Mémoire"
+      title="Évolution"
+      /* « À CE STADE », comme partout ailleurs. La section mettait le total
+         de la semaine EN COURS face à celui de la semaine précédente
+         COMPLÈTE : chaque lundi matin, l'écran annonçait en rouge la perte de
+         tout le travail de la semaine passée (« 0 min · −7 h »). Le chiffre
+         est juste, c'est la comparaison qui ne l'était pas — on le dit. */
+      description="Par rapport à la semaine précédente, à ce stade de la semaine."
+    >
       <StatRow>
         <Stat
           label="Temps travaillé"
-          value={formatDuration(comparison.currentTotalSeconds)}
+          value={formatSpan(comparison.currentTotalSeconds)}
           detail={withSignMinutes(comparison.deltaTotalSeconds)}
           size="sm"
-          tone={comparison.deltaTotalSeconds > 0 ? "success" : comparison.deltaTotalSeconds < 0 ? "danger" : undefined}
+          /* Plus de ROUGE sur un écart négatif : une semaine en cours est
+             par construction en retard sur une semaine terminée, et teinter
+             ce fait en alerte transforme une mécanique de calendrier en
+             reproche. Le signe suffit à le dire. */
+          tone={comparison.deltaTotalSeconds > 0 ? "success" : undefined}
         />
         <Stat
           label="Exercices maîtrisés"
@@ -459,22 +387,10 @@ function WeekEvolution({
           detail={withSign(comparison.deltaCompletionRate, " pt")}
           size="sm"
         />
-        {comparison.mostImprovedSubject && (
-          <Stat
-            label="A le plus progressé"
-            value={comparison.mostImprovedSubject.subject}
-            detail={`${withSign(comparison.mostImprovedSubject.deltaCompletionRate, " pt")} de maîtrise`}
-            size="sm"
-          />
-        )}
-        {comparison.mostNeglectedSubject && (
-          <Stat
-            label="La moins travaillée"
-            value={comparison.mostNeglectedSubject.subject}
-            detail={`${formatDuration(comparison.mostNeglectedSubject.currentSeconds)} cette semaine`}
-            size="sm"
-          />
-        )}
+        {/* « A le plus progressé » et « La moins travaillée » ont été retirées :
+            « Tes matières » dit maintenant la même chose matière par matière,
+            avec le temps ET l'avancement, au lieu de n'en désigner qu'une. Deux
+            rendus du même fait sur la même page valent moins qu'un seul. */}
       </StatRow>
     </Section>
   );
@@ -561,7 +477,7 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
                   ? "Aucune séance enregistrée pour l'instant."
                   : `${completionRate} % maîtrisé${
                       flaggedCount > 0
-                        ? ` · ${flaggedCount} exercice${flaggedCount > 1 ? "s" : ""} à retravailler · ≈ ${estimatedMinutes} min`
+                        ? ` · ${flaggedCount} exercice${flaggedCount > 1 ? "s" : ""} à retravailler · ≈ ${formatMinutesSpan(estimatedMinutes)}`
                         : ""
                     }`}
               </span>
@@ -575,6 +491,79 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
           );
         })}
       </ul>
+    </Section>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   BILAN DE LA SEMAINE
+   ══════════════════════════════════════════════════════════════════ */
+
+/**
+ * « Mesure → interprétation → action », dans cet ordre et sur trois niveaux
+ * typographiques.
+ *
+ * Le reproche fait à cet écran était juste : il mesurait beaucoup et
+ * n'interprétait presque rien. « 45 min », « 1 % », « 8 exercices » sont
+ * exacts et inutilisables à sept heures du matin. Cette section ajoute la
+ * couche manquante — quelques chiffres, quelques CONSTATS, et UN conseil.
+ *
+ * Elle n'affiche rigoureusement rien qui ne sorte d'un calcul de
+ * lib/weekly-review.ts : une semaine sans rien de notable produit une liste
+ * de constats vide et aucun conseil, et c'est le comportement voulu. Un
+ * conseil générique ne vaut pas mieux que pas de conseil — il vaut moins,
+ * parce qu'il apprend à ignorer les suivants.
+ */
+function WeeklyReviewSection({
+  workItems,
+  sessions,
+  exercises,
+  preferences,
+}: {
+  workItems: WorkItem[];
+  sessions: WorkSession[];
+  exercises: Exercise[];
+  preferences: Preferences;
+}) {
+  const review = useMemo(
+    () => computeWeeklyReview(workItems, sessions, exercises, preferences),
+    [workItems, sessions, exercises, preferences]
+  );
+
+  if (review.totalMinutes === 0 && review.findings.length === 0) return null;
+
+  return (
+    <Section label="Cette semaine" title="Ton bilan" description="Ce que les données de la semaine permettent réellement de dire — et rien d'autre.">
+      <StatRow>
+        <Stat label="Travaillé" value={formatSpan(review.totalMinutes * 60)} size="sm" />
+        {review.bySubject.slice(0, 2).map((entry) => (
+          <Stat key={entry.subject} label={entry.subject} value={formatSpan(entry.minutes * 60)} size="sm" />
+        ))}
+        {review.completedCount > 0 && <Stat label="Travaux terminés" value={review.completedCount} size="sm" />}
+        {review.postponedCount > 0 && <Stat label="Reports" value={review.postponedCount} size="sm" />}
+      </StatRow>
+
+      {review.findings.length > 0 && (
+        <div className="mt-6">
+          <p className="t-label mb-2">À retenir</p>
+          {/* Des constats, pas des métriques : chacun est une phrase complète,
+              et chacun cite le chiffre dont il sort. */}
+          <ul className="divide-y divide-line border-y border-line">
+            {review.findings.map((finding) => (
+              <li key={finding.key} className="py-2.5 text-sm text-ink">
+                {finding.sentence}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {review.advice && (
+        <div className="mt-6 border-t border-line pt-4">
+          <p className="t-label mb-1.5">Pour la suite</p>
+          <p className="t-lede">{review.advice}</p>
+        </div>
+      )}
     </Section>
   );
 }

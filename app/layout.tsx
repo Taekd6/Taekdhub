@@ -114,7 +114,21 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr" className={`${sans.variable} ${serif.variable}`}>
+    /*
+     * `suppressHydrationWarning` sur `<html>` UNIQUEMENT — pas sur le corps
+     * de la page.
+     *
+     * Le script anti-flash ci-dessous pose `data-theme` sur cette balise
+     * AVANT que React n'hydrate, précisément pour éviter l'éclair de thème
+     * clair au chargement. React compare alors un `<html>` serveur sans
+     * `data-theme` à un `<html>` client qui en porte un, et signale une
+     * divergence d'hydratation dans la console à chaque page, en thème
+     * sombre. La divergence est voulue et sans conséquence : l'attribut est
+     * écrit par le script, jamais par le rendu. On la tait ici, à la portée
+     * la plus étroite possible — aucun contenu rendu par React n'est couvert
+     * par cette exemption.
+     */
+    <html lang="fr" suppressHydrationWarning className={`${sans.variable} ${serif.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

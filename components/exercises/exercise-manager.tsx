@@ -568,6 +568,8 @@ export function ExerciseManager() {
         update={update}
         sessions={sessions}
         saveSessions={saveSessions}
+        exercises={exercises}
+        chapters={chapters}
         onClose={() => setFocusMode(false)}
         reasons={recommendationReasons.get(selected.id)}
         onPrev={previousId ? () => goTo(previousId) : undefined}

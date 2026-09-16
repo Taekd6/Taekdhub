@@ -3,19 +3,28 @@
 import { AlertTriangle, Download, Upload } from "lucide-react";
 import { ChangeEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/cn";
 import { Section } from "@/components/ui/section";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { exportBackup, localData, validateBackupPayload, type BackupPayload } from "@/lib/storage";
+import { exportBackup, restoreBackup, validateBackupPayload, type BackupPayload } from "@/lib/storage";
 
 export function DataBackup() {
   const { refresh } = usePrepahubData();
   const input = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
+  /*
+   * Un échec de restauration ne peut pas s'afficher comme une confirmation.
+   * `role="alert"` (et non `status`) le fait annoncer immédiatement par un
+   * lecteur d'écran, et la teinte reprend celle déjà employée par
+   * <StorageAlert> pour exactement le même sujet — le disque plein.
+   */
+  const [failed, setFailed] = useState(false);
   const [pendingImport, setPendingImport] = useState<BackupPayload | null>(null);
 
   function exportData() {
     exportBackup();
     refresh();
+    setFailed(false);
     setMessage("Sauvegarde téléchargée.");
   }
 
@@ -29,10 +38,12 @@ export function DataBackup() {
         const data = JSON.parse(String(reader.result));
         if (!validateBackupPayload(data)) throw new Error();
         // Rien n'est écrit ici : on attend la confirmation explicite de l'utilisateur.
+        setFailed(false);
         setMessage("");
         setPendingImport(data);
       } catch {
         setPendingImport(null);
+        setFailed(true);
         setMessage("Ce fichier n'est pas une sauvegarde TaekdHub valide.");
       }
     };
@@ -41,22 +52,46 @@ export function DataBackup() {
 
   function confirmImport() {
     if (!pendingImport) return;
-    localData.saveExercises(pendingImport.exercises);
-    localData.saveSessions(pendingImport.sessions);
-    localData.savePreferences(pendingImport.preferences);
-    // Chapitres : indispensables pour que les `chapter_id` des exercices
-    // pointent vers un catalogue réel. Absents d'une sauvegarde ancienne
-    // (exportée avant l'ajout des chapitres à l'export) → restaurés à [].
-    localData.saveChapters(pendingImport.chapters ?? []);
-    // Sauvegarde d'avant le Sprint 2.1 : pas de weekSnapshots dans le fichier, restaurés à [] proprement.
-    localData.saveWeekSnapshots(pendingImport.weekSnapshots ?? []);
+    /*
+     * Toute la logique est dans lib/storage.ts#restoreBackup : elle écrit la
+     * banque en premier, s'arrête au premier refus et renvoie exactement ce
+     * qui est passé. Ici, on ne fait plus que le DIRE.
+     *
+     * L'ancienne version enchaînait huit écritures sans lire un seul de leurs
+     * retours, puis affichait « Sauvegarde restaurée » quoi qu'il arrive —
+     * y compris quand le quota avait laissé les exercices de la machine face
+     * aux séances du fichier, notes effacées au passage.
+     */
+    const outcome = restoreBackup(pendingImport);
     setPendingImport(null);
-    setMessage("Sauvegarde restaurée. Recharge la page.");
+    // Dans tous les cas : l'état React doit refléter le disque, pas
+    // l'intention. Sans ce `refresh`, les formulaires de Réglages gardaient
+    // leur instantané d'AVANT l'import et le réécrivaient au clic suivant.
+    refresh();
+
+    setFailed(!outcome.ok);
+    if (outcome.ok) {
+      setMessage("Sauvegarde restaurée. Recharge la page.");
+      return;
+    }
+    if (outcome.intact) {
+      setMessage(
+        `Restauration impossible : l'enregistrement a échoué sur ${outcome.failedAt}, faute de place. Rien n'a été modifié sur cet appareil — libère de l'espace, puis réessaie.`
+      );
+      return;
+    }
+    // « l'enregistrement de les séances » : les libellés portent déjà leur
+    // article, on ne peut donc pas les faire suivre d'un « de ». La phrase
+    // est tournée pour que l'article reste correct quel que soit l'élément.
+    setMessage(
+      `Restauration INCOMPLÈTE : ${outcome.restored.join(", ")} ${outcome.restored.length > 1 ? "ont été restaurés" : "a été restauré"}, puis l'enregistrement a échoué sur ${outcome.failedAt}, faute de place. Le reste est resté tel qu'il était sur cet appareil. Libère de l'espace, puis relance l'import du même fichier.`
+    );
   }
 
   function cancelImport() {
     // Aucune donnée locale n'a été touchée : on jette simplement le fichier lu.
     setPendingImport(null);
+    setFailed(false);
     setMessage("Import annulé, aucune donnée n'a été modifiée.");
   }
 
@@ -131,7 +166,7 @@ export function DataBackup() {
       </>
 
       {message && (
-        <p role="status" className="mt-4 text-sm text-accent">
+        <p role={failed ? "alert" : "status"} className={cn("mt-4 text-sm", failed ? "text-rose-300" : "text-accent")}>
           {message}
         </p>
       )}

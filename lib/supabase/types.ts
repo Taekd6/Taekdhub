@@ -176,6 +176,32 @@ export interface WorkSession {
    * comme pour `result`.
    */
   hints_used: number | null;
+  /**
+   * Travail planifié (`WorkItem`, lib/storage.ts) auquel cette séance a été
+   * consacrée, ou `null` pour une séance qui n'en servait aucun — cas de
+   * toutes les séances antérieures à ce champ, et de toute séance libre.
+   *
+   * C'est l'UNIQUE lien entre le temps réellement passé et le travail à
+   * faire, et il est posé ici — sur la séance — plutôt que sur le `WorkItem`
+   * pour deux raisons.
+   *
+   * D'abord parce que `WorkItem` ne doit stocker AUCUNE durée réalisée : la
+   * règle du Sprint 2.6 (voir `Exercise`, plus bas — « ne stocke plus aucune
+   * durée cumulée, pour éliminer tout risque de divergence ») vaut
+   * exactement de la même façon ici. Le temps fait sur un DM se SOMME depuis
+   * les séances, il ne se recopie pas.
+   *
+   * Ensuite parce qu'une séance est une ligne NEUVE à chaque fois : deux
+   * onglets ouverts ne se disputent jamais la même. Un tableau
+   * `sessionIds[]` porté par le `WorkItem`, lui, serait réécrit à chaque
+   * séance, et la fusion par identifiant de lib/storage.ts#mergeStored y
+   * perdrait des entrées dès qu'une copie React est périmée.
+   *
+   * Champ purement local : `work_items` n'a pas de miroir Supabase (comme
+   * `Chapter` et `Preferences`), donc la colonne correspondante n'existe pas
+   * en base. Il est ignoré côté serveur, exactement comme `Preferences`.
+   */
+  work_item_id: string | null;
 }
 
 /** Résultat d'une tentative de travail sur un exercice — voir `WorkSession.result`. */

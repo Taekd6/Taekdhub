@@ -77,8 +77,23 @@ export function relativeLuminance([r, g, b]: [number, number, number]): number {
  * le thème, si `--accent-ink-rgb` vaut cette version assombrie (clair) ou
  * l'accent tel quel (sombre). Un seul endroit tranche, jamais deux.
  */
-/** Calibré pour 4,5:1 sur `--canvas` en thème clair (#f4f5f7) — la surface la plus sombre où l'encre se pose. */
-const INK_MAX_LUMINANCE = 0.163;
+/*
+ * Calibré pour 4,5:1 sur LA SURFACE LA PLUS SOMBRE où l'encre se pose en
+ * thème clair — aplats translucides des badges compris, soit rgb(241 237 228)
+ * mesuré au navigateur.
+ *
+ * La valeur précédente (0,163) visait « #f4f5f7 », un canvas gris-bleu que la
+ * palette n'utilise plus depuis qu'elle est passée aux neutres chauds : le
+ * fond réel étant plus sombre, le plafond ne tenait plus sa promesse. Mesuré
+ * en thème clair : 4,22:1 sur le badge « Important » de /echeances et sur
+ * l'option retenue du sélecteur de thème — deux échecs AA sur du texte de
+ * 14 px, avec l'accent par défaut comme avec tous les autres.
+ *
+ * 0,145 donne 4,61:1 sur ce même fond, avec une marge pour l'arrondi de la
+ * mise à l'échelle. L'écart visuel est d'un cran (rgb 142,106,56 →
+ * rgb 134,100,53) : la teinte reste la même, elle passe juste le seuil.
+ */
+const INK_MAX_LUMINANCE = 0.145;
 /** Aplat principal en thème clair : nettement plus sombre que l'encre, pour porter du texte blanc (≈ 11:1) au lieu d'être un surligneur. */
 const DEEP_MAX_LUMINANCE = 0.045;
 

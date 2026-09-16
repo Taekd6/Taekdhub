@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { lastStorageWriteFailure, localData, normalizePreferences, normalizeSession, validateBackupPayload } from "@/lib/storage";
+import { lastStorageWriteFailure, localData, normalizePreferences, normalizeSession, normalizeWorkItem, restoreBackup, validateBackupPayload } from "@/lib/storage";
+import { hexToRgb } from "@/lib/theme";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -396,5 +397,324 @@ describe("normalize* — un compteur négatif ne franchit jamais la frontière d
     const [exercise] = withWritableStorage({ "prepahub:exercises": JSON.stringify(raw) }, () => localData.exercises());
     expect(exercise.attempts).toBe(0);
     expect(exercise.estimated_minutes).toBeNull();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   MIGRATION — le chantier planning ne doit invalider AUCUNE donnée
+   ══════════════════════════════════════════════════════════════════ */
+
+describe("WorkSession — le nouveau champ ne casse aucune séance existante", () => {
+  /**
+   * §24 du cahier des charges : aucune donnée existante ne doit devenir
+   * invalide. `work_item_id` suit exactement le protocole de `result` et
+   * `hints_used` avant lui — absent d'une séance antérieure, il vaut `null`
+   * et n'est jamais rattaché après coup à un travail qui n'existait pas.
+   */
+  it("une séance enregistrée avant ce chantier reste valide, avec un rattachement nul", () => {
+    const session = normalizeSession(makeRawSession());
+    expect(session.work_item_id).toBeNull();
+    expect(session.duration_seconds).toBe(600);
+  });
+
+  it("un rattachement présent est conservé tel quel", () => {
+    expect(normalizeSession(makeRawSession({ work_item_id: "w-1" })).work_item_id).toBe("w-1");
+  });
+
+  it("un rattachement corrompu retombe à null plutôt que de propager n'importe quoi", () => {
+    expect(normalizeSession(makeRawSession({ work_item_id: 42 })).work_item_id).toBeNull();
+  });
+});
+
+describe("normalizeWorkItem — frontière de confiance du travail planifié", () => {
+  it("un travail vide ne plante pas et reçoit des valeurs sûres", () => {
+    const item = normalizeWorkItem({});
+    expect(item.title).toBe("Travail sans titre");
+    expect(item.kind).toBe("autre");
+    expect(item.status).toBe("à faire");
+    expect(item.estimatedMinutes).toBeGreaterThan(0);
+    expect(item.dueDate).toBeNull();
+  });
+
+  it("une durée nulle est ramenée à au moins une minute — un travail à 0 min serait invisible du planificateur tout en restant affiché", () => {
+    expect(normalizeWorkItem({ estimatedMinutes: 0 }).estimatedMinutes).toBeGreaterThan(0);
+  });
+
+  it("une date d'échéance illisible est écartée, jamais propagée", () => {
+    expect(normalizeWorkItem({ dueDate: "jeudi prochain" }).dueDate).toBeNull();
+    expect(normalizeWorkItem({ dueDate: "2026-13-45" }).dueDate).toBeNull();
+    expect(normalizeWorkItem({ dueDate: "2026-09-17" }).dueDate).toBe("2026-09-17");
+  });
+
+  it("une heure hors format est écartée", () => {
+    expect(normalizeWorkItem({ dueTime: "25:00" }).dueTime).toBeNull();
+    expect(normalizeWorkItem({ dueTime: "08:00" }).dueTime).toBe("08:00");
+  });
+
+  it("une matière inconnue devient « sans matière » plutôt qu'une matière inventée", () => {
+    expect(normalizeWorkItem({ subject: "Philosophie" }).subject).toBeNull();
+    expect(normalizeWorkItem({ subject: "Physique" }).subject).toBe("Physique");
+  });
+
+  it("une date d'achèvement sur un travail non terminé est effacée — elle fausserait le bilan hebdomadaire", () => {
+    const item = normalizeWorkItem({ status: "en cours", completedAt: "2026-09-10T00:00:00.000Z" });
+    expect(item.completedAt).toBeNull();
+  });
+
+  it("les reports malformés sont écartés un par un, sans perdre les valides", () => {
+    const item = normalizeWorkItem({
+      postponements: [
+        { at: "2026-09-14T08:00:00.000Z", fromDate: "2026-09-14", toDate: "2026-09-15" },
+        { at: "n'importe quoi", fromDate: "2026-09-14", toDate: "2026-09-15" },
+        "pas un objet",
+      ],
+    });
+    expect(item.postponements).toHaveLength(1);
+  });
+});
+
+describe("sauvegarde — les échéances voyagent, et une ancienne sauvegarde reste importable", () => {
+  it("une sauvegarde d'avant ce chantier reste valide : `workItems` est simplement absent", () => {
+    const legacy = {
+      version: 1,
+      exportedAt: "2026-09-01T00:00:00.000Z",
+      exercises: [],
+      sessions: [],
+      preferences: { displayName: "Taekd" },
+    };
+    expect(validateBackupPayload(legacy)).toBe(true);
+    expect((legacy as { workItems?: unknown[] }).workItems).toBeUndefined();
+  });
+
+  it("un travail traverse un cycle export → JSON → import sans rien perdre", () => {
+    const original = normalizeWorkItem({
+      id: "w-1",
+      title: "DM de maths",
+      kind: "dm",
+      subject: "Mathématiques",
+      estimatedMinutes: 120,
+      dueDate: "2026-09-17",
+      dueTime: "08:00",
+      status: "en cours",
+      important: true,
+      notBeforeDate: "2026-09-15",
+      chapterIds: ["c-1"],
+      createdAt: "2026-09-14T08:00:00.000Z",
+      postponements: [{ at: "2026-09-14T08:00:00.000Z", fromDate: "2026-09-14", toDate: "2026-09-15" }],
+    });
+    expect(normalizeWorkItem(JSON.parse(JSON.stringify(original)))).toEqual(original);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LOT ① — INTÉGRITÉ : ne jamais annoncer réussi ce qui ne l'est pas
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Stockage à BUDGET, plus fidèle que le `refuse` global : il laisse passer les
+ * premières écritures et refuse les suivantes, ce qui est exactement le
+ * comportement d'un quota atteint en cours de restauration — le seul moyen de
+ * reproduire l'état mi-fichier mi-appareil que `restoreBackup` doit empêcher.
+ */
+function withQuotaStorage<T>(entries: Record<string, string>, budget: number, run: () => T): T {
+  const store: Record<string, string> = { ...entries };
+  let used = 0;
+  const stub = {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => {
+      if (used + value.length > budget) {
+        const error = new Error("QuotaExceededError");
+        error.name = "QuotaExceededError";
+        throw error;
+      }
+      used += value.length;
+      store[key] = value;
+    },
+  };
+  const globals = globalThis as unknown as { window?: unknown; localStorage?: unknown };
+  const previousWindow = globals.window;
+  const previousStorage = globals.localStorage;
+  globals.window = globals.window ?? {};
+  globals.localStorage = stub;
+  try {
+    return run();
+  } finally {
+    globals.window = previousWindow;
+    globals.localStorage = previousStorage;
+  }
+}
+
+function backup(overrides: Record<string, unknown> = {}) {
+  return {
+    exercises: [],
+    sessions: [],
+    preferences: { displayName: "Léo", dailyGoalMinutes: 90 },
+    chapters: [],
+    weekSnapshots: [],
+    workItems: [],
+    grades: [],
+    dayPlans: [],
+    ...overrides,
+  } as never;
+}
+
+describe("restoreBackup — une restauration partielle ne s'annonce jamais réussie", () => {
+  it("tout passe → ok, rien en échec", () => {
+    const outcome = withQuotaStorage({}, 1_000_000, () => restoreBackup(backup()));
+    expect(outcome.ok).toBe(true);
+    expect(outcome.failedAt).toBeNull();
+    expect(outcome.restored).toHaveLength(8);
+  });
+
+  it("la banque ne passe pas → RIEN n'est touché, et c'est dit", () => {
+    const outcome = withQuotaStorage({}, 1, () =>
+      restoreBackup(backup({ exercises: [{ id: "x", subject: "Mathématiques", title: "t", source: "s", difficulty: 3, status: "à faire", created_at: "2026-01-01T00:00:00.000Z" }] }))
+    );
+    expect(outcome.ok).toBe(false);
+    expect(outcome.intact).toBe(true);
+    expect(outcome.restored).toEqual([]);
+    expect(outcome.failedAt).toBe("les exercices");
+  });
+
+  it("un refus EN COURS de restauration s'arrête net et nomme ce qui est passé", () => {
+    // Budget calibré pour laisser entrer les premières écritures puis refuser.
+    const outcome = withQuotaStorage({}, 12, () => restoreBackup(backup()));
+    expect(outcome.ok).toBe(false);
+    expect(outcome.intact).toBe(false);
+    expect(outcome.restored.length).toBeGreaterThan(0);
+    expect(outcome.failedAt).not.toBeNull();
+    // Et surtout : ce qui a échoué n'est JAMAIS compté comme restauré.
+    expect(outcome.restored).not.toContain(outcome.failedAt);
+  });
+
+  it("la banque est tentée EN PREMIER — c'est ce qui rend l'échec inoffensif", () => {
+    const outcome = withQuotaStorage({}, 1_000_000, () => restoreBackup(backup()));
+    expect(outcome.restored[0]).toBe("les exercices");
+  });
+
+  it("les préférences restaurées passent par la normalisation, jamais telles quelles", () => {
+    // Un fichier de sauvegarde édité à la main ne doit pas pouvoir déposer
+    // dans le localStorage une valeur qui fera planter lib/theme.ts au
+    // prochain démarrage — cf. la page blanche sur TOUTES les routes.
+    const prefs = withQuotaStorage({}, 1_000_000, () => {
+      const outcome = restoreBackup(backup({ preferences: { accent: 42, contestDate: "demain", dailyGoalMinutes: "beaucoup" } }));
+      expect(outcome.ok).toBe(true);
+      return localData.preferences();
+    });
+    expect(hexToRgb(prefs.accent)).not.toBeNull();
+    expect(prefs.contestDate).toBe("");
+    expect(prefs.dailyGoalMinutes).toBeGreaterThan(0);
+  });
+});
+
+describe("normalizePreferences — frontière de trust réelle, pas trois champs sur huit", () => {
+  it("un accent non textuel retombe sur le défaut au lieu de faire planter applyAccent", () => {
+    const prefs = normalizePreferences({ accent: 42 });
+    expect(typeof prefs.accent).toBe("string");
+    // Le vrai critère : la valeur produite doit être ACCEPTÉE par l'analyseur qui l'utilisera.
+    expect(hexToRgb(prefs.accent)).not.toBeNull();
+  });
+
+  it("un accent textuel mais invalide est refusé lui aussi", () => {
+    expect(hexToRgb(normalizePreferences({ accent: "rouge vif" }).accent)).not.toBeNull();
+  });
+
+  it("une date de concours illisible ne peut plus atteindre Intl.DateTimeFormat", () => {
+    const prefs = normalizePreferences({ contestDate: "pas-une-date" });
+    expect(prefs.contestDate).toBe("");
+    // Reproduit littéralement l'appel de components/dashboard-overview.tsx.
+    expect(() => prefs.contestDate && new Intl.DateTimeFormat("fr-FR").format(new Date(prefs.contestDate))).not.toThrow();
+  });
+
+  it("une date de concours réelle est conservée", () => {
+    expect(normalizePreferences({ contestDate: "2027-05-04" }).contestDate).toBe("2027-05-04");
+  });
+
+  it("un objectif nul, négatif ou non numérique ne devient jamais un dénominateur", () => {
+    for (const value of [0, -30, "beaucoup", null, Number.NaN]) {
+      const prefs = normalizePreferences({ dailyGoalMinutes: value, weeklyGoalMinutes: value });
+      expect(prefs.dailyGoalMinutes).toBeGreaterThan(0);
+      expect(prefs.weeklyGoalMinutes).toBeGreaterThan(0);
+      expect(Number.isFinite(100 / prefs.dailyGoalMinutes)).toBe(true);
+    }
+  });
+
+  it("un nom d'affichage non textuel ne traverse pas", () => {
+    expect(typeof normalizePreferences({ displayName: { evil: true } }).displayName).toBe("string");
+  });
+
+  it("aucune clé étrangère ne ressort des préférences", () => {
+    const prefs = normalizePreferences({ __proto__: null, intrus: "oui", autre: 1 }) as Record<string, unknown>;
+    expect(Object.keys(prefs).sort()).toEqual(
+      ["accent", "capacityByWeekday", "contestDate", "dailyGoalMinutes", "displayName", "planningMarginPercent", "themeMode", "weeklyGoalMinutes"]
+    );
+  });
+});
+
+describe("validateBackupPayload — les trois collections récentes ne passent plus en aveugle", () => {
+  const base = { exercises: [], sessions: [], preferences: {} };
+
+  it("refuse un fichier dont les échéances ne sont pas une liste", () => {
+    expect(validateBackupPayload({ ...base, workItems: "oups" })).toBe(false);
+  });
+
+  it("refuse un fichier dont les notes ne sont pas une liste", () => {
+    expect(validateBackupPayload({ ...base, grades: 42 })).toBe(false);
+  });
+
+  it("refuse un fichier dont le planning n'est pas une liste", () => {
+    expect(validateBackupPayload({ ...base, dayPlans: { a: 1 } })).toBe(false);
+  });
+
+  it("accepte toujours une sauvegarde ANCIENNE, où ces trois clés sont absentes", () => {
+    expect(validateBackupPayload(base)).toBe(true);
+  });
+});
+
+describe("lastBackupAt — un stockage bloqué ne fige plus l'application", () => {
+  it("renvoie null au lieu de lever quand getItem est refusé", () => {
+    const globals = globalThis as unknown as { window?: unknown; localStorage?: unknown };
+    const previousWindow = globals.window;
+    const previousStorage = globals.localStorage;
+    globals.window = globals.window ?? {};
+    globals.localStorage = {
+      getItem: () => {
+        throw new Error("SecurityError");
+      },
+      setItem: () => {
+        throw new Error("SecurityError");
+      },
+    };
+    try {
+      // C'est l'appel exact que fait readAll() dans hooks/use-prepahub-data.ts :
+      // s'il lève, `ready` ne passe jamais à true et toutes les pages restent
+      // bloquées sur leurs squelettes.
+      expect(() => localData.lastBackupAt()).not.toThrow();
+      expect(localData.lastBackupAt()).toBeNull();
+    } finally {
+      globals.window = previousWindow;
+      globals.localStorage = previousStorage;
+    }
+  });
+});
+
+describe("merge* — l'état React reçoit ce qui est sur le DISQUE, pas l'intention", () => {
+  it("une fusion refusée renvoie le disque intact, jamais la liste voulue", () => {
+    const disk = [rawSession("s-1", "2026-01-01T08:00:00.000Z")];
+    const stored = withWritableStorage(
+      { "prepahub:sessions": JSON.stringify(disk) },
+      () => localData.mergeSessions([normalizeSession(rawSession("s-2", "2026-02-01T08:00:00.000Z"))]),
+      true
+    );
+    expect(stored.map((session) => session.id)).toEqual(["s-1"]);
+    expect(lastStorageWriteFailure()?.key).toBe("prepahub:sessions");
+  });
+
+  it("une fusion acceptée renvoie bien la liste fusionnée", () => {
+    const disk = [rawSession("s-1", "2026-01-01T08:00:00.000Z")];
+    const stored = withWritableStorage({ "prepahub:sessions": JSON.stringify(disk) }, () =>
+      localData.mergeSessions([normalizeSession(rawSession("s-2", "2026-02-01T08:00:00.000Z"))])
+    );
+    expect(stored.map((session) => session.id).sort()).toEqual(["s-1", "s-2"]);
   });
 });

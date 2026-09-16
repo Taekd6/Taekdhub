@@ -50,9 +50,14 @@ export function SegmentedControl<T extends string | number>({
             aria-pressed={active}
             className={cn(
               "min-w-0 flex-1 truncate rounded-[0.4375rem] font-medium transition-colors sm:flex-none",
+              /* Le rembourrage se resserre en dessous de `sm`, là où quatre
+                 options se partagent la largeur d'un téléphone : à 2,5 unités
+                 de chaque côté, « 60 min » perdait sa dernière lettre pour
+                 un pixel. La cible tactile, elle, ne bouge pas — c'est la
+                 hauteur de 40 px qui la garantit, pas la largeur. */
               size === "sm"
-                ? "min-h-7 px-2 text-2xs max-lg:min-h-10"
-                : "min-h-8 px-2.5 text-[0.8125rem] max-lg:min-h-10",
+                ? "min-h-7 px-1.5 text-2xs max-lg:min-h-10 sm:px-2"
+                : "min-h-8 px-1.5 text-[0.8125rem] max-lg:min-h-10 sm:px-2.5",
               active
                 ? "border border-line bg-panel text-ink"
                 : "border border-transparent text-muted hover:text-ink"

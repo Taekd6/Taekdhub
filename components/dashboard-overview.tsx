@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ChevronRight, Flame, Scale, Trophy } from "lucide-react";
+import { ArrowRight, CalendarClock, ChevronRight, Flame, LayoutList, Trophy } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
   computeUpcoming,
 } from "@/lib/next-action";
 import { explainReasons } from "@/lib/recommendation";
+import { explainPriority } from "@/lib/deadlines";
 import {
   computeDailyPlan,
   DEFAULT_PLAN_MINUTES,
@@ -31,12 +32,16 @@ import {
   PLAN_STORAGE_KEY,
   serializePlan,
 } from "@/lib/plan";
-import { formatDuration, formatMinutes } from "@/lib/utils";
+import { formatMinutesSpan, formatSpan } from "@/lib/utils";
 import { computeWeeklySummary } from "@/lib/week";
+import { buildWeeklyPlan } from "@/lib/planning";
+import { servesBankExercises, WORK_ITEM_KIND_META } from "@/lib/work-items";
+import { LOAD_STATUS_META } from "@/lib/workload";
 import { computeProgressBySubject } from "@/lib/progress";
 import { cn } from "@/lib/cn";
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+const contestDateFormatter = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
 /**
  * ÉCRAN D'ACCUEIL — « qu'est-ce que je fais maintenant ? »
@@ -52,13 +57,14 @@ const dateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "
  *
  * 2. UNE SEULE RÉPONSE. Le tableau de bord répondait DEUX FOIS à la même
  *    question, avec deux moteurs : « Plan du jour » (lib/plan.ts) et
- *    « Préparation globale » (lib/preparation-os.ts), chacun avec son
- *    sélecteur de durée et son bouton « commencer », l'un sous l'autre. La
- *    préparation par matière garde toute sa valeur — mais comme un ARBITRAGE
- *    que l'on va consulter (/preparation), pas comme un second départ.
+ *    « Préparation globale », chacun avec son sélecteur de durée et son
+ *    bouton « commencer », l'un sous l'autre. Le second est devenu le SUIVI
+ *    par matière (/preparation) : un espace que l'on va CONSULTER, qui ne
+ *    propose plus d'exercices et ne démarre plus de séance. L'accueil reste
+ *    le seul endroit d'où l'on part travailler.
  */
 export function DashboardOverview() {
-  const { sessions, exercises, chapters, preferences, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, workItems, preferences, ready } = usePrepahubData();
   const router = useRouter();
   const [planMinutes, setPlanMinutes] = useState<number>(DEFAULT_PLAN_MINUTES);
 
@@ -103,12 +109,25 @@ export function DashboardOverview() {
       contestDays: preferences.contestDate
         ? Math.max(0, Math.ceil((new Date(preferences.contestDate).getTime() - now.getTime()) / 86400000))
         : null,
+      contestDate: preferences.contestDate ? contestDateFormatter.format(new Date(preferences.contestDate)) : null,
     };
   }, [exercises, sessions, chapters, preferences]);
 
   const dailyPlan = useMemo(
     () => computeDailyPlan(exercises, sessions, chapters, planMinutes, new Date()),
     [exercises, sessions, chapters, planMinutes]
+  );
+
+  /*
+   * LE PLANNING, recalculé à chaque rendu depuis les travaux, les séances et
+   * la capacité déclarée — jamais stocké, donc jamais périmé (voir
+   * lib/planning.ts). L'accueil n'en affiche que trois choses : ce qui est
+   * prévu aujourd'hui, les deux échéances les plus pressantes, et ce qui ne
+   * rentre plus. Le détail vit sur /echeances.
+   */
+  const workPlan = useMemo(
+    () => buildWeeklyPlan(workItems, sessions, preferences, new Date()),
+    [workItems, sessions, preferences]
   );
 
   const startPlan = useCallback(() => {
@@ -127,9 +146,52 @@ export function DashboardOverview() {
     );
   }
 
-  const { nextAction, objective, statusLine, upcoming, toConsolidate, weeklySummary, streak, contestDays, resume, subjects } = model;
+  const { nextAction, objective, statusLine, upcoming, toConsolidate, weeklySummary, streak, contestDays, contestDate, resume, subjects } = model;
+  const today = workPlan.days[0];
+  /*
+   * QUI RÉPOND À « MAINTENANT » ?
+   *
+   * Dès qu'un travail est PLANIFIÉ pour aujourd'hui, c'est lui — une
+   * échéance datée prime toujours sur une proposition de la banque, qui
+   * n'engage à rien. Sans planning du jour, le bloc reprend exactement son
+   * comportement d'avant : la séance construite par `computeDailyPlan`.
+   *
+   * Les deux moteurs ne se disputent jamais : le planning dit QUAND et
+   * COMBIEN, et pour un travail qui passe par la banque (« exercices »,
+   * « chapitre ») c'est `recommendExercises` qui choisit le contenu au
+   * moment de démarrer — d'où le lien vers /session, portant la matière et
+   * le budget du créneau. Un DM, lui, part au chronomètre : personne ne
+   * prétend en connaître le contenu.
+   */
+  const firstSlot = today?.slots[0] ?? null;
+  const nextSlots = today?.slots.slice(1) ?? [];
+  const slotItem = firstSlot ? workItems.find((entry) => entry.id === firstSlot.workItemId) : undefined;
+  const slotPriority = firstSlot ? workPlan.priorities.find((entry) => entry.item.id === firstSlot.workItemId) : undefined;
+  const slotHref =
+    firstSlot && slotItem
+      ? servesBankExercises(slotItem)
+        ? `/session?minutes=${firstSlot.minutes}${slotItem.subject ? `&subject=${encodeURIComponent(slotItem.subject)}` : ""}&travail=${slotItem.id}`
+        : `/timer?travail=${slotItem.id}`
+      : null;
+  /*
+   * À SURVEILLER — au plus DEUX entrées.
+   *
+   * Ne retient que ce qui appelle une décision aujourd'hui : un retard, une
+   * échéance qui ne tient plus, ou une échéance à moins de deux jours. Une
+   * échéance lointaine et confortable n'a rien à faire ici — la signaler
+   * apprendrait à ignorer la rubrique. Le reste vit sur /echeances.
+   */
+  const watchList = workPlan.priorities
+    .filter(
+      (priority) =>
+        priority.overdue ||
+        priority.feasibility.level === "non casable" ||
+        (priority.daysUntilDue !== null && priority.daysUntilDue <= 1)
+    )
+    .slice(0, 2);
   const planReason = explainReasons(dailyPlan.blocks[0]?.picks[0]?.reasons ?? []);
   const hasPlan = dailyPlan.blocks.length > 0;
+  const [firstBlock, ...nextBlocks] = dailyPlan.blocks;
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
   const secondaryPicks = nextAction.picks.slice(1);
   const otherSignals = upcoming.filter((item) => item.key !== "chapter");
@@ -156,13 +218,86 @@ export function DashboardOverview() {
             </div>
           </div>
 
+          {/* AUJOURD'HUI — ce qui est prévu, face à ce que la journée peut
+              absorber. Deux nombres, pas un graphique : « suis-je à jour ? »
+              se répond en les comparant, et rien d'autre ne le répond. */}
+          {(today.load.plannedMinutes > 0 || today.slots.length > 0) && (
+            <div>
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="t-label">Prévu aujourd&apos;hui</p>
+                <p className="tabular t-meta shrink-0 whitespace-nowrap">
+                  <span className="text-ink">{formatSpan(today.load.plannedMinutes * 60)}</span> /{" "}
+                  {formatSpan(today.load.capacityMinutes * 60)}
+                </p>
+              </div>
+              <ul className="mt-2 divide-y divide-line border-y border-line">
+                {today.slots.map((slot) => (
+                  <li key={slot.workItemId} className="flex items-baseline gap-3 py-2">
+                    <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-ink">
+                      {slot.title}
+                      <span className="text-subtle"> · {WORK_ITEM_KIND_META[slot.kind].short}</span>
+                    </span>
+                    <span className="tabular shrink-0 whitespace-nowrap text-2xs text-muted">{formatSpan(slot.minutes * 60)}</span>
+                  </li>
+                ))}
+              </ul>
+              {(today.load.status === "surchargé" || today.load.status === "intenable") && (
+                <p className={cn("t-meta mt-1.5 text-2xs", today.load.status === "intenable" ? "text-rose-300" : "text-amber-300")}>
+                  {LOAD_STATUS_META[today.load.status].label} — {describeTodayLoad(today.load.overflowMinutes, today.load.status)}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* À SURVEILLER — les échéances qui approchent, et celles qui ne
+              tiennent plus. Les deux signaux restent distincts : « en retard »
+              est un fait, « ne tient pas » une projection. */}
+          {watchList.length > 0 && (
+            <div>
+              <p className="t-label mb-2">À surveiller</p>
+              <ul className="divide-y divide-line border-y border-line">
+                {watchList.map((priority) => (
+                  <li key={priority.item.id}>
+                    <Link href="/echeances" className="row-hover block rounded-md py-2.5 max-lg:min-h-11">
+                      <span className="flex items-baseline gap-2">
+                        <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-ink">{priority.item.title}</span>
+                        <span className="tabular shrink-0 whitespace-nowrap text-2xs text-muted">
+                          {formatSpan(priority.remainingMinutes * 60)}
+                        </span>
+                      </span>
+                      <span className="t-meta mt-0.5 block truncate text-2xs">
+                        {priority.overdue
+                          ? "En retard"
+                          : priority.feasibility.level === "non casable"
+                            ? "Ne tient plus dans tes journées"
+                            : priority.daysUntilDue === 0
+                              ? "À rendre aujourd'hui"
+                              : priority.daysUntilDue === 1
+                                ? "À rendre demain"
+                                : `Dans ${priority.daysUntilDue} jours`}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <dl className="divide-y divide-line border-y border-line">
-            <RailFigure label="Cette semaine" value={formatDuration(weeklySummary.totalSeconds)} detail={`${weeklySummary.progressPercent} % de l'objectif`} />
+            <RailFigure label="Cette semaine" value={formatSpan(weeklySummary.totalSeconds)} detail={`${weeklySummary.progressPercent} % de l'objectif`} />
             {streak > 0 && (
               <RailFigure label="Série" value={`${streak} j`} detail="jours d'affilée" icon={<Flame size={13} className="text-accent" />} />
             )}
             {contestDays !== null && (
-              <RailFigure label="Concours" value={`J−${contestDays}`} detail="avant l'échéance" icon={<Trophy size={13} className="text-accent" />} />
+              /* « J−223 · avant l'échéance » ne disait pas QUELLE échéance.
+                 Un compte à rebours sans sa date oblige à aller la vérifier
+                 dans les réglages pour la resituer dans un calendrier. */
+              <RailFigure
+                label="Concours"
+                value={`J−${contestDays}`}
+                detail={contestDate ?? "avant l'échéance"}
+                icon={<Trophy size={13} className="text-accent" />}
+              />
             )}
           </dl>
 
@@ -200,10 +335,13 @@ export function DashboardOverview() {
           )}
 
           <div className="flex flex-col items-start gap-2">
-            <Link href="/preparation" className="t-meta inline-flex items-center gap-1.5 rounded hover:text-ink max-lg:min-h-11">
-              <Scale size={14} /> Équilibrer mes matières
+            <Link href="/echeances" className="t-meta inline-flex min-h-6 items-center gap-1.5 rounded hover:text-ink max-lg:min-h-11">
+              <CalendarClock size={14} /> Mes échéances
             </Link>
-            <Link href="/progress" className="t-meta inline-flex items-center gap-1 rounded hover:text-ink max-lg:min-h-11">
+            <Link href="/preparation" className="t-meta inline-flex min-h-6 items-center gap-1.5 rounded hover:text-ink max-lg:min-h-11">
+              <LayoutList size={14} /> Suivi par matière
+            </Link>
+            <Link href="/progress" className="t-meta inline-flex min-h-6 items-center gap-1 rounded hover:text-ink max-lg:min-h-11">
               Ma progression <ChevronRight size={14} />
             </Link>
           </div>
@@ -211,9 +349,15 @@ export function DashboardOverview() {
       }
     >
       <div className="space-y-10">
-        <BackupReminder />
-
+        {/* EN-TÊTE RÉDUIT À UNE LIGNE.
+            La salutation était composée en `t-display`, au même corps que le
+            titre du bloc « La séance » juste en dessous : deux titres de
+            même poids, donc aucun des deux ne désignait plus l'élément
+            important. Elle passe en `quiet` (voir `PageBar`) et sa date se
+            range sur la même ligne — la décision du jour redevient le seul
+            grand titre de l'écran, et gagne la hauteur correspondante. */}
         <PageBar
+          rank="quiet"
           title={name ? `Bonjour, ${name}.` : "Bonjour."}
           meta={
             <>
@@ -227,51 +371,151 @@ export function DashboardOverview() {
         <Section
           variant="feature"
           label="La séance"
-          title={hasPlan ? "Ce que tu devrais travailler maintenant" : <MathInline text={nextAction.title} />}
-          description={planReason ?? nextAction.description}
+          title={firstSlot ? "Ce que tu devrais travailler maintenant" : hasPlan ? "Ce que tu devrais travailler maintenant" : <MathInline text={nextAction.title} />}
+          /* Le chapeau justifie CE QUI EST AFFICHÉ, jamais autre chose.
+             Quand un plan existe mais que sa première recommandation ne porte
+             aucune raison explicite, on retombait sur `nextAction.description`
+             — la justification d'un exercice qui, lui, n'apparaît nulle part
+             sur l'écran (« Tu n'as pas encore travaillé cet exercice. » :
+             lequel ?). Mieux vaut pas de phrase du tout : le bloc
+             « Maintenant » dit déjà l'intention et la matière. */
+          description={firstSlot ? (slotPriority ? explainPriority(slotPriority) ?? undefined : undefined) : hasPlan ? planReason ?? undefined : nextAction.description}
+          /* Le sélecteur de durée ne s'affiche QUE quand la banque pilote le
+             bloc : en mode planning, les durées viennent des créneaux, et un
+             contrôle sans effet est pire qu'un contrôle absent. Le temps
+             disponible se règle alors là où il a du sens — la capacité
+             (Réglages) et le budget de la séance elle-même. */
           action={
-            <SegmentedControl
-              ariaLabel="Durée de la séance"
-              value={planMinutes}
-              onChange={setPlanMinutes}
-              options={PLAN_DURATION_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
-            />
+            firstSlot ? undefined : (
+              <SegmentedControl
+                ariaLabel="Durée de la séance"
+                value={planMinutes}
+                onChange={setPlanMinutes}
+                options={PLAN_DURATION_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
+              />
+            )
           }
         >
-          {hasPlan && (
-            /* Le plan se lit comme un SOMMAIRE : un numéro, un intitulé, une
-               durée alignée à droite. Pas trois blocs encadrés dans un bloc
-               encadré — c'est ce motif qui rendait l'ancien écran illisible. */
-            <ol className="divide-y divide-line border-y border-line">
-              {dailyPlan.blocks.map((block, index) => (
-                <li key={block.intent} className="flex items-baseline gap-4 py-3.5">
-                  <span className="t-figure w-5 shrink-0 text-right text-sm text-subtle">{index + 1}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="t-subhead">
-                      {block.label}
-                      <span className="font-normal text-muted"> — {PLAN_INTENT_META[block.intent].description}</span>
-                    </p>
-                    {/* La durée est alignée à droite de la ligne de DÉTAIL, pas
-                        de celle du titre : quand le titre passait à la ligne
-                        sur mobile, « 40 min » se retrouvait coincé entre le
-                        titre et son propre détail. */}
-                    <div className="mt-0.5 flex items-baseline gap-3">
-                      <p className="t-meta min-w-0 flex-1 truncate">
-                        {block.focus} · {block.picks.length} exercice{block.picks.length > 1 ? "s" : ""}
-                      </p>
+          {firstSlot && (
+            /*
+             * MODE PLANNING — même composition « Maintenant / Puis » que la
+             * séance de la banque, mais alimentée par les créneaux du jour.
+             * Rien de nouveau à l'écran : c'est la SOURCE qui change, pas la
+             * forme, pour que l'élève n'ait qu'un seul endroit à regarder.
+             */
+            <div key={firstSlot.workItemId} className="animate-fade-in border-y border-line">
+              <div className="flex items-baseline gap-4 py-4">
+                <div className="min-w-0 flex-1">
+                  <p className="t-label mb-1.5">Maintenant</p>
+                  <p className="t-heading">{firstSlot.title}</p>
+                  <p className="t-meta mt-1">
+                    {WORK_ITEM_KIND_META[firstSlot.kind].label}
+                    {firstSlot.subject && ` · ${firstSlot.subject}`}
+                  </p>
+                </div>
+                {/* `formatSpan` et non « N min » : un créneau de planning
+                    peut dépasser l'heure (un travail en retard se rattrape
+                    d'un bloc), et « 90 min » se lit moins vite que « 1 h 30 ».
+                    Le pied de bloc affiche déjà le total dans cette forme. */}
+                <span className="t-figure-sm tabular shrink-0 whitespace-nowrap">{formatSpan(firstSlot.minutes * 60)}</span>
+              </div>
+
+              {nextSlots.length > 0 && (
+                <ol className="border-t border-line pb-1 pt-3">
+                  <li className="t-label mb-1">Puis</li>
+                  {nextSlots.map((slot) => (
+                    <li key={slot.workItemId} className="flex items-baseline gap-3 py-1.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-ink">{slot.title}</p>
+                        <p className="t-meta mt-0.5 truncate text-2xs">
+                          {WORK_ITEM_KIND_META[slot.kind].label}
+                          {slot.subject && ` · ${slot.subject}`}
+                        </p>
+                      </div>
+                      <span className="t-meta tabular shrink-0 whitespace-nowrap">{formatSpan(slot.minutes * 60)}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          )}
+          {!firstSlot && hasPlan && (
+            /*
+             * MAINTENANT, PUIS — pas un sommaire de trois lignes égales.
+             *
+             * Le plan se lisait comme une table des matières : trois rangées
+             * de même poids, numérotées, qu'il fallait parcourir pour
+             * comprendre par quoi commencer. Or la question posée en ouvrant
+             * l'application le matin n'est pas « que contient ma séance »,
+             * c'est « je fais quoi, là, tout de suite » — et la réponse
+             * tenait dans la même graisse que le reste.
+             *
+             * Le premier bloc est donc COMPOSÉ comme la réponse : son
+             * intitulé en `t-heading`, sa durée en chiffre serif à droite,
+             * son détail dessous. Ce qui suit reste une liste, en retrait.
+             * Aucune donnée nouvelle, aucun calcul déplacé : exactement les
+             * mêmes `dailyPlan.blocks`, dans le même ordre.
+             */
+            /*
+             * Le `key` sur la durée demandée est la SEULE animation ajoutée à
+             * cet écran, et elle est fonctionnelle : quand on passe de 45 à
+             * 90 minutes, le plan change entièrement — intitulés, durées,
+             * nombre de blocs — mais le texte se substituait d'une image à
+             * l'autre, sans rien signaler. Un fondu de 180 ms dit « ceci
+             * vient d'être recalculé ». Il est annulé par
+             * `prefers-reduced-motion` comme tout le reste (voir
+             * app/globals.css).
+             */
+            <div key={planMinutes} className="animate-fade-in border-y border-line">
+              <div className="flex items-baseline gap-4 py-4">
+                <div className="min-w-0 flex-1">
+                  <p className="t-label mb-1.5">Maintenant</p>
+                  <p className="t-heading">
+                    {firstBlock.label}
+                    <span className="text-muted"> — {PLAN_INTENT_META[firstBlock.intent].description}</span>
+                  </p>
+                  <p className="t-meta mt-1">
+                    {firstBlock.focus} · {firstBlock.picks.length} exercice{firstBlock.picks.length > 1 ? "s" : ""}
+                  </p>
+                </div>
+                <span className="t-figure-sm tabular shrink-0 whitespace-nowrap">
+                  {firstBlock.estimatedMinutes}
+                  <span className="t-meta"> min</span>
+                </span>
+              </div>
+
+              {nextBlocks.length > 0 && (
+                <ol className="border-t border-line pb-1 pt-3">
+                  <li className="t-label mb-1">Puis</li>
+                  {nextBlocks.map((block) => (
+                    <li key={block.intent} className="flex items-baseline gap-3 py-1.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-ink">
+                          {block.label}
+                          <span className="text-muted"> — {PLAN_INTENT_META[block.intent].description}</span>
+                        </p>
+                        <p className="t-meta mt-0.5 truncate text-2xs">
+                          {block.focus} · {block.picks.length} exercice{block.picks.length > 1 ? "s" : ""}
+                        </p>
+                      </div>
                       <span className="t-meta tabular shrink-0">{block.estimatedMinutes} min</span>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ol>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
           )}
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
             <p className="t-meta">
-              {hasPlan ? (
+              {firstSlot ? (
                 <>
-                  <span className="font-medium text-ink">{formatMinutes(dailyPlan.totalMinutes)}</span> ·{" "}
+                  <span className="font-medium text-ink">{formatSpan(today.load.plannedMinutes * 60)}</span> prévues aujourd&apos;hui
+                  {objective.workedMinutes > 0 && <> · {objective.workedMinutes} min déjà faites</>}
+                </>
+              ) : hasPlan ? (
+                <>
+                  <span className="font-medium text-ink">{formatMinutesSpan(dailyPlan.totalMinutes)}</span> ·{" "}
                   {dailyPlan.totalExercises} exercice{dailyPlan.totalExercises > 1 ? "s" : ""}
                   {objective.workedMinutes > 0 && <> · {objective.workedMinutes} min déjà faites aujourd&apos;hui</>}
                 </>
@@ -281,7 +525,13 @@ export function DashboardOverview() {
                 "Rien à planifier pour l'instant — ta banque est à jour."
               )}
             </p>
-            {hasPlan ? (
+            {firstSlot && slotHref ? (
+              <Link href={slotHref}>
+                <Button size="lg">
+                  Commencer <ArrowRight size={16} />
+                </Button>
+              </Link>
+            ) : hasPlan ? (
               <Button size="lg" onClick={startPlan}>
                 Commencer <ArrowRight size={16} />
               </Button>
@@ -294,6 +544,12 @@ export function DashboardOverview() {
             )}
           </div>
         </Section>
+
+        {/* Le rappel de sauvegarde est une CORVÉE, pas une décision : posé en
+            tête d'écran, il repoussait la séance d'une centaine de pixels et
+            accueillait chaque semaine par un bandeau orange. Il reste
+            exactement aussi visible, mais APRÈS ce qu'on est venu chercher. */}
+        <BackupReminder />
 
         {/* ── REPRENDRE ─────────────────────────────────────────────
             Ce sur quoi on travaillait hier. Au tout début, il n'y a rien à
@@ -351,9 +607,17 @@ export function DashboardOverview() {
             description="Classés par urgence réelle, chacun justifié par tes tentatives datées."
           >
             <List>
-              {toConsolidate.map(({ chapter, averageMastery, reasons, href, evidence }) => (
+              {toConsolidate.map(({ chapter, averageMastery, reasons, href, evidence }, index) => (
                 <li key={chapter.id}>
                   <Link href={href} className={rowInteractive}>
+                    {/* Le RANG, écrit.
+                        La section annonce « classés par urgence réelle », mais
+                        les maîtrises voisines (0 %, 3 %, 3 %, 4 %) ne
+                        laissaient rien voir de ce classement : cinq lignes
+                        d'apparence interchangeable. Le numéro dit ce que
+                        l'ordre veut dire, exactement comme la liste des
+                        priorités de l'écran Progression. */}
+                    <span className="t-figure w-4 shrink-0 text-right text-sm text-subtle">{index + 1}</span>
                     <div className="min-w-0 flex-1">
                       <p className="t-subhead truncate">{chapter.label}</p>
                       <p className="t-meta mt-0.5 truncate">
@@ -422,4 +686,11 @@ function RailFigure({
       </dd>
     </div>
   );
+}
+
+/** Phrase d'alerte de la journée — toujours avec son chiffre, jamais un mot seul. */
+function describeTodayLoad(overflowMinutes: number, status: "surchargé" | "intenable"): string {
+  return status === "intenable"
+    ? `dépassement de ${formatSpan(overflowMinutes * 60)} sur ta capacité.`
+    : "le planning entame ta marge.";
 }

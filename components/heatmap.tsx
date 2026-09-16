@@ -2,7 +2,7 @@
 
 import { lastNDays } from "@/lib/gamification";
 import { dayKey } from "@/lib/study";
-import { formatDuration } from "@/lib/utils";
+import { formatSpan } from "@/lib/utils";
 
 /**
  * Heatmap d'activité (extraite du Dashboard au Sprint 3B pour être partagée
@@ -26,7 +26,7 @@ export function Heatmap({ workByDay, days = 84 }: { workByDay: Record<string, nu
         return (
           <span
             key={key}
-            title={`${date.toLocaleDateString("fr-FR")} : ${formatDuration(seconds)}`}
+            title={`${date.toLocaleDateString("fr-FR")} : ${formatSpan(seconds)}`}
             className="h-3 w-3 rounded-[3px]"
             style={{
               // Reprend les variables CSS du thème (app/globals.css) — jamais

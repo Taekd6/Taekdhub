@@ -8,24 +8,67 @@ import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { useWorkTimer } from "@/hooks/use-work-timer";
 import { subjects } from "@/lib/study";
-import { formatDuration } from "@/lib/utils";
+import { activeWorkItems, remainingMinutes, WORK_ITEM_KIND_META } from "@/lib/work-items";
+import { formatDuration, formatSpan } from "@/lib/utils";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 const TIMER_STORAGE_KEY = "prepahub:timer:free";
 
 interface TimerContext {
   subject: Subject;
+  /**
+   * Travail planifié que cette séance sert, ou `null` pour une séance libre.
+   *
+   * Persisté AVEC le chrono (voir `useWorkTimer`, dont le contexte est
+   * générique) : un rechargement en pleine séance ne doit pas détacher le
+   * temps du travail auquel il était destiné. C'est ce champ qui devient
+   * `WorkSession.work_item_id` à l'arrêt, et donc ce qui fait avancer un DM
+   * — un travail dont aucun exercice de la banque ne porte le contenu.
+   */
+  workItemId?: string | null;
 }
 
 export function Timer() {
   // `ready` est indispensable ici comme partout ailleurs : le chrono restaure
   // une séance persistée dès son premier effet, donc "Terminer" est cliquable
   // avant même que la banque locale ait fini d'être lue.
-  const { sessions, saveSessions, ready } = usePrepahubData();
+  const { sessions, workItems, saveSessions, saveWorkItems, ready } = usePrepahubData();
   const { seconds, running, context, setContext, start, toggle, stop } = useWorkTimer<TimerContext>(TIMER_STORAGE_KEY, {
     subject: "Mathématiques",
+    workItemId: null,
   });
   const [fullscreen, setFullscreen] = useState(false);
+  /*
+   * Le paramètre est lu depuis `window.location.search` dans un effet, comme
+   * le fait déjà components/session/session-runner.tsx — et NON via
+   * `useSearchParams`, qui forcerait cette page à sortir du rendu statique
+   * (« useSearchParams() should be wrapped in a suspense boundary ») pour un
+   * paramètre optionnel dont rien, dans le premier rendu, ne dépend.
+   */
+  const [requestedItemId, setRequestedItemId] = useState<string | null>(null);
+  useEffect(() => {
+    setRequestedItemId(new URLSearchParams(window.location.search).get("travail"));
+  }, []);
+  const openItems = activeWorkItems(workItems);
+  const selectedItem = openItems.find((item) => item.id === context.workItemId) ?? null;
+
+  /*
+   * Arriver depuis un créneau du planning (« /timer?travail=… ») présélectionne
+   * le travail ET sa matière. Ne s'applique JAMAIS pendant qu'un chrono tourne :
+   * réattribuer en cours de route le temps déjà écoulé à un autre travail
+   * serait une réécriture silencieuse de l'historique.
+   */
+  useEffect(() => {
+    if (!ready || running || !requestedItemId) return;
+    if (context.workItemId === requestedItemId) return;
+    const target = openItems.find((item) => item.id === requestedItemId);
+    if (!target) return;
+    setContext({ subject: target.subject ?? context.subject, workItemId: target.id });
+    // `openItems` est recalculé à chaque rendu ; le dépendre ici relancerait
+    // l'effet en boucle. L'identifiant demandé et l'état prêt suffisent à
+    // décider, et c'est bien ce qu'on surveille.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, running, requestedItemId, context.workItemId]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -56,8 +99,21 @@ export function Timer() {
         // un résultat est demandé) — pas davantage celle des indices.
         result: null,
         hints_used: null,
+        work_item_id: context.workItemId ?? null,
       };
       saveSessions([session, ...sessions]);
+      /*
+       * Un travail « à faire » sur lequel on vient de passer du temps est
+       * « en cours ». Le statut suit le fait, il ne se déclare pas à la
+       * main : sans cela, un DM entamé restait indéfiniment « à faire », et
+       * le bilan hebdomadaire comme le planning en donnaient une image
+       * fausse. Rien d'autre n'est touché — surtout pas l'échéance, ni
+       * l'estimation.
+       */
+      const target = workItems.find((item) => item.id === context.workItemId);
+      if (target && target.status === "à faire") {
+        saveWorkItems(workItems.map((item) => (item.id === target.id ? { ...item, status: "en cours" as const } : item)));
+      }
     });
   }
 
@@ -72,16 +128,50 @@ export function Timer() {
         {running && <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent" />}
         {running ? "Séance en cours" : "Nouvelle séance"}
       </p>
+      {/* DEUX sélecteurs, jamais deux systèmes : le travail planifié d'abord
+          (c'est lui qui donne son sens à la séance), la matière ensuite.
+          Choisir un travail impose sa matière — on ne chronomètre pas un DM
+          de maths « en physique ». « Aucun » reste le premier choix : le
+          chronomètre garde son usage libre, exactement comme avant. */}
+      {openItems.length > 0 && (
+        <label className="mx-auto mt-5 block w-full max-w-[22rem]">
+          <span className="sr-only">Travail planifié</span>
+          <Select
+            value={context.workItemId ?? ""}
+            onChange={(event) => {
+              const id = event.target.value;
+              const target = openItems.find((item) => item.id === id);
+              setContext({ subject: target?.subject ?? context.subject, workItemId: id || null });
+            }}
+            disabled={running}
+            className="text-center"
+          >
+            <option value="">Séance libre — aucun travail planifié</option>
+            {openItems.map((item) => (
+              <option key={item.id} value={item.id}>
+                {WORK_ITEM_KIND_META[item.kind].short} · {item.title}
+              </option>
+            ))}
+          </Select>
+        </label>
+      )}
+
       <Select
         value={context.subject}
-        onChange={(e) => setContext({ subject: e.target.value as Subject })}
-        disabled={running}
-        className="mx-auto mt-5 w-auto min-w-[180px] text-center"
+        onChange={(e) => setContext({ subject: e.target.value as Subject, workItemId: context.workItemId ?? null })}
+        disabled={running || selectedItem?.subject != null}
+        className="mx-auto mt-3 w-auto min-w-[180px] text-center"
       >
         {subjects.map((s) => (
           <option key={s}>{s}</option>
         ))}
       </Select>
+
+      {selectedItem && (
+        <p className="t-meta mt-3">
+          Il reste {formatSpan(remainingMinutes(selectedItem, sessions) * 60)} sur ce travail.
+        </p>
+      )}
 
       {/* Le chrono est le seul très grand nombre de l'application : composé en
           serif à taille optique, il se lit d'un mètre — exactement l'usage
@@ -115,7 +205,10 @@ export function Timer() {
         </Button>
       </div>
 
-      <p className="t-meta mt-7 text-2xs">Barre d&apos;espace pour démarrer / pause</p>
+      {/* Un raccourci clavier n'a de sens que là où il existe un clavier.
+          Sur un téléphone, cette ligne occupait une place réelle sous les
+          boutons pour annoncer une touche que l'appareil n'a pas. */}
+      <p className="t-meta mt-7 hidden text-2xs lg:block">Barre d&apos;espace pour démarrer / pause</p>
     </>
   );
 
