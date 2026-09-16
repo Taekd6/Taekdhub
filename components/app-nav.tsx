@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, BookOpen, Clock3, History, Home, Settings, Trophy } from "lucide-react";
+import { BarChart3, Clock3, History, Home, Layers, Settings, Trophy } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -25,9 +25,20 @@ import { cn } from "@/lib/cn";
  * destination non plus, c'est l'ACTION — elle est déclenchée depuis l'écran
  * d'accueil, où elle est le premier élément.
  */
+/*
+ * LA BANQUE N'EST PLUS UNE DESTINATION.
+ *
+ * « Exercices » occupait la deuxième place, juste après l'accueil : l'écran
+ * le plus consulté du produit proposait donc, en permanence, d'aller feuilleter
+ * 534 fiches. TaekdHub pilote une progression, il ne vend pas un catalogue —
+ * la banque reste entière et atteignable (« Ouvrir la banque » depuis chaque
+ * hub, et /exercises répond toujours), mais elle cesse d'être un lieu où l'on
+ * te propose d'aller. À sa place : le suivi par matière, qui répond à la
+ * question qu'on se pose vraiment en ouvrant cet onglet.
+ */
 const DESTINATIONS = [
   { href: "/dashboard", label: "Aujourd'hui", short: "Aujourd'hui", icon: Home },
-  { href: "/exercises", label: "Exercices", short: "Exercices", icon: BookOpen },
+  { href: "/preparation", label: "Matières", short: "Matières", icon: Layers },
   { href: "/concours", label: "Concours", short: "Concours", icon: Trophy },
   { href: "/progress", label: "Progression", short: "Progrès", icon: BarChart3 },
   { href: "/history", label: "Séances", short: "Séances", icon: History },
@@ -38,7 +49,7 @@ const TOOLS = [
   { href: "/settings", label: "Réglages", icon: Settings },
 ];
 
-/** Une section est active si l'URL commence par son chemin — les écrans de détail (`/exercises?...`) gardent leur onglet allumé. */
+/** Une section est active si l'URL commence par son chemin — les écrans de détail (`/preparation?...`) gardent leur onglet allumé. */
 function useActive() {
   const pathname = usePathname();
   return (href: string) => pathname === href || pathname.startsWith(`${href}/`);

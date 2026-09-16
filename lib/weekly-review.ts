@@ -278,7 +278,10 @@ export function computeWeeklyReview(
     const first = neglected[0];
     findings.push({
       key: "matiere-delaissee",
-      sentence: `Aucune séance de ${first.subject} cette semaine, alors que ${first.pendingCount} exercice${first.pendingCount > 1 ? "s" : ""} y ${first.pendingCount > 1 ? "attendent" : "attend"}.`,
+      // « la matière la plus délaissée » serait un classement : toutes les
+      // matières de cette liste sont à zéro minute, seul leur stock de fiches
+      // les départage — et ce stock ne s'affiche plus. On s'en tient au fait.
+      sentence: `Aucune séance de ${first.subject} cette semaine.`,
     });
   }
 

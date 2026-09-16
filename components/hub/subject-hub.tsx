@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, CalendarClock } from "lucide-react";
 import { Section } from "@/components/ui/section";
 import { Stat, StatRow } from "@/components/ui/stat";
@@ -42,6 +43,9 @@ export function SubjectHub() {
   const available = useMemo(() => hubSubjects(exercises, sessions, allSubjects), [exercises, sessions]);
   const [subject, setSubject] = useState<Subject | null>(null);
   const active = subject && available.includes(subject) ? subject : (available[0] ?? null);
+  // `?subject=` permet d'arriver ici depuis l'accueil déjà sur la bonne
+  // matière, plutôt que de retomber systématiquement sur la première.
+  const selectSubject = useCallback((value: Subject) => setSubject(value), []);
 
   const model = useMemo(
     () => (active ? buildSubjectHub(active, exercises, sessions, chapters, workItems, grades, preferences) : null),
@@ -66,6 +70,12 @@ export function SubjectHub() {
 
   return (
     <div className="space-y-9">
+      {/* `useSearchParams` exige une limite Suspense — isolée ici pour ne pas
+          faire basculer toute la page en rendu dynamique. */}
+      <Suspense fallback={null}>
+        <SubjectQueryHandler ready={ready} available={available} onSubject={selectSubject} />
+      </Suspense>
+
       {/* Le sélecteur de matière EST la navigation de cet écran : une seule
           matière à la fois, parce qu'un suivi qui montre tout ne se lit pas. */}
       {available.length > 1 && (
@@ -289,10 +299,9 @@ function ChapterGroup({
             <li key={row.chapter.id} className="flex items-center gap-3 py-2.5">
               <span className={cn("min-w-0 flex-1 truncate text-sm", muted ? "text-muted" : "text-ink")}>
                 {row.chapter.label}
-                {/* Le COMPTE situe le chapitre ; il ne nomme aucune fiche. */}
-                <span className="t-meta ml-2 text-2xs">
-                  {row.mastered} / {row.total} acquis
-                </span>
+                {/* « 0 / 5 acquis » nommait encore un stock de fiches. Le taux
+                    à droite dit la même chose, et c'est l'échelle du CHAPITRE
+                    qui pilote cet écran. */}
               </span>
               {!muted && <Meter value={row.rate} className="w-16 shrink-0 max-sm:hidden" tone="neutral" />}
               {/* « — » et non « 0 % » en face d'un chapitre rangé sous « non
@@ -316,4 +325,34 @@ function ChapterGroup({
       )}
     </div>
   );
+}
+
+/**
+ * `?subject=<matière>` — arriver sur le suivi d'une matière précise, depuis
+ * l'accueil notamment. Isolé dans son propre composant car `useSearchParams`
+ * impose une limite Suspense (même motif que ExerciseManager).
+ */
+function SubjectQueryHandler({
+  ready,
+  available,
+  onSubject,
+}: {
+  ready: boolean;
+  available: Subject[];
+  onSubject: (subject: Subject) => void;
+}) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const handled = useRef(false);
+
+  useEffect(() => {
+    if (!ready || handled.current) return;
+    const subject = searchParams.get("subject");
+    if (!subject) return;
+    handled.current = true;
+    if ((available as string[]).includes(subject)) onSubject(subject as Subject);
+    router.replace("/preparation", { scroll: false });
+  }, [ready, available, searchParams, onSubject, router]);
+
+  return null;
 }

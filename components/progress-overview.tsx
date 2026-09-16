@@ -17,7 +17,7 @@ import { SubjectEvolution } from "@/components/progress/subject-evolution";
 import { MasterySection } from "@/components/progress/mastery-section";
 import { GradesSection } from "@/components/progress/grades-section";
 import { WorkAndResults } from "@/components/progress/work-and-results";
-import { ExerciseBankStats } from "@/components/exercises/exercise-bank-stats";
+import { resultCounts } from "@/lib/history";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak, workByDayMap } from "@/lib/gamification";
 import { computeChaptersToConsolidate, type ChapterConsolidation } from "@/lib/next-action";
@@ -84,6 +84,8 @@ export function ProgressOverview() {
     [exercises, chapters, sessions]
   );
 
+  const results = useMemo(() => resultCounts(sessions), [sessions]);
+
   if (!ready) {
     return (
       <div className="space-y-6">
@@ -112,15 +114,14 @@ export function ProgressOverview() {
         <div className="space-y-8">
           <dl className="divide-y divide-line border-y border-line">
             <RailStat label="Temps cumulé" value={formatSpan(model.totalTime)} />
-            <RailStat
-              label="Exercices maîtrisés"
-              value={`${model.global.masteredCount}`}
-              detail={`sur ${model.global.activeCount} actifs`}
-            />
-            {/* « non mesuré » plutôt que « 0 % » tant qu'AUCUNE fiche n'a été
-                engagée : sur une banque de 534 exercices fraîchement amorcée,
-                un zéro se lit comme un échec alors que rien n'a été tenté.
-                Même critère que les hubs (lib/hub.ts). */}
+            {/* « 24 sur 534 actifs » a disparu : le même fait est déjà dit
+                juste en dessous, en pourcentage, sans étaler l'inventaire de
+                la banque sur un écran de suivi.
+
+                « non mesuré » plutôt que « 0 % » tant qu'AUCUNE fiche n'a été
+                engagée : sur une banque fraîchement amorcée, un zéro se lit
+                comme un échec alors que rien n'a été tenté. Même critère que
+                les hubs (lib/hub.ts). */}
             <RailStat
               label="Progression globale"
               value={model.engaged ? `${model.global.completionRate} %` : "non mesuré"}
@@ -136,9 +137,23 @@ export function ProgressOverview() {
               section « Tes progrès » dit désormais mieux, et en le
               rapportant à une évolution. Deux façons de montrer la même chose
               valent moins qu'une seule qui conclut. */}
+          {/* « À revoir 510 · Jamais travaillés 452 » : deux décomptes de
+              fiches, c'est-à-dire l'état de la banque, sur l'écran qui suit
+              une progression. Retirés. Reste le taux de réussite, qui mesure
+              ce que l'élève PRODUIT et non ce qu'il lui reste en rayon. */}
           <div>
-            <p className="t-label mb-3">Ce qui mérite ton attention</p>
-            <ExerciseBankStats exercises={exercises} sessions={sessions} layout="rail" />
+            <p className="t-label mb-3">Ce que donnent tes tentatives</p>
+            <dl className="divide-y divide-line border-y border-line">
+              <RailStat
+                label="Taux de réussite"
+                value={results.successRate === null ? "—" : `${results.successRate} %`}
+                detail={
+                  results.attempted > 0
+                    ? `${results.attempted} tentative${results.attempted > 1 ? "s" : ""} qualifiée${results.attempted > 1 ? "s" : ""}`
+                    : "aucun résultat enregistré"
+                }
+              />
+            </dl>
           </div>
         </div>
       }
@@ -374,18 +389,14 @@ function WeekEvolution({
              reproche. Le signe suffit à le dire. */
           tone={comparison.deltaTotalSeconds > 0 ? "success" : undefined}
         />
-        <Stat
-          label="Exercices maîtrisés"
-          value={comparison.currentMasteredCount}
-          detail={withSign(comparison.deltaMasteredCount)}
-          size="sm"
-          tone={comparison.deltaMasteredCount > 0 ? "success" : undefined}
-        />
+        {/* Le nombre de fiches maîtrisées disait la même chose que la ligne
+            suivante, en stock plutôt qu'en avancement. Une seule suffit. */}
         <Stat
           label="Progression globale"
           value={`${comparison.currentCompletionRate} %`}
           detail={withSign(comparison.deltaCompletionRate, " pt")}
           size="sm"
+          tone={comparison.deltaCompletionRate > 0 ? "success" : undefined}
         />
         {/* « A le plus progressé » et « La moins travaillée » ont été retirées :
             « Tes matières » dit maintenant la même chose matière par matière,
@@ -475,10 +486,10 @@ function DsReadiness({ exercises, sessions }: { exercises: Exercise[]; sessions:
               <span className="t-meta w-full sm:w-auto sm:min-w-[16rem]">
                 {level === "pas commencé"
                   ? "Aucune séance enregistrée pour l'instant."
-                  : `${completionRate} % maîtrisé${
-                      flaggedCount > 0
-                        ? ` · ${flaggedCount} exercice${flaggedCount > 1 ? "s" : ""} à retravailler · ≈ ${formatMinutesSpan(estimatedMinutes)}`
-                        : ""
+                  : /* Le nombre de fiches signalées cède la place au seul
+                       chiffre actionnable : le temps que ça demande. */
+                    `${completionRate} % maîtrisé${
+                      flaggedCount > 0 ? ` · ≈ ${formatMinutesSpan(estimatedMinutes)} de révision` : ""
                     }`}
               </span>
               {/* Réutilise tel quel /session?subject=… — aucun nouveau système de séance. */}
