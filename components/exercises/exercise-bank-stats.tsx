@@ -46,8 +46,20 @@ export function ExerciseBankStats({
   const stats = useMemo(() => computeExerciseBankStats(exercises, sessions), [exercises, sessions]);
   const results = useMemo(() => resultCounts(sessions), [sessions]);
 
+  // « À revoir » compte TOUT ce que le moteur signale, et « jamais ouvert »
+  // est l'un de ses critères : sur une banque neuve, les 534 fiches y sont
+  // toutes, sous un libellé qui prétend qu'on les a déjà travaillées. Le
+  // nombre est juste, la phrase ne l'était pas — elle dit désormais ce que
+  // ces fiches sont réellement.
+  const neverWorkedShare =
+    stats.neverWorkedCount === 0
+      ? "exercices à retravailler"
+      : stats.neverWorkedCount >= stats.toReviewCount
+        ? "aucun n'a encore été ouvert"
+        : `dont ${stats.neverWorkedCount} jamais ouvert${stats.neverWorkedCount > 1 ? "s" : ""}`;
+
   const entries = [
-    { label: "À revoir", value: String(stats.toReviewCount), detail: "exercices à retravailler" },
+    { label: "À revoir", value: String(stats.toReviewCount), detail: neverWorkedShare },
     { label: "Jamais travaillés", value: String(stats.neverWorkedCount), detail: "aucune séance enregistrée" },
     {
       label: "Taux de réussite",

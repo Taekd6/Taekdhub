@@ -9,10 +9,11 @@ import { Section } from "@/components/ui/section";
 import { Stat, StatRow } from "@/components/ui/stat";
 import { Skeleton } from "@/components/ui/state";
 import { PageBar, Split } from "@/components/ui/layout";
-import { RhythmSection } from "@/components/progress/rhythm-section";
 import { WeekSection } from "@/components/progress/week-section";
 import { ConsistencySection } from "@/components/progress/consistency-section";
-import { SubjectsSection } from "@/components/progress/subjects-section";
+import { EvolutionOverview } from "@/components/progress/evolution-overview";
+import { WorkTimeSection } from "@/components/progress/work-time-section";
+import { SubjectEvolution } from "@/components/progress/subject-evolution";
 import { MasterySection } from "@/components/progress/mastery-section";
 import { GradesSection } from "@/components/progress/grades-section";
 import { WorkAndResults } from "@/components/progress/work-and-results";
@@ -67,6 +68,11 @@ export function ProgressOverview() {
   const model = useMemo(
     () => ({
       global: computeGlobalProgress(exercises),
+      // Au moins une fiche engagée ? Même critère que lib/hub.ts et que
+      // `hasChapterEngagement` : c'est ce qui distingue « 0 % » de « non mesuré ».
+      engaged: exercises.some(
+        (exercise) => !exercise.archived && (exercise.attempts > 0 || exercise.status !== "à faire" || exercise.last_worked_at !== null)
+      ),
       bySubject: computeProgressBySubject(exercises),
       byChapter: progressByChapter(exercises, chapters),
       mastery: masteryDistribution(exercises),
@@ -111,7 +117,14 @@ export function ProgressOverview() {
               value={`${model.global.masteredCount}`}
               detail={`sur ${model.global.activeCount} actifs`}
             />
-            <RailStat label="Progression globale" value={`${model.global.completionRate} %`} />
+            {/* « non mesuré » plutôt que « 0 % » tant qu'AUCUNE fiche n'a été
+                engagée : sur une banque de 534 exercices fraîchement amorcée,
+                un zéro se lit comme un échec alors que rien n'a été tenté.
+                Même critère que les hubs (lib/hub.ts). */}
+            <RailStat
+              label="Progression globale"
+              value={model.engaged ? `${model.global.completionRate} %` : "non mesuré"}
+            />
             <RailStat label="Série actuelle" value={`${model.streak} j`} />
           </dl>
 
@@ -131,7 +144,7 @@ export function ProgressOverview() {
       }
     >
       <div className="space-y-10">
-        <PageBar title="Progression" lede="Observer les faits pour ajuster ton travail." />
+        <PageBar title="Mon évolution" lede="Comprends ton rythme de travail et ta progression." />
 
         {/*
           ORDRE DE LECTURE — celui d'un dimanche soir, pas celui du modèle de
@@ -151,12 +164,26 @@ export function ProgressOverview() {
           première section sans rien manquer d'actionnable.
         */}
         <WeeklyReviewSection workItems={workItems} sessions={sessions} exercises={exercises} preferences={preferences} />
-        <RhythmSection sessions={sessions} preferences={preferences} />
-        <WeekSection dayPlans={dayPlans} sessions={sessions} />
-        <ConsistencySection sessions={sessions} />
-        <SubjectsSection sessions={sessions} />
+
+        {/* VUE D'ENSEMBLE — cinq chiffres, juste sous le bilan : de quoi
+            répondre à « où j'en suis » sans faire défiler. */}
+        <EvolutionOverview sessions={sessions} exercises={exercises} chapters={chapters} />
+
+        {/* LE TEMPS, la figure principale. Remplace l'ancienne « RhythmSection »,
+            qui ne savait regarder qu'à la semaine : ici le pas est le jour, et
+            la fenêtre se choisit (7 j / 30 j / 3 mois). L'objectif hebdomadaire
+            qu'elle portait a suivi, il n'est pas perdu. */}
+        <WorkTimeSection sessions={sessions} preferences={preferences} />
+
+        {/* LES MATIÈRES. Remplace l'ancienne « SubjectsSection », qui montrait
+            deux répartitions figées (cette semaine, depuis le début) sans
+            jamais dire ce qui BOUGE. */}
+        <SubjectEvolution sessions={sessions} exercises={exercises} chapters={chapters} snapshots={weekSnapshots} />
+
         <MasterySection exercises={exercises} sessions={sessions} chapters={chapters} weekSnapshots={weekSnapshots} />
         <GradesSection grades={grades} onSave={saveGrades} />
+        <ConsistencySection sessions={sessions} />
+        <WeekSection dayPlans={dayPlans} sessions={sessions} />
         <WorkAndResults sessions={sessions} grades={grades} />
         <WeekEvolution exercises={exercises} sessions={sessions} weekSnapshots={weekSnapshots} />
 
@@ -360,22 +387,10 @@ function WeekEvolution({
           detail={withSign(comparison.deltaCompletionRate, " pt")}
           size="sm"
         />
-        {comparison.mostImprovedSubject && (
-          <Stat
-            label="A le plus progressé"
-            value={comparison.mostImprovedSubject.subject}
-            detail={`${withSign(comparison.mostImprovedSubject.deltaCompletionRate, " pt")} de maîtrise`}
-            size="sm"
-          />
-        )}
-        {comparison.mostNeglectedSubject && (
-          <Stat
-            label="La moins travaillée"
-            value={comparison.mostNeglectedSubject.subject}
-            detail={`${formatSpan(comparison.mostNeglectedSubject.currentSeconds)} cette semaine`}
-            size="sm"
-          />
-        )}
+        {/* « A le plus progressé » et « La moins travaillée » ont été retirées :
+            « Tes matières » dit maintenant la même chose matière par matière,
+            avec le temps ET l'avancement, au lieu de n'en désigner qu'une. Deux
+            rendus du même fait sur la même page valent moins qu'un seul. */}
       </StatRow>
     </Section>
   );

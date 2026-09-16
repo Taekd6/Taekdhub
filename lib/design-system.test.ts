@@ -172,6 +172,39 @@ describe("typographie — des rôles, pas des tailles ad hoc", () => {
     expect([...offenders], "Rôle typographique inexistant — la classe ne s'applique à rien.").toEqual([]);
   });
 
+  /**
+   * MÊME MODE D'ÉCHEC, AUTRE FAMILLE DE CLASSES — et il s'est reproduit.
+   *
+   * `components/ui/chart.tsx` peignait ses barres en `bg-accent-ink/70`. La
+   * couleur Tailwind s'appelle `accent` (son `DEFAULT` EST l'encre) : il
+   * n'existe aucun `accent-ink`. La classe ne correspondait donc à rien, les
+   * barres avaient la bonne hauteur dans le DOM mais AUCUN fond, et le
+   * graphique s'affichait vide. Invisible au typecheck, invisible aux tests,
+   * invisible à la relecture — seule une capture d'écran l'a montré.
+   *
+   * On vérifie donc que toute variante d'accent employée dans une classe
+   * existe réellement dans la palette.
+   */
+  it("toute nuance `accent-…` employée existe dans la palette Tailwind", () => {
+    const config = readFileSync(path.resolve(process.cwd(), "tailwind.config.ts"), "utf8");
+    const scale = config.slice(config.indexOf("accent: {"), config.indexOf("},", config.indexOf("accent: {")));
+    const defined = new Set([...scale.matchAll(/^\s*"?([a-z-]+)"?:/gm)].map((match) => match[1]).filter((key) => key !== "DEFAULT"));
+
+    const offenders = new Set<string>();
+    for (const { file, content } of allSources()) {
+      if (file.endsWith(".css")) continue;
+      for (const attribute of content.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\}|\{cn\(([\s\S]*?)\)\})/g)) {
+        const value = attribute[1] ?? attribute[2] ?? attribute[3] ?? "";
+        // `bg-accent`, `text-accent/70` : la couleur par défaut, toujours valide.
+        // `bg-accent-brand`, `text-accent-ink` : une nuance, qui doit exister.
+        for (const used of value.matchAll(/\b(?:bg|text|border|ring|fill|stroke|from|via|to|divide|outline|decoration|shadow|accent)-accent-([a-z-]+?)(?:\/\d+)?\b/g)) {
+          if (!defined.has(used[1])) offenders.add(`${file}: accent-${used[1]}`);
+        }
+      }
+    }
+    expect([...offenders], "Nuance d'accent inexistante — la classe ne peint rien.").toEqual([]);
+  });
+
   it("aucune taille de police arbitraire supérieure au corps de texte", () => {
     // Les valeurs SOUS 1 rem restent tolérées : ce sont des micro-étiquettes
     // dont l'échelle Tailwind ne couvre pas tous les crans. Au-dessus, c'est

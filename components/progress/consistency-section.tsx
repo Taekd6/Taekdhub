@@ -4,6 +4,9 @@ import { useMemo } from "react";
 import { Section } from "@/components/ui/section";
 import { Heatmap } from "@/components/heatmap";
 import { Insufficient } from "@/components/progress/insufficient";
+import { Stat, StatRow } from "@/components/ui/stat";
+import { computeRegularity } from "@/lib/tracking";
+import { formatSpan } from "@/lib/utils";
 import { computeConsistency, currentStreak } from "@/lib/analytics/consistency";
 import { describeConfidence } from "@/lib/analytics/trend";
 import { workByDayMap } from "@/lib/gamification";
@@ -34,6 +37,9 @@ export function ConsistencySection({ sessions }: { sessions: WorkSession[] }) {
   }, [sessions]);
 
   const { consistency, streak, workByDay } = model;
+  // Fenêtre de 30 jours pour les chiffres : assez pour absorber une semaine
+  // creuse, assez court pour décrire le rythme actuel.
+  const regularity = useMemo(() => computeRegularity(sessions, "30j", new Date()), [sessions]);
   const hasActivity = Object.values(workByDay).some((seconds) => seconds > 0);
 
   return (
@@ -47,7 +53,33 @@ export function ConsistencySection({ sessions }: { sessions: WorkSession[] }) {
         <>
           <Heatmap workByDay={workByDay} />
 
-          <p className="t-body mt-4">
+          {/* LES CHIFFRES QUE LA HEATMAP NE DONNE PAS. Elle montre les
+              habitudes d'un coup d'œil ; elle ne dit ni combien on y passe
+              quand on s'y met, ni quelle a été la meilleure semaine. */}
+          <StatRow className="mt-5">
+            <Stat label="Jours travaillés" value={`${regularity.activeDays} / ${regularity.days}`} size="sm" />
+            <Stat
+              label="Moyenne par jour travaillé"
+              value={regularity.averagePerActiveDay > 0 ? formatSpan(regularity.averagePerActiveDay * 60) : "—"}
+              size="sm"
+            />
+            {/* « — » tant qu'il n'y a pas DEUX semaines complètes à comparer :
+                sur une seule, la meilleure et la pire seraient la même. */}
+            <Stat
+              label="Meilleure semaine"
+              value={regularity.best ? formatSpan(regularity.best.minutes * 60) : "—"}
+              detail={regularity.best ? weekLabel.format(regularity.best.start) : "pas encore comparable"}
+              size="sm"
+            />
+            <Stat
+              label="Semaine la plus creuse"
+              value={regularity.worst ? formatSpan(regularity.worst.minutes * 60) : "—"}
+              detail={regularity.worst ? weekLabel.format(regularity.worst.start) : "pas encore comparable"}
+              size="sm"
+            />
+          </StatRow>
+
+          <p className="t-body mt-5">
             <span className="font-medium">{consistency.currentActiveDays}</span> jour
             {consistency.currentActiveDays > 1 ? "s" : ""} actif{consistency.currentActiveDays > 1 ? "s" : ""} cette semaine
             {consistency.averageActiveDays !== null && (
@@ -73,6 +105,8 @@ export function ConsistencySection({ sessions }: { sessions: WorkSession[] }) {
     </Section>
   );
 }
+
+const weekLabel = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
 
 const TREND_WORDS: Record<"hausse" | "baisse" | "stable", string> = {
   hausse: "en hausse",

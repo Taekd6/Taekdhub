@@ -9,6 +9,7 @@ import { SegmentedControl } from "@/components/ui/segmented";
 import { LineChart } from "@/components/ui/chart";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { Insufficient } from "@/components/progress/insufficient";
+import { computeGradesByKind, computeGradesBySubject } from "@/lib/tracking";
 import { computeGradeTrend, createGrade, formatAverage, formatGrade, GRADE_KIND_META, gradedSubjects, normalizedScore, removeGrade } from "@/lib/grades";
 import { describeConfidence, withSign } from "@/lib/analytics/trend";
 import { subjectMeta, subjects } from "@/lib/study";
@@ -34,9 +35,27 @@ import type { Subject } from "@/lib/supabase/types";
  */
 export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (grades: Grade[]) => void }) {
   const [subject, setSubject] = useState<Subject | "toutes">("toutes");
-  const available = useMemo(() => gradedSubjects(grades), [grades]);
+  /*
+   * FILTRE PAR NATURE, distinct du filtre par matière.
+   *
+   * Un DS, une khôlle et un DM ne se passent pas dans les mêmes conditions :
+   * une courbe qui les enchaîne dans l'ordre chronologique fait alterner des
+   * exigences incomparables, et sa « tendance » ne veut rien dire. Le filtre
+   * rend la comparaison possible ; c'est lui qui fait le travail, pas une
+   * moyenne globale qu'on n'affiche donc plus comme un verdict.
+   */
+  const [kind, setKind] = useState<GradeKind | "toutes">("toutes");
+  const byKind = useMemo(() => computeGradesByKind(grades), [grades]);
+  const kindScope = kind !== "toutes" && byKind.some((entry) => entry.kind === kind) ? kind : null;
+  const scopedByKind = useMemo(
+    () => (kindScope ? grades.filter((grade) => grade.kind === kindScope) : grades),
+    [grades, kindScope]
+  );
+  const available = useMemo(() => gradedSubjects(scopedByKind), [scopedByKind]);
   const scope = subject !== "toutes" && available.includes(subject) ? subject : null;
-  const result = useMemo(() => computeGradeTrend(grades, scope), [grades, scope]);
+  const result = useMemo(() => computeGradeTrend(scopedByKind, scope), [scopedByKind, scope]);
+  /** Une ligne par matière : dernière note, moyenne, tendance — bornée à la nature choisie. */
+  const bySubject = useMemo(() => computeGradesBySubject(scopedByKind), [scopedByKind]);
 
   return (
     <Section
@@ -54,6 +73,19 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
         />
       ) : (
         <div className="mt-7 space-y-5">
+          {byKind.length > 1 && (
+            <SegmentedControl
+              size="sm"
+              ariaLabel="Nature d'épreuve affichée"
+              value={kind}
+              onChange={(value) => setKind(value as GradeKind | "toutes")}
+              options={[
+                { value: "toutes" as const, label: "Toutes" },
+                ...byKind.map((entry) => ({ value: entry.kind, label: GRADE_KIND_META[entry.kind].short })),
+              ]}
+            />
+          )}
+
           {available.length > 1 && (
             <SegmentedControl
               size="sm"
@@ -95,6 +127,40 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
               what={`${result.stats.count} note enregistrée${scope ? ` en ${scope}` : ""} — pas encore de courbe.`}
               how="Il en faut au moins deux pour voir une variation."
             />
+          )}
+
+          {/* UNE LIGNE PAR MATIÈRE : dernière note, moyenne, tendance. Le
+              tableau que la liste chronologique ne remplace pas — elle dit
+              « quand », il dit « où j'en suis ». */}
+          {bySubject.length > 1 && (
+            <div>
+              <p className="t-label mb-2">Par matière{kindScope ? ` · ${GRADE_KIND_META[kindScope].label}` : ""}</p>
+              <ul className="divide-y divide-line border-y border-line">
+                {bySubject.map((row) => (
+                  <li key={row.subject} className="flex items-center gap-3 py-2.5">
+                    <SubjectAvatar subject={row.subject} size="sm" />
+                    <span className="min-w-0 flex-1 truncate text-sm text-ink">{row.subject}</span>
+                    <span className="tabular w-14 shrink-0 whitespace-nowrap text-right text-sm text-ink">
+                      {row.stats.latest ? formatGrade(row.stats.latest) : "—"}
+                    </span>
+                    <span className="t-meta tabular w-16 shrink-0 whitespace-nowrap text-right text-2xs">
+                      moy. {row.stats.average !== null ? formatAverage(row.stats.average) : "—"}
+                    </span>
+                    {/* « — » et non une flèche quand une seule note existe :
+                        deux points font une variation, pas une tendance. */}
+                    <span className="w-6 shrink-0 text-right text-sm">
+                      {row.trend.direction === "insuffisant"
+                        ? "—"
+                        : row.trend.direction === "hausse"
+                          ? "↑"
+                          : row.trend.direction === "baisse"
+                            ? "↓"
+                            : "→"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           <ul className="divide-y divide-line border-y border-line">

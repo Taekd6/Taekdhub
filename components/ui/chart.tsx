@@ -231,3 +231,76 @@ export function PairedBars({
     </div>
   );
 }
+
+export interface VolumeBar {
+  /** Identifiant STABLE — la clé de période, jamais le libellé : deux jours peuvent partager une lettre. */
+  id: string;
+  /** Ce qui s'écrit sous la barre. Vide pour les barres intercalaires quand la série est longue. */
+  label: string;
+  /** Libellé complet, lu par les lecteurs d'écran et affiché au survol. */
+  title: string;
+  minutes: number;
+}
+
+/**
+ * BARRES DE VOLUME — « combien ai-je travaillé, jour après jour ».
+ *
+ * Une seule série, donc une seule barre par période : c'est la figure la plus
+ * simple possible, et c'est voulu. La question posée est « est-ce que je
+ * travaille régulièrement, et combien », à laquelle une courbe répond moins
+ * bien qu'un peigne — un trou s'y voit immédiatement.
+ *
+ * UN JOUR À ZÉRO GARDE SA PLACE, avec une barre résiduelle d'un pixel : c'est
+ * l'information principale de la figure. Le masquer donnerait une série
+ * continue là où il y a eu une interruption.
+ *
+ * AUCUNE INFO-BULLE N'EST NÉCESSAIRE pour comprendre : le total et la moyenne
+ * sont dits en texte par l'appelant, la valeur maximale est écrite sur l'axe,
+ * et chaque barre porte son libellé complet dans `title` + `aria-label`. Sur
+ * mobile, où le survol n'existe pas, rien n'est donc perdu.
+ */
+export function VolumeBars({
+  bars,
+  ariaLabel,
+  formatValue,
+  className,
+}: {
+  bars: VolumeBar[];
+  ariaLabel: string;
+  formatValue: (minutes: number) => string;
+  className?: string;
+}) {
+  if (bars.length === 0) return null;
+  const max = Math.max(...bars.map((bar) => bar.minutes), 1);
+
+  return (
+    <figure className={cn("mt-4", className)} role="img" aria-label={ariaLabel}>
+      <div className="flex h-32 items-end gap-[3px]" aria-hidden>
+        {bars.map((bar) => (
+          <div key={bar.id} className="group relative flex h-full min-w-0 flex-1 items-end" title={`${bar.title} — ${formatValue(bar.minutes)}`}>
+            <div
+              className={cn(
+                "w-full rounded-t-[2px] transition-[height]",
+                bar.minutes > 0 ? "bg-accent/70" : "bg-line"
+              )}
+              /* Minimum d'un pixel : un jour sans travail reste visible comme
+                 un creux, et non comme une absence de colonne. */
+              style={{ height: bar.minutes > 0 ? `${Math.max(2, (bar.minutes / max) * 100)}%` : "1px" }}
+            />
+          </div>
+        ))}
+      </div>
+      {/* Les libellés en HTML, jamais dans le SVG : voir `LineChart`. */}
+      <div className="mt-1.5 flex gap-[3px]" aria-hidden>
+        {bars.map((bar) => (
+          <span key={bar.id} className="t-meta min-w-0 flex-1 truncate text-center text-2xs">
+            {bar.label}
+          </span>
+        ))}
+      </div>
+      <figcaption className="t-meta mt-2 flex items-baseline justify-between text-2xs">
+        <span>maximum {formatValue(max)}</span>
+      </figcaption>
+    </figure>
+  );
+}
