@@ -8,8 +8,16 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/dashboard",
     scope: "/",
     display: "standalone",
-    background_color: "#09090b",
-    theme_color: "#09090b",
+    /*
+     * Ces deux couleurs peignent l'écran de démarrage de l'application
+     * installée. Elles étaient restées sur le noir bleuté du design d'avant,
+     * alors que le produit est passé au papier chaud : l'app s'ouvrait sur un
+     * éclair sombre avant d'afficher un fond crème. Alignées sur
+     * `--canvas-rgb` du thème clair (app/globals.css), comme l'est déjà
+     * `viewport.themeColor` dans app/layout.tsx.
+     */
+    background_color: "#faf9f6",
+    theme_color: "#faf9f6",
     lang: "fr",
     icons: [
       { src: "/pwa/icon-192", sizes: "192x192", type: "image/png", purpose: "any" },
