@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Instrument_Sans } from "next/font/google";
 import { ThemeSync } from "@/components/theme-sync";
+import { ServiceWorker } from "@/components/service-worker";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 
@@ -135,6 +136,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         {children}
         <ThemeSync />
+        <ServiceWorker />
       </body>
     </html>
   );
