@@ -117,12 +117,12 @@ export function ExerciseImport({
   if (!open) return null;
 
   return (
-    <div className="surface space-y-4 rounded-2xl p-5">
+    <div className="surface space-y-4 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="eyebrow">Import en masse</p>
-          <h2 className="mt-1 text-lg font-semibold">Ajoute plusieurs exercices à la fois.</h2>
-          <p className="mt-1 text-sm leading-6 text-zinc-500">
+          <p className="t-label">Import en masse</p>
+          <h2 className="t-heading mt-1">Ajoute plusieurs exercices à la fois.</h2>
+          <p className="t-meta mt-1">
             Colle ou importe un fichier JSON (un tableau, un objet par exercice). Rien n&apos;est ajouté avant ta confirmation ci-dessous.
           </p>
         </div>

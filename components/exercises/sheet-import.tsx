@@ -274,7 +274,7 @@ export function SheetImport({
                 const dropped = event.dataTransfer.files?.[0];
                 if (dropped) void analyseFile(dropped);
               }}
-              className={`rounded-2xl border border-dashed px-6 py-10 text-center transition-colors ${
+              className={`rounded-xl border border-dashed px-6 py-10 text-center transition-colors ${
                 dragging ? "border-accent bg-accent/[0.06]" : "border-line"
               }`}
             >

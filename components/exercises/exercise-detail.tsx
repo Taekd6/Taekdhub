@@ -78,7 +78,7 @@ export function ExerciseDetail({
   return (
     <div className="grid gap-5 bg-inset p-5 md:grid-cols-2">
       <div className="md:col-span-2">
-        <p className="eyebrow">Énoncé</p>
+        <p className="t-label">Énoncé</p>
         <Textarea
           value={statementDraft}
           onChange={(event) => setStatementDraft(event.target.value)}
@@ -96,7 +96,7 @@ export function ExerciseDetail({
         )}
       </div>
       <div>
-        <p className="eyebrow">Notes</p>
+        <p className="t-label">Notes</p>
         <Textarea
           value={noteDraft}
           onChange={(event) => setNoteDraft(event.target.value)}
@@ -109,7 +109,7 @@ export function ExerciseDetail({
       </div>
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="eyebrow">Mode résolution</p>
+          <p className="t-label">Mode résolution</p>
           <div className="flex items-center gap-4 text-xs text-zinc-500">
             <span className="flex items-center gap-1">
               <Clock3 size={13} /> {minutesSpent} min passées
@@ -248,7 +248,7 @@ export function ExerciseDetail({
 
       <div className="md:col-span-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="eyebrow">Séances</p>
+          <p className="t-label">Séances</p>
           {results.attempted > 0 && (
             <p className="text-xs text-zinc-500">
               {results.success} réussite{results.success > 1 ? "s" : ""} · {results.partial} partielle{results.partial > 1 ? "s" : ""} ·{" "}

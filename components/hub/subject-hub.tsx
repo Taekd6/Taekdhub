@@ -9,6 +9,7 @@ import { Stat, StatRow } from "@/components/ui/stat";
 import { Meter } from "@/components/ui/progress";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Insufficient } from "@/components/progress/insufficient";
+import { Skeleton } from "@/components/ui/state";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { buildSubjectHub, hubSubjects, HUB_RECENT_DAYS, HUB_WINDOW_DAYS } from "@/lib/hub";
@@ -52,7 +53,7 @@ export function SubjectHub() {
     [active, exercises, sessions, chapters, workItems, grades, preferences]
   );
 
-  if (!ready) return <div className="h-64 animate-pulse rounded-xl bg-inset" />;
+  if (!ready) return <Skeleton className="h-64 w-full" />;
 
   if (!model || !active) {
     return (
