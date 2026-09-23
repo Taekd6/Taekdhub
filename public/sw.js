@@ -62,6 +62,7 @@ const PRECACHE = [
   "/concours",
   "/progress",
   "/echeances",
+  "/revoir",
   "/history",
   "/session",
   "/timer",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lastStorageWriteFailure, localData, normalizePreferences, normalizeSession, normalizeWorkItem, restoreBackup, validateBackupPayload } from "@/lib/storage";
+import { buildBackupPayload, lastStorageWriteFailure, localData, normalizePreferences, normalizeSession, normalizeWorkItem, restoreBackup, validateBackupPayload } from "@/lib/storage";
 import { hexToRgb } from "@/lib/theme";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
@@ -563,7 +563,7 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     const outcome = withQuotaStorage({}, 1_000_000, () => restoreBackup(backup()));
     expect(outcome.ok).toBe(true);
     expect(outcome.failedAt).toBeNull();
-    expect(outcome.restored).toHaveLength(8);
+    expect(outcome.restored).toHaveLength(9);
   });
 
   it("la banque ne passe pas → RIEN n'est touché, et c'est dit", () => {
@@ -741,5 +741,55 @@ describe("merge* — l'état React reçoit ce qui est sur le DISQUE, pas l'inten
       localData.mergeSessions([normalizeSession(rawSession("s-2", "2026-02-01T08:00:00.000Z"))])
     );
     expect(stored.map((session) => session.id).sort()).toEqual(["s-1", "s-2"]);
+  });
+});
+
+/**
+ * CARNET « À REVOIR » — la seule collection née APRÈS la leçon des trois
+ * collections oubliées par `validateBackupPayload`. On vérifie donc d'emblée
+ * les trois promesses : le carnet voyage dans la sauvegarde, une sauvegarde
+ * ancienne (sans le champ) reste importable et REMPLACE par un carnet vide,
+ * et une suppression n'est jamais ressuscitée par l'écriture suivante.
+ */
+describe("carnet « À revoir » — sauvegarde, restauration, suppression", () => {
+  const entries = [
+    { id: "r-1", subject: "Mathématiques", text: "Cartouche : suite convergente → monotone bornée", kind: "méthode", createdAt: "2026-09-20T10:00:00.000Z", doneAt: null },
+    { id: "r-2", subject: "Physique", text: "Refaire exo 12 TD4", kind: "à revoir", createdAt: "2026-09-21T10:00:00.000Z", doneAt: "2026-09-22T10:00:00.000Z" },
+  ];
+
+  it("export → JSON → validation → restauration sur un autre appareil : rien ne se perd", () => {
+    const file = withWritableStorage({ "prepahub:reviewItems": JSON.stringify(entries) }, () =>
+      JSON.parse(JSON.stringify(buildBackupPayload(new Date("2026-09-23T12:00:00.000Z"))))
+    );
+    expect(file.reviewItems).toEqual(entries);
+    expect(validateBackupPayload(file)).toBe(true);
+
+    const restored = withWritableStorage({}, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.reviewItems();
+    });
+    expect(restored).toEqual(entries);
+  });
+
+  it("une sauvegarde d'avant le carnet reste importable, et le carnet de l'appareil est remplacé par un carnet vide", () => {
+    const legacy = { version: 1, exportedAt: "2026-09-01T00:00:00.000Z", exercises: [], sessions: [], preferences: {} };
+    expect(validateBackupPayload(legacy)).toBe(true);
+    const after = withWritableStorage({ "prepahub:reviewItems": JSON.stringify(entries) }, () => {
+      restoreBackup(legacy as never);
+      return localData.reviewItems();
+    });
+    expect(after).toEqual([]);
+  });
+
+  it("refuse un fichier dont le carnet n'est pas une liste", () => {
+    expect(validateBackupPayload({ exercises: [], sessions: [], preferences: {}, reviewItems: "oups" })).toBe(false);
+  });
+
+  it("une entrée supprimée ne revient pas : l'écriture REMPLACE", () => {
+    const after = withWritableStorage({ "prepahub:reviewItems": JSON.stringify(entries) }, () => {
+      localData.saveReviewItems(localData.reviewItems().filter((entry) => entry.id !== "r-1"));
+      return localData.reviewItems();
+    });
+    expect(after.map((entry) => entry.id)).toEqual(["r-2"]);
   });
 });

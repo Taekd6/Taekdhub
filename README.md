@@ -10,7 +10,7 @@ Tes données (exercices, chapitres, séances, préférences, progression) vivent
 
 **Sur l'ancien ordinateur — exporter :**
 1. Ouvrir [https://taekdhub.vercel.app](https://taekdhub.vercel.app) → **Réglages** → **Exporter**.
-2. Un fichier `taekdhub-sauvegarde-AAAA-MM-JJ.json` est téléchargé. Il contient **tout** : exercices, chapitres, séances, préférences (dont la couleur d'accent) et l'historique de progression (weekSnapshots). Garde ce fichier (clé USB, cloud, e-mail à toi-même…).
+2. Un fichier `taekdhub-sauvegarde-AAAA-MM-JJ.json` est téléchargé. Il contient **tout** : exercices, chapitres, séances, échéances, notes, carnet « À revoir » (dont les cartouches de méthode), préférences (dont la couleur d'accent) et l'historique de progression (weekSnapshots). Garde ce fichier (clé USB, cloud, e-mail à toi-même…).
 
 **Sur le nouvel ordinateur — importer :**
 1. Ouvrir [https://taekdhub.vercel.app](https://taekdhub.vercel.app) (aucune installation nécessaire — c'est un site web ; optionnellement « Installer l'application » depuis le navigateur pour l'avoir comme une app).
@@ -81,6 +81,7 @@ app/(app)/dashboard   Tableau de bord
 app/(app)/exercises   Banque d'exercices
 app/(app)/history     Historique des séances
 app/(app)/progress    Progression / statistiques
+app/(app)/revoir      Carnet « À revoir » (à revoir, à apprendre, cartouches de méthode)
 app/(app)/session     Séance de travail
 app/(app)/timer       Focus timer
 app/(app)/settings    Réglages

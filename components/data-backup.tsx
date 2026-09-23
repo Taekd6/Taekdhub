@@ -141,6 +141,12 @@ export function DataBackup() {
                       {pendingImport.chapters.length > 1 ? "s" : ""}
                     </>
                   ) : null}
+                  {pendingImport.reviewItems?.length ? (
+                    <>
+                      , <span className="font-medium text-ink">{pendingImport.reviewItems.length}</span> ligne
+                      {pendingImport.reviewItems.length > 1 ? "s" : ""} du carnet « À revoir »
+                    </>
+                  ) : null}
                   {pendingImport.weekSnapshots?.length ? (
                     <>
                       {" "}
@@ -149,7 +155,7 @@ export function DataBackup() {
                     </>
                   ) : null}
                   {pendingImport.exportedAt && ` (exporté le ${new Date(pendingImport.exportedAt).toLocaleDateString("fr-FR")})`}. Cette
-                  action remplacera définitivement tes exercices, chapitres, séances, préférences et historique de progression actuels sur cet appareil.
+                  action remplacera définitivement tes exercices, chapitres, séances, échéances, notes, carnet « À revoir », préférences et historique de progression actuels sur cet appareil.
                 </p>
               </div>
             </div>
