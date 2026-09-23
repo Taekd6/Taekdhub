@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { computeGradeStats, computeGradeTrend, createGrade, formatAverage, formatGrade, gradedSubjects, normalizedScore, removeGrade, sortedByDate } from "@/lib/grades";
+import { computeGradeStats, computeGradeTrend, createGrade, formatAverage, formatGrade, formatPrediction, gradedSubjects, isPending, normalizedScore, removeGrade, resolveGrade, sortedByDate, type ScoredGrade } from "@/lib/grades";
+import { computeGradesByKind, computeGradesBySubject } from "@/lib/tracking";
 import { normalizeGrade, type Grade } from "@/lib/storage";
 
-function grade(overrides: Partial<Grade> = {}): Grade {
+function grade(overrides: Partial<ScoredGrade> = {}): ScoredGrade {
   return {
     id: crypto.randomUUID(),
     subject: "Mathématiques",
@@ -97,7 +98,7 @@ describe("tendance des notes — pas de conclusion prématurée", () => {
 describe("saisie et correction", () => {
   it("une note au-dessus du barème est ramenée au barème, jamais propagée", () => {
     const created = createGrade({ subject: "Physique", title: "DS", kind: "ds", date: "2026-09-14", score: 25, maxScore: 20 });
-    expect(created.score).toBe(20);
+    expect(created?.score).toBe(20);
   });
 
   it("une note se supprime réellement — on saisit 14 au lieu de 4, on corrige", () => {
@@ -141,5 +142,61 @@ describe("formatage à la française", () => {
 
   it("n'ajoute pas de décimale postiche à un entier", () => {
     expect(formatAverage(14)).toBe("14");
+  });
+});
+
+/**
+ * NOTES EN ATTENTE (calibration) — une prédiction saisie avant la copie
+ * rendue ne doit JAMAIS peser dans une moyenne, une courbe ou une tendance.
+ */
+describe("notes en attente — exclues de tous les agrégats", () => {
+  const pending: Grade = { ...grade({ id: "p1", subject: "Chimie", kind: "colle" }), score: null, predictedScore: 15 };
+
+  it("se crée avec une prédiction seule, et se reconnaît comme en attente", () => {
+    const created = createGrade({ subject: "Physique", title: "", kind: "ds", date: "2026-09-20", score: null, maxScore: 20, predictedScore: 13 });
+    expect(created?.score).toBeNull();
+    expect(created?.predictedScore).toBe(13);
+    expect(created && isPending(created)).toBe(true);
+  });
+
+  it("sans note NI prédiction, rien n'est créé", () => {
+    expect(createGrade({ subject: "Physique", title: "", kind: "ds", date: "2026-09-20", score: null, maxScore: 20 })).toBeNull();
+  });
+
+  it("la prédiction est bornée au barème, comme la note", () => {
+    expect(createGrade({ subject: "Physique", title: "", kind: "ds", date: "2026-09-20", score: null, maxScore: 10, predictedScore: 14 })?.predictedScore).toBe(10);
+  });
+
+  it("n'entre ni dans la moyenne, ni dans le compte, ni dans la dernière note", () => {
+    const stats = computeGradeStats([grade({ score: 10 }), pending]);
+    expect(stats.count).toBe(1);
+    expect(stats.average).toBe(10);
+    expect(stats.latest?.score).toBe(10);
+    expect(computeGradeStats([pending]).average).toBeNull();
+  });
+
+  it("n'entre ni dans la courbe, ni dans les matières notées, ni dans les tableaux par nature/matière", () => {
+    expect(computeGradeTrend([grade(), pending]).grades).toHaveLength(1);
+    expect(gradedSubjects([pending])).toEqual([]);
+    expect(computeGradesByKind([pending])).toEqual([]);
+    expect(computeGradesBySubject([pending])).toEqual([]);
+  });
+
+  it("s'affiche « ?/20 », jamais « 0/20 »", () => {
+    expect(formatGrade(pending)).toBe("?/20");
+    expect(formatPrediction(pending)).toBe("15/20");
+    expect(formatPrediction(grade())).toBeNull();
+  });
+
+  it("se complète plus tard sans toucher à la prédiction", () => {
+    const [resolved] = resolveGrade([pending], "p1", 12);
+    expect(resolved.score).toBe(12);
+    expect(resolved.predictedScore).toBe(15);
+    expect(isPending(resolved)).toBe(false);
+  });
+
+  it("survit à la normalisation, et une note ancienne n'acquiert pas de prédiction", () => {
+    expect(normalizeGrade(JSON.parse(JSON.stringify(pending)))).toEqual(pending);
+    expect("predictedScore" in normalizeGrade(grade())!).toBe(false);
   });
 });

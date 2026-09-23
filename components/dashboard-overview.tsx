@@ -7,6 +7,7 @@ import { useCallback, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { QuickLog } from "@/components/work/quick-log";
 import { ReviewCapture } from "@/components/review/review-capture";
+import { DailyCheckinCard } from "@/components/checkin/daily-checkin"; // check-in du soir
 import { Button } from "@/components/ui/button";
 import { List, rowInteractive, Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
@@ -69,7 +70,7 @@ const contestDateFormatter = new Intl.DateTimeFormat("fr-FR", { day: "numeric", 
  *    le seul endroit d'où l'on part travailler.
  */
 export function DashboardOverview() {
-  const { sessions, exercises, chapters, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems } = usePrepahubData();
+  const { sessions, exercises, chapters, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems, checkins, saveCheckins } = usePrepahubData();
   const router = useRouter();
   const [planMinutes, setPlanMinutes] = useState<number>(DEFAULT_PLAN_MINUTES);
 
@@ -231,6 +232,12 @@ export function DashboardOverview() {
           {/* NOTER DU TEMPS juste sous l'anneau : la saisie le fait avancer
               sous les yeux de l'élève. Voir components/work/quick-log.tsx. */}
           <QuickLog sessions={sessions} saveSessions={saveSessions} removeSession={removeSession} ready={ready} />
+
+          {/* ── CHECK-IN DU SOIR ── dix secondes, à partir de 17 h, tant
+              qu'il n'est pas fait — le composant décide seul de s'afficher.
+              Voir components/checkin/daily-checkin.tsx. */}
+          <DailyCheckinCard checkins={checkins} onSave={saveCheckins} ready={ready} />
+          {/* ── fin check-in du soir ── */}
 
           {/* AUJOURD'HUI — ce qui est prévu, face à ce que la journée peut
               absorber. Deux nombres, pas un graphique : « suis-je à jour ? »
