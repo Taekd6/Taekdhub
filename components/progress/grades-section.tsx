@@ -11,7 +11,8 @@ import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { Insufficient } from "@/components/progress/insufficient";
 import { GradeErrorsLink } from "@/components/errors/error-links";
 import { computeGradesByKind, computeGradesBySubject } from "@/lib/tracking";
-import { computeGradeTrend, createGrade, formatAverage, formatGrade, GRADE_KIND_META, gradedSubjects, normalizedScore, removeGrade } from "@/lib/grades";
+import { computeGradeTrend, createGrade, formatAverage, formatGrade, formatPrediction, GRADE_KIND_META, gradedSubjects, isScored, normalizedScore, removeGrade } from "@/lib/grades";
+import { CalibrationPanel, PendingGrades } from "@/components/progress/calibration-panel"; // calibration des notes
 import { describeConfidence, withSign } from "@/lib/analytics/trend";
 import { subjectMeta, subjects } from "@/lib/study";
 import { GRADE_KINDS, type Grade, type GradeKind } from "@/lib/storage";
@@ -75,7 +76,10 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
       {/* Carnet d'erreurs : la copie est encore sous les yeux, c'est le moment. */}
       {justAdded && grades.some((grade) => grade.id === justAdded.id) && <GradeErrorsLink grade={justAdded} className="mt-2" />}
 
-      {grades.length === 0 ? (
+      {/* ── Calibration : épreuves en attente de la copie ── */}
+      <PendingGrades grades={grades} onSave={onSave} className="mt-6" />
+
+      {!grades.some(isScored) ? (
         <Insufficient
           className="mt-6"
           what="Aucune note enregistrée."
@@ -181,6 +185,7 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
                   <span className="block truncate text-sm text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
                   <span className="t-meta mt-0.5 block truncate text-2xs">
                     {GRADE_KIND_META[grade.kind].short} · {longDate.format(new Date(`${grade.date}T00:00:00`))}
+                    {formatPrediction(grade) && <> · pronostic {formatPrediction(grade)}</>}
                   </span>
                 </span>
                 <span className="t-figure-sm tabular shrink-0 whitespace-nowrap">{formatGrade(grade)}</span>
@@ -197,11 +202,20 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
           </ul>
         </div>
       )}
+
+      {/* ── Calibration : pronostics face aux notes ── */}
+      <CalibrationPanel grades={grades} className="mt-7" />
     </Section>
   );
 }
 
-/** Saisie d'une note — tout tient sur deux rangées, et seul le score est obligatoire. */
+/**
+ * Saisie d'une note — tout tient sur deux rangées.
+ *
+ * Il faut une note OU un pronostic. Avec un pronostic seul, la note est
+ * créée EN ATTENTE : on la complète le jour où la copie est rendue (voir
+ * components/progress/calibration-panel.tsx#PendingGrades).
+ */
 function GradeForm({ onCreate }: { onCreate: (grade: Grade) => void }) {
   const [subject, setSubject] = useState<Subject>("Mathématiques");
   const [kind, setKind] = useState<GradeKind>("ds");
@@ -209,16 +223,20 @@ function GradeForm({ onCreate }: { onCreate: (grade: Grade) => void }) {
   const [date, setDate] = useState(new Date().toLocaleDateString("en-CA"));
   const [score, setScore] = useState("");
   const [maxScore, setMaxScore] = useState(20);
+  const [prediction, setPrediction] = useState("");
 
-  const parsed = Number(score.replace(",", "."));
-  const valid = score.trim() !== "" && Number.isFinite(parsed) && parsed >= 0;
+  const parsed = parseScore(score);
+  const predicted = parseScore(prediction);
+  const valid = parsed !== null || predicted !== null;
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!valid) return;
-    onCreate(createGrade({ subject, title, kind, date, score: parsed, maxScore }));
+    const grade = createGrade({ subject, title, kind, date, score: parsed, maxScore, predictedScore: predicted });
+    if (!grade) return;
+    onCreate(grade);
     setTitle("");
     setScore("");
+    setPrediction("");
   }
 
   return (
@@ -250,7 +268,7 @@ function GradeForm({ onCreate }: { onCreate: (grade: Grade) => void }) {
         />
       </label>
       <Button type="submit" disabled={!valid} className="shrink-0">
-        <Plus size={15} /> Ajouter
+        <Plus size={15} /> {parsed === null && predicted !== null ? "En attente" : "Ajouter"}
       </Button>
 
       <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap">
@@ -276,9 +294,29 @@ function GradeForm({ onCreate }: { onCreate: (grade: Grade) => void }) {
           <span className="sr-only">Date de l&apos;épreuve</span>
           <Input aria-label="Date de l'épreuve" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
         </label>
+        {/* Calibration : ce que tu penses avoir, AVANT la copie. */}
+        <label className="col-span-2 flex min-w-0 items-center gap-2 sm:col-span-1">
+          <span className="t-meta shrink-0 text-2xs">Pronostic</span>
+          <Input
+            aria-label="Pronostic, avant la copie"
+            inputMode="decimal"
+            value={prediction}
+            onChange={(event) => setPrediction(event.target.value)}
+            placeholder="facultatif"
+            className="w-24 text-center"
+          />
+          <span className="t-meta">/{maxScore}</span>
+        </label>
       </div>
     </form>
   );
+}
+
+/** Champ numérique à la française (« 11,5 ») — `null` si vide ou illisible. */
+function parseScore(raw: string): number | null {
+  if (raw.trim() === "") return null;
+  const value = Number(raw.replace(",", "."));
+  return Number.isFinite(value) && value >= 0 ? value : null;
 }
 
 const TREND_WORDS: Record<"hausse" | "baisse" | "stable", string> = {
