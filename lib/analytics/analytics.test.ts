@@ -368,14 +368,17 @@ describe("chapitres — un chapitre jamais commencé n'est PAS un chapitre faibl
       exercise("a", { chapter_id: "c1", mastery: 25, attempts: 2, last_worked_at: "2026-09-14T00:00:00.000Z" }),
       exercise("b", { chapter_id: "c2" }),
     ];
-    const board = computeChapterMastery(exercises, chapters);
+    const board = computeChapterMastery(exercises, chapters, 5, [], NOW);
     expect(board.fragile.map((row) => row.chapter.label)).toEqual(["Intégration"]);
     expect(board.untouched.map((row) => row.chapter.label)).toEqual(["Probabilités"]);
   });
 
   it("un chapitre acquis rejoint les solides, pas les fragiles", () => {
     const exercises = [exercise("a", { chapter_id: "c1", mastery: 100, status: "maîtrisé", attempts: 3, last_worked_at: "2026-09-14T00:00:00.000Z" })];
-    const board = computeChapterMastery(exercises, chapters);
+    // `now` injecté : sans lui, le verdict dépendait de la date d'exécution.
+    // Neuf jours après la dernière révision — au-delà de CHAPTER_STALE_DAYS —,
+    // un chapitre ACQUIS doit rester solide : l'ancienneté ne vise que l'incomplet.
+    const board = computeChapterMastery(exercises, chapters, 5, [], new Date("2026-09-23T12:00:00"));
     expect(board.solid.map((row) => row.chapter.label)).toEqual(["Intégration"]);
     expect(board.fragile).toEqual([]);
   });

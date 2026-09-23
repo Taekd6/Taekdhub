@@ -188,7 +188,14 @@ export function assessChapter(
     .filter((value): value is string => value !== null)
     .map((value) => new Date(value).getTime())
     .filter((time) => !Number.isNaN(time));
-  if (lastWorked.length > 0) {
+  // L'ancienneté ne vaut que pour un chapitre ENCORE INCOMPLET (voir
+  // `CHAPTER_STALE_DAYS`) : un chapitre entièrement maîtrisé n'a rien à
+  // consolider, et le laisser reposer n'est pas une faiblesse. Avant la
+  // fusion des deux verdicts, l'accueil l'excluait en amont
+  // (`completionRate < 100`) ; les hubs, eux, le déclaraient « fragile »
+  // sept jours après sa dernière révision.
+  const incomplete = chapterExercises.some((exercise) => exercise.status !== "maîtrisé");
+  if (incomplete && lastWorked.length > 0) {
     const days = Math.floor((now.getTime() - Math.max(...lastWorked)) / 86400000);
     if (days >= CHAPTER_STALE_DAYS) reasons.push(`Non travaillé depuis ${days} j`);
   }
