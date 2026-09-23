@@ -13,6 +13,7 @@ import { WeekSection } from "@/components/progress/week-section";
 import { ConsistencySection } from "@/components/progress/consistency-section";
 import { EvolutionOverview } from "@/components/progress/evolution-overview";
 import { WorkTimeSection } from "@/components/progress/work-time-section";
+import { SubjectTargetsSection } from "@/components/progress/subject-targets-section";
 import { SubjectEvolution } from "@/components/progress/subject-evolution";
 import { MasterySection } from "@/components/progress/mastery-section";
 import { GradesSection } from "@/components/progress/grades-section";
@@ -189,6 +190,7 @@ export function ProgressOverview() {
             la fenêtre se choisit (7 j / 30 j / 3 mois). L'objectif hebdomadaire
             qu'elle portait a suivi, il n'est pas perdu. */}
         <WorkTimeSection sessions={sessions} preferences={preferences} />
+        <SubjectTargetsSection sessions={sessions} preferences={preferences} />
 
         {/* LES MATIÈRES. Remplace l'ancienne « SubjectsSection », qui montrait
             deux répartitions figées (cette semaine, depuis le début) sans
