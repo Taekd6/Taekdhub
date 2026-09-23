@@ -11,6 +11,7 @@ import { SegmentedControl } from "@/components/ui/segmented";
 import { Insufficient } from "@/components/progress/insufficient";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { ReviewCapture, ReviewList } from "@/components/review/review-capture";
+import { DueToday } from "@/components/review/due-today";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { buildSubjectHub, hubSubjects, HUB_RECENT_DAYS, HUB_WINDOW_DAYS } from "@/lib/hub";
 import { describeConfidence } from "@/lib/analytics/trend";
@@ -257,6 +258,8 @@ export function SubjectHub() {
           </Link>
         }
       >
+        {/* Révisions espacées de CETTE matière — la séance s'ouvre filtrée. */}
+        <DueToday items={reviewItems} subject={active} className="mb-4" />
         <ReviewCapture
           key={active}
           items={reviewItems}

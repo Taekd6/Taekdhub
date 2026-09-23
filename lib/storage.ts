@@ -1,4 +1,5 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
+import { SRS_LADDER } from "@/lib/spaced-repetition";
 import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, THEME_MODES, hexToRgb, type ThemeMode } from "@/lib/theme";
 import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, Filiere, LicenseStatus, Mastery, ProgrammeLevel, Provenance, Subject, WorkSession } from "@/lib/supabase/types";
 
@@ -278,6 +279,48 @@ export interface ReviewItem {
    * tâches. Voir lib/review-items.ts pour le raisonnement complet.
    */
   doneAt: string | null;
+  /**
+   * LE VERSO — facultatif. La question est `text` (« Montrer qu'une suite
+   * converge ? »), la réponse vit ici (« monotone + bornée ⇒ convergente »).
+   * Avec un verso, la séance de révision peut CACHER la réponse et demander
+   * de la retrouver de tête — c'est tout l'intérêt (voir
+   * lib/spaced-repetition.ts). Sans verso, l'entrée se révise quand même :
+   * on se demande simplement si l'on s'en souvient.
+   *
+   * Absent plutôt que `""` : une sauvegarde antérieure au verso n'a pas ce
+   * champ, et « pas de réponse » n'a qu'une seule écriture.
+   */
+  answer?: string;
+  /**
+   * LE CALENDRIER DE RÉVISION — absent tant que l'entrée n'a jamais été
+   * révisée. Une entrée sans calendrier est due le LENDEMAIN de sa création
+   * (voir `effectiveSchedule` dans lib/spaced-repetition.ts) : pas besoin de
+   * l'écrire à la saisie, et les entrées notées avant l'existence des
+   * révisions rejoignent la file sans migration.
+   */
+  srs?: ReviewSchedule;
+}
+
+/**
+ * L'état de révision espacée d'une entrée — un objet entier ou rien. Les six
+ * champs n'ont de sens qu'ensemble (un `dueAt` sans `step` ne dit pas quel
+ * intervalle viendrait ensuite) : les regrouper permet à la normalisation de
+ * jeter d'un bloc un calendrier illisible et de retomber sur « jamais
+ * révisée », plutôt que de recoller des morceaux.
+ */
+export interface ReviewSchedule {
+  /** Jour CALENDAIRE local (AAAA-MM-JJ) où l'entrée redevient à réviser — jamais un instant ISO : « à réviser demain » ne doit pas dépendre du fuseau. */
+  dueAt: string;
+  /** Écart, en jours, entre la dernière révision et `dueAt`. ≥ 1. */
+  intervalDays: number;
+  /** Barreau atteint sur l'échelle 1, 3, 7, 16, 35, 90 jours (0 = le premier). Voir `SRS_LADDER`. */
+  step: number;
+  /** Nombre de révisions notées, toutes notes confondues. */
+  reviews: number;
+  /** Nombre de « À revoir » — les oublis. Informatif : ne change pas le calcul. */
+  lapses: number;
+  /** ISO de la dernière note, ou `null`. */
+  lastReviewedAt: string | null;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -849,6 +892,10 @@ export function normalizeReviewItem(raw: unknown): ReviewItem | null {
   if (!text) return null;
   const subject = migrateSubjectOrNull(item.subject);
   if (!subject) return null;
+  // Le verso garde ses retours à la ligne (une méthode s'écrit souvent en
+  // deux temps) mais perd ses espaces de bord ; vide, il n'existe pas.
+  const answer = typeof item.answer === "string" ? item.answer.trim() : "";
+  const srs = normalizeReviewSchedule(item.srs);
   return {
     id: typeof item.id === "string" && item.id ? item.id : crypto.randomUUID(),
     subject,
@@ -856,6 +903,34 @@ export function normalizeReviewItem(raw: unknown): ReviewItem | null {
     kind: (REVIEW_KINDS as string[]).includes(item.kind as string) ? (item.kind as ReviewKind) : "à revoir",
     createdAt: isoDate(item.createdAt) ?? new Date().toISOString(),
     doneAt: isoDate(item.doneAt),
+    // Ajoutés seulement s'ils existent : un aller-retour JSON d'une entrée
+    // sans verso ni calendrier doit redonner EXACTEMENT la même entrée.
+    ...(answer ? { answer } : {}),
+    ...(srs ? { srs } : {}),
+  };
+}
+
+/**
+ * Un calendrier de révision lisible, ou `undefined` (= « jamais révisée »,
+ * l'entrée redevient due le lendemain de sa création).
+ *
+ * Seul `dueAt` est indispensable : sans jour d'échéance, on ne sait plus
+ * quand la montrer, et inventer une date mentirait. Le reste se répare — un
+ * barreau hors échelle est ramené dans l'échelle, un intervalle illisible
+ * reprend la valeur de son barreau, un compteur abîmé repart de zéro.
+ */
+export function normalizeReviewSchedule(raw: unknown): ReviewSchedule | undefined {
+  if (!isRecord(raw)) return undefined;
+  const dueAt = calendarDay(raw.dueAt);
+  if (!dueAt) return undefined;
+  const step = Math.min(SRS_LADDER.length - 1, nonNegativeInteger(raw.step) ?? 0);
+  return {
+    dueAt,
+    intervalDays: positiveInteger(raw.intervalDays) ?? SRS_LADDER[step],
+    step,
+    reviews: nonNegativeInteger(raw.reviews) ?? 0,
+    lapses: nonNegativeInteger(raw.lapses) ?? 0,
+    lastReviewedAt: isoDate(raw.lastReviewedAt),
   };
 }
 

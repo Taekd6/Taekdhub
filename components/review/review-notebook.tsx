@@ -7,6 +7,7 @@ import { SegmentedControl } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/state";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { ReviewCapture, ReviewList } from "@/components/review/review-capture";
+import { DueToday } from "@/components/review/due-today";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { cn } from "@/lib/cn";
 import { countBySubject, isOpen, REVIEW_KIND_META, selectReviewItems } from "@/lib/review-items";
@@ -119,6 +120,9 @@ export function ReviewNotebook() {
           title="À revoir"
           lede="Ce que tu as noté en relisant tes corrigés — à revoir, à apprendre, et les méthodes que tu en as tirées."
         />
+
+        {/* Révisions espacées — suit le filtre de matière du carnet. */}
+        <DueToday items={reviewItems} subject={subject === "all" ? null : subject} />
 
         <ReviewCapture items={reviewItems} saveItems={saveReviewItems} ready={ready} showList={false} />
 

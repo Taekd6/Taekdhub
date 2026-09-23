@@ -6,7 +6,9 @@ import {
   methodsFor,
   parseReviewMemory,
   removeReviewItem,
+  REVIEW_ANSWER_MAX,
   REVIEW_TEXT_MAX,
+  sanitizeReviewAnswer,
   sanitizeReviewText,
   selectReviewItems,
   sortReviewItems,
@@ -44,6 +46,24 @@ describe("création — une ligne, jamais vide", () => {
     expect(createReviewItem({ subject: "Physique", text: "   ", kind: "à revoir" })).toBeNull();
     expect(sanitizeReviewText("x".repeat(REVIEW_TEXT_MAX))).not.toBeNull();
     expect(sanitizeReviewText("x".repeat(REVIEW_TEXT_MAX + 1))).toBeNull();
+  });
+});
+
+describe("le verso — facultatif", () => {
+  it("absent ou vide : pas de champ `answer`", () => {
+    expect("answer" in createReviewItem({ subject: "Mathématiques", text: "Suites", kind: "méthode" })!).toBe(false);
+    expect("answer" in createReviewItem({ subject: "Mathématiques", text: "Suites", kind: "méthode", answer: "  \n " })!).toBe(false);
+  });
+
+  it("garde les retours à la ligne, retire le reste du désordre", () => {
+    expect(sanitizeReviewAnswer("  Monotone  +  bornée \r\n\n\n\n ⇒ convergente ")).toBe("Monotone + bornée\n\n⇒ convergente");
+    const created = createReviewItem({ subject: "Mathématiques", text: "Montrer qu'une suite converge ?", kind: "méthode", answer: "Monotone + bornée ⇒ convergente" })!;
+    expect(created.answer).toBe("Monotone + bornée ⇒ convergente");
+  });
+
+  it("un verso trop long fait refuser l'entrée plutôt que d'être coupé", () => {
+    expect(sanitizeReviewAnswer("x".repeat(REVIEW_ANSWER_MAX))).not.toBeNull();
+    expect(createReviewItem({ subject: "Physique", text: "Optique", kind: "à revoir", answer: "x".repeat(REVIEW_ANSWER_MAX + 1) })).toBeNull();
   });
 });
 

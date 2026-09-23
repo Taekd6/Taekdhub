@@ -7,6 +7,7 @@ import { useCallback, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { QuickLog } from "@/components/work/quick-log";
 import { ReviewCapture } from "@/components/review/review-capture";
+import { DueToday } from "@/components/review/due-today";
 import { Button } from "@/components/ui/button";
 import { List, rowInteractive, Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
@@ -653,6 +654,8 @@ export function DashboardOverview() {
             </Link>
           }
         >
+          {/* Révisions espacées du carnet — voir components/review/due-today.tsx. */}
+          <DueToday items={reviewItems} className="mb-4" />
           <ReviewCapture
             items={reviewItems}
             saveItems={saveReviewItems}
