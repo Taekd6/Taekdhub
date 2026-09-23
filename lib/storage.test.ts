@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBackupPayload, lastStorageWriteFailure, localData, normalizePreferences, normalizeSession, normalizeWorkItem, restoreBackup, validateBackupPayload } from "@/lib/storage";
+import { buildBackupPayload, lastStorageWriteFailure, localData, normalizeErrorEntry, normalizePreferences, normalizeSession, normalizeWorkItem, restoreBackup, validateBackupPayload } from "@/lib/storage";
 import { hexToRgb } from "@/lib/theme";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
@@ -563,7 +563,7 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     const outcome = withQuotaStorage({}, 1_000_000, () => restoreBackup(backup()));
     expect(outcome.ok).toBe(true);
     expect(outcome.failedAt).toBeNull();
-    expect(outcome.restored).toHaveLength(9);
+    expect(outcome.restored).toHaveLength(10);
   });
 
   it("la banque ne passe pas → RIEN n'est touché, et c'est dit", () => {
@@ -791,5 +791,89 @@ describe("carnet « À revoir » — sauvegarde, restauration, suppression", () 
       return localData.reviewItems();
     });
     expect(after.map((entry) => entry.id)).toEqual(["r-2"]);
+  });
+});
+
+/* ── Carnet d'erreurs ─────────────────────────────────────────────────
+ * Les mêmes trois promesses que le carnet « À revoir » — voyager dans la
+ * sauvegarde, rester importable depuis une sauvegarde ancienne, ne jamais
+ * ressusciter une suppression — plus la frontière de confiance propre au
+ * carnet : un type inconnu écarte l'entrée plutôt que d'inventer un type.
+ */
+describe("carnet d'erreurs — normalisation, sauvegarde, restauration, suppression", () => {
+  const errors = [
+    {
+      id: "e-1",
+      subject: "Physique",
+      date: "2026-09-20",
+      source: "colle",
+      type: "calcul",
+      description: "Signe oublié dans la projection",
+      fix: "Faire un schéma avec les axes",
+      chapterId: null,
+      exerciseId: null,
+      reviewItemId: null,
+      createdAt: "2026-09-20T18:00:00.000Z",
+    },
+    {
+      id: "e-2",
+      subject: "Mathématiques",
+      date: "2026-09-21",
+      source: "DS",
+      type: "cours",
+      description: "Définition de la continuité uniforme",
+      fix: null,
+      chapterId: "ch-1",
+      exerciseId: "ex-1",
+      reviewItemId: "r-9",
+      createdAt: "2026-09-21T18:00:00.000Z",
+    },
+  ];
+
+  it("répare ce qui se répare, écarte ce qui ne veut plus rien dire", () => {
+    expect(normalizeErrorEntry({ ...errors[0], source: "khôlle", fix: "  ", chapterId: 3 })).toMatchObject({ source: "autre", fix: null, chapterId: null });
+    expect(normalizeErrorEntry({ ...errors[0], description: "   " })).toBeNull();
+    expect(normalizeErrorEntry({ ...errors[0], subject: "Latin" })).toBeNull();
+    // Type inconnu : écartée, jamais rangée d'office dans un type inventé.
+    expect(normalizeErrorEntry({ ...errors[0], type: "fatigue" })).toBeNull();
+    // Date illisible : retombe sur le jour de saisie.
+    expect(normalizeErrorEntry({ ...errors[0], date: "hier" })?.date).toBe("2026-09-20");
+    // Matière renommée : migrée, pas perdue.
+    expect(normalizeErrorEntry({ ...errors[0], subject: "Informatique" })?.subject).toBe("Informatique TC");
+  });
+
+  it("export → JSON → validation → restauration sur un autre appareil : rien ne se perd", () => {
+    const file = withWritableStorage({ "prepahub:errors": JSON.stringify(errors) }, () =>
+      JSON.parse(JSON.stringify(buildBackupPayload(new Date("2026-09-23T12:00:00.000Z"))))
+    );
+    expect(file.errors).toEqual(errors);
+    expect(validateBackupPayload(file)).toBe(true);
+    const restored = withWritableStorage({}, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.errors();
+    });
+    expect(restored).toEqual(errors);
+  });
+
+  it("une sauvegarde d'avant le carnet reste importable, et le carnet de l'appareil est remplacé par un carnet vide", () => {
+    const legacy = { version: 1, exportedAt: "2026-09-01T00:00:00.000Z", exercises: [], sessions: [], preferences: {} };
+    expect(validateBackupPayload(legacy)).toBe(true);
+    const after = withWritableStorage({ "prepahub:errors": JSON.stringify(errors) }, () => {
+      restoreBackup(legacy as never);
+      return localData.errors();
+    });
+    expect(after).toEqual([]);
+  });
+
+  it("refuse un fichier dont le carnet d'erreurs n'est pas une liste", () => {
+    expect(validateBackupPayload({ exercises: [], sessions: [], preferences: {}, errors: { a: 1 } })).toBe(false);
+  });
+
+  it("une erreur supprimée ne revient pas : l'écriture REMPLACE", () => {
+    const after = withWritableStorage({ "prepahub:errors": JSON.stringify(errors) }, () => {
+      localData.saveErrors(localData.errors().filter((entry) => entry.id !== "e-1"));
+      return localData.errors();
+    });
+    expect(after.map((entry) => entry.id)).toEqual(["e-2"]);
   });
 });

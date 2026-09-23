@@ -9,6 +9,7 @@ import { SegmentedControl } from "@/components/ui/segmented";
 import { LineChart } from "@/components/ui/chart";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { Insufficient } from "@/components/progress/insufficient";
+import { GradeErrorsLink } from "@/components/errors/error-links";
 import { computeGradesByKind, computeGradesBySubject } from "@/lib/tracking";
 import { computeGradeTrend, createGrade, formatAverage, formatGrade, GRADE_KIND_META, gradedSubjects, normalizedScore, removeGrade } from "@/lib/grades";
 import { describeConfidence, withSign } from "@/lib/analytics/trend";
@@ -35,6 +36,8 @@ import type { Subject } from "@/lib/supabase/types";
  */
 export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (grades: Grade[]) => void }) {
   const [subject, setSubject] = useState<Subject | "toutes">("toutes");
+  /** Dernière note ajoutée — porte le lien « Noter les erreurs de ce DS » (carnet d'erreurs). */
+  const [justAdded, setJustAdded] = useState<Grade | null>(null);
   /*
    * FILTRE PAR NATURE, distinct du filtre par matière.
    *
@@ -63,7 +66,14 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
       title="Tes notes"
       description="Saisies par toi : c'est le seul regard extérieur sur ton travail. Les barèmes sont ramenés sur 20 pour être comparables, en moyenne simple."
     >
-      <GradeForm onCreate={(grade) => onSave([grade, ...grades])} />
+      <GradeForm
+        onCreate={(grade) => {
+          onSave([grade, ...grades]);
+          setJustAdded(grade);
+        }}
+      />
+      {/* Carnet d'erreurs : la copie est encore sous les yeux, c'est le moment. */}
+      {justAdded && grades.some((grade) => grade.id === justAdded.id) && <GradeErrorsLink grade={justAdded} className="mt-2" />}
 
       {grades.length === 0 ? (
         <Insufficient

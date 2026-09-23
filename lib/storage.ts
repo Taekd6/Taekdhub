@@ -15,6 +15,8 @@ const workItemsKey = "prepahub:work-items";
 const gradesKey = "prepahub:grades";
 const dayPlansKey = "prepahub:day-plans";
 const reviewItemsKey = "prepahub:reviewItems";
+/* ── Carnet d'erreurs — voir `ErrorEntry` ── */
+const errorsKey = "prepahub:errors";
 
 /**
  * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
@@ -321,6 +323,58 @@ export interface ReviewSchedule {
   lapses: number;
   /** ISO de la dernière note, ou `null`. */
   lastReviewedAt: string | null;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CARNET D'ERREURS — ce qui s'est mal passé, et pourquoi
+   ══════════════════════════════════════════════════════════════════
+
+   Après une colle, un DS ou un exercice, l'élève note chaque erreur en une
+   dizaine de secondes : où (matière, source, date), QUEL GENRE d'erreur
+   (six types, voir lib/error-log.ts), ce qui s'est passé, et — s'il l'a —
+   la bonne idée qui l'aurait évitée.
+
+   Distinct du carnet « À revoir » : une entrée À revoir est une PROMESSE
+   (« revoir l'IPP »), qui se coche et s'efface. Une erreur est un CONSTAT
+   daté, qu'on ne coche pas — elle sert à voir, sur un mois, ce qui revient.
+   La fusionner avec le carnet aurait mêlé deux usages et rendu les comptes
+   par type impossibles.
+
+   Le chapitre et l'exercice sont FACULTATIFS et ne sont que des renvois
+   (identifiants) : l'erreur de colle n'a souvent aucun exercice dans la
+   banque, et c'est justement le cas le plus fréquent.
+*/
+
+/** Où l'erreur a été commise — le vocabulaire des élèves, pas celui de `GradeKind`, qui ignore l'exercice fait seul. */
+export type ErrorSource = "colle" | "DS" | "DM" | "exercice" | "concours blanc" | "autre";
+export const ERROR_SOURCES: readonly ErrorSource[] = ["colle", "DS", "DM", "exercice", "concours blanc", "autre"];
+
+/** Le GENRE d'erreur — six types, décrits en une ligne chacun dans lib/error-log.ts#ERROR_TYPE_META. */
+export type ErrorType = "calcul" | "méthode" | "cours" | "lecture" | "rédaction" | "temps";
+export const ERROR_TYPES: readonly ErrorType[] = ["calcul", "méthode", "cours", "lecture", "rédaction", "temps"];
+
+export interface ErrorEntry {
+  id: string;
+  subject: Subject;
+  /** "AAAA-MM-JJ" — le jour de l'épreuve ou de l'exercice, pas celui de la saisie. */
+  date: string;
+  source: ErrorSource;
+  type: ErrorType;
+  /** Ce qui s'est mal passé, en une ligne. Jamais vide. */
+  description: string;
+  /** « La bonne idée » : ce qu'il fallait faire. `null` quand l'élève ne l'a pas (encore) notée. */
+  fix: string | null;
+  /** Renvoi facultatif vers `Chapter.id` — n'est jamais une condition de validité. */
+  chapterId: string | null;
+  /** Renvoi facultatif vers `Exercise.id` de la banque. */
+  exerciseId: string | null;
+  /**
+   * Identifiant de l'entrée « À revoir » créée à partir de cette erreur, ou
+   * `null`. Sert uniquement à ne pas proposer deux fois « ajouter au
+   * carnet » — si l'entrée a été supprimée depuis, le bouton reparaît.
+   */
+  reviewItemId: string | null;
+  createdAt: string;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -934,6 +988,54 @@ export function normalizeReviewSchedule(raw: unknown): ReviewSchedule | undefine
   };
 }
 
+/* ── Carnet d'erreurs ─────────────────────────────────────────────── */
+
+function optionalText(raw: unknown): string | null {
+  return typeof raw === "string" && raw.trim() ? raw.trim() : null;
+}
+
+/**
+ * Ramène une erreur notée potentiellement corrompue vers une forme valide, ou
+ * l'écarte (`null`).
+ *
+ * Écartée quand elle ne veut plus rien dire : sans description, sans matière
+ * reconnaissable, ou sans TYPE reconnu. Ce dernier point est un choix : le
+ * type est la seule chose que le carnet compte, et le remplacer par une
+ * valeur inventée fausserait précisément les statistiques qui justifient le
+ * carnet (« ton erreur n°1 : calcul » alors que l'élève n'a jamais dit
+ * calcul). Une source inconnue, elle, retombe sur « autre » — c'est une
+ * valeur honnête, qui existe pour ça.
+ *
+ * La date manquante retombe sur le jour de saisie quand il est lisible : une
+ * erreur notée le soir même d'une colle, c'est le cas normal.
+ */
+export function normalizeErrorEntry(raw: unknown): ErrorEntry | null {
+  const item = isRecord(raw) ? raw : {};
+  const description = typeof item.description === "string" ? item.description.trim() : "";
+  if (!description) return null;
+  const subject = migrateSubjectOrNull(item.subject);
+  if (!subject) return null;
+  if (!(ERROR_TYPES as string[]).includes(item.type as string)) return null;
+  const createdAt = isoDate(item.createdAt) ?? new Date().toISOString();
+  const date = calendarDay(item.date) ?? calendarDay(createdAt.slice(0, 10));
+  if (!date) return null;
+  return {
+    id: typeof item.id === "string" && item.id ? item.id : crypto.randomUUID(),
+    subject,
+    date,
+    source: (ERROR_SOURCES as string[]).includes(item.source as string) ? (item.source as ErrorSource) : "autre",
+    type: item.type as ErrorType,
+    description,
+    fix: optionalText(item.fix),
+    chapterId: optionalText(item.chapterId),
+    exerciseId: optionalText(item.exerciseId),
+    reviewItemId: optionalText(item.reviewItemId),
+    createdAt,
+  };
+}
+
+/* ── fin carnet d'erreurs ─────────────────────────────────────────── */
+
 /** Voir `DayPlanRecord` — un enregistrement sans jour valide n'a aucun sens et disparaît. */
 export function normalizeDayPlanRecord(raw: unknown): DayPlanRecord | null {
   const item = isRecord(raw) ? raw : {};
@@ -1320,6 +1422,15 @@ export const localData = {
    * d'effacer.
    */
   saveReviewItems: (items: ReviewItem[]): boolean => writeKey(reviewItemsKey, JSON.stringify(items)),
+  /* ── Carnet d'erreurs ── */
+  errors: (): ErrorEntry[] =>
+    typeof window === "undefined" ? [] : readList(errorsKey).map(normalizeErrorEntry).filter((item): item is ErrorEntry => item !== null),
+  /**
+   * REMPLACE, jamais de fusion — même profil que `saveGrades` et
+   * `saveReviewItems` : une erreur mal saisie SE SUPPRIME, et la fusion par
+   * identifiant la ressusciterait à l'écriture suivante.
+   */
+  saveErrors: (items: ErrorEntry[]): boolean => writeKey(errorsKey, JSON.stringify(items)),
 };
 
 /**
@@ -1354,7 +1465,7 @@ export function daysSinceBackup(lastBackupAt: string | null, now: Date = new Dat
  * l'ancien « réussi » inconditionnel.
  */
 export interface RestoreOutcome {
-  /** Vrai seulement si TOUTES les collections ont été écrites (neuf depuis le carnet « À revoir »). */
+  /** Vrai seulement si TOUTES les collections ont été écrites (dix depuis le carnet d'erreurs). */
   ok: boolean;
   /** Collections réellement écrites, dans l'ordre de tentative. */
   restored: string[];
@@ -1404,6 +1515,8 @@ export function restoreBackup(payload: BackupPayload): RestoreOutcome {
     // Absent d'une sauvegarde antérieure au carnet : `[]`, comme les autres
     // collections optionnelles — l'import REMPLACE, il ne complète pas.
     ["le carnet à revoir", () => localData.saveReviewItems(payload.reviewItems ?? [])],
+    // Même règle : absent d'une sauvegarde antérieure au carnet d'erreurs ⇒ `[]`.
+    ["le carnet d'erreurs", () => localData.saveErrors(payload.errors ?? [])],
     ["le planning", () => localData.saveDayPlans(payload.dayPlans ?? [])],
     ["les bilans de semaine", () => localData.saveWeekSnapshots(payload.weekSnapshots ?? [])],
     ["les réglages", () => localData.savePreferences(normalizePreferences(payload.preferences))],
@@ -1453,6 +1566,8 @@ export function buildBackupPayload(now: Date = new Date()): BackupPayload {
     // cartouches de méthode sont le fruit d'une année de corrigés
     // disséqués : exactement ce qu'aucun amorçage ne peut recréer.
     reviewItems: localData.reviewItems(),
+    // Le carnet d'erreurs : saisie manuelle pure, irremplaçable.
+    errors: localData.errors(),
   };
 }
 
@@ -1500,6 +1615,8 @@ export interface BackupPayload {
   dayPlans?: DayPlanRecord[];
   /** Optionnel, même raison — voir `ReviewItem`. */
   reviewItems?: ReviewItem[];
+  /** Optionnel, même raison — voir `ErrorEntry`. */
+  errors?: ErrorEntry[];
 }
 
 /**
@@ -1572,5 +1689,7 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   // restauré à `[]` ; présent mais pas un tableau ⇒ fichier refusé, jamais
   // un carnet effacé en silence.
   if (data.reviewItems !== undefined && !Array.isArray(data.reviewItems)) return false;
+  // Carnet d'erreurs : même règle dès sa naissance.
+  if (data.errors !== undefined && !Array.isArray(data.errors)) return false;
   return true;
 }
