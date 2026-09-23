@@ -999,6 +999,18 @@ export const localData = {
   mergeSessions: (items: WorkSession[]): WorkSession[] => {
     return mergeAndStore(sessionsKey, items, normalizeSession);
   },
+  /**
+   * SUPPRIME une séance — relue depuis le disque, jamais depuis une copie
+   * React : `mergeSessions` ne sait pas retirer (une séance absente de la
+   * liste passée est conservée par la fusion), c'est voulu pour les écritures
+   * incrémentales et c'est pourquoi l'annulation a son propre chemin. Seul
+   * appelant : l'annulation d'une saisie rapide (components/work/quick-log.tsx).
+   */
+  removeSession: (id: string): WorkSession[] => {
+    const remaining = localData.sessions().filter((session) => session.id !== id);
+    writeKey(sessionsKey, JSON.stringify(remaining));
+    return remaining;
+  },
   exercises: (): Exercise[] => (typeof window === "undefined" ? [] : readList(exercisesKey).map(normalizeExercise)),
   /** REMPLACE intégralement la banque stockée — amorçage/réconciliation/restauration, voir `mergeExercises` pour une écriture incrémentale. */
   saveExercises: (items: Exercise[]): boolean => writeKey(exercisesKey, JSON.stringify(items)),

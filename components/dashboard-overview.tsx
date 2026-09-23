@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarClock, ChevronRight, Flame, LayoutList, Trophy } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
+import { QuickLog } from "@/components/work/quick-log";
 import { Button } from "@/components/ui/button";
 import { List, rowInteractive, Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
@@ -64,7 +65,7 @@ const contestDateFormatter = new Intl.DateTimeFormat("fr-FR", { day: "numeric", 
  *    le seul endroit d'où l'on part travailler.
  */
 export function DashboardOverview() {
-  const { sessions, exercises, chapters, workItems, preferences, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, workItems, preferences, ready, saveSessions, removeSession } = usePrepahubData();
   const router = useRouter();
   const [planMinutes, setPlanMinutes] = useState<number>(DEFAULT_PLAN_MINUTES);
 
@@ -217,6 +218,10 @@ export function DashboardOverview() {
               {objective.met && <p className="t-meta mt-0.5 text-emerald-300">Atteint</p>}
             </div>
           </div>
+
+          {/* NOTER DU TEMPS juste sous l'anneau : la saisie le fait avancer
+              sous les yeux de l'élève. Voir components/work/quick-log.tsx. */}
+          <QuickLog sessions={sessions} saveSessions={saveSessions} removeSession={removeSession} ready={ready} />
 
           {/* AUJOURD'HUI — ce qui est prévu, face à ce que la journée peut
               absorber. Deux nombres, pas un graphique : « suis-je à jour ? »

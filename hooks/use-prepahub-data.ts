@@ -212,6 +212,12 @@ export function usePrepahubData() {
     setData((prev) => ({ ...prev, sessions: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
+  /** Suppression d'une séance — voir `localData.removeSession` : la fusion de `saveSessions` ne retire jamais rien. */
+  const removeSession = useCallback((id: string) => {
+    const stored = localData.removeSession(id);
+    setData((prev) => ({ ...prev, sessions: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
+  }, []);
+
   const saveExercises = useCallback((exercises: Exercise[]) => {
     const stored = localData.mergeExercises(exercises);
     setData((prev) => ({ ...prev, exercises: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
@@ -249,5 +255,5 @@ export function usePrepahubData() {
     setData((prev) => ({ ...prev, preferences, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
-  return { ...data, refresh, saveSessions, saveExercises, saveWorkItems, saveGrades, saveChapters, savePreferences };
+  return { ...data, refresh, saveSessions, removeSession, saveExercises, saveWorkItems, saveGrades, saveChapters, savePreferences };
 }
