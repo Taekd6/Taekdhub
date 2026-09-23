@@ -464,12 +464,6 @@ export function DashboardOverview() {
             yeux à chaque saisie. Voir components/work/quick-log.tsx. */}
         <Section variant="panel" index={3} title="Noter du temps" description="Anki, relecture de cours… ce que le chrono n'a pas vu.">
           <QuickLog sessions={sessions} saveSessions={saveSessions} removeSession={removeSession} ready={ready} />
-          {/* ── Check-in du soir : le composant décide seul de s'afficher
-              (après 17 h, tant qu'il n'est pas fait). Voir
-              components/checkin/daily-checkin.tsx. */}
-          <div className="mt-5">
-            <DailyCheckinCard checkins={checkins} onSave={saveCheckins} ready={ready} />
-          </div>
         </Section>
 
         {/* ── LA SEMAINE — sept colonnes empilées par matière ────────── */}
@@ -486,7 +480,7 @@ export function DashboardOverview() {
           }
           bodyClassName="flex flex-col"
         >
-          <StackedColumns columns={weekColumns} ariaLabel={weekAria} formatValue={(value) => formatSpan(value)} className="mt-2" />
+          <StackedColumns columns={weekColumns} ariaLabel={weekAria} formatValue={(value) => formatSpan(value)} className="mt-2" heightClassName="h-36 lg:h-60" />
           {weekSubjects.length > 0 && (
             <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-2" aria-hidden>
               {weekSubjects.map((subject) => (
@@ -497,6 +491,12 @@ export function DashboardOverview() {
               ))}
             </ul>
           )}
+          {/* ── Check-in du soir, au pied de la semaine : le composant décide
+              seul de s'afficher (après 17 h, tant qu'il n'est pas fait) et ne
+              laisse rien derrière lui sinon. Voir components/checkin/daily-checkin.tsx. */}
+          <div className="mt-auto pt-6 empty:hidden">
+            <DailyCheckinCard checkins={checkins} onSave={saveCheckins} ready={ready} />
+          </div>
         </Section>
 
         {/* ── BUDGETS PAR MATIÈRE — le budget fixé dans Réglages, face au

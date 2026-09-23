@@ -346,18 +346,21 @@ export function StackedColumns({
   ariaLabel,
   formatValue,
   className,
+  heightClassName = "h-36",
 }: {
   columns: StackColumn[];
   ariaLabel: string;
   formatValue: (value: number) => string;
   className?: string;
+  /** Hauteur de la zone des colonnes — plus haute quand la carte a la place. */
+  heightClassName?: string;
 }) {
   if (columns.length === 0) return null;
   const max = Math.max(1, ...columns.map((column) => column.segments.reduce((sum, segment) => sum + segment.value, 0)));
 
   return (
     <figure role="img" aria-label={ariaLabel} className={cn("w-full", className)}>
-      <div className="flex h-36 items-end gap-2 sm:gap-3" aria-hidden>
+      <div className={cn("flex items-end gap-2 sm:gap-3", heightClassName)} aria-hidden>
         {columns.map((column, index) => {
           const total = column.segments.reduce((sum, segment) => sum + segment.value, 0);
           return (
