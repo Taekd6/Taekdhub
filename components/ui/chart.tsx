@@ -11,7 +11,7 @@ import { cn } from "@/lib/cn";
  * pèsent plusieurs centaines de kilo-octets pour deux formes que trente
  * lignes de SVG produisent, et arrivent avec leur propre langage visuel :
  * grilles, tooltips, légendes, couleurs par défaut — tout ce qu'il faudrait
- * ensuite neutraliser pour rester dans le système « Nuit ». Les couleurs viennent
+ * ensuite neutraliser pour rester dans le système « Apple ». Les couleurs viennent
  * ici des mêmes variables CSS que le reste de l'application, donc elles
  * suivent l'accent choisi par l'élève et s'inversent avec le thème sans une
  * ligne de configuration.
@@ -333,8 +333,8 @@ export interface StackColumn {
  * matière.
  *
  * Répond à deux questions d'un seul regard : « ai-je travaillé chaque
- * jour ? » (la hauteur) et « sur quoi ? » (les couleurs). Les segments sont
- * séparés par un liseré de la couleur du fond plutôt que par un espace
+ * jour ? » (la hauteur) et « sur quoi ? » (les paliers de gris, un par matière). Les segments sont
+ * séparés par un liseré de la couleur de la tuile plutôt que par un espace
  * mesuré : la colonne garde sa hauteur exacte.
  *
  * Chaque colonne POUSSE depuis le bas au montage, en cascade (`.grow-y`).
@@ -377,7 +377,7 @@ export function StackedColumns({
                   {column.segments.map((segment) => (
                     <span
                       key={segment.id}
-                      className="block w-full border-t-2 border-canvas last:border-t-0"
+                      className="block w-full border-t-2 border-panel last:border-t-0"
                       style={{ height: `${(segment.value / total) * 100}%`, backgroundColor: segment.color }}
                     />
                   ))}

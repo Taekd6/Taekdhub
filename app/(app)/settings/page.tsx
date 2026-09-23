@@ -2,7 +2,6 @@ import { CapacityForm } from "@/components/work/capacity-form";
 import { DataBackup } from "@/components/data-backup";
 import { PageBar, Stack } from "@/components/ui/layout";
 import { PreferencesForm } from "@/components/preferences-form";
-import { SubjectColorPicker } from "@/components/subject-color-picker";
 import { ThemePicker } from "@/components/theme-picker";
 
 /**
@@ -17,7 +16,6 @@ export default function SettingsPage() {
       <PreferencesForm />
       <CapacityForm />
       <ThemePicker />
-      <SubjectColorPicker />
       <DataBackup />
     </Stack>
   );

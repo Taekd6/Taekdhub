@@ -625,43 +625,41 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     expect(prefs.weeklySubjectTargets.Anglais).toBe(0);
   });
 
-  it("la palette et les couleurs de matière font l'aller-retour export → fichier → restauration", () => {
-    const exported = normalizePreferences({ subjectPalette: "ocean", subjectColors: { Chimie: "#ff8800" } });
-    const file = JSON.parse(JSON.stringify(backup({ preferences: exported })));
+  it("une ancienne sauvegarde qui porte encore palette et couleurs de matière se restaure sans erreur, et les abandonne", () => {
+    const file = JSON.parse(
+      JSON.stringify(backup({ preferences: { ...normalizePreferences({ displayName: "Ancien" }), subjectPalette: "ocean", subjectColors: { Chimie: "#ff8800" } } }))
+    );
     const prefs = withQuotaStorage({}, 1_000_000, () => {
       expect(restoreBackup(file).ok).toBe(true);
       return localData.preferences();
-    });
-    expect(prefs.subjectPalette).toBe("ocean");
-    expect(prefs.subjectColors).toEqual({ Chimie: "#ff8800" });
+    }) as Record<string, unknown>;
+    expect(prefs.displayName).toBe("Ancien");
+    expect(prefs).not.toHaveProperty("subjectPalette");
+    expect(prefs).not.toHaveProperty("subjectColors");
   });
 });
 
-describe("normalizePreferences — couleurs de matière (refonte « Nuit »)", () => {
-  it("une préférence antérieure reçoit la palette Néon, sans surcharge", () => {
-    const prefs = normalizePreferences({ displayName: "Ancien", accent: "#6366f1" });
-    expect(prefs.subjectPalette).toBe("neon");
-    expect(prefs.subjectColors).toEqual({});
+describe("normalizePreferences — couleurs de matière retirées (refonte « Apple »)", () => {
+  it("une préférence « Nuit » (palette + surcharges) est lue sans erreur, et les deux clés disparaissent", () => {
+    for (const legacy of [
+      { subjectPalette: "neon", subjectColors: {} },
+      { subjectPalette: "ocean", subjectColors: { Chimie: "#FF8800", Physique: "bleu", Latin: "#000000" } },
+      { subjectPalette: 3, subjectColors: "violet" },
+      { subjectPalette: null, subjectColors: null },
+    ]) {
+      const prefs = normalizePreferences({ displayName: "Ancien", accent: "#6366f1", ...legacy }) as Record<string, unknown>;
+      expect(prefs.displayName).toBe("Ancien");
+      expect(prefs.accent).toBe("#6366f1");
+      expect(prefs).not.toHaveProperty("subjectPalette");
+      expect(prefs).not.toHaveProperty("subjectColors");
+    }
   });
 
-  it("une palette inconnue retombe sur Néon", () => {
-    expect(normalizePreferences({ subjectPalette: "fluo" }).subjectPalette).toBe("neon");
-    expect(normalizePreferences({ subjectPalette: 3 }).subjectPalette).toBe("neon");
-  });
-
-  it("seules les surcharges valides de matières connues survivent", () => {
-    const prefs = normalizePreferences({ subjectColors: { Chimie: "#FF8800", Physique: "bleu", Latin: "#000000" } });
-    expect(prefs.subjectColors).toEqual({ Chimie: "#ff8800" });
-  });
-
-  it("des surcharges qui ne sont pas un objet donnent {}", () => {
-    expect(normalizePreferences({ subjectColors: "violet" }).subjectColors).toEqual({});
-    expect(normalizePreferences({ subjectColors: null }).subjectColors).toEqual({});
-  });
-
-  it("l'ancien accent par défaut (« Miel ») migre vers le nouveau, un vrai choix est conservé", () => {
+  it("les anciens accents par défaut (« Miel », « Menthe ») migrent vers le bleu, un vrai choix est conservé", () => {
     expect(normalizePreferences({ accent: "#e0a758" }).accent).toBe(DEFAULT_ACCENT);
     expect(normalizePreferences({ accent: "#E0A758" }).accent).toBe(DEFAULT_ACCENT);
+    expect(normalizePreferences({ accent: "#5eead4" }).accent).toBe(DEFAULT_ACCENT);
+    expect(DEFAULT_ACCENT).toBe("#0a84ff");
     expect(normalizePreferences({ accent: "#d4f36b" }).accent).toBe("#d4f36b");
   });
 });
@@ -712,8 +710,6 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
         "dailyGoalMinutes",
         "displayName",
         "planningMarginPercent",
-        "subjectColors",
-        "subjectPalette",
         "themeMode",
         "weeklyGoalMinutes",
         "weeklySubjectTargets",

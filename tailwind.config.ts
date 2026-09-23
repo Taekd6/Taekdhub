@@ -87,17 +87,17 @@ export default {
           400: "rgb(var(--rose-400-rgb) / <alpha-value>)",
           500: "rgb(var(--rose-500-rgb) / <alpha-value>)",
         },
-        // Identité de matière (lib/study.ts#subjectMeta) — même principe : 200 (texte) s'assombrit en clair, 400 (fond, faible opacité) inchangé.
+        // Anciennes teintes d'identité — désormais des ALIAS neutres (gris, accent ou orange de statut), voir app/globals.css : plus aucune couleur décorative.
         violet: { 200: "rgb(var(--violet-200-rgb) / <alpha-value>)", 400: "rgb(var(--violet-400-rgb) / <alpha-value>)" },
         sky: { 200: "rgb(var(--sky-200-rgb) / <alpha-value>)", 400: "rgb(var(--sky-400-rgb) / <alpha-value>)" },
         teal: { 200: "rgb(var(--teal-200-rgb) / <alpha-value>)", 400: "rgb(var(--teal-400-rgb) / <alpha-value>)" },
         orange: { 200: "rgb(var(--orange-200-rgb) / <alpha-value>)", 400: "rgb(var(--orange-400-rgb) / <alpha-value>)" },
         /*
-         * IDENTITÉ DE MATIÈRE (refonte « Nuit ») — une teinte par matière,
-         * réglable par l'élève (lib/subject-colors.ts). `subj-<clé>` =
-         * remplissage (barre, segment, fond de pastille en faible opacité),
-         * `subj-<clé>-ink` = texte posé sur ce fond. Les deux s'ajustent au
-         * thème dans app/globals.css.
+         * MATIÈRES (refonte « Apple ») — plus de teinte par matière : un
+         * PALIER DE GRIS chacune, pour distinguer deux segments voisins d'un
+         * graphique empilé, et l'encre ordinaire pour le texte. Mêmes noms de
+         * classes qu'avant (`bg-subj-math`, `text-subj-math-ink`) ; les
+         * valeurs vivent dans app/globals.css et s'inversent avec le thème.
          */
         subj: {
           math: "rgb(var(--subj-math) / <alpha-value>)",
@@ -117,31 +117,35 @@ export default {
         },
       },
       fontFamily: {
-        // Voir app/layout.tsx : `sans` (Nunito) = toute l'interface, `serif`
-        // (Newsreader) = la colonne de lecture d'un énoncé, et elle seule.
-        sans: ["var(--font-sans)", "ui-rounded", "ui-sans-serif", "system-ui", "sans-serif"],
+        // Voir app/globals.css (`--font-sans`) : SF Pro Rounded sur appareil
+        // Apple, Nunito ailleurs = toute l'interface ; `serif` (Newsreader) =
+        // la colonne de lecture d'un énoncé, et elle seule. La pile entière
+        // vit dans UNE variable, pour que `font-sans` et `body` ne puissent
+        // pas diverger.
+        sans: ["var(--font-sans)"],
         serif: ["var(--font-serif)", "Georgia", "serif"],
       },
       /*
-       * RAYONS — refonte « Nuit » : franchement arrondis, cohérents avec une
-       * police ronde. Contrôles à 12 px (`rounded-lg`), cartes à 20 px
-       * (`rounded-2xl`, et `.surface`), pastilles et bouton principal en
+       * RAYONS — refonte « Apple » : grands et doux. Contrôles à 14 px
+       * (`rounded-lg`), tuiles à 24 px (`rounded-2xl`, et `.surface`), 28 px
+       * pour une feuille (`rounded-3xl`), boutons et pastilles en
        * `rounded-full`. Mêmes NOMS de classes qu'avant : seules les valeurs
        * changent, et tout l'écran suit.
        */
       borderRadius: {
         sm: "0.5rem",
         DEFAULT: "0.625rem",
-        md: "0.625rem",
-        lg: "0.75rem",
-        xl: "1rem",
-        "2xl": "1.25rem",
-        "3xl": "1.375rem",
+        md: "0.75rem",
+        lg: "0.875rem",
+        xl: "1.125rem",
+        "2xl": "1.5rem",
+        "3xl": "1.75rem",
       },
       /*
-       * OMBRES — une seule, et elle ne sert QU'AUX couches flottantes
-       * (feuille modale, menu). Le contenu en place se détache par son voile
-       * et son filet : voir `.surface` dans app/globals.css.
+       * OMBRES — une seule classe, et elle ne sert QU'AUX couches flottantes
+       * (feuille modale, menu). Les tuiles en place portent la leur,
+       * presque invisible et en clair seulement, dans `.surface`
+       * (app/globals.css).
        */
       boxShadow: {
         surface: "var(--shadow-surface)",
@@ -160,7 +164,7 @@ export default {
        */
       animation: {
         "fade-in": "fadeIn .2s ease-out",
-        "rise": "rise .35s cubic-bezier(.16,1,.3,1)",
+        "rise": "rise .5s cubic-bezier(.16,1,.3,1)",
         "pulse-soft": "pulseSoft 2.4s ease-in-out infinite",
       },
       keyframes: {
@@ -169,7 +173,7 @@ export default {
           to: { opacity: "1" },
         },
         rise: {
-          from: { opacity: "0", transform: "translateY(10px)" },
+          from: { opacity: "0", transform: "translateY(16px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
         pulseSoft: {

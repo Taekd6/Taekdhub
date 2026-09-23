@@ -8,28 +8,31 @@ export const exerciseTypes: ExerciseType[] = ["TD", "DM", "DS", "Colle", "TP", "
 export const masteryLevels: Mastery[] = [0, 25, 50, 75, 100];
 
 /**
- * Identité de matière — une lettre, une teinte.
+ * Identité de matière — une lettre, un NOM. Plus de teinte (refonte
+ * « Apple », voir lib/subject-colors.ts).
  *
- * La teinte n'est plus choisie ici : elle vient des variables `--subj-<clé>`
- * (lib/subject-colors.ts), réglables par l'élève (palette + surcharge par
- * matière). Les classes ci-dessous ne font que les RÉFÉRENCER — c'est pour ça
- * qu'elles restent écrites en entier, et non construites : Tailwind ne
+ *   `className`  pastille NEUTRE : aplat gris (#2c2c2e en sombre, #e8e8ed en
+ *                clair) et lettre à l'encre — la même pour toutes les
+ *                matières : c'est la lettre qui distingue ;
+ *   `solid`      palier de gris de la matière — segment de colonne empilée,
+ *                point de légende (il DOIT correspondre au segment) ;
+ *   `ink`        texte d'une matière : l'encre ordinaire ;
+ *   `fill`       palier de gris en couleur CSS brute, pour un `style` ou un
+ *                trait SVG.
+ *
+ * Les classes restent écrites en entier, et non construites : Tailwind ne
  * génère que les classes qu'il lit littéralement (lib/ est dans `content`).
- *
- *   `className`  pastille : fond teinté à 18 % + lettre à l'encre de la
- *                matière (assombrie en thème clair pour tenir 4,5:1) ;
- *   `solid`      aplat plein — barre, segment, point de légende ;
- *   `ink`        texte seul, à la couleur de la matière ;
- *   `fill`       couleur CSS brute, pour un `style` ou un trait SVG.
  */
+const NEUTRAL_CHIP = "bg-zinc-800 text-zinc-100";
+
 export const subjectMeta: Record<Subject, { short: string; className: string; solid: string; ink: string; fill: string }> = {
-  Mathématiques: { short: "M", className: "bg-subj-math/[0.18] text-subj-math-ink", solid: "bg-subj-math", ink: "text-subj-math-ink", fill: "rgb(var(--subj-math))" },
-  Physique: { short: "P", className: "bg-subj-phys/[0.18] text-subj-phys-ink", solid: "bg-subj-phys", ink: "text-subj-phys-ink", fill: "rgb(var(--subj-phys))" },
-  Chimie: { short: "C", className: "bg-subj-chim/[0.18] text-subj-chim-ink", solid: "bg-subj-chim", ink: "text-subj-chim-ink", fill: "rgb(var(--subj-chim))" },
-  "Informatique TC": { short: "IT", className: "bg-subj-itc/[0.18] text-subj-itc-ink", solid: "bg-subj-itc", ink: "text-subj-itc-ink", fill: "rgb(var(--subj-itc))" },
-  "Informatique Spé": { short: "IS", className: "bg-subj-isp/[0.18] text-subj-isp-ink", solid: "bg-subj-isp", ink: "text-subj-isp-ink", fill: "rgb(var(--subj-isp))" },
-  Français: { short: "F", className: "bg-subj-fr/[0.18] text-subj-fr-ink", solid: "bg-subj-fr", ink: "text-subj-fr-ink", fill: "rgb(var(--subj-fr))" },
-  Anglais: { short: "A", className: "bg-subj-en/[0.18] text-subj-en-ink", solid: "bg-subj-en", ink: "text-subj-en-ink", fill: "rgb(var(--subj-en))" },
+  Mathématiques: { short: "M", className: NEUTRAL_CHIP, solid: "bg-subj-math", ink: "text-subj-math-ink", fill: "rgb(var(--subj-math))" },
+  Physique: { short: "P", className: NEUTRAL_CHIP, solid: "bg-subj-phys", ink: "text-subj-phys-ink", fill: "rgb(var(--subj-phys))" },
+  Chimie: { short: "C", className: NEUTRAL_CHIP, solid: "bg-subj-chim", ink: "text-subj-chim-ink", fill: "rgb(var(--subj-chim))" },
+  "Informatique TC": { short: "IT", className: NEUTRAL_CHIP, solid: "bg-subj-itc", ink: "text-subj-itc-ink", fill: "rgb(var(--subj-itc))" },
+  "Informatique Spé": { short: "IS", className: NEUTRAL_CHIP, solid: "bg-subj-isp", ink: "text-subj-isp-ink", fill: "rgb(var(--subj-isp))" },
+  Français: { short: "F", className: NEUTRAL_CHIP, solid: "bg-subj-fr", ink: "text-subj-fr-ink", fill: "rgb(var(--subj-fr))" },
+  Anglais: { short: "A", className: NEUTRAL_CHIP, solid: "bg-subj-en", ink: "text-subj-en-ink", fill: "rgb(var(--subj-en))" },
 };
 
 /** Couleurs par statut, pour que le sélecteur de statut reste immédiatement lisible d'un coup d'œil (Sprint 2B). Purement visuel — n'affecte pas le modèle de données. */
@@ -38,6 +41,8 @@ export const statusMeta: Record<ExerciseStatus, { className: string }> = {
   // thème clair, alors que les trois autres statuts s'y voyaient. `bg-inset`
   // suit le thème, comme tous les autres fonds en creux de l'application.
   "à faire": { className: "bg-inset text-muted" },
+  // « ciel » = l'accent depuis la refonte « Apple » (app/globals.css) :
+  // « en cours » est le seul statut qui n'est pas un verdict.
   "en cours": { className: "bg-sky-400/[0.18] text-sky-200" },
   "à revoir": { className: "bg-amber-400/[0.18] text-amber-200" },
   maîtrisé: { className: "bg-emerald-400/[0.18] text-emerald-200" },
