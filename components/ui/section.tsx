@@ -6,11 +6,17 @@ import { cn } from "@/lib/cn";
  *
  *   `bare`    (défaut) titre + contenu, sans cadre — pour ce qui se lit dans
  *             le flux de la page.
- *   `panel`   une CARTE (`.surface` : voile + filet, 20 px de rayon). Le
- *             cas courant de la refonte « Nuit » : l'écran est une grille
- *             de cartes.
- *   `feature` la carte « qui compte » d'un écran, plus aérée, titre plus
- *             grand. Une par page au maximum, comme le bouton principal.
+ *   `panel`   une TUILE (`.surface` : aplat gris, 24 px de rayon, sans
+ *             cadre visible) — les tuiles d'apple.com. Marge intérieure
+ *             généreuse : 24 px, 32 px dès `sm`.
+ *   `feature` la tuile « qui compte » d'un écran, encore plus aérée, titre
+ *             plus grand. Une par page au maximum, comme le bouton principal.
+ *
+ * ENTRÉE AU DÉFILEMENT. Une section encadrée monte en fondu quand elle
+ * entre dans l'écran (`.reveal`, armé par components/ui/reveal.tsx), même
+ * sans `index` : c'est le geste d'apple.com, et il doit valoir pour tout
+ * l'écran sans que chaque page ait à le demander. `index` ne sert plus qu'à
+ * DÉCALER les tuiles voisines d'une même rangée.
  *
  * FIN DU SUR-TITRE SYSTÉMATIQUE. `label` était une étiquette en capitales
  * posée au-dessus de CHAQUE titre (« LA SÉANCE » puis « Ce que tu devrais
@@ -45,31 +51,33 @@ export function Section({
   className?: string;
   bodyClassName?: string;
   /**
-   * Rang dans la cascade d'entrée de l'écran (`.reveal`, app/globals.css).
-   * Absent = pas d'animation d'entrée : un écran choisit lui-même s'il en veut.
+   * Rang dans la cascade d'entrée (`.reveal`, app/globals.css) — décale
+   * l'entrée de 70 ms par rang. Absent : une section encadrée entre quand
+   * même (rang 0), une section `bare` n'a pas d'animation.
    */
   index?: number;
   children?: React.ReactNode;
 }) {
   const framed = variant !== "bare";
   const hasHeader = Boolean(label || title || description || action);
+  const rank = index ?? (framed ? 0 : undefined);
 
   return (
     <Tag
       className={cn(
         framed && "surface",
-        variant === "panel" && "p-5 sm:p-6",
-        variant === "feature" && "p-5 sm:p-8",
-        index !== undefined && "reveal",
+        variant === "panel" && "p-6 sm:p-8",
+        variant === "feature" && "p-6 sm:p-10",
+        rank !== undefined && "reveal",
         className
       )}
-      style={index !== undefined ? ({ "--i": index } as CSSProperties) : undefined}
+      style={rank !== undefined ? ({ "--i": rank } as CSSProperties) : undefined}
     >
       {hasHeader && (
         <header
           className={cn(
             "flex flex-wrap items-start justify-between gap-x-5 gap-y-3",
-            children && (variant === "feature" ? "mb-6" : "mb-4")
+            children && (variant === "feature" ? "mb-8" : "mb-5")
           )}
         >
           <div className="min-w-0">
@@ -80,7 +88,7 @@ export function Section({
                 {title}
               </h2>
             )}
-            {description && <p className="t-lede mt-1.5 max-w-[58ch]">{description}</p>}
+            {description && <p className={cn(variant === "panel" ? "text-[0.9375rem] leading-normal text-muted" : "t-lede", "mt-1.5 max-w-[58ch]")}>{description}</p>}
           </div>
           {/* `shrink-0` protège l'action du rétrécissement quand elle tient sur
               la même ligne que le titre ; `max-w-full` l'empêche de dépasser
@@ -94,7 +102,7 @@ export function Section({
       <div className={bodyClassName}>{children}</div>
 
       {footer && (
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
           {footer}
         </div>
       )}
@@ -117,7 +125,7 @@ export function List({ className, children }: { className?: string; children: Re
  * son propre `<Link>`/`<button>`, pour ne jamais imbriquer un lien dans un
  * conteneur cliquable.
  */
-export const rowClass = "flex min-w-0 items-center gap-3 px-2 py-3 text-left sm:px-3";
+export const rowClass = "flex min-w-0 items-center gap-3 px-2 py-3.5 text-left sm:px-3";
 
 export const rowInteractive = cn(rowClass, "row-hover w-full cursor-pointer rounded-xl max-lg:min-h-[3.25rem]");
 

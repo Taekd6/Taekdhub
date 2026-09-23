@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accentForeground, accentInk, ACCENT_PRESETS, applyThemeMode, hexToRgb, relativeLuminance } from "@/lib/theme";
+import { accentForeground, accentInk, accentSolid, ACCENT_PRESETS, applyAccent, applyThemeMode, DEFAULT_ACCENT, hexToRgb, relativeLuminance } from "@/lib/theme";
 
 /**
  * Sprint personnalisation (Phase 11) — couvre le mode d'apparence
@@ -44,7 +44,7 @@ describe("applyThemeMode", () => {
 });
 
 describe("accent — contraste, réutilisé en clair comme en sombre", () => {
-  it("choisit du texte noir sur un accent clair (lime par défaut)", () => {
+  it("choisit du texte noir sur un accent clair (lime)", () => {
     const [r, g, b] = accentForeground("#d4f36b");
     expect([r, g, b]).toEqual([0, 0, 0]);
   });
@@ -104,12 +104,13 @@ describe("texte posé sur l'accent — noir ou blanc, le plus lisible des deux",
 
 describe("l'encre d'accent tient le contraste AA sur la surface la plus sombre du thème clair", () => {
   /**
-   * Le plafond de luminance existe précisément pour ça ; il avait été calibré
-   * sur un canvas (#f4f5f7) que la palette n'utilise plus, et ne tenait donc
-   * plus sa promesse — 4,22:1 mesuré au navigateur sur le badge « Important »
-   * et sur l'option retenue du sélecteur de thème.
+   * Le plafond de luminance existe précisément pour ça. Refonte « Apple » :
+   * la surface claire la plus sombre où l'encre se pose est le gris du
+   * bouton secondaire et des pistes, #e8e8ed — plus sombre que les fonds
+   * crème (#f1ede4) et gris-bleu (#f4f5f7) des systèmes précédents, d'où
+   * un plafond abaissé à 0,13.
    */
-  const DARKEST_LIGHT_SURFACE: [number, number, number] = [241, 237, 228];
+  const DARKEST_LIGHT_SURFACE: [number, number, number] = [232, 232, 237];
 
   function contrastRatio(a: [number, number, number], b: [number, number, number]): number {
     const [high, low] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
@@ -130,5 +131,43 @@ describe("l'encre d'accent tient le contraste AA sur la surface la plus sombre d
 
   it("une teinte déjà assez sombre n'est pas assombrie inutilement", () => {
     expect(accentInk("#402d10")).toEqual(hexToRgb("#402d10"));
+  });
+});
+
+describe("bouton principal — texte blanc, aplat assombri juste assez (refonte « Apple »)", () => {
+  function contrastRatio(a: [number, number, number], b: [number, number, number]): number {
+    const [high, low] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+    return (high + 0.05) / (low + 0.05);
+  }
+
+  it("l'accent par défaut est le bleu d'Apple", () => {
+    expect(DEFAULT_ACCENT).toBe("#0a84ff");
+    expect(ACCENT_PRESETS.map((preset) => preset.id)).toEqual(["bleu", "indigo", "vert", "orange", "rose", "graphite"]);
+  });
+
+  it("le blanc tient 4,5:1 sur l'aplat de chaque préréglage, et sur n'importe quel hex", () => {
+    for (const hex of [...ACCENT_PRESETS.map((preset) => preset.hex), "#ffffff", "#ffff00", "#5eead4"]) {
+      const ratio = contrastRatio(accentSolid(hex), [255, 255, 255]);
+      expect(ratio, `${hex} : ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("le bleu par défaut reste un bleu Apple, pas un marine", () => {
+    const [r, g, b] = accentSolid(DEFAULT_ACCENT);
+    expect(b).toBeGreaterThan(200);
+    expect(g).toBeGreaterThan(100);
+    expect(r).toBeLessThan(20);
+  });
+
+  it("une teinte déjà assez sombre n'est pas assombrie", () => {
+    expect(accentSolid("#1a1a2e")).toEqual(hexToRgb("#1a1a2e"));
+  });
+
+  it("applyAccent écrit aussi l'aplat du bouton", () => {
+    const written = new Map<string, string>();
+    const root = { style: { setProperty: (name: string, value: string) => written.set(name, value) } } as unknown as HTMLElement;
+    applyAccent(DEFAULT_ACCENT, root);
+    expect(written.get("--accent-rgb")).toBe("10 132 255");
+    expect(written.get("--accent-solid-base-rgb")).toBe(accentSolid(DEFAULT_ACCENT).join(" "));
   });
 });

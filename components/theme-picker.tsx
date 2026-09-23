@@ -45,17 +45,22 @@ export function ThemePicker() {
     savePreferences({ ...localData.preferences(), themeMode: next });
   }
 
+  /*
+   * Deux réglages, et seulement deux : le mode, en sélecteur segmenté
+   * façon iOS (piste grise, option retenue surélevée), et l'accent, en
+   * pastilles rondes. Les « Couleurs par matière » de la refonte « Nuit »
+   * ont disparu avec les couleurs elles-mêmes (lib/subject-colors.ts).
+   */
   return (
     <Section
       variant="panel"
-      label="Apparence"
-      title="Comment TaekdHub s'affiche"
-      description="Sombre par défaut ; la couleur d'accent s'applique instantanément à toute l'interface."
+      title="Apparence"
+      description="Noir et blanc, et une seule couleur : celle des boutons, des liens et de ce qu'il faut regarder."
       className="max-w-2xl"
     >
       <div>
         <h3 className="t-subhead">Mode</h3>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div role="group" aria-label="Mode d'apparence" className="mt-3 inline-flex w-full items-center gap-0.5 rounded-full bg-inset p-1 sm:w-auto">
           {THEME_MODES.map((option) => {
             const meta = MODE_META[option];
             const Icon = meta.icon;
@@ -67,74 +72,79 @@ export function ThemePicker() {
                 onClick={() => chooseMode(option)}
                 aria-pressed={active}
                 className={cn(
-                  "press flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-bold transition-colors max-lg:min-h-11",
-                  active ? "border-accent/50 bg-accent/[0.1] text-accent" : "border-line text-muted hover:text-ink"
+                  "press flex min-h-9 flex-1 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold max-lg:min-h-11 sm:flex-none",
+                  active ? "chip-on" : "text-muted hover:text-ink"
                 )}
               >
-                <Icon size={15} /> {meta.label}
+                <Icon size={15} strokeWidth={2.2} /> {meta.label}
               </button>
             );
           })}
         </div>
       </div>
 
-      <div className="mt-7 border-t border-line pt-6">
+      <div className="mt-8 border-t border-line pt-7">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="t-subhead">Couleur principale</h3>
-            <p className="t-meta mt-1.5 max-w-[52ch]">
-              Le texte posé sur l&apos;accent reste toujours lisible : la teinte est assombrie automatiquement quand le
-              fond est clair.
+            <h3 className="t-subhead">Couleur d&apos;accent</h3>
+            <p className="t-meta mt-1 max-w-[52ch]">
+              Le texte posé dessus reste toujours lisible : la teinte est ajustée automatiquement selon le fond.
             </p>
           </div>
           {accent !== DEFAULT_ACCENT && (
             <button
               type="button"
               onClick={() => choose(DEFAULT_ACCENT)}
-              className="row-hover flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-subtle hover:text-ink max-lg:min-h-11"
+              className="press flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-accent hover:bg-inset max-lg:min-h-11"
             >
               <RotateCcw size={13} /> Réinitialiser
             </button>
           )}
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-3">
-        {ACCENT_PRESETS.map((preset) => {
-          const active = sameHex(preset.hex, accent);
-          return (
-            <button
-              key={preset.id}
-              type="button"
-              onClick={() => choose(preset.hex)}
-              aria-pressed={active}
-              title={preset.label}
-              className="focus-ring flex flex-col items-center gap-1.5 rounded-lg p-1"
-            >
-              <span
-                className={cn("grid h-11 w-11 place-items-center rounded-full ring-offset-2 ring-offset-canvas transition-transform hover:scale-105", active && "ring-2 ring-ink/70")}
-                style={{ background: preset.hex }}
+        <div className="mt-5 flex flex-wrap gap-x-2 gap-y-3">
+          {ACCENT_PRESETS.map((preset) => {
+            const active = sameHex(preset.hex, accent);
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => choose(preset.hex)}
+                aria-pressed={active}
+                title={preset.label}
+                className="press group flex w-16 flex-col items-center gap-2 rounded-2xl py-1"
               >
-                {active && <Check size={16} style={{ color: accentForegroundCss(preset.hex) }} />}
-              </span>
-              <span className={cn("text-2xs", active ? "text-ink" : "text-muted")}>{preset.label}</span>
-            </button>
-          );
-        })}
+                <span
+                  className={cn(
+                    "grid h-10 w-10 place-items-center rounded-full ring-offset-[3px] ring-offset-panel transition-transform duration-300 ease-[cubic-bezier(.16,1,.3,1)] group-hover:scale-110",
+                    active && "ring-2 ring-ink/80"
+                  )}
+                  style={{ background: preset.hex }}
+                >
+                  {active && <Check size={16} strokeWidth={3} style={{ color: accentForegroundCss(preset.hex) }} />}
+                </span>
+                <span className={cn("text-2xs font-semibold", active ? "text-ink" : "text-subtle")}>{preset.label}</span>
+              </button>
+            );
+          })}
 
-        <label className="focus-ring flex flex-col items-center gap-1.5 rounded-lg p-1">
-          <span
-            className={cn("grid h-11 w-11 cursor-pointer place-items-center overflow-hidden rounded-full ring-offset-2 ring-offset-canvas", !isPreset && "ring-2 ring-ink/70")}
-          >
-            <input
-              type="color"
-              value={accent}
-              onChange={(event) => choose(event.target.value)}
-              aria-label="Couleur d'accent personnalisée"
-              className="h-12 w-12 cursor-pointer border-none bg-transparent p-0"
-            />
-          </span>
-          <span className={cn("text-2xs", !isPreset ? "text-ink" : "text-muted")}>Personnalisé</span>
-        </label>
+          <label className="press group flex w-16 cursor-pointer flex-col items-center gap-2 rounded-2xl py-1">
+            <span
+              className={cn(
+                "grid h-10 w-10 place-items-center overflow-hidden rounded-full ring-offset-[3px] ring-offset-panel transition-transform duration-300 group-hover:scale-110",
+                !isPreset && "ring-2 ring-ink/80"
+              )}
+            >
+              <input
+                type="color"
+                value={accent}
+                onChange={(event) => choose(event.target.value)}
+                aria-label="Couleur d'accent personnalisée"
+                className="h-12 w-12 cursor-pointer border-none bg-transparent p-0"
+              />
+            </span>
+            <span className={cn("text-2xs font-semibold", !isPreset ? "text-ink" : "text-subtle")}>Autre</span>
+          </label>
         </div>
       </div>
     </Section>

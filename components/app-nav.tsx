@@ -81,25 +81,31 @@ export function AppNav() {
   return (
     <>
       {/* ── BARRE HAUTE ────────────────────────────────────────────
-          `sticky` et non `fixed` : la page garde son flux normal, et la
-          barre ne recouvre jamais une ancre atteinte au clavier. */}
-      <header className="sticky top-0 z-40 border-b border-hairline/[0.07] bg-canvas/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-[var(--shell-max)] items-center gap-2 px-4 sm:px-6">
+          La barre d'apple.com : translucide (le contenu passe DESSOUS,
+          flouté et saturé), 56 px, aucun cadre — un filet d'un pixel à
+          peine visible la sépare de la page. `sticky` et non `fixed` : la
+          page garde son flux normal, et la barre ne recouvre jamais une
+          ancre atteinte au clavier. */}
+      <header className="sticky top-0 z-40 border-b border-hairline/[0.07] bg-canvas/70 backdrop-blur-xl backdrop-saturate-150">
+        <div className="mx-auto flex h-14 max-w-[var(--shell-max)] items-center gap-2 px-4 sm:px-6">
           <Link
             href="/dashboard"
-            className="mr-1 flex min-h-11 shrink-0 items-center rounded-lg pr-2 lg:mr-8"
+            className="press mr-1 flex min-h-11 shrink-0 items-center rounded-lg pr-2 lg:mr-6"
             aria-label="TaekdHub — accueil"
           >
             <Wordmark />
           </Link>
 
           <nav aria-label="Sections" className="hidden min-w-0 lg:block">
-            <div ref={listRef} className="relative flex items-center gap-1 rounded-full bg-inset p-1">
-              {/* Pastille glissante — premier enfant, d'où `activeIndex + 1` à la mesure. */}
+            <div ref={listRef} className="relative flex items-center gap-0.5">
+              {/* Pastille glissante — premier enfant, d'où `activeIndex + 1`
+                  à la mesure. Un simple voile, pas un bouton : la barre reste
+                  du texte, comme sur apple.com, et la pastille dit seulement
+                  « tu es ici ». */}
               <span
                 aria-hidden
                 className={cn(
-                  "chip-on pointer-events-none absolute bottom-1 top-1 left-0 rounded-full transition-[transform,width,opacity] duration-500 ease-[cubic-bezier(.16,1,.3,1)]",
+                  "pointer-events-none absolute bottom-0 left-0 top-0 rounded-full bg-hairline/[0.10] transition-[transform,width,opacity] duration-500 ease-[cubic-bezier(.16,1,.3,1)]",
                   box ? "opacity-100" : "opacity-0"
                 )}
                 style={box ? { width: box.width, transform: `translateX(${box.left}px)` } : undefined}
@@ -112,7 +118,7 @@ export function AppNav() {
                     href={href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "press relative z-10 rounded-full px-4 py-1.5 text-sm font-bold transition-colors",
+                      "press relative z-10 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors duration-200",
                       active ? "text-ink" : "text-muted hover:text-ink"
                     )}
                   >
@@ -134,8 +140,8 @@ export function AppNav() {
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "press grid h-10 w-10 place-items-center rounded-full transition-colors max-lg:h-11 max-lg:w-11",
-                    active ? "chip-on" : "text-muted hover:bg-inset hover:text-ink"
+                    "press grid h-10 w-10 place-items-center rounded-full transition-colors duration-200 max-lg:h-11 max-lg:w-11",
+                    active ? "bg-hairline/[0.10] text-ink" : "text-muted hover:text-ink"
                   )}
                 >
                   <Icon size={18} strokeWidth={2} />
@@ -147,12 +153,13 @@ export function AppNav() {
       </header>
 
       {/* ── BARRE D'ONGLETS MOBILE ─────────────────────────────────
-          Cinq cibles de 56 px de haut, ancrées au bas de l'écran, avec la
-          marge de sécurité des téléphones à encoche. L'onglet actif pose une
-          pastille derrière son icône, qui s'ouvre depuis le centre. */}
+          La barre d'onglets d'iOS : translucide, floutée, cinq cibles de
+          56 px avec la marge de sécurité des téléphones à encoche. L'onglet
+          actif prend l'accent (icône ET libellé), les autres restent gris —
+          pas de pastille, pas de fond. */}
       <nav
         aria-label="Sections"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-hairline/[0.07] bg-canvas/90 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-hairline/[0.07] bg-canvas/75 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-150 lg:hidden"
       >
         {DESTINATIONS.map(({ href, short, icon: Icon }) => {
           const active = isActive(href);
@@ -162,20 +169,11 @@ export function AppNav() {
               href={href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "press flex min-h-14 flex-col items-center justify-center gap-0.5 px-0.5 pb-1.5 pt-1.5 text-[0.6875rem] font-bold transition-colors",
-                active ? "text-ink" : "text-subtle"
+                "press flex min-h-14 flex-col items-center justify-center gap-1 px-0.5 pb-1.5 pt-2 text-[0.6875rem] font-semibold transition-colors duration-200",
+                active ? "text-accent" : "text-subtle"
               )}
             >
-              <span className="relative grid h-7 w-12 place-items-center">
-                <span
-                  aria-hidden
-                  className={cn(
-                    "absolute inset-0 rounded-full bg-accent/[0.16] transition-[transform,opacity] duration-300 ease-out",
-                    active ? "scale-100 opacity-100" : "scale-50 opacity-0"
-                  )}
-                />
-                <Icon size={19} strokeWidth={active ? 2.4 : 2} className={cn("relative", active && "text-accent")} />
-              </span>
+              <Icon size={22} strokeWidth={active ? 2.2 : 1.8} />
               <span className="leading-none">{short}</span>
             </Link>
           );
@@ -186,17 +184,10 @@ export function AppNav() {
 }
 
 /**
- * SIGNATURE — le nom, en Nunito noir (900), avec « Hub » à la couleur
- * d'accent et un point qui la rappelle. Pas de carré arrondi avec une
- * étincelle dedans : c'est le logo par défaut de tous les outils de
- * productivité depuis dix ans.
+ * SIGNATURE — le nom, en noir franc (800), d'une seule couleur : l'encre.
+ * Plus de « Hub » à l'accent ni de point de couleur — l'accent est réservé
+ * à l'action, et la marque d'Apple n'est jamais en bleu.
  */
 export function Wordmark({ className }: { className?: string }) {
-  return (
-    <span className={cn("t-wordmark inline-flex items-baseline text-ink", className)}>
-      Taekd
-      <span className="text-accent">Hub</span>
-      <span aria-hidden className="ml-0.5 inline-block h-1.5 w-1.5 rounded-full bg-accent-brand" />
-    </span>
-  );
+  return <span className={cn("t-wordmark inline-flex items-baseline text-ink", className)}>TaekdHub</span>;
 }

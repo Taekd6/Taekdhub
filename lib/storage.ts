@@ -1,7 +1,6 @@
 import { subjects } from "@/lib/study";
 import { SRS_LADDER } from "@/lib/spaced-repetition";
 import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, LEGACY_DEFAULT_ACCENTS, THEME_MODES, hexToRgb, type ThemeMode } from "@/lib/theme";
-import { DEFAULT_SUBJECT_PALETTE, isSubjectPaletteId, normalizeSubjectColorOverrides, type SubjectColorOverrides, type SubjectPaletteId } from "@/lib/subject-colors";
 import type { AttemptResult, Subject, WorkSession } from "@/lib/supabase/types";
 
 const ATTEMPT_RESULTS: readonly AttemptResult[] = ["réussi", "partiel", "échoué"];
@@ -91,18 +90,14 @@ export type Preferences = {
    * face à `capacityByWeekday`. Ce budget ne réserve rien dans le planning.
    */
   weeklySubjectTargets: Record<Subject, number>;
-  /**
-   * PALETTE DES MATIÈRES (refonte « Nuit ») — voir lib/subject-colors.ts.
-   * Purement visuelle : aucune donnée ne dépend de la couleur d'une matière.
-   * Absente d'une préférence antérieure : retombe sur « Néon ».
+  /*
+   * `subjectPalette` / `subjectColors` (palette et surcharges de couleur par
+   * matière, refonte « Nuit ») n'existent plus : les matières n'ont plus de
+   * couleur (lib/subject-colors.ts). Une préférence ou une sauvegarde qui
+   * les porte encore est lue sans erreur, et les deux clés sont
+   * simplement abandonnées — `normalizePreferences` reconstruit l'objet
+   * champ par champ.
    */
-  subjectPalette: SubjectPaletteId;
-  /**
-   * Couleur SURCHARGÉE par matière, par-dessus la palette. Seules les
-   * matières réellement surchargées sont présentes ; `{}` = la palette telle
-   * quelle. Validé hex par hex à la lecture (voir `normalizePreferences`).
-   */
-  subjectColors: SubjectColorOverrides;
 };
 
 /**
@@ -162,8 +157,6 @@ const defaults: Preferences = {
   capacityByWeekday: DEFAULT_CAPACITY_BY_WEEKDAY,
   planningMarginPercent: DEFAULT_PLANNING_MARGIN_PERCENT,
   weeklySubjectTargets: DEFAULT_WEEKLY_SUBJECT_TARGETS,
-  subjectPalette: DEFAULT_SUBJECT_PALETTE,
-  subjectColors: {},
 };
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
@@ -1063,10 +1056,8 @@ export function normalizePreferences(raw: unknown): Preferences {
     capacityByWeekday: normalizeCapacityByWeekday(item.capacityByWeekday),
     planningMarginPercent: normalizeMarginPercent(item.planningMarginPercent),
     weeklySubjectTargets: normalizeWeeklySubjectTargets(item.weeklySubjectTargets),
-    subjectPalette: isSubjectPaletteId(item.subjectPalette) ? item.subjectPalette : defaults.subjectPalette,
-    // Reconstruit matière par matière : une surcharge invalide disparaît
-    // seule, les autres restent.
-    subjectColors: normalizeSubjectColorOverrides(item.subjectColors),
+    // `subjectPalette` et `subjectColors` (refonte « Nuit ») ne sont pas
+    // recopiés : lus sans erreur, puis abandonnés.
   };
 }
 

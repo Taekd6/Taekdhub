@@ -16,26 +16,31 @@ export interface AccentPreset {
   hex: string;
 }
 
-/** Teintes sobres, choisies pour un rendu premium/académique — jamais saturées au point de devenir "gadget". */
+/**
+ * SIX TEINTES FRANCHES, UNE SEULE À LA FOIS — refonte « Apple ».
+ *
+ * L'élève a écarté la refonte « Nuit » (« c'est bizarre, ça fait pas
+ * premium ») et tranché : noir et blanc, plus UN accent, avec Apple pour
+ * référence. Les préréglages sont donc les couleurs système d'Apple en
+ * thème sombre — des teintes pleines, saturées mais jamais fluo, qui
+ * existent seules sur un fond gris : jamais deux à l'écran.
+ *
+ * « Bleu » ouvre la liste, donc devient l'accent par défaut : c'est le bleu
+ * des liens et des boutons d'Apple (#0a84ff en sombre). En thème clair,
+ * l'encre (`accentInk`) le ramène vers #0066cc et l'aplat du bouton
+ * (`accentSolid`) vers #0071e3 — exactement les deux bleus d'apple.com, par
+ * calcul et non par une seconde table.
+ *
+ * « Graphite » est l'option « zéro couleur » : un gris, pour qui veut un
+ * écran strictement noir et blanc.
+ */
 export const ACCENT_PRESETS: AccentPreset[] = [
-  /*
-   * « Menthe » ouvre la liste, donc devient l'accent par défaut, avec le
-   * passage au thème « Nuit » (fond presque noir, neutres froids). Le miel
-   * tenait du papier crème : sur un fond nuit il virait au laiton terne, et
-   * l'élève l'a explicitement écarté. Une menthe lumineuse se détache du noir
-   * sans crier, et se laisse assombrir proprement en thème clair (encre
-   * sarcelle, voir `accentInk`).
-   *
-   * « Miel » a quitté la liste : son hex exact est désormais traité comme
-   * l'ANCIEN DÉFAUT et migré vers la menthe (voir `LEGACY_DEFAULT_ACCENTS`).
-   */
-  { id: "menthe", label: "Menthe", hex: "#5eead4" },
-  { id: "lime", label: "Lime", hex: "#d4f36b" },
-  { id: "azur", label: "Azur", hex: "#8ecbff" },
-  { id: "ambre", label: "Ambre", hex: "#f5c26b" },
-  { id: "corail", label: "Corail", hex: "#f0968a" },
-  { id: "lavande", label: "Lavande", hex: "#b9a6f5" },
-  { id: "rose", label: "Rose", hex: "#f9a8d4" },
+  { id: "bleu", label: "Bleu", hex: "#0a84ff" },
+  { id: "indigo", label: "Indigo", hex: "#5e5ce6" },
+  { id: "vert", label: "Vert", hex: "#30d158" },
+  { id: "orange", label: "Orange", hex: "#ff9f0a" },
+  { id: "rose", label: "Rose", hex: "#ff375f" },
+  { id: "graphite", label: "Graphite", hex: "#8e8e93" },
 ];
 
 export const DEFAULT_ACCENT = ACCENT_PRESETS[0].hex;
@@ -45,11 +50,13 @@ export const DEFAULT_ACCENT = ACCENT_PRESETS[0].hex;
  * préférences (lib/storage.ts#normalizePreferences).
  *
  * `savePreferences` écrit l'objet entier : quiconque a touché à un réglage
- * avant la refonte « Nuit » a donc `accent: "#e0a758"` sur le disque, sans
- * l'avoir jamais choisi. Ce hex ne figurant plus dans les préréglages, il ne
- * peut venir que de l'ancien défaut — le migrer ne défait aucun choix.
+ * sous une refonte précédente a donc sur le disque l'accent PAR DÉFAUT de
+ * l'époque, sans l'avoir jamais choisi — « Miel » (#e0a758, papier & encre)
+ * puis « Menthe » (#5eead4, Nuit). Aucun des deux ne figurant plus dans les
+ * préréglages, ils ne peuvent venir que de l'ancien défaut : les migrer vers
+ * le bleu ne défait aucun choix.
  */
-export const LEGACY_DEFAULT_ACCENTS = ["#e0a758"];
+export const LEGACY_DEFAULT_ACCENTS = ["#e0a758", "#5eead4"];
 
 export function hexToRgb(hex: string): [number, number, number] | null {
   const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -92,25 +99,33 @@ export function relativeLuminance([r, g, b]: [number, number, number]): number {
  */
 /*
  * Calibré pour 4,5:1 sur LA SURFACE LA PLUS SOMBRE où l'encre se pose en
- * thème clair — aplats translucides des badges compris, soit rgb(241 237 228)
- * mesuré au navigateur.
+ * thème clair : le gris du bouton secondaire et des pistes, #e8e8ed
+ * (luminance ≈ 0,80). (0,80 + 0,05) / 4,5 − 0,05 = 0,139 ; 0,13 garde une
+ * marge pour l'arrondi des canaux. Pour le bleu par défaut, cela donne
+ * rgb(0 104 214) — à un cheveu du #0066cc des liens d'apple.com.
  *
- * La valeur précédente (0,163) visait « #f4f5f7 », un canvas gris-bleu que la
- * palette n'utilise plus depuis qu'elle est passée aux neutres chauds : le
- * fond réel étant plus sombre, le plafond ne tenait plus sa promesse. Mesuré
- * en thème clair : 4,22:1 sur le badge « Important » de /echeances et sur
- * l'option retenue du sélecteur de thème — deux échecs AA sur du texte de
- * 14 px, avec l'accent par défaut comme avec tous les autres.
- *
- * 0,145 donne 4,61:1 sur ce même fond, avec une marge pour l'arrondi de la
- * mise à l'échelle. L'écart visuel est d'un cran (rgb 142,106,56 →
- * rgb 134,100,53) : la teinte reste la même, elle passe juste le seuil.
+ * Les valeurs précédentes (0,163 puis 0,145) visaient les fonds crème et
+ * gris-bleu des systèmes « papier » et « Nuit », plus clairs que ce gris.
  */
-export const INK_MAX_LUMINANCE = 0.145;
-/** Aplat principal en thème clair : nettement plus sombre que l'encre, pour porter du texte blanc (≈ 11:1) au lieu d'être un surligneur. */
+export const INK_MAX_LUMINANCE = 0.13;
+/** Teinte profonde — réservée à un aplat qui doit porter du blanc à ≈ 11:1 (rare ; le bouton principal utilise `accentSolid`). */
 export const DEEP_MAX_LUMINANCE = 0.045;
+/**
+ * APLAT DU BOUTON PRINCIPAL — texte BLANC, toujours, comme chez Apple.
+ *
+ * Le système « Nuit » posait du texte NOIR sur l'accent brut ; avec un bleu
+ * franc (#0a84ff), le noir contraste mieux que le blanc (5,8 contre 3,6:1)
+ * — mais un bouton bleu à texte noir ne ressemble à rien de ce que l'élève
+ * a pris pour référence. On garde donc le blanc et on déplace la couleur :
+ * l'aplat est assombri, par la même mise à l'échelle des canaux que
+ * l'encre, juste assez pour que le blanc tienne 4,5:1.
+ *
+ * 1,05 / 4,5 − 0,05 = 0,183 ; 0,175 garde la marge d'arrondi (4,67:1). Le
+ * bleu par défaut devient rgb(9 120 232), quasiment le #0071e3 d'Apple.
+ */
+export const SOLID_MAX_LUMINANCE = 0.175;
 
-/** Assombrit `rgb` par mise à l'échelle des canaux jusqu'à passer sous `target` — la teinte reste reconnaissable. Réutilisé par lib/subject-colors.ts pour les teintes de matière en thème clair. */
+/** Assombrit `rgb` par mise à l'échelle des canaux jusqu'à passer sous `target` — la teinte reste reconnaissable. */
 export function darkenTo(rgb: [number, number, number], target: number): [number, number, number] {
   if (relativeLuminance(rgb) <= target) return rgb;
   let low = 0;
@@ -126,6 +141,11 @@ export function darkenTo(rgb: [number, number, number], target: number): [number
 /** Teinte profonde de l'accent — remplissage du bouton principal en thème clair. */
 export function accentDeep(hex: string): [number, number, number] {
   return darkenTo(hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]), DEEP_MAX_LUMINANCE);
+}
+
+/** Aplat du bouton principal — toujours assez sombre pour porter du texte blanc (voir `SOLID_MAX_LUMINANCE`). */
+export function accentSolid(hex: string): [number, number, number] {
+  return darkenTo(hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]), SOLID_MAX_LUMINANCE);
 }
 
 export function accentInk(hex: string): [number, number, number] {
@@ -166,6 +186,7 @@ export function applyAccent(hex: string, root: HTMLElement = document.documentEl
   root.style.setProperty("--accent-fg-rgb", fg.join(" "));
   root.style.setProperty("--accent-ink-base-rgb", accentInk(hex).join(" "));
   root.style.setProperty("--accent-deep-base-rgb", accentDeep(hex).join(" "));
+  root.style.setProperty("--accent-solid-base-rgb", accentSolid(hex).join(" "));
 }
 
 /**
