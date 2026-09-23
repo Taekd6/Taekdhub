@@ -1,23 +1,25 @@
 # TaekdHub
 
-Système de travail personnel pour prépa scientifique (timer, banque d'exercices, progression, gamification). Next.js 15 + React 19 + TypeScript, données stockées en `localStorage` du navigateur.
+Système de suivi personnel pour prépa scientifique. L'élève travaille sur ses propres feuilles ; TaekdHub garde la trace de son travail : chrono et saisie rapide du temps, objectifs par jour, par semaine et par matière, échéances et planning, notes (et calibration de ses prédictions), carnet « À revoir » en révision espacée, carnet d'erreurs, check-in du soir. Next.js 15 + React 19 + TypeScript, données stockées en `localStorage` du navigateur.
+
+> **Pas de banque d'exercices.** TaekdHub en a longtemps embarqué une (≈ 540 énoncés, lecteur PDF, import de feuilles, recommandations, copilote IA d'indices, page Concours). Elle a été retirée : l'élève n'en avait pas besoin. Au premier chargement, l'ancienne banque encore présente dans le navigateur (`prepahub:exercises`, ≈ 2,8 Mo) est effacée — voir `purgeRetiredBankData` dans `lib/storage.ts`.
 
 **Application en ligne (stable) : [https://taekdhub.vercel.app](https://taekdhub.vercel.app)** — déploiement Vercel automatique depuis la branche `main`.
 
 ## Changer d'ordinateur
 
-Tes données (exercices, chapitres, séances, préférences, progression) vivent dans le `localStorage` du navigateur, pas sur un serveur. Pour les emporter sur une autre machine :
+Tes données (séances, échéances, notes, carnets, préférences) vivent dans le `localStorage` du navigateur, pas sur un serveur. Pour les emporter sur une autre machine :
 
 **Sur l'ancien ordinateur — exporter :**
 1. Ouvrir [https://taekdhub.vercel.app](https://taekdhub.vercel.app) → **Réglages** → **Exporter**.
-2. Un fichier `taekdhub-sauvegarde-AAAA-MM-JJ.json` est téléchargé. Il contient **tout** : exercices, chapitres, séances, échéances, notes, carnet « À revoir » (dont les cartouches de méthode), préférences (dont la couleur d'accent) et l'historique de progression (weekSnapshots). Garde ce fichier (clé USB, cloud, e-mail à toi-même…).
+2. Un fichier `taekdhub-sauvegarde-AAAA-MM-JJ.json` est téléchargé. Il contient **tout** : séances, échéances, intentions de planning, notes, carnet « À revoir » (dont les cartouches de méthode), carnet d'erreurs, check-ins du soir, préférences (dont la couleur d'accent) et les bilans de semaine figés (weekSnapshots). Garde ce fichier (clé USB, cloud, e-mail à toi-même…).
 
 **Sur le nouvel ordinateur — importer :**
 1. Ouvrir [https://taekdhub.vercel.app](https://taekdhub.vercel.app) (aucune installation nécessaire — c'est un site web ; optionnellement « Installer l'application » depuis le navigateur pour l'avoir comme une app).
 2. **Réglages** → **Restaurer** → choisir le fichier `.json`.
 3. Confirmer le remplacement, puis recharger la page. Toutes tes données sont là, à l'identique.
 
-> Le format de sauvegarde est rétrocompatible : un fichier exporté par une ancienne version reste importable (les champs absents sont restaurés à vide sans erreur).
+> Le format de sauvegarde est rétrocompatible : un fichier exporté par une ancienne version reste importable (les champs absents sont restaurés à vide sans erreur). Une sauvegarde de l'époque de la banque d'exercices contient encore `exercises` et `chapters` : elle s'importe normalement, ces deux champs sont simplement ignorés.
 
 **Pour continuer le développement sur le nouvel ordinateur :**
 
@@ -65,7 +67,7 @@ Sans ces variables, `lib/supabase/client.ts` désactive proprement le client Sup
 pnpm build
 ```
 
-Génère un build de production statique (toutes les routes sont prérendues). Vérifié avec `tsc --noEmit` et `next build` sans erreur.
+Génère un build de production statique (toutes les routes sont prérendues, aucune route serveur). Vérifié avec `tsc --noEmit`, `pnpm test`, `pnpm lint` et `next build` sans erreur.
 
 ## Déploiement (Vercel)
 
@@ -77,17 +79,18 @@ Génère un build de production statique (toutes les routes sont prérendues). V
 ## Structure du projet
 
 ```
-app/(app)/dashboard   Tableau de bord
-app/(app)/exercises   Banque d'exercices
-app/(app)/history     Historique des séances
-app/(app)/progress    Progression / statistiques
-app/(app)/revoir      Carnet « À revoir » (à revoir, à apprendre, cartouches de méthode)
-app/(app)/session     Séance de travail
-app/(app)/timer       Focus timer
-app/(app)/settings    Réglages
-components/           Composants UI et par domaine (exercises, history, session, ui)
-lib/                  Logique métier : storage (localStorage), progression, recommandations, gamification, supabase/
-supabase/migrations/  Schéma SQL pour la synchronisation cloud optionnelle
+app/(app)/dashboard       Aujourd'hui : ma journée, échéances, révisions du jour, semaine
+app/(app)/preparation     Matières : suivi par matière (temps, budget, échéances, notes, carnet)
+app/(app)/progress        Progression : temps, régularité, répartition, notes, sommeil
+app/(app)/history         Séances : journal des séances
+app/(app)/echeances       Échéances et planning (atteint depuis l'accueil)
+app/(app)/revoir          Carnet « À revoir » (+ /revoir/session : révisions espacées)
+app/(app)/erreurs         Carnet d'erreurs
+app/(app)/timer           Chronomètre
+app/(app)/settings        Réglages, sauvegarde et restauration
+components/               Composants UI et par domaine (work, review, errors, progress, history, hub, ui)
+lib/                      Logique métier : storage (localStorage), planning, échéances, suivi du temps, notes, carnets, supabase/
+supabase/migrations/      Schéma SQL historique pour la synchronisation cloud optionnelle (non branchée)
 ```
 
 ## Reprendre le développement avec Claude Code
@@ -101,98 +104,21 @@ pnpm install
 pnpm dev
 ```
 
-Ensuite, lancer `claude` dans le dossier du projet. Aucune donnée personnelle ou sauvegarde utilisateur n'est versionnée — le contexte métier (exercices, séances, préférences) vit uniquement dans le `localStorage` du navigateur de chaque utilisateur.
+Ensuite, lancer `claude` dans le dossier du projet. Aucune donnée personnelle ou sauvegarde utilisateur n'est versionnée — le contexte métier (séances, échéances, notes, préférences) vit uniquement dans le `localStorage` du navigateur de chaque utilisateur.
 
-## Copilot IA (facultatif)
-
-TaekdHub fonctionne **entièrement sans IA**. Le coach de raisonnement est une
-couche additionnelle : sans clé configurée, il ne s'affiche pas, et le reste de
-l'application est inchangé — banque, séances, planning, progression, sauvegarde.
-
-### Ce que fait le Copilot
-
-Une **échelle d'indices à six paliers** dans le lecteur d'exercice, du plus
-discret au plus explicite : reformuler la question → identifier la notion → la
-propriété et son hypothèse → la première étape → résolution guidée → solution
-complète. Chaque palier est une question avant d'être une aide, et le palier
-demandé est un plafond que le modèle ne peut pas dépasser (contraint par le
-prompt, par le schéma de sortie, et refusé à la validation s'il le fait quand
-même).
-
-Le modèle s'appuie sur **l'énoncé, les indices du professeur et le corrigé de
-la fiche** plutôt que sur sa connaissance générale. Sans corrigé, il doit le
-dire au lieu d'en inventer un.
-
-Les indices IA sont comptés dans `hints_used` de la séance, au même titre que
-les indices du professeur : ne pas les compter ferait passer pour autonome un
-élève ayant gravi cinq paliers, et fausserait le moteur de recommandation.
-
-### Configuration en local
-
-```bash
-cp .env.example .env.local
-# puis, dans .env.local :
-TAEKDHUB_AI_API_KEY=sk-ant-...
-```
-
-Puis `pnpm dev` (ou `pnpm build && pnpm start`). Vérification rapide :
-
-```bash
-curl -s http://localhost:3000/api/ai     # {"configured":true}
-```
-
-`{"configured":false}` signifie que la variable n'est pas lue — vérifie qu'elle
-est bien dans `.env.local` (et non `.env.example`) et que le serveur a été
-relancé après l'avoir ajoutée.
-
-### Configuration sur Vercel
-
-1. **Settings → Environment Variables** → ajouter `TAEKDHUB_AI_API_KEY`
-   (et, si besoin, `TAEKDHUB_AI_MODEL`). Cocher les environnements voulus.
-   Ne **jamais** préfixer par `NEXT_PUBLIC_`.
-2. Redéployer : les variables ne sont lues qu'au démarrage d'une instance.
-
-La route `/api/ai` est un *route handler* Node.js, donc déployée
-automatiquement en fonction serverless par Vercel — aucune configuration
-supplémentaire.
-
-### Conséquence sur l'hébergement statique
-
-Avant le Copilot, les 23 pages de TaekdHub étaient intégralement statiques.
-Elles le restent : le build ne marque en dynamique (`ƒ`) que `/api/ai`. Une
-clé d'API ne peut pas vivre dans le navigateur, donc un point d'exécution
-serveur est nécessaire — c'est le seul, et il n'existe que si quelqu'un
-l'appelle.
-
-Sur un hébergeur **purement statique** (GitHub Pages, `output: "export"`), la
-route n'existe pas : la sonde de disponibilité échoue, le coach ne s'affiche
-pas, et l'application reste complète. C'est le comportement voulu.
-
-### Coût
-
-Le prompt système est stable et marqué cacheable ; seul le contexte de
-l'exercice varie. Le contexte est borné (24 000 caractères au maximum, refusé
-au-delà côté serveur), la génération plafonnée à 1 200 jetons, et l'effort
-réglé au minimum — produire un indice à partir d'un corrigé fourni ne demande
-pas de longue délibération. Aucun appel n'est déclenché par un rendu React :
-seul un clic sur un palier appelle le modèle.
-
-## Budget de stockage local — mesures et chantier recommandé
+## Budget de stockage local
 
 TaekdHub vit intégralement dans le `localStorage`, dont le quota est d'environ
 5 Mo par origine sur la plupart des navigateurs. Voici où va cet espace,
 **mesuré** et non estimé.
 
-### Ce qui occupe l'espace aujourd'hui
+### Au premier démarrage : presque rien
 
-| Clé | Poids |
-|---|---|
-| `prepahub:exercises` (537 fiches, 2 740 o par fiche) | **2,81 Mo** |
-| `prepahub:chapters` (52 chapitres) | 0,01 Mo |
-| **Total au premier démarrage** | **2,82 Mo** |
-
-Sur les 2 740 octets d'une fiche, **1 656 sont du contenu** — énoncé (480),
-corrigé (713), indices (463). Soit 60 % du poids total de la banque.
+L'ancienne banque d'exercices occupait à elle seule **2,81 Mo** dès le
+premier lancement (`prepahub:exercises`, 537 fiches, plus 0,01 Mo de
+chapitres). Elle a été retirée, et `purgeRetiredBankData` (`lib/storage.ts`)
+efface ces clés d'un appareil qui les avait encore, une fois pour toutes, au
+chargement suivant : tout le quota revient aux données de l'élève.
 
 ### Ce qui grossit avec le temps
 
@@ -202,43 +128,26 @@ Poids unitaires mesurés en UTF-16, l'unité réellement facturée :
 |---|---|---|
 | Séance | 742 o | **1,03 Mo** |
 | Travail / échéance | 828 o | 0,16 Mo |
-| Instantané hebdomadaire | 1 982 o | 0,10 Mo |
+| Instantané hebdomadaire | 1 982 o (moins depuis qu'il ne fige plus que du temps) | 0,10 Mo |
 | Intention de planning | 164 o | 0,06 Mo |
 | Note | 402 o | 0,02 Mo |
-| **Total** | | **1,37 Mo/an** |
+| **Total** | | **≈ 1,37 Mo/an** |
 
 Les **séances représentent les trois quarts de la croissance**. Tout le reste
 est marginal.
 
-### Le risque est réel, mais pas immédiat
+### Pas de plafond en vue sur deux ans de prépa
 
-- fin de la première année : **4,19 Mo** — sous le plafond, mais à l'étroit ;
-- fin de la seconde année : **5,56 Mo** — plafond dépassé.
+- fin de la première année : **≈ 1,4 Mo** ;
+- fin de la seconde année : **≈ 2,8 Mo** — encore bien sous les 5 Mo.
 
-Le point de rupture tombe donc vers le **seizième mois d'usage**, c'est-à-dire
-en deuxième année de prépa. Rien ne justifie d'y toucher maintenant : l'écriture
-échoue proprement (`writeKey` renvoie `false`, `<StorageAlert>` le dit, la
-restauration s'arrête net et rend compte — voir `restoreBackup`).
+L'écriture reste de toute façon blindée : un refus (stockage bloqué, disque
+plein) ne lève jamais, `writeKey` renvoie `false`, `<StorageAlert>` le dit,
+et la restauration d'une sauvegarde s'arrête net et rend compte — voir
+`restoreBackup`.
 
-### La stratégie recommandée, le jour venu
-
-**Ne pas élaguer les données de l'élève.** Ses séances, ses notes et ses
-échéances sont précisément ce qu'aucun amorçage ne peut recréer, et les
-compacter casserait la rétro-agrégation (`computeWorkTimeSeries` recalcule
-n'importe quelle période à la demande), le journal et les taux de réussite.
-
-Deux leviers, par ordre de rendement :
-
-1. **Ne persister que l'écart à la banque livrée.** Le contenu des 537 fiches
-   (60 % des 2,81 Mo) est déjà dans le dataset embarqué ; seul l'état de
-   l'élève — statut, maîtrise, tentatives, notes personnelles, favoris — a
-   besoin d'être stocké. Cela supprimerait l'essentiel du coût FIXE et
-   repousserait le plafond de plusieurs années. Chantier non trivial : touche
-   `mergeStored`, `reconcileSeedBank` et le format de sauvegarde, qui doit
-   rester rétro-compatible.
-2. **Cesser d'écrire `WorkSession.note`** pour les nouvelles séances. Le champ
-   recopie le titre de l'exercice (« Exercice focus : … ») alors que
-   `exercise_id` porte déjà le lien ; il pèse environ 15 % d'une séance, donc
-   ~0,15 Mo/an. Non destructif : les séances existantes gardent leur note.
-
-Ces deux leviers sont additifs et aucun ne supprime de donnée.
+Si un jour la marge venait à manquer, **ne pas élaguer les données de
+l'élève** : ses séances, ses notes et ses échéances sont précisément ce que
+rien ne peut recréer, et les compacter casserait la rétro-agrégation
+(`computeWorkTimeSeries` recalcule n'importe quelle période à la demande) et
+le journal.
