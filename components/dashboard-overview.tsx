@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CalendarClock, ChevronRight, Flame, LayoutList, Trophy } from "lucide-react";
+import { ArrowRight, CalendarClock, ChevronRight, Flame, LayoutList, NotebookPen, Trophy } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { QuickLog } from "@/components/work/quick-log";
@@ -371,6 +371,10 @@ export function DashboardOverview() {
             </Link>
             <Link href="/preparation" className="t-meta inline-flex min-h-6 items-center gap-1.5 rounded hover:text-ink max-lg:min-h-11">
               <LayoutList size={14} /> Suivi par matière
+            </Link>
+            {/* Carnet d'erreurs */}
+            <Link href="/erreurs" className="t-meta inline-flex min-h-6 items-center gap-1.5 rounded hover:text-ink max-lg:min-h-11">
+              <NotebookPen size={14} /> Carnet d&apos;erreurs
             </Link>
             <Link href="/progress" className="t-meta inline-flex min-h-6 items-center gap-1 rounded hover:text-ink max-lg:min-h-11">
               Ma progression <ChevronRight size={14} />
