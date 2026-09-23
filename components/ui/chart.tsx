@@ -11,7 +11,7 @@ import { cn } from "@/lib/cn";
  * pèsent plusieurs centaines de kilo-octets pour deux formes que trente
  * lignes de SVG produisent, et arrivent avec leur propre langage visuel :
  * grilles, tooltips, légendes, couleurs par défaut — tout ce qu'il faudrait
- * ensuite neutraliser pour rester en papier & encre. Les couleurs viennent
+ * ensuite neutraliser pour rester dans le système « Nuit ». Les couleurs viennent
  * ici des mêmes variables CSS que le reste de l'application, donc elles
  * suivent l'accent choisi par l'élève et s'inversent avec le thème sans une
  * ligne de configuration.
@@ -141,7 +141,7 @@ export function LineChart({
               key={index}
               fill="none"
               stroke="rgb(var(--accent-ink-rgb))"
-              strokeWidth={1.5}
+              strokeWidth={2}
               strokeLinejoin="round"
               strokeLinecap="round"
               vectorEffect="non-scaling-stroke"
@@ -215,14 +215,14 @@ export function PairedBars({
             {/* PRÉVU — un contour, donc reconnaissable comme une intention. */}
             <span
               aria-hidden
-              className={cn("w-3 rounded-sm border border-dashed border-line", bar.planned === null && "invisible")}
+              className={cn("w-3 rounded-md border border-dashed border-hairline/[0.14]", bar.planned === null && "invisible")}
               style={{ height: bar.planned === null ? "0%" : height(bar.planned) }}
             />
             {/* RÉALISÉ — un aplat. */}
             <span
               aria-hidden
-              className="w-3 rounded-sm"
-              style={{ height: height(bar.actual), backgroundColor: "rgb(var(--accent-ink-rgb) / 0.55)" }}
+              className="grow-y w-3 rounded-md"
+              style={{ height: height(bar.actual), backgroundColor: "rgb(var(--accent-ink-rgb) / 0.85)" }}
             />
           </div>
           <span className="t-meta w-full truncate text-center text-2xs">{bar.label}</span>
@@ -280,8 +280,8 @@ export function VolumeBars({
           <div key={bar.id} className="group relative flex h-full min-w-0 flex-1 items-end" title={`${bar.title} — ${formatValue(bar.minutes)}`}>
             <div
               className={cn(
-                "w-full rounded-t-[2px] transition-[height]",
-                bar.minutes > 0 ? "bg-accent/70" : "bg-line"
+                "grow-y w-full rounded-tl-md rounded-tr-md transition-[height]",
+                bar.minutes > 0 ? "bg-accent/80" : "bg-line"
               )}
               /* Minimum d'un pixel : un jour sans travail reste visible comme
                  un creux, et non comme une absence de colonne. */
@@ -301,6 +301,98 @@ export function VolumeBars({
       <figcaption className="t-meta mt-2 flex items-baseline justify-between text-2xs">
         <span>maximum {formatValue(max)}</span>
       </figcaption>
+    </figure>
+  );
+}
+
+export interface StackSegment {
+  /** Identifiant stable dans la colonne (la matière). */
+  id: string;
+  value: number;
+  /** Couleur CSS du segment. */
+  color: string;
+}
+
+export interface StackColumn {
+  /** Identifiant STABLE — la date, jamais le libellé. */
+  id: string;
+  /** Ce qui s'écrit sous la colonne (« L », « M »…). */
+  label: string;
+  /** Libellé complet, lu au survol et par les lecteurs d'écran. */
+  title: string;
+  /** La colonne du jour est soulignée : c'est le repère qu'on cherche. */
+  highlight?: boolean;
+  /** Jour à venir : pas de socle, pour ne pas le lire comme « zéro ». */
+  muted?: boolean;
+  /** De bas en haut. */
+  segments: StackSegment[];
+}
+
+/**
+ * COLONNES EMPILÉES — la semaine en sept colonnes, chacune découpée par
+ * matière.
+ *
+ * Répond à deux questions d'un seul regard : « ai-je travaillé chaque
+ * jour ? » (la hauteur) et « sur quoi ? » (les couleurs). Les segments sont
+ * séparés par un liseré de la couleur du fond plutôt que par un espace
+ * mesuré : la colonne garde sa hauteur exacte.
+ *
+ * Chaque colonne POUSSE depuis le bas au montage, en cascade (`.grow-y`).
+ * Un jour passé sans travail garde un socle de 3 px — l'interruption doit
+ * se voir ; un jour à venir n'en a pas.
+ */
+export function StackedColumns({
+  columns,
+  ariaLabel,
+  formatValue,
+  className,
+}: {
+  columns: StackColumn[];
+  ariaLabel: string;
+  formatValue: (value: number) => string;
+  className?: string;
+}) {
+  if (columns.length === 0) return null;
+  const max = Math.max(1, ...columns.map((column) => column.segments.reduce((sum, segment) => sum + segment.value, 0)));
+
+  return (
+    <figure role="img" aria-label={ariaLabel} className={cn("w-full", className)}>
+      <div className="flex h-36 items-end gap-2 sm:gap-3" aria-hidden>
+        {columns.map((column, index) => {
+          const total = column.segments.reduce((sum, segment) => sum + segment.value, 0);
+          return (
+            <div
+              key={column.id}
+              className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+              title={`${column.title} — ${formatValue(total)}`}
+            >
+              {total > 0 ? (
+                <div
+                  className="grow-y flex w-full max-w-[2.75rem] flex-col-reverse overflow-hidden rounded-lg"
+                  style={{ height: `${Math.max(4, (total / max) * 100)}%`, "--i": index } as React.CSSProperties}
+                >
+                  {column.segments.map((segment) => (
+                    <span
+                      key={segment.id}
+                      className="block w-full border-t-2 border-canvas last:border-t-0"
+                      style={{ height: `${(segment.value / total) * 100}%`, backgroundColor: segment.color }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className={cn("h-[3px] w-full max-w-[2.75rem] rounded-full", column.muted ? "bg-transparent" : "bg-hairline/[0.10]")} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-2 flex gap-2 sm:gap-3" aria-hidden>
+        {columns.map((column) => (
+          <span key={column.id} className={cn("min-w-0 flex-1 text-center text-2xs font-bold", column.highlight ? "text-ink" : "text-subtle")}>
+            <span className={cn("inline-grid h-6 min-w-6 place-items-center rounded-full px-1", column.highlight && "chip-on")}>{column.label}</span>
+          </span>
+        ))}
+      </div>
     </figure>
   );
 }

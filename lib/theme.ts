@@ -19,24 +19,37 @@ export interface AccentPreset {
 /** Teintes sobres, choisies pour un rendu premium/académique — jamais saturées au point de devenir "gadget". */
 export const ACCENT_PRESETS: AccentPreset[] = [
   /*
-   * « Miel » remplace le vert fluo en tête de liste, donc comme accent par
-   * défaut. Le fluo tenait d'un fond noir bleuté ; sur le papier chaud du
-   * thème clair, il jurait avec toute la palette, et sa version assombrie
-   * (l'aplat du bouton principal) tombait sur un olive terne. Le miel est de
-   * la même famille de température que le fond : il souligne au lieu de
-   * surligner. Lime reste disponible juste en dessous, et un choix déjà
-   * enregistré n'est pas modifié.
+   * « Menthe » ouvre la liste, donc devient l'accent par défaut, avec le
+   * passage au thème « Nuit » (fond presque noir, neutres froids). Le miel
+   * tenait du papier crème : sur un fond nuit il virait au laiton terne, et
+   * l'élève l'a explicitement écarté. Une menthe lumineuse se détache du noir
+   * sans crier, et se laisse assombrir proprement en thème clair (encre
+   * sarcelle, voir `accentInk`).
+   *
+   * « Miel » a quitté la liste : son hex exact est désormais traité comme
+   * l'ANCIEN DÉFAUT et migré vers la menthe (voir `LEGACY_DEFAULT_ACCENTS`).
    */
-  { id: "miel", label: "Miel", hex: "#e0a758" },
+  { id: "menthe", label: "Menthe", hex: "#5eead4" },
   { id: "lime", label: "Lime", hex: "#d4f36b" },
   { id: "azur", label: "Azur", hex: "#8ecbff" },
   { id: "ambre", label: "Ambre", hex: "#f5c26b" },
   { id: "corail", label: "Corail", hex: "#f0968a" },
   { id: "lavande", label: "Lavande", hex: "#b9a6f5" },
-  { id: "menthe", label: "Menthe", hex: "#7fe0c4" },
+  { id: "rose", label: "Rose", hex: "#f9a8d4" },
 ];
 
 export const DEFAULT_ACCENT = ACCENT_PRESETS[0].hex;
+
+/**
+ * Anciens accents PAR DÉFAUT, remplacés par `DEFAULT_ACCENT` à la lecture des
+ * préférences (lib/storage.ts#normalizePreferences).
+ *
+ * `savePreferences` écrit l'objet entier : quiconque a touché à un réglage
+ * avant la refonte « Nuit » a donc `accent: "#e0a758"` sur le disque, sans
+ * l'avoir jamais choisi. Ce hex ne figurant plus dans les préréglages, il ne
+ * peut venir que de l'ancien défaut — le migrer ne défait aucun choix.
+ */
+export const LEGACY_DEFAULT_ACCENTS = ["#e0a758"];
 
 export function hexToRgb(hex: string): [number, number, number] | null {
   const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -93,12 +106,12 @@ export function relativeLuminance([r, g, b]: [number, number, number]): number {
  * mise à l'échelle. L'écart visuel est d'un cran (rgb 142,106,56 →
  * rgb 134,100,53) : la teinte reste la même, elle passe juste le seuil.
  */
-const INK_MAX_LUMINANCE = 0.145;
+export const INK_MAX_LUMINANCE = 0.145;
 /** Aplat principal en thème clair : nettement plus sombre que l'encre, pour porter du texte blanc (≈ 11:1) au lieu d'être un surligneur. */
-const DEEP_MAX_LUMINANCE = 0.045;
+export const DEEP_MAX_LUMINANCE = 0.045;
 
-/** Assombrit `rgb` par mise à l'échelle des canaux jusqu'à passer sous `target` — la teinte reste reconnaissable. */
-function darkenTo(rgb: [number, number, number], target: number): [number, number, number] {
+/** Assombrit `rgb` par mise à l'échelle des canaux jusqu'à passer sous `target` — la teinte reste reconnaissable. Réutilisé par lib/subject-colors.ts pour les teintes de matière en thème clair. */
+export function darkenTo(rgb: [number, number, number], target: number): [number, number, number] {
   if (relativeLuminance(rgb) <= target) return rgb;
   let low = 0;
   let high = 1;
@@ -157,22 +170,27 @@ export function applyAccent(hex: string, root: HTMLElement = document.documentEl
 
 /**
  * Mode d'apparence (Sprint personnalisation) — indépendant de la couleur
- * d'accent ci-dessus. "system" ne fixe AUCUN attribut : c'est l'absence de
- * `data-theme` qui laisse `prefers-color-scheme` décider (voir
- * app/globals.css) — un seul mécanisme, jamais un troisième état dupliqué
- * en CSS.
+ * d'accent ci-dessus.
+ *
+ * SOMBRE PAR DÉFAUT depuis la refonte « Nuit » : app/globals.css pose les
+ * neutres sombres sur `:root` nu, et le clair n'existe que sous
+ * `data-theme="light"` (ou `data-theme="system"` quand le système est clair).
+ * Conséquence : "system" doit désormais être ÉCRIT dans l'attribut — son
+ * absence ne veut plus dire « laisse le système décider » mais « défaut »,
+ * c'est-à-dire sombre. Une page sans JavaScript, ou lue avant le script
+ * anti-flash, s'affiche donc dans le thème du produit, pas dans celui du
+ * système.
  */
 export type ThemeMode = "light" | "dark" | "system";
 export const THEME_MODES: ThemeMode[] = ["light", "dark", "system"];
-export const DEFAULT_THEME_MODE: ThemeMode = "system";
+export const DEFAULT_THEME_MODE: ThemeMode = "dark";
 
 /**
- * Pose `data-theme` sur `root` — "light"/"dark" explicite, ou retire
- * l'attribut pour "system" (voir la doc de `ThemeMode`). Seul point d'entrée,
- * utilisé par `ThemeSync` (React) et le script anti-flash inline
- * (app/layout.tsx), même principe que `applyAccent`.
+ * Pose `data-theme` sur `root` — toujours, y compris "system" (voir la doc
+ * de `ThemeMode`). Seul point d'entrée, utilisé par `ThemeSync` (React) et
+ * le script anti-flash inline (app/layout.tsx), même principe que
+ * `applyAccent`.
  */
 export function applyThemeMode(mode: ThemeMode, root: HTMLElement = document.documentElement): void {
-  if (mode === "system") root.removeAttribute("data-theme");
-  else root.setAttribute("data-theme", mode);
+  root.setAttribute("data-theme", mode);
 }

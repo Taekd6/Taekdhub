@@ -2,20 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CalendarClock, ChevronRight, Flame, LayoutList, Trophy } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { ArrowRight, CalendarClock, ChevronRight, Flame, LayoutList, LineChart, Trophy } from "lucide-react";
+import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { QuickLog } from "@/components/work/quick-log";
 import { ReviewCapture } from "@/components/review/review-capture";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { List, rowInteractive, Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
-import { Ring } from "@/components/ui/progress";
+import { SegmentRing } from "@/components/ui/progress";
+import { StackedColumns } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/state";
-import { PageBar, Split } from "@/components/ui/layout";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { MathInline } from "@/components/rich-math";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { useCountUp } from "@/hooks/use-count-up";
 import { computeStreak } from "@/lib/gamification";
 import {
   computeChaptersToConsolidate,
@@ -43,30 +44,44 @@ import { servesBankExercises, WORK_ITEM_KIND_META } from "@/lib/work-items";
 import { LOAD_STATUS_META } from "@/lib/workload";
 import { computeProgressBySubject } from "@/lib/progress";
 import { selectReviewItems } from "@/lib/review-items";
+import { ringSegments, todayBySubject, weekDayStacks } from "@/lib/day-stack";
+import { subjectMeta, subjects as allSubjects } from "@/lib/study";
 import { cn } from "@/lib/cn";
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 const contestDateFormatter = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
+/** Anneau du jour : diamètre et épaisseur, partagés entre le dessin et le calcul de l'écart entre segments. */
+const RING_SIZE = 176;
+const RING_STROKE = 14;
+
 /**
  * ÉCRAN D'ACCUEIL — « qu'est-ce que je fais maintenant ? »
  *
- * DEUX changements de fond par rapport à la version précédente.
+ * REFONTE « NUIT » : une PHRASE, puis une grille de cartes.
  *
- * 1. LA COMPOSITION. L'écran était une colonne : la séance, puis les
- *    compteurs, puis les chapitres, puis le reste — donc « où j'en suis »
- *    coûtait un défilement à « qu'est-ce que je fais », alors que les deux
- *    questions se posent en même temps, en s'asseyant. Le rail de droite les
- *    met côte à côte : la décision à gauche, l'état à droite, d'un seul coup
- *    d'œil.
+ * 1. LA PHRASE. L'écran s'ouvre sur ce qu'il reste à faire aujourd'hui, en
+ *    très grand (« Encore 35 min et ta journée est faite. »), avec le bouton
+ *    pour s'y mettre juste à côté. C'est la seule question qu'on se pose en
+ *    ouvrant l'application ; la réponse ne doit pas se chercher.
  *
- * 2. UNE SEULE RÉPONSE. Le tableau de bord répondait DEUX FOIS à la même
- *    question, avec deux moteurs : « Plan du jour » (lib/plan.ts) et
- *    « Préparation globale », chacun avec son sélecteur de durée et son
- *    bouton « commencer », l'un sous l'autre. Le second est devenu le SUIVI
- *    par matière (/preparation) : un espace que l'on va CONSULTER, qui ne
- *    propose plus d'exercices et ne démarre plus de séance. L'accueil reste
- *    le seul endroit d'où l'on part travailler.
+ * 2. LES CARTES, dans l'ordre de lecture d'un téléphone (le DOM), placées
+ *    en grille de trois colonnes sur grand écran : la séance et l'anneau du
+ *    jour, puis la saisie rapide et la semaine, puis les budgets par matière
+ *    et le planning du jour, puis le carnet « À revoir » et ce qu'on
+ *    reprenait. La COULEUR DE MATIÈRE relie les cartes entre elles : le
+ *    violet des maths est le même dans l'anneau, dans les colonnes de la
+ *    semaine et dans les barres de budget.
+ *
+ * UNE SEULE RÉPONSE à « que faire » : le bloc séance (planning du jour s'il
+ * existe, sinon la séance construite depuis la banque). /preparation reste
+ * un espace que l'on CONSULTE ; l'accueil est le seul endroit d'où l'on part
+ * travailler.
+ *
+ * Toutes les données viennent d'UN SEUL `usePrepahubData()`, ici, et sont
+ * passées aux enfants (saisie rapide, carnet) : chaque appel du hook tient
+ * sa propre copie de l'état, et une seconde copie resterait figée après une
+ * saisie.
  */
 export function DashboardOverview() {
   const { sessions, exercises, chapters, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems } = usePrepahubData();
@@ -88,15 +103,12 @@ export function DashboardOverview() {
       // n'est pas « en retard » le samedi matin (voir lib/subject-targets.ts).
       subjectTargets: computeSubjectTargets(sessions, preferences.weeklySubjectTargets, now, preferences.capacityByWeekday),
       streak: computeStreak(sessions),
+      // Les deux figures colorées : même définition du temps que l'objectif
+      // du jour et le bilan de la semaine (voir lib/day-stack.ts).
+      today: todayBySubject(sessions, now),
+      week: weekDayStacks(sessions, now),
       /*
        * REPRENDRE — les derniers exercices réellement ouverts, dans l'ordre.
-       *
-       * La colonne principale s'arrêtait après la séance quand rien n'était
-       * signalé : un écran d'accueil qui se termine par du vide au premier
-       * tiers de la page. Or il existe toujours une réponse utile à
-       * « et sinon ? » : soit ce sur quoi on travaillait hier, soit, au tout
-       * début, les matières elles-mêmes.
-       *
        * Dérivé des `WorkSession` (aucun nouveau champ) : on remonte le
        * journal, on garde le premier passage sur chaque exercice.
        */
@@ -145,33 +157,42 @@ export function DashboardOverview() {
     router.push("/session");
   }, [dailyPlan, router]);
 
+  // Compteurs animés — appelés AVANT tout retour anticipé (règle des hooks).
+  // Tant que les données ne sont pas prêtes, ils visent 0 et ne bougent pas.
+  const remainingCount = useCountUp(ready ? model.objective.remainingMinutes : 0);
+  const workedCount = useCountUp(ready ? model.objective.workedMinutes : 0);
+  const weekCount = useCountUp(ready ? Math.round(model.weeklySummary.totalSeconds / 60) : 0);
+
   const name = preferences.displayName?.trim();
 
   if (!ready) {
     return (
-      <div className="space-y-8">
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-72 w-full rounded-xl" />
+      <div className="space-y-6">
+        <Skeleton className="h-5 w-56" />
+        <Skeleton className="h-14 w-full max-w-2xl" />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Skeleton className="h-72 rounded-2xl lg:col-span-2" />
+          <Skeleton className="h-72 rounded-2xl" />
+        </div>
       </div>
     );
   }
 
-  const { nextAction, objective, statusLine, upcoming, toConsolidate, weeklySummary, subjectTargets, streak, contestDays, contestDate, resume, subjects } = model;
+  const { nextAction, objective, statusLine, upcoming, toConsolidate, weeklySummary, subjectTargets, streak, contestDays, contestDate, resume, subjects, today: todayParts, week } = model;
   const today = workPlan.days[0];
   /*
    * QUI RÉPOND À « MAINTENANT » ?
    *
    * Dès qu'un travail est PLANIFIÉ pour aujourd'hui, c'est lui — une
    * échéance datée prime toujours sur une proposition de la banque, qui
-   * n'engage à rien. Sans planning du jour, le bloc reprend exactement son
-   * comportement d'avant : la séance construite par `computeDailyPlan`.
+   * n'engage à rien. Sans planning du jour, le bloc reprend la séance
+   * construite par `computeDailyPlan`.
    *
    * Les deux moteurs ne se disputent jamais : le planning dit QUAND et
    * COMBIEN, et pour un travail qui passe par la banque (« exercices »,
    * « chapitre ») c'est `recommendExercises` qui choisit le contenu au
    * moment de démarrer — d'où le lien vers /session, portant la matière et
-   * le budget du créneau. Un DM, lui, part au chronomètre : personne ne
-   * prétend en connaître le contenu.
+   * le budget du créneau. Un DM, lui, part au chronomètre.
    */
   const firstSlot = today?.slots[0] ?? null;
   const nextSlots = today?.slots.slice(1) ?? [];
@@ -184,12 +205,10 @@ export function DashboardOverview() {
         : `/timer?travail=${slotItem.id}`
       : null;
   /*
-   * À SURVEILLER — au plus DEUX entrées.
-   *
-   * Ne retient que ce qui appelle une décision aujourd'hui : un retard, une
-   * échéance qui ne tient plus, ou une échéance à moins de deux jours. Une
-   * échéance lointaine et confortable n'a rien à faire ici — la signaler
-   * apprendrait à ignorer la rubrique. Le reste vit sur /echeances.
+   * À SURVEILLER — au plus DEUX entrées : un retard, une échéance qui ne
+   * tient plus, ou une échéance à moins de deux jours. Une échéance
+   * lointaine et confortable n'a rien à faire ici — la signaler apprendrait
+   * à ignorer la rubrique. Le reste vit sur /echeances.
    */
   const watchList = workPlan.priorities
     .filter(
@@ -205,217 +224,116 @@ export function DashboardOverview() {
   const sessionHref = nextAction.kind === "start-session" ? `/session?minutes=${nextAction.minutes}` : nextAction.href;
   const secondaryPicks = nextAction.picks.slice(1);
   const otherSignals = upcoming.filter((item) => item.key !== "chapter");
+  const hasTodayPlan = today.load.plannedMinutes > 0 || today.slots.length > 0;
+
+  /* ANNEAU DU JOUR — un segment par matière, dans sa couleur. L'écart entre
+     deux segments couvre les bouts arrondis (une demi-épaisseur de chaque
+     côté) plus 3 px d'air : sans lui, deux segments se chevaucheraient. */
+  const ringCircumference = Math.PI * (RING_SIZE - RING_STROKE);
+  const arcs = ringSegments(todayParts, objective.goalMinutes * 60, (RING_STROKE + 3) / ringCircumference).map((segment) => ({
+    id: segment.subject,
+    start: segment.start,
+    length: segment.length,
+    color: subjectMeta[segment.subject].fill,
+  }));
+
+  /* SEMAINE — sept colonnes empilées par matière, et la légende des seules
+     matières réellement travaillées cette semaine (sept pastilles pour deux
+     matières travaillées, c'est cinq pastilles de bruit). */
+  const weekSubjects = allSubjects.filter((subject) => week.some((day) => day.segments.some((segment) => segment.subject === subject)));
+  const weekColumns = week.map((day) => ({
+    id: day.key,
+    label: day.label,
+    title: day.longLabel,
+    highlight: day.isToday,
+    muted: day.isFuture,
+    segments: day.segments.map((segment) => ({ id: segment.subject, value: segment.seconds, color: subjectMeta[segment.subject].fill })),
+  }));
+  const weekAria = `Temps de travail de la semaine, jour par jour : ${week
+    .filter((day) => !day.isFuture)
+    .map((day) => `${day.longLabel}, ${formatSpan(day.totalSeconds)}`)
+    .join(" ; ")}.`;
+
+  /* L'ACTION PRINCIPALE — une seule par écran, portée par la phrase
+     d'accueil. Même logique qu'avant, déplacée : planning du jour, sinon
+     plan de la banque, sinon l'action suggérée (banque vide, à jour…). */
+  const primaryAction =
+    firstSlot && slotHref ? (
+      /* Un lien STYLÉ en bouton, pas un bouton dans un lien : deux éléments
+         interactifs imbriqués font deux arrêts de tabulation pour une action. */
+      <Link href={slotHref} className={cn(buttonVariants({ size: "lg" }), "max-sm:w-full")}>
+        Commencer <ArrowRight size={17} strokeWidth={2.4} />
+      </Link>
+    ) : hasPlan ? (
+      <Button size="lg" onClick={startPlan} className="max-sm:w-full">
+        Commencer <ArrowRight size={17} strokeWidth={2.4} />
+      </Button>
+    ) : (
+      <Link href={sessionHref} className={cn(buttonVariants({ size: "lg" }), "max-sm:w-full")}>
+        {nextAction.ctaLabel} <ArrowRight size={17} strokeWidth={2.4} />
+      </Link>
+    );
 
   return (
-    <Split
-      railLabel="Où j'en suis"
-      rail={
-        <div className="space-y-8">
-          {/* L'OBJECTIF DU JOUR en tête du rail : c'est la seule mesure qu'on
-              regarde plusieurs fois par jour, donc la seule qui mérite un
-              anneau plutôt qu'une ligne. */}
-          <div className="flex items-center gap-4">
-            <Ring value={objective.percent} size={62} strokeWidth={4}>
-              <span className="t-figure text-[0.9375rem]">{objective.percent}%</span>
-            </Ring>
-            <div className="min-w-0">
-              <p className="t-label">Objectif du jour</p>
-              <p className="tabular mt-1 text-sm">
-                <span className="font-medium text-ink">{objective.workedMinutes}</span>
-                <span className="text-muted"> / {objective.goalMinutes} min</span>
-              </p>
-              {objective.met && <p className="t-meta mt-0.5 text-emerald-300">Atteint</p>}
-            </div>
-          </div>
-
-          {/* NOTER DU TEMPS juste sous l'anneau : la saisie le fait avancer
-              sous les yeux de l'élève. Voir components/work/quick-log.tsx. */}
-          <QuickLog sessions={sessions} saveSessions={saveSessions} removeSession={removeSession} ready={ready} />
-
-          {/* AUJOURD'HUI — ce qui est prévu, face à ce que la journée peut
-              absorber. Deux nombres, pas un graphique : « suis-je à jour ? »
-              se répond en les comparant, et rien d'autre ne le répond. */}
-          {(today.load.plannedMinutes > 0 || today.slots.length > 0) && (
-            <div>
-              <div className="flex items-baseline justify-between gap-3">
-                <p className="t-label">Prévu aujourd&apos;hui</p>
-                <p className="tabular t-meta shrink-0 whitespace-nowrap">
-                  <span className="text-ink">{formatSpan(today.load.plannedMinutes * 60)}</span> /{" "}
-                  {formatSpan(today.load.capacityMinutes * 60)}
-                </p>
-              </div>
-              <ul className="mt-2 divide-y divide-line border-y border-line">
-                {today.slots.map((slot) => (
-                  <li key={slot.workItemId} className="flex items-baseline gap-3 py-2">
-                    <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-ink">
-                      {slot.title}
-                      <span className="text-subtle"> · {WORK_ITEM_KIND_META[slot.kind].short}</span>
-                    </span>
-                    <span className="tabular shrink-0 whitespace-nowrap text-2xs text-muted">{formatSpan(slot.minutes * 60)}</span>
-                  </li>
-                ))}
-              </ul>
-              {(today.load.status === "surchargé" || today.load.status === "intenable") && (
-                <p className={cn("t-meta mt-1.5 text-2xs", today.load.status === "intenable" ? "text-rose-300" : "text-amber-300")}>
-                  {LOAD_STATUS_META[today.load.status].label} — {describeTodayLoad(today.load.overflowMinutes, today.load.status)}
-                </p>
+    <div className="space-y-8 sm:space-y-10">
+      {/* ── LA PHRASE ───────────────────────────────────────────────
+          Salutation + date en petit, puis ce qu'il reste à faire en très
+          grand, le chiffre à la couleur d'accent et qui monte jusqu'à sa
+          valeur. À droite (dessous sur mobile), le bouton pour s'y mettre. */}
+      <header className="reveal flex flex-wrap items-end justify-between gap-x-10 gap-y-6" style={{ "--i": 0 } as CSSProperties}>
+        <div className="min-w-0 max-w-3xl">
+          <p className="t-meta font-semibold">
+            {name ? `Bonjour ${name}` : "Bonjour"} · <span className="capitalize">{dateFormatter.format(new Date())}</span>
+          </p>
+          <h1 className="t-display mt-3">
+            {objective.met ? (
+              <>
+                Journée faite<span className="text-accent">.</span> Tout le reste est du bonus.
+              </>
+            ) : (
+              <>
+                Encore <span className="tabular text-accent">{remainingCount}&nbsp;min</span> et ta journée est faite.
+              </>
+            )}
+          </h1>
+          <p className="t-lede mt-3">{statusLine}</p>
+          {/* Deux repères qui ne méritent pas une carte : la série et le
+              concours, en pastilles. Le concours porte sa DATE — un compte à
+              rebours sans date oblige à aller la vérifier. */}
+          {(streak > 0 || contestDays !== null) && (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {streak > 0 && (
+                <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-inset px-3 text-[0.8125rem] font-bold">
+                  <Flame size={14} className="text-subj-fr-ink" aria-hidden /> {streak} j d&apos;affilée
+                </span>
+              )}
+              {contestDays !== null && (
+                <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-inset px-3 text-[0.8125rem] font-bold">
+                  <Trophy size={14} className="text-accent" aria-hidden /> J−{contestDays}
+                  <span className="font-semibold text-muted">· {contestDate}</span>
+                </span>
               )}
             </div>
           )}
-
-          {/* CETTE SEMAINE PAR MATIÈRE — le budget que l'élève s'est fixé
-              (Réglages), face au temps réellement noté. Juste sous la saisie
-              rapide et le prévu du jour : noter 30 min d'anglais fait bouger
-              la ligne correspondante sous les yeux. Absent quand aucune
-              matière n'a de budget — un bloc vide n'apprend rien. */}
-          {subjectTargets.length > 0 && (
-            <div>
-              <div className="mb-2 flex items-baseline justify-between gap-3">
-                <p className="t-label">Cette semaine par matière</p>
-                <Link href="/settings" className="t-meta shrink-0 rounded text-2xs hover:text-ink max-lg:inline-flex max-lg:min-h-11 max-lg:items-center">
-                  Régler
-                </Link>
-              </div>
-              <SubjectTargetList rows={subjectTargets} />
-            </div>
-          )}
-
-          {/* À SURVEILLER — les échéances qui approchent, et celles qui ne
-              tiennent plus. Les deux signaux restent distincts : « en retard »
-              est un fait, « ne tient pas » une projection. */}
-          {watchList.length > 0 && (
-            <div>
-              <p className="t-label mb-2">À surveiller</p>
-              <ul className="divide-y divide-line border-y border-line">
-                {watchList.map((priority) => (
-                  <li key={priority.item.id}>
-                    <Link href="/echeances" className="row-hover block rounded-md py-2.5 max-lg:min-h-11">
-                      <span className="flex items-baseline gap-2">
-                        <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-ink">{priority.item.title}</span>
-                        <span className="tabular shrink-0 whitespace-nowrap text-2xs text-muted">
-                          {formatSpan(priority.remainingMinutes * 60)}
-                        </span>
-                      </span>
-                      <span className="t-meta mt-0.5 block truncate text-2xs">
-                        {priority.overdue
-                          ? "En retard"
-                          : priority.feasibility.level === "non casable"
-                            ? "Ne tient plus dans tes journées"
-                            : priority.daysUntilDue === 0
-                              ? "À rendre aujourd'hui"
-                              : priority.daysUntilDue === 1
-                                ? "À rendre demain"
-                                : `Dans ${priority.daysUntilDue} jours`}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <dl className="divide-y divide-line border-y border-line">
-            <RailFigure label="Cette semaine" value={formatSpan(weeklySummary.totalSeconds)} detail={`${weeklySummary.progressPercent} % de l'objectif`} />
-            {streak > 0 && (
-              <RailFigure label="Série" value={`${streak} j`} detail="jours d'affilée" icon={<Flame size={13} className="text-accent" />} />
-            )}
-            {contestDays !== null && (
-              /* « J−223 · avant l'échéance » ne disait pas QUELLE échéance.
-                 Un compte à rebours sans sa date oblige à aller la vérifier
-                 dans les réglages pour la resituer dans un calendrier. */
-              <RailFigure
-                label="Concours"
-                value={`J−${contestDays}`}
-                detail={contestDate ?? "avant l'échéance"}
-                icon={<Trophy size={13} className="text-accent" />}
-              />
-            )}
-          </dl>
-
-          {/* AUSSI SIGNALÉ vit dans le rail, pas sous la séance : ce sont des
-              signaux à surveiller, pas des choses à faire maintenant. Les
-              mettre dans le flux principal les mettait au même rang que le
-              plan du jour. */}
-          {(secondaryPicks.length > 0 || otherSignals.length > 0) && (
-            <div>
-              <p className="t-label mb-2">Aussi signalé</p>
-              <ul className="divide-y divide-line border-y border-line">
-                {secondaryPicks.map(({ exercise, reasons }) => (
-                  <li key={exercise.id}>
-                    <Link href={`/exercises?focus=${exercise.id}`} className="row-hover flex items-center gap-2.5 rounded-md py-2.5 max-lg:min-h-11">
-                      <SubjectAvatar subject={exercise.subject} size="sm" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[0.8125rem] text-ink">
-                          <MathInline text={exercise.title} />
-                        </span>
-                        <span className="t-meta mt-0.5 block truncate text-2xs">{reasons.slice(0, 1).join(" · ")}</span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-                {otherSignals.map((item) => (
-                  <li key={item.key}>
-                    <Link href={item.href} className="row-hover block rounded-md py-2.5 max-lg:min-h-11">
-                      <span className="block truncate text-[0.8125rem] text-ink">{item.label}</span>
-                      <span className="t-meta mt-0.5 block truncate text-2xs">{item.detail}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="flex flex-col items-start gap-2">
-            <Link href="/echeances" className="t-meta inline-flex min-h-6 items-center gap-1.5 rounded hover:text-ink max-lg:min-h-11">
-              <CalendarClock size={14} /> Mes échéances
-            </Link>
-            <Link href="/preparation" className="t-meta inline-flex min-h-6 items-center gap-1.5 rounded hover:text-ink max-lg:min-h-11">
-              <LayoutList size={14} /> Suivi par matière
-            </Link>
-            <Link href="/progress" className="t-meta inline-flex min-h-6 items-center gap-1 rounded hover:text-ink max-lg:min-h-11">
-              Ma progression <ChevronRight size={14} />
-            </Link>
-          </div>
         </div>
-      }
-    >
-      <div className="space-y-10">
-        {/* EN-TÊTE RÉDUIT À UNE LIGNE.
-            La salutation était composée en `t-display`, au même corps que le
-            titre du bloc « La séance » juste en dessous : deux titres de
-            même poids, donc aucun des deux ne désignait plus l'élément
-            important. Elle passe en `quiet` (voir `PageBar`) et sa date se
-            range sur la même ligne — la décision du jour redevient le seul
-            grand titre de l'écran, et gagne la hauteur correspondante. */}
-        <PageBar
-          rank="quiet"
-          title={name ? `Bonjour, ${name}.` : "Bonjour."}
-          meta={
-            <>
-              <span className="capitalize">{dateFormatter.format(new Date())}</span> · {statusLine}
-            </>
-          }
-        />
+        <div className="shrink-0 max-sm:w-full">{primaryAction}</div>
+      </header>
 
-        {/* ── LA SÉANCE ─────────────────────────────────────────────
-            Seul bloc encadré et seul bouton plein de l'écran. */}
+      <div className="grid grid-flow-row-dense gap-4 sm:gap-5 lg:grid-cols-3">
+        {/* ── LA SÉANCE ────────────────────────────────────────────── */}
         <Section
           variant="feature"
+          index={1}
           label="La séance"
-          title={firstSlot ? "Ce que tu devrais travailler maintenant" : hasPlan ? "Ce que tu devrais travailler maintenant" : <MathInline text={nextAction.title} />}
-          /* Le chapeau justifie CE QUI EST AFFICHÉ, jamais autre chose.
-             Quand un plan existe mais que sa première recommandation ne porte
-             aucune raison explicite, on retombait sur `nextAction.description`
-             — la justification d'un exercice qui, lui, n'apparaît nulle part
-             sur l'écran (« Tu n'as pas encore travaillé cet exercice. » :
-             lequel ?). Mieux vaut pas de phrase du tout : le bloc
-             « Maintenant » dit déjà l'intention et la matière. */
+          className="lg:col-span-2"
+          title={firstSlot || hasPlan ? "Ce que tu devrais travailler maintenant" : <MathInline text={nextAction.title} />}
+          /* Le chapeau justifie CE QUI EST AFFICHÉ, jamais autre chose : sans
+             raison explicite pour le premier bloc, pas de phrase du tout
+             plutôt que la justification d'un exercice absent de l'écran. */
           description={firstSlot ? (slotPriority ? explainPriority(slotPriority) ?? undefined : undefined) : hasPlan ? planReason ?? undefined : nextAction.description}
-          /* Le sélecteur de durée ne s'affiche QUE quand la banque pilote le
+          /* Le sélecteur de durée n'apparaît QUE quand la banque pilote le
              bloc : en mode planning, les durées viennent des créneaux, et un
-             contrôle sans effet est pire qu'un contrôle absent. Le temps
-             disponible se règle alors là où il a du sens — la capacité
-             (Réglages) et le budget de la séance elle-même. */
+             contrôle sans effet est pire qu'un contrôle absent. */
           action={
             firstSlot ? undefined : (
               <SegmentedControl
@@ -428,227 +346,244 @@ export function DashboardOverview() {
           }
         >
           {firstSlot && (
-            /*
-             * MODE PLANNING — même composition « Maintenant / Puis » que la
-             * séance de la banque, mais alimentée par les créneaux du jour.
-             * Rien de nouveau à l'écran : c'est la SOURCE qui change, pas la
-             * forme, pour que l'élève n'ait qu'un seul endroit à regarder.
-             */
-            <div key={firstSlot.workItemId} className="animate-fade-in border-y border-line">
-              <div className="flex items-baseline gap-4 py-4">
-                <div className="min-w-0 flex-1">
-                  <p className="t-label mb-1.5">Maintenant</p>
-                  <p className="t-heading">{firstSlot.title}</p>
-                  <p className="t-meta mt-1">
+            /* MODE PLANNING — même composition « Maintenant / Puis » que la
+               séance de la banque, alimentée par les créneaux du jour. */
+            <div key={firstSlot.workItemId} className="animate-fade-in">
+              <NowBlock
+                title={firstSlot.title}
+                meta={
+                  <>
                     {WORK_ITEM_KIND_META[firstSlot.kind].label}
                     {firstSlot.subject && ` · ${firstSlot.subject}`}
-                  </p>
-                </div>
-                {/* `formatSpan` et non « N min » : un créneau de planning
-                    peut dépasser l'heure (un travail en retard se rattrape
-                    d'un bloc), et « 90 min » se lit moins vite que « 1 h 30 ».
-                    Le pied de bloc affiche déjà le total dans cette forme. */}
-                <span className="t-figure-sm tabular shrink-0 whitespace-nowrap">{formatSpan(firstSlot.minutes * 60)}</span>
-              </div>
-
+                  </>
+                }
+                subject={firstSlot.subject ?? undefined}
+                /* `formatSpan` et non « N min » : un créneau peut dépasser
+                   l'heure, et « 90 min » se lit moins vite que « 1 h 30 ». */
+                figure={formatSpan(firstSlot.minutes * 60)}
+              />
               {nextSlots.length > 0 && (
-                <ol className="border-t border-line pb-1 pt-3">
-                  <li className="t-label mb-1">Puis</li>
-                  {nextSlots.map((slot) => (
-                    <li key={slot.workItemId} className="flex items-baseline gap-3 py-1.5">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm text-ink">{slot.title}</p>
-                        <p className="t-meta mt-0.5 truncate text-2xs">
-                          {WORK_ITEM_KIND_META[slot.kind].label}
-                          {slot.subject && ` · ${slot.subject}`}
-                        </p>
-                      </div>
-                      <span className="t-meta tabular shrink-0 whitespace-nowrap">{formatSpan(slot.minutes * 60)}</span>
-                    </li>
-                  ))}
-                </ol>
+                <ThenList
+                  items={nextSlots.map((slot) => ({
+                    key: slot.workItemId,
+                    title: slot.title,
+                    meta: `${WORK_ITEM_KIND_META[slot.kind].label}${slot.subject ? ` · ${slot.subject}` : ""}`,
+                    figure: formatSpan(slot.minutes * 60),
+                  }))}
+                />
               )}
             </div>
           )}
           {!firstSlot && hasPlan && (
             /*
-             * MAINTENANT, PUIS — pas un sommaire de trois lignes égales.
+             * MAINTENANT, PUIS — le premier bloc est composé comme la
+             * réponse (titre, durée en grand chiffre), ce qui suit reste une
+             * liste en retrait. Exactement les mêmes `dailyPlan.blocks`.
              *
-             * Le plan se lisait comme une table des matières : trois rangées
-             * de même poids, numérotées, qu'il fallait parcourir pour
-             * comprendre par quoi commencer. Or la question posée en ouvrant
-             * l'application le matin n'est pas « que contient ma séance »,
-             * c'est « je fais quoi, là, tout de suite » — et la réponse
-             * tenait dans la même graisse que le reste.
-             *
-             * Le premier bloc est donc COMPOSÉ comme la réponse : son
-             * intitulé en `t-heading`, sa durée en chiffre serif à droite,
-             * son détail dessous. Ce qui suit reste une liste, en retrait.
-             * Aucune donnée nouvelle, aucun calcul déplacé : exactement les
-             * mêmes `dailyPlan.blocks`, dans le même ordre.
+             * Le `key` sur la durée demandée rejoue un fondu quand on passe
+             * de 45 à 60 minutes : le plan change entièrement, et le fondu
+             * dit « ceci vient d'être recalculé ».
              */
-            /*
-             * Le `key` sur la durée demandée est la SEULE animation ajoutée à
-             * cet écran, et elle est fonctionnelle : quand on passe de 45 à
-             * 90 minutes, le plan change entièrement — intitulés, durées,
-             * nombre de blocs — mais le texte se substituait d'une image à
-             * l'autre, sans rien signaler. Un fondu de 180 ms dit « ceci
-             * vient d'être recalculé ». Il est annulé par
-             * `prefers-reduced-motion` comme tout le reste (voir
-             * app/globals.css).
-             */
-            <div key={planMinutes} className="animate-fade-in border-y border-line">
-              <div className="flex items-baseline gap-4 py-4">
-                <div className="min-w-0 flex-1">
-                  <p className="t-label mb-1.5">Maintenant</p>
-                  <p className="t-heading">
+            <div key={planMinutes} className="animate-fade-in">
+              <NowBlock
+                title={
+                  <>
                     {firstBlock.label}
                     <span className="text-muted"> — {PLAN_INTENT_META[firstBlock.intent].description}</span>
-                  </p>
-                  {/* Le nombre de fiches ne figure plus ici : ce qui décide de
-                      se mettre au travail, c'est le sujet et la durée. Le
-                      décompte reste sur l'écran de séance, où l'on règle
-                      justement la taille de la séance. */}
-                  <p className="t-meta mt-1">{firstBlock.focus}</p>
-                </div>
-                <span className="t-figure-sm tabular shrink-0 whitespace-nowrap">
-                  {firstBlock.estimatedMinutes}
-                  <span className="t-meta"> min</span>
-                </span>
-              </div>
-
+                  </>
+                }
+                meta={firstBlock.focus}
+                figure={`${firstBlock.estimatedMinutes} min`}
+              />
               {nextBlocks.length > 0 && (
-                <ol className="border-t border-line pb-1 pt-3">
-                  <li className="t-label mb-1">Puis</li>
-                  {nextBlocks.map((block) => (
-                    <li key={block.intent} className="flex items-baseline gap-3 py-1.5">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-ink">
-                          {block.label}
-                          <span className="text-muted"> — {PLAN_INTENT_META[block.intent].description}</span>
-                        </p>
-                        <p className="t-meta mt-0.5 truncate text-2xs">{block.focus}</p>
-                      </div>
-                      <span className="t-meta tabular shrink-0">{block.estimatedMinutes} min</span>
-                    </li>
-                  ))}
-                </ol>
+                <ThenList
+                  items={nextBlocks.map((block) => ({
+                    key: block.intent,
+                    title: `${block.label} — ${PLAN_INTENT_META[block.intent].description}`,
+                    meta: block.focus,
+                    figure: `${block.estimatedMinutes} min`,
+                  }))}
+                />
               )}
             </div>
           )}
 
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-            <p className="t-meta">
-              {firstSlot ? (
-                <>
-                  <span className="font-medium text-ink">{formatSpan(today.load.plannedMinutes * 60)}</span> prévues aujourd&apos;hui
-                  {objective.workedMinutes > 0 && <> · {objective.workedMinutes} min déjà faites</>}
-                </>
-              ) : hasPlan ? (
-                <>
-                  <span className="font-medium text-ink">{formatMinutesSpan(dailyPlan.totalMinutes)}</span>
-                  {objective.workedMinutes > 0 && <> · {objective.workedMinutes} min déjà faites aujourd&apos;hui</>}
-                </>
-              ) : nextAction.kind === "empty-bank" ? (
-                "Ta banque est vide — TaekdHub ne peut rien te proposer tant qu'elle l'est."
-              ) : (
-                "Rien à planifier pour l'instant — ta banque est à jour."
-              )}
-            </p>
-            {firstSlot && slotHref ? (
-              <Link href={slotHref}>
-                <Button size="lg">
-                  Commencer <ArrowRight size={16} />
-                </Button>
-              </Link>
+          <p className="t-meta mt-5">
+            {firstSlot ? (
+              <>
+                <span className="font-bold text-ink">{formatSpan(today.load.plannedMinutes * 60)}</span> prévues aujourd&apos;hui
+                {objective.workedMinutes > 0 && <> · {objective.workedMinutes} min déjà faites</>}
+              </>
             ) : hasPlan ? (
-              <Button size="lg" onClick={startPlan}>
-                Commencer <ArrowRight size={16} />
-              </Button>
+              <>
+                <span className="font-bold text-ink">{formatMinutesSpan(dailyPlan.totalMinutes)}</span> au total
+                {objective.workedMinutes > 0 && <> · {objective.workedMinutes} min déjà faites aujourd&apos;hui</>}
+              </>
+            ) : nextAction.kind === "empty-bank" ? (
+              "Ta banque est vide — TaekdHub ne peut rien te proposer tant qu'elle l'est."
             ) : (
-              <Link href={sessionHref}>
-                <Button size="lg">
-                  {nextAction.ctaLabel} <ArrowRight size={16} />
-                </Button>
-              </Link>
+              "Rien à planifier pour l'instant — ta banque est à jour."
             )}
-          </div>
+          </p>
         </Section>
 
-        {/* Le rappel de sauvegarde est une CORVÉE, pas une décision : posé en
-            tête d'écran, il repoussait la séance d'une centaine de pixels et
-            accueillait chaque semaine par un bandeau orange. Il reste
-            exactement aussi visible, mais APRÈS ce qu'on est venu chercher. */}
-        <BackupReminder />
-
-        {/* ── REPRENDRE ─────────────────────────────────────────────
-            Ce sur quoi on travaillait hier. Au tout début, il n'y a rien à
-            reprendre : on propose alors d'entrer par une matière, plutôt que
-            de laisser la colonne se terminer sur du vide. */}
-        {resume.length > 0 ? (
-          <Section label="Reprendre" title="Ce que tu travaillais">
-            <List>
-              {resume.map(({ exercise, at }) => (
-                <li key={exercise.id}>
-                  <Link href={`/exercises?focus=${exercise.id}`} className={rowInteractive}>
-                    <SubjectAvatar subject={exercise.subject} size="sm" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-ink">
-                        <MathInline text={exercise.title} />
-                      </p>
-                      <p className="t-meta mt-0.5 truncate">
-                        {exercise.subject} · {relativeDay(at)}
-                      </p>
-                    </div>
-                    <ChevronRight size={15} className="shrink-0 text-subtle" />
-                  </Link>
+        {/* ── AUJOURD'HUI — l'anneau par matière ─────────────────────── */}
+        <Section variant="panel" index={2} title="Aujourd'hui" bodyClassName="flex flex-col items-center">
+          <SegmentRing
+            arcs={arcs}
+            size={RING_SIZE}
+            strokeWidth={RING_STROKE}
+            label={`Objectif du jour : ${objective.workedMinutes} minutes sur ${objective.goalMinutes}${
+              todayParts.length > 0 ? `, dont ${todayParts.map((part) => `${part.subject} ${formatSpan(part.seconds)}`).join(", ")}` : ""
+            }.`}
+          >
+            <div>
+              <p className="t-figure-lg tabular">{workedCount}</p>
+              <p className="t-meta mt-1 font-semibold">/ {objective.goalMinutes} min</p>
+              {objective.met && <p className="mt-1 text-2xs font-bold text-emerald-300">Objectif atteint</p>}
+            </div>
+          </SegmentRing>
+          {todayParts.length > 0 ? (
+            <ul className="mt-5 flex w-full flex-wrap justify-center gap-x-4 gap-y-2">
+              {todayParts.map((part) => (
+                <li key={part.subject} className="flex items-center gap-1.5 text-[0.8125rem]">
+                  <span aria-hidden className={cn("h-2.5 w-2.5 rounded-full", subjectMeta[part.subject].solid)} />
+                  <span className="font-semibold text-ink">{part.subject}</span>
+                  <span className="tabular text-muted">{formatSpan(part.seconds)}</span>
                 </li>
               ))}
-            </List>
+            </ul>
+          ) : (
+            <p className="t-meta mt-5 text-center">Rien de noté aujourd&apos;hui. Chaque séance ou saisie colore l&apos;anneau.</p>
+          )}
+        </Section>
+
+        {/* ── NOTER DU TEMPS — juste à côté de l'anneau, qui bouge sous les
+            yeux à chaque saisie. Voir components/work/quick-log.tsx. */}
+        <Section variant="panel" index={3} title="Noter du temps" description="Anki, relecture de cours… ce que le chrono n'a pas vu.">
+          <QuickLog sessions={sessions} saveSessions={saveSessions} removeSession={removeSession} ready={ready} />
+        </Section>
+
+        {/* ── LA SEMAINE — sept colonnes empilées par matière ────────── */}
+        <Section
+          variant="panel"
+          index={4}
+          className="lg:col-span-2"
+          title="Ta semaine"
+          action={
+            <p className="text-right max-sm:text-left">
+              <span className="t-figure-md tabular">{formatSpan(weekCount * 60)}</span>
+              <span className="t-meta ml-2 font-semibold">{weeklySummary.progressPercent} % de l&apos;objectif</span>
+            </p>
+          }
+          bodyClassName="flex flex-col"
+        >
+          <StackedColumns columns={weekColumns} ariaLabel={weekAria} formatValue={(value) => formatSpan(value)} className="mt-2" />
+          {weekSubjects.length > 0 && (
+            <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-2" aria-hidden>
+              {weekSubjects.map((subject) => (
+                <li key={subject} className="flex items-center gap-1.5 text-2xs font-semibold text-muted">
+                  <span className={cn("h-2 w-2 rounded-full", subjectMeta[subject].solid)} />
+                  {subject}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+
+        {/* ── BUDGETS PAR MATIÈRE — le budget fixé dans Réglages, face au
+            temps noté. Absent quand aucune matière n'a de budget. */}
+        {subjectTargets.length > 0 && (
+          <Section
+            variant="panel"
+            index={5}
+            className="lg:col-span-2"
+            title="Cette semaine par matière"
+            action={
+              <Link href="/settings" className="t-meta inline-flex min-h-8 items-center gap-1 rounded-full font-semibold hover:text-ink max-lg:min-h-11">
+                Régler <ChevronRight size={14} />
+              </Link>
+            }
+          >
+            <SubjectTargetList rows={subjectTargets} size="comfortable" />
           </Section>
-        ) : (
-          subjects.length > 0 && (
-            /*
-             * PAS UNE VITRINE DE LA BANQUE.
-             *
-             * Ce bloc annonçait « La banque entière, rangée par chapitre » et
-             * listait « 321 exercices · 7 % maîtrisés » par matière : sur
-             * l'écran le plus consulté du produit, un inventaire. Il mène
-             * désormais au SUIVI de la matière, et ne montre que
-             * l'avancement — un pourcentage, pas un stock de fiches.
-             */
-            <Section label="Explorer" title="Ou entre par une matière" description="Où tu en es, matière par matière.">
-              <List>
-                {subjects.map((entry) => (
-                  <li key={entry.subject}>
-                    <Link href={`/preparation?subject=${encodeURIComponent(entry.subject)}`} className={rowInteractive}>
-                      <SubjectAvatar subject={entry.subject} size="sm" />
-                      <div className="min-w-0 flex-1">
-                        <p className="t-subhead truncate">{entry.subject}</p>
-                        <p className="t-meta mt-0.5">
-                          {entry.completionRate > 0 ? `${entry.completionRate} % acquis` : "Pas encore mesuré"}
-                        </p>
-                      </div>
-                      <ChevronRight size={15} className="shrink-0 text-subtle" />
-                    </Link>
-                  </li>
-                ))}
-              </List>
-            </Section>
-          )
         )}
 
-        {/* ── À REVOIR ──────────────────────────────────────────────
-            Dans la colonne principale et non dans le rail : c'est une
-            SAISIE, et le rail est fait pour être lu. Sous la séance et
-            « Reprendre », parce que noter ce qu'il faut revoir vient après
-            avoir travaillé, pas avant. Six lignes au plus : au-delà,
-            l'accueil deviendrait le carnet, et le carnet a sa page. */}
+        {/* ── PLANNING DU JOUR ET ÉCHÉANCES ─────────────────────────────
+            Ce qui est prévu face à ce que la journée peut absorber, puis les
+            échéances qui appellent une décision. Les deux signaux restent
+            distincts : « en retard » est un fait, « ne tient pas » une
+            projection. */}
+        {(hasTodayPlan || watchList.length > 0) && (
+          <Section variant="panel" index={6} title="Planning">
+            {hasTodayPlan && (
+              <div>
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="t-label">Prévu aujourd&apos;hui</p>
+                  <p className="tabular t-meta shrink-0 whitespace-nowrap">
+                    <span className="font-bold text-ink">{formatSpan(today.load.plannedMinutes * 60)}</span> / {formatSpan(today.load.capacityMinutes * 60)}
+                  </p>
+                </div>
+                <ul className="mt-2 divide-y divide-line">
+                  {today.slots.map((slot) => (
+                    <li key={slot.workItemId} className="flex items-baseline gap-3 py-2">
+                      <span className="min-w-0 flex-1 truncate text-sm text-ink">
+                        {slot.title}
+                        <span className="text-subtle"> · {WORK_ITEM_KIND_META[slot.kind].short}</span>
+                      </span>
+                      <span className="tabular shrink-0 whitespace-nowrap text-[0.8125rem] font-semibold text-muted">{formatSpan(slot.minutes * 60)}</span>
+                    </li>
+                  ))}
+                </ul>
+                {(today.load.status === "surchargé" || today.load.status === "intenable") && (
+                  <p className={cn("t-meta mt-1.5", today.load.status === "intenable" ? "text-rose-300" : "text-amber-300")}>
+                    {LOAD_STATUS_META[today.load.status].label} — {describeTodayLoad(today.load.overflowMinutes, today.load.status)}
+                  </p>
+                )}
+              </div>
+            )}
+            {watchList.length > 0 && (
+              <div className={cn(hasTodayPlan && "mt-5")}>
+                <p className="t-label mb-1">À surveiller</p>
+                <ul className="divide-y divide-line">
+                  {watchList.map((priority) => (
+                    <li key={priority.item.id}>
+                      <Link href="/echeances" className="row-hover -mx-2 block rounded-xl px-2 py-2.5 max-lg:min-h-11">
+                        <span className="flex items-baseline gap-2">
+                          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{priority.item.title}</span>
+                          <span className="tabular shrink-0 whitespace-nowrap text-[0.8125rem] text-muted">{formatSpan(priority.remainingMinutes * 60)}</span>
+                        </span>
+                        <span className={cn("mt-0.5 block truncate text-[0.8125rem]", priority.overdue || priority.feasibility.level === "non casable" ? "text-rose-300" : "text-amber-300")}>
+                          {priority.overdue
+                            ? "En retard"
+                            : priority.feasibility.level === "non casable"
+                              ? "Ne tient plus dans tes journées"
+                              : priority.daysUntilDue === 0
+                                ? "À rendre aujourd'hui"
+                                : priority.daysUntilDue === 1
+                                  ? "À rendre demain"
+                                  : `Dans ${priority.daysUntilDue} jours`}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </Section>
+        )}
+
+        {/* ── À REVOIR — une SAISIE, d'où sa place dans la colonne large.
+            Six lignes au plus : au-delà, l'accueil deviendrait le carnet, et
+            le carnet a sa page. */}
         <Section
+          variant="panel"
+          index={7}
+          className="lg:col-span-2"
           label="À revoir"
           title="Ce qu'il faut reprendre"
           action={
-            <Link href="/revoir" className="t-meta inline-flex min-h-6 items-center gap-1 rounded hover:text-ink max-lg:min-h-11">
+            <Link href="/revoir" className="t-meta inline-flex min-h-8 items-center gap-1 rounded-full font-semibold hover:text-ink max-lg:min-h-11">
               Le carnet <ChevronRight size={14} />
             </Link>
           }
@@ -663,25 +598,69 @@ export function DashboardOverview() {
           />
         </Section>
 
+        {/* ── REPRENDRE — ce sur quoi on travaillait. Au tout début, il n'y a
+            rien à reprendre : on propose alors d'entrer par une matière. */}
+        {resume.length > 0 ? (
+          <Section variant="panel" index={8} label="Reprendre" title="Ce que tu travaillais">
+            <List className="-mx-2">
+              {resume.map(({ exercise, at }) => (
+                <li key={exercise.id}>
+                  <Link href={`/exercises?focus=${exercise.id}`} className={rowInteractive}>
+                    <SubjectAvatar subject={exercise.subject} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-ink">
+                        <MathInline text={exercise.title} />
+                      </p>
+                      <p className="t-meta mt-0.5 truncate">
+                        {exercise.subject} · {relativeDay(at)}
+                      </p>
+                    </div>
+                    <ChevronRight size={15} className="shrink-0 text-subtle" />
+                  </Link>
+                </li>
+              ))}
+            </List>
+          </Section>
+        ) : (
+          subjects.length > 0 && (
+            /* PAS UNE VITRINE DE LA BANQUE : mène au SUIVI de la matière, et
+               ne montre que l'avancement — un pourcentage, pas un stock. */
+            <Section variant="panel" index={8} label="Explorer" title="Entre par une matière">
+              <List className="-mx-2">
+                {subjects.map((entry) => (
+                  <li key={entry.subject}>
+                    <Link href={`/preparation?subject=${encodeURIComponent(entry.subject)}`} className={rowInteractive}>
+                      <SubjectAvatar subject={entry.subject} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <p className="t-subhead truncate">{entry.subject}</p>
+                        <p className="t-meta mt-0.5">{entry.completionRate > 0 ? `${entry.completionRate} % acquis` : "Pas encore mesuré"}</p>
+                      </div>
+                      <ChevronRight size={15} className="shrink-0 text-subtle" />
+                    </Link>
+                  </li>
+                ))}
+              </List>
+            </Section>
+          )
+        )}
+
         {/* ── À CONSOLIDER ──────────────────────────────────────────── */}
         {toConsolidate.length > 0 && (
           <Section
+            variant="panel"
+            index={9}
+            className="lg:col-span-2"
             label="À consolider"
             title="Ces chapitres appellent du travail"
             description="Classés par urgence réelle, chacun justifié par tes tentatives datées."
           >
-            <List>
+            <List className="-mx-2">
               {toConsolidate.map(({ chapter, averageMastery, reasons, href, evidence }, index) => (
                 <li key={chapter.id}>
                   <Link href={href} className={rowInteractive}>
-                    {/* Le RANG, écrit.
-                        La section annonce « classés par urgence réelle », mais
-                        les maîtrises voisines (0 %, 3 %, 3 %, 4 %) ne
-                        laissaient rien voir de ce classement : cinq lignes
-                        d'apparence interchangeable. Le numéro dit ce que
-                        l'ordre veut dire, exactement comme la liste des
-                        priorités de l'écran Progression. */}
-                    <span className="t-figure w-4 shrink-0 text-right text-sm text-subtle">{index + 1}</span>
+                    {/* Le RANG, écrit : les maîtrises voisines (0 %, 3 %, 4 %)
+                        ne laissent rien voir du classement annoncé. */}
+                    <span className="t-figure w-5 shrink-0 text-right text-sm text-subtle">{index + 1}</span>
                     <div className="min-w-0 flex-1">
                       <p className="t-subhead truncate">{chapter.label}</p>
                       <p className="t-meta mt-0.5 truncate">
@@ -694,9 +673,8 @@ export function DashboardOverview() {
                         )}
                       </p>
                     </div>
-                    {/* La maîtrise est un CHIFFRE, pas une barre : sur cinq
-                        lignes, cinq barres de longueurs voisines se comparent
-                        moins bien que cinq nombres alignés. */}
+                    {/* La maîtrise est un CHIFFRE, pas une barre : cinq nombres
+                        alignés se comparent mieux que cinq barres voisines. */}
                     <span
                       className={cn(
                         "t-figure tabular shrink-0 text-base",
@@ -704,7 +682,7 @@ export function DashboardOverview() {
                       )}
                     >
                       {averageMastery}
-                      <span className="text-xs font-normal text-subtle"> %</span>
+                      <span className="text-xs font-semibold text-subtle"> %</span>
                     </span>
                     <ChevronRight size={15} className="shrink-0 text-subtle" />
                   </Link>
@@ -713,13 +691,110 @@ export function DashboardOverview() {
             </List>
           </Section>
         )}
+
+        {/* ── AUSSI SIGNALÉ — des signaux à surveiller, pas des choses à
+            faire maintenant : jamais au rang de la séance. */}
+        {(secondaryPicks.length > 0 || otherSignals.length > 0) && (
+          <Section variant="panel" index={10} title="Aussi signalé">
+            <ul className="-mx-2 divide-y divide-line">
+              {secondaryPicks.map(({ exercise, reasons }) => (
+                <li key={exercise.id}>
+                  <Link href={`/exercises?focus=${exercise.id}`} className="row-hover flex items-center gap-2.5 rounded-xl px-2 py-2.5 max-lg:min-h-11">
+                    <SubjectAvatar subject={exercise.subject} size="sm" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-ink">
+                        <MathInline text={exercise.title} />
+                      </span>
+                      <span className="t-meta mt-0.5 block truncate text-[0.8125rem]">{reasons.slice(0, 1).join(" · ")}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+              {otherSignals.map((item) => (
+                <li key={item.key}>
+                  <Link href={item.href} className="row-hover block rounded-xl px-2 py-2.5 max-lg:min-h-11">
+                    <span className="block truncate text-sm font-semibold text-ink">{item.label}</span>
+                    <span className="t-meta mt-0.5 block truncate text-[0.8125rem]">{item.detail}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
       </div>
-    </Split>
+
+      {/* Le rappel de sauvegarde est une CORVÉE, pas une décision : il reste
+          aussi visible, mais APRÈS ce qu'on est venu chercher. */}
+      <BackupReminder />
+
+      <nav aria-label="Aller plus loin" className="flex flex-wrap gap-2">
+        {[
+          { href: "/echeances", label: "Mes échéances", icon: CalendarClock },
+          { href: "/preparation", label: "Suivi par matière", icon: LayoutList },
+          { href: "/progress", label: "Ma progression", icon: LineChart },
+        ].map(({ href, label, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className="press inline-flex min-h-10 items-center gap-2 rounded-full border border-line px-4 text-sm font-bold text-muted transition-colors hover:border-hairline/[0.14] hover:text-ink max-lg:min-h-11"
+          >
+            <Icon size={15} aria-hidden /> {label}
+          </Link>
+        ))}
+      </nav>
+    </div>
   );
 }
 
 /** Au-delà, l'accueil deviendrait le carnet — le reste vit sur /revoir. */
 const REVIEW_ITEMS_ON_DASHBOARD = 6;
+
+/**
+ * « MAINTENANT » — le premier bloc de la séance, composé comme la réponse :
+ * un encart en creux, le titre en gras, la durée en grand chiffre à droite.
+ * Quand le créneau porte une matière, sa pastille le signe.
+ */
+function NowBlock({
+  title,
+  meta,
+  figure,
+  subject,
+}: {
+  title: React.ReactNode;
+  meta: React.ReactNode;
+  figure: string;
+  subject?: (typeof allSubjects)[number];
+}) {
+  return (
+    <div className="well flex items-center gap-4 p-4 sm:p-5">
+      {subject && <SubjectAvatar subject={subject} />}
+      <div className="min-w-0 flex-1">
+        <p className="text-2xs font-bold text-accent">Maintenant</p>
+        <p className="t-heading mt-0.5">{title}</p>
+        <p className="t-meta mt-1">{meta}</p>
+      </div>
+      <span className="t-figure-sm tabular shrink-0 whitespace-nowrap">{figure}</span>
+    </div>
+  );
+}
+
+/** « PUIS » — la suite de la séance, en retrait : une liste, pas des blocs de même poids. */
+function ThenList({ items }: { items: { key: string; title: string; meta: string; figure: string }[] }) {
+  return (
+    <ol className="mt-4 space-y-1">
+      <li className="t-label px-1">Puis</li>
+      {items.map((item) => (
+        <li key={item.key} className="flex items-baseline gap-3 rounded-xl px-1 py-1.5">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-ink">{item.title}</p>
+            <p className="t-meta mt-0.5 truncate text-[0.8125rem]">{item.meta}</p>
+          </div>
+          <span className="tabular shrink-0 whitespace-nowrap text-sm font-bold text-muted">{item.figure}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 /** « aujourd'hui » / « hier » / « il y a 4 jours » — jamais une date brute pour du travail récent. */
 function relativeDay(iso: string): string {
@@ -727,32 +802,6 @@ function relativeDay(iso: string): string {
   if (days <= 0) return "aujourd'hui";
   if (days === 1) return "hier";
   return `il y a ${days} jours`;
-}
-
-/** Chiffre du rail — étiquette, valeur, précision. Une ligne, séparée par un filet. */
-function RailFigure({
-  label,
-  value,
-  detail,
-  icon,
-}: {
-  label: string;
-  value: string;
-  detail?: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-3 py-3">
-      <div className="min-w-0">
-        <dt className="t-label">{label}</dt>
-        {detail && <dd className="t-meta mt-0.5 text-2xs">{detail}</dd>}
-      </div>
-      <dd className="t-figure-sm flex shrink-0 items-center gap-1.5">
-        {icon}
-        {value}
-      </dd>
-    </div>
-  );
 }
 
 /** Phrase d'alerte de la journée — toujours avec son chiffre, jamais un mot seul. */

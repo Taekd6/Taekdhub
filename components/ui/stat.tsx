@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
  * Volontairement SANS cadre, sans icône et sans fond. Un « stat card » avec
  * son icône dans un carré arrondi est le signe distinctif du tableau de bord
  * générique ; quatre d'entre eux alignés occupent un écran entier pour dire
- * quatre nombres. Ici, le chiffre est composé en serif à taille réelle et
+ * quatre nombres. Ici, le chiffre est composé en gras tabulaire, en grand, et
  * séparé de son voisin par un simple filet vertical : la donnée est
  * l'élément, pas son emballage.
  */

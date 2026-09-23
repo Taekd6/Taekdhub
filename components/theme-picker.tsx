@@ -22,7 +22,7 @@ export function ThemePicker() {
   const { preferences, savePreferences, ready } = usePrepahubData();
   const accent = ready && hexToRgb(preferences.accent) ? preferences.accent : DEFAULT_ACCENT;
   const isPreset = ACCENT_PRESETS.some((preset) => sameHex(preset.hex, accent));
-  const mode = ready ? preferences.themeMode : "system";
+  const mode = ready ? preferences.themeMode : "dark";
 
   // `usePrepahubData` n'est pas un contexte partagé : chaque composant monté a
   // sa propre instance, et `preferences` n'est donc qu'un INSTANTANÉ pris au
@@ -50,7 +50,7 @@ export function ThemePicker() {
       variant="panel"
       label="Apparence"
       title="Comment TaekdHub s'affiche"
-      description="Le mode suit ton système par défaut ; la couleur d'accent s'applique instantanément à toute l'interface."
+      description="Sombre par défaut ; la couleur d'accent s'applique instantanément à toute l'interface."
       className="max-w-2xl"
     >
       <div>
@@ -67,8 +67,8 @@ export function ThemePicker() {
                 onClick={() => chooseMode(option)}
                 aria-pressed={active}
                 className={cn(
-                  "flex min-h-9 items-center gap-2 rounded-lg border px-3.5 text-sm font-medium transition-colors max-lg:min-h-11",
-                  active ? "border-accent/40 bg-accent/10 text-accent" : "border-line text-muted hover:text-ink"
+                  "press flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-bold transition-colors max-lg:min-h-11",
+                  active ? "border-accent/50 bg-accent/[0.1] text-accent" : "border-line text-muted hover:text-ink"
                 )}
               >
                 <Icon size={15} /> {meta.label}
@@ -111,8 +111,8 @@ export function ThemePicker() {
               className="focus-ring flex flex-col items-center gap-1.5 rounded-lg p-1"
             >
               <span
-                className="grid h-10 w-10 place-items-center rounded-xl border-2 transition-transform hover:scale-105"
-                style={{ background: preset.hex, borderColor: active ? "rgba(255,255,255,0.55)" : "transparent" }}
+                className={cn("grid h-11 w-11 place-items-center rounded-full ring-offset-2 ring-offset-canvas transition-transform hover:scale-105", active && "ring-2 ring-ink/70")}
+                style={{ background: preset.hex }}
               >
                 {active && <Check size={16} style={{ color: accentForegroundCss(preset.hex) }} />}
               </span>
@@ -123,8 +123,7 @@ export function ThemePicker() {
 
         <label className="focus-ring flex flex-col items-center gap-1.5 rounded-lg p-1">
           <span
-            className="grid h-10 w-10 cursor-pointer place-items-center overflow-hidden rounded-xl border-2"
-            style={{ borderColor: !isPreset ? "rgba(255,255,255,0.55)" : "transparent" }}
+            className={cn("grid h-11 w-11 cursor-pointer place-items-center overflow-hidden rounded-full ring-offset-2 ring-offset-canvas", !isPreset && "ring-2 ring-ink/70")}
           >
             <input
               type="color"

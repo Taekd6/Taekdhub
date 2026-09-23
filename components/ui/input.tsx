@@ -10,10 +10,10 @@ import { cn } from "@/lib/cn";
  * réapparaît qu'au survol et au focus, là où il sert vraiment.
  */
 const fieldBase =
-  "w-full rounded-lg border border-transparent bg-inset px-3 text-sm text-ink transition-colors placeholder:text-subtle hover:border-line focus:border-transparent";
+  "w-full rounded-lg border border-transparent bg-inset px-3.5 text-sm text-ink transition-colors placeholder:text-subtle hover:border-line focus:border-accent/40";
 
 export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn(fieldBase, "min-h-9 py-2 max-lg:min-h-11", className)} {...props} />;
+  return <input className={cn(fieldBase, "min-h-10 py-2 max-lg:min-h-11", className)} {...props} />;
 }
 
 export function Textarea({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
@@ -49,10 +49,10 @@ export function Select({
 }) {
   return (
     <span className={cn("relative inline-flex w-full items-center", wrapperClassName)}>
-      <select className={cn(fieldBase, "min-h-9 appearance-none py-2 pr-8 max-lg:min-h-11", className)} {...props}>
+      <select className={cn(fieldBase, "min-h-10 appearance-none py-2 pr-9 max-lg:min-h-11", className)} {...props}>
         {children}
       </select>
-      <ChevronDown size={14} aria-hidden className="pointer-events-none absolute right-2.5 text-subtle" />
+      <ChevronDown size={14} aria-hidden className="pointer-events-none absolute right-3 text-subtle" />
     </span>
   );
 }

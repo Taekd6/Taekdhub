@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildBackupPayload, lastStorageWriteFailure, localData, normalizePreferences, normalizeSession, normalizeWorkItem, restoreBackup, validateBackupPayload } from "@/lib/storage";
-import { hexToRgb } from "@/lib/theme";
+import { DEFAULT_ACCENT, hexToRgb } from "@/lib/theme";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -143,9 +143,9 @@ describe("export → JSON → import — round-trip complet (Phase 7)", () => {
  * valeur incohérente à `applyThemeMode` (lib/theme.ts).
  */
 describe("normalizePreferences — thème et rétrocompatibilité", () => {
-  it("une préférence vide retombe entièrement sur les défauts (dont themeMode: \"system\")", () => {
+  it("une préférence vide retombe entièrement sur les défauts (dont themeMode: \"dark\", défaut « Nuit »)", () => {
     const prefs = normalizePreferences({});
-    expect(prefs.themeMode).toBe("system");
+    expect(prefs.themeMode).toBe("dark");
     expect(prefs.weeklyGoalMinutes).toBe(300);
     expect(prefs.accent).toMatch(/^#/);
   });
@@ -155,10 +155,14 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     expect(normalizePreferences({ themeMode: "dark" }).themeMode).toBe("dark");
   });
 
-  it("retombe sur \"system\" pour un themeMode invalide ou corrompu", () => {
-    expect(normalizePreferences({ themeMode: "bleu" }).themeMode).toBe("system");
-    expect(normalizePreferences({ themeMode: 42 }).themeMode).toBe("system");
-    expect(normalizePreferences({ themeMode: null }).themeMode).toBe("system");
+  it("retombe sur le défaut (sombre) pour un themeMode invalide ou corrompu", () => {
+    expect(normalizePreferences({ themeMode: "bleu" }).themeMode).toBe("dark");
+    expect(normalizePreferences({ themeMode: 42 }).themeMode).toBe("dark");
+    expect(normalizePreferences({ themeMode: null }).themeMode).toBe("dark");
+  });
+
+  it("conserve un choix explicite \"system\"", () => {
+    expect(normalizePreferences({ themeMode: "system" }).themeMode).toBe("system");
   });
 
   it("une ancienne sauvegarde sans themeMode ni weeklyGoalMinutes reste valide et n'invente rien d'autre", () => {
@@ -167,7 +171,7 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     expect(prefs.displayName).toBe("Ancien utilisateur");
     expect(prefs.dailyGoalMinutes).toBe(120);
     expect(prefs.accent).toBe("#6366f1");
-    expect(prefs.themeMode).toBe("system");
+    expect(prefs.themeMode).toBe("dark");
     expect(prefs.weeklyGoalMinutes).toBe(300);
   });
 });
@@ -620,6 +624,46 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     expect(prefs.weeklySubjectTargets).toEqual(exported.weeklySubjectTargets);
     expect(prefs.weeklySubjectTargets.Anglais).toBe(0);
   });
+
+  it("la palette et les couleurs de matière font l'aller-retour export → fichier → restauration", () => {
+    const exported = normalizePreferences({ subjectPalette: "ocean", subjectColors: { Chimie: "#ff8800" } });
+    const file = JSON.parse(JSON.stringify(backup({ preferences: exported })));
+    const prefs = withQuotaStorage({}, 1_000_000, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.preferences();
+    });
+    expect(prefs.subjectPalette).toBe("ocean");
+    expect(prefs.subjectColors).toEqual({ Chimie: "#ff8800" });
+  });
+});
+
+describe("normalizePreferences — couleurs de matière (refonte « Nuit »)", () => {
+  it("une préférence antérieure reçoit la palette Néon, sans surcharge", () => {
+    const prefs = normalizePreferences({ displayName: "Ancien", accent: "#6366f1" });
+    expect(prefs.subjectPalette).toBe("neon");
+    expect(prefs.subjectColors).toEqual({});
+  });
+
+  it("une palette inconnue retombe sur Néon", () => {
+    expect(normalizePreferences({ subjectPalette: "fluo" }).subjectPalette).toBe("neon");
+    expect(normalizePreferences({ subjectPalette: 3 }).subjectPalette).toBe("neon");
+  });
+
+  it("seules les surcharges valides de matières connues survivent", () => {
+    const prefs = normalizePreferences({ subjectColors: { Chimie: "#FF8800", Physique: "bleu", Latin: "#000000" } });
+    expect(prefs.subjectColors).toEqual({ Chimie: "#ff8800" });
+  });
+
+  it("des surcharges qui ne sont pas un objet donnent {}", () => {
+    expect(normalizePreferences({ subjectColors: "violet" }).subjectColors).toEqual({});
+    expect(normalizePreferences({ subjectColors: null }).subjectColors).toEqual({});
+  });
+
+  it("l'ancien accent par défaut (« Miel ») migre vers le nouveau, un vrai choix est conservé", () => {
+    expect(normalizePreferences({ accent: "#e0a758" }).accent).toBe(DEFAULT_ACCENT);
+    expect(normalizePreferences({ accent: "#E0A758" }).accent).toBe(DEFAULT_ACCENT);
+    expect(normalizePreferences({ accent: "#d4f36b" }).accent).toBe("#d4f36b");
+  });
 });
 
 describe("normalizePreferences — frontière de trust réelle, pas trois champs sur huit", () => {
@@ -668,6 +712,8 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
         "dailyGoalMinutes",
         "displayName",
         "planningMarginPercent",
+        "subjectColors",
+        "subjectPalette",
         "themeMode",
         "weeklyGoalMinutes",
         "weeklySubjectTargets",

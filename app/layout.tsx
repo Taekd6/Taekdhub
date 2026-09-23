@@ -1,68 +1,69 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Instrument_Sans } from "next/font/google";
+import { Newsreader, Nunito } from "next/font/google";
 import { ThemeSync } from "@/components/theme-sync";
 import { ServiceWorker } from "@/components/service-worker";
+import { DEEP_MAX_LUMINANCE, INK_MAX_LUMINANCE, LEGACY_DEFAULT_ACCENTS } from "@/lib/theme";
+import {
+  DEEP_MAX_LUMINANCE as SUBJECT_DEEP_MAX_LUMINANCE,
+  SOFT_MAX_LUMINANCE as SUBJECT_SOFT_MAX_LUMINANCE,
+  SUBJECT_KEYS,
+  SUBJECT_PALETTES,
+} from "@/lib/subject-colors";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 
 /**
- * Applique l'accent ET le mode d'apparence persistés AVANT l'hydratation
- * React, pour éviter un flash (accent par défaut, ou thème sombre par défaut
- * chez qui a choisi "clair") — même principe pour les deux : petit script
- * inline (ne peut pas importer de module, voir lib/theme.ts pour la version
- * "propre"), `ThemeSync` prend le relais après hydratation.
+ * SCRIPT ANTI-FLASH — applique l'accent, le mode d'apparence ET les couleurs
+ * de matière persistés AVANT l'hydratation React. Sans lui, chaque page
+ * s'afficherait d'abord avec les valeurs par défaut, puis « sauterait » vers
+ * celles de l'élève. `ThemeSync` prend le relais après hydratation.
  *
- * Calcule aussi `--accent-ink-base-rgb` (encre) et `--accent-deep-base-rgb`
- * (aplat du bouton principal en thème clair) — mêmes formules que
- * `accentInk`/`accentDeep` (lib/theme.ts),
- * dupliquée ici pour la même raison que le reste de ce script : il ne peut
- * pas importer de module.
+ * Un script inline ne peut pas importer de module : les FORMULES
+ * (assombrissement par mise à l'échelle des canaux, choix noir/blanc) sont
+ * donc dupliquées de lib/theme.ts et lib/subject-colors.ts. Les DONNÉES, en
+ * revanche — palettes, clés de matière, seuils de luminance, anciens
+ * accents par défaut — sont injectées depuis ces modules au moment du rendu
+ * serveur : elles ne peuvent pas diverger.
  *
- * Mode : "light"/"dark" pose `data-theme` sur `<html>` ; "system" (ou
- * préférence absente/invalide) ne pose rien — voir app/globals.css, qui
- * laisse alors `prefers-color-scheme` décider. C'est la même règle que
- * `applyThemeMode` (lib/theme.ts), dupliquée ici pour la même raison que
- * l'accent ci-dessus.
+ * Mode : "light" / "dark" / "system" est écrit tel quel dans `data-theme`
+ * (lib/theme.ts#applyThemeMode) ; une préférence absente ou invalide pose
+ * "dark", le défaut du produit — que app/globals.css applique d'ailleurs
+ * aussi sans attribut.
  */
-const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('prepahub:preferences');if(!raw)return;var prefs=JSON.parse(raw);var accent=prefs.accent;if(/^#?[0-9a-fA-F]{6}$/.test(accent||'')){var hex=accent.replace('#','');var r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);var lin=function(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);};var L=function(rr,gg,bb){return 0.2126*lin(rr)+0.7152*lin(gg)+0.0722*lin(bb);};var lum=L(r,g,b);var fg=lum>Math.sqrt(1.05*0.05)-0.05?'0 0 0':'255 255 255';var root=document.documentElement.style;root.setProperty('--accent-rgb',r+' '+g+' '+b);root.setProperty('--accent-fg-rgb',fg);var dk=function(t){var lo=0,hi=1;if(lum<=t)return[r,g,b];for(var i=0;i<24;i++){var m=(lo+hi)/2;if(L(r*m,g*m,b*m)>t){hi=m;}else{lo=m;}}return[Math.round(r*lo),Math.round(g*lo),Math.round(b*lo)];};root.setProperty('--accent-ink-base-rgb',dk(0.163).join(' '));root.setProperty('--accent-deep-base-rgb',dk(0.045).join(' '));}var mode=prefs.themeMode;if(mode==='light'||mode==='dark'){document.documentElement.setAttribute('data-theme',mode);}}catch(e){}})();`;
+const PALETTE_DATA = JSON.stringify(Object.fromEntries(SUBJECT_PALETTES.map((palette) => [palette.id, palette.colors])));
+const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement,st=d.style;var raw=localStorage.getItem('prepahub:preferences');var prefs={};if(raw){try{prefs=JSON.parse(raw)||{};}catch(e){prefs={};}}
+var hexRe=/^#?[0-9a-fA-F]{6}$/;var rgbOf=function(h){h=String(h).trim().replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
+var lin=function(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);};var L=function(c){return 0.2126*lin(c[0])+0.7152*lin(c[1])+0.0722*lin(c[2]);};
+var dk=function(c,t){if(L(c)<=t)return c;var lo=0,hi=1;for(var i=0;i<24;i++){var m=(lo+hi)/2;if(L([c[0]*m,c[1]*m,c[2]*m])>t){hi=m;}else{lo=m;}}return[Math.round(c[0]*lo),Math.round(c[1]*lo),Math.round(c[2]*lo)];};
+var legacy=${JSON.stringify(LEGACY_DEFAULT_ACCENTS)};var accent=prefs.accent;
+if(typeof accent==='string'&&hexRe.test(accent.trim())&&legacy.indexOf(accent.trim().toLowerCase())<0){var a=rgbOf(accent);var fg=L(a)>Math.sqrt(1.05*0.05)-0.05?'0 0 0':'255 255 255';st.setProperty('--accent-rgb',a.join(' '));st.setProperty('--accent-fg-rgb',fg);st.setProperty('--accent-ink-base-rgb',dk(a,${INK_MAX_LUMINANCE}).join(' '));st.setProperty('--accent-deep-base-rgb',dk(a,${DEEP_MAX_LUMINANCE}).join(' '));}
+var mode=prefs.themeMode;d.setAttribute('data-theme',(mode==='light'||mode==='dark'||mode==='system')?mode:'dark');
+var P=${PALETTE_DATA},K=${JSON.stringify(SUBJECT_KEYS)};var pal=P[prefs.subjectPalette]||P.neon;var ov=(prefs.subjectColors&&typeof prefs.subjectColors==='object')?prefs.subjectColors:{};
+for(var s in K){var hex=(typeof ov[s]==='string'&&hexRe.test(ov[s].trim()))?ov[s]:pal[s];var c=rgbOf(hex);st.setProperty('--subj-'+K[s]+'-raw',c.join(' '));st.setProperty('--subj-'+K[s]+'-soft',dk(c,${SUBJECT_SOFT_MAX_LUMINANCE}).join(' '));st.setProperty('--subj-'+K[s]+'-deep',dk(c,${SUBJECT_DEEP_MAX_LUMINANCE}).join(' '));}
+}catch(e){}})();`;
 
 /**
- * DEUX FAMILLES, DEUX RÔLES — voir l'en-tête d'app/globals.css.
+ * DEUX FAMILLES, DEUX RÔLES TRÈS INÉGAUX — voir l'en-tête d'app/globals.css.
  *
- * `Instrument Sans` porte le CHROME (navigation, contrôles, métadonnées).
- * Il remplace Inter pour deux raisons mesurables : une hauteur d'x plus
- * grande (0,74 em contre 0,727), donc un texte qui paraît plus gros à taille
- * égale — et une construction moins neutre, qui sort l'interface du gris des
- * outils de productivité sans jamais gêner la lecture d'une étiquette.
+ * `Nunito` porte TOUTE l'interface : navigation, contrôles, titres, grands
+ * nombres. Ronde et charnue, choisie par l'élève sur maquette (« Nuit ») ;
+ * variable, donc un seul fichier couvre de 400 à 900. Ses chiffres
+ * tabulaires (`tnum`) alignent les durées en colonne.
  *
- * `Fraunces` porte le CONTENU (titres, énoncés, corrections, grands nombres).
- * C'est un serif à TAILLE OPTIQUE VARIABLE : l'axe `opsz` change réellement
- * le dessin de la lettre selon le corps. Une seule famille tient donc les
- * deux registres que la page demande — un titre à 48 px très contrasté,
- * presque d'affiche, et un énoncé à 19 px robuste et calme — là où il aurait
- * fallu deux fichiers de police. Seul cet axe est chargé —
- * voir la note sur les axes écartés juste en dessous.
- *
- * Les deux familles sont variables : un seul fichier par famille couvre
- * toutes les graisses réellement utilisées.
+ * `Newsreader` ne sert qu'à la colonne de LECTURE d'un énoncé (`.t-read`) :
+ * les formules KaTeX y sont en serif, et un texte rond autour d'elles
+ * changerait de dessin à chaque symbole. Seul l'axe `opsz` est chargé.
  */
-const sans = Instrument_Sans({
+const sans = Nunito({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans",
 });
 
-const serif = Fraunces({
+const serif = Newsreader({
   subsets: ["latin"],
   display: "swap",
   style: ["normal", "italic"],
-  // SEUL `opsz` est chargé, et c'est l'axe qui justifie tout le choix (voir
-  // ci-dessus). Les axes décoratifs de Fraunces ont été écartés après mesure
-  // au build : `SOFT` (arrondi des terminaisons) doublait à lui seul le poids
-  // des fichiers de police — 460 ko contre 250 ko — pour un adoucissement
-  // qu'on ne distingue qu'en comparant deux captures côte à côte. `WONK`
-  // (formes alternatives fantaisistes) n'a jamais été chargé : de la
-  // personnalité, pas des pitreries dans un énoncé de mathématiques.
   axes: ["opsz"],
   variable: "--font-serif",
 });
@@ -105,12 +106,10 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   // Doit correspondre à `--canvas-rgb` (app/globals.css) : c'est la couleur
-  // que le navigateur mobile étend derrière la barre d'état. Un écart, même
-  // faible, dessine une bande au-dessus de la page.
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf9f6" },
-    { media: "(prefers-color-scheme: dark)", color: "#12110f" },
-  ],
+  // que le navigateur mobile étend derrière la barre d'état. Le thème étant
+  // sombre PAR DÉFAUT quel que soit le système, une seule valeur : celle du
+  // fond nuit.
+  themeColor: "#0b0c10",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

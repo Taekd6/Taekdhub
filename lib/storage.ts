@@ -1,5 +1,6 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
-import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, THEME_MODES, hexToRgb, type ThemeMode } from "@/lib/theme";
+import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, LEGACY_DEFAULT_ACCENTS, THEME_MODES, hexToRgb, type ThemeMode } from "@/lib/theme";
+import { DEFAULT_SUBJECT_PALETTE, isSubjectPaletteId, normalizeSubjectColorOverrides, type SubjectColorOverrides, type SubjectPaletteId } from "@/lib/subject-colors";
 import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, Filiere, LicenseStatus, Mastery, ProgrammeLevel, Provenance, Subject, WorkSession } from "@/lib/supabase/types";
 
 const ATTEMPT_RESULTS: readonly AttemptResult[] = ["réussi", "partiel", "échoué"];
@@ -87,6 +88,18 @@ export type Preferences = {
    * face à `capacityByWeekday`. Ce budget ne réserve rien dans le planning.
    */
   weeklySubjectTargets: Record<Subject, number>;
+  /**
+   * PALETTE DES MATIÈRES (refonte « Nuit ») — voir lib/subject-colors.ts.
+   * Purement visuelle : aucune donnée ne dépend de la couleur d'une matière.
+   * Absente d'une préférence antérieure : retombe sur « Néon ».
+   */
+  subjectPalette: SubjectPaletteId;
+  /**
+   * Couleur SURCHARGÉE par matière, par-dessus la palette. Seules les
+   * matières réellement surchargées sont présentes ; `{}` = la palette telle
+   * quelle. Validé hex par hex à la lecture (voir `normalizePreferences`).
+   */
+  subjectColors: SubjectColorOverrides;
 };
 
 /**
@@ -146,6 +159,8 @@ const defaults: Preferences = {
   capacityByWeekday: DEFAULT_CAPACITY_BY_WEEKDAY,
   planningMarginPercent: DEFAULT_PLANNING_MARGIN_PERCENT,
   weeklySubjectTargets: DEFAULT_WEEKLY_SUBJECT_TARGETS,
+  subjectPalette: DEFAULT_SUBJECT_PALETTE,
+  subjectColors: {},
 };
 
 /**
@@ -913,7 +928,12 @@ export function normalizePreferences(raw: unknown): Preferences {
     contestDate: calendarDay(item.contestDate) ?? defaults.contestDate,
     // Validé par le MÊME analyseur que celui qui l'utilisera (lib/theme.ts),
     // pour qu'une valeur acceptée ici ne puisse pas faire échouer celui-là.
-    accent: typeof item.accent === "string" && hexToRgb(item.accent) ? item.accent : defaults.accent,
+    // L'ancien défaut (« Miel ») est migré vers le nouveau : voir
+    // lib/theme.ts#LEGACY_DEFAULT_ACCENTS — il n'a jamais été un choix.
+    accent:
+      typeof item.accent === "string" && hexToRgb(item.accent) && !LEGACY_DEFAULT_ACCENTS.includes(item.accent.trim().toLowerCase())
+        ? item.accent
+        : defaults.accent,
     themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE,
     // Un tableau de capacité de longueur ≠ 7, ou contenant autre chose que
     // des nombres, ferait lire `undefined` au planificateur pour un jour de
@@ -924,6 +944,10 @@ export function normalizePreferences(raw: unknown): Preferences {
     capacityByWeekday: normalizeCapacityByWeekday(item.capacityByWeekday),
     planningMarginPercent: normalizeMarginPercent(item.planningMarginPercent),
     weeklySubjectTargets: normalizeWeeklySubjectTargets(item.weeklySubjectTargets),
+    subjectPalette: isSubjectPaletteId(item.subjectPalette) ? item.subjectPalette : defaults.subjectPalette,
+    // Reconstruit matière par matière : une surcharge invalide disparaît
+    // seule, les autres restent.
+    subjectColors: normalizeSubjectColorOverrides(item.subjectColors),
   };
 }
 

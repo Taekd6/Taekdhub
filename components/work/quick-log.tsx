@@ -22,10 +22,13 @@ import type { Subject, WorkSession } from "@/lib/supabase/types";
 /**
  * NOTER DU TEMPS — trois gestes : une matière, une durée, « Ajouter ».
  *
- * Posé dans le rail de l'accueil, juste sous l'objectif du jour : l'anneau
- * bouge au moment où l'on valide, ce qui est la seule récompense dont une
- * saisie de dix secondes a besoin. Le dernier choix est retenu : les 30 min
- * d'Anki du matin se notent d'un seul geste.
+ * Posé sur l'accueil, juste à côté de l'anneau du jour : l'anneau gagne un
+ * segment de la couleur de la matière au moment où l'on valide, ce qui est
+ * la seule récompense dont une saisie de dix secondes a besoin. Le dernier
+ * choix est retenu : les 30 min d'Anki du matin se notent d'un seul geste.
+ *
+ * Le TITRE de la carte (« Noter du temps ») est posé par l'appelant, dans
+ * sa `Section` : ce composant ne rend que les contrôles.
  *
  * Aucun formulaire, aucune fenêtre : une feuille modale coûterait deux
  * gestes de plus à chaque saisie, et c'est exactement ce qui fait abandonner
@@ -93,13 +96,10 @@ export function QuickLog({
 
   return (
     <div>
-      <p className="t-label">Noter du temps</p>
-      <p className="t-meta mt-1 text-2xs">Anki, relecture de cours… ce que le chrono n&apos;a pas vu.</p>
-
-      {/* MATIÈRE — les avatars déjà connus partout dans l'app, pas une liste
-          déroulante : sept cibles visibles d'un coup valent mieux qu'un menu
-          à ouvrir. */}
-      <div role="radiogroup" aria-label="Matière" className="mt-3 grid grid-cols-7 gap-1">
+      {/* MATIÈRE — sept pastilles à la couleur de chaque matière, pas une
+          liste déroulante : sept cibles visibles d'un coup valent mieux
+          qu'un menu à ouvrir. La matière retenue passe en aplat plein. */}
+      <div role="radiogroup" aria-label="Matière" className="grid grid-cols-7 gap-1.5">
         {subjects.map((item) => {
           const active = item === subject;
           return (
@@ -112,9 +112,11 @@ export function QuickLog({
               title={item}
               onClick={() => setSubject(item)}
               className={cn(
-                "grid h-9 place-items-center rounded-md text-[0.6875rem] font-semibold leading-none transition-[box-shadow,opacity] max-lg:h-11",
-                subjectMeta[item].className,
-                active ? "ring-2 ring-accent ring-offset-2 ring-offset-canvas" : "opacity-60 hover:opacity-100"
+                "press grid h-10 place-items-center rounded-full text-xs font-extrabold leading-none max-lg:h-11",
+                // Texte presque noir sur l'aplat : les teintes de matière sont
+                // claires en sombre et « douces » (≥ 3:1) en clair — le noir y
+                // tient ≥ 6:1 dans les deux cas.
+                active ? cn(subjectMeta[item].solid, "text-[rgb(11_12_16)]") : cn(subjectMeta[item].className, "hover:brightness-125")
               )}
             >
               {subjectMeta[item].short}
@@ -122,10 +124,13 @@ export function QuickLog({
           );
         })}
       </div>
-      <p className="mt-1.5 text-[0.8125rem] font-medium text-ink">{subject}</p>
+      <p className="mt-2 text-sm font-bold text-ink">
+        <span aria-hidden className={cn("mr-1.5 inline-block h-2 w-2 rounded-full align-middle", subjectMeta[subject].solid)} />
+        {subject}
+      </p>
 
       {/* DURÉE — huit durées en un geste, et un champ pour le reste. */}
-      <div role="radiogroup" aria-label="Durée" className="mt-3 grid grid-cols-4 gap-1">
+      <div role="radiogroup" aria-label="Durée" className="mt-3 grid grid-cols-4 gap-1.5">
         {QUICK_LOG_PRESETS.map((preset) => {
           const active = customMinutes === null && preset === minutes;
           return (
@@ -139,8 +144,8 @@ export function QuickLog({
                 setCustom("");
               }}
               className={cn(
-                "tabular min-h-8 rounded-md border text-[0.8125rem] transition-colors max-lg:min-h-11",
-                active ? "border-line bg-panel font-medium text-ink" : "border-transparent bg-inset text-muted hover:text-ink"
+                "press tabular min-h-9 rounded-full text-[0.8125rem] font-bold max-lg:min-h-11",
+                active ? "chip-on" : "bg-inset text-muted hover:text-ink"
               )}
             >
               {preset < 60 ? `${preset}′` : `${Math.floor(preset / 60)}h${preset % 60 ? preset % 60 : ""}`}
@@ -148,37 +153,39 @@ export function QuickLog({
           );
         })}
       </div>
-      <label className="mt-2 flex items-center gap-2 text-2xs text-muted">
-        Autre
-        <input
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={QUICK_LOG_MAX_MINUTES}
-          value={custom}
-          onChange={(event) => setCustom(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && valid) add();
-          }}
-          placeholder="min"
-          className="tabular h-8 w-16 rounded-md border border-line bg-panel px-2 text-[0.8125rem] text-ink placeholder:text-subtle max-lg:h-11"
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <label className="flex items-center gap-2 text-[0.8125rem] font-semibold text-muted">
+          Autre
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={QUICK_LOG_MAX_MINUTES}
+            value={custom}
+            onChange={(event) => setCustom(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && valid) add();
+            }}
+            placeholder="min"
+            className="tabular h-9 w-16 rounded-lg border border-transparent bg-inset px-2.5 text-[0.8125rem] text-ink placeholder:text-subtle hover:border-line max-lg:h-11"
+          />
+          min
+        </label>
+        <SegmentedControl
+          className="ml-auto sm:w-auto"
+          size="sm"
+          ariaLabel="Jour"
+          value={day}
+          onChange={setDay}
+          options={[
+            { value: "aujourd'hui", label: "Aujourd'hui" },
+            { value: "hier", label: "Hier" },
+          ]}
         />
-        min
-      </label>
+      </div>
 
-      <SegmentedControl
-        className="mt-3"
-        size="sm"
-        ariaLabel="Jour"
-        value={day}
-        onChange={setDay}
-        options={[
-          { value: "aujourd'hui", label: "Aujourd'hui" },
-          { value: "hier", label: "Hier" },
-        ]}
-      />
-
-      <Button variant="secondary" className="mt-3 w-full" disabled={!ready || !valid} onClick={add}>
+      <Button variant="secondary" className="mt-4 w-full" disabled={!ready || !valid} onClick={add}>
         {justAdded ? (
           <>
             <Check size={15} className="text-emerald-300" /> Ajouté
@@ -191,20 +198,20 @@ export function QuickLog({
       </Button>
 
       {recent.length > 0 && (
-        <ul className="mt-3 divide-y divide-line border-y border-line">
+        <ul className="mt-3 divide-y divide-line">
           {recent.map((session) => (
-            <li key={session.id} className="flex items-center gap-2 py-1.5">
-              <span className={cn("grid h-5 w-5 shrink-0 place-items-center rounded text-[0.625rem] font-semibold", subjectMeta[session.subject].className)}>
+            <li key={session.id} className={cn("flex items-center gap-2 py-1.5", session.id === justAdded && "animate-rise")}>
+              <span className={cn("grid h-6 w-6 shrink-0 place-items-center rounded-full text-[0.625rem] font-extrabold", subjectMeta[session.subject].className)}>
                 {subjectMeta[session.subject].short}
               </span>
-              <span className="tabular min-w-0 flex-1 truncate text-2xs text-muted">
+              <span className="tabular min-w-0 flex-1 truncate text-[0.8125rem] font-semibold text-muted">
                 {formatSpan(session.duration_seconds)}
                 {session.id === justAdded && <span className="text-emerald-300"> · à l&apos;instant</span>}
               </span>
               <button
                 type="button"
                 onClick={() => undo(session.id)}
-                className="inline-flex min-h-6 items-center gap-1 rounded px-1 text-2xs text-subtle hover:text-ink max-lg:min-h-11"
+                className="inline-flex min-h-8 items-center gap-1 rounded-full px-2 text-2xs font-bold text-subtle hover:bg-inset hover:text-ink max-lg:min-h-11"
                 aria-label={`Annuler ${formatSpan(session.duration_seconds)} de ${session.subject}`}
               >
                 <Undo2 size={12} /> Annuler

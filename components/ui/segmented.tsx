@@ -5,9 +5,9 @@ import { cn } from "@/lib/cn";
 /**
  * SÉLECTEUR SEGMENTÉ — un choix parmi quelques options courtes.
  *
- * La pastille active est SURÉLEVÉE (fond de panneau + filet) plutôt que
- * teintée : deux gris pâles côte à côte, en thème clair, ne se distinguaient
- * pas. C'est aussi la convention que tout le monde reconnaît.
+ * Une piste en creux, en pilule, et l'option retenue SURÉLEVÉE (`.chip-on`,
+ * app/globals.css) plutôt que teintée : c'est la convention que tout le monde
+ * reconnaît, et elle tient dans les deux thèmes.
  */
 export function SegmentedControl<T extends string | number>({
   options,
@@ -30,13 +30,11 @@ export function SegmentedControl<T extends string | number>({
       role="group"
       aria-label={ariaLabel}
       className={cn(
-        // Pleine largeur sous `sm`, options réparties à parts égales. Quatre
-        // options de durée mesuraient 266 px dans une colonne de 246 px à
-        // 320 px de large : le groupe débordait de son cadre, et dans le
-        // lecteur « maîtrisé » se faisait couper par le bord de l'écran. Une
-        // largeur imposée règle le débordement ET donne des cibles plus
-        // larges au doigt, sans rien changer sur grand écran.
-        "flex w-full items-center gap-0.5 rounded-lg bg-inset p-0.5 sm:inline-flex sm:w-auto",
+        // Pleine largeur sous `sm`, options réparties à parts égales : quatre
+        // options de durée débordaient d'une colonne de 246 px à 320 px de
+        // large. Une largeur imposée règle le débordement ET donne des cibles
+        // plus larges au doigt, sans rien changer sur grand écran.
+        "flex w-full items-center gap-0.5 rounded-full bg-inset p-1 sm:inline-flex sm:w-auto",
         className
       )}
     >
@@ -49,18 +47,14 @@ export function SegmentedControl<T extends string | number>({
             onClick={() => onChange(option.value)}
             aria-pressed={active}
             className={cn(
-              "min-w-0 flex-1 truncate rounded-[0.4375rem] font-medium transition-colors sm:flex-none",
-              /* Le rembourrage se resserre en dessous de `sm`, là où quatre
-                 options se partagent la largeur d'un téléphone : à 2,5 unités
-                 de chaque côté, « 60 min » perdait sa dernière lettre pour
-                 un pixel. La cible tactile, elle, ne bouge pas — c'est la
-                 hauteur de 40 px qui la garantit, pas la largeur. */
+              "press min-w-0 flex-1 truncate rounded-full font-bold sm:flex-none",
+              /* La cible tactile est garantie par la hauteur (40 px sous
+                 `lg`), pas par la largeur : le rembourrage peut se resserrer
+                 sur un téléphone sans rogner « 60 min ». */
               size === "sm"
-                ? "min-h-7 px-1.5 text-2xs max-lg:min-h-10 sm:px-2"
-                : "min-h-8 px-1.5 text-[0.8125rem] max-lg:min-h-10 sm:px-2.5",
-              active
-                ? "border border-line bg-panel text-ink"
-                : "border border-transparent text-muted hover:text-ink"
+                ? "min-h-7 px-2 text-2xs max-lg:min-h-10 sm:px-2.5"
+                : "min-h-8 px-2 text-[0.8125rem] max-lg:min-h-10 sm:px-3.5",
+              active ? "chip-on" : "text-muted hover:text-ink"
             )}
           >
             {option.label}

@@ -35,12 +35,11 @@ describe("applyThemeMode", () => {
     expect(attributes.get("data-theme")).toBe("dark");
   });
 
-  it("retire l'attribut pour le mode système — laisse prefers-color-scheme décider (app/globals.css)", () => {
+  it("écrit data-theme=\"system\" pour le mode système — le défaut sans attribut est désormais le sombre (app/globals.css)", () => {
     const { element, attributes } = makeFakeRoot();
     applyThemeMode("dark", element);
-    expect(attributes.has("data-theme")).toBe(true);
     applyThemeMode("system", element);
-    expect(attributes.has("data-theme")).toBe(false);
+    expect(attributes.get("data-theme")).toBe("system");
   });
 });
 

@@ -57,14 +57,17 @@ export function Sheet({
     <>
       {open && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end sm:hidden">
-          <div onClick={onClose} className="animate-fade-in absolute inset-0 bg-black/45" />
+          <div onClick={onClose} className="animate-fade-in absolute inset-0 bg-black/55" />
           <div
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className="animate-rise relative flex max-h-[85vh] flex-col rounded-t-2xl border-t border-line bg-panel"
+            className="floating animate-rise relative flex max-h-[85vh] flex-col rounded-t-3xl border-x-0 border-b-0"
           >
-            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3">
+            {/* Poignée : dit « panneau qui monte du bas » avant même qu'on
+                lise le titre. Décorative — la fermeture reste le bouton. */}
+            <span aria-hidden className="mx-auto mt-2.5 block h-1 w-10 shrink-0 rounded-full bg-hairline/[0.14]" />
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-5 py-3">
               <h2 className="t-subhead">{title}</h2>
               <Button variant="ghost" size="icon" aria-label="Fermer" onClick={onClose}>
                 <X size={18} />
