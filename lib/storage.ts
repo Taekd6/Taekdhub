@@ -66,6 +66,26 @@ export type Preferences = {
    * lib/capacity.ts#plannableMinutes.
    */
   planningMarginPercent: number;
+  /**
+   * BUDGET HEBDOMADAIRE PAR MATIÈRE, en minutes par semaine (lundi → dimanche).
+   *
+   * Existe parce que l'objectif hebdomadaire global (`weeklyGoalMinutes`) ne
+   * dit rien de la RÉPARTITION : cinq heures de maths et zéro minute
+   * d'anglais le remplissent aussi bien que l'inverse. Or c'est justement la
+   * répartition que l'élève s'est fixée (« Anki 30 min par jour, français
+   * 4 h, info 1 h 30 le week-end + 1 h en semaine ») et qu'aucun écran ne
+   * lui permettait de vérifier.
+   *
+   * Toujours COMPLET après normalisation (une entrée par matière de
+   * lib/study.ts#subjects) : les consommateurs n'ont jamais à se demander
+   * si une clé manque. `0` veut dire « pas de budget pour cette matière » —
+   * elle est alors simplement absente du suivi (voir lib/subject-targets.ts),
+   * jamais affichée comme « 0 % ».
+   *
+   * Un OBJECTIF, pas une capacité : même distinction que `dailyGoalMinutes`
+   * face à `capacityByWeekday`. Ce budget ne réserve rien dans le planning.
+   */
+  weeklySubjectTargets: Record<Subject, number>;
 };
 
 /**
@@ -83,6 +103,32 @@ export const DEFAULT_PLANNING_MARGIN_PERCENT = 20;
 export const MAX_PLANNING_MARGIN_PERCENT = 50;
 /** Plafond par jour — 16 h. Au-delà, c'est une saisie erronée, pas une journée de travail. */
 export const MAX_DAILY_CAPACITY_MINUTES = 960;
+/**
+ * Budgets hebdomadaires par matière, en minutes — VALEURS DE DÉPART, tirées
+ * du plan que l'élève s'est fixé, et modifiables dans Réglages :
+ *
+ *   — Informatique : 1 h 30 le week-end + 1 h en semaine = 2 h 30, partagées
+ *     à parts égales entre le tronc commun et la spécialité (75 + 75). Deux
+ *     matières distinctes dans lib/study.ts, donc deux budgets : un seul
+ *     budget « informatique » masquerait qu'une des deux est à l'abandon.
+ *   — Anglais : 30 à 40 min par jour (Anki dans les transports) ≈ 4 h.
+ *   — Français : environ 4 h.
+ *   — Maths 8 h, physique 6 h : cours en semaine, exercices le week-end. Le
+ *     plan ne donnait pas de chiffre ; ce sont des ordres de grandeur à
+ *     corriger, pas une prescription.
+ *   — Chimie : 0, donc pas suivie tant que l'élève ne le décide pas.
+ */
+export const DEFAULT_WEEKLY_SUBJECT_TARGETS: Record<Subject, number> = {
+  Mathématiques: 480,
+  Physique: 360,
+  Chimie: 0,
+  "Informatique TC": 75,
+  "Informatique Spé": 75,
+  Français: 240,
+  Anglais: 240,
+};
+/** Plafond par matière — 50 h par semaine. Au-delà, c'est une faute de frappe (un zéro de trop), pas un budget. */
+export const MAX_WEEKLY_SUBJECT_TARGET_MINUTES = 3000;
 // `dailyGoalMinutes: 60` correspond exactement au plus haut des trois préréglages du
 // Dashboard/Réglages (PLAN_DURATION_PRESETS = [30, 45, 60], lib/plan.ts) : un premier
 // objectif ambitieux mais tenable, jamais un chiffre hors de tout préréglage cliquable
@@ -98,6 +144,7 @@ const defaults: Preferences = {
   themeMode: DEFAULT_THEME_MODE,
   capacityByWeekday: DEFAULT_CAPACITY_BY_WEEKDAY,
   planningMarginPercent: DEFAULT_PLANNING_MARGIN_PERCENT,
+  weeklySubjectTargets: DEFAULT_WEEKLY_SUBJECT_TARGETS,
 };
 
 /**
@@ -767,7 +814,7 @@ export function normalizePreferences(raw: unknown): Preferences {
    * Le vecteur n'est pas théorique : `validateBackupPayload` n'inspecte
    * `preferences` que par `isRecord`, donc un fichier de sauvegarde édité à
    * la main, tronqué ou fusionné suffit. Chaque champ est désormais validé
-   * par le même helper que le reste du module, et RIEN d'autre que les huit
+   * par le même helper que le reste du module, et RIEN d'autre que les
    * clés connues ne ressort d'ici.
    */
   return {
@@ -791,7 +838,30 @@ export function normalizePreferences(raw: unknown): Preferences {
     // sur son défaut, et la longueur est garantie.
     capacityByWeekday: normalizeCapacityByWeekday(item.capacityByWeekday),
     planningMarginPercent: normalizeMarginPercent(item.planningMarginPercent),
+    weeklySubjectTargets: normalizeWeeklySubjectTargets(item.weeklySubjectTargets),
   };
+}
+
+/*
+ * Reconstruit matière par matière, sur le modèle de
+ * `normalizeCapacityByWeekday` : une matière valide est conservée, une
+ * matière absente ou douteuse retombe sur SON défaut, et les autres ne sont
+ * pas touchées. Un seul budget corrompu ne doit pas effacer les six autres.
+ *
+ * ABSENT ≠ ZÉRO. Une préférence enregistrée avant ce chantier n'a pas la
+ * clé : elle reçoit les défauts. Un `0` explicite, lui, est un choix
+ * (« je ne suis pas la chimie ») et doit survivre à l'aller-retour — d'où
+ * `nonNegativeInteger` et non `positiveInteger`, qui l'aurait remplacé par
+ * le défaut. Toute clé qui n'est pas une matière connue est ignorée.
+ */
+function normalizeWeeklySubjectTargets(raw: unknown): Record<Subject, number> {
+  const item = isRecord(raw) ? raw : {};
+  const out = { ...DEFAULT_WEEKLY_SUBJECT_TARGETS };
+  for (const subject of subjects) {
+    const value = nonNegativeInteger(item[subject]);
+    if (value !== null) out[subject] = Math.min(MAX_WEEKLY_SUBJECT_TARGET_MINUTES, value);
+  }
+  return out;
 }
 
 function normalizeCapacityByWeekday(raw: unknown): number[] {

@@ -6,9 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
+import { Skeleton } from "@/components/ui/state";
+import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { PLAN_DURATION_PRESETS } from "@/lib/plan";
-import { localData, type Preferences } from "@/lib/storage";
+import { localData, MAX_WEEKLY_SUBJECT_TARGET_MINUTES, type Preferences } from "@/lib/storage";
+import { subjects } from "@/lib/study";
+import { formatMinutesSpan } from "@/lib/utils";
 
 /** Préréglages "objectif hebdomadaire" (Sprint Plan de travail), en minutes — 3h/5h/7h, plus une valeur libre déjà couverte par le champ nombre ci-dessous. */
 const WEEKLY_GOAL_PRESETS = [180, 300, 420];
@@ -19,7 +23,7 @@ const WEEKLY_GOAL_PRESETS = [180, 300, 420];
  * Un seul formulaire, une seule sauvegarde.
  */
 export function PreferencesForm() {
-  const { preferences, savePreferences } = usePrepahubData();
+  const { preferences, savePreferences, ready } = usePrepahubData();
   const [prefs, setPrefs] = useState<Preferences>(preferences);
   const [saved, setSaved] = useState(false);
 
@@ -27,7 +31,7 @@ export function PreferencesForm() {
     setPrefs(preferences);
   }, [preferences]);
 
-  // N'écrit QUE les quatre champs de ce formulaire, par-dessus ce qui est
+  // N'écrit QUE les cinq champs de ce formulaire, par-dessus ce qui est
   // réellement enregistré à cet instant. `prefs` est un instantané pris au
   // montage, et `usePrepahubData` n'est pas un contexte partagé : envoyer
   // l'objet complet renvoyait aussi `accent` et `themeMode` tels qu'ils
@@ -42,17 +46,20 @@ export function PreferencesForm() {
       dailyGoalMinutes: prefs.dailyGoalMinutes,
       weeklyGoalMinutes: prefs.weeklyGoalMinutes,
       contestDate: prefs.contestDate,
+      weeklySubjectTargets: prefs.weeklySubjectTargets,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
+
+  const subjectTotal = subjects.reduce((sum, subject) => sum + prefs.weeklySubjectTargets[subject], 0);
 
   return (
     <Section
       variant="panel"
       label="Rythme"
       title="Ton identité de travail"
-      description="Ces deux objectifs alimentent l'accueil, le plan du jour et la mesure de ta semaine."
+      description="Tes objectifs alimentent l'accueil, le plan du jour et la mesure de ta semaine."
       className="max-w-2xl"
     >
       <form onSubmit={save} className="space-y-6">
@@ -112,6 +119,61 @@ export function PreferencesForm() {
             />
           </div>
         </Field>
+
+        {/* BUDGET PAR MATIÈRE — une ligne par matière, en minutes, avec sa
+            lecture en heures à côté : « 480 » ne se lit pas d'un coup d'œil,
+            « 8 h » si. Pas de préréglages : chaque matière a son propre
+            ordre de grandeur, et sept sélecteurs segmentés feraient un
+            formulaire de deux écrans. Voir lib/subject-targets.ts.
+
+            Rendu seulement une fois `ready` : le total est un TEXTE calculé
+            depuis le localStorage, que le serveur ne voit pas — même
+            divergence d'hydratation que celle documentée dans
+            components/work/capacity-form.tsx. */}
+        {!ready ? (
+          <Skeleton className="h-48 w-full rounded-lg" />
+        ) : (
+          <div>
+            <span className="t-subhead mb-2 block">Budget par matière</span>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+              {subjects.map((subject) => {
+                const value = prefs.weeklySubjectTargets[subject];
+                return (
+                  <label key={subject} className="flex items-center gap-2.5">
+                    <SubjectAvatar subject={subject} size="sm" />
+                    <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-ink">{subject}</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={15}
+                      max={MAX_WEEKLY_SUBJECT_TARGET_MINUTES}
+                      value={value}
+                      onChange={(event) => {
+                        const next = Math.max(0, Math.min(MAX_WEEKLY_SUBJECT_TARGET_MINUTES, Math.round(Number(event.target.value) || 0)));
+                        setPrefs({ ...prefs, weeklySubjectTargets: { ...prefs.weeklySubjectTargets, [subject]: next } });
+                      }}
+                      className="w-[4.5rem] shrink-0 text-center"
+                      aria-label={`Budget hebdomadaire en ${subject}, en minutes`}
+                    />
+                    {/* Largeur fixe : la colonne des champs reste alignée,
+                        que l'aide dise « 8 h » ou « non suivie ». */}
+                    <span className="tabular t-meta w-16 shrink-0 text-2xs">{value > 0 ? formatMinutesSpan(value) : "non suivie"}</span>
+                  </label>
+                );
+              })}
+            </div>
+            <span className="t-meta mt-2 block max-w-[56ch]">
+              Minutes par semaine, du lundi au dimanche — 0 pour ne pas suivre une matière. Soit{" "}
+              <span className="tabular text-ink">{formatMinutesSpan(subjectTotal)}</span> au total
+              {/* Deux objectifs saisis séparément finissent par diverger ; le
+                  dire ici, au moment où on les règle, évite de le découvrir
+                  sur l'accueil. Un constat, pas une correction automatique. */}
+              {subjectTotal > prefs.weeklyGoalMinutes
+                ? `, au-dessus de ton objectif hebdomadaire (${formatMinutesSpan(prefs.weeklyGoalMinutes)}).`
+                : "."}
+            </span>
+          </div>
+        )}
 
         <Field label="Date des concours" hint="Affiche le compte à rebours sur l'accueil. Laisse vide si tu ne veux pas le voir.">
           <Input

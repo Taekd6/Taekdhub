@@ -605,6 +605,21 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     expect(prefs.contestDate).toBe("");
     expect(prefs.dailyGoalMinutes).toBeGreaterThan(0);
   });
+
+  it("les budgets par matière font l'aller-retour export → fichier → restauration", () => {
+    // Le cycle réel d'`exportBackup` : les préférences telles que lues, puis
+    // sérialisées en JSON, puis restaurées sur un autre appareil. Un 0
+    // explicite (« je ne suis pas l'anglais ») doit survivre, pas redevenir
+    // le défaut.
+    const exported = normalizePreferences({ weeklySubjectTargets: { Anglais: 0, Mathématiques: 540, Chimie: 90 } });
+    const file = JSON.parse(JSON.stringify(backup({ preferences: exported })));
+    const prefs = withQuotaStorage({}, 1_000_000, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.preferences();
+    });
+    expect(prefs.weeklySubjectTargets).toEqual(exported.weeklySubjectTargets);
+    expect(prefs.weeklySubjectTargets.Anglais).toBe(0);
+  });
 });
 
 describe("normalizePreferences — frontière de trust réelle, pas trois champs sur huit", () => {
@@ -646,7 +661,17 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
   it("aucune clé étrangère ne ressort des préférences", () => {
     const prefs = normalizePreferences({ __proto__: null, intrus: "oui", autre: 1 }) as Record<string, unknown>;
     expect(Object.keys(prefs).sort()).toEqual(
-      ["accent", "capacityByWeekday", "contestDate", "dailyGoalMinutes", "displayName", "planningMarginPercent", "themeMode", "weeklyGoalMinutes"]
+      [
+        "accent",
+        "capacityByWeekday",
+        "contestDate",
+        "dailyGoalMinutes",
+        "displayName",
+        "planningMarginPercent",
+        "themeMode",
+        "weeklyGoalMinutes",
+        "weeklySubjectTargets",
+      ]
     );
   });
 });

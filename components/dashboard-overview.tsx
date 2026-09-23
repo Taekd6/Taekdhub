@@ -35,6 +35,8 @@ import {
 } from "@/lib/plan";
 import { formatMinutesSpan, formatSpan } from "@/lib/utils";
 import { computeWeeklySummary } from "@/lib/week";
+import { computeSubjectTargets } from "@/lib/subject-targets";
+import { SubjectTargetList } from "@/components/work/subject-targets";
 import { buildWeeklyPlan } from "@/lib/planning";
 import { servesBankExercises, WORK_ITEM_KIND_META } from "@/lib/work-items";
 import { LOAD_STATUS_META } from "@/lib/workload";
@@ -80,6 +82,9 @@ export function DashboardOverview() {
       upcoming: computeUpcoming(exercises, sessions, chapters, now),
       toConsolidate: computeChaptersToConsolidate(exercises, sessions, chapters, now),
       weeklySummary: computeWeeklySummary(exercises, sessions, preferences.weeklyGoalMinutes, now),
+      // Pondéré par la capacité déclarée : un plan tourné vers le week-end
+      // n'est pas « en retard » le samedi matin (voir lib/subject-targets.ts).
+      subjectTargets: computeSubjectTargets(sessions, preferences.weeklySubjectTargets, now, preferences.capacityByWeekday),
       streak: computeStreak(sessions),
       /*
        * REPRENDRE — les derniers exercices réellement ouverts, dans l'ordre.
@@ -147,7 +152,7 @@ export function DashboardOverview() {
     );
   }
 
-  const { nextAction, objective, statusLine, upcoming, toConsolidate, weeklySummary, streak, contestDays, contestDate, resume, subjects } = model;
+  const { nextAction, objective, statusLine, upcoming, toConsolidate, weeklySummary, subjectTargets, streak, contestDays, contestDate, resume, subjects } = model;
   const today = workPlan.days[0];
   /*
    * QUI RÉPOND À « MAINTENANT » ?
@@ -251,6 +256,23 @@ export function DashboardOverview() {
                   {LOAD_STATUS_META[today.load.status].label} — {describeTodayLoad(today.load.overflowMinutes, today.load.status)}
                 </p>
               )}
+            </div>
+          )}
+
+          {/* CETTE SEMAINE PAR MATIÈRE — le budget que l'élève s'est fixé
+              (Réglages), face au temps réellement noté. Juste sous la saisie
+              rapide et le prévu du jour : noter 30 min d'anglais fait bouger
+              la ligne correspondante sous les yeux. Absent quand aucune
+              matière n'a de budget — un bloc vide n'apprend rien. */}
+          {subjectTargets.length > 0 && (
+            <div>
+              <div className="mb-2 flex items-baseline justify-between gap-3">
+                <p className="t-label">Cette semaine par matière</p>
+                <Link href="/settings" className="t-meta shrink-0 rounded text-2xs hover:text-ink max-lg:inline-flex max-lg:min-h-11 max-lg:items-center">
+                  Régler
+                </Link>
+              </div>
+              <SubjectTargetList rows={subjectTargets} />
             </div>
           )}
 
