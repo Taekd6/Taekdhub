@@ -12,3 +12,6 @@ tsconfig.tsbuildinfo
 __pycache__/
 *.pyc
 /public/pdfjs/
+
+# Copies de travail des agents Claude Code
+.claude/worktrees/
