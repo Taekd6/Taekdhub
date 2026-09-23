@@ -114,7 +114,7 @@ export function QuickLog({
               className={cn(
                 "grid h-9 place-items-center rounded-md text-[0.6875rem] font-semibold leading-none transition-[box-shadow,opacity] max-lg:h-11",
                 subjectMeta[item].className,
-                active ? "bg-panel ring-2 ring-accent ring-offset-2 ring-offset-canvas" : "bg-inset opacity-70 hover:opacity-100"
+                active ? "ring-2 ring-accent ring-offset-2 ring-offset-canvas" : "opacity-60 hover:opacity-100"
               )}
             >
               {subjectMeta[item].short}

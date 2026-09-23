@@ -4,6 +4,9 @@ export default {
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
+    // lib/study.ts porte les classes des matières et des statuts
+    // (`subjectMeta`, `statusMeta`) : sans lui, leurs fonds n'étaient jamais générés.
+    "./lib/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {
