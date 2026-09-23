@@ -12,4 +12,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./"),
     },
   },
+  test: {
+    // `.claude/worktrees/` héberge les copies de travail des agents Claude
+    // Code : leurs tests appartiennent à un autre état du dépôt.
+    exclude: ["**/node_modules/**", ".claude/**"],
+  },
 });
