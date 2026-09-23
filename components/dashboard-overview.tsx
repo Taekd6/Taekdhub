@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CalendarClock, ChevronRight, Flame, LayoutList, LineChart, Trophy } from "lucide-react";
+import { ArrowRight, CalendarClock, ChevronRight, Flame, LayoutList, LineChart, NotebookPen, Trophy } from "lucide-react";
 import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { QuickLog } from "@/components/work/quick-log";
 import { ReviewCapture } from "@/components/review/review-capture";
+import { DueToday } from "@/components/review/due-today";
+import { DailyCheckinCard } from "@/components/checkin/daily-checkin"; // check-in du soir
 import { Button, buttonVariants } from "@/components/ui/button";
 import { List, rowInteractive, Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
@@ -84,7 +86,7 @@ const RING_STROKE = 14;
  * saisie.
  */
 export function DashboardOverview() {
-  const { sessions, exercises, chapters, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems } = usePrepahubData();
+  const { sessions, exercises, chapters, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems, checkins, saveCheckins } = usePrepahubData();
   const router = useRouter();
   const [planMinutes, setPlanMinutes] = useState<number>(DEFAULT_PLAN_MINUTES);
 
@@ -462,6 +464,12 @@ export function DashboardOverview() {
             yeux à chaque saisie. Voir components/work/quick-log.tsx. */}
         <Section variant="panel" index={3} title="Noter du temps" description="Anki, relecture de cours… ce que le chrono n'a pas vu.">
           <QuickLog sessions={sessions} saveSessions={saveSessions} removeSession={removeSession} ready={ready} />
+          {/* ── Check-in du soir : le composant décide seul de s'afficher
+              (après 17 h, tant qu'il n'est pas fait). Voir
+              components/checkin/daily-checkin.tsx. */}
+          <div className="mt-5">
+            <DailyCheckinCard checkins={checkins} onSave={saveCheckins} ready={ready} />
+          </div>
         </Section>
 
         {/* ── LA SEMAINE — sept colonnes empilées par matière ────────── */}
@@ -588,6 +596,8 @@ export function DashboardOverview() {
             </Link>
           }
         >
+          {/* Révisions espacées du carnet — voir components/review/due-today.tsx. */}
+          <DueToday items={reviewItems} className="mb-4" />
           <ReviewCapture
             items={reviewItems}
             saveItems={saveReviewItems}
@@ -731,6 +741,7 @@ export function DashboardOverview() {
         {[
           { href: "/echeances", label: "Mes échéances", icon: CalendarClock },
           { href: "/preparation", label: "Suivi par matière", icon: LayoutList },
+          { href: "/erreurs", label: "Carnet d'erreurs", icon: NotebookPen },
           { href: "/progress", label: "Ma progression", icon: LineChart },
         ].map(({ href, label, icon: Icon }) => (
           <Link

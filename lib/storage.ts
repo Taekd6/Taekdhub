@@ -1,4 +1,5 @@
 import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
+import { SRS_LADDER } from "@/lib/spaced-repetition";
 import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, LEGACY_DEFAULT_ACCENTS, THEME_MODES, hexToRgb, type ThemeMode } from "@/lib/theme";
 import { DEFAULT_SUBJECT_PALETTE, isSubjectPaletteId, normalizeSubjectColorOverrides, type SubjectColorOverrides, type SubjectPaletteId } from "@/lib/subject-colors";
 import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, Filiere, LicenseStatus, Mastery, ProgrammeLevel, Provenance, Subject, WorkSession } from "@/lib/supabase/types";
@@ -15,6 +16,10 @@ const workItemsKey = "prepahub:work-items";
 const gradesKey = "prepahub:grades";
 const dayPlansKey = "prepahub:day-plans";
 const reviewItemsKey = "prepahub:reviewItems";
+/* ── Carnet d'erreurs — voir `ErrorEntry` ── */
+const errorsKey = "prepahub:errors";
+/* ── Check-in du soir — voir `DailyCheckin` ── */
+const checkinsKey = "prepahub:checkins";
 
 /**
  * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
@@ -236,10 +241,24 @@ export interface Grade {
   kind: GradeKind;
   /** "AAAA-MM-JJ" — le jour de l'épreuve, pas celui de la saisie. */
   date: string;
-  /** Note obtenue. Décimales permises (11,5). Toujours ≥ 0 et ≤ `maxScore`. */
-  score: number;
+  /**
+   * Note obtenue. Décimales permises (11,5). Toujours ≥ 0 et ≤ `maxScore`.
+   *
+   * `null` = NOTE EN ATTENTE (calibration) : l'épreuve est passée, la copie
+   * n'est pas rendue, et l'élève a seulement noté ce qu'il PENSE avoir. Une
+   * note en attente n'entre dans AUCUNE moyenne, courbe ni tendance — voir
+   * lib/grades.ts#isScored, le filtre unique que tous les agrégats appliquent.
+   */
+  score: number | null;
   /** Barème. 20 dans l'immense majorité des cas, mais une colle sur 10 ou un concours blanc sur 40 existent. */
   maxScore: number;
+  /**
+   * CALIBRATION — la note que l'élève PRÉDISAIT avant de connaître le
+   * résultat, sur le même barème que `maxScore`. Facultative et absente de
+   * toute note antérieure à ce champ (`undefined` ⇒ pas de prédiction).
+   * Voir lib/calibration.ts.
+   */
+  predictedScore?: number | null;
   createdAt: string;
 }
 
@@ -293,6 +312,100 @@ export interface ReviewItem {
    * tâches. Voir lib/review-items.ts pour le raisonnement complet.
    */
   doneAt: string | null;
+  /**
+   * LE VERSO — facultatif. La question est `text` (« Montrer qu'une suite
+   * converge ? »), la réponse vit ici (« monotone + bornée ⇒ convergente »).
+   * Avec un verso, la séance de révision peut CACHER la réponse et demander
+   * de la retrouver de tête — c'est tout l'intérêt (voir
+   * lib/spaced-repetition.ts). Sans verso, l'entrée se révise quand même :
+   * on se demande simplement si l'on s'en souvient.
+   *
+   * Absent plutôt que `""` : une sauvegarde antérieure au verso n'a pas ce
+   * champ, et « pas de réponse » n'a qu'une seule écriture.
+   */
+  answer?: string;
+  /**
+   * LE CALENDRIER DE RÉVISION — absent tant que l'entrée n'a jamais été
+   * révisée. Une entrée sans calendrier est due le LENDEMAIN de sa création
+   * (voir `effectiveSchedule` dans lib/spaced-repetition.ts) : pas besoin de
+   * l'écrire à la saisie, et les entrées notées avant l'existence des
+   * révisions rejoignent la file sans migration.
+   */
+  srs?: ReviewSchedule;
+}
+
+/**
+ * L'état de révision espacée d'une entrée — un objet entier ou rien. Les six
+ * champs n'ont de sens qu'ensemble (un `dueAt` sans `step` ne dit pas quel
+ * intervalle viendrait ensuite) : les regrouper permet à la normalisation de
+ * jeter d'un bloc un calendrier illisible et de retomber sur « jamais
+ * révisée », plutôt que de recoller des morceaux.
+ */
+export interface ReviewSchedule {
+  /** Jour CALENDAIRE local (AAAA-MM-JJ) où l'entrée redevient à réviser — jamais un instant ISO : « à réviser demain » ne doit pas dépendre du fuseau. */
+  dueAt: string;
+  /** Écart, en jours, entre la dernière révision et `dueAt`. ≥ 1. */
+  intervalDays: number;
+  /** Barreau atteint sur l'échelle 1, 3, 7, 16, 35, 90 jours (0 = le premier). Voir `SRS_LADDER`. */
+  step: number;
+  /** Nombre de révisions notées, toutes notes confondues. */
+  reviews: number;
+  /** Nombre de « À revoir » — les oublis. Informatif : ne change pas le calcul. */
+  lapses: number;
+  /** ISO de la dernière note, ou `null`. */
+  lastReviewedAt: string | null;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CARNET D'ERREURS — ce qui s'est mal passé, et pourquoi
+   ══════════════════════════════════════════════════════════════════
+
+   Après une colle, un DS ou un exercice, l'élève note chaque erreur en une
+   dizaine de secondes : où (matière, source, date), QUEL GENRE d'erreur
+   (six types, voir lib/error-log.ts), ce qui s'est passé, et — s'il l'a —
+   la bonne idée qui l'aurait évitée.
+
+   Distinct du carnet « À revoir » : une entrée À revoir est une PROMESSE
+   (« revoir l'IPP »), qui se coche et s'efface. Une erreur est un CONSTAT
+   daté, qu'on ne coche pas — elle sert à voir, sur un mois, ce qui revient.
+   La fusionner avec le carnet aurait mêlé deux usages et rendu les comptes
+   par type impossibles.
+
+   Le chapitre et l'exercice sont FACULTATIFS et ne sont que des renvois
+   (identifiants) : l'erreur de colle n'a souvent aucun exercice dans la
+   banque, et c'est justement le cas le plus fréquent.
+*/
+
+/** Où l'erreur a été commise — le vocabulaire des élèves, pas celui de `GradeKind`, qui ignore l'exercice fait seul. */
+export type ErrorSource = "colle" | "DS" | "DM" | "exercice" | "concours blanc" | "autre";
+export const ERROR_SOURCES: readonly ErrorSource[] = ["colle", "DS", "DM", "exercice", "concours blanc", "autre"];
+
+/** Le GENRE d'erreur — six types, décrits en une ligne chacun dans lib/error-log.ts#ERROR_TYPE_META. */
+export type ErrorType = "calcul" | "méthode" | "cours" | "lecture" | "rédaction" | "temps";
+export const ERROR_TYPES: readonly ErrorType[] = ["calcul", "méthode", "cours", "lecture", "rédaction", "temps"];
+
+export interface ErrorEntry {
+  id: string;
+  subject: Subject;
+  /** "AAAA-MM-JJ" — le jour de l'épreuve ou de l'exercice, pas celui de la saisie. */
+  date: string;
+  source: ErrorSource;
+  type: ErrorType;
+  /** Ce qui s'est mal passé, en une ligne. Jamais vide. */
+  description: string;
+  /** « La bonne idée » : ce qu'il fallait faire. `null` quand l'élève ne l'a pas (encore) notée. */
+  fix: string | null;
+  /** Renvoi facultatif vers `Chapter.id` — n'est jamais une condition de validité. */
+  chapterId: string | null;
+  /** Renvoi facultatif vers `Exercise.id` de la banque. */
+  exerciseId: string | null;
+  /**
+   * Identifiant de l'entrée « À revoir » créée à partir de cette erreur, ou
+   * `null`. Sert uniquement à ne pas proposer deux fois « ajouter au
+   * carnet » — si l'entrée a été supprimée depuis, le bouton reparaît.
+   */
+  reviewItemId: string | null;
+  createdAt: string;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -826,7 +939,12 @@ export function normalizeGrade(raw: unknown): Grade | null {
 
   const maxScore = typeof item.maxScore === "number" && Number.isFinite(item.maxScore) && item.maxScore > 0 ? item.maxScore : 20;
   const rawScore = typeof item.score === "number" && Number.isFinite(item.score) ? item.score : null;
-  if (rawScore === null) return null;
+  // Calibration : une prédiction lisible, bornée au barème comme la note.
+  const rawPrediction =
+    typeof item.predictedScore === "number" && Number.isFinite(item.predictedScore) ? Math.max(0, Math.min(maxScore, item.predictedScore)) : null;
+  // Sans note NI prédiction, il ne reste rien à mesurer : écartée, comme
+  // avant. Avec une prédiction seule, c'est une note EN ATTENTE, légitime.
+  if (rawScore === null && rawPrediction === null) return null;
 
   return {
     id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
@@ -836,8 +954,11 @@ export function normalizeGrade(raw: unknown): Grade | null {
     date,
     // Bornée au barème : une note de 25/20 vient forcément d'une saisie ou
     // d'un fichier abîmé, et elle contaminerait toutes les moyennes.
-    score: Math.max(0, Math.min(maxScore, rawScore)),
+    score: rawScore === null ? null : Math.max(0, Math.min(maxScore, rawScore)),
     maxScore,
+    // Le champ n'est posé que s'il existe : une note sans prédiction garde
+    // exactement la forme qu'elle avait avant la calibration.
+    ...(rawPrediction !== null ? { predictedScore: rawPrediction } : {}),
     createdAt: isoDate(item.createdAt) ?? new Date().toISOString(),
   };
 }
@@ -864,6 +985,10 @@ export function normalizeReviewItem(raw: unknown): ReviewItem | null {
   if (!text) return null;
   const subject = migrateSubjectOrNull(item.subject);
   if (!subject) return null;
+  // Le verso garde ses retours à la ligne (une méthode s'écrit souvent en
+  // deux temps) mais perd ses espaces de bord ; vide, il n'existe pas.
+  const answer = typeof item.answer === "string" ? item.answer.trim() : "";
+  const srs = normalizeReviewSchedule(item.srs);
   return {
     id: typeof item.id === "string" && item.id ? item.id : crypto.randomUUID(),
     subject,
@@ -871,8 +996,84 @@ export function normalizeReviewItem(raw: unknown): ReviewItem | null {
     kind: (REVIEW_KINDS as string[]).includes(item.kind as string) ? (item.kind as ReviewKind) : "à revoir",
     createdAt: isoDate(item.createdAt) ?? new Date().toISOString(),
     doneAt: isoDate(item.doneAt),
+    // Ajoutés seulement s'ils existent : un aller-retour JSON d'une entrée
+    // sans verso ni calendrier doit redonner EXACTEMENT la même entrée.
+    ...(answer ? { answer } : {}),
+    ...(srs ? { srs } : {}),
   };
 }
+
+/**
+ * Un calendrier de révision lisible, ou `undefined` (= « jamais révisée »,
+ * l'entrée redevient due le lendemain de sa création).
+ *
+ * Seul `dueAt` est indispensable : sans jour d'échéance, on ne sait plus
+ * quand la montrer, et inventer une date mentirait. Le reste se répare — un
+ * barreau hors échelle est ramené dans l'échelle, un intervalle illisible
+ * reprend la valeur de son barreau, un compteur abîmé repart de zéro.
+ */
+export function normalizeReviewSchedule(raw: unknown): ReviewSchedule | undefined {
+  if (!isRecord(raw)) return undefined;
+  const dueAt = calendarDay(raw.dueAt);
+  if (!dueAt) return undefined;
+  const step = Math.min(SRS_LADDER.length - 1, nonNegativeInteger(raw.step) ?? 0);
+  return {
+    dueAt,
+    intervalDays: positiveInteger(raw.intervalDays) ?? SRS_LADDER[step],
+    step,
+    reviews: nonNegativeInteger(raw.reviews) ?? 0,
+    lapses: nonNegativeInteger(raw.lapses) ?? 0,
+    lastReviewedAt: isoDate(raw.lastReviewedAt),
+  };
+}
+
+/* ── Carnet d'erreurs ─────────────────────────────────────────────── */
+
+function optionalText(raw: unknown): string | null {
+  return typeof raw === "string" && raw.trim() ? raw.trim() : null;
+}
+
+/**
+ * Ramène une erreur notée potentiellement corrompue vers une forme valide, ou
+ * l'écarte (`null`).
+ *
+ * Écartée quand elle ne veut plus rien dire : sans description, sans matière
+ * reconnaissable, ou sans TYPE reconnu. Ce dernier point est un choix : le
+ * type est la seule chose que le carnet compte, et le remplacer par une
+ * valeur inventée fausserait précisément les statistiques qui justifient le
+ * carnet (« ton erreur n°1 : calcul » alors que l'élève n'a jamais dit
+ * calcul). Une source inconnue, elle, retombe sur « autre » — c'est une
+ * valeur honnête, qui existe pour ça.
+ *
+ * La date manquante retombe sur le jour de saisie quand il est lisible : une
+ * erreur notée le soir même d'une colle, c'est le cas normal.
+ */
+export function normalizeErrorEntry(raw: unknown): ErrorEntry | null {
+  const item = isRecord(raw) ? raw : {};
+  const description = typeof item.description === "string" ? item.description.trim() : "";
+  if (!description) return null;
+  const subject = migrateSubjectOrNull(item.subject);
+  if (!subject) return null;
+  if (!(ERROR_TYPES as string[]).includes(item.type as string)) return null;
+  const createdAt = isoDate(item.createdAt) ?? new Date().toISOString();
+  const date = calendarDay(item.date) ?? calendarDay(createdAt.slice(0, 10));
+  if (!date) return null;
+  return {
+    id: typeof item.id === "string" && item.id ? item.id : crypto.randomUUID(),
+    subject,
+    date,
+    source: (ERROR_SOURCES as string[]).includes(item.source as string) ? (item.source as ErrorSource) : "autre",
+    type: item.type as ErrorType,
+    description,
+    fix: optionalText(item.fix),
+    chapterId: optionalText(item.chapterId),
+    exerciseId: optionalText(item.exerciseId),
+    reviewItemId: optionalText(item.reviewItemId),
+    createdAt,
+  };
+}
+
+/* ── fin carnet d'erreurs ─────────────────────────────────────────── */
 
 /** Voir `DayPlanRecord` — un enregistrement sans jour valide n'a aucun sens et disparaît. */
 export function normalizeDayPlanRecord(raw: unknown): DayPlanRecord | null {
@@ -885,6 +1086,94 @@ export function normalizeDayPlanRecord(raw: unknown): DayPlanRecord | null {
     capturedAt: isoDate(item.capturedAt) ?? `${date}T00:00:00.000Z`,
   };
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   CHECK-IN DU SOIR — sommeil, énergie, stress (dix secondes par jour)
+   ══════════════════════════════════════════════════════════════════
+
+   Tout le reste du fichier décrit le TRAVAIL. Le check-in décrit l'état
+   dans lequel on le fait : combien on a dormi la nuit dernière, l'énergie et
+   le stress ressentis dans la journée. Trois chiffres et, au besoin, une
+   ligne de texte — une saisie qui dépasse dix secondes est une saisie qu'on
+   cesse de faire au bout d'une semaine.
+
+   UN CHECK-IN PAR JOUR CALENDAIRE, identifié par `date` et non par un
+   identifiant : refaire le check-in le même soir CORRIGE celui du jour (voir
+   lib/checkin-insights.ts#upsertCheckin), il n'en crée pas un second. Deux
+   valeurs pour la même nuit n'auraient aucun sens.
+
+   Le sommeil porte sur la nuit PRÉCÉDANT `date` : c'est la nuit qui a
+   précédé la journée de travail décrite. Voir lib/checkin-insights.ts pour
+   le rapprochement avec le temps travaillé.
+*/
+
+/** Bornes du sommeil saisissable, par pas d'une demi-heure — au-delà, c'est une faute de frappe, pas une nuit. */
+export const CHECKIN_SLEEP_MIN = 4;
+export const CHECKIN_SLEEP_MAX = 10;
+
+export interface DailyCheckin {
+  /** "AAAA-MM-JJ" — le jour décrit, clé unique de la collection. */
+  date: string;
+  /** Heures dormies la nuit précédente, par pas de 0,5, bornées à [4 ; 10]. */
+  sleepHours: number;
+  /** Énergie ressentie, de 1 (à plat) à 5 (en pleine forme). */
+  energy: number;
+  /** Stress ressenti, de 1 (serein) à 5 (sous pression). */
+  stress: number;
+  /** Une ligne facultative — `null` plutôt qu'une chaîne vide. */
+  note: string | null;
+  /** Dernière saisie (création ou correction). */
+  updatedAt: string;
+}
+
+function scaleOneToFive(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.max(1, Math.min(5, Math.round(value)));
+}
+
+/**
+ * Ramène un check-in corrompu vers une forme valide, ou l'écarte (`null`).
+ *
+ * Écarté sans jour valide (il n'y a plus de clé), ou quand l'une des trois
+ * mesures est illisible : inventer « 7 h de sommeil » ou « énergie 3 »
+ * fausserait précisément les moyennes et le rapprochement que la
+ * collection existe pour permettre. Une valeur HORS BORNES mais lisible est
+ * en revanche ramenée dans les bornes (12 h → 10 h), et arrondie à la
+ * demi-heure : c'est une saisie maladroite, pas une donnée absente.
+ */
+export function normalizeCheckin(raw: unknown): DailyCheckin | null {
+  const item = isRecord(raw) ? raw : {};
+  const date = calendarDay(item.date);
+  if (!date) return null;
+  if (typeof item.sleepHours !== "number" || !Number.isFinite(item.sleepHours)) return null;
+  const energy = scaleOneToFive(item.energy);
+  const stress = scaleOneToFive(item.stress);
+  if (energy === null || stress === null) return null;
+  const note = typeof item.note === "string" && item.note.trim() ? item.note.trim() : null;
+  return {
+    date,
+    sleepHours: Math.max(CHECKIN_SLEEP_MIN, Math.min(CHECKIN_SLEEP_MAX, Math.round(item.sleepHours * 2) / 2)),
+    energy,
+    stress,
+    note,
+    updatedAt: isoDate(item.updatedAt) ?? `${date}T20:00:00.000Z`,
+  };
+}
+
+/**
+ * Lecture dédupliquée : si un fichier (édition manuelle, fusion de deux
+ * sauvegardes) porte deux check-ins pour le même jour, le plus récent gagne.
+ * Triée par jour croissant — l'ordre d'une série.
+ */
+function dedupeCheckins(items: DailyCheckin[]): DailyCheckin[] {
+  const byDay = new Map<string, DailyCheckin>();
+  for (const item of items) {
+    const existing = byDay.get(item.date);
+    if (!existing || existing.updatedAt <= item.updatedAt) byDay.set(item.date, item);
+  }
+  return [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+/* ── fin du bloc check-in du soir ── */
 
 /**
  * Fusionne une préférence potentiellement partielle/corrompue (import, ancienne
@@ -1269,6 +1558,27 @@ export const localData = {
    * d'effacer.
    */
   saveReviewItems: (items: ReviewItem[]): boolean => writeKey(reviewItemsKey, JSON.stringify(items)),
+  /* ── Carnet d'erreurs ── */
+  errors: (): ErrorEntry[] =>
+    typeof window === "undefined" ? [] : readList(errorsKey).map(normalizeErrorEntry).filter((item): item is ErrorEntry => item !== null),
+  /**
+   * REMPLACE, jamais de fusion — même profil que `saveGrades` et
+   * `saveReviewItems` : une erreur mal saisie SE SUPPRIME, et la fusion par
+   * identifiant la ressusciterait à l'écriture suivante.
+   */
+  saveErrors: (items: ErrorEntry[]): boolean => writeKey(errorsKey, JSON.stringify(items)),
+  /* ── Check-in du soir ── */
+  checkins: (): DailyCheckin[] =>
+    typeof window === "undefined"
+      ? []
+      : dedupeCheckins(readList(checkinsKey).map(normalizeCheckin).filter((item): item is DailyCheckin => item !== null)),
+  /**
+   * REMPLACE — la liste entière, déjà mise à jour par
+   * lib/checkin-insights.ts#upsertCheckin. Un check-in ne se supprime pas,
+   * mais il se CORRIGE, et la clé est le jour : une fusion par `id` comme
+   * `mergeStored` n'aurait aucune prise ici.
+   */
+  saveCheckins: (items: DailyCheckin[]): boolean => writeKey(checkinsKey, JSON.stringify(items)),
 };
 
 /**
@@ -1303,7 +1613,7 @@ export function daysSinceBackup(lastBackupAt: string | null, now: Date = new Dat
  * l'ancien « réussi » inconditionnel.
  */
 export interface RestoreOutcome {
-  /** Vrai seulement si TOUTES les collections ont été écrites (neuf depuis le carnet « À revoir »). */
+  /** Vrai seulement si TOUTES les collections ont été écrites (onze depuis le check-in du soir). */
   ok: boolean;
   /** Collections réellement écrites, dans l'ordre de tentative. */
   restored: string[];
@@ -1353,6 +1663,10 @@ export function restoreBackup(payload: BackupPayload): RestoreOutcome {
     // Absent d'une sauvegarde antérieure au carnet : `[]`, comme les autres
     // collections optionnelles — l'import REMPLACE, il ne complète pas.
     ["le carnet à revoir", () => localData.saveReviewItems(payload.reviewItems ?? [])],
+    // Même règle : absent d'une sauvegarde antérieure au carnet d'erreurs ⇒ `[]`.
+    ["le carnet d'erreurs", () => localData.saveErrors(payload.errors ?? [])],
+    // Check-in du soir : absent d'une sauvegarde antérieure ⇒ `[]`.
+    ["les check-ins du soir", () => localData.saveCheckins(payload.checkins ?? [])],
     ["le planning", () => localData.saveDayPlans(payload.dayPlans ?? [])],
     ["les bilans de semaine", () => localData.saveWeekSnapshots(payload.weekSnapshots ?? [])],
     ["les réglages", () => localData.savePreferences(normalizePreferences(payload.preferences))],
@@ -1402,6 +1716,10 @@ export function buildBackupPayload(now: Date = new Date()): BackupPayload {
     // cartouches de méthode sont le fruit d'une année de corrigés
     // disséqués : exactement ce qu'aucun amorçage ne peut recréer.
     reviewItems: localData.reviewItems(),
+    // Le carnet d'erreurs : saisie manuelle pure, irremplaçable.
+    errors: localData.errors(),
+    // Check-in du soir : saisie manuelle, jour après jour — irrécupérable.
+    checkins: localData.checkins(),
   };
 }
 
@@ -1449,6 +1767,10 @@ export interface BackupPayload {
   dayPlans?: DayPlanRecord[];
   /** Optionnel, même raison — voir `ReviewItem`. */
   reviewItems?: ReviewItem[];
+  /** Optionnel, même raison — voir `ErrorEntry`. */
+  errors?: ErrorEntry[];
+  /** Optionnel, même raison — voir `DailyCheckin`. */
+  checkins?: DailyCheckin[];
 }
 
 /**
@@ -1521,5 +1843,9 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   // restauré à `[]` ; présent mais pas un tableau ⇒ fichier refusé, jamais
   // un carnet effacé en silence.
   if (data.reviewItems !== undefined && !Array.isArray(data.reviewItems)) return false;
+  // Carnet d'erreurs : même règle dès sa naissance.
+  if (data.errors !== undefined && !Array.isArray(data.errors)) return false;
+  // Check-in du soir : même règle, dès sa naissance.
+  if (data.checkins !== undefined && !Array.isArray(data.checkins)) return false;
   return true;
 }

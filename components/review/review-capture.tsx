@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Check, CornerDownLeft, X } from "lucide-react";
+import { ArrowRight, Check, CornerDownLeft, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented";
@@ -11,6 +11,7 @@ import {
   createReviewItem,
   parseReviewMemory,
   removeReviewItem,
+  REVIEW_ANSWER_MAX,
   REVIEW_KIND_META,
   REVIEW_MEMORY_KEY,
   REVIEW_TEXT_MAX,
@@ -69,6 +70,12 @@ export function ReviewCapture({
   const [chosenSubject, setChosenSubject] = useState<Subject>("Mathématiques");
   const [kind, setKind] = useState<ReviewKind>("à revoir");
   const [text, setText] = useState("");
+  // LE VERSO — replié par défaut. La saisie de cinq secondes reste une
+  // ligne ; qui veut s'interroger plus tard ouvre le second champ, et il
+  // reste ouvert tant que la page l'est (on note souvent plusieurs méthodes
+  // d'affilée, chacune avec sa réponse).
+  const [answer, setAnswer] = useState("");
+  const [answerOpen, setAnswerOpen] = useState(false);
   const [justAdded, setJustAdded] = useState<string | null>(null);
   const field = useRef<HTMLInputElement>(null);
   const subject = lockedSubject ?? chosenSubject;
@@ -92,14 +99,15 @@ export function ReviewCapture({
   );
 
   const trimmed = text.trim();
-  const canAdd = ready && trimmed.length > 0 && trimmed.length <= REVIEW_TEXT_MAX;
+  const canAdd = ready && trimmed.length > 0 && trimmed.length <= REVIEW_TEXT_MAX && answer.trim().length <= REVIEW_ANSWER_MAX;
 
   function add() {
-    const item = createReviewItem({ subject, text, kind });
+    const item = createReviewItem({ subject, text, kind, answer: answerOpen ? answer : undefined });
     if (!item || !ready) return;
     saveItems([item, ...items]);
     if (!lockedSubject) writeFlag(REVIEW_MEMORY_KEY, subject);
     setText("");
+    setAnswer("");
     setJustAdded(item.id);
     field.current?.focus();
   }
@@ -150,6 +158,31 @@ export function ReviewCapture({
         </label>
       </form>
 
+      {answerOpen && (
+        <label className="mt-2 block">
+          <span className="t-label mb-1 block">Réponse / méthode (facultatif)</span>
+          {/* Entrée valide la saisie, comme le champ du dessus ; Maj + Entrée
+              passe à la ligne — une méthode s'écrit souvent en deux temps. */}
+          <textarea
+            value={answer}
+            onChange={(event) => setAnswer(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                event.preventDefault();
+                if (canAdd) add();
+              }
+            }}
+            maxLength={REVIEW_ANSWER_MAX}
+            rows={2}
+            placeholder="Monotone + bornée ⇒ convergente"
+            className="block w-full resize-y rounded-lg border border-transparent bg-inset px-3 py-2 text-sm text-ink outline-none transition-colors placeholder:text-subtle hover:border-line focus:border-line"
+          />
+          <span className="t-meta mt-1 block text-2xs">
+            Le verso de la carte : en révision, la question s&apos;affiche seule et tu essaies de retrouver ceci de tête.
+          </span>
+        </label>
+      )}
+
       <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
         {/* MATIÈRE — les avatars déjà connus partout dans l'app, comme la
             saisie rapide de temps : sept cibles visibles d'un coup valent
@@ -189,6 +222,11 @@ export function ReviewCapture({
           }}
           options={REVIEW_KINDS.map((value) => ({ value, label: REVIEW_KIND_META[value].label }))}
         />
+        {!answerOpen && (
+          <Button type="button" variant="ghost" size="sm" onClick={() => setAnswerOpen(true)} aria-expanded={false}>
+            <Plus size={13} aria-hidden /> Réponse
+          </Button>
+        )}
       </div>
       {!lockedSubject && <p className="t-meta mt-1.5 text-2xs">{subject}</p>}
       {trimmed.length > REVIEW_TEXT_MAX - 40 && (
@@ -374,6 +412,9 @@ function ReviewRow({
             {tag}
           </span>
         )}
+        {/* Le verso, en retrait et en gris : dans le carnet on RELIT, rien
+            à cacher — c'est la séance de révision qui le masque. */}
+        {item.answer && <span className="mt-0.5 block whitespace-pre-line text-2xs text-muted">↳ {item.answer}</span>}
       </p>
       <button
         type="button"

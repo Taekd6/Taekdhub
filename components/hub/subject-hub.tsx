@@ -11,6 +11,9 @@ import { SegmentedControl } from "@/components/ui/segmented";
 import { Insufficient } from "@/components/progress/insufficient";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
 import { ReviewCapture, ReviewList } from "@/components/review/review-capture";
+import { DueToday } from "@/components/review/due-today";
+// Carnet d'erreurs — lien « Mes erreurs · N ».
+import { SubjectErrorsLink } from "@/components/errors/error-links";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { buildSubjectHub, hubSubjects, HUB_RECENT_DAYS, HUB_WINDOW_DAYS } from "@/lib/hub";
 import { describeConfidence } from "@/lib/analytics/trend";
@@ -40,7 +43,7 @@ import type { Subject } from "@/lib/supabase/types";
  * composer des moteurs existants — aucune statistique n'est née ici.
  */
 export function SubjectHub() {
-  const { exercises, sessions, chapters, workItems, grades, reviewItems, preferences, ready, saveReviewItems } = usePrepahubData();
+  const { exercises, sessions, chapters, workItems, grades, reviewItems, errors, preferences, ready, saveReviewItems } = usePrepahubData();
 
   const available = useMemo(() => hubSubjects(exercises, sessions, allSubjects), [exercises, sessions]);
   const [subject, setSubject] = useState<Subject | null>(null);
@@ -114,6 +117,9 @@ export function SubjectHub() {
               : "Aucun chapitre rattaché à cette matière pour l'instant."}
           </p>
         </div>
+        {/* Carnet d'erreurs de la matière — un lien, pas une section : on y
+            note en sortant d'une colle, pas en consultant le suivi. */}
+        <SubjectErrorsLink errors={errors} subject={active} className="ml-auto shrink-0" />
       </div>
 
       {/* ── AVANCEMENT ET TRAVAIL ───────────────────────────────── */}
@@ -257,6 +263,8 @@ export function SubjectHub() {
           </Link>
         }
       >
+        {/* Révisions espacées de CETTE matière — la séance s'ouvre filtrée. */}
+        <DueToday items={reviewItems} subject={active} className="mb-4" />
         <ReviewCapture
           key={active}
           items={reviewItems}

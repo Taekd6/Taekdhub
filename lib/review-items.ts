@@ -71,10 +71,20 @@ export const REVIEW_KIND_META: Record<ReviewKind, { label: string; filter: strin
   },
 };
 
+/**
+ * Le verso a plus de place que la question : une méthode tient rarement en
+ * une ligne (« monotone + bornée ⇒ convergente ; sinon, encadrer par deux
+ * suites adjacentes »), mais au-delà de quelques lignes ce n'est plus une
+ * réponse qu'on retrouve de tête, c'est un cours qu'on relit.
+ */
+export const REVIEW_ANSWER_MAX = 400;
+
 export interface NewReviewItemInput {
   subject: Subject;
   text: string;
   kind: ReviewKind;
+  /** Le verso, facultatif — voir `ReviewItem.answer`. */
+  answer?: string;
 }
 
 /**
@@ -92,9 +102,40 @@ export function sanitizeReviewText(value: string): string | null {
   return text;
 }
 
+/**
+ * Verso saisi, ou `null` s'il est vide ou trop long.
+ *
+ * Contrairement à la question, les retours à la ligne SONT gardés (une
+ * méthode s'écrit souvent en deux temps) ; on ne retire que les espaces de
+ * bord de chaque ligne et les lignes vides en série.
+ */
+export function sanitizeReviewAnswer(value: string): string | null {
+  const answer = value
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[^\S\n]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (!answer || answer.length > REVIEW_ANSWER_MAX) return null;
+  return answer;
+}
+
+/**
+ * Pas de calendrier de révision à la création : une entrée sans `srs` est
+ * due le lendemain de sa création (voir lib/spaced-repetition.ts), ce qui est
+ * exactement ce qu'on écrirait ici.
+ *
+ * Un verso trop long est REFUSÉ avec toute l'entrée plutôt que tronqué ou
+ * ignoré, pour la même raison que la question : l'interface borne le champ,
+ * et perdre en silence la moitié d'une méthode est pire qu'un refus.
+ */
 export function createReviewItem(input: NewReviewItemInput, now: Date = new Date()): ReviewItem | null {
   const text = sanitizeReviewText(input.text);
   if (text === null) return null;
+  const rawAnswer = input.answer?.trim() ?? "";
+  const answer = rawAnswer ? sanitizeReviewAnswer(rawAnswer) : null;
+  if (rawAnswer && answer === null) return null;
   return {
     id: crypto.randomUUID(),
     subject: input.subject,
@@ -102,6 +143,7 @@ export function createReviewItem(input: NewReviewItemInput, now: Date = new Date
     kind: input.kind,
     createdAt: now.toISOString(),
     doneAt: null,
+    ...(answer ? { answer } : {}),
   };
 }
 

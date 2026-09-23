@@ -17,6 +17,7 @@ import { SubjectTargetsSection } from "@/components/progress/subject-targets-sec
 import { SubjectEvolution } from "@/components/progress/subject-evolution";
 import { MasterySection } from "@/components/progress/mastery-section";
 import { GradesSection } from "@/components/progress/grades-section";
+import { SleepSection } from "@/components/progress/sleep-section"; // check-in du soir
 import { WorkAndResults } from "@/components/progress/work-and-results";
 import { resultCounts } from "@/lib/history";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -64,7 +65,7 @@ import type { Exercise, WorkSession } from "@/lib/supabase/types";
  * lib/gamification.ts, exactement comme avant.
  */
 export function ProgressOverview() {
-  const { sessions, exercises, chapters, weekSnapshots, workItems, grades, dayPlans, preferences, saveGrades, ready } = usePrepahubData();
+  const { sessions, exercises, chapters, weekSnapshots, workItems, grades, dayPlans, preferences, saveGrades, ready, checkins } = usePrepahubData();
 
   const model = useMemo(
     () => ({
@@ -200,6 +201,8 @@ export function ProgressOverview() {
         <MasterySection exercises={exercises} sessions={sessions} chapters={chapters} weekSnapshots={weekSnapshots} />
         <GradesSection grades={grades} onSave={saveGrades} />
         <ConsistencySection sessions={sessions} />
+        {/* ── Check-in du soir : sommeil, énergie, stress — voir components/progress/sleep-section.tsx ── */}
+        <SleepSection checkins={checkins} sessions={sessions} />
         <WeekSection dayPlans={dayPlans} sessions={sessions} />
         <WorkAndResults sessions={sessions} grades={grades} />
         <WeekEvolution exercises={exercises} sessions={sessions} weekSnapshots={weekSnapshots} />

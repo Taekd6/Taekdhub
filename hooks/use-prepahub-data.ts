@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { lastStorageWriteFailure, localData, readFlag, writeFlag, type Chapter, type DayPlanRecord, type Grade, type Preferences, type ReviewItem, type WeekSnapshot, type WorkItem } from "@/lib/storage";
+import { lastStorageWriteFailure, localData, readFlag, writeFlag, type Chapter, type DayPlanRecord, type ErrorEntry, type Grade, type Preferences, type ReviewItem, type WeekSnapshot, type WorkItem, type DailyCheckin } from "@/lib/storage";
 import { buildWeeklyPlan } from "@/lib/planning";
 import { dayKey } from "@/lib/study";
 import { loadSeedBank, reconcileSeedBank, SEED_CONTENT_VERSION, SEED_FLAG_KEY, SEED_VERSION_KEY } from "@/lib/seed";
@@ -74,6 +74,10 @@ type DataState = {
   dayPlans: DayPlanRecord[];
   /** Carnet « À revoir » : notions à revoir, à apprendre, et cartouches de méthode — voir `ReviewItem` (lib/storage.ts). */
   reviewItems: ReviewItem[];
+  /** Carnet d'erreurs — voir `ErrorEntry` (lib/storage.ts). */
+  errors: ErrorEntry[];
+  /** Check-in du soir (sommeil, énergie, stress) — voir `DailyCheckin` (lib/storage.ts). */
+  checkins: DailyCheckin[];
   weekSnapshots: WeekSnapshot[];
   lastBackupAt: string | null;
   preferences: Preferences;
@@ -156,6 +160,8 @@ function readAll(): Omit<DataState, "ready" | "writeFailedAt"> {
     grades: localData.grades(),
     dayPlans: ensureTomorrowPlanRecord(workItems, sessions, preferences, localData.dayPlans()),
     reviewItems: localData.reviewItems(),
+    errors: localData.errors(),
+    checkins: localData.checkins(),
     weekSnapshots,
     lastBackupAt: localData.lastBackupAt(),
     preferences,
@@ -171,6 +177,8 @@ export function usePrepahubData() {
     grades: [],
     dayPlans: [],
     reviewItems: [],
+    errors: [],
+    checkins: [],
     weekSnapshots: [],
     lastBackupAt: null,
     preferences: localData.preferences(),
@@ -269,6 +277,28 @@ export function usePrepahubData() {
     setData((prev) => ({ ...prev, reviewItems: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
+  /* ── Carnet d'erreurs ──────────────────────────────────────────────
+     REMPLACEMENT, exactement comme `saveReviewItems` et pour les mêmes
+     raisons : une erreur se supprime, et une écriture refusée renvoie ce qui
+     est RÉELLEMENT sur le disque. Un seul appelant du hook par écran
+     (components/errors/error-log.tsx). */
+  const saveErrors = useCallback((errors: ErrorEntry[]) => {
+    const written = localData.saveErrors(errors);
+    const stored = written ? errors : localData.errors();
+    setData((prev) => ({ ...prev, errors: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
+  }, []);
+  /* ── fin carnet d'erreurs ── */
+  /* ── Check-in du soir ──
+   * REMPLACEMENT de la liste déjà mise à jour par
+   * lib/checkin-insights.ts#upsertCheckin (un check-in par jour, qui se
+   * corrige). Écriture refusée : l'état reçoit ce qui est RÉELLEMENT sur le
+   * disque, même règle que `saveReviewItems`. */
+  const saveCheckins = useCallback((checkins: DailyCheckin[]) => {
+    const written = localData.saveCheckins(checkins);
+    const stored = written ? checkins : localData.checkins();
+    setData((prev) => ({ ...prev, checkins: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
+  }, []);
+
   const saveChapters = useCallback((chapters: Chapter[]) => {
     localData.saveChapters(chapters);
     setData((prev) => ({ ...prev, chapters, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
@@ -279,5 +309,5 @@ export function usePrepahubData() {
     setData((prev) => ({ ...prev, preferences, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
-  return { ...data, refresh, saveSessions, removeSession, saveExercises, saveWorkItems, saveGrades, saveReviewItems, saveChapters, savePreferences };
+  return { ...data, refresh, saveSessions, removeSession, saveExercises, saveWorkItems, saveGrades, saveReviewItems, saveErrors, saveCheckins, saveChapters, savePreferences };
 }

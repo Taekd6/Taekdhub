@@ -2,7 +2,7 @@ import { computeConsistency, currentStreak } from "@/lib/analytics/consistency";
 import { computeChapterMastery } from "@/lib/analytics/mastery";
 import { computeTrend, type Trend } from "@/lib/analytics/trend";
 import { computeSubjectDistribution, computeWorkTimeSeries, measuredMinutes, minutesBetween, type TimePoint } from "@/lib/analytics/work-time";
-import { computeGradeStats, computeGradeTrend, type GradeStats } from "@/lib/grades";
+import { computeGradeStats, computeGradeTrend, isScored, type GradeStats } from "@/lib/grades";
 import { computeProgressBySubject } from "@/lib/progress";
 import { dayKey, subjects as allSubjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
@@ -303,7 +303,10 @@ export interface GradeKindTracking {
  * les agréger produirait un nombre que le modèle ne porte pas. Chaque nature
  * garde donc sa courbe, et l'interface laisse choisir.
  */
-export function computeGradesByKind(grades: Grade[]): GradeKindTracking[] {
+export function computeGradesByKind(all: Grade[]): GradeKindTracking[] {
+  // Notes en attente exclues : une nature qui n'a QUE des prédictions n'a
+  // encore aucun résultat à montrer (voir lib/grades.ts#isScored).
+  const grades = all.filter(isScored);
   return GRADE_KINDS.filter((kind) => grades.some((grade) => grade.kind === kind)).map((kind) => {
     const scoped = grades.filter((grade) => grade.kind === kind);
     return { kind, stats: computeGradeStats(scoped), trend: computeGradeTrend(scoped).trend };
@@ -317,7 +320,8 @@ export interface SubjectGradeRow {
 }
 
 /** Une ligne par matière NOTÉE — jamais une ligne vide pour une matière sans note. */
-export function computeGradesBySubject(grades: Grade[], kind: GradeKind | null = null): SubjectGradeRow[] {
+export function computeGradesBySubject(all: Grade[], kind: GradeKind | null = null): SubjectGradeRow[] {
+  const grades = all.filter(isScored); // notes en attente exclues — voir `computeGradesByKind`
   const scoped = kind ? grades.filter((grade) => grade.kind === kind) : grades;
   return allSubjects
     .filter((subject) => scoped.some((grade) => grade.subject === subject))
