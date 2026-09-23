@@ -6,6 +6,7 @@ import { ArrowRight, CalendarClock, ChevronRight, Flame, LayoutList, Trophy } fr
 import { useCallback, useMemo, useState } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { QuickLog } from "@/components/work/quick-log";
+import { ReviewCapture } from "@/components/review/review-capture";
 import { Button } from "@/components/ui/button";
 import { List, rowInteractive, Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
@@ -39,6 +40,7 @@ import { buildWeeklyPlan } from "@/lib/planning";
 import { servesBankExercises, WORK_ITEM_KIND_META } from "@/lib/work-items";
 import { LOAD_STATUS_META } from "@/lib/workload";
 import { computeProgressBySubject } from "@/lib/progress";
+import { selectReviewItems } from "@/lib/review-items";
 import { cn } from "@/lib/cn";
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
@@ -65,7 +67,7 @@ const contestDateFormatter = new Intl.DateTimeFormat("fr-FR", { day: "numeric", 
  *    le seul endroit d'où l'on part travailler.
  */
 export function DashboardOverview() {
-  const { sessions, exercises, chapters, workItems, preferences, ready, saveSessions, removeSession } = usePrepahubData();
+  const { sessions, exercises, chapters, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems } = usePrepahubData();
   const router = useRouter();
   const [planMinutes, setPlanMinutes] = useState<number>(DEFAULT_PLAN_MINUTES);
 
@@ -113,6 +115,8 @@ export function DashboardOverview() {
       contestDate: preferences.contestDate ? contestDateFormatter.format(new Date(preferences.contestDate)) : null,
     };
   }, [exercises, sessions, chapters, preferences]);
+
+  const openReviews = useMemo(() => selectReviewItems(reviewItems, { openOnly: true }), [reviewItems]);
 
   const dailyPlan = useMemo(
     () => computeDailyPlan(exercises, sessions, chapters, planMinutes, new Date()),
@@ -612,6 +616,31 @@ export function DashboardOverview() {
           )
         )}
 
+        {/* ── À REVOIR ──────────────────────────────────────────────
+            Dans la colonne principale et non dans le rail : c'est une
+            SAISIE, et le rail est fait pour être lu. Sous la séance et
+            « Reprendre », parce que noter ce qu'il faut revoir vient après
+            avoir travaillé, pas avant. Six lignes au plus : au-delà,
+            l'accueil deviendrait le carnet, et le carnet a sa page. */}
+        <Section
+          label="À revoir"
+          title="Ce qu'il faut reprendre"
+          action={
+            <Link href="/revoir" className="t-meta inline-flex min-h-6 items-center gap-1 rounded hover:text-ink max-lg:min-h-11">
+              Le carnet <ChevronRight size={14} />
+            </Link>
+          }
+        >
+          <ReviewCapture
+            items={reviewItems}
+            saveItems={saveReviewItems}
+            ready={ready}
+            visible={openReviews}
+            limit={REVIEW_ITEMS_ON_DASHBOARD}
+            allHref="/revoir"
+          />
+        </Section>
+
         {/* ── À CONSOLIDER ──────────────────────────────────────────── */}
         {toConsolidate.length > 0 && (
           <Section
@@ -666,6 +695,9 @@ export function DashboardOverview() {
     </Split>
   );
 }
+
+/** Au-delà, l'accueil deviendrait le carnet — le reste vit sur /revoir. */
+const REVIEW_ITEMS_ON_DASHBOARD = 6;
 
 /** « aujourd'hui » / « hier » / « il y a 4 jours » — jamais une date brute pour du travail récent. */
 function relativeDay(iso: string): string {

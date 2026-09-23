@@ -13,6 +13,7 @@ const weekSnapshotsKey = "prepahub:week-snapshots";
 const workItemsKey = "prepahub:work-items";
 const gradesKey = "prepahub:grades";
 const dayPlansKey = "prepahub:day-plans";
+const reviewItemsKey = "prepahub:reviewItems";
 
 /**
  * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
@@ -178,6 +179,58 @@ export interface Grade {
   /** Barème. 20 dans l'immense majorité des cas, mais une colle sur 10 ou un concours blanc sur 40 existent. */
   maxScore: number;
   createdAt: string;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CARNET « À REVOIR » — ce qu'on se promet de reprendre
+   ══════════════════════════════════════════════════════════════════
+
+   En maths, l'élève dissèque les corrigés pendant la semaine pour en
+   extraire des « cartouches » : non pas un résultat à réciter, mais une
+   manière de penser (« montrer qu'une suite converge → monotone bornée »).
+   À côté de ça, il y a tout ce qu'on se note en passant — « revoir l'IPP »,
+   « refaire l'exo 12 du TD4 », « apprendre les formules de trigo ». Tout
+   cela finissait sur un coin de cahier, et donc nulle part.
+
+   Volontairement minimal, pour la même raison que `Grade` : une ligne de
+   texte, une matière, une nature. Ni chapitre, ni échéance, ni priorité —
+   chaque champ de plus coûte une décision à la saisie, et une saisie qui
+   dépasse cinq secondes est une saisie qu'on ne fait plus.
+
+   Le carnet n'est PAS relié à la banque d'exercices : « l'exo 12 du TD4 »
+   n'y existe pas, et c'est précisément ce que l'élève a besoin de noter.
+*/
+
+/**
+ * Nature d'une entrée — trois valeurs, parce que l'élève en distingue trois :
+ *
+ *   « à revoir »    une notion vue, pas encore solide. Se coche quand c'est fait.
+ *   « à apprendre » du par-cœur (formules, définitions). Se coche quand c'est su.
+ *   « méthode »     une CARTOUCHE. Ce n'est pas une tâche mais une fiche de
+ *                   référence, qu'on garde toute l'année — voir `ReviewItem.doneAt`.
+ */
+export type ReviewKind = "à revoir" | "à apprendre" | "méthode";
+export const REVIEW_KINDS: readonly ReviewKind[] = ["à revoir", "à apprendre", "méthode"];
+
+export interface ReviewItem {
+  id: string;
+  subject: Subject;
+  /** Ce qu'il y a à revoir, tel que l'élève l'a tapé (espaces de bord retirés). Jamais vide. */
+  text: string;
+  kind: ReviewKind;
+  createdAt: string;
+  /**
+   * ISO, ou `null` tant que l'entrée est ouverte.
+   *
+   * Pour « à revoir » / « à apprendre », c'est le moment où c'est FAIT :
+   * l'entrée quitte les listes ouvertes.
+   *
+   * Pour une « méthode », c'est le moment où la cartouche est MAÎTRISÉE — et
+   * elle ne disparaît pas pour autant : elle reste dans la liste des
+   * cartouches de sa matière, qui est un aide-mémoire, pas une liste de
+   * tâches. Voir lib/review-items.ts pour le raisonnement complet.
+   */
+  doneAt: string | null;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -727,6 +780,38 @@ export function normalizeGrade(raw: unknown): Grade | null {
   };
 }
 
+/**
+ * Ramène une entrée du carnet « À revoir » potentiellement corrompue vers une
+ * forme valide, ou l'écarte (`null`).
+ *
+ * Écartée seulement quand elle ne veut plus rien dire : sans texte, il n'y a
+ * rien à revoir ; sans matière reconnaissable (même après
+ * `migrateSubjectOrNull`, qui rattrape les renommages), on ne saurait pas où
+ * la ranger — la déposer d'office en « Mathématiques » mentirait. Tout le
+ * reste se répare : une nature inconnue retombe sur « à revoir », une date
+ * illisible sur maintenant.
+ *
+ * Le texte n'est PAS tronqué ici, alors que la saisie le borne (voir
+ * lib/review-items.ts#REVIEW_TEXT_MAX) : un fichier édité à la main avec une
+ * ligne plus longue reste lisible, et couper la pensée de l'élève au milieu
+ * serait une perte de donnée pour un gain purement cosmétique.
+ */
+export function normalizeReviewItem(raw: unknown): ReviewItem | null {
+  const item = isRecord(raw) ? raw : {};
+  const text = typeof item.text === "string" ? item.text.trim() : "";
+  if (!text) return null;
+  const subject = migrateSubjectOrNull(item.subject);
+  if (!subject) return null;
+  return {
+    id: typeof item.id === "string" && item.id ? item.id : crypto.randomUUID(),
+    subject,
+    text,
+    kind: (REVIEW_KINDS as string[]).includes(item.kind as string) ? (item.kind as ReviewKind) : "à revoir",
+    createdAt: isoDate(item.createdAt) ?? new Date().toISOString(),
+    doneAt: isoDate(item.doneAt),
+  };
+}
+
 /** Voir `DayPlanRecord` — un enregistrement sans jour valide n'a aucun sens et disparaît. */
 export function normalizeDayPlanRecord(raw: unknown): DayPlanRecord | null {
   const item = isRecord(raw) ? raw : {};
@@ -1077,6 +1162,19 @@ export const localData = {
       ? []
       : readList(dayPlansKey).map(normalizeDayPlanRecord).filter((item): item is DayPlanRecord => item !== null),
   saveDayPlans: (items: DayPlanRecord[]): boolean => writeKey(dayPlansKey, JSON.stringify(items)),
+  reviewItems: (): ReviewItem[] =>
+    typeof window === "undefined"
+      ? []
+      : readList(reviewItemsKey).map(normalizeReviewItem).filter((item): item is ReviewItem => item !== null),
+  /**
+   * REMPLACE, jamais de fusion — même profil que `saveGrades` et
+   * `saveChapters`. Une entrée du carnet SE SUPPRIME (faute de frappe, ligne
+   * devenue inutile) : la fusion par identifiant de `mergeStored` conserve
+   * toute entrée présente sur le disque et absente de la liste entrante, elle
+   * ressusciterait donc à l'écriture suivante la ligne que l'élève vient
+   * d'effacer.
+   */
+  saveReviewItems: (items: ReviewItem[]): boolean => writeKey(reviewItemsKey, JSON.stringify(items)),
 };
 
 /**
@@ -1111,7 +1209,7 @@ export function daysSinceBackup(lastBackupAt: string | null, now: Date = new Dat
  * l'ancien « réussi » inconditionnel.
  */
 export interface RestoreOutcome {
-  /** Vrai seulement si les HUIT collections ont été écrites. */
+  /** Vrai seulement si TOUTES les collections ont été écrites (neuf depuis le carnet « À revoir »). */
   ok: boolean;
   /** Collections réellement écrites, dans l'ordre de tentative. */
   restored: string[];
@@ -1158,6 +1256,9 @@ export function restoreBackup(payload: BackupPayload): RestoreOutcome {
     ["les séances", () => localData.saveSessions(payload.sessions)],
     ["les échéances", () => localData.saveWorkItems(payload.workItems ?? [])],
     ["les notes", () => localData.saveGrades(payload.grades ?? [])],
+    // Absent d'une sauvegarde antérieure au carnet : `[]`, comme les autres
+    // collections optionnelles — l'import REMPLACE, il ne complète pas.
+    ["le carnet à revoir", () => localData.saveReviewItems(payload.reviewItems ?? [])],
     ["le planning", () => localData.saveDayPlans(payload.dayPlans ?? [])],
     ["les bilans de semaine", () => localData.saveWeekSnapshots(payload.weekSnapshots ?? [])],
     ["les réglages", () => localData.savePreferences(normalizePreferences(payload.preferences))],
@@ -1171,35 +1272,47 @@ export function restoreBackup(payload: BackupPayload): RestoreOutcome {
   return { ok: true, restored, failedAt: null, intact: false };
 }
 
+/**
+ * Le CONTENU d'une sauvegarde, lu depuis le disque — séparé de
+ * `exportBackup` (qui, lui, déclenche un téléchargement) pour que le
+ * round-trip export → JSON → `validateBackupPayload` → `restoreBackup` se
+ * teste sans navigateur (lib/storage.test.ts). Sans cette séparation, une
+ * collection oubliée à l'export ne se voyait qu'au jour du changement
+ * d'ordinateur — c'est-à-dire trop tard.
+ */
+export function buildBackupPayload(now: Date = new Date()): BackupPayload {
+  return {
+    version: 1,
+    exportedAt: now.toISOString(),
+    exercises: localData.exercises(),
+    sessions: localData.sessions(),
+    preferences: localData.preferences(),
+    // `chapters` (Sprint 3D) : indispensable dans la sauvegarde — les
+    // exercices y renvoient par `chapter_id`. Sans lui, un changement
+    // d'ordinateur restaurerait des exercices avec des chapitres
+    // fantômes (chapter_id pointant vers un catalogue vide).
+    chapters: localData.chapters(),
+    weekSnapshots: localData.weekSnapshots(),
+    // Les échéances et les travaux planifiés sont de la saisie MANUELLE de
+    // l'élève — la donnée la moins reconstituable de tout le fichier. Une
+    // sauvegarde qui les oublierait perdrait exactement ce qu'aucun
+    // amorçage ne peut recréer.
+    workItems: localData.workItems(),
+    // Les notes sont saisies à la main et ne se recalculent pas : une
+    // sauvegarde qui les oublierait perdrait un trimestre de résultats.
+    grades: localData.grades(),
+    // Les intentions de planning passées ne sont pas reconstituables non
+    // plus — voir `DayPlanRecord`.
+    dayPlans: localData.dayPlans(),
+    // Le carnet « À revoir » est de la saisie manuelle pure, et les
+    // cartouches de méthode sont le fruit d'une année de corrigés
+    // disséqués : exactement ce qu'aucun amorçage ne peut recréer.
+    reviewItems: localData.reviewItems(),
+  };
+}
+
 export function exportBackup(): void {
-  const data = JSON.stringify(
-    {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      exercises: localData.exercises(),
-      sessions: localData.sessions(),
-      preferences: localData.preferences(),
-      // `chapters` (Sprint 3D) : indispensable dans la sauvegarde — les
-      // exercices y renvoient par `chapter_id`. Sans lui, un changement
-      // d'ordinateur restaurerait des exercices avec des chapitres
-      // fantômes (chapter_id pointant vers un catalogue vide).
-      chapters: localData.chapters(),
-      weekSnapshots: localData.weekSnapshots(),
-      // Les échéances et les travaux planifiés sont de la saisie MANUELLE de
-      // l'élève — la donnée la moins reconstituable de tout le fichier. Une
-      // sauvegarde qui les oublierait perdrait exactement ce qu'aucun
-      // amorçage ne peut recréer.
-      workItems: localData.workItems(),
-      // Les notes sont saisies à la main et ne se recalculent pas : une
-      // sauvegarde qui les oublierait perdrait un trimestre de résultats.
-      grades: localData.grades(),
-      // Les intentions de planning passées ne sont pas reconstituables non
-      // plus — voir `DayPlanRecord`.
-      dayPlans: localData.dayPlans(),
-    },
-    null,
-    2
-  );
+  const data = JSON.stringify(buildBackupPayload(), null, 2);
   const url = URL.createObjectURL(new Blob([data], { type: "application/json" }));
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -1240,6 +1353,8 @@ export interface BackupPayload {
   grades?: Grade[];
   /** Optionnel, même raison — voir `DayPlanRecord`. */
   dayPlans?: DayPlanRecord[];
+  /** Optionnel, même raison — voir `ReviewItem`. */
+  reviewItems?: ReviewItem[];
 }
 
 /**
@@ -1307,5 +1422,10 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   if (data.workItems !== undefined && !Array.isArray(data.workItems)) return false;
   if (data.grades !== undefined && !Array.isArray(data.grades)) return false;
   if (data.dayPlans !== undefined && !Array.isArray(data.dayPlans)) return false;
+  // Le carnet « À revoir » suit la même règle dès sa naissance, plutôt que
+  // d'attendre qu'on redécouvre l'oubli : absent (sauvegarde antérieure) ⇒
+  // restauré à `[]` ; présent mais pas un tableau ⇒ fichier refusé, jamais
+  // un carnet effacé en silence.
+  if (data.reviewItems !== undefined && !Array.isArray(data.reviewItems)) return false;
   return true;
 }

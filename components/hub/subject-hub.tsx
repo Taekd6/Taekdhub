@@ -10,10 +10,12 @@ import { Meter } from "@/components/ui/progress";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Insufficient } from "@/components/progress/insufficient";
 import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { ReviewCapture, ReviewList } from "@/components/review/review-capture";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { buildSubjectHub, hubSubjects, HUB_RECENT_DAYS, HUB_WINDOW_DAYS } from "@/lib/hub";
 import { describeConfidence } from "@/lib/analytics/trend";
 import { formatAverage, GRADE_KIND_META } from "@/lib/grades";
+import { methodsFor, selectReviewItems } from "@/lib/review-items";
 import { subjects as allSubjects, subjectMeta } from "@/lib/study";
 import { formatSpan } from "@/lib/utils";
 import { cn } from "@/lib/cn";
@@ -38,7 +40,7 @@ import type { Subject } from "@/lib/supabase/types";
  * composer des moteurs existants — aucune statistique n'est née ici.
  */
 export function SubjectHub() {
-  const { exercises, sessions, chapters, workItems, grades, preferences, ready } = usePrepahubData();
+  const { exercises, sessions, chapters, workItems, grades, reviewItems, preferences, ready, saveReviewItems } = usePrepahubData();
 
   const available = useMemo(() => hubSubjects(exercises, sessions, allSubjects), [exercises, sessions]);
   const [subject, setSubject] = useState<Subject | null>(null);
@@ -51,6 +53,21 @@ export function SubjectHub() {
     () => (active ? buildSubjectHub(active, exercises, sessions, chapters, workItems, grades, preferences) : null),
     [active, exercises, sessions, chapters, workItems, grades, preferences]
   );
+
+  /*
+   * Le carnet de la matière, en deux listes qui ne se ressemblent pas :
+   * les TÂCHES ouvertes (à revoir, à apprendre), qui disparaissent une fois
+   * cochées, et le RECUEIL des cartouches, qui ne rétrécit jamais tout seul
+   * — voir lib/review-items.ts. Mêler les deux ferait disparaître une
+   * méthode maîtrisée de la seule page où on vient la relire.
+   */
+  const review = useMemo(() => {
+    if (!active) return { tasks: [], methods: [] };
+    return {
+      tasks: selectReviewItems(reviewItems, { subject: active, openOnly: true }).filter((item) => item.kind !== "méthode"),
+      methods: methodsFor(reviewItems, active),
+    };
+  }, [reviewItems, active]);
 
   if (!ready) return <div className="h-64 animate-pulse rounded-xl bg-inset" />;
 
@@ -222,6 +239,56 @@ export function SubjectHub() {
           )}
         </Section>
       )}
+
+      {/* ── À REVOIR ET CARTOUCHES ─────────────────────────────────
+          Ce qu'on a noté en disséquant les corrigés de cette matière. La
+          saisie est ici aussi, matière déjà choisie : on ouvre le suivi de
+          maths, on note, on referme. */}
+      <Section
+        label="Le carnet"
+        title="À revoir"
+        description="Ce que tu as noté en relisant tes corrigés, et les méthodes que tu en as tirées."
+        action={
+          <Link
+            href={`/revoir?subject=${encodeURIComponent(active)}`}
+            className="t-meta inline-flex min-h-6 items-center gap-1 rounded hover:text-ink max-lg:min-h-11"
+          >
+            Tout le carnet <ArrowRight size={14} aria-hidden />
+          </Link>
+        }
+      >
+        <ReviewCapture
+          key={active}
+          items={reviewItems}
+          saveItems={saveReviewItems}
+          ready={ready}
+          subject={active}
+          visible={review.tasks}
+          emptyText={`Rien à revoir en ${active} pour l'instant.`}
+        />
+        <div className="mt-6">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="t-label">Cartouches</p>
+            {review.methods.length > 0 && (
+              <p className="tabular t-meta shrink-0 text-2xs">
+                {review.methods.filter((item) => item.doneAt !== null).length} maîtrisée
+                {review.methods.filter((item) => item.doneAt !== null).length > 1 ? "s" : ""} sur {review.methods.length}
+              </p>
+            )}
+          </div>
+          {/* Les méthodes maîtrisées RESTENT : c'est un recueil qu'on relit
+              avant un DS, pas une liste qu'on vide. */}
+          <ReviewList
+            items={reviewItems}
+            saveItems={saveReviewItems}
+            rows={review.methods}
+            showSubject={false}
+            showKind={false}
+            emptyText="Aucune méthode notée. Choisis « Méthode » ci-dessus pour garder une manière de penser tirée d'un corrigé."
+            className="mt-2"
+          />
+        </div>
+      </Section>
 
       {/* ── LA SORTIE ───────────────────────────────────────────── */}
       <Section label="Et maintenant" title="À travailler ensuite">

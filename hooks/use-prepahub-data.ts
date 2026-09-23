@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { lastStorageWriteFailure, localData, readFlag, writeFlag, type Chapter, type DayPlanRecord, type Grade, type Preferences, type WeekSnapshot, type WorkItem } from "@/lib/storage";
+import { lastStorageWriteFailure, localData, readFlag, writeFlag, type Chapter, type DayPlanRecord, type Grade, type Preferences, type ReviewItem, type WeekSnapshot, type WorkItem } from "@/lib/storage";
 import { buildWeeklyPlan } from "@/lib/planning";
 import { dayKey } from "@/lib/study";
 import { loadSeedBank, reconcileSeedBank, SEED_CONTENT_VERSION, SEED_FLAG_KEY, SEED_VERSION_KEY } from "@/lib/seed";
@@ -72,6 +72,8 @@ type DataState = {
   grades: Grade[];
   /** Intentions de planning passées — voir `DayPlanRecord` (lib/storage.ts). */
   dayPlans: DayPlanRecord[];
+  /** Carnet « À revoir » : notions à revoir, à apprendre, et cartouches de méthode — voir `ReviewItem` (lib/storage.ts). */
+  reviewItems: ReviewItem[];
   weekSnapshots: WeekSnapshot[];
   lastBackupAt: string | null;
   preferences: Preferences;
@@ -153,6 +155,7 @@ function readAll(): Omit<DataState, "ready" | "writeFailedAt"> {
     workItems,
     grades: localData.grades(),
     dayPlans: ensureTomorrowPlanRecord(workItems, sessions, preferences, localData.dayPlans()),
+    reviewItems: localData.reviewItems(),
     weekSnapshots,
     lastBackupAt: localData.lastBackupAt(),
     preferences,
@@ -167,6 +170,7 @@ export function usePrepahubData() {
     workItems: [],
     grades: [],
     dayPlans: [],
+    reviewItems: [],
     weekSnapshots: [],
     lastBackupAt: null,
     preferences: localData.preferences(),
@@ -245,6 +249,26 @@ export function usePrepahubData() {
     setData((prev) => ({ ...prev, grades, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
+  /**
+   * REMPLACEMENT, pour la même raison que `saveGrades` : une entrée du carnet
+   * se supprime, et une fusion par identifiant la ressusciterait. Le prix de
+   * ce choix est connu et accepté — une copie React PÉRIMÉE qui écrirait
+   * effacerait ce qu'une autre a ajouté. C'est pourquoi un seul composant
+   * par écran appelle le hook et passe `reviewItems`/`saveReviewItems` à ses
+   * enfants (voir components/review/review-capture.tsx), plutôt que chaque
+   * enfant ouvre sa propre copie.
+   *
+   * Écriture refusée (quota) : l'état reçoit ce qui est RÉELLEMENT sur le
+   * disque, pas la liste voulue — sinon la ligne s'afficherait comme notée
+   * et disparaîtrait au rechargement, exactement ce que `merge*` a appris à
+   * éviter (voir lib/storage.ts#mergeAndStore).
+   */
+  const saveReviewItems = useCallback((reviewItems: ReviewItem[]) => {
+    const written = localData.saveReviewItems(reviewItems);
+    const stored = written ? reviewItems : localData.reviewItems();
+    setData((prev) => ({ ...prev, reviewItems: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
+  }, []);
+
   const saveChapters = useCallback((chapters: Chapter[]) => {
     localData.saveChapters(chapters);
     setData((prev) => ({ ...prev, chapters, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
@@ -255,5 +279,5 @@ export function usePrepahubData() {
     setData((prev) => ({ ...prev, preferences, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
-  return { ...data, refresh, saveSessions, removeSession, saveExercises, saveWorkItems, saveGrades, saveChapters, savePreferences };
+  return { ...data, refresh, saveSessions, removeSession, saveExercises, saveWorkItems, saveGrades, saveReviewItems, saveChapters, savePreferences };
 }
