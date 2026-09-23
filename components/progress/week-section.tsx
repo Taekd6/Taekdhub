@@ -58,9 +58,9 @@ export function WeekSection({ dayPlans, sessions }: { dayPlans: DayPlanRecord[];
           /* La promesse était INCONDITIONNELLE, et fausse pour qui n'a pas
              d'échéance : `ensureTomorrowPlanRecord` (hooks/use-prepahub-data.ts)
              sort immédiatement quand `workItems` est vide, donc aucune
-             intention n'est jamais enregistrée. Un élève qui n'utilise que la
-             banque d'exercices se voyait promettre chaque jour une
-             comparaison qui n'arriverait jamais. */
+             intention n'est jamais enregistrée. Un élève sans échéance se
+             voyait promettre chaque jour une comparaison qui n'arriverait
+             jamais. */
           how="TaekdHub note ce qu'il prévoit pour le lendemain à partir de tes échéances : la comparaison démarre dès que tu en as créé une."
         />
       ) : (

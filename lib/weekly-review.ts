@@ -1,18 +1,18 @@
 import { computeEstimationBias, type EstimationBias } from "@/lib/estimation";
 import { computeWorkItemPriority, sortByPriority } from "@/lib/deadlines";
-import { dayKey, subjects, totalSeconds } from "@/lib/study";
+import { dayKey, subjects } from "@/lib/study";
 import { activeWorkItems } from "@/lib/work-items";
-import { sessionsInWeek, startOfWeek, timeBySubjectInWeek, neglectedSubjects } from "@/lib/week";
+import { sessionsInWeek, startOfWeek, timeBySubjectInWeek } from "@/lib/week";
 import { computeWeeklyComparison, computeSubjectDistribution } from "@/lib/analytics/work-time";
 import { withSignMinutes } from "@/lib/analytics/trend";
-import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
+import type { Subject, WorkSession } from "@/lib/supabase/types";
 import type { Preferences, WorkItem } from "@/lib/storage";
 
 /**
  * BILAN HEBDOMADAIRE — des CONSTATS, pas un tableau de bord.
  *
  * L'écran Progression mesurait déjà beaucoup et n'interprétait presque rien :
- * « 45 min », « 8 exercices maîtrisés », « 1 % » — des chiffres exacts dont
+ * « 45 min », « 8 séances », « 1 % » — des chiffres exacts dont
  * l'élève ne sait pas quoi faire à sept heures du matin. Ce module produit
  * la couche manquante : mesure → interprétation → action.
  *
@@ -39,7 +39,6 @@ export interface WeeklyFinding {
     | "biais-estimation"
     | "echeance-a-risque"
     | "matiere-sous-servie"
-    | "matiere-delaissee"
     | "travaux-termines";
   sentence: string;
 }
@@ -79,7 +78,6 @@ const UNDERSERVED_FAIR_SHARE_RATIO = 0.6;
 export function computeWeeklyReview(
   workItems: WorkItem[],
   sessions: WorkSession[],
-  exercises: Exercise[],
   preferences: Preferences,
   now: Date = new Date()
 ): WeeklyReview {
@@ -159,7 +157,13 @@ export function computeWeeklyReview(
     if (bias && (!strongestBias || Math.abs(bias.deviationPercent) > Math.abs(strongestBias.deviationPercent))) strongestBias = bias;
   }
 
-  const neglected = neglectedSubjects(exercises, sessions, now);
+  /*
+   * Plus de constat « matière délaissée » : il signalait une matière sans
+   * séance ALORS QUE des exercices de l'ancienne banque y attendaient. La
+   * banque retirée, ce critère n'a plus d'objet ; le retard sur un budget
+   * de matière, lui, est déjà dit par « Mes matières » (lib/subject-targets.ts),
+   * et la matière sous-servie ci-dessous couvre le cas des échéances ouvertes.
+   */
 
   // ── Constats ───────────────────────────────────────────────────────
   // Chacun n'existe que si son calcul a produit quelque chose. Aucun
@@ -274,17 +278,6 @@ export function computeWeeklyReview(
     });
   }
 
-  if (neglected.length > 0) {
-    const first = neglected[0];
-    findings.push({
-      key: "matiere-delaissee",
-      // « la matière la plus délaissée » serait un classement : toutes les
-      // matières de cette liste sont à zéro minute, seul leur stock de fiches
-      // les départage — et ce stock ne s'affiche plus. On s'en tient au fait.
-      sentence: `Aucune séance de ${first.subject} cette semaine.`,
-    });
-  }
-
   return {
     weekStart: weekStart.toISOString(),
     totalMinutes,
@@ -294,7 +287,7 @@ export function computeWeeklyReview(
     postponedCount: postponements.length,
     atRisk,
     findings,
-    advice: deriveAdvice({ atRisk, neglected, strongestBias, busiestDay, underserved: underserved ?? null }),
+    advice: deriveAdvice({ atRisk, strongestBias, busiestDay, underserved: underserved ?? null }),
   };
 }
 
@@ -309,7 +302,6 @@ export function computeWeeklyReview(
  */
 function deriveAdvice(input: {
   atRisk: { item: WorkItem; remainingMinutes: number; level: string; shortfallMinutes: number }[];
-  neglected: { subject: Subject; pendingCount: number }[];
   strongestBias: EstimationBias | null;
   busiestDay: { date: string; minutes: number } | null;
   underserved: { subject: Subject; percent: number } | null;
@@ -333,8 +325,6 @@ function deriveAdvice(input: {
     }
     return `Réserve ${formatShort(risk.remainingMinutes)} avant ${weekdayName(risk.item.dueDate)} pour « ${risk.item.title} » — la marge est mince.`;
   }
-  const [neglected] = input.neglected;
-  if (neglected) return `Prévois une séance de ${neglected.subject} : c'est la seule matière sans aucun travail cette semaine.`;
   if (input.underserved) {
     return `Prévois une séance supplémentaire de ${input.underserved.subject} : elle porte des échéances ouvertes et n'a reçu que ${input.underserved.percent} % de ton temps cette semaine.`;
   }

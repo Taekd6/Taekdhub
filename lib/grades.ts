@@ -112,7 +112,7 @@ export function resolveGrade(grades: Grade[], id: string, score: number): Grade[
   return grades.map((grade) => (grade.id === id ? { ...grade, score: clampToScale(score, grade.maxScore) } : grade));
 }
 
-/** Une note SE SUPPRIME (on saisit 14 au lieu de 4) — voir `localData.saveGrades`, qui remplace au lieu de fusionner, exactement comme les chapitres. */
+/** Une note SE SUPPRIME (on saisit 14 au lieu de 4) — voir `localData.saveGrades`, qui remplace au lieu de fusionner. */
 export function removeGrade(grades: Grade[], id: string): Grade[] {
   return grades.filter((grade) => grade.id !== id);
 }

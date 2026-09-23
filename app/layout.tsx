@@ -9,7 +9,6 @@ import {
   SUBJECT_KEYS,
   SUBJECT_PALETTES,
 } from "@/lib/subject-colors";
-import "katex/dist/katex.min.css";
 import "./globals.css";
 
 /**
@@ -50,9 +49,10 @@ for(var s in K){var hex=(typeof ov[s]==='string'&&hexRe.test(ov[s].trim()))?ov[s
  * variable, donc un seul fichier couvre de 400 à 900. Ses chiffres
  * tabulaires (`tnum`) alignent les durées en colonne.
  *
- * `Newsreader` ne sert qu'à la colonne de LECTURE d'un énoncé (`.t-read`) :
- * les formules KaTeX y sont en serif, et un texte rond autour d'elles
- * changerait de dessin à chaque symbole. Seul l'axe `opsz` est chargé.
+ * `Newsreader` ne sert qu'aux textes de LECTURE (`.t-read`) et aux grands
+ * titres en serif. Seul l'axe `opsz` est chargé. (Il accompagnait aussi les
+ * formules KaTeX des énoncés de l'ancienne banque d'exercices, retirée avec
+ * KaTeX lui-même.)
  */
 const sans = Nunito({
   subsets: ["latin"],
@@ -77,7 +77,7 @@ const serif = Newsreader({
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://taekdhub.vercel.app";
 const TITLE = "TaekdHub — Ton système de travail en prépa";
 const DESCRIPTION =
-  "TaekdHub regarde ce que tu réussis, ce que tu rates et ce que tu n'obtiens qu'avec des indices, puis te dit quoi travailler maintenant — et pourquoi.";
+  "TaekdHub suit ton travail de prépa : ton temps par matière, tes échéances, tes notes, tes révisions et tes erreurs — tout reste dans ton navigateur.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

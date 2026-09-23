@@ -5,9 +5,9 @@ import { ArrowRight, Check, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Meter } from "@/components/ui/progress";
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { SubjectAvatar } from "@/components/subject-avatar";
 import { explainPriority, type WorkItemPriority } from "@/lib/deadlines";
-import { progressPercent, servesBankExercises, WORK_ITEM_KIND_META } from "@/lib/work-items";
+import { progressPercent, WORK_ITEM_KIND_META } from "@/lib/work-items";
 import { formatSpan } from "@/lib/utils";
 import type { WorkSession } from "@/lib/supabase/types";
 
@@ -45,12 +45,10 @@ export function WorkItemRow({
   const { item, feasibility, remainingMinutes, overdue } = priority;
   const done = progressPercent(item, sessions);
   const explanation = explainPriority(priority);
-  // Un travail dont TaekdHub sait choisir le contenu part en séance (le
-  // moteur de recommandation décide des exercices) ; les autres partent au
-  // chronomètre, qui mesure sans prétendre savoir ce qu'il y a dedans.
-  const workHref = servesBankExercises(item)
-    ? `/session?minutes=${Math.max(15, Math.min(120, remainingMinutes))}${item.subject ? `&subject=${encodeURIComponent(item.subject)}` : ""}&travail=${item.id}`
-    : `/timer?travail=${item.id}`;
+  // Tout travail part au chronomètre, rattaché : TaekdHub mesure le temps
+  // sans prétendre savoir ce qu'il y a dedans — l'élève travaille sur ses
+  // propres feuilles.
+  const workHref = `/timer?travail=${item.id}`;
 
   return (
     <li className="py-3.5">

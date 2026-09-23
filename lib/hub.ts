@@ -1,34 +1,30 @@
-import { computeChapterMastery, type ChapterMasteryRow } from "@/lib/analytics/mastery";
 import { computeConsistency } from "@/lib/analytics/consistency";
 import { computeTrend, type Trend } from "@/lib/analytics/trend";
 import { computeWorkTimeSeries, minutesBetween } from "@/lib/analytics/work-time";
 import { computeWorkItemPriority, sortByPriority, type WorkItemPriority } from "@/lib/deadlines";
 import { computeGradeStats, computeGradeTrend, type GradeStats, type GradeTrend } from "@/lib/grades";
-import { computeProgressBySubject, type SubjectProgress } from "@/lib/progress";
+import { computeSubjectTargets, type SubjectTargetProgress } from "@/lib/subject-targets";
 import { activeWorkItems } from "@/lib/work-items";
-import { subjects } from "@/lib/study";
 import { GRADE_KINDS } from "@/lib/storage";
-import type { Chapter, Grade, GradeKind, Preferences, WorkItem, WorkItemKind } from "@/lib/storage";
-import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
+import type { Grade, GradeKind, Preferences, WorkItem } from "@/lib/storage";
+import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
- * LE HUB D'UNE MATIÈRE — un tableau de bord de SUIVI, pas une banque.
+ * LE HUB D'UNE MATIÈRE — un tableau de bord de SUIVI.
  *
  * CE QUE CE MODULE NE FAIT PAS, et c'est l'essentiel : il ne calcule aucune
  * statistique nouvelle. Chaque champ ci-dessous vient d'un moteur déjà en
- * place et déjà testé — progression, maîtrise par chapitre, temps de travail,
- * régularité, échéances, notes, tendances. Ce fichier ne fait que les
- * COMPOSER pour une matière donnée. Une seconde définition de « maîtrise » ou
- * de « temps travaillé » serait exactement le défaut que l'audit précédent a
- * passé son temps à supprimer.
+ * place et déjà testé — temps de travail, régularité, budget de la semaine,
+ * échéances, notes, tendances. Ce fichier ne fait que les COMPOSER pour une
+ * matière donnée. Une seconde définition de « temps travaillé » serait
+ * exactement le défaut que les audits précédents ont passé leur temps à
+ * supprimer.
  *
- * CE QU'IL NE CONTIENT PAS NON PLUS : aucun exercice. Pas de liste, pas de
- * titre de fiche, pas d'identifiant. Les exercices restent une donnée de
- * l'application — c'est eux qui alimentent la maîtrise et les chapitres — mais
- * ils ne structurent plus l'écran. Ce qu'il y a « à travailler ensuite » est
- * nommé à l'échelle du CHAPITRE, parce que c'est l'échelle à laquelle on
- * pilote une prépa ; le choix de la fiche appartient au moteur de
- * recommandation, et il s'exprime chaque jour sur l'accueil.
+ * AUCUN EXERCICE. L'élève travaille sur ses propres feuilles et déclare son
+ * temps lui-même : l'ancienne banque intégrée — et la « maîtrise par
+ * chapitre » qu'elle alimentait — a été retirée. Le hub ne parle donc que de
+ * ce que l'élève enregistre réellement : ses séances, ses échéances, ses
+ * notes (et, côté écran, ses carnets).
  *
  * Fonctions pures.
  */
@@ -53,32 +49,15 @@ export interface HubWorkload {
   trend: Trend;
 }
 
-export interface HubChapters {
-  /** Commencés et encore faibles, les plus bas d'abord. */
-  fragile: ChapterMasteryRow[];
-  /** Acquis. */
-  solid: ChapterMasteryRow[];
-  /** Jamais travaillés — ni faibles ni solides : NON MESURÉS. */
-  untouched: ChapterMasteryRow[];
-}
-
 export interface HubSubjectModel {
   subject: Subject;
-  /** Avancement de la matière — repris tel quel de lib/progress.ts. */
-  progress: SubjectProgress;
-  /**
-   * Y a-t-il seulement de quoi MESURER un avancement ?
-   *
-   * Le critère n'est pas « la matière contient des fiches » mais « au moins
-   * une fiche a été engagée ». Sur une banque fraîchement amorcée, les deux
-   * diffèrent : 321 fiches de maths jamais ouvertes donnent une maîtrise
-   * moyenne de 0 %, ce qui s'affiche comme un échec alors que rien n'a été
-   * tenté. Un zéro non mesuré est aussi trompeur qu'un zéro inventé — même
-   * règle que partout ailleurs dans ce produit.
-   */
-  measured: boolean;
   workload: HubWorkload;
-  chapters: HubChapters;
+  /**
+   * Budget de la semaine pour cette matière (lib/subject-targets.ts), ou
+   * `null` quand l'élève ne s'en est pas fixé (budget à 0) — jamais une
+   * ligne « 0 / 0 ».
+   */
+  target: SubjectTargetProgress | null;
   /** Échéances ouvertes DE CETTE MATIÈRE, les plus prioritaires d'abord. */
   deadlines: WorkItemPriority[];
   /**
@@ -93,12 +72,6 @@ export interface HubSubjectModel {
   /** Toutes natures confondues — affiché UNIQUEMENT quand une seule nature existe, sinon il mentirait par agrégation. */
   grades: GradeStats;
   gradeTrend: GradeTrend;
-  /**
-   * Ce qu'il y a à travailler ensuite, à l'échelle du CHAPITRE — `null` quand
-   * rien ne le justifie. Jamais un exercice : nommer une fiche ici
-   * ramènerait la banque au milieu du suivi.
-   */
-  nextChapter: ChapterMasteryRow | null;
   /** Vrai quand la matière n'a aucune activité mesurable — l'écran dit alors ce qui manque plutôt que d'afficher des zéros. */
   empty: boolean;
 }
@@ -115,21 +88,13 @@ function daysAgo(now: Date, days: number): Date {
 
 export function buildSubjectHub(
   subject: Subject,
-  exercises: Exercise[],
   sessions: WorkSession[],
-  chapters: Chapter[],
   workItems: WorkItem[],
   grades: Grade[],
   preferences: Preferences,
   now: Date = new Date()
 ): HubSubjectModel {
   const own = subjectSessions(sessions, subject);
-  const subjectExercises = exercises.filter((exercise) => exercise.subject === subject);
-  const subjectChapters = chapters.filter((chapter) => chapter.subject === subject);
-
-  const progress =
-    computeProgressBySubject(exercises).find((entry) => entry.subject === subject) ??
-    { subject, total: 0, mastered: 0, completionRate: 0, averageMastery: 0 };
 
   const windowMinutes = minutesBetween(own, daysAgo(now, HUB_WINDOW_DAYS), now);
   const totalWindowMinutes = minutesBetween(sessions, daysAgo(now, HUB_WINDOW_DAYS), now);
@@ -152,9 +117,12 @@ export function buildSubjectHub(
     ),
   };
 
-  // `computeChapterMastery` fait déjà le tri fragile/solide/non mesuré, et
-  // c'est SON tri qui fait foi. On le borne à la matière en amont.
-  const board = computeChapterMastery(subjectExercises, subjectChapters, Number.MAX_SAFE_INTEGER, sessions, now);
+  // Le budget de la matière vient de la MÊME fonction que l'accueil et
+  // Progression : les trois écrans disent donc le même « 2 h 10 / 4 h ».
+  const target =
+    computeSubjectTargets(sessions, preferences.weeklySubjectTargets, now, preferences.capacityByWeekday).find(
+      (row) => row.subject === subject
+    ) ?? null;
 
   const deadlines = sortByPriority(
     activeWorkItems(workItems)
@@ -171,159 +139,35 @@ export function buildSubjectHub(
 
   return {
     subject,
-    progress,
-    // Même critère d'engagement que lib/next-action.ts#hasChapterEngagement,
-    // appliqué à l'échelle de la matière.
-    measured: subjectExercises.some(
-      (exercise) => !exercise.archived && (exercise.attempts > 0 || exercise.status !== "à faire" || exercise.last_worked_at !== null)
-    ),
     workload,
-    chapters: { fragile: board.fragile, solid: board.solid, untouched: board.untouched },
+    target,
     deadlines,
     gradesByKind,
     grades: computeGradeStats(subjectGrades),
     gradeTrend: computeGradeTrend(grades, subject),
-    // Le chapitre RÉELLEMENT commencé et le plus faible. Un chapitre jamais
-    // ouvert n'est pas « à retravailler » : il est à commencer, ce qui n'est
-    // pas le même conseil, et `computeChapterMastery` les sépare déjà.
-    nextChapter: board.fragile[0] ?? null,
-    empty: progress.total === 0 && own.length === 0,
+    empty: own.length === 0 && subjectGrades.length === 0 && deadlines.length === 0,
   };
 }
 
-/** Les matières où il y a quelque chose à suivre — une matière sans fiche ni séance n'a pas de hub. */
-export function hubSubjects(exercises: Exercise[], sessions: WorkSession[], all: Subject[]): Subject[] {
-  return all.filter(
-    (subject) =>
-      exercises.some((exercise) => !exercise.archived && exercise.subject === subject) ||
-      sessions.some((session) => session.subject === subject)
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   LE HUB CONCOURS — un domaine, pas un catalogue d'annales
-   ══════════════════════════════════════════════════════════════════ */
-
-/** Natures de travail qui préparent réellement une épreuve — les autres relèvent du quotidien, pas du concours. */
-const CONTEST_KINDS: WorkItemKind[] = ["ds", "concours"];
-/** Natures de note qui mesurent une épreuve. */
-const CONTEST_GRADE_KINDS: GradeKind[] = ["ds", "concours"];
-
-export interface ContestSubjectLine {
-  subject: Subject;
-  /** `false` quand aucune fiche n'est rattachée : l'avancement n'est alors pas mesurable, et 0 % serait un mensonge. */
-  measured: boolean;
-  /** Part des chapitres acquis, 0–100 — l'avancement, pas un compte de fiches. */
-  completionRate: number;
-  averageMastery: number;
-  /** Minutes sur la fenêtre longue. */
-  windowMinutes: number;
-  /** Chapitres commencés et encore faibles. */
-  fragileChapters: number;
-}
-
-export interface ContestHubModel {
-  /** Jours restants avant l'épreuve déclarée, ou `null` si aucune date n'est renseignée. */
-  daysUntil: number | null;
-  /** Date déclarée, telle quelle — jamais devinée. */
-  contestDate: string | null;
-  subjects: ContestSubjectLine[];
-  /** DS et préparations concours encore ouverts, les plus urgents d'abord. */
-  deadlines: WorkItemPriority[];
-  /** Résultats des ÉPREUVES uniquement (DS, concours) — pas les interros ni les DM. */
-  grades: GradeStats;
-  gradeTrend: GradeTrend;
-  /** Total travaillé sur la fenêtre longue, toutes matières. */
-  windowMinutes: number;
-  /** Les chapitres les plus faibles, toutes matières confondues — ce qu'il reste à consolider avant l'épreuve. */
-  toConsolidate: { subject: Subject; row: ChapterMasteryRow }[];
-}
-
-/** Nombre de chapitres à consolider présentés — au-delà, ce n'est plus une priorité, c'est une liste. */
-export const CONTEST_CONSOLIDATE_LIMIT = 6;
-
 /**
- * « Où j'en suis pour le concours ? »
- *
- * Même discipline que `buildSubjectHub` : composition de moteurs existants,
- * aucune statistique nouvelle, et AUCUN EXERCICE. L'écran qu'il remplace
- * comptait des annales fiche par fiche (« 534 exercices, 312 travaillés,
- * couverture 58 % ») — ce qui répond à « que contient ma bibliothèque ? »,
- * pas à « suis-je prêt ? ».
+ * Les matières où il y a quelque chose à suivre : une séance, une note, un
+ * travail ouvert, ou un budget hebdomadaire fixé par l'élève. Une matière
+ * sans rien de tout ça (« je ne suis pas la chimie », budget à 0) n'a pas
+ * de hub.
  */
-export function buildContestHub(
-  exercises: Exercise[],
+export function hubSubjects(
   sessions: WorkSession[],
-  chapters: Chapter[],
   workItems: WorkItem[],
   grades: Grade[],
   preferences: Preferences,
-  now: Date = new Date()
-): ContestHubModel {
-  const contestDate = preferences.contestDate || null;
-  const daysUntil = contestDate
-    ? Math.max(0, Math.ceil((new Date(`${contestDate}T00:00:00`).getTime() - now.getTime()) / 86400000))
-    : null;
-
-  const present = hubSubjects(exercises, sessions, subjects);
-  const progress = computeProgressBySubject(exercises);
-
-  const lines: ContestSubjectLine[] = present.map((subject) => {
-    const own = subjectSessions(sessions, subject);
-    const entry = progress.find((row) => row.subject === subject);
-    const board = computeChapterMastery(
-      exercises.filter((exercise) => exercise.subject === subject),
-      chapters.filter((chapter) => chapter.subject === subject),
-      Number.MAX_SAFE_INTEGER,
-      sessions,
-      now
-    );
-    return {
-      subject,
-      measured: exercises.some(
-        (exercise) =>
-          !exercise.archived &&
-          exercise.subject === subject &&
-          (exercise.attempts > 0 || exercise.status !== "à faire" || exercise.last_worked_at !== null)
-      ),
-      completionRate: entry?.completionRate ?? 0,
-      averageMastery: entry?.averageMastery ?? 0,
-      windowMinutes: minutesBetween(own, daysAgo(now, HUB_WINDOW_DAYS), now),
-      fragileChapters: board.fragile.length,
-    };
-  });
-
-  const deadlines = sortByPriority(
-    activeWorkItems(workItems)
-      .filter((item) => CONTEST_KINDS.includes(item.kind))
-      .map((item) => computeWorkItemPriority(item, sessions, preferences, now))
+  all: Subject[]
+): Subject[] {
+  const open = activeWorkItems(workItems);
+  return all.filter(
+    (subject) =>
+      (preferences.weeklySubjectTargets[subject] ?? 0) > 0 ||
+      sessions.some((session) => session.subject === subject) ||
+      grades.some((grade) => grade.subject === subject) ||
+      open.some((item) => item.subject === subject)
   );
-
-  // Seules les ÉPREUVES comptent ici. Mélanger les interros et les DM dans
-  // une « moyenne de concours » dirait quelque chose que la donnée ne porte pas.
-  const contestGrades = grades.filter((grade) => CONTEST_GRADE_KINDS.includes(grade.kind));
-
-  const toConsolidate = present
-    .flatMap((subject) =>
-      computeChapterMastery(
-        exercises.filter((exercise) => exercise.subject === subject),
-        chapters.filter((chapter) => chapter.subject === subject),
-        Number.MAX_SAFE_INTEGER,
-        sessions,
-        now
-      ).fragile.map((row) => ({ subject, row }))
-    )
-    .sort((a, b) => a.row.rate - b.row.rate)
-    .slice(0, CONTEST_CONSOLIDATE_LIMIT);
-
-  return {
-    daysUntil,
-    contestDate,
-    subjects: lines,
-    deadlines,
-    grades: computeGradeStats(contestGrades),
-    gradeTrend: computeGradeTrend(contestGrades),
-    windowMinutes: minutesBetween(sessions, daysAgo(now, HUB_WINDOW_DAYS), now),
-    toConsolidate,
-  };
 }

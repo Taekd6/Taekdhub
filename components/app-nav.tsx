@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
-import { BarChart3, Clock3, History, Home, Layers, Settings, Trophy } from "lucide-react";
+import { BarChart3, Clock3, History, Home, Layers, Settings } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -15,19 +15,18 @@ import { cn } from "@/lib/cn";
  * est doublée d'une barre d'onglets en bas — les mêmes destinations, à
  * portée de pouce.
  *
- * CINQ destinations + deux outils. « Chronomètre » et « Réglages » ne sont
+ * QUATRE destinations + deux outils. « Chronomètre » et « Réglages » ne sont
  * pas des lieux où l'on va travailler : ce sont des outils, en icônes à
- * droite. « Séance » n'est pas une destination non plus, c'est l'ACTION —
- * elle part de l'écran d'accueil.
+ * droite.
  *
- * LA BANQUE N'EST PLUS UNE DESTINATION : TaekdHub pilote une progression, il
- * ne vend pas un catalogue. Elle reste atteignable depuis chaque hub, et
- * /exercises répond toujours.
+ * PAS DE BANQUE, PAS DE CONCOURS : l'élève travaille sur ses propres
+ * feuilles et ne fait qu'y consigner son temps et ses notes. La banque
+ * d'exercices intégrée — et l'écran Concours, qui en dépendait — ont été
+ * retirés.
  */
 const DESTINATIONS = [
   { href: "/dashboard", label: "Aujourd'hui", short: "Aujourd'hui", icon: Home },
   { href: "/preparation", label: "Matières", short: "Matières", icon: Layers },
-  { href: "/concours", label: "Concours", short: "Concours", icon: Trophy },
   { href: "/progress", label: "Progression", short: "Progrès", icon: BarChart3 },
   { href: "/history", label: "Séances", short: "Séances", icon: History },
 ];

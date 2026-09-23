@@ -16,7 +16,7 @@ import type { Subject } from "@/lib/supabase/types";
  * vingt cas particuliers. Classées en six genres, les mêmes vingt lignes
  * disent « la moitié, c'est du calcul » — et ça, c'est une chose qu'on peut
  * travailler. Le type est donc le seul champ que le carnet COMPTE ; tout le
- * reste (description, bonne idée, chapitre) sert à relire.
+ * reste (description, bonne idée) sert à relire.
  *
  * CE QUE LES CHIFFRES NE DISENT PAS. Le carnet compte des erreurs NOTÉES, pas
  * des erreurs COMMISES. Une hausse d'un mois sur l'autre peut vouloir dire
@@ -111,8 +111,6 @@ export interface NewErrorInput {
   type: ErrorType;
   description: string;
   fix?: string;
-  chapterId?: string | null;
-  exerciseId?: string | null;
 }
 
 export function createErrorEntry(input: NewErrorInput, now: Date = new Date()): ErrorEntry | null {
@@ -132,8 +130,10 @@ export function createErrorEntry(input: NewErrorInput, now: Date = new Date()): 
     type: input.type,
     description,
     fix,
-    chapterId: input.chapterId || null,
-    exerciseId: input.exerciseId || null,
+    // Renvois HÉRITÉS de l'ancienne banque d'exercices — plus rien ne les
+    // saisit (voir `ErrorEntry`, lib/storage.ts).
+    chapterId: null,
+    exerciseId: null,
     reviewItemId: null,
     createdAt: now.toISOString(),
   };
@@ -370,24 +370,22 @@ export interface ErrorPrefill {
   subject?: Subject;
   source?: ErrorSource;
   date?: string;
-  chapterId?: string;
-  exerciseId?: string;
 }
 
-/** Lit `?subject=&source=&date=&chapter=&exercise=` — toute valeur inconnue est ignorée, jamais propagée. */
+/**
+ * Lit `?subject=&source=&date=` — toute valeur inconnue est ignorée, jamais
+ * propagée. Les anciens `&chapter=`/`&exercise=` (liens de l'ancienne banque
+ * d'exercices) sont simplement ignorés.
+ */
 export function parseErrorPrefill(search: string): ErrorPrefill {
   const params = new URLSearchParams(search);
   const prefill: ErrorPrefill = {};
   const subject = params.get("subject");
   const source = params.get("source");
   const date = params.get("date");
-  const chapter = params.get("chapter");
-  const exercise = params.get("exercise");
   if (subject && (subjects as string[]).includes(subject)) prefill.subject = subject as Subject;
   if (source && (ERROR_SOURCES as string[]).includes(source)) prefill.source = source as ErrorSource;
   if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) prefill.date = date;
-  if (chapter) prefill.chapterId = chapter;
-  if (exercise) prefill.exerciseId = exercise;
   return prefill;
 }
 
@@ -397,8 +395,6 @@ export function errorLogHref(prefill: ErrorPrefill = {}): string {
   if (prefill.subject) params.set("subject", prefill.subject);
   if (prefill.source) params.set("source", prefill.source);
   if (prefill.date) params.set("date", prefill.date);
-  if (prefill.chapterId) params.set("chapter", prefill.chapterId);
-  if (prefill.exerciseId) params.set("exercise", prefill.exerciseId);
   const query = params.toString();
   return query ? `/erreurs?${query}` : "/erreurs";
 }

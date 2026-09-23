@@ -1,52 +1,26 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Meter } from "@/components/ui/progress";
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
-import type { HistorySummary as HistorySummaryData, ResultCounts } from "@/lib/history";
+import { SubjectAvatar } from "@/components/subject-avatar";
+import type { HistorySummary as HistorySummaryData } from "@/lib/history";
 import { formatSpan } from "@/lib/utils";
 
 /**
- * Purement présentationnel — l'agrégat de temps vient de
- * `summarizeSessions`, les résultats de `resultCounts` : « qu'est-ce que j'ai
- * réellement fait », pas seulement « combien de temps ».
+ * Purement présentationnel — l'agrégat de temps vient de `summarizeSessions`.
+ * (Le taux de réussite qui s'affichait ici lisait le résultat des tentatives
+ * sur les exercices de l'ancienne banque, retirée.)
  */
-export function HistorySummary({ summary, results }: { summary: HistorySummaryData; results: ResultCounts }) {
+export function HistorySummary({ summary }: { summary: HistorySummaryData }) {
   const maxSeconds = Math.max(1, ...summary.bySubject.map((entry) => entry.seconds));
 
   return (
     <div className="space-y-8">
-      {/* Empilées, pas en rangée : dans un rail de 18 rem, trois indicateurs
+      {/* Empilées, pas en rangée : dans un rail de 18 rem, des indicateurs
           côte à côte redeviennent illisibles. */}
       <dl className="divide-y divide-line border-y border-line">
         <SummaryLine label="Temps total" value={formatSpan(summary.totalSeconds)} />
         <SummaryLine label="Séances" value={String(summary.sessionCount)} />
-        <SummaryLine
-          label="Réussite"
-          value={results.successRate === null ? "—" : `${results.successRate} %`}
-          detail={`${results.attempted} tentative${results.attempted > 1 ? "s" : ""} notée${results.attempted > 1 ? "s" : ""}`}
-        />
       </dl>
-
-      {results.attempted > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {results.success > 0 && (
-            <Badge variant="success">
-              {results.success} réussi{results.success > 1 ? "s" : ""}
-            </Badge>
-          )}
-          {results.partial > 0 && (
-            <Badge variant="warning">
-              {results.partial} partiel{results.partial > 1 ? "s" : ""}
-            </Badge>
-          )}
-          {results.failure > 0 && (
-            <Badge variant="danger">
-              {results.failure} échoué{results.failure > 1 ? "s" : ""}
-            </Badge>
-          )}
-        </div>
-      )}
 
       {summary.bySubject.length > 0 && (
         <div>

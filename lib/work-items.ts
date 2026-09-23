@@ -3,12 +3,11 @@ import type { Subject, WorkSession } from "@/lib/supabase/types";
 import type { WorkItem, WorkItemKind, WorkItemStatus } from "@/lib/storage";
 
 /**
- * MODÈLE DU TRAVAIL PLANIFIABLE — la couche « pour quand », posée au-dessus
- * du moteur de recommandation, jamais à sa place.
+ * MODÈLE DU TRAVAIL PLANIFIABLE — la couche « pour quand ».
  *
- * Ce module ne décide JAMAIS quel exercice proposer : c'est le rôle exclusif
- * de lib/recommendation.ts, et rien ici ne le duplique. Il répond aux trois
- * questions que la banque d'exercices ne pouvait pas poser :
+ * L'élève travaille sur ses propres feuilles : TaekdHub ne sait pas ce qu'il
+ * y a dans un DM ou une série d'exercices, et ne prétend pas le savoir. Ce
+ * module répond à trois questions, et à rien d'autre :
  *
  *   — qu'est-ce qui est à faire (`WorkItem`) ;
  *   — pour quand (`dueDate`) ;
@@ -16,7 +15,7 @@ import type { WorkItem, WorkItemKind, WorkItemStatus } from "@/lib/storage";
  *
  * Fonctions PURES, sans localStorage, sans React, sans DOM : la persistance
  * vit dans lib/storage.ts, la réactivité dans hooks/use-prepahub-data.ts.
- * Même contrat que lib/chapters.ts et lib/recommendation.ts.
+ * Même contrat que lib/review-items.ts et lib/grades.ts.
  */
 
 export const WORK_ITEM_KIND_META: Record<WorkItemKind, { label: string; short: string }> = {
@@ -27,18 +26,6 @@ export const WORK_ITEM_KIND_META: Record<WorkItemKind, { label: string; short: s
   concours: { label: "Préparation concours", short: "Concours" },
   autre: { label: "Autre travail", short: "Autre" },
 };
-
-/**
- * Les deux natures de travail dont TaekdHub sait choisir le CONTENU tout
- * seul — parce que le moteur de recommandation sait ce qu'est un exercice et
- * ce qu'est un chapitre. Pour toutes les autres (`dm`, `ds`, `concours`,
- * `autre`), TaekdHub réserve du temps et suit l'avancement, sans prétendre
- * savoir ce qu'il y a à faire dedans : c'est le cahier de l'élève, pas la
- * banque.
- */
-export function servesBankExercises(item: WorkItem): boolean {
-  return item.kind === "exercices" || item.kind === "chapitre";
-}
 
 /** Un travail encore à faire — ni terminé, ni abandonné (voir `WorkItemStatus`, lib/storage.ts). */
 export function isActive(item: WorkItem): boolean {
@@ -54,10 +41,9 @@ export function activeWorkItems(items: WorkItem[]): WorkItem[] {
  * Minutes RÉELLEMENT faites sur ce travail, sommées depuis les séances qui le
  * portent (`WorkSession.work_item_id`).
  *
- * Calculé à la demande et jamais stocké : c'est exactement la règle posée au
- * Sprint 2.6 pour `Exercise` (« ne stocke plus aucune durée cumulée, pour
- * éliminer tout risque de divergence »). Une seule source de vérité pour une
- * durée : les séances.
+ * Calculé à la demande et jamais stocké (règle du Sprint 2.6 : aucune durée
+ * cumulée recopiée, pour éliminer tout risque de divergence). Une seule
+ * source de vérité pour une durée : les séances.
  */
 export function doneMinutes(item: WorkItem, sessions: WorkSession[]): number {
   const seconds = sessions
@@ -124,7 +110,6 @@ export interface NewWorkItemInput {
   dueDate: string | null;
   dueTime?: string | null;
   important?: boolean;
-  chapterIds?: string[];
 }
 
 /** Fabrique pure — aucun effet de bord, l'appelant persiste le résultat via `saveWorkItems`. */
@@ -140,7 +125,8 @@ export function createWorkItem(input: NewWorkItemInput, now: Date = new Date()):
     status: "à faire",
     important: input.important ?? false,
     notBeforeDate: null,
-    chapterIds: input.chapterIds ?? [],
+    // Champ HÉRITÉ de l'ancienne banque d'exercices — voir `WorkItem.chapterIds`.
+    chapterIds: [],
     createdAt: now.toISOString(),
     completedAt: null,
     postponements: [],
@@ -149,7 +135,7 @@ export function createWorkItem(input: NewWorkItemInput, now: Date = new Date()):
 
 /**
  * Applique un correctif à un travail de la liste et renvoie une NOUVELLE
- * liste — jamais de mutation en place, comme lib/chapters.ts.
+ * liste — jamais de mutation en place.
  *
  * `completedAt` est tenu ici, au seul endroit où le statut change : le poser
  * dans chaque appelant garantissait qu'un jour l'un d'eux l'oublierait, et

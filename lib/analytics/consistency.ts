@@ -60,9 +60,8 @@ export interface Consistency {
  *
  * DÉFINITION UNIQUE, partagée avec lib/gamification.ts#computeStreak, qui
  * s'appuie désormais dessus. Il y en avait deux : ici, toute séance de plus
- * de zéro seconde ; là-bas, une minute cumulée. Une tentative déclarée
- * « échoué » en 40 secondes — cas que components/exercises/focus-view.tsx
- * gère explicitement — suffisait donc à les faire diverger, et l'écran
+ * de zéro seconde ; là-bas, une minute cumulée. Une séance de 40 secondes
+ * suffisait donc à les faire diverger, et l'écran
  * Progression affichait « Série actuelle : 1 j » en tête et « 2 jours
  * consécutifs » quelques centaines de pixels plus bas.
  *

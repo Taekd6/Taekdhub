@@ -9,7 +9,6 @@ import {
   isOverdue,
   progressPercent,
   remainingMinutes,
-  servesBankExercises,
   updateWorkItem,
 } from "@/lib/work-items";
 import type { WorkItem } from "@/lib/storage";
@@ -144,24 +143,6 @@ describe("cycle de vie", () => {
     const items = [makeItem()];
     updateWorkItem(items, "w-1", { title: "Autre" }, NOW);
     expect(items[0].title).toBe("DM de maths");
-  });
-});
-
-describe("quel travail TaekdHub sait remplir tout seul", () => {
-  /**
-   * La frontière du chantier : le moteur de recommandation sait ce qu'est un
-   * exercice et un chapitre. Il ne sait rien du DM que le professeur a donné
-   * — TaekdHub en réserve le temps, sans prétendre en connaître le contenu.
-   */
-  it("exercices et chapitre passent par la banque", () => {
-    expect(servesBankExercises(makeItem({ kind: "exercices" }))).toBe(true);
-    expect(servesBankExercises(makeItem({ kind: "chapitre" }))).toBe(true);
-  });
-
-  it("DM, DS, concours et « autre » restent du travail que l'élève seul connaît", () => {
-    for (const kind of ["dm", "ds", "concours", "autre"] as const) {
-      expect(servesBankExercises(makeItem({ kind }))).toBe(false);
-    }
   });
 });
 

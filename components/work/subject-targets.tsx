@@ -1,4 +1,4 @@
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { SubjectAvatar } from "@/components/subject-avatar";
 import { Meter } from "@/components/ui/progress";
 import { cn } from "@/lib/cn";
 import { subjectMeta } from "@/lib/study";

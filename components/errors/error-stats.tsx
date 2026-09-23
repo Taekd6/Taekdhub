@@ -1,7 +1,7 @@
 "use client";
 
 import { BookmarkPlus } from "lucide-react";
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { SubjectAvatar } from "@/components/subject-avatar";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { cn } from "@/lib/cn";
 import {

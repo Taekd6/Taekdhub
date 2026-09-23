@@ -22,8 +22,7 @@ interface TimerContext {
    * Persisté AVEC le chrono (voir `useWorkTimer`, dont le contexte est
    * générique) : un rechargement en pleine séance ne doit pas détacher le
    * temps du travail auquel il était destiné. C'est ce champ qui devient
-   * `WorkSession.work_item_id` à l'arrêt, et donc ce qui fait avancer un DM
-   * — un travail dont aucun exercice de la banque ne porte le contenu.
+   * `WorkSession.work_item_id` à l'arrêt, et donc ce qui fait avancer un DM.
    */
   workItemId?: string | null;
 }
@@ -31,7 +30,7 @@ interface TimerContext {
 export function Timer() {
   // `ready` est indispensable ici comme partout ailleurs : le chrono restaure
   // une séance persistée dès son premier effet, donc "Terminer" est cliquable
-  // avant même que la banque locale ait fini d'être lue.
+  // avant même que les données locales aient fini d'être lues.
   const { sessions, workItems, saveSessions, saveWorkItems, ready } = usePrepahubData();
   const { seconds, running, context, setContext, start, toggle, stop } = useWorkTimer<TimerContext>(TIMER_STORAGE_KEY, {
     subject: "Mathématiques",
@@ -39,8 +38,7 @@ export function Timer() {
   });
   const [fullscreen, setFullscreen] = useState(false);
   /*
-   * Le paramètre est lu depuis `window.location.search` dans un effet, comme
-   * le fait déjà components/session/session-runner.tsx — et NON via
+   * Le paramètre est lu depuis `window.location.search` dans un effet — et NON via
    * `useSearchParams`, qui forcerait cette page à sortir du rendu statique
    * (« useSearchParams() should be wrapped in a suspense boundary ») pour un
    * paramètre optionnel dont rien, dans le premier rendu, ne dépend.
@@ -87,16 +85,14 @@ export function Timer() {
       const session: WorkSession = {
         id: crypto.randomUUID(),
         subject: context.subject,
-        // Séance libre depuis le Timer principal : aucun exercice sélectionné.
+        // Champs hérités de l'ancienne banque d'exercices (voir
+        // lib/supabase/types.ts) : toujours `null` désormais.
         exercise_id: null,
         started_at: startedAt,
         ended_at: new Date().toISOString(),
         duration_seconds: finalSeconds,
         note: null,
         created_at: new Date().toISOString(),
-        // Séance libre, sans exercice précis : la question "réussi/échoué"
-        // n'a pas de sens ici (voir focus-view.tsx pour le seul endroit où
-        // un résultat est demandé) — pas davantage celle des indices.
         result: null,
         hints_used: null,
         work_item_id: context.workItemId ?? null,
@@ -117,7 +113,7 @@ export function Timer() {
     });
   }
 
-  // Tant que la banque locale n'est pas lue, on n'affiche pas de chrono
+  // Tant que les données locales ne sont pas lues, on n'affiche pas de chrono
   // manipulable : « Terminer » enregistrerait alors une séance à partir d'un
   // historique encore vide en mémoire.
   if (!ready) return <Skeleton className="h-72 w-full rounded-xl" />;

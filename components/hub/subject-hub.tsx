@@ -6,10 +6,10 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { ArrowRight, CalendarClock } from "lucide-react";
 import { Section } from "@/components/ui/section";
 import { Stat, StatRow } from "@/components/ui/stat";
-import { Meter } from "@/components/ui/progress";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Insufficient } from "@/components/progress/insufficient";
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { SubjectAvatar } from "@/components/subject-avatar";
+import { SubjectTargetList } from "@/components/work/subject-targets";
 import { ReviewCapture, ReviewList } from "@/components/review/review-capture";
 import { DueToday } from "@/components/review/due-today";
 // Carnet d'erreurs — lien « Mes erreurs · N ».
@@ -25,27 +25,26 @@ import { cn } from "@/lib/cn";
 import type { Subject } from "@/lib/supabase/types";
 
 /**
- * HUB D'UNE MATIÈRE — le tableau de bord de suivi, pas la banque.
+ * HUB D'UNE MATIÈRE — le tableau de bord de suivi.
  *
- * Cet écran remplace « Équilibrer mes matières », qui était structuré par les
- * exercices : il comptait des fiches restantes, allouait des minutes par
- * matière, et se terminait par un bouton qui CONSTRUISAIT une séance
- * d'exercices. On y ouvrait une banque, pas un suivi.
- *
- * ICI, AUCUN EXERCICE N'EST NOMMÉ NI LISTÉ. Ce qui reste des fiches, ce sont
- * les grandeurs qu'elles alimentent — avancement, maîtrise par chapitre — et
- * rien d'autre. Ce qu'il y a à travailler ensuite est désigné à l'échelle du
- * CHAPITRE : c'est l'échelle à laquelle on pilote une prépa. Le choix de la
- * fiche appartient au moteur de recommandation, qui s'exprime chaque jour sur
- * l'accueil, et à la banque, atteinte par un seul lien de sortie.
+ * AUCUN EXERCICE : l'élève travaille sur ses propres feuilles, TaekdHub ne
+ * connaît que ce qu'il y consigne. L'écran dit donc, matière par matière, le
+ * temps réellement mis et le budget de la semaine, ce qui arrive (échéances),
+ * ce qu'un professeur en a dit (notes), et ce qu'il reste à revoir (carnet et
+ * cartouches de méthode). La « maîtrise par chapitre » et « à travailler
+ * ensuite » qui s'y trouvaient venaient de l'ancienne banque d'exercices,
+ * retirée.
  *
  * Toutes les valeurs affichées viennent de lib/hub.ts, qui ne fait que
  * composer des moteurs existants — aucune statistique n'est née ici.
  */
 export function SubjectHub() {
-  const { exercises, sessions, chapters, workItems, grades, reviewItems, errors, preferences, ready, saveReviewItems } = usePrepahubData();
+  const { sessions, workItems, grades, reviewItems, errors, preferences, ready, saveReviewItems } = usePrepahubData();
 
-  const available = useMemo(() => hubSubjects(exercises, sessions, allSubjects), [exercises, sessions]);
+  const available = useMemo(
+    () => hubSubjects(sessions, workItems, grades, preferences, allSubjects),
+    [sessions, workItems, grades, preferences]
+  );
   const [subject, setSubject] = useState<Subject | null>(null);
   const active = subject && available.includes(subject) ? subject : (available[0] ?? null);
   // `?subject=` permet d'arriver ici depuis l'accueil déjà sur la bonne
@@ -53,8 +52,8 @@ export function SubjectHub() {
   const selectSubject = useCallback((value: Subject) => setSubject(value), []);
 
   const model = useMemo(
-    () => (active ? buildSubjectHub(active, exercises, sessions, chapters, workItems, grades, preferences) : null),
-    [active, exercises, sessions, chapters, workItems, grades, preferences]
+    () => (active ? buildSubjectHub(active, sessions, workItems, grades, preferences) : null),
+    [active, sessions, workItems, grades, preferences]
   );
 
   /*
@@ -78,15 +77,13 @@ export function SubjectHub() {
     return (
       <Insufficient
         what="Aucune matière à suivre pour l'instant."
-        how="Le suivi se remplit dès la première séance enregistrée, ou dès qu'une matière contient une fiche."
+        how="Le suivi se remplit dès la première séance enregistrée, ou dès qu'un budget hebdomadaire est fixé dans Réglages."
       />
     );
   }
 
-  const { progress, workload, chapters: board, deadlines, grades: gradeStats, gradesByKind, gradeTrend, nextChapter, measured } = model;
+  const { workload, target, deadlines, grades: gradeStats, gradesByKind, gradeTrend } = model;
   const rhythm = describeConfidence(workload.trend);
-  const chapterCount = board.fragile.length + board.solid.length + board.untouched.length;
-
 
   return (
     <div className="space-y-9">
@@ -112,9 +109,9 @@ export function SubjectHub() {
         <div className="min-w-0">
           <h2 className="t-heading truncate">{active}</h2>
           <p className="t-meta mt-0.5">
-            {chapterCount > 0
-              ? `${board.solid.length} chapitre${board.solid.length > 1 ? "s" : ""} acquis sur ${chapterCount}`
-              : "Aucun chapitre rattaché à cette matière pour l'instant."}
+            {workload.recentMinutes > 0
+              ? `${formatSpan(workload.recentMinutes * 60)} ces ${HUB_RECENT_DAYS} derniers jours`
+              : `Aucune séance ces ${HUB_RECENT_DAYS} derniers jours.`}
           </p>
         </div>
         {/* Carnet d'erreurs de la matière — un lien, pas une section : on y
@@ -122,20 +119,13 @@ export function SubjectHub() {
         <SubjectErrorsLink errors={errors} subject={active} className="ml-auto shrink-0" />
       </div>
 
-      {/* ── AVANCEMENT ET TRAVAIL ───────────────────────────────── */}
+      {/* ── TEMPS DE TRAVAIL ─────────────────────────────────────── */}
       <Section
         label="Où j'en suis"
-        title="Avancement"
-        description="Ce qui est acquis dans cette matière, et le temps que tu y as réellement mis."
+        title="Temps de travail"
+        description="Le temps que tu as réellement mis dans cette matière, et où tu en es de ton budget de la semaine."
       >
         <StatRow>
-          {/* « NON MESURÉ », pas « 0 % ». Sans aucune fiche rattachée, un zéro
-              se lit comme « tu n'as rien acquis » alors que la vérité est
-              « rien n'est mesuré ici ». Le zéro est réservé aux mesures
-              réelles — même règle que `sharePercent`, `average` et `Trend`
-              partout ailleurs. */}
-          <Stat label="Maîtrise moyenne" value={measured ? `${progress.averageMastery} %` : "non mesuré"} size="sm" />
-          <Stat label="Progression" value={measured ? `${progress.completionRate} %` : "non mesuré"} size="sm" />
           <Stat label={`Ces ${HUB_RECENT_DAYS} jours`} value={formatSpan(workload.recentMinutes * 60)} size="sm" />
           <Stat
             label={`Sur ${HUB_WINDOW_DAYS} jours`}
@@ -143,13 +133,20 @@ export function SubjectHub() {
             detail={workload.sharePercent !== null ? `${workload.sharePercent} % de ton temps` : undefined}
             size="sm"
           />
+          <Stat label="Jours actifs" value={workload.activeDaysThisWeek} detail="cette semaine, toutes matières" size="sm" />
         </StatRow>
-        {measured && <Meter value={progress.completionRate} className="mt-5" tone="neutral" />}
-        {!measured && (
+        {/* Le budget de la semaine — la même ligne que sur l'accueil et
+            Progression (components/work/subject-targets.tsx). */}
+        {target ? (
+          <div className="mt-5">
+            <SubjectTargetList rows={[target]} size="comfortable" />
+          </div>
+        ) : (
           <p className="t-meta mt-4">
-            {progress.total === 0
-              ? `Aucune fiche n'est rattachée à ${active} : l'avancement ne peut pas être mesuré, seul le temps l'est.`
-              : `Rien n'a encore été travaillé en ${active} : l'avancement se mesurera dès la première fiche ouverte.`}
+            Aucun budget hebdomadaire fixé pour {active}.{" "}
+            <Link href="/settings" className="text-accent hover:underline">
+              En fixer un dans Réglages
+            </Link>
           </p>
         )}
         {workload.trend.direction !== "insuffisant" ? (
@@ -160,26 +157,6 @@ export function SubjectHub() {
           </p>
         ) : (
           <p className="t-meta mt-3">Pas encore assez de semaines mesurées pour qualifier un rythme dans cette matière.</p>
-        )}
-      </Section>
-
-      {/* ── CHAPITRES ───────────────────────────────────────────── */}
-      <Section
-        label="Le contenu"
-        title="Chapitres"
-        description="Trois états, et le troisième compte autant que les deux autres : un chapitre jamais travaillé n'est pas un chapitre faible."
-      >
-        {chapterCount === 0 ? (
-          <Insufficient
-            what="Aucun chapitre rattaché à cette matière."
-            how="Les chapitres se créent depuis la banque ; le suivi les reprend ensuite automatiquement."
-          />
-        ) : (
-          <div className="space-y-6">
-            <ChapterGroup title="À consolider" rows={board.fragile} empty="Rien de fragile pour l'instant." />
-            <ChapterGroup title="Acquis" rows={board.solid} empty="Aucun chapitre encore acquis." />
-            <ChapterGroup title="Non mesurés" rows={board.untouched} empty="Tous les chapitres ont été abordés." muted />
-          </div>
         )}
       </Section>
 
@@ -298,106 +275,6 @@ export function SubjectHub() {
         </div>
       </Section>
 
-      {/* ── LA SORTIE ───────────────────────────────────────────── */}
-      <Section label="Et maintenant" title="À travailler ensuite">
-        {nextChapter ? (
-          /* MATIÈRE → CHAPITRE → RAISON, et jamais une fiche précise. Les
-             raisons sont celles du verdict partagé avec l'accueil
-             (`assessChapter`) : les deux écrans disent donc la même chose du
-             même chapitre, avec les mêmes mots. */
-          <div>
-            <p className="t-body">
-              <span className="text-muted">{active}</span> —{" "}
-              <span className="font-medium text-ink">{nextChapter.chapter.label}</span>
-            </p>
-            <ul className="mt-2 space-y-1">
-              {nextChapter.assessment.reasons.map((reason) => (
-                <li key={reason} className="t-meta">
-                  {reason}
-                </li>
-              ))}
-            </ul>
-            <p className="t-meta mt-2 text-2xs">
-              {nextChapter.assessment.attempts > 0
-                ? `Verdict établi sur ${nextChapter.assessment.attempts} tentative${nextChapter.assessment.attempts > 1 ? "s" : ""} notée${nextChapter.assessment.attempts > 1 ? "s" : ""}${nextChapter.assessment.sinceDays !== null ? `, depuis ${nextChapter.assessment.sinceDays} j` : ""}.`
-                : "Aucune tentative notée sur ce chapitre — le verdict repose sur la maîtrise déclarée."}
-            </p>
-          </div>
-        ) : board.untouched.length > 0 ? (
-          <p className="t-body">
-            Rien de fragile parmi ce que tu as commencé. Il reste{" "}
-            <span className="font-medium text-ink">{board.untouched.length}</span> chapitre
-            {board.untouched.length > 1 ? "s" : ""} jamais abordé{board.untouched.length > 1 ? "s" : ""}.
-          </p>
-        ) : (
-          <p className="t-body">Rien à signaler dans cette matière pour l&apos;instant.</p>
-        )}
-        {/* LE SEUL LIEN VERS LA BANQUE. On suit ici, on travaille là-bas. */}
-        <Link
-          href={`/exercises?subject=${encodeURIComponent(active)}`}
-          className="t-meta mt-4 inline-flex min-h-6 items-center gap-1.5 text-accent hover:underline max-lg:min-h-11"
-        >
-          Ouvrir la banque en {active} <ArrowRight size={14} aria-hidden />
-        </Link>
-      </Section>
-    </div>
-  );
-}
-
-/** Un groupe de chapitres — le taux et le compte, jamais la liste des fiches. */
-/** Au-delà, une liste de chapitres cesse d'être un repère et devient un mur — on replie le reste derrière un compte. */
-const CHAPTERS_SHOWN = 6;
-
-function ChapterGroup({
-  title,
-  rows,
-  empty,
-  muted,
-}: {
-  title: string;
-  rows: { chapter: { id: string; label: string }; rate: number; total: number; mastered: number; untouched: number }[];
-  empty: string;
-  muted?: boolean;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const shown = expanded ? rows : rows.slice(0, CHAPTERS_SHOWN);
-  const hidden = rows.length - shown.length;
-
-  return (
-    <div>
-      <p className="t-label">{title}</p>
-      {rows.length === 0 ? (
-        <p className="t-meta mt-1.5 text-2xs">{empty}</p>
-      ) : (
-        <ul className="mt-2 divide-y divide-line border-y border-line">
-          {shown.map((row) => (
-            <li key={row.chapter.id} className="flex items-center gap-3 py-2.5">
-              <span className={cn("min-w-0 flex-1 truncate text-sm", muted ? "text-muted" : "text-ink")}>
-                {row.chapter.label}
-                {/* « 0 / 5 acquis » nommait encore un stock de fiches. Le taux
-                    à droite dit la même chose, et c'est l'échelle du CHAPITRE
-                    qui pilote cet écran. */}
-              </span>
-              {!muted && <Meter value={row.rate} className="w-16 shrink-0 max-sm:hidden" tone="neutral" />}
-              {/* « — » et non « 0 % » en face d'un chapitre rangé sous « non
-                  mesurés » : le taux y serait une mesure de rien, et la ligne
-                  se contredirait elle-même. */}
-              <span className="tabular w-12 shrink-0 whitespace-nowrap text-right text-sm text-ink">
-                {muted ? "—" : `${row.rate} %`}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {hidden > 0 && (
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className="t-meta mt-2 inline-flex min-h-6 items-center text-2xs text-accent hover:underline max-lg:min-h-11"
-        >
-          Voir les {hidden} autres
-        </button>
-      )}
     </div>
   );
 }
@@ -405,7 +282,7 @@ function ChapterGroup({
 /**
  * `?subject=<matière>` — arriver sur le suivi d'une matière précise, depuis
  * l'accueil notamment. Isolé dans son propre composant car `useSearchParams`
- * impose une limite Suspense (même motif que ExerciseManager).
+ * impose une limite Suspense.
  */
 function SubjectQueryHandler({
   ready,

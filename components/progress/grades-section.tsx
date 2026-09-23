@@ -7,7 +7,7 @@ import { Input, Select } from "@/components/ui/input";
 import { Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { LineChart } from "@/components/ui/chart";
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { SubjectAvatar } from "@/components/subject-avatar";
 import { Insufficient } from "@/components/progress/insufficient";
 import { GradeErrorsLink } from "@/components/errors/error-links";
 import { computeGradesByKind, computeGradesBySubject } from "@/lib/tracking";

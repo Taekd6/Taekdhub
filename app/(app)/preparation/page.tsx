@@ -6,20 +6,16 @@ export const metadata = { title: "Suivi par matière — TaekdHub" };
 /**
  * LE HUB D'UNE MATIÈRE.
  *
- * Cet écran s'appelait « Équilibrer mes matières » et répartissait des minutes
- * entre des exercices, en se terminant par un bouton qui construisait une
- * séance. C'était un écran de banque déguisé en écran de pilotage.
- *
- * Il répond désormais à une seule question — « où j'en suis dans cette
- * matière ? » — et n'affiche aucun exercice. Les fiches restent la matière
- * première des chiffres ; elles ne sont plus la structure de l'écran.
+ * Une seule question — « où j'en suis dans cette matière ? » — à partir de
+ * ce que l'élève consigne lui-même : son temps, ses échéances, ses notes,
+ * ses carnets. Aucun exercice : la banque intégrée a été retirée.
  */
 export default function PreparationPage() {
   return (
     <Stack className="space-y-8">
       <PageBar
         title="Suivi par matière"
-        lede="Où tu en es, ce que tu y as mis, ce qui arrive, et ce qu'il y a à consolider — matière par matière."
+        lede="Ce que tu y as mis, ce qui arrive, tes notes et ce qu'il reste à revoir — matière par matière."
       />
       <SubjectHub />
     </Stack>

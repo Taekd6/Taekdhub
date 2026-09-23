@@ -146,7 +146,7 @@ export interface WorkItemPriority {
   item: WorkItem;
   score: number;
   level: PriorityLevel;
-  /** Raisons brutes, comme `ExerciseRecommendation.reasons` — chacune correspond à un terme réellement ajouté au score. */
+  /** Raisons brutes — chacune correspond à un terme réellement ajouté au score. */
   reasons: string[];
   feasibility: Feasibility;
   remainingMinutes: number;
@@ -158,8 +158,8 @@ export interface WorkItemPriority {
 /*
  * BARÈME — volontairement à gros grain, et chaque terme porte sa raison.
  *
- * Le score n'a aucune signification absolue : il sert à ORDONNER, exactement
- * comme `urgencyScore` dans lib/recommendation.ts. Ce qui compte, c'est que
+ * Le score n'a aucune signification absolue : il sert à ORDONNER. Ce qui
+ * compte, c'est que
  * chaque point ajouté soit justifiable d'une phrase — un score qu'on ne peut
  * pas expliquer est un score auquel l'élève n'a aucune raison de se fier.
  */
@@ -255,8 +255,7 @@ export function sortByPriority(priorities: WorkItemPriority[]): WorkItemPriority
 }
 
 /**
- * UNE phrase qui explique la priorité, sur le modèle de
- * lib/recommendation.ts#explainReasons : la raison la plus décisive, pas la
+ * UNE phrase qui explique la priorité : la raison la plus décisive, pas la
  * concaténation de toutes. Jamais de texte inventé — `null` quand il n'y a
  * rien à dire.
  */

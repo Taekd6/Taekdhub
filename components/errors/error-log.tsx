@@ -5,7 +5,7 @@ import { BookmarkCheck, BookmarkPlus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ErrorCapture } from "@/components/errors/error-capture";
 import { ErrorStats, WhyItWorks, type StatsPeriod } from "@/components/errors/error-stats";
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { SubjectAvatar } from "@/components/subject-avatar";
 import { Button } from "@/components/ui/button";
 import { PageBar, Split } from "@/components/ui/layout";
 import { Section } from "@/components/ui/section";
@@ -25,9 +25,9 @@ import {
   reviewInputFromError,
 } from "@/lib/error-log";
 import { createReviewItem } from "@/lib/review-items";
-import { ERROR_TYPES, type Chapter, type ErrorEntry, type ErrorType, type ReviewItem } from "@/lib/storage";
+import { ERROR_TYPES, type ErrorEntry, type ErrorType, type ReviewItem } from "@/lib/storage";
 import { subjectMeta, subjects } from "@/lib/study";
-import type { Exercise, Subject } from "@/lib/supabase/types";
+import type { Subject } from "@/lib/supabase/types";
 
 /**
  * LE CARNET D'ERREURS EN ENTIER — noter, relire, voir ce qui revient.
@@ -41,7 +41,7 @@ import type { Exercise, Subject } from "@/lib/supabase/types";
  * s'effaceraient mutuellement leurs ajouts.
  */
 export function ErrorLog() {
-  const { errors, saveErrors, reviewItems, saveReviewItems, chapters, exercises, ready } = usePrepahubData();
+  const { errors, saveErrors, reviewItems, saveReviewItems, ready } = usePrepahubData();
   const [subject, setSubject] = useState<Subject | "all">("all");
   const [type, setType] = useState<ErrorType | "all">("all");
   const [period, setPeriod] = useState<StatsPeriod>("recent");
@@ -65,8 +65,6 @@ export function ErrorLog() {
     [errors, subject, type]
   );
   const groups = useMemo(() => groupErrorsByRecency(scoped), [scoped]);
-  const chapterLabels = useMemo(() => new Map(chapters.map((chapter: Chapter) => [chapter.id, chapter.label])), [chapters]);
-  const exerciseById = useMemo(() => new Map(exercises.map((exercise: Exercise) => [exercise.id, exercise])), [exercises]);
 
   /** Une erreur de cours → une ligne « à apprendre » du carnet À revoir, reliée pour ne pas la proposer deux fois. */
   function sendToReview(entry: ErrorEntry) {
@@ -110,8 +108,6 @@ export function ErrorLog() {
           <ErrorCapture
             errors={errors}
             saveErrors={saveErrors}
-            chapters={chapters}
-            exercises={exercises}
             ready={ready}
             onSaved={setLastSaved}
           />
@@ -184,8 +180,6 @@ export function ErrorLog() {
                         key={entry.id}
                         entry={entry}
                         showSubject={subject === "all"}
-                        chapterLabel={entry.chapterId ? chapterLabels.get(entry.chapterId) : undefined}
-                        exercise={entry.exerciseId ? exerciseById.get(entry.exerciseId) : undefined}
                         reviewItems={reviewItems}
                         fresh={entry.id === lastSaved?.id}
                         onSendToReview={() => sendToReview(entry)}
@@ -207,15 +201,13 @@ const dateFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "sh
 
 /**
  * UNE ERREUR — ce qui s'est passé, la bonne idée en dessous, puis type,
- * source, date et renvois. Pas de case à cocher : une erreur est un constat,
+ * source et date. Pas de case à cocher : une erreur est un constat,
  * pas une tâche (voir `ErrorEntry`). La croix supprime — toujours visible,
  * comme dans le carnet À revoir, pour rester atteignable au doigt.
  */
 function ErrorRow({
   entry,
   showSubject,
-  chapterLabel,
-  exercise,
   reviewItems,
   fresh,
   onSendToReview,
@@ -223,8 +215,6 @@ function ErrorRow({
 }: {
   entry: ErrorEntry;
   showSubject: boolean;
-  chapterLabel?: string;
-  exercise?: Exercise;
   reviewItems: ReviewItem[];
   fresh: boolean;
   onSendToReview: () => void;
@@ -248,15 +238,6 @@ function ErrorRow({
           {ERROR_SOURCE_META[entry.source].label}
           {" · "}
           {dateFormat.format(new Date(`${entry.date}T00:00:00`))}
-          {chapterLabel && <> · {chapterLabel}</>}
-          {exercise && (
-            <>
-              {" · "}
-              <Link href={`/exercises?focus=${exercise.id}`} className="text-accent hover:underline">
-                {exercise.title}
-              </Link>
-            </>
-          )}
         </p>
         {sendable && (
           <button

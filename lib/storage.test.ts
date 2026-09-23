@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBackupPayload, lastStorageWriteFailure, localData, normalizeCheckin, normalizeErrorEntry, normalizeGrade, normalizePreferences, normalizeSession, normalizeWorkItem, restoreBackup, validateBackupPayload } from "@/lib/storage";
+import { buildBackupPayload, lastStorageWriteFailure, localData, normalizeCheckin, normalizeErrorEntry, normalizeGrade, normalizePreferences, normalizeSession, normalizeWorkItem, purgeRetiredBankData, restoreBackup, validateBackupPayload } from "@/lib/storage";
 import { DEFAULT_ACCENT, hexToRgb } from "@/lib/theme";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
@@ -208,13 +208,13 @@ describe("localData — lecture blindée d'un stockage corrompu", () => {
 
   it("du JSON illisible ne lève pas — la liste est simplement vide", () => {
     expect(withStorage({ "prepahub:sessions": "{{{cassé" }, () => localData.sessions())).toEqual([]);
-    expect(withStorage({ "prepahub:exercises": "<html>" }, () => localData.exercises())).toEqual([]);
-    expect(withStorage({ "prepahub:chapters": "" }, () => localData.chapters())).toEqual([]);
+    expect(withStorage({ "prepahub:work-items": "<html>" }, () => localData.workItems())).toEqual([]);
+    expect(withStorage({ "prepahub:grades": "" }, () => localData.grades())).toEqual([]);
   });
 
   it("une valeur qui n'est pas un tableau est traitée comme absente", () => {
     expect(withStorage({ "prepahub:sessions": "42" }, () => localData.sessions())).toEqual([]);
-    expect(withStorage({ "prepahub:exercises": '{"pas":"un tableau"}' }, () => localData.exercises())).toEqual([]);
+    expect(withStorage({ "prepahub:work-items": '{"pas":"un tableau"}' }, () => localData.workItems())).toEqual([]);
   });
 
   it("des préférences illisibles retombent sur les valeurs par défaut", () => {
@@ -276,9 +276,8 @@ function rawSession(id: string, startedAt: string): Record<string, unknown> {
  *
  * Chaque appel à `usePrepahubData()` a sa PROPRE copie React (ce n'est pas un
  * contexte partagé). components/timer.tsx, en particulier, n'attend pas
- * `ready` : tant que `maybeSeedBank()` n'a pas résolu (import dynamique de
- * 1,35 Mo de JSON puis reconstruction de 477 exercices), sa liste `sessions`
- * vaut encore `[]` — alors que `useWorkTimer` a déjà restauré le chrono
+ * `ready` : tant que le premier `refresh()` n'a pas eu lieu, sa liste
+ * `sessions` vaut encore `[]` — alors que `useWorkTimer` a déjà restauré le chrono
  * persisté et que le bouton « Terminer » est cliquable. Un rechargement en
  * pleine séance suivi de « Terminer » écrivait `[la séance en cours]` par
  * REMPLACEMENT : toutes les séances précédentes disparaissaient d'un coup.
@@ -321,34 +320,13 @@ describe("localData.mergeSessions — le scénario 'Terminer avant chargement'",
   });
 });
 
-describe("localData.mergeExercises — une progression enregistrée ailleurs n'est pas annulée", () => {
-  it("garde les exercices absents de la liste entrante et applique la modification sur celui qu'elle contient", () => {
-    const disk = [
-      { id: "ex-1", subject: "Mathématiques", title: "A", source: "s", difficulty: 3, status: "à faire", created_at: "2026-01-01T00:00:00.000Z", attempts: 0 },
-      { id: "ex-2", subject: "Physique", title: "B", source: "s", difficulty: 3, status: "maîtrisé", created_at: "2026-01-01T00:00:00.000Z", attempts: 7 },
-    ];
-    const stored = withWritableStorage({ "prepahub:exercises": JSON.stringify(disk) }, () => {
-      const current = localData.exercises();
-      const patched = current.filter((item) => item.id === "ex-1").map((item) => ({ ...item, attempts: 1 }));
-      return localData.mergeExercises(patched);
-    });
-
-    expect(stored).toHaveLength(2);
-    expect(stored.find((item) => item.id === "ex-1")!.attempts).toBe(1);
-    expect(stored.find((item) => item.id === "ex-2")!.attempts).toBe(7);
-  });
-});
-
 /**
  * Régression P0 — quota atteint = résultat perdu EN SILENCE.
  *
  * `localStorage.setItem` lève un `QuotaExceededError`, et aucun appel n'était
- * protégé. Dans components/exercises/focus-view.tsx#commitResult, l'exception
- * partait depuis un gestionnaire de clic React : `update(...)` et `onClose(...)`
- * ne s'exécutaient jamais, l'écran « Comment s'est passé l'exercice ? » restait
- * figé, et la séance était perdue sans aucun message. Ce n'est pas théorique :
- * la banque amorcée sérialise à elle seule ~1,20 M caractères, soit ~2,3 Mo
- * en UTF-16, sur un quota de 5 Mo par origine.
+ * protégé : l'exception partait depuis un gestionnaire de clic React, la suite
+ * du gestionnaire ne s'exécutait jamais, et la séance était perdue sans aucun
+ * message.
  */
 describe("écriture refusée par le navigateur (quota) — ne lève jamais, et ne ment jamais", () => {
   it("saveSessions renvoie false au lieu de faire exploser le gestionnaire de clic", () => {
@@ -365,16 +343,16 @@ describe("écriture refusée par le navigateur (quota) — ne lève jamais, et n
   });
 
   it("l'échec est signalé, pour que l'app puisse le dire plutôt que de laisser croire que c'est enregistré", () => {
-    withWritableStorage({}, () => localData.saveExercises([]), true);
-    expect(lastStorageWriteFailure()?.key).toBe("prepahub:exercises");
+    withWritableStorage({}, () => localData.saveSessions([]), true);
+    expect(lastStorageWriteFailure()?.key).toBe("prepahub:sessions");
     // …et un écriture qui repasse efface le signal.
-    withWritableStorage({}, () => localData.saveExercises([]));
+    withWritableStorage({}, () => localData.saveSessions([]));
     expect(lastStorageWriteFailure()).toBeNull();
   });
 
-  it("saveChapters/savePreferences/saveWeekSnapshots ne lèvent pas non plus", () => {
+  it("saveGrades/savePreferences/saveWeekSnapshots ne lèvent pas non plus", () => {
     withWritableStorage({}, () => {
-      expect(() => localData.saveChapters([])).not.toThrow();
+      expect(() => localData.saveGrades([])).not.toThrow();
       expect(() => localData.saveWeekSnapshots([])).not.toThrow();
       expect(() => localData.saveLastBackupAt("2026-01-01T00:00:00.000Z")).not.toThrow();
       expect(() => localData.savePreferences(normalizePreferences({}))).not.toThrow();
@@ -384,7 +362,7 @@ describe("écriture refusée par le navigateur (quota) — ne lève jamais, et n
 
 /**
  * Compteurs négatifs — une seule valeur suffit à fausser durablement tout ce
- * qui s'additionne (temps du jour, bilan hebdo, XP), sans qu'aucune erreur
+ * qui s'additionne (temps du jour, bilan hebdo), sans qu'aucune erreur
  * ne soit levée nulle part.
  */
 describe("normalize* — un compteur négatif ne franchit jamais la frontière de confiance", () => {
@@ -396,12 +374,6 @@ describe("normalize* — un compteur négatif ne franchit jamais la frontière d
     expect(normalizeSession(makeRawSession({ duration_seconds: 599.6 })).duration_seconds).toBe(600);
   });
 
-  it("des tentatives négatives et une durée estimée négative sont écartées", () => {
-    const raw = [{ id: "ex-1", subject: "Mathématiques", title: "A", source: "s", difficulty: 3, status: "à faire", created_at: "2026-01-01T00:00:00.000Z", attempts: -5, estimated_minutes: -30 }];
-    const [exercise] = withWritableStorage({ "prepahub:exercises": JSON.stringify(raw) }, () => localData.exercises());
-    expect(exercise.attempts).toBe(0);
-    expect(exercise.estimated_minutes).toBeNull();
-  });
 });
 
 /* ══════════════════════════════════════════════════════════════════
@@ -550,10 +522,8 @@ function withQuotaStorage<T>(entries: Record<string, string>, budget: number, ru
 
 function backup(overrides: Record<string, unknown> = {}) {
   return {
-    exercises: [],
     sessions: [],
     preferences: { displayName: "Léo", dailyGoalMinutes: 90 },
-    chapters: [],
     weekSnapshots: [],
     workItems: [],
     grades: [],
@@ -567,17 +537,17 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     const outcome = withQuotaStorage({}, 1_000_000, () => restoreBackup(backup()));
     expect(outcome.ok).toBe(true);
     expect(outcome.failedAt).toBeNull();
-    expect(outcome.restored).toHaveLength(11);
+    expect(outcome.restored).toHaveLength(9);
   });
 
-  it("la banque ne passe pas → RIEN n'est touché, et c'est dit", () => {
+  it("les séances ne passent pas → RIEN n'est touché, et c'est dit", () => {
     const outcome = withQuotaStorage({}, 1, () =>
-      restoreBackup(backup({ exercises: [{ id: "x", subject: "Mathématiques", title: "t", source: "s", difficulty: 3, status: "à faire", created_at: "2026-01-01T00:00:00.000Z" }] }))
+      restoreBackup(backup({ sessions: [normalizeSession(rawSession("s-1", "2026-01-01T08:00:00.000Z"))] }))
     );
     expect(outcome.ok).toBe(false);
     expect(outcome.intact).toBe(true);
     expect(outcome.restored).toEqual([]);
-    expect(outcome.failedAt).toBe("les exercices");
+    expect(outcome.failedAt).toBe("les séances");
   });
 
   it("un refus EN COURS de restauration s'arrête net et nomme ce qui est passé", () => {
@@ -591,9 +561,9 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     expect(outcome.restored).not.toContain(outcome.failedAt);
   });
 
-  it("la banque est tentée EN PREMIER — c'est ce qui rend l'échec inoffensif", () => {
+  it("les séances — la plus grosse écriture — sont tentées EN PREMIER : c'est ce qui rend l'échec inoffensif", () => {
     const outcome = withQuotaStorage({}, 1_000_000, () => restoreBackup(backup()));
-    expect(outcome.restored[0]).toBe("les exercices");
+    expect(outcome.restored[0]).toBe("les séances");
   });
 
   it("les préférences restaurées passent par la normalisation, jamais telles quelles", () => {
@@ -719,6 +689,87 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
         "weeklySubjectTargets",
       ]
     );
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   BANQUE D'EXERCICES RETIRÉE — ménage du stockage, anciennes sauvegardes
+   ══════════════════════════════════════════════════════════════════ */
+
+describe("banque d'exercices retirée — les anciennes données ne gênent plus, et ne se perdent pas", () => {
+  const oldExercise = { id: "x", subject: "Mathématiques", title: "t", source: "s", difficulty: 3, status: "à faire", created_at: "2026-01-01T00:00:00.000Z" };
+
+  it("le ménage efface l'ancienne banque, ses chapitres et ses drapeaux d'amorçage", () => {
+    const { removed, remaining } = withWritableStorage(
+      {
+        "prepahub:exercises": JSON.stringify([oldExercise]),
+        "prepahub:chapters": "[]",
+        "prepahub:seeded": "2026-01-01T00:00:00.000Z",
+        "prepahub:seeded:version": "12",
+        "prepahub:sessions": JSON.stringify([rawSession("s-1", "2026-01-01T08:00:00.000Z")]),
+      },
+      () => {
+        const globals = globalThis as unknown as { localStorage: { removeItem?: (key: string) => void } };
+        globals.localStorage.removeItem = (key: string) => {
+          delete writeStore[key];
+        };
+        try {
+          return { removed: purgeRetiredBankData(), remaining: { ...writeStore } };
+        } finally {
+          delete globals.localStorage.removeItem;
+        }
+      }
+    );
+    expect(removed.sort()).toEqual(["prepahub:chapters", "prepahub:exercises", "prepahub:seeded", "prepahub:seeded:version"]);
+    // Les données de l'élève, elles, ne sont pas touchées.
+    expect(Object.keys(remaining)).toEqual(["prepahub:sessions"]);
+  });
+
+  it("le ménage ne fait rien la deuxième fois, et ne lève jamais", () => {
+    const removed = withWritableStorage({}, () => {
+      const globals = globalThis as unknown as { localStorage: { removeItem?: (key: string) => void } };
+      globals.localStorage.removeItem = () => {
+        throw new Error("SecurityError");
+      };
+      try {
+        return purgeRetiredBankData();
+      } finally {
+        delete globals.localStorage.removeItem;
+      }
+    });
+    expect(removed).toEqual([]);
+  });
+
+  it("l'export ne contient plus ni exercices ni chapitres", () => {
+    const payload = withWritableStorage({}, () => buildBackupPayload(new Date("2026-09-20T12:00:00.000Z")));
+    expect(payload).not.toHaveProperty("exercises");
+    expect(payload).not.toHaveProperty("chapters");
+    expect(validateBackupPayload(JSON.parse(JSON.stringify(payload)))).toBe(true);
+  });
+
+  it("une ANCIENNE sauvegarde avec des exercices et des chapitres reste valide…", () => {
+    const legacy = {
+      version: 1,
+      exportedAt: "2026-05-01T00:00:00.000Z",
+      exercises: [oldExercise],
+      chapters: [{ id: "c-1", subject: "Mathématiques", label: "Suites" }],
+      sessions: [rawSession("s-1", "2026-01-01T08:00:00.000Z")],
+      preferences: {},
+    };
+    expect(validateBackupPayload(JSON.parse(JSON.stringify(legacy)))).toBe(true);
+  });
+
+  it("… et sa restauration écrit les séances sans jamais réécrire la banque", () => {
+    const legacy = backup({
+      exercises: [oldExercise],
+      chapters: [{ id: "c-1", subject: "Mathématiques", label: "Suites" }],
+      sessions: [normalizeSession(rawSession("s-1", "2026-01-01T08:00:00.000Z"))],
+    });
+    const { outcome, keys } = withWritableStorage({}, () => ({ outcome: restoreBackup(legacy), keys: Object.keys(writeStore) }));
+    expect(outcome.ok).toBe(true);
+    expect(keys).toContain("prepahub:sessions");
+    expect(keys).not.toContain("prepahub:exercises");
+    expect(keys).not.toContain("prepahub:chapters");
   });
 });
 

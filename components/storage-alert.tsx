@@ -11,11 +11,10 @@ import { exportBackup, lastStorageWriteFailure } from "@/lib/storage";
  * l'app qui doit interrompre le travail en cours.
  *
  * TaekdHub n'a pas de compte : `localStorage` est la seule mémoire du
- * produit. Or une écriture peut être refusée (quota dépassé — la banque
- * pèse déjà quelques mégaoctets sur un budget de cinq, navigation privée,
- * stockage bloqué par le navigateur). Jusqu'ici cet échec était totalement
- * muet : l'élève déclarait « réussi », voyait l'écran de fin de séance
- * défiler normalement, et retrouvait une séance vide au rechargement. Le
+ * produit. Or une écriture peut être refusée (quota dépassé, navigation
+ * privée, stockage bloqué par le navigateur). Jusqu'ici cet échec était
+ * totalement muet : l'élève terminait sa séance, voyait l'écran défiler
+ * normalement, et retrouvait une séance vide au rechargement. Le
  * pire mode de défaillance possible pour un outil de révision — celui où
  * l'on croit avoir travaillé pour rien.
  *

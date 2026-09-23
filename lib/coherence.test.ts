@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computeWeeklySummary } from "@/lib/week";
 import { computeWeeklyReview } from "@/lib/weekly-review";
 import { computeWeeklyComparison } from "@/lib/analytics/work-time";
-import { computeDailyObjective } from "@/lib/next-action";
+import { computeDailyObjective } from "@/lib/daily-objective";
 import { normalizePreferences } from "@/lib/storage";
 import type { WorkSession } from "@/lib/supabase/types";
 
@@ -52,18 +52,18 @@ describe("« cette semaine » vaut la même chose sur l'accueil et sur Progressi
   ];
 
   it("l'accueil ne compte plus le travail qui n'a pas encore eu lieu", () => {
-    expect(Math.round(computeWeeklySummary([], sessions, 300, NOW).totalSeconds / 60)).toBe(90);
+    expect(Math.round(computeWeeklySummary(sessions, 300, NOW).totalSeconds / 60)).toBe(90);
   });
 
   it("les trois modules donnent le même total", () => {
-    const accueil = Math.round(computeWeeklySummary([], sessions, 300, NOW).totalSeconds / 60);
-    const bilan = computeWeeklyReview([], sessions, [], prefs, NOW).totalMinutes;
+    const accueil = Math.round(computeWeeklySummary(sessions, 300, NOW).totalSeconds / 60);
+    const bilan = computeWeeklyReview([], sessions, prefs, NOW).totalMinutes;
     const rythme = computeWeeklyComparison(sessions, NOW).currentMinutes;
     expect(new Set([accueil, bilan, rythme]).size).toBe(1);
   });
 
   it("le pourcentage d'objectif suit le même total", () => {
-    expect(computeWeeklySummary([], sessions, 300, NOW).progressPercent).toBe(30);
+    expect(computeWeeklySummary(sessions, 300, NOW).progressPercent).toBe(30);
   });
 });
 

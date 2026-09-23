@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { SubjectAvatar } from "@/components/subject-avatar";
 import { WhyItWorks } from "@/components/checkin/why-it-works";
 import { CALIBRATION_MIN_SAMPLES, computeCalibration, describeCalibration, type CalibrationPoint } from "@/lib/calibration";
 import { formatPrediction, GRADE_KIND_META, isPending, removeGrade, resolveGrade } from "@/lib/grades";

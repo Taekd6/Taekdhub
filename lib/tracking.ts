@@ -1,23 +1,19 @@
 import { computeConsistency, currentStreak } from "@/lib/analytics/consistency";
-import { computeChapterMastery } from "@/lib/analytics/mastery";
 import { computeTrend, type Trend } from "@/lib/analytics/trend";
 import { computeSubjectDistribution, computeWorkTimeSeries, measuredMinutes, minutesBetween, type TimePoint } from "@/lib/analytics/work-time";
 import { computeGradeStats, computeGradeTrend, isScored, type GradeStats } from "@/lib/grades";
-import { computeProgressBySubject } from "@/lib/progress";
 import { dayKey, subjects as allSubjects, todaySeconds } from "@/lib/study";
 import { secondsToWholeMinutes } from "@/lib/utils";
 import { startOfWeek } from "@/lib/week";
-import { GRADE_KINDS, type Grade, type GradeKind, type WeekSnapshot } from "@/lib/storage";
-import type { Chapter } from "@/lib/storage";
-import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
+import { GRADE_KINDS, type Grade, type GradeKind } from "@/lib/storage";
+import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
  * SUIVI DE L'ÉVOLUTION — les agrégations de l'écran « Mon évolution ».
  *
  * CE MODULE NE DÉFINIT AUCUNE MÉTRIQUE NOUVELLE. Le temps vient de
  * `minutesBetween` et `computeWorkTimeSeries`, la régularité de
- * `computeConsistency`, la maîtrise de `computeProgressBySubject` et
- * `computeChapterMastery`, les notes de `computeGradeStats`, les tendances de
+ * `computeConsistency`, les notes de `computeGradeStats`, les tendances de
  * `computeTrend`. Tout ce qu'on ajoute ici, c'est le DÉCOUPAGE PAR PÉRIODE et
  * la comparaison à soi-même — deux choses qu'aucun moteur ne faisait, et
  * qu'il aurait été absurde de refaire en dupliquant leurs définitions.
@@ -127,8 +123,6 @@ export interface TrackingOverview {
   /** Jours écoulés de la semaine en cours, aujourd'hui inclus — le dénominateur honnête de « X / 7 ». */
   elapsedDaysThisWeek: number;
   streak: number;
-  /** Chapitres où au moins une fiche a été engagée — le contenu réellement abordé. */
-  chaptersWorked: number;
   /** Tendance du volume hebdomadaire — `insuffisant` tant qu'il n'y a pas de quoi conclure. */
   trend: Trend;
 }
@@ -136,21 +130,9 @@ export interface TrackingOverview {
 /** Semaines observées pour la tendance de volume — même horizon que l'écran Progression. */
 export const TRACKING_TREND_WEEKS = 6;
 
-export function computeTrackingOverview(
-  sessions: WorkSession[],
-  exercises: Exercise[],
-  chapters: Chapter[],
-  now: Date = new Date()
-): TrackingOverview {
+export function computeTrackingOverview(sessions: WorkSession[], now: Date = new Date()): TrackingOverview {
   const weekStart = startOfWeek(now);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const engaged = new Set(
-    exercises
-      .filter((exercise) => !exercise.archived && (exercise.attempts > 0 || exercise.last_worked_at !== null))
-      .map((exercise) => exercise.chapter_id)
-      .filter((id): id is string => id !== null)
-  );
 
   return {
     todayMinutes: secondsToWholeMinutes(todaySeconds(sessions, now)),
@@ -161,13 +143,12 @@ export function computeTrackingOverview(
     // reproche adressé à des jours qui ne sont pas arrivés.
     elapsedDaysThisWeek: Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - weekStart.getTime()) / 86400000) + 1,
     streak: currentStreak(sessions, now),
-    chaptersWorked: chapters.filter((chapter) => engaged.has(chapter.id)).length,
     trend: computeTrend(measuredMinutes(computeWorkTimeSeries(sessions, "semaine", TRACKING_TREND_WEEKS, now).slice(0, -1))),
   };
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   RÉPARTITION ET PROGRESSION PAR MATIÈRE
+   RÉPARTITION DU TEMPS PAR MATIÈRE
    ══════════════════════════════════════════════════════════════════ */
 
 export interface SubjectTracking {
@@ -179,68 +160,31 @@ export interface SubjectTracking {
   /** Minutes sur la période précédente de même longueur. */
   previousMinutes: number;
   deltaMinutes: number;
-  /** Maîtrise courante — part des fiches acquises, reprise de lib/progress.ts. */
-  completionRate: number;
-  /**
-   * Même taux au dernier instantané hebdomadaire disponible, ou `null`.
-   *
-   * `null` signifie « aucun instantané antérieur » — donc pas de « 0 % → 64 % »
-   * inventé au premier lancement. C'est la seule source d'historique de
-   * maîtrise qui existe (lib/week-snapshot.ts) ; sans elle, on n'affiche
-   * qu'une valeur, pas une évolution.
-   */
-  completionRateBefore: number | null;
-  fragileChapters: number;
-  /** `false` quand aucune fiche n'a été engagée : l'avancement n'est pas nul, il n'est pas mesuré. */
-  measured: boolean;
 }
 
-export function computeSubjectTracking(
-  sessions: WorkSession[],
-  exercises: Exercise[],
-  chapters: Chapter[],
-  snapshots: WeekSnapshot[],
-  period: TrackingPeriod,
-  now: Date = new Date()
-): SubjectTracking[] {
+/**
+ * Temps par matière sur la période, face à la période précédente de même
+ * longueur. Une matière n'apparaît que si elle a été travaillée sur l'une ou
+ * l'autre des deux périodes — jamais une ligne « 0 → 0 ».
+ */
+export function computeSubjectTracking(sessions: WorkSession[], period: TrackingPeriod, now: Date = new Date()): SubjectTracking[] {
   const days = PERIOD_DAYS[period];
   const since = daysAgo(now, days);
   const distribution = computeSubjectDistribution(sessions, since, now);
-  const progress = computeProgressBySubject(exercises);
-
-  // Le PLUS RÉCENT instantané, qui porte l'état d'une semaine révolue.
-  const latest = [...snapshots].sort((a, b) => new Date(b.weekStart).getTime() - new Date(a.weekStart).getTime())[0] ?? null;
 
   return allSubjects
     .map((subject) => {
       const share = distribution.find((entry) => entry.subject === subject);
       const own = sessions.filter((session) => session.subject === subject);
-      const subjectExercises = exercises.filter((exercise) => exercise.subject === subject);
-      const before = latest?.bySubjectProgress.find((entry) => entry.subject === subject);
-      const board = computeChapterMastery(
-        subjectExercises,
-        chapters.filter((chapter) => chapter.subject === subject),
-        Number.MAX_SAFE_INTEGER,
-        sessions,
-        now
-      );
       return {
         subject,
         minutes: share?.minutes ?? 0,
         percent: share?.percent ?? 0,
         previousMinutes: minutesBetween(own, daysAgo(now, days * 2), since),
         deltaMinutes: (share?.minutes ?? 0) - minutesBetween(own, daysAgo(now, days * 2), since),
-        completionRate: progress.find((entry) => entry.subject === subject)?.completionRate ?? 0,
-        // Un instantané qui ne contient pas la matière, ou qui la contient
-        // sans aucune fiche, ne dit rien : `null`, pas 0.
-        completionRateBefore: before && before.total > 0 ? before.completionRate : null,
-        fragileChapters: board.fragile.length,
-        measured: subjectExercises.some(
-          (exercise) => !exercise.archived && (exercise.attempts > 0 || exercise.status !== "à faire" || exercise.last_worked_at !== null)
-        ),
       };
     })
-    .filter((entry) => entry.minutes > 0 || entry.measured);
+    .filter((entry) => entry.minutes > 0 || entry.previousMinutes > 0);
 }
 
 /* ══════════════════════════════════════════════════════════════════

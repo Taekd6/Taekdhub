@@ -1,11 +1,6 @@
-import { secondsToWholeMinutes } from "@/lib/utils";
-import type { Exercise, ExerciseStatus, ExerciseType, Mastery, Subject, WorkSession } from "@/lib/supabase/types";
+import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 export const subjects: Subject[] = ["Mathématiques", "Physique", "Chimie", "Informatique TC", "Informatique Spé", "Français", "Anglais"];
-export const exerciseStatuses: ExerciseStatus[] = ["à faire", "en cours", "à revoir", "maîtrisé"];
-export const exerciseTypes: ExerciseType[] = ["TD", "DM", "DS", "Colle", "TP", "Annale", "Concours", "Personnel"];
-/** Paliers de maîtrise, dans l'ordre d'affichage — source unique pour toute UI qui énumère les paliers (voir lib/progress.ts). */
-export const masteryLevels: Mastery[] = [0, 25, 50, 75, 100];
 
 /**
  * Identité de matière — une lettre, une teinte.
@@ -32,23 +27,10 @@ export const subjectMeta: Record<Subject, { short: string; className: string; so
   Anglais: { short: "A", className: "bg-subj-en/[0.18] text-subj-en-ink", solid: "bg-subj-en", ink: "text-subj-en-ink", fill: "rgb(var(--subj-en))" },
 };
 
-/** Couleurs par statut, pour que le sélecteur de statut reste immédiatement lisible d'un coup d'œil (Sprint 2B). Purement visuel — n'affecte pas le modèle de données. */
-export const statusMeta: Record<ExerciseStatus, { className: string }> = {
-  // `bg-white/[0.045]` était du BLANC en dur : invisible sur le fond papier du
-  // thème clair, alors que les trois autres statuts s'y voyaient. `bg-inset`
-  // suit le thème, comme tous les autres fonds en creux de l'application.
-  "à faire": { className: "bg-inset text-muted" },
-  "en cours": { className: "bg-sky-400/[0.18] text-sky-200" },
-  "à revoir": { className: "bg-amber-400/[0.18] text-amber-200" },
-  maîtrisé: { className: "bg-emerald-400/[0.18] text-emerald-200" },
-};
-
 export function dayKey(value: string | Date) { return new Date(value).toLocaleDateString("en-CA"); }
-/** Un exercice est considéré acquis une fois "maîtrisé" — "à revoir" reste actif (fondation pour un futur suivi de type révision). */
-export function completedExercises(exercises: Exercise[]) { return exercises.filter((exercise) => exercise.status === "maîtrisé" && !exercise.archived); }
 export function totalSeconds(sessions: WorkSession[]) { return sessions.reduce((total, session) => total + session.duration_seconds, 0); }
 
-/** Temps déjà investi aujourd'hui (toutes matières confondues), en secondes — source unique, réutilisée par le Dashboard et par la séance bornée par le temps (lib/recommendation.ts côté appelant). */
+/** Temps déjà investi aujourd'hui (toutes matières confondues), en secondes — source unique, réutilisée par l'accueil (« Ma journée ») et le Chrono. */
 export function todaySeconds(sessions: WorkSession[], now: Date = new Date()): number {
   const today = dayKey(now);
   return totalSeconds(
@@ -61,27 +43,4 @@ export function todaySeconds(sessions: WorkSession[], now: Date = new Date()): n
       return new Date(session.started_at) <= now;
     })
   );
-}
-
-/**
- * Temps réellement passé par exercice, en MINUTES — dérivé des `WorkSession`
- * liées par `exercise_id` (Sprint 2.6, seule source de vérité). Calculé en
- * un seul passage sur `sessions` (pas un par exercice) : point de perf
- * important dès que la banque grossit, réutilisé pour l'affichage ET le tri
- * "temps passé" (voir lib/exercise-sort.ts).
- */
-export function minutesByExerciseMap(sessions: WorkSession[]): Map<string, number> {
-  const secondsById = new Map<string, number>();
-  for (const session of sessions) {
-    if (!session.exercise_id) continue;
-    secondsById.set(session.exercise_id, (secondsById.get(session.exercise_id) ?? 0) + session.duration_seconds);
-  }
-  const minutesById = new Map<string, number>();
-  for (const [id, seconds] of secondsById) minutesById.set(id, secondsToWholeMinutes(seconds));
-  return minutesById;
-}
-
-/** Confort pour un usage ponctuel (hors liste) — voir `minutesByExerciseMap` pour le cas "plusieurs exercices à la fois", nettement plus efficace. */
-export function minutesSpentOnExercise(exerciseId: string, sessions: WorkSession[]): number {
-  return minutesByExerciseMap(sessions).get(exerciseId) ?? 0;
 }

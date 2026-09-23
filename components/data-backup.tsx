@@ -53,14 +53,18 @@ export function DataBackup() {
   function confirmImport() {
     if (!pendingImport) return;
     /*
-     * Toute la logique est dans lib/storage.ts#restoreBackup : elle écrit la
-     * banque en premier, s'arrête au premier refus et renvoie exactement ce
+     * Toute la logique est dans lib/storage.ts#restoreBackup : elle écrit les
+     * séances en premier, s'arrête au premier refus et renvoie exactement ce
      * qui est passé. Ici, on ne fait plus que le DIRE.
      *
-     * L'ancienne version enchaînait huit écritures sans lire un seul de leurs
+     * L'ancienne version enchaînait les écritures sans lire un seul de leurs
      * retours, puis affichait « Sauvegarde restaurée » quoi qu'il arrive —
-     * y compris quand le quota avait laissé les exercices de la machine face
-     * aux séances du fichier, notes effacées au passage.
+     * y compris quand le quota avait laissé un mélange des deux appareils,
+     * notes effacées au passage.
+     *
+     * Une ancienne sauvegarde qui contient encore la banque d'exercices
+     * (`exercises`, `chapters`) s'importe normalement : ces deux champs sont
+     * ignorés, la banque ayant été retirée de l'application.
      */
     const outcome = restoreBackup(pendingImport);
     setPendingImport(null);
@@ -106,7 +110,7 @@ export function DataBackup() {
           l'élève doit pouvoir décider en connaissance de cause, pas découvrir
           la contrainte le jour où il perd son année. */}
       <p className="t-body max-w-[64ch] text-muted">
-        TaekdHub fonctionne sans compte : tes exercices, tes séances et ta progression sont enregistrés dans ce navigateur, sur cet
+        TaekdHub fonctionne sans compte : tes séances, tes échéances, tes notes et tes carnets sont enregistrés dans ce navigateur, sur cet
         appareil, et nulle part ailleurs. Ils ne partent sur aucun serveur — mais ils ne te suivent pas non plus d&apos;un appareil à
         l&apos;autre, et vider les données du navigateur les efface.
       </p>
@@ -132,15 +136,8 @@ export function DataBackup() {
               <div className="t-body text-muted">
                 <p className="t-subhead text-ink">Remplacer tes données locales ?</p>
                 <p className="mt-1">
-                  Ce fichier contient <span className="font-medium text-ink">{pendingImport.exercises.length}</span> exercice
-                  {pendingImport.exercises.length > 1 ? "s" : ""}, <span className="font-medium text-ink">{pendingImport.sessions.length}</span> séance
+                  Ce fichier contient <span className="font-medium text-ink">{pendingImport.sessions.length}</span> séance
                   {pendingImport.sessions.length > 1 ? "s" : ""}
-                  {pendingImport.chapters?.length ? (
-                    <>
-                      , <span className="font-medium text-ink">{pendingImport.chapters.length}</span> chapitre
-                      {pendingImport.chapters.length > 1 ? "s" : ""}
-                    </>
-                  ) : null}
                   {pendingImport.reviewItems?.length ? (
                     <>
                       , <span className="font-medium text-ink">{pendingImport.reviewItems.length}</span> ligne
@@ -157,11 +154,11 @@ export function DataBackup() {
                     <>
                       {" "}
                       et <span className="font-medium text-ink">{pendingImport.weekSnapshots.length}</span> semaine
-                      {pendingImport.weekSnapshots.length > 1 ? "s" : ""} de progression
+                      {pendingImport.weekSnapshots.length > 1 ? "s" : ""} figée{pendingImport.weekSnapshots.length > 1 ? "s" : ""}
                     </>
                   ) : null}
                   {pendingImport.exportedAt && ` (exporté le ${new Date(pendingImport.exportedAt).toLocaleDateString("fr-FR")})`}. Cette
-                  action remplacera définitivement tes exercices, chapitres, séances, échéances, notes, carnet « À revoir », carnet d&apos;erreurs, préférences et historique de progression actuels sur cet appareil.
+                  action remplacera définitivement tes séances, échéances, notes, carnet « À revoir », carnet d&apos;erreurs, préférences et historique de progression actuels sur cet appareil.
                 </p>
               </div>
             </div>

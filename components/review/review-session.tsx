@@ -9,7 +9,7 @@ import { Meter } from "@/components/ui/progress";
 import { Section } from "@/components/ui/section";
 import { Stat, StatRow } from "@/components/ui/stat";
 import { EmptyState, Skeleton } from "@/components/ui/state";
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { SubjectAvatar } from "@/components/subject-avatar";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { cn } from "@/lib/cn";
 import { REVIEW_KIND_META } from "@/lib/review-items";

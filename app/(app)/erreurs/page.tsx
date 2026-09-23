@@ -9,7 +9,7 @@ export const metadata = { title: "Carnet d'erreurs — TaekdHub" };
  * dans la barre de navigation (voir components/app-nav.tsx) : on y vient
  * au moment où l'on sort d'une épreuve, pas en flânant.
  *
- * `?subject=&source=&date=&chapter=&exercise=` pré-remplissent la saisie —
+ * `?subject=&source=&date=` pré-remplissent la saisie —
  * voir lib/error-log.ts#parseErrorPrefill.
  */
 export default function ErreursPage() {

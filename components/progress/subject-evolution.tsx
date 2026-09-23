@@ -5,52 +5,31 @@ import { Section } from "@/components/ui/section";
 import { Meter } from "@/components/ui/progress";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Insufficient } from "@/components/progress/insufficient";
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { SubjectAvatar } from "@/components/subject-avatar";
 import { computeSubjectTracking, PERIOD_LABELS, TRACKING_PERIODS, type TrackingPeriod } from "@/lib/tracking";
 import { withSignMinutes } from "@/lib/analytics/trend";
 import { formatSpan } from "@/lib/utils";
-import { cn } from "@/lib/cn";
-import type { Chapter, WeekSnapshot } from "@/lib/storage";
-import type { Exercise, WorkSession } from "@/lib/supabase/types";
+import type { WorkSession } from "@/lib/supabase/types";
 
 /**
- * MATIÈRE PAR MATIÈRE — la répartition ET son évolution, dans un seul endroit.
+ * MATIÈRE PAR MATIÈRE — la répartition du temps ET son évolution.
  *
- * Deux figures existaient séparément : une répartition statique du temps, et
- * une courbe de maîtrise pour UNE matière à la fois. Aucune ne répondait à
- * « mon travail est-il équilibré, et qu'est-ce qui bouge ». Ici, une ligne par
- * matière porte les quatre grandeurs qui se comparent : le temps, sa part, son
- * écart à la période précédente, et l'avancement avec son point de départ.
- *
- * « 25 % → 40 % » ne s'affiche QUE si un instantané hebdomadaire antérieur
- * existe (lib/week-snapshot.ts). Sans lui, on montre la valeur du jour et on
- * dit qu'il n'y a pas encore d'historique — plutôt que d'inventer un départ
- * à zéro qui ferait passer n'importe quel compte neuf pour une réussite.
+ * Une ligne par matière porte les trois grandeurs qui se comparent : le
+ * temps, sa part, et son écart à la période précédente. (L'avancement par
+ * matière qui l'accompagnait — part des fiches acquises, chapitres à
+ * consolider — venait de l'ancienne banque d'exercices, retirée.)
  */
-export function SubjectEvolution({
-  sessions,
-  exercises,
-  chapters,
-  snapshots,
-}: {
-  sessions: WorkSession[];
-  exercises: Exercise[];
-  chapters: Chapter[];
-  snapshots: WeekSnapshot[];
-}) {
+export function SubjectEvolution({ sessions }: { sessions: WorkSession[] }) {
   const [period, setPeriod] = useState<TrackingPeriod>("30j");
-  const rows = useMemo(
-    () => computeSubjectTracking(sessions, exercises, chapters, snapshots, period, new Date()),
-    [sessions, exercises, chapters, snapshots, period]
-  );
+  const rows = useMemo(() => computeSubjectTracking(sessions, period, new Date()), [sessions, period]);
 
   const worked = rows.filter((row) => row.minutes > 0);
 
   return (
     <Section
       label="Tes matières"
-      title="Où part ton temps, et ce qui avance"
-      description="Le temps de la période, sa part, et l'avancement de chaque matière."
+      title="Où part ton temps"
+      description="Le temps de la période, sa part, et son écart à la période précédente."
       action={
         <SegmentedControl
           size="sm"
@@ -77,49 +56,11 @@ export function SubjectEvolution({
             </p>
           )}
           <ul className="divide-y divide-line border-y border-line">
-            {rows.map((row) => {
-              const evolved = row.completionRateBefore !== null && row.completionRateBefore !== row.completionRate;
-              const delta = row.completionRateBefore !== null ? row.completionRate - row.completionRateBefore : null;
-              return (
+            {rows.map((row) => (
                 <li key={row.subject} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
                   <SubjectAvatar subject={row.subject} size="sm" />
                   <div className="min-w-[8rem] flex-1">
                     <p className="t-subhead truncate">{row.subject}</p>
-                    <p className="t-meta mt-0.5">
-                      {row.measured ? (
-                        <>
-                          {row.completionRateBefore !== null ? (
-                            <>
-                              {row.completionRateBefore} % → <span className="text-ink">{row.completionRate} %</span>{" "}
-                              {evolved && (
-                                <span className={cn(delta! > 0 ? "text-emerald-300" : "text-rose-300")}>
-                                  {delta! > 0 ? "↑" : "↓"} {Math.abs(delta!)} pt
-                                </span>
-                              )}
-                              {!evolved && <span className="text-subtle">→ stable</span>}
-                            </>
-                          ) : (
-                            <>
-                              {row.completionRate} % acquis
-                              <span className="text-subtle"> · pas encore d&apos;historique</span>
-                            </>
-                          )}
-                          {row.fragileChapters > 0 && (
-                            <span className="text-subtle">
-                              {" "}
-                              · {row.fragileChapters} chapitre{row.fragileChapters > 1 ? "s" : ""} à consolider
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        /* « aucune fiche ouverte », et non « rien n'a été
-                           travaillé » : une matière peut avoir douze heures de
-                           chronomètre libre et zéro fiche engagée. Les deux
-                           grandeurs sont affichées côte à côte, la phrase ne
-                           peut pas contredire le temps juste à sa droite. */
-                        "Avancement non mesuré — aucune fiche de cette matière n'a encore été ouverte"
-                      )}
-                    </p>
                   </div>
 
                   {row.minutes > 0 ? (
@@ -137,8 +78,7 @@ export function SubjectEvolution({
                     <span className="t-meta w-full text-2xs sm:w-40">Aucun temps sur cette période</span>
                   )}
                 </li>
-              );
-            })}
+            ))}
           </ul>
         </>
       )}

@@ -11,7 +11,7 @@ import { HistorySummary } from "@/components/history/history-summary";
 import { SessionRow } from "@/components/history/session-row";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { buildWeeklyPlan } from "@/lib/planning";
-import { defaultHistoryFilters, filterSessions, resultCounts, summarizeSessions, type HistoryFilters as HistoryFiltersState } from "@/lib/history";
+import { defaultHistoryFilters, filterSessions, summarizeSessions, type HistoryFilters as HistoryFiltersState } from "@/lib/history";
 import { formatSpan } from "@/lib/utils";
 
 /** Lignes montées d'un coup — voir `visibleCount`. */
@@ -24,7 +24,7 @@ const HISTORY_PAGE_SIZE = 100;
  * que les assembler.
  */
 export function SessionHistory() {
-  const { sessions, exercises, chapters, workItems, preferences, ready } = usePrepahubData();
+  const { sessions, workItems, preferences, ready } = usePrepahubData();
   const [filters, setFilters] = useState<HistoryFiltersState>(defaultHistoryFilters);
   // Combien de lignes sont réellement montées dans le DOM.
   //
@@ -36,12 +36,10 @@ export function SessionHistory() {
   // jamais la mesure.
   const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
 
-  const exerciseById = useMemo(() => new Map(exercises.map((item) => [item.id, item])), [exercises]);
-  const chapterById = useMemo(() => new Map(chapters.map((item) => [item.id, item])), [chapters]);
+  const workItemTitleById = useMemo(() => new Map(workItems.map((item) => [item.id, item.title])), [workItems]);
 
   const filtered = useMemo(() => filterSessions(sessions, filters), [sessions, filters]);
   const summary = useMemo(() => summarizeSessions(filtered), [filtered]);
-  const results = useMemo(() => resultCounts(filtered), [filtered]);
   const sorted = useMemo(
     () => [...filtered].sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()),
     [filtered]
@@ -122,7 +120,7 @@ export function SessionHistory() {
       <EmptyState
         icon={Clock3}
         title="Ton journal est prêt."
-        description="Chaque exercice travaillé y laissera sa durée, son résultat et sa date. Rien n'y est écrit à ta place."
+        description="Chaque séance chronométrée ou déclarée y laissera sa durée, sa matière et ta note. Rien n'y est écrit à ta place."
       />
     );
   }
@@ -131,12 +129,12 @@ export function SessionHistory() {
   return (
     <Split
       railLabel="Synthèse de la période"
-      rail={<HistorySummary summary={summary} results={results} />}
+      rail={<HistorySummary summary={summary} />}
     >
       <div className="space-y-8">
         <PageBar
           title="Séances"
-          lede="La trace exacte du travail accompli : ce qui a été travaillé, combien de temps, avec quel résultat."
+          lede="La trace exacte du travail accompli : ce qui a été travaillé, quand, et combien de temps."
         />
 
       {/* Les filtres vivaient dans le rail, donc SOUS le journal sur
@@ -174,19 +172,14 @@ export function SessionHistory() {
                   </span>
                 </h3>
                 <ul className="divide-y divide-line border-b border-line">
-                  {day.sessions.map((session) => {
-                    const exercise = session.exercise_id ? exerciseById.get(session.exercise_id) : undefined;
-                    const chapter = exercise?.chapter_id ? chapterById.get(exercise.chapter_id) : undefined;
-                    return (
-                      <SessionRow
-                        key={session.id}
-                        session={session}
-                        exerciseTitle={exercise?.title}
-                        chapterLabel={chapter?.label}
-                        dateInHeader
-                      />
-                    );
-                  })}
+                  {day.sessions.map((session) => (
+                    <SessionRow
+                      key={session.id}
+                      session={session}
+                      workItemTitle={session.work_item_id ? workItemTitleById.get(session.work_item_id) : undefined}
+                      dateInHeader
+                    />
+                  ))}
                 </ul>
               </section>
             ))}

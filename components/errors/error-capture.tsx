@@ -1,11 +1,10 @@
 "use client";
 
-import { Check, CornerDownLeft, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, CornerDownLeft } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input, Select } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/cn";
-import { getChaptersForSubject } from "@/lib/chapters";
 import {
   createErrorEntry,
   ERROR_MEMORY_KEY,
@@ -16,8 +15,8 @@ import {
   parseErrorPrefill,
 } from "@/lib/error-log";
 import { dayKey, subjectMeta, subjects } from "@/lib/study";
-import { ERROR_SOURCES, ERROR_TYPES, readFlag, writeFlag, type Chapter, type ErrorEntry, type ErrorSource, type ErrorType } from "@/lib/storage";
-import type { Exercise, Subject } from "@/lib/supabase/types";
+import { ERROR_SOURCES, ERROR_TYPES, readFlag, writeFlag, type ErrorEntry, type ErrorSource, type ErrorType } from "@/lib/storage";
+import type { Subject } from "@/lib/supabase/types";
 
 /**
  * NOTER UNE ERREUR — dix secondes, sans quitter la copie des yeux.
@@ -36,8 +35,10 @@ import type { Exercise, Subject } from "@/lib/supabase/types";
  *
  * « La bonne idée » est visible d'emblée, pas cachée derrière « Plus » : noter
  * la correction, pas seulement l'erreur, est ce qui fait qu'on en apprend
- * quelque chose (voir « Pourquoi ça marche »). La date, le chapitre et
- * l'exercice, eux, sont repliés : utiles, rarement indispensables.
+ * quelque chose (voir « Pourquoi ça marche »). La date, elle, est repliée :
+ * utile, rarement indispensable. (Le chapitre et l'exercice de l'ancienne
+ * banque d'exercices, qui se choisissaient ici aussi, ont disparu avec elle :
+ * « l'exo 12 du TD4 » s'écrit dans la description.)
  *
  * Les données viennent du PARENT (components/errors/error-log.tsx), jamais
  * d'un second `usePrepahubData()` — `saveErrors` REMPLACE, une seconde copie
@@ -46,16 +47,12 @@ import type { Exercise, Subject } from "@/lib/supabase/types";
 export function ErrorCapture({
   errors,
   saveErrors,
-  chapters,
-  exercises,
   ready,
   onSaved,
 }: {
   /** Le carnet ENTIER — c'est lui qu'on réécrit. */
   errors: ErrorEntry[];
   saveErrors: (errors: ErrorEntry[]) => void;
-  chapters: Chapter[];
-  exercises: Exercise[];
   ready: boolean;
   /** Appelé avec l'erreur tout juste notée — le parent peut proposer une suite (« ajouter au carnet À revoir »). */
   onSaved?: (entry: ErrorEntry) => void;
@@ -66,8 +63,6 @@ export function ErrorCapture({
   const [description, setDescription] = useState("");
   const [fix, setFix] = useState("");
   const [date, setDate] = useState("");
-  const [chapterId, setChapterId] = useState("");
-  const [exerciseId, setExerciseId] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
   const [missingType, setMissingType] = useState(false);
   const [justAdded, setJustAdded] = useState<string | null>(null);
@@ -83,10 +78,10 @@ export function ErrorCapture({
     const nextSource = prefill.source ?? memory.source;
     if (nextSubject) setSubject(nextSubject);
     if (nextSource) setSource(nextSource);
-    if (prefill.date) setDate(prefill.date);
-    if (prefill.chapterId) setChapterId(prefill.chapterId);
-    if (prefill.exerciseId) setExerciseId(prefill.exerciseId);
-    if (prefill.date || prefill.chapterId || prefill.exerciseId) setMoreOpen(true);
+    if (prefill.date) {
+      setDate(prefill.date);
+      setMoreOpen(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -94,27 +89,6 @@ export function ErrorCapture({
     const timeout = window.setTimeout(() => setJustAdded(null), 1800);
     return () => window.clearTimeout(timeout);
   }, [justAdded]);
-
-  const subjectChapters = useMemo(() => getChaptersForSubject(chapters, subject), [chapters, subject]);
-  const linkedExercise = exerciseId ? exercises.find((exercise) => exercise.id === exerciseId) : undefined;
-  // L'exercice se choisit DANS un chapitre : la banque en compte des
-  // centaines par matière, un menu de toute la matière serait inutilisable.
-  const chapterExercises = useMemo(
-    () =>
-      chapterId
-        ? exercises
-            .filter((exercise) => exercise.chapter_id === chapterId && !exercise.archived)
-            .sort((a, b) => a.title.localeCompare(b.title, "fr"))
-        : [],
-    [exercises, chapterId]
-  );
-
-  // Un exercice pré-rempli par l'URL apporte sa matière et son chapitre.
-  useEffect(() => {
-    if (!linkedExercise) return;
-    setSubject(linkedExercise.subject);
-    if (linkedExercise.chapter_id) setChapterId(linkedExercise.chapter_id);
-  }, [linkedExercise]);
 
   const trimmed = description.trim();
   const fixTrimmed = fix.trim();
@@ -133,8 +107,6 @@ export function ErrorCapture({
       description,
       fix,
       date: date || dayKey(new Date()),
-      chapterId: subjectChapters.some((chapter) => chapter.id === chapterId) ? chapterId : null,
-      exerciseId: exerciseId || null,
     });
     if (!entry) return;
     saveErrors([entry, ...errors]);
@@ -143,7 +115,6 @@ export function ErrorCapture({
     setFix("");
     setType(null);
     setMissingType(false);
-    setExerciseId("");
     setJustAdded(entry.id);
     onSaved?.(entry);
     field.current?.focus();
@@ -151,10 +122,6 @@ export function ErrorCapture({
 
   function chooseSubject(value: Subject) {
     setSubject(value);
-    if (value !== subject) {
-      setChapterId("");
-      setExerciseId("");
-    }
   }
 
   function chooseType(value: ErrorType) {
@@ -299,7 +266,7 @@ export function ErrorCapture({
           aria-expanded={moreOpen}
           className="inline-flex min-h-6 items-center text-accent hover:underline max-lg:min-h-11"
         >
-          {moreOpen ? "Moins de détails" : "Date, chapitre, exercice"}
+          {moreOpen ? "Moins de détails" : "Changer la date"}
         </button>
       </p>
 
@@ -309,49 +276,6 @@ export function ErrorCapture({
             <span className="sr-only">Date de l&apos;erreur</span>
             <Input aria-label="Date de l'erreur" type="date" value={date || dayKey(new Date())} onChange={(event) => setDate(event.target.value)} />
           </label>
-          <label className="min-w-0">
-            <span className="sr-only">Chapitre (facultatif)</span>
-            <Select
-              aria-label="Chapitre (facultatif)"
-              value={subjectChapters.some((chapter) => chapter.id === chapterId) ? chapterId : ""}
-              onChange={(event) => {
-                setChapterId(event.target.value);
-                setExerciseId("");
-              }}
-            >
-              <option value="">Sans chapitre</option>
-              {subjectChapters.map((chapter) => (
-                <option key={chapter.id} value={chapter.id}>
-                  {chapter.label}
-                </option>
-              ))}
-            </Select>
-          </label>
-          {linkedExercise && !chapterExercises.some((exercise) => exercise.id === linkedExercise.id) ? (
-            <p className="t-meta flex min-h-9 min-w-0 items-center gap-1 text-2xs">
-              <span className="truncate">Exercice : {linkedExercise.title}</span>
-              <button type="button" aria-label="Retirer l'exercice" onClick={() => setExerciseId("")} className="grid h-6 w-6 shrink-0 place-items-center rounded text-subtle hover:text-ink">
-                <X size={13} aria-hidden />
-              </button>
-            </p>
-          ) : (
-            <label className="min-w-0">
-              <span className="sr-only">Exercice de la banque (facultatif)</span>
-              <Select
-                aria-label="Exercice de la banque (facultatif)"
-                value={exerciseId}
-                onChange={(event) => setExerciseId(event.target.value)}
-                disabled={chapterExercises.length === 0}
-              >
-                <option value="">{chapterId ? "Sans exercice" : "Exercice : choisis un chapitre"}</option>
-                {chapterExercises.map((exercise) => (
-                  <option key={exercise.id} value={exercise.id}>
-                    {exercise.title}
-                  </option>
-                ))}
-              </Select>
-            </label>
-          )}
         </div>
       )}
 

@@ -6,11 +6,10 @@ import { Wordmark } from "@/components/app-nav";
 /**
  * PAGE D'ACCUEIL PUBLIQUE.
  *
- * Ce que le produit fait RÉELLEMENT, sans un seul chiffre écrit à la main :
- * la page annonçait autrefois « 402 exercices » alors que l'amorçage réel en
- * produisait un tout autre nombre. Un décompte codé en dur se désynchronise
- * dès la première correction de la banque, et la première phrase que lit
- * l'élève devient fausse. La banque est donc DÉCRITE, jamais comptée.
+ * Ce que le produit fait RÉELLEMENT : suivre le travail que l'élève fait sur
+ * ses propres feuilles. La page vantait autrefois une banque d'exercices et
+ * ses recommandations ; la banque a été retirée, la page ne promet plus que
+ * ce qui existe.
  *
  * Composition : une page de titre, pas une page d'atterrissage marketing.
  * Un énoncé au centre gauche, deux actions, puis quatre principes séparés par
@@ -19,24 +18,24 @@ import { Wordmark } from "@/components/app-nav";
  */
 const PRINCIPES = [
   {
-    titre: "Il sait quoi te faire travailler",
+    titre: "Ton temps, mesuré honnêtement",
     texte:
-      "Toute ta banque classée en continu selon tes résultats réels — et chaque recommandation dit pourquoi elle est là.",
+      "Un chrono quand tu te mets au travail, une saisie en dix secondes pour ce qu'il n'a pas vu. Par matière, jour après jour, face à tes objectifs.",
   },
   {
-    titre: "Un plan adapté au temps que tu as",
+    titre: "Tes échéances, casées dans tes journées",
     texte:
-      "20 minutes ou 90 : la séance ne fait pas que s'allonger, sa structure change. Réparer d'abord, entretenir ensuite.",
+      "DM, DS, colles : TaekdHub répartit le temps qu'ils demandent selon ce que chaque jour peut absorber, et dit ce qui ne tient plus.",
   },
   {
-    titre: "Réussir seul n'est pas réussir aidé",
+    titre: "Ce qu'il faut revoir, au bon moment",
     texte:
-      "Les indices que tu révèles sont comptés. Un exercice arraché aux indices revient ; une réussite autonome, non.",
+      "Le carnet « À revoir » et tes cartouches de méthode reviennent en révision espacée ; le carnet d'erreurs montre ce qui revient.",
   },
   {
-    titre: "Des annales, pas des imitations",
+    titre: "Tes données restent chez toi",
     texte:
-      "Un exercice n'est présenté comme sujet de concours que si sa source établit le concours, l'année, l'épreuve et le numéro.",
+      "Pas de compte, pas de serveur : tout vit dans ton navigateur, et une sauvegarde en un clic te suit d'un appareil à l'autre.",
   },
 ];
 
@@ -54,8 +53,8 @@ export default function Home() {
             Chaque heure compte.
           </h1>
           <p className="t-read mt-7 max-w-[48ch] text-muted">
-            TaekdHub regarde ce que tu réussis, ce que tu rates et ce que tu n&apos;obtiens qu&apos;avec des indices,
-            puis te dit quoi travailler maintenant — et pourquoi.
+            Tu travailles sur tes feuilles ; TaekdHub garde la trace de ton temps, de tes échéances, de tes notes et de
+            ce qu&apos;il te reste à revoir.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
             <Link href="/dashboard">
@@ -63,9 +62,9 @@ export default function Home() {
                 Ouvrir TaekdHub <ArrowRight size={17} />
               </Button>
             </Link>
-            <Link href="/exercises">
+            <Link href="/timer">
               <Button size="lg" variant="secondary">
-                Parcourir la bibliothèque
+                Lancer le chrono
               </Button>
             </Link>
           </div>

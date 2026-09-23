@@ -7,12 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/state";
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { SubjectAvatar } from "@/components/subject-avatar";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { PLAN_DURATION_PRESETS } from "@/lib/plan";
 import { localData, MAX_WEEKLY_SUBJECT_TARGET_MINUTES, type Preferences } from "@/lib/storage";
 import { subjects } from "@/lib/study";
 import { formatMinutesSpan } from "@/lib/utils";
+
+/**
+ * Préréglages "objectif quotidien", en minutes — mêmes valeurs que les
+ * durées de séance de l'ancien plan d'exercices (lib/plan.ts, retiré avec la
+ * banque), pour ne rien changer à ce que l'élève a l'habitude de choisir.
+ */
+const DAILY_GOAL_PRESETS = [20, 45, 60, 90];
 
 /** Préréglages "objectif hebdomadaire" (Sprint Plan de travail), en minutes — 3h/5h/7h, plus une valeur libre déjà couverte par le champ nombre ci-dessous. */
 const WEEKLY_GOAL_PRESETS = [180, 300, 420];
@@ -85,7 +91,7 @@ export function PreferencesForm() {
               ariaLabel="Objectif quotidien"
               value={prefs.dailyGoalMinutes}
               onChange={(value) => setPrefs({ ...prefs, dailyGoalMinutes: value })}
-              options={PLAN_DURATION_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
+              options={DAILY_GOAL_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
             />
             <Input
               type="number"

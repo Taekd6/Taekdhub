@@ -5,7 +5,7 @@ import { PageBar, Split } from "@/components/ui/layout";
 import { Section } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/state";
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { SubjectAvatar } from "@/components/subject-avatar";
 import { ReviewCapture, ReviewList } from "@/components/review/review-capture";
 import { DueToday } from "@/components/review/due-today";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
