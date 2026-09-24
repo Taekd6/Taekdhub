@@ -1,14 +1,12 @@
-import { PageBar, Stack } from "@/components/ui/layout";
 import { Timer } from "@/components/timer";
 
+export const metadata = { title: "Chrono — TaekdHub" };
+
+/**
+ * L'écran « Focus » : un seul objet centré, le chrono. Le titre vit dans le
+ * composant (components/timer.tsx) parce qu'il disparaît en plein écran —
+ * un en-tête posé ici resterait sous la couche plein écran.
+ */
 export default function TimerPage() {
-  return (
-    <Stack className="space-y-8">
-      <PageBar
-        title="Chronomètre"
-        lede="Lance le chrono quand tu te mets au travail — une feuille d'exercices, un DM, une relecture de cours."
-      />
-      <Timer />
-    </Stack>
-  );
+  return <Timer />;
 }

@@ -3,9 +3,12 @@ import { sessionsInWeek, startOfWeek } from "@/lib/week";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
- * EMPILEMENTS PAR MATIÈRE — les deux figures colorées de l'accueil.
+ * EMPILEMENTS PAR MATIÈRE — les deux figures de l'accueil.
  *
- *   `todayBySubject`   l'anneau du jour, un segment par matière ;
+ *   `todayBySubject`   la légende de « Ma journée », matière par matière
+ *                      (l'anneau, lui, est désormais d'un seul tenant, à
+ *                      l'accent — le découpage en segments gris a été
+ *                      retiré avec `ringSegments` / `SegmentRing`) ;
  *   `weekDayStacks`    la semaine en sept colonnes (lundi → dimanche),
  *                      chacune empilée par matière.
  *
@@ -81,37 +84,4 @@ export function weekDayStacks(sessions: WorkSession[], now: Date = new Date()): 
       segments,
     };
   });
-}
-
-export interface RingSegment {
-  subject: Subject;
-  /** Début et longueur, en fraction du tour (0–1). */
-  start: number;
-  length: number;
-}
-
-/**
- * Découpe l'anneau du jour : chaque matière occupe la part de l'OBJECTIF
- * qu'elle a remplie, et l'ensemble plafonne au tour complet. Au-delà de
- * l'objectif, les parts sont remises à l'échelle pour que l'anneau reste
- * fermé et proportionné — il dit alors « objectif atteint, et voici avec
- * quoi », pas « 140 % ».
- *
- * `gap` (fraction du tour) sépare deux segments voisins ; il n'est retiré
- * qu'à un segment assez long pour le porter, pour qu'une séance de cinq
- * minutes reste un point visible et ne disparaisse pas.
- */
-export function ringSegments(parts: SubjectSeconds[], goalSeconds: number, gap = 0): RingSegment[] {
-  const total = parts.reduce((sum, part) => sum + part.seconds, 0);
-  if (total <= 0) return [];
-  const scale = goalSeconds > 0 && total <= goalSeconds ? 1 / goalSeconds : 1 / total;
-  const segments: RingSegment[] = [];
-  let cursor = 0;
-  for (const part of parts) {
-    const share = part.seconds * scale;
-    const usable = parts.length > 1 && share > gap * 2 ? share - gap : share;
-    segments.push({ subject: part.subject, start: cursor, length: Math.max(0, usable) });
-    cursor += share;
-  }
-  return segments;
 }

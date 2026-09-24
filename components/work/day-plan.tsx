@@ -1,5 +1,6 @@
 "use client";
 
+import { Meter } from "@/components/ui/progress";
 import { cn } from "@/lib/cn";
 import { formatSpan } from "@/lib/utils";
 import { WORK_ITEM_KIND_META } from "@/lib/work-items";
@@ -16,8 +17,8 @@ import type { PlannedDay } from "@/lib/planning";
  * porte donc aucun signal : c'est ce qui permet aux deux états qui comptent
  * (surchargé, intenable) de rester visibles.
  *
- * Pas de graphique, pas de barre colorée par jour, pas de feu tricolore :
- * un filet, des chiffres alignés, et une étiquette là où il y a réellement
+ * Pas de graphique ni de feu tricolore : un trait (prévu / capacité),
+ * des chiffres alignés, et une étiquette là où il y a réellement
  * quelque chose à dire.
  */
 export function DayPlan({ day, label, dense = false }: { day: PlannedDay; label: string; dense?: boolean }) {
@@ -40,6 +41,18 @@ export function DayPlan({ day, label, dense = false }: { day: PlannedDay; label:
           )}
         </p>
       </div>
+
+      {/* LA CAPACITÉ, EN UN TRAIT — prévu face à ce que la journée peut
+          porter. À l'accent tant que tout va bien : l'orange et le rouge ne
+          s'allument que pour les deux états qui demandent une décision, les
+          mêmes que l'étiquette plus bas. */}
+      {load.capacityMinutes > 0 && (
+        <Meter
+          value={(load.plannedMinutes / load.capacityMinutes) * 100}
+          tone={load.status === "intenable" ? "danger" : load.status === "surchargé" ? "warning" : "accent"}
+          className="mt-2"
+        />
+      )}
 
       {day.slots.length > 0 ? (
         <ul className="mt-1.5 space-y-1">

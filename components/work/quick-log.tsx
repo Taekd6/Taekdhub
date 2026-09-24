@@ -22,13 +22,14 @@ import type { Subject, WorkSession } from "@/lib/supabase/types";
 /**
  * NOTER DU TEMPS — trois gestes : une matière, une durée, « Ajouter ».
  *
- * Posé sur l'accueil, juste à côté de l'anneau du jour : l'anneau gagne un
- * segment de la couleur de la matière au moment où l'on valide, ce qui est
- * la seule récompense dont une saisie de dix secondes a besoin. Le dernier
+ * Posé sur l'accueil, sous l'anneau du jour : l'anneau avance au moment où
+ * l'on valide, ce qui est la seule récompense dont une saisie de dix
+ * secondes a besoin. Le dernier
  * choix est retenu : les 30 min d'Anki du matin se notent d'un seul geste.
  *
- * Le TITRE de la carte (« Noter du temps ») est posé par l'appelant, dans
- * sa `Section` : ce composant ne rend que les contrôles.
+ * Le TITRE de la carte (« Noter du temps ») est posé par l'appelant (la
+ * tuile en deux colonnes de l'accueil) : ce composant ne rend que les
+ * contrôles.
  *
  * Aucun formulaire, aucune fenêtre : une feuille modale coûterait deux
  * gestes de plus à chaque saisie, et c'est exactement ce qui fait abandonner
@@ -96,9 +97,16 @@ export function QuickLog({
 
   return (
     <div>
-      {/* MATIÈRE — sept pastilles à la couleur de chaque matière, pas une
-          liste déroulante : sept cibles visibles d'un coup valent mieux
-          qu'un menu à ouvrir. La matière retenue passe en aplat plein. */}
+      {/* MATIÈRE — sept pastilles NEUTRES, pas une liste déroulante : sept
+          cibles visibles d'un coup valent mieux qu'un menu à ouvrir.
+
+          La matière retenue passe en INVERSE (fond à l'encre, lettre à la
+          couleur du fond) — la sélection d'iOS. Avant, elle prenait le
+          palier de gris de la matière (`subjectMeta.solid`) avec une lettre
+          quasi noire codée en dur : en thème clair, les paliers partent du
+          NOIR (maths = #1d1d1f), et la lettre disparaissait. L'inverse
+          encre / fond tient 15:1 et plus dans les deux thèmes, pour toutes
+          les matières. */}
       <div role="radiogroup" aria-label="Matière" className="grid grid-cols-7 gap-1.5">
         {subjects.map((item) => {
           const active = item === subject;
@@ -112,11 +120,8 @@ export function QuickLog({
               title={item}
               onClick={() => setSubject(item)}
               className={cn(
-                "press grid h-10 place-items-center rounded-full text-xs font-extrabold leading-none max-lg:h-11",
-                // Texte presque noir sur l'aplat : les teintes de matière sont
-                // claires en sombre et « douces » (≥ 3:1) en clair — le noir y
-                // tient ≥ 6:1 dans les deux cas.
-                active ? cn(subjectMeta[item].solid, "text-[rgb(11_12_16)]") : cn(subjectMeta[item].className, "hover:brightness-125")
+                "press grid h-11 place-items-center rounded-full text-[0.8125rem] font-bold leading-none",
+                active ? "bg-ink text-canvas" : "bg-inset text-ink hover:bg-zinc-700"
               )}
             >
               {subjectMeta[item].short}
@@ -124,10 +129,7 @@ export function QuickLog({
           );
         })}
       </div>
-      <p className="mt-2 text-sm font-bold text-ink">
-        <span aria-hidden className={cn("mr-1.5 inline-block h-2 w-2 rounded-full align-middle", subjectMeta[subject].solid)} />
-        {subject}
-      </p>
+      <p className="mt-2.5 text-sm font-semibold text-ink">{subject}</p>
 
       {/* DURÉE — huit durées en un geste, et un champ pour le reste. */}
       <div role="radiogroup" aria-label="Durée" className="mt-3 grid grid-cols-4 gap-1.5">
@@ -144,8 +146,8 @@ export function QuickLog({
                 setCustom("");
               }}
               className={cn(
-                "press tabular min-h-9 rounded-full text-[0.8125rem] font-bold max-lg:min-h-11",
-                active ? "chip-on" : "bg-inset text-muted hover:text-ink"
+                "press tabular min-h-10 rounded-full text-[0.8125rem] font-bold max-lg:min-h-11",
+                active ? "bg-ink text-canvas" : "bg-inset text-muted hover:text-ink"
               )}
             >
               {preset < 60 ? `${preset}′` : `${Math.floor(preset / 60)}h${preset % 60 ? preset % 60 : ""}`}
@@ -185,7 +187,7 @@ export function QuickLog({
         />
       </div>
 
-      <Button variant="secondary" className="mt-4 w-full" disabled={!ready || !valid} onClick={add}>
+      <Button variant="secondary" size="lg" className="mt-5 w-full" disabled={!ready || !valid} onClick={add}>
         {justAdded ? (
           <>
             <Check size={15} className="text-emerald-300" /> Ajouté
