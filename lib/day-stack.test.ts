@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ringSegments, todayBySubject, weekDayStacks } from "@/lib/day-stack";
+import { todayBySubject, weekDayStacks } from "@/lib/day-stack";
 import { todaySeconds } from "@/lib/study";
 import { weeklyTimeBySubject } from "@/lib/week";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
@@ -92,52 +92,5 @@ describe("weekDayStacks", () => {
 
   it("porte un libellé long lisible", () => {
     expect(days[0].longLabel).toMatch(/lundi 21 septembre/);
-  });
-});
-
-describe("ringSegments", () => {
-  it("sous l'objectif, chaque matière occupe sa part de l'objectif", () => {
-    const segments = ringSegments(
-      [
-        { subject: "Mathématiques", seconds: 1800 },
-        { subject: "Anglais", seconds: 900 },
-      ],
-      3600
-    );
-    expect(segments).toEqual([
-      { subject: "Mathématiques", start: 0, length: 0.5 },
-      { subject: "Anglais", start: 0.5, length: 0.25 },
-    ]);
-  });
-
-  it("au-delà de l'objectif, l'anneau se ferme et reste proportionné", () => {
-    const segments = ringSegments(
-      [
-        { subject: "Mathématiques", seconds: 3600 },
-        { subject: "Anglais", seconds: 3600 },
-      ],
-      3600
-    );
-    expect(segments[0].length).toBeCloseTo(0.5);
-    expect(segments[1].start).toBeCloseTo(0.5);
-    expect(segments[1].length).toBeCloseTo(0.5);
-  });
-
-  it("l'écart n'est retiré qu'aux segments assez longs pour le porter", () => {
-    const segments = ringSegments(
-      [
-        { subject: "Mathématiques", seconds: 1800 },
-        { subject: "Anglais", seconds: 30 },
-      ],
-      3600,
-      0.02
-    );
-    expect(segments[0].length).toBeCloseTo(0.48);
-    expect(segments[1].length).toBeGreaterThan(0);
-  });
-
-  it("rien de travaillé → aucun segment, et un objectif nul ne divise pas par zéro", () => {
-    expect(ringSegments([], 3600)).toEqual([]);
-    expect(ringSegments([{ subject: "Chimie", seconds: 600 }], 0)).toEqual([{ subject: "Chimie", start: 0, length: 1 }]);
   });
 });

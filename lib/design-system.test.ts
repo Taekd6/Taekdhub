@@ -250,7 +250,7 @@ describe("les animations restent en CSS", () => {
 
 describe("la mise en page passe par le système de composition", () => {
   /**
-   * `Workbench`, `Split` et `Stack` (components/ui/layout.tsx) existent pour
+   * `Split` et `Stack` (components/ui/layout.tsx) existent pour
    * qu'un écran choisisse une COMPOSITION plutôt que d'écrire sa propre
    * grille. Sans cette règle, on retrouve `lg:grid-cols-[280px_1fr]` dans un
    * écran et `lg:grid-cols-[15rem_1fr]` dans le suivant, pour le même rôle —
@@ -262,16 +262,17 @@ describe("la mise en page passe par le système de composition", () => {
       .map((entry) => `${entry.file}: ${entry.value}`);
     expect(
       offenders,
-      "Utiliser Workbench / Split / Stack (components/ui/layout.tsx) plutôt qu'une grille écrite sur place."
+      "Utiliser Split / Stack (components/ui/layout.tsx) plutôt qu'une grille écrite sur place."
     ).toEqual([]);
   });
 
   it("les compositions sont réellement utilisées", () => {
     const sources = allSources();
     // `Workbench` (volet collant + zone de travail) n'avait qu'un usage : le
-    // navigateur de l'ancienne banque d'exercices, retirée. Il n'est donc
-    // plus exigé ici ; son retrait de components/ui/layout.tsx revient au
-    // chantier qui tient ce fichier.
+    // navigateur de l'ancienne banque d'exercices. Il est parti avec elle, et
+    // ne doit pas revenir comme code mort.
+    const layout = readFileSync(path.resolve(process.cwd(), "components/ui/layout.tsx"), "utf8");
+    expect(layout).not.toMatch(/export function Workbench/);
     for (const name of ["Split", "Stack"]) {
       const used = sources.filter(({ file, content }) => file !== "components/ui/layout.tsx" && content.includes(`<${name}`));
       expect(used.length, `Composition inutilisée : ${name}`).toBeGreaterThan(0);

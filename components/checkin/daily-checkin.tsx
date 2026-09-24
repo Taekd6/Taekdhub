@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { WhyItWorks } from "@/components/checkin/why-it-works";
+import { Illustration } from "@/components/ui/illustrations";
 import { checkinForDay, clampSleep, formatSleep, shouldPromptCheckin, upsertCheckin } from "@/lib/checkin-insights";
 import { CHECKIN_SLEEP_MAX, CHECKIN_SLEEP_MIN, readFlag, writeFlag, type DailyCheckin } from "@/lib/storage";
 import { dayKey } from "@/lib/study";
@@ -53,8 +54,9 @@ export function DailyCheckinCard({
 
   if (existing && !editing) {
     return (
-      <div className="flex items-center justify-between gap-3 border-y border-line py-2.5">
-        <p className="t-meta min-w-0 truncate text-2xs">
+      <div className="surface flex items-center gap-4 px-6 py-4">
+        <Illustration name="checkin" size={32} className="shrink-0 text-muted" />
+        <p className="t-meta min-w-0 flex-1 truncate">
           <span className="text-ink">Check-in du soir fait</span> · {formatSleep(existing.sleepHours)} · énergie {existing.energy} · stress{" "}
           {existing.stress}
         </p>
@@ -123,12 +125,32 @@ function CheckinForm({
   }
 
   return (
-    <form onSubmit={submit} aria-label="Check-in du soir" className="space-y-3.5 rounded-xl border border-line bg-panel p-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="t-label">Check-in du soir</p>
-        <span className="t-meta text-2xs">10 secondes</span>
+    /* Une TUILE en deux colonnes sur grand écran, comme « Noter du temps » :
+       la lune et la promesse (« 10 secondes ») à gauche, les trois gestes à
+       droite. Sous `lg`, tout s'empile. */
+    <form onSubmit={submit} aria-labelledby="checkin-titre" className="surface grid gap-8 p-6 sm:p-10 lg:grid-cols-2 lg:gap-16">
+      <div className="min-w-0">
+        <Illustration name="checkin" size={48} className="text-muted" />
+        <h3 id="checkin-titre" className="t-heading mt-4">
+          Check-in du soir.
+        </h3>
+        <p className="t-meta mt-1.5 max-w-[36ch]">Ton sommeil, ton énergie, ton stress — dix secondes, une fois par jour.</p>
+        <div className="mt-4">
+          <WhyItWorks>
+            <p>
+              Le sommeil joue un rôle dans la consolidation de ce qu&apos;on a appris dans la journée (Walker &amp; Stickgold, 2006 ;
+              Diekelmann &amp; Born, 2010). Noter chaque soir son sommeil, son énergie et son stress est une forme d&apos;auto-observation :
+              on repère des régularités qu&apos;on ne voit pas au jour le jour.
+            </p>
+            <p>
+              Ce check-in ne soigne rien et ne prédit pas tes notes. Après quelques semaines, la page Progrès te montre simplement ce
+              qu&apos;on observe dans TES données — sans en tirer de cause.
+            </p>
+          </WhyItWorks>
+        </div>
       </div>
 
+      <div className="min-w-0 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm text-ink">Sommeil cette nuit</span>
         <div className="flex items-center gap-1" role="group" aria-label="Heures de sommeil la nuit dernière">
@@ -174,18 +196,7 @@ function CheckinForm({
           Enregistrer
         </Button>
       </div>
-
-      <WhyItWorks>
-        <p>
-          Le sommeil joue un rôle dans la consolidation de ce qu&apos;on a appris dans la journée (Walker &amp; Stickgold, 2006 ; Diekelmann
-          &amp; Born, 2010). Noter chaque soir son sommeil, son énergie et son stress est une forme d&apos;auto-observation : on repère des
-          régularités qu&apos;on ne voit pas au jour le jour.
-        </p>
-        <p>
-          Ce check-in ne soigne rien et ne prédit pas tes notes. Après quelques semaines, la page Progrès te montre simplement ce qu&apos;on
-          observe dans TES données — sans en tirer de cause.
-        </p>
-      </WhyItWorks>
+      </div>
     </form>
   );
 }
