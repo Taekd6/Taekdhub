@@ -48,7 +48,7 @@ export function WorkAndResults({ sessions, grades }: { sessions: WorkSession[]; 
   const sameDirection = work.direction === gradeTrend.trend.direction && work.direction !== "stable";
 
   return (
-    <Section label="Travail et résultats" title="Ce qui évolue en même temps">
+    <Section variant="panel" label="Travail et résultats" title="Ce qui évolue en même temps">
       <p className="t-body">
         Sur les semaines mesurées, ton volume de travail est {DIRECTION[work.direction]} ({formatSpan(model.workFirst * 60)} →{" "}
         {formatSpan(model.workLast * 60)}) et tes notes sont {DIRECTION[gradeTrend.trend.direction]} ({formatAverage(gradeTrend.trend.first ?? 0)} → {formatAverage(gradeTrend.trend.last ?? 0)} sur 20).

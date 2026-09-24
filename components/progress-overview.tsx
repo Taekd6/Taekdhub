@@ -1,10 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Section } from "@/components/ui/section";
 import { Stat, StatRow } from "@/components/ui/stat";
 import { Skeleton } from "@/components/ui/state";
-import { PageBar, Split } from "@/components/ui/layout";
+import { Tabs } from "@/components/ui/tabs";
+import { CountUp } from "@/components/ui/count-up";
+import { Meter } from "@/components/ui/progress";
+import { Illustration } from "@/components/ui/illustrations";
+import { PageHero } from "@/components/ui/page-hero";
 import { WeekSection } from "@/components/progress/week-section";
 import { ConsistencySection } from "@/components/progress/consistency-section";
 import { EvolutionOverview } from "@/components/progress/evolution-overview";
@@ -19,138 +23,224 @@ import { computeStreak } from "@/lib/gamification";
 import { computeWeeklyReview } from "@/lib/weekly-review";
 import type { Preferences, WeekSnapshot, WorkItem } from "@/lib/storage";
 import { totalSeconds } from "@/lib/study";
+import { computePeriodTotals, computeTrackingOverview } from "@/lib/tracking";
 import { compareToPreviousWeek, findPreviousWeekSnapshot } from "@/lib/week-snapshot";
 import { formatMinutesSpan, formatSpan } from "@/lib/utils";
 import type { WorkSession } from "@/lib/supabase/types";
 
+/** Les ancres des onglets — `#notes` ouvre les notes, depuis l'accueil notamment. */
+const TAB_IDS = ["temps", "notes", "regularite", "sommeil", "bilan"];
+
 /**
  * ÉCRAN PROGRESSION.
  *
- * L'écran précédent affichait CINQUANTE tuiles encadrées de taille
- * identique — une par chapitre — sur une page de 3 400 pixels. Toutes
- * portaient le même contenu (« 0/12 » et une barre), donc aucune ne
- * ressortait, et rien là-dedans ne permettait de décider quoi que ce soit :
- * c'était un inventaire, pas un bilan.
+ * L'écran précédent était UN SEUL DÉFILEMENT de onze sections sans cadre :
+ * 6 000 pixels à parcourir pour arriver au sommeil, et aucun moyen de
+ * savoir, en ouvrant la page, ce qu'elle contenait plus bas. Refonte
+ * « Apple » :
  *
- * Deux principes ont guidé la réécriture :
- *
- *   1. CONCLURE AVANT DE MESURER. Le bilan de la semaine d'abord ; les
- *      chiffres bruts ensuite.
- *   2. CHAQUE ÉLÉMENT DOIT PERMETTRE UNE DÉCISION.
+ *   1. UN EN-TÊTE QUI RÉPOND TOUT DE SUITE. Quatre grands chiffres qui
+ *      montent quand on les voit (`CountUp`) : cette semaine, la série en
+ *      cours, la moyenne par jour, l'objectif de la semaine. C'est ce qu'on
+ *      vient chercher neuf fois sur dix.
+ *   2. DES ONGLETS pour le reste (`Tabs`, ancrés dans l'URL : /progress#notes
+ *      ouvre directement les notes). Cinq questions distinctes, cinq
+ *      onglets : combien je travaille (Temps), ce que disent mes notes
+ *      (Notes), est-ce que je m'y mets souvent (Régularité), comment je dors
+ *      (Sommeil), et ce qu'il faut retenir de la semaine (Bilan).
+ *   3. DES TUILES. Chaque mesure vit dans sa tuile (`Section variant="panel"`),
+ *      qui entre au défilement ; les graphiques poussent ou se dessinent au
+ *      même moment.
  *
  * DEPUIS LE RETRAIT DE LA BANQUE D'EXERCICES, cet écran ne mesure plus que
  * ce que l'élève consigne lui-même : son temps (volume, régularité,
- * répartition, budgets), ses notes et leur calibration, son sommeil. La
- * maîtrise par chapitre, le taux de réussite des tentatives, « Prêt pour le
- * DS ? » et le niveau de travail du moteur de recommandation reposaient tous
- * sur la banque ; ils sont partis avec elle.
+ * répartition, budgets), ses notes et leur calibration, son sommeil.
  *
- * Aucun calcul n'est fait ici : tout vient de lib/tracking.ts,
- * lib/weekly-review.ts, lib/week-snapshot.ts et lib/gamification.ts.
+ * UN SEUL `usePrepahubData()` pour tout l'écran : chaque onglet reçoit ses
+ * données en props. Aucun calcul n'est fait ici : tout vient de
+ * lib/tracking.ts, lib/weekly-review.ts, lib/week-snapshot.ts et
+ * lib/gamification.ts.
  */
 export function ProgressOverview() {
   const { sessions, weekSnapshots, workItems, grades, dayPlans, preferences, saveGrades, ready, checkins } = usePrepahubData();
+  const tabsRef = useRef<HTMLDivElement>(null);
 
-  const model = useMemo(
-    () => ({
+  const hero = useMemo(() => {
+    const now = new Date();
+    const overview = computeTrackingOverview(sessions, now);
+    const week = computePeriodTotals(sessions, "7j", now);
+    return {
+      weekMinutes: overview.weekMinutes,
+      todayMinutes: overview.todayMinutes,
+      streak: computeStreak(sessions),
+      dailyAverage: week.dailyAverage,
       totalTime: totalSeconds(sessions),
       sessionCount: sessions.length,
-      streak: computeStreak(sessions),
-    }),
-    [sessions]
-  );
+    };
+  }, [sessions]);
+
+  /*
+   * ARRIVER SUR UN ONGLET PAR SON ANCRE (/progress#notes, depuis l'accueil).
+   * `Tabs` ouvre le bon onglet ; il reste à AMENER l'élève dessus : aucun
+   * élément ne porte l'identifiant `notes`, donc le navigateur ne fait
+   * défiler rien. Une fois les données prêtes, la rangée d'onglets vient se
+   * placer sous la barre haute.
+   */
+  useEffect(() => {
+    if (!ready) return;
+    const id = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    if (!TAB_IDS.includes(id)) return;
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const frame = requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" }));
+    return () => cancelAnimationFrame(frame);
+  }, [ready]);
 
   if (!ready) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-48 w-full rounded-xl" />
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <div className="space-y-8">
+        <Skeleton className="h-24 w-72" />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} className="h-36 rounded-2xl" />
+          ))}
+        </div>
+        <Skeleton className="h-96 w-full rounded-2xl" />
       </div>
     );
   }
 
-  /*
-   * COMPOSITION — un verdict, puis un corps en deux colonnes.
-   *
-   * L'écran était une pile de neuf sections pleine largeur : il fallait
-   * faire défiler 2 800 px d'un bout à l'autre. Or ces mesures ne se lisent
-   * pas l'une APRÈS l'autre : on les confronte. Le détail occupe la colonne
-   * principale ; les trois repères cumulés tiennent dans le rail, visibles
-   * en même temps.
-   */
+  const goal = preferences.weeklyGoalMinutes;
+  const goalPercent = goal > 0 ? Math.round((hero.weekMinutes / goal) * 100) : 0;
+
   return (
-    <Split
-      railLabel="Mesures"
-      rail={
-        <div className="space-y-8">
-          <dl className="divide-y divide-line border-y border-line">
-            <RailStat label="Temps cumulé" value={formatSpan(model.totalTime)} />
-            <RailStat label="Séances" value={String(model.sessionCount)} />
-            <RailStat label="Série actuelle" value={`${model.streak} j`} />
-          </dl>
-        </div>
-      }
-    >
-      <div className="space-y-10">
-        <PageBar title="Mon évolution" lede="Comprends ton rythme de travail et ta progression." />
+    <div className="space-y-10 sm:space-y-12">
+      <PageHero
+        title="Mon évolution"
+        lede="Ton temps, tes notes, ton sommeil — et ce qu'ils racontent ensemble."
+        illustration={<Illustration name="chrono" size={56} />}
+      />
 
-        {/*
-          ORDRE DE LECTURE — celui d'un dimanche soir, pas celui du modèle de
-          données.
-
-            LE BILAN      ce qu'il faut retenir, et quoi faire ensuite.
-            LE RYTHME     ai-je assez travaillé ?
-            LA SEMAINE    ai-je fait ce que j'avais prévu ?
-            LA RÉGULARITÉ est-ce que je m'y mets souvent ?
-            LES MATIÈRES  où part mon temps ?
-            LES RÉSULTATS qu'en disent mes notes ?
-
-          La conclusion vient d'abord, les mesures qui la fondent ensuite : un
-          élève qui n'a que deux minutes doit pouvoir s'arrêter après la
-          première section sans rien manquer d'actionnable.
-        */}
-        <WeeklyReviewSection workItems={workItems} sessions={sessions} preferences={preferences} />
-
-        {/* VUE D'ENSEMBLE — quatre chiffres, juste sous le bilan : de quoi
-            répondre à « où j'en suis » sans faire défiler. */}
-        <EvolutionOverview sessions={sessions} />
-
-        {/* LE TEMPS, la figure principale. Remplace l'ancienne « RhythmSection »,
-            qui ne savait regarder qu'à la semaine : ici le pas est le jour, et
-            la fenêtre se choisit (7 j / 30 j / 3 mois). L'objectif hebdomadaire
-            qu'elle portait a suivi, il n'est pas perdu. */}
-        <WorkTimeSection sessions={sessions} preferences={preferences} />
-        <SubjectTargetsSection sessions={sessions} preferences={preferences} />
-
-        {/* LES MATIÈRES. Remplace l'ancienne « SubjectsSection », qui montrait
-            deux répartitions figées (cette semaine, depuis le début) sans
-            jamais dire ce qui BOUGE. */}
-        <SubjectEvolution sessions={sessions} />
-
-        <GradesSection grades={grades} onSave={saveGrades} />
-        <ConsistencySection sessions={sessions} />
-        {/* ── Check-in du soir : sommeil, énergie, stress — voir components/progress/sleep-section.tsx ── */}
-        <SleepSection checkins={checkins} sessions={sessions} />
-        <WeekSection dayPlans={dayPlans} sessions={sessions} />
-        <WorkAndResults sessions={sessions} grades={grades} />
-        <WeekEvolution sessions={sessions} weekSnapshots={weekSnapshots} />
+      {/* ── LES QUATRE CHIFFRES ─────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <HeroFigure index={0} label="Cette semaine" detail={`aujourd'hui ${formatSpan(hero.todayMinutes * 60)}`}>
+          <CountUp value={hero.weekMinutes} format={(value) => formatSpan(value * 60)} />
+        </HeroFigure>
+        <HeroFigure index={1} label="Série en cours" detail={hero.streak > 1 ? "jours d'affilée" : hero.streak === 1 ? "jour — on continue demain" : "une séance la relance"}>
+          <CountUp value={hero.streak} format={(value) => `${value} j`} />
+        </HeroFigure>
+        <HeroFigure index={2} label="Moyenne par jour" detail="sur les 7 derniers jours">
+          <CountUp value={hero.dailyAverage} format={(value) => formatSpan(value * 60)} />
+        </HeroFigure>
+        <HeroFigure
+          index={3}
+          label="Objectif de la semaine"
+          detail={goal > 0 ? `${formatSpan(hero.weekMinutes * 60)} sur ${formatMinutesSpan(goal)}` : "aucun objectif fixé"}
+          meter={goal > 0 ? goalPercent : undefined}
+        >
+          <CountUp value={goalPercent} format={(value) => `${value} %`} />
+        </HeroFigure>
       </div>
-    </Split>
+
+      <div ref={tabsRef} className="scroll-mt-[calc(var(--nav-h)+1rem)]">
+        <Tabs
+          syncHash
+          ariaLabel="Mesures de progression"
+          items={[
+            {
+              id: "temps",
+              label: "Temps",
+              content: (
+                <div className="space-y-5">
+                  {/* LE TEMPS, la figure principale : le pas est le jour, la
+                      fenêtre se choisit (7 j / 30 j / 3 mois). */}
+                  <WorkTimeSection sessions={sessions} preferences={preferences} />
+                  {/* OÙ il part, face à ce que l'élève s'était fixé, puis ce qui
+                      BOUGE d'une période à l'autre. */}
+                  <SubjectTargetsSection sessions={sessions} preferences={preferences} />
+                  <SubjectEvolution sessions={sessions} />
+                </div>
+              ),
+            },
+            {
+              id: "notes",
+              label: "Notes",
+              content: <GradesSection grades={grades} onSave={saveGrades} />,
+            },
+            {
+              id: "regularite",
+              label: "Régularité",
+              content: (
+                <div className="space-y-5">
+                  <ConsistencySection sessions={sessions} />
+                  <WeekSection dayPlans={dayPlans} sessions={sessions} />
+                </div>
+              ),
+            },
+            {
+              id: "sommeil",
+              label: "Sommeil",
+              /* Check-in du soir : sommeil, énergie, stress — voir components/progress/sleep-section.tsx. */
+              content: <SleepSection checkins={checkins} sessions={sessions} />,
+            },
+            {
+              id: "bilan",
+              label: "Bilan",
+              content: (
+                <div className="space-y-5">
+                  {/* La conclusion d'abord, les mesures qui la fondent ensuite. */}
+                  <WeeklyReviewSection workItems={workItems} sessions={sessions} preferences={preferences} />
+                  <Section variant="panel" title="Vue d'ensemble" description="Où tu en es, et dans quel sens ça va.">
+                    <EvolutionOverview sessions={sessions} />
+                  </Section>
+                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                    <WeekEvolution sessions={sessions} weekSnapshots={weekSnapshots} />
+                    <Section variant="panel" title="Depuis le début" description="Tout ce que TaekdHub a enregistré.">
+                      <StatRow>
+                        <Stat label="Temps cumulé" value={formatSpan(hero.totalTime)} size="sm" />
+                        <Stat label="Séances" value={hero.sessionCount} size="sm" />
+                      </StatRow>
+                    </Section>
+                  </div>
+                  <WorkAndResults sessions={sessions} grades={grades} />
+                </div>
+              ),
+            },
+          ]}
+        />
+      </div>
+    </div>
   );
 }
 
-/** Mesure du rail — une ligne, étiquette à gauche, valeur en serif à droite. */
-function RailStat({ label, value, detail }: { label: string; value: string; detail?: string }) {
+/**
+ * UN GRAND CHIFFRE — une tuile, une étiquette, le nombre qui monte, une
+ * ligne de contexte. `meter` (0–100) ajoute sous le chiffre la barre de
+ * l'objectif, qui pousse à l'accent en même temps que le nombre monte.
+ */
+function HeroFigure({
+  label,
+  detail,
+  meter,
+  index,
+  children,
+}: {
+  label: string;
+  detail: string;
+  meter?: number;
+  index: number;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex items-baseline justify-between gap-3 py-3">
+    <div className="surface reveal flex min-w-0 flex-col justify-between gap-6 p-5 sm:p-6" style={{ "--i": index } as React.CSSProperties}>
+      <p className="t-label">{label}</p>
       <div className="min-w-0">
-        <dt className="t-label">{label}</dt>
-        {detail && <dd className="t-meta mt-0.5 text-2xs">{detail}</dd>}
+        <p className="t-figure-md whitespace-nowrap sm:text-5xl">{children}</p>
+        {meter !== undefined && <Meter value={meter} index={2} className="mt-3" />}
+        <p className="t-meta mt-1.5 text-[0.8125rem]">{detail}</p>
       </div>
-      <dd className="t-figure-sm shrink-0">{value}</dd>
     </div>
   );
+
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -184,7 +274,7 @@ function WeekEvolution({ sessions, weekSnapshots }: { sessions: WorkSession[]; w
 
   if (!comparison) {
     return (
-      <Section label="Mémoire" title="Évolution">
+      <Section variant="panel" label="Mémoire" title="Face à la semaine dernière">
         <p className="t-meta">
           TaekdHub commence à mesurer ton temps de travail cette semaine. La comparaison apparaîtra dès qu&apos;une semaine
           complète sera enregistrée.
@@ -195,14 +285,15 @@ function WeekEvolution({ sessions, weekSnapshots }: { sessions: WorkSession[]; w
 
   return (
     <Section
+      variant="panel"
       label="Mémoire"
-      title="Évolution"
+      title="Face à la semaine dernière"
       /* « À CE STADE », comme partout ailleurs. La section mettait le total
          de la semaine EN COURS face à celui de la semaine précédente
          COMPLÈTE : chaque lundi matin, l'écran annonçait en rouge la perte de
          tout le travail de la semaine passée (« 0 min · −7 h »). Le chiffre
          est juste, c'est la comparaison qui ne l'était pas — on le dit. */
-      description="Par rapport à la semaine précédente, à ce stade de la semaine."
+      description="À ce stade de la semaine."
     >
       <StatRow>
         <Stat
@@ -230,9 +321,9 @@ function WeekEvolution({ sessions, weekSnapshots }: { sessions: WorkSession[]; w
  * typographiques.
  *
  * Le reproche fait à cet écran était juste : il mesurait beaucoup et
- * n'interprétait presque rien. « 45 min », « 1 % », « 8 séances » sont
- * exacts et inutilisables à sept heures du matin. Cette section ajoute la
- * couche manquante — quelques chiffres, quelques CONSTATS, et UN conseil.
+ * n'interprétait presque rien. Cette section ajoute la couche manquante —
+ * quelques chiffres, quelques CONSTATS, et UN conseil, mis en avant dans la
+ * tuile phare de l'onglet (`feature`).
  *
  * Elle n'affiche rigoureusement rien qui ne sorte d'un calcul de
  * lib/weekly-review.ts : une semaine sans rien de notable produit une liste
@@ -251,10 +342,16 @@ function WeeklyReviewSection({
 }) {
   const review = useMemo(() => computeWeeklyReview(workItems, sessions, preferences), [workItems, sessions, preferences]);
 
-  if (review.totalMinutes === 0 && review.findings.length === 0) return null;
+  if (review.totalMinutes === 0 && review.findings.length === 0) {
+    return (
+      <Section variant="feature" label="Cette semaine" title="Ton bilan">
+        <p className="t-meta">Rien d&apos;enregistré cette semaine pour l&apos;instant : le bilan se construit dès la première séance.</p>
+      </Section>
+    );
+  }
 
   return (
-    <Section label="Cette semaine" title="Ton bilan" description="Ce que les données de la semaine permettent réellement de dire — et rien d'autre.">
+    <Section variant="feature" label="Cette semaine" title="Ton bilan" description="Ce que les données de la semaine permettent réellement de dire — et rien d'autre.">
       <StatRow>
         <Stat label="Travaillé" value={formatSpan(review.totalMinutes * 60)} size="sm" />
         {review.bySubject.slice(0, 2).map((entry) => (
@@ -265,13 +362,14 @@ function WeeklyReviewSection({
       </StatRow>
 
       {review.findings.length > 0 && (
-        <div className="mt-6">
-          <p className="t-label mb-2">À retenir</p>
+        <div className="mt-8">
+          <p className="t-label mb-3">À retenir</p>
           {/* Des constats, pas des métriques : chacun est une phrase complète,
               et chacun cite le chiffre dont il sort. */}
-          <ul className="divide-y divide-line border-y border-line">
+          <ul className="space-y-3">
             {review.findings.map((finding) => (
-              <li key={finding.key} className="py-2.5 text-sm text-ink">
+              <li key={finding.key} className="flex gap-3 text-[0.9375rem] leading-relaxed text-ink">
+                <span aria-hidden className="mt-[0.6rem] h-1.5 w-1.5 shrink-0 rounded-full bg-subtle" />
                 {finding.sentence}
               </li>
             ))}
@@ -280,9 +378,9 @@ function WeeklyReviewSection({
       )}
 
       {review.advice && (
-        <div className="mt-6 border-t border-line pt-4">
-          <p className="t-label mb-1.5">Pour la suite</p>
-          <p className="t-lede">{review.advice}</p>
+        <div className="well mt-8 p-5 sm:p-6">
+          <p className="t-label mb-1.5 text-accent">Pour la suite</p>
+          <p className="t-subhead text-ink sm:text-xl">{review.advice}</p>
         </div>
       )}
     </Section>

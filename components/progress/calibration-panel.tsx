@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Section } from "@/components/ui/section";
 import { Input } from "@/components/ui/input";
 import { SubjectAvatar } from "@/components/subject-avatar";
 import { WhyItWorks } from "@/components/checkin/why-it-works";
@@ -31,8 +32,8 @@ export function PendingGrades({ grades, onSave, className }: { grades: Grade[]; 
   if (pending.length === 0) return null;
   return (
     <div className={className}>
-      <p className="t-label mb-2">En attente de la copie</p>
-      <ul className="divide-y divide-line border-y border-line">
+      <p className="t-label mb-2">En attente de la copie · {pending.length}</p>
+      <ul className="well divide-y divide-line px-4">
         {pending.map((grade) => (
           <PendingRow
             key={grade.id}
@@ -104,31 +105,34 @@ export function CalibrationPanel({ grades, className }: { grades: Grade[]; class
   const overallText = describeCalibration(overall);
 
   return (
-    <div className={cn("space-y-3", className)}>
-      <p className="t-label">Tes pronostics face à tes notes</p>
-
+    <Section
+      variant="panel"
+      title="Tes pronostics face à tes notes"
+      description="Ce que tu pensais avoir en sortant de l'épreuve, face à la note rendue."
+      className={className}
+    >
       {!overall.sufficient ? (
         <p className="t-meta">
           {overall.count} pronostic{overall.count > 1 ? "s" : ""} confronté{overall.count > 1 ? "s" : ""} à une note sur {CALIBRATION_MIN_SAMPLES}{" "}
           nécessaires. Note ce que tu penses avoir en sortant de l&apos;épreuve, avant la copie.
         </p>
       ) : (
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           {sentences.length > 0 ? (
             sentences.map(({ row, text }) => (
-              <p key={row.subject} className="t-body">
+              <p key={row.subject} className="t-subhead text-ink">
                 {text}
               </p>
             ))
           ) : (
-            overallText && <p className="t-body">{overallText}</p>
+            overallText && <p className="t-subhead text-ink">{overallText}</p>
           )}
           {/* Pas de phrase « toutes matières » à côté des phrases par matière :
               une surestimation en physique et une sous-estimation en maths se
               compensent en « bien calibré », ce qui serait faux dans les deux
               cas. L'écart absolu ci-dessous dit l'ampleur globale sans ce biais. */}
           {overall.meanAbsoluteError !== null && (
-            <p className="t-meta text-2xs">
+            <p className="t-meta pt-1 text-[0.8125rem]">
               Écart moyen, dans un sens ou dans l&apos;autre : {formatPoints(overall.meanAbsoluteError)} pt sur {overall.count} épreuves.
               {bySubject.some((row) => !row.sufficient) && ` Les matières à moins de ${CALIBRATION_MIN_SAMPLES} pronostics notés n'ont pas encore de phrase.`}
             </p>
@@ -138,7 +142,7 @@ export function CalibrationPanel({ grades, className }: { grades: Grade[]; class
 
       {points.length > 0 && <CalibrationChart points={points.slice(-16)} />}
 
-      <WhyItWorks>
+      <WhyItWorks className="mt-5">
         <p>
           Juger ce qu&apos;on sait est une compétence à part entière, la métacognition, et les élèves ont tendance à se surestimer
           (Dunlosky &amp; Rawson, 2012). Or c&apos;est ce jugement qui décide quand on arrête de réviser un chapitre.
@@ -148,65 +152,89 @@ export function CalibrationPanel({ grades, className }: { grades: Grade[]; class
           en soi : ça t&apos;aide à repérer si tu t&apos;arrêtes trop tôt, ou si tu doutes plus qu&apos;il ne faut.
         </p>
       </WhyItWorks>
-    </div>
+    </Section>
   );
 }
 
 /**
  * ÉCART PAR ÉPREUVE — une barre par pronostic noté, de part et d'autre d'une
- * ligne zéro : vers le haut (ambre) quand on s'est surestimé, vers le bas
- * (bleu) quand on s'est sous-estimé. Plus lisible qu'un nuage de points à
- * cette taille : la question est « dans quel sens je me trompe, et de
- * combien », et une barre signée y répond d'un regard.
+ * ligne zéro : vers le HAUT, à l'accent, quand on s'est surestimé ; vers le
+ * BAS, en gris, quand on s'est sous-estimé ; un point quand on a vu juste.
+ * Plus lisible qu'un nuage de points à cette taille : la question est « dans
+ * quel sens je me trompe, et de combien », et une barre signée y répond d'un
+ * regard. L'accent va à la surestimation parce que c'est elle qui coûte :
+ * c'est elle qui fait arrêter de réviser trop tôt.
  */
 function CalibrationChart({ points }: { points: CalibrationPoint[] }) {
-  const scale = Math.max(4, ...points.map((point) => Math.abs(point.error)));
+  const scale = Math.max(4, ...points.map((point) => Math.ceil(Math.abs(point.error))));
   const summary = points
     .map((point) => `${point.subject}, ${point.date} : pronostic ${formatPoints(point.predicted)}, note ${formatPoints(point.actual)} sur 20`)
     .join(" ; ");
 
   return (
-    <figure>
-      <div className="flex gap-2">
-        <div className="t-meta flex w-10 shrink-0 flex-col justify-between text-right text-2xs tabular" aria-hidden>
-          <span>+{formatPoints(scale)}</span>
-          <span>0</span>
-          <span>−{formatPoints(scale)}</span>
-        </div>
-        <div role="img" aria-label={`Écart entre pronostic et note, sur 20 : ${summary}.`} className="relative flex h-28 min-w-0 flex-1 gap-1">
+    <figure className="mt-8">
+      <div className="flex gap-3">
+        <div role="img" aria-label={`Écart entre pronostic et note, sur 20 : ${summary}.`} className="relative flex h-44 min-w-0 flex-1 gap-1 sm:gap-2">
+          <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-hairline/[0.07]" />
           <span aria-hidden className="absolute inset-x-0 top-1/2 h-px bg-line" />
-          {points.map((point) => {
+          <span aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-hairline/[0.07]" />
+          {points.map((point, index) => {
             const height = `${(Math.abs(point.error) / scale) * 50}%`;
             const over = point.error > 0;
+            const side = index < points.length / 4 ? "left-0" : index >= (points.length * 3) / 4 ? "right-0" : "left-1/2 -translate-x-1/2";
             return (
-              <div key={point.id} className="relative min-w-0 flex-1" title={`${point.subject} — pronostic ${formatPoints(point.predicted)}, note ${formatPoints(point.actual)} /20`}>
+              <div key={point.id} className="group relative min-w-0 flex-1">
                 {point.error === 0 ? (
-                  <span aria-hidden className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400" />
+                  <span aria-hidden className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink" />
                 ) : (
                   <span
                     aria-hidden
-                    className={over ? "absolute bottom-1/2 left-1/2 w-2.5 -translate-x-1/2 rounded-t-sm bg-amber-400/80" : "absolute left-1/2 top-1/2 w-2.5 -translate-x-1/2 rounded-b-sm bg-sky-400/80"}
-                    style={{ height }}
+                    className={cn(
+                      "absolute left-1/2 w-full max-w-[1rem] -translate-x-1/2",
+                      over ? "grow-y bottom-1/2 rounded-t-[0.75rem] bg-[rgb(var(--accent-ink-rgb))]" : "grow-y top-1/2 rounded-b-md bg-zinc-600"
+                    )}
+                    style={{ height, "--i": index, transformOrigin: over ? undefined : "center top" } as React.CSSProperties}
                   />
                 )}
+                <span
+                  aria-hidden
+                  className={cn(
+                    "floating pointer-events-none absolute top-0 z-10 -translate-y-full whitespace-nowrap rounded-xl px-2.5 py-1.5 text-2xs leading-tight text-ink opacity-0 transition-opacity duration-200 group-hover:opacity-100",
+                    side
+                  )}
+                >
+                  <span className="font-bold">{point.subject}</span>
+                  <span className="text-muted"> · pronostic </span>
+                  <span className="font-bold tabular">{formatPoints(point.predicted)}</span>
+                  <span className="text-muted"> · note </span>
+                  <span className="font-bold tabular">{formatPoints(point.actual)}</span>
+                </span>
               </div>
             );
           })}
         </div>
+        <div className="t-meta relative w-8 shrink-0 text-2xs tabular" aria-hidden>
+          <span className="absolute top-0 -translate-y-1/2">+{formatPoints(scale)}</span>
+          <span className="absolute top-1/2 -translate-y-1/2">0</span>
+          <span className="absolute bottom-0 translate-y-1/2">−{formatPoints(scale)}</span>
+        </div>
       </div>
-      <div className="mt-1.5 flex gap-1 pl-12" aria-hidden>
+      <div className="mr-11 mt-2 flex gap-1 sm:gap-2" aria-hidden>
         {points.map((point) => (
-          <span key={point.id} className="t-meta min-w-0 flex-1 truncate text-center text-2xs">
+          <span key={point.id} className="t-meta min-w-0 flex-1 truncate text-center text-2xs font-semibold">
             {subjectMeta[point.subject].short}
           </span>
         ))}
       </div>
-      <figcaption className="t-meta mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs">
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-3 w-2 rounded-sm bg-amber-400/80" /> surestimé
+      <figcaption className="t-meta mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[0.8125rem]">
+        <span className="inline-flex items-center gap-2">
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[rgb(var(--accent-ink-rgb))]" /> surestimé
         </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-3 w-2 rounded-sm bg-sky-400/80" /> sous-estimé
+        <span className="inline-flex items-center gap-2">
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-zinc-600" /> sous-estimé
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span aria-hidden className="h-2 w-2 rounded-full bg-ink" /> vu juste
         </span>
         <span>points sur 20, du plus ancien au plus récent</span>
       </figcaption>

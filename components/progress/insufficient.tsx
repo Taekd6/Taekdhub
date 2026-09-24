@@ -12,12 +12,16 @@ import { cn } from "@/lib/cn";
  * COMBLER. Un état vide qui ne dit pas quoi faire est une impasse — c'est
  * déjà la règle d'`EmptyState` (components/ui/state.tsx), reprise ici à
  * l'échelle d'une section plutôt que d'un écran.
+ *
+ * Refonte « Apple » : un creux gris arrondi (`.well`), centré, à la place
+ * des deux filets — les sections vivent désormais dans des tuiles, et deux
+ * traits horizontaux au milieu d'une tuile la coupaient en trois.
  */
 export function Insufficient({ what, how, className }: { what: string; how?: string; className?: string }) {
   return (
-    <p className={cn("t-meta border-y border-line py-5", className)}>
-      {what}
-      {how && <span className="mt-1 block text-2xs">{how}</span>}
-    </p>
+    <div className={cn("well px-5 py-7 text-center", className)}>
+      <p className="text-[0.9375rem] font-semibold text-ink">{what}</p>
+      {how && <p className="t-meta mx-auto mt-1 max-w-[48ch]">{how}</p>}
+    </div>
   );
 }

@@ -201,9 +201,12 @@ export function ReviewCapture({
                   title={item}
                   onClick={() => chooseSubject(item)}
                   className={cn(
-                    "grid h-8 min-w-8 place-items-center rounded-md px-1 text-[0.6875rem] font-semibold leading-none transition-[box-shadow,opacity] max-lg:h-11",
-                    subjectMeta[item].className,
-                    active ? "bg-panel ring-2 ring-accent ring-offset-2 ring-offset-canvas" : "bg-inset opacity-70 hover:opacity-100"
+                    // Même pastille que la saisie rapide de temps : la matière
+                    // retenue est INVERSÉE (aplat à la couleur du texte, lettre
+                    // à la couleur du fond) — pas de contour d'accent, l'accent
+                    // reste réservé à l'action.
+                    "press grid h-9 min-w-9 place-items-center rounded-full px-1.5 text-xs font-extrabold leading-none max-lg:h-11",
+                    active ? "bg-ink text-canvas" : cn(subjectMeta[item].className, "hover:brightness-125")
                   )}
                 >
                   {subjectMeta[item].short}

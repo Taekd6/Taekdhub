@@ -4,7 +4,8 @@ import Link from "next/link";
 import { ChevronDown, RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { PageBar } from "@/components/ui/layout";
+import { PageHero } from "@/components/ui/page-hero";
+import { Illustration } from "@/components/ui/illustrations";
 import { Meter } from "@/components/ui/progress";
 import { Section } from "@/components/ui/section";
 import { Stat, StatRow } from "@/components/ui/stat";
@@ -231,7 +232,7 @@ export function ReviewSession() {
                     type="button"
                     onClick={() => rate(rating)}
                     title={meta.hint}
-                    className="flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-lg border border-line bg-panel px-2 py-2 text-ink transition-colors hover:bg-inset active:bg-inset"
+                    className="surface press flex min-h-16 flex-col items-center justify-center gap-0.5 px-2 py-2.5 text-ink hover:bg-inset"
                   >
                     <span className="flex items-center gap-1.5 text-sm font-medium">
                       <kbd className="tabular rounded border border-line px-1 text-2xs font-normal text-subtle max-lg:hidden">{meta.key}</kbd>
@@ -289,9 +290,10 @@ function SessionStart({
 
   return (
     <div className="space-y-8">
-      <PageBar
+      <PageHero
         title="Révisions du jour"
         lede="Les entrées de ton carnet qui arrivent à échéance aujourd'hui. Pour chacune : cherche la réponse de tête, retourne la carte, note-toi."
+        illustration={<Illustration name="revisions" size={56} />}
       />
 
       {subject && (
@@ -305,6 +307,8 @@ function SessionStart({
 
       {due.length === 0 ? (
         <EmptyState
+          className="surface"
+          illustration={<Illustration name="checkin" size={56} />}
           title="Rien à réviser aujourd'hui"
           description={
             next
@@ -360,7 +364,7 @@ function SessionStart({
  */
 function WhyItWorks() {
   return (
-    <details className="group border-t border-line pt-4">
+    <details className="group px-1">
       <summary className="flex min-h-8 cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-ink max-lg:min-h-11 [&::-webkit-details-marker]:hidden">
         <ChevronDown size={15} aria-hidden className="text-subtle transition-transform group-open:rotate-180" />
         Pourquoi ça marche
@@ -404,9 +408,10 @@ function SessionEnd({
 
   return (
     <div className="space-y-8">
-      <PageBar
+      <PageHero
+        illustration={<Illustration name="revisions" size={56} />}
         title={rated.length > 0 ? "Séance terminée" : "Séance interrompue"}
-        meta={
+        eyebrow={
           rated.length > 0 ? (
             <span className="tabular">
               {rated.length} carte{rated.length > 1 ? "s" : ""} révisée{rated.length > 1 ? "s" : ""}
@@ -430,7 +435,7 @@ function SessionEnd({
             ))}
           </StatRow>
 
-          <Section label="Prochaines échéances" title="Quand elles reviendront">
+          <Section variant="panel" label="Prochaines échéances" title="Quand elles reviendront">
             <ul className="divide-y divide-line border-y border-line">
               {rated.map((entry) => {
                 const item = byId.get(entry.id);

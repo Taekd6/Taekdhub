@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { Section } from "@/components/ui/section";
+import { buttonVariants } from "@/components/ui/button";
 import { SubjectTargetList } from "@/components/work/subject-targets";
 import { computeSubjectTargets } from "@/lib/subject-targets";
 import type { Preferences } from "@/lib/storage";
@@ -32,11 +33,12 @@ export function SubjectTargetsSection({ sessions, preferences }: { sessions: Wor
 
   return (
     <Section
+      variant="panel"
       label="Cette semaine"
       title="Ton budget par matière"
       description="Le temps noté depuis lundi, face à ce que tu t'es fixé pour chaque matière."
       action={
-        <Link href="/settings" className="t-meta rounded hover:text-ink max-lg:inline-flex max-lg:min-h-11 max-lg:items-center">
+        <Link href="/settings#budgets" className={buttonVariants({ variant: "link", size: "sm" })}>
           Régler les budgets
         </Link>
       }

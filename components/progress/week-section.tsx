@@ -48,6 +48,7 @@ export function WeekSection({ dayPlans, sessions }: { dayPlans: DayPlanRecord[];
 
   return (
     <Section
+      variant="panel"
       label="Ta semaine"
       title="Prévu et réalisé"
       description="Ce que ton planning réservait la veille, face au temps réellement enregistré."
@@ -66,6 +67,7 @@ export function WeekSection({ dayPlans, sessions }: { dayPlans: DayPlanRecord[];
       ) : (
         <>
           <PairedBars
+            formatValue={(minutes) => formatSpan(minutes * 60)}
             bars={accuracy.days.map((day) => ({
               id: day.key,
               label: DAY_LETTERS[day.start.getDay()],
@@ -81,21 +83,21 @@ export function WeekSection({ dayPlans, sessions }: { dayPlans: DayPlanRecord[];
               )
               .join(" ; ")}.`}
           />
-          <p className="t-meta mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
-            <span className="inline-flex items-center gap-1.5">
-              <span aria-hidden className="h-4 w-2.5 rounded-sm border border-dashed border-line" /> prévu
+          <p className="t-meta mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-[0.8125rem]">
+            <span className="inline-flex items-center gap-2">
+              <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-zinc-700" /> prévu la veille
             </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span aria-hidden className="h-4 w-2.5 rounded-sm" style={{ backgroundColor: "rgb(var(--accent-ink-rgb) / 0.55)" }} /> réalisé
+            <span className="inline-flex items-center gap-2">
+              <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[rgb(var(--accent-ink-rgb))]" /> réalisé
             </span>
           </p>
 
           {/* Les totaux suivent le POURCENTAGE, donc les journées terminées :
               les afficher sur sept jours à côté d'un taux calculé sur six
               recréerait exactement la contradiction qu'on vient de fermer. */}
-          <p className="t-body mt-4">
-            Sur les journées terminées : prévu <span className="font-medium">{formatSpan(settled.plannedMinutes * 60)}</span> · réalisé{" "}
-            <span className="font-medium">{formatSpan(settled.actualMinutes * 60)}</span>.
+          <p className="mt-6 border-t border-line pt-5 text-[0.9375rem] text-ink">
+            Sur les journées terminées : prévu <span className="tabular font-bold">{formatSpan(settled.plannedMinutes * 60)}</span> · réalisé{" "}
+            <span className="tabular font-bold">{formatSpan(settled.actualMinutes * 60)}</span>.
           </p>
 
           {sentence ? (

@@ -7,10 +7,11 @@ import { ErrorCapture } from "@/components/errors/error-capture";
 import { ErrorStats, WhyItWorks, type StatsPeriod } from "@/components/errors/error-stats";
 import { SubjectAvatar } from "@/components/subject-avatar";
 import { Button } from "@/components/ui/button";
-import { PageBar, Split } from "@/components/ui/layout";
+import { PageHero } from "@/components/ui/page-hero";
+import { Illustration } from "@/components/ui/illustrations";
+import { FilterPills } from "@/components/ui/pills";
 import { Section } from "@/components/ui/section";
-import { SegmentedControl } from "@/components/ui/segmented";
-import { Skeleton } from "@/components/ui/state";
+import { EmptyState, Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { cn } from "@/lib/cn";
 import {
@@ -26,13 +27,13 @@ import {
 } from "@/lib/error-log";
 import { createReviewItem } from "@/lib/review-items";
 import { ERROR_TYPES, type ErrorEntry, type ErrorType, type ReviewItem } from "@/lib/storage";
-import { subjectMeta, subjects } from "@/lib/study";
+import { subjects } from "@/lib/study";
 import type { Subject } from "@/lib/supabase/types";
 
 /**
  * LE CARNET D'ERREURS EN ENTIER — noter, relire, voir ce qui revient.
  *
- * Composition `Split`, comme /revoir : la saisie et la liste à gauche, ce
+ * Comme /revoir (refonte « Apple ») : la saisie et la liste dans des tuiles à gauche, ce
  * qui revient à droite (sous la liste sur téléphone — l'action d'abord).
  *
  * SEUL appelant de `usePrepahubData()` sur cet écran : la saisie, la liste et
@@ -89,111 +90,100 @@ export function ErrorLog() {
   const freshCours = lastSaved && lastSaved.type === "cours" && canSendToReview(lastSaved, reviewItems) ? lastSaved : null;
 
   return (
-    <Split
-      railLabel="Ce qui revient"
-      rail={
-        <div className="space-y-6">
-          <ErrorStats errors={errors} subject={subject === "all" ? null : subject} period={period} onPeriod={setPeriod} />
-          <WhyItWorks />
-        </div>
-      }
-    >
-      <div className="space-y-8">
-        <PageBar
-          title="Carnet d'erreurs"
-          lede="Chaque erreur de colle, de DS ou d'exercice, notée en dix secondes avec la bonne idée — pour voir ce qui revient et le travailler."
-        />
+    <div className="space-y-10">
+      <PageHero
+        title="Carnet d'erreurs"
+        lede="Chaque erreur de colle, de DS ou d'exercice, notée en dix secondes avec la bonne idée — pour voir ce qui revient et le travailler."
+        illustration={<Illustration name="erreurs" size={56} />}
+      />
 
-        <Section variant="panel" label="Noter une erreur">
-          <ErrorCapture
-            errors={errors}
-            saveErrors={saveErrors}
-            ready={ready}
-            onSaved={setLastSaved}
-          />
-          {freshCours && (
-            <p role="status" className="t-meta mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-2xs">
-              Erreur de cours notée.
-              <Button type="button" variant="link" size="sm" className="min-h-6 px-0" onClick={() => sendToReview(freshCours)}>
-                <BookmarkPlus size={13} aria-hidden /> L&apos;ajouter au carnet « À revoir » (à apprendre)
-              </Button>
-            </p>
-          )}
-        </Section>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.38fr)] lg:gap-8">
+        <div className="min-w-0 space-y-5">
+          <Section variant="panel" title="Noter une erreur">
+            <ErrorCapture errors={errors} saveErrors={saveErrors} ready={ready} onSaved={setLastSaved} />
+            {freshCours && (
+              <p role="status" className="t-meta mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-2xs">
+                Erreur de cours notée.
+                <Button type="button" variant="link" size="sm" className="min-h-6 px-0" onClick={() => sendToReview(freshCours)}>
+                  <BookmarkPlus size={13} aria-hidden /> L&apos;ajouter au carnet « À revoir » (à apprendre)
+                </Button>
+              </p>
+            )}
+          </Section>
 
-        <Section
-          label="Le carnet"
-          title="Erreurs notées"
-          action={
-            errors.length > 0 && (
-              <div className="flex flex-col items-stretch gap-2 sm:items-end">
+          <Section variant="panel" label="Le carnet" title="Erreurs notées">
+            {errors.length > 0 && (
+              <div className="mb-6 space-y-3">
+                {/* Sept options : des pastilles qui passent à la ligne. Un
+                    sélecteur segmenté les coupait en « Cou… » à 375 px. */}
+                <FilterPills
+                  ariaLabel="Type d'erreur"
+                  value={type}
+                  onChange={setType}
+                  options={[{ value: "all" as const, label: "Tous les types" }, ...ERROR_TYPES.map((value) => ({ value, label: ERROR_TYPE_META[value].label }))]}
+                />
                 {subjectOptions.length > 1 && (
-                  <SegmentedControl
-                    size="sm"
+                  <FilterPills
                     ariaLabel="Matière"
                     value={subject}
                     onChange={setSubject}
-                    options={[{ value: "all" as const, label: "Toutes" }, ...subjectOptions.map((entry) => ({ value: entry, label: subjectMeta[entry].short }))]}
+                    options={[
+                      { value: "all" as const, label: "Toutes les matières" },
+                      ...subjectOptions.map((entry) => ({ value: entry, label: entry, count: errors.filter((error) => error.subject === entry).length })),
+                    ]}
                   />
                 )}
-                {/* Sept options : des pastilles qui passent à la ligne. Un
-                    sélecteur segmenté les coupait en « Cou… » à 375 px. */}
-                <div role="group" aria-label="Type d'erreur" className="flex flex-wrap gap-1 sm:justify-end">
-                  {(["all", ...ERROR_TYPES] as const).map((value) => {
-                    const active = value === type;
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        aria-pressed={active}
-                        onClick={() => setType(value)}
-                        className={cn(
-                          "min-h-7 rounded-md px-2 text-[0.8125rem] transition-colors max-lg:min-h-11",
-                          active ? "bg-panel font-medium text-ink ring-1 ring-line" : "bg-inset text-muted hover:text-ink"
-                        )}
-                      >
-                        {value === "all" ? "Tout" : ERROR_TYPE_META[value].label}
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
-            )
-          }
-        >
-          {groups.length === 0 ? (
-            <p className="t-meta text-2xs">
-              {errors.length === 0
-                ? "Aucune erreur notée. Après ta prochaine colle ou ton prochain DS, note chaque erreur ci-dessus : ce qui s'est passé, son type, et la bonne idée."
-                : "Aucune erreur avec ces filtres."}
-            </p>
-          ) : (
-            <div className="space-y-6">
-              {groups.map((group) => (
-                <div key={group.key}>
-                  <p className="t-label mb-1.5">
-                    {group.label} · <span className="tabular">{group.entries.length}</span>
-                  </p>
-                  <ul className="divide-y divide-line border-y border-line">
-                    {group.entries.map((entry) => (
-                      <ErrorRow
-                        key={entry.id}
-                        entry={entry}
-                        showSubject={subject === "all"}
-                        reviewItems={reviewItems}
-                        fresh={entry.id === lastSaved?.id}
-                        onSendToReview={() => sendToReview(entry)}
-                        onRemove={() => saveErrors(removeErrorEntry(errors, entry.id))}
-                      />
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
-        </Section>
+            )}
+
+            {groups.length === 0 ? (
+              errors.length === 0 ? (
+                <EmptyState
+                  className="py-8"
+                  illustration={<Illustration name="erreurs" size={56} />}
+                  title="Aucune erreur notée."
+                  description="Après ta prochaine colle ou ton prochain DS, note chaque erreur ci-dessus : ce qui s'est passé, son type, et la bonne idée."
+                />
+              ) : (
+                <p className="t-meta py-6 text-center">Aucune erreur avec ces filtres.</p>
+              )
+            ) : (
+              <div className="space-y-6">
+                {groups.map((group) => (
+                  <div key={group.key}>
+                    <p className="t-label mb-1.5">
+                      {group.label} · <span className="tabular">{group.entries.length}</span>
+                    </p>
+                    <ul className="divide-y divide-line">
+                      {group.entries.map((entry) => (
+                        <ErrorRow
+                          key={entry.id}
+                          entry={entry}
+                          showSubject={subject === "all"}
+                          reviewItems={reviewItems}
+                          fresh={entry.id === lastSaved?.id}
+                          onSendToReview={() => sendToReview(entry)}
+                          onRemove={() => saveErrors(removeErrorEntry(errors, entry.id))}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+        </div>
+
+        {/* CE QUI REVIENT — une tuile collante à droite sur grand écran, sous
+            la liste sur téléphone (l'action d'abord). */}
+        <aside aria-label="Ce qui revient" className="h-fit space-y-4 lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)]">
+          <div className="surface p-6">
+            <ErrorStats errors={errors} subject={subject === "all" ? null : subject} period={period} onPeriod={setPeriod} />
+          </div>
+          <WhyItWorks />
+        </aside>
       </div>
-    </Split>
+    </div>
   );
 }
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Section } from "@/components/ui/section";
+import { Group, Row } from "@/components/ui/grouped";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/state";
 import { SubjectAvatar } from "@/components/subject-avatar";
@@ -26,7 +26,8 @@ const WEEKLY_GOAL_PRESETS = [180, 300, 420];
 /**
  * Réglages (Sprint 3G : fusion de l'ancienne page Profil, séparée sans
  * raison réelle — un seul champ chacune, jamais consultées indépendamment).
- * Un seul formulaire, une seule sauvegarde.
+ * Un seul formulaire, une seule sauvegarde — réparti en TROIS listes
+ * groupées : toi, tes objectifs, ton budget par matière.
  */
 export function PreferencesForm() {
   const { preferences, savePreferences, ready } = usePrepahubData();
@@ -37,13 +38,19 @@ export function PreferencesForm() {
     setPrefs(preferences);
   }, [preferences]);
 
+  // TOUTES les rangées attendent `ready` : `prefs` est lu dans le
+  // localStorage dès le premier rendu CLIENT, alors que le serveur rend les
+  // valeurs par défaut — le préréglage allumé et le prénom divergeaient, et
+  // React jetait tout le rendu serveur (erreur d'hydratation constatée).
+  // Les groupes, eux, sont toujours là : `/settings#budgets` a son ancre.
+
   // N'écrit QUE les cinq champs de ce formulaire, par-dessus ce qui est
   // réellement enregistré à cet instant. `prefs` est un instantané pris au
   // montage, et `usePrepahubData` n'est pas un contexte partagé : envoyer
   // l'objet complet renvoyait aussi `accent` et `themeMode` tels qu'ils
   // étaient à l'ouverture de la page, annulant la couleur ou le mode que le
-  // sélecteur d'apparence — juste en dessous, sur cette même page Réglages —
-  // venait d'enregistrer.
+  // sélecteur d'apparence — sur cette même page Réglages — venait
+  // d'enregistrer.
   function save(event: React.FormEvent) {
     event.preventDefault();
     savePreferences({
@@ -61,158 +68,155 @@ export function PreferencesForm() {
   const subjectTotal = subjects.reduce((sum, subject) => sum + prefs.weeklySubjectTargets[subject], 0);
 
   return (
-    <Section
-      variant="panel"
-      label="Rythme"
-      title="Ton identité de travail"
-      description="Tes objectifs alimentent l'accueil, le plan du jour et la mesure de ta semaine."
-      className="max-w-2xl"
-    >
-      <form onSubmit={save} className="space-y-6">
-        <Field label="Prénom">
-          <Input
-            value={prefs.displayName}
-            onChange={(e) => setPrefs({ ...prefs, displayName: e.target.value })}
-            placeholder="Ton prénom"
-            className="max-w-xs"
-          />
-        </Field>
-
-        {/* Sélecteur segmenté, pas quatre boutons dont l'actif en aplat plein :
-            le préréglage choisi portait le style de l'ACTION PRINCIPALE, le
-            même que « Enregistrer » quelques lignes plus bas. Régler n'est pas
-            agir. */}
-        <Field
-          label="Objectif quotidien"
-          hint="Durée visée chaque jour, en minutes — alimente l'accueil et le plan du jour."
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <SegmentedControl
-              ariaLabel="Objectif quotidien"
-              value={prefs.dailyGoalMinutes}
-              onChange={(value) => setPrefs({ ...prefs, dailyGoalMinutes: value })}
-              options={DAILY_GOAL_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
-            />
-            <Input
-              type="number"
-              value={prefs.dailyGoalMinutes}
-              min={1}
-              onChange={(e) => setPrefs({ ...prefs, dailyGoalMinutes: Math.max(1, Number(e.target.value)) })}
-              className="w-20 text-center"
-              aria-label="Objectif quotidien personnalisé, en minutes"
-            />
-          </div>
-        </Field>
-
-        <Field
-          label="Objectif hebdomadaire"
-          hint="Durée visée sur la semaine, en minutes — indépendant de l'objectif quotidien."
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <SegmentedControl
-              ariaLabel="Objectif hebdomadaire"
-              value={prefs.weeklyGoalMinutes}
-              onChange={(value) => setPrefs({ ...prefs, weeklyGoalMinutes: value })}
-              options={WEEKLY_GOAL_PRESETS.map((preset) => ({ value: preset, label: `${Math.round(preset / 60)} h` }))}
-            />
-            <Input
-              type="number"
-              value={prefs.weeklyGoalMinutes}
-              min={1}
-              onChange={(e) => setPrefs({ ...prefs, weeklyGoalMinutes: Math.max(1, Number(e.target.value)) })}
-              className="w-20 text-center"
-              aria-label="Objectif hebdomadaire personnalisé, en minutes"
-            />
-          </div>
-        </Field>
-
-        {/* BUDGET PAR MATIÈRE — une ligne par matière, en minutes, avec sa
-            lecture en heures à côté : « 480 » ne se lit pas d'un coup d'œil,
-            « 8 h » si. Pas de préréglages : chaque matière a son propre
-            ordre de grandeur, et sept sélecteurs segmentés feraient un
-            formulaire de deux écrans. Voir lib/subject-targets.ts.
-
-            Rendu seulement une fois `ready` : le total est un TEXTE calculé
-            depuis le localStorage, que le serveur ne voit pas — même
-            divergence d'hydratation que celle documentée dans
-            components/work/capacity-form.tsx. */}
+    <form onSubmit={save} className="space-y-12">
+      <Group title="Toi" footer="La date des concours affiche le compte à rebours sur l'accueil. Laisse-la vide si tu ne veux pas le voir.">
         {!ready ? (
-          <Skeleton className="h-48 w-full rounded-lg" />
+          <div className="py-3 pr-4">
+            <Skeleton className="h-20 w-full" />
+          </div>
         ) : (
-          <div>
-            <span className="t-subhead mb-2 block">Budget par matière</span>
-            <div className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
-              {subjects.map((subject) => {
-                const value = prefs.weeklySubjectTargets[subject];
-                return (
-                  <label key={subject} className="flex items-center gap-2.5">
-                    <SubjectAvatar subject={subject} size="sm" />
-                    <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-ink">{subject}</span>
-                    <Input
-                      type="number"
-                      min={0}
-                      step={15}
-                      max={MAX_WEEKLY_SUBJECT_TARGET_MINUTES}
-                      value={value}
-                      onChange={(event) => {
-                        const next = Math.max(0, Math.min(MAX_WEEKLY_SUBJECT_TARGET_MINUTES, Math.round(Number(event.target.value) || 0)));
-                        setPrefs({ ...prefs, weeklySubjectTargets: { ...prefs.weeklySubjectTargets, [subject]: next } });
-                      }}
-                      className="w-[4.5rem] shrink-0 text-center"
-                      aria-label={`Budget hebdomadaire en ${subject}, en minutes`}
-                    />
-                    {/* Largeur fixe : la colonne des champs reste alignée,
-                        que l'aide dise « 8 h » ou « non suivie ». */}
-                    <span className="tabular t-meta w-16 shrink-0 text-2xs">{value > 0 ? formatMinutesSpan(value) : "non suivie"}</span>
-                  </label>
-                );
-              })}
-            </div>
-            <span className="t-meta mt-2 block max-w-[56ch]">
+          <>
+            <Row label="Prénom" htmlFor="pref-name">
+              <Input
+                id="pref-name"
+                value={prefs.displayName}
+                onChange={(e) => setPrefs({ ...prefs, displayName: e.target.value })}
+                placeholder="Ton prénom"
+                className="w-40 text-right sm:w-52"
+              />
+            </Row>
+            <Row label="Date des concours" htmlFor="pref-contest">
+              <Input id="pref-contest" type="date" value={prefs.contestDate} onChange={(e) => setPrefs({ ...prefs, contestDate: e.target.value })} className="w-40 sm:w-44" />
+            </Row>
+          </>
+        )}
+      </Group>
+
+      {/* Sélecteurs segmentés, pas quatre boutons dont l'actif en aplat
+          plein : régler n'est pas agir, et le seul aplat d'accent de l'écran
+          reste « Enregistrer ». Le champ nombre à côté couvre toute valeur
+          hors préréglage. */}
+      <Group title="Objectifs" footer="Tes objectifs alimentent l'accueil, le plan du jour et la mesure de ta semaine. Le quotidien et l'hebdomadaire sont indépendants.">
+        {!ready ? (
+          <div className="py-3 pr-4">
+            <Skeleton className="h-20 w-full" />
+          </div>
+        ) : (
+          <>
+            <Row label="Chaque jour" hint="en minutes" stack>
+              <SegmentedControl
+                ariaLabel="Objectif quotidien"
+                value={prefs.dailyGoalMinutes}
+                onChange={(value) => setPrefs({ ...prefs, dailyGoalMinutes: value })}
+                options={DAILY_GOAL_PRESETS.map((preset) => ({ value: preset, label: `${preset} min` }))}
+              />
+              <Input
+                type="number"
+                value={prefs.dailyGoalMinutes}
+                min={1}
+                onChange={(e) => setPrefs({ ...prefs, dailyGoalMinutes: Math.max(1, Number(e.target.value)) })}
+                className="w-20 shrink-0 text-center"
+                aria-label="Objectif quotidien personnalisé, en minutes"
+              />
+            </Row>
+            <Row label="Chaque semaine" hint={formatMinutesSpan(prefs.weeklyGoalMinutes)} stack>
+              <SegmentedControl
+                ariaLabel="Objectif hebdomadaire"
+                value={prefs.weeklyGoalMinutes}
+                onChange={(value) => setPrefs({ ...prefs, weeklyGoalMinutes: value })}
+                options={WEEKLY_GOAL_PRESETS.map((preset) => ({ value: preset, label: `${Math.round(preset / 60)} h` }))}
+              />
+              <Input
+                type="number"
+                value={prefs.weeklyGoalMinutes}
+                min={1}
+                onChange={(e) => setPrefs({ ...prefs, weeklyGoalMinutes: Math.max(1, Number(e.target.value)) })}
+                className="w-20 shrink-0 text-center"
+                aria-label="Objectif hebdomadaire personnalisé, en minutes"
+              />
+            </Row>
+          </>
+        )}
+      </Group>
+
+      {/* BUDGET PAR MATIÈRE — une rangée par matière, en minutes, avec sa
+          lecture en heures sous le nom : « 480 » ne se lit pas d'un coup
+          d'œil, « 8 h » si. Pas de préréglages : chaque matière a son propre
+          ordre de grandeur. Voir lib/subject-targets.ts.
+
+          Les rangées ne sont rendues qu'une fois `ready` : le total est un
+          TEXTE calculé depuis le localStorage, que le serveur ne voit pas —
+          même divergence d'hydratation que celle documentée dans
+          components/work/capacity-form.tsx. Le groupe, lui, est toujours
+          là : c'est l'ancre de `/settings#budgets`. */}
+      <Group
+        id="budgets"
+        title="Budget par matière"
+        footer={
+          ready ? (
+            <>
               Minutes par semaine, du lundi au dimanche — 0 pour ne pas suivre une matière. Soit{" "}
-              <span className="tabular text-ink">{formatMinutesSpan(subjectTotal)}</span> au total
+              <span className="tabular font-semibold text-ink">{formatMinutesSpan(subjectTotal)}</span> au total
               {/* Deux objectifs saisis séparément finissent par diverger ; le
                   dire ici, au moment où on les règle, évite de le découvrir
                   sur l'accueil. Un constat, pas une correction automatique. */}
               {subjectTotal > prefs.weeklyGoalMinutes
                 ? `, au-dessus de ton objectif hebdomadaire (${formatMinutesSpan(prefs.weeklyGoalMinutes)}).`
                 : "."}
-            </span>
+            </>
+          ) : undefined
+        }
+      >
+        {!ready ? (
+          <div className="py-3 pr-4">
+            <Skeleton className="h-64 w-full" />
           </div>
+        ) : (
+          subjects.map((subject) => {
+            const value = prefs.weeklySubjectTargets[subject];
+            const id = `budget-${subject}`;
+            return (
+              <Row
+                key={subject}
+                htmlFor={id}
+                icon={<SubjectAvatar subject={subject} />}
+                label={subject}
+                hint={value > 0 ? `${formatMinutesSpan(value)} par semaine` : "non suivie"}
+              >
+                <Input
+                  id={id}
+                  type="number"
+                  min={0}
+                  step={15}
+                  max={MAX_WEEKLY_SUBJECT_TARGET_MINUTES}
+                  value={value}
+                  onChange={(event) => {
+                    const next = Math.max(0, Math.min(MAX_WEEKLY_SUBJECT_TARGET_MINUTES, Math.round(Number(event.target.value) || 0)));
+                    setPrefs({ ...prefs, weeklySubjectTargets: { ...prefs.weeklySubjectTargets, [subject]: next } });
+                  }}
+                  className="w-20 text-center"
+                  aria-describedby={`${id}-unit`}
+                />
+                <span id={`${id}-unit`} className="t-meta w-7 text-[0.8125rem]">
+                  min
+                </span>
+              </Row>
+            );
+          })
         )}
+      </Group>
 
-        <Field label="Date des concours" hint="Affiche le compte à rebours sur l'accueil. Laisse vide si tu ne veux pas le voir.">
-          <Input
-            type="date"
-            value={prefs.contestDate}
-            onChange={(e) => setPrefs({ ...prefs, contestDate: e.target.value })}
-            className="max-w-xs"
-          />
-        </Field>
-
-        <div className="border-t border-line pt-5">
-          <Button type="submit">
-            {saved ? (
-              <>
-                <Check size={16} /> Enregistré
-              </>
-            ) : (
-              "Enregistrer"
-            )}
-          </Button>
-        </div>
-      </form>
-    </Section>
-  );
-}
-
-/** Champ de formulaire — étiquette au-dessus, aide en dessous. Une seule forme pour tous les réglages. */
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="t-subhead mb-2 block">{label}</span>
-      {children}
-      {hint && <span className="t-meta mt-2 block max-w-[56ch]">{hint}</span>}
-    </label>
+      <div className="flex justify-end px-1">
+        <Button type="submit" size="lg" className="max-sm:w-full">
+          {saved ? (
+            <>
+              <Check size={16} aria-hidden /> Enregistré
+            </>
+          ) : (
+            "Enregistrer mes objectifs"
+          )}
+        </Button>
+      </div>
+    </form>
   );
 }

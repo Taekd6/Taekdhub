@@ -10,12 +10,19 @@ import { cn } from "@/lib/cn";
  */
 export function EmptyState({
   icon: Icon,
+  illustration,
   title,
   description,
   action,
   className,
 }: {
   icon?: LucideIcon;
+  /**
+   * Un dessin au trait (components/ui/illustrations.tsx) à la place de
+   * l'icône : un état vide est le seul moment où l'écran n'a rien d'autre à
+   * montrer, c'est là qu'une illustration a toute sa place.
+   */
+  illustration?: React.ReactNode;
   title: string;
   description?: string;
   action?: React.ReactNode;
@@ -23,7 +30,11 @@ export function EmptyState({
 }) {
   return (
     <div className={cn("flex flex-col items-center px-6 py-14 text-center", className)}>
-      {Icon && (
+      {illustration ? (
+        <span aria-hidden className="mb-5 grid h-24 w-24 place-items-center rounded-[1.75rem] bg-inset text-ink">
+          {illustration}
+        </span>
+      ) : Icon && (
         <span className="mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-inset text-muted">
           <Icon size={20} strokeWidth={1.8} />
         </span>

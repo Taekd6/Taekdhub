@@ -5,7 +5,8 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Section } from "@/components/ui/section";
-import { SegmentedControl } from "@/components/ui/segmented";
+import { FilterPills } from "@/components/ui/pills";
+import { cn } from "@/lib/cn";
 import { LineChart } from "@/components/ui/chart";
 import { SubjectAvatar } from "@/components/subject-avatar";
 import { Insufficient } from "@/components/progress/insufficient";
@@ -14,7 +15,7 @@ import { computeGradesByKind, computeGradesBySubject } from "@/lib/tracking";
 import { computeGradeTrend, createGrade, formatAverage, formatGrade, formatPrediction, GRADE_KIND_META, gradedSubjects, isScored, normalizedScore, removeGrade } from "@/lib/grades";
 import { CalibrationPanel, PendingGrades } from "@/components/progress/calibration-panel"; // calibration des notes
 import { describeConfidence, withSign } from "@/lib/analytics/trend";
-import { subjectMeta, subjects } from "@/lib/study";
+import { subjects } from "@/lib/study";
 import { GRADE_KINDS, type Grade, type GradeKind } from "@/lib/storage";
 import type { Subject } from "@/lib/supabase/types";
 
@@ -61,151 +62,194 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
   /** Une ligne par matière : dernière note, moyenne, tendance — bornée à la nature choisie. */
   const bySubject = useMemo(() => computeGradesBySubject(scopedByKind), [scopedByKind]);
 
+  /*
+   * QUATRE TUILES, dans l'ordre d'un retour de copie : on NOTE (saisie et
+   * épreuves en attente), on REGARDE la courbe, on COMPARE matière par
+   * matière et épreuve par épreuve, puis on confronte ses PRONOSTICS. Tout
+   * tenait auparavant dans une seule section de 2 000 px, où la courbe se
+   * perdait entre le formulaire et la liste.
+   */
   return (
-    <Section
-      label="Tes résultats"
-      title="Tes notes"
-      description="Saisies par toi : c'est le seul regard extérieur sur ton travail. Les barèmes sont ramenés sur 20 pour être comparables, en moyenne simple."
-    >
-      <GradeForm
-        onCreate={(grade) => {
-          onSave([grade, ...grades]);
-          setJustAdded(grade);
-        }}
-      />
-      {/* Carnet d'erreurs : la copie est encore sous les yeux, c'est le moment. */}
-      {justAdded && grades.some((grade) => grade.id === justAdded.id) && <GradeErrorsLink grade={justAdded} className="mt-2" />}
+    <div className="space-y-5">
+      <Section
+        variant="panel"
+        label="Tes résultats"
+        title="Ajouter une note"
+        description="Saisies par toi : c'est le seul regard extérieur sur ton travail. Un pronostic seul crée l'épreuve « en attente » de la copie."
+      >
+        <GradeForm
+          onCreate={(grade) => {
+            onSave([grade, ...grades]);
+            setJustAdded(grade);
+          }}
+        />
+        {/* Carnet d'erreurs : la copie est encore sous les yeux, c'est le moment. */}
+        {justAdded && grades.some((grade) => grade.id === justAdded.id) && <GradeErrorsLink grade={justAdded} className="mt-3" />}
 
-      {/* ── Calibration : épreuves en attente de la copie ── */}
-      <PendingGrades grades={grades} onSave={onSave} className="mt-6" />
+        {/* ── Calibration : épreuves en attente de la copie ── */}
+        <PendingGrades grades={grades} onSave={onSave} className="mt-7" />
+      </Section>
 
       {!grades.some(isScored) ? (
         <Insufficient
-          className="mt-6"
           what="Aucune note enregistrée."
           how="Ajoute un DS ou une interro ci-dessus : deux notes suffisent à voir une variation, quatre à dégager une tendance."
         />
       ) : (
-        <div className="mt-7 space-y-5">
-          {byKind.length > 1 && (
-            <SegmentedControl
-              size="sm"
-              ariaLabel="Nature d'épreuve affichée"
-              value={kind}
-              onChange={(value) => setKind(value as GradeKind | "toutes")}
-              options={[
-                { value: "toutes" as const, label: "Toutes" },
-                ...byKind.map((entry) => ({ value: entry.kind, label: GRADE_KIND_META[entry.kind].short })),
-              ]}
-            />
-          )}
-
-          {available.length > 1 && (
-            <SegmentedControl
-              size="sm"
-              ariaLabel="Matière affichée"
-              value={subject}
-              onChange={setSubject}
-              options={[{ value: "toutes" as const, label: "Toutes" }, ...available.map((entry) => ({ value: entry, label: subjectMeta[entry].short }))]}
-            />
-          )}
-
-          {result.grades.length >= 2 ? (
-            <>
-              <LineChart
-                points={result.grades.map((grade) => ({ label: shortDate.format(new Date(`${grade.date}T00:00:00`)), value: normalizedScore(grade) }))}
-                min={0}
-                max={20}
-                formatValue={(value) => String(Math.round(value))}
-                ariaLabel={`Notes ${scope ?? "toutes matières"} : ${result.grades
-                  .map((grade) => `${shortDate.format(new Date(`${grade.date}T00:00:00`))} ${formatGrade(grade)}`)
-                  .join(", ")}.`}
-              />
-              <p className="t-body">
-                Moyenne <span className="font-medium">{formatAverage(result.stats.average ?? 0)}/20</span> sur {result.stats.count} note
-                {result.stats.count > 1 ? "s" : ""}
-                {result.trend.direction !== "insuffisant" && result.trend.delta !== null && (
-                  <> · {withSign(Math.round(result.trend.delta * 10) / 10, " pt")} de la première à la dernière</>
-                )}
-                .
-              </p>
-              {result.trend.direction !== "insuffisant" && (
-                <p className="t-meta">
-                  Tes notes sont {TREND_WORDS[result.trend.direction]}.
-                  {describeConfidence(result.trend) && <> {describeConfidence(result.trend)}</>}
-                </p>
+        <>
+          <Section
+            variant="panel"
+            title="Ta courbe"
+            description="Les barèmes sont ramenés sur 20 pour être comparables, en moyenne simple. Survole un point pour l'épreuve."
+          >
+            <div className="space-y-3">
+              {byKind.length > 1 && (
+                <FilterPills
+                  ariaLabel="Nature d'épreuve affichée"
+                  value={kind}
+                  onChange={(value) => setKind(value as GradeKind | "toutes")}
+                  options={[
+                    { value: "toutes" as const, label: "Toutes les épreuves" },
+                    ...byKind.map((entry) => ({ value: entry.kind, label: GRADE_KIND_META[entry.kind].label })),
+                  ]}
+                />
               )}
-            </>
-          ) : (
-            <Insufficient
-              what={`${result.stats.count} note enregistrée${scope ? ` en ${scope}` : ""} — pas encore de courbe.`}
-              how="Il en faut au moins deux pour voir une variation."
-            />
-          )}
+              {available.length > 1 && (
+                <FilterPills
+                  ariaLabel="Matière affichée"
+                  value={subject}
+                  onChange={setSubject}
+                  options={[{ value: "toutes" as const, label: "Toutes les matières" }, ...available.map((entry) => ({ value: entry, label: entry }))]}
+                />
+              )}
+            </div>
 
-          {/* UNE LIGNE PAR MATIÈRE : dernière note, moyenne, tendance. Le
-              tableau que la liste chronologique ne remplace pas — elle dit
-              « quand », il dit « où j'en suis ». */}
-          {bySubject.length > 1 && (
-            <div>
-              <p className="t-label mb-2">Par matière{kindScope ? ` · ${GRADE_KIND_META[kindScope].label}` : ""}</p>
-              <ul className="divide-y divide-line border-y border-line">
-                {bySubject.map((row) => (
-                  <li key={row.subject} className="flex items-center gap-3 py-2.5">
-                    <SubjectAvatar subject={row.subject} size="sm" />
-                    <span className="min-w-0 flex-1 truncate text-sm text-ink">{row.subject}</span>
-                    <span className="tabular w-14 shrink-0 whitespace-nowrap text-right text-sm text-ink">
-                      {row.stats.latest ? formatGrade(row.stats.latest) : "—"}
+            {result.grades.length >= 2 ? (
+              <div className="mt-8">
+                <div className="mb-6 flex flex-wrap items-end gap-x-8 gap-y-3">
+                  <div>
+                    <p className="t-label">Moyenne</p>
+                    <p className="t-figure-lg mt-1">
+                      {formatAverage(result.stats.average ?? 0)}
+                      <span className="text-2xl font-semibold text-subtle"> /20</span>
+                    </p>
+                  </div>
+                  <p className="t-meta pb-1.5">
+                    sur {result.stats.count} note{result.stats.count > 1 ? "s" : ""}
+                    {result.trend.direction !== "insuffisant" && result.trend.delta !== null && (
+                      <> · {withSign(Math.round(result.trend.delta * 10) / 10, " pt")} de la première à la dernière</>
+                    )}
+                    {result.trend.direction !== "insuffisant" && (
+                      <>
+                        <br />
+                        Tes notes sont {TREND_WORDS[result.trend.direction]}.
+                        {describeConfidence(result.trend) && <> {describeConfidence(result.trend)}</>}
+                      </>
+                    )}
+                  </p>
+                </div>
+                <LineChart
+                  points={result.grades.map((grade) => ({
+                    label: `${grade.title || GRADE_KIND_META[grade.kind].label} · ${shortDate.format(new Date(`${grade.date}T00:00:00`))}`,
+                    value: normalizedScore(grade),
+                  }))}
+                  min={0}
+                  max={20}
+                  formatValue={(value) => formatAverage(value)}
+                  ariaLabel={`Notes ${scope ?? "toutes matières"} : ${result.grades
+                    .map((grade) => `${shortDate.format(new Date(`${grade.date}T00:00:00`))} ${formatGrade(grade)}`)
+                    .join(", ")}.`}
+                />
+              </div>
+            ) : (
+              <Insufficient
+                className="mt-6"
+                what={`${result.stats.count} note enregistrée${scope ? ` en ${scope}` : ""} — pas encore de courbe.`}
+                how="Il en faut au moins deux pour voir une variation."
+              />
+            )}
+          </Section>
+
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+            {/* UNE LIGNE PAR MATIÈRE : dernière note, moyenne, tendance. Le
+                tableau que la liste chronologique ne remplace pas — elle dit
+                « quand », il dit « où j'en suis ». */}
+            {bySubject.length > 1 && (
+              <Section variant="panel" title="Par matière" description={kindScope ? GRADE_KIND_META[kindScope].label : "Toutes épreuves confondues."}>
+                <ul className="-mx-2 space-y-0.5">
+                  {bySubject.map((row) => (
+                    <li key={row.subject} className="row-hover flex items-center gap-3 rounded-xl px-2 py-2.5">
+                      <SubjectAvatar subject={row.subject} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[0.9375rem] font-semibold text-ink">{row.subject}</span>
+                        <span className="t-meta tabular block text-2xs">
+                          moy. {row.stats.average !== null ? formatAverage(row.stats.average) : "—"}
+                        </span>
+                      </span>
+                      <span className="tabular shrink-0 whitespace-nowrap text-right text-[0.9375rem] font-bold text-ink">
+                        {row.stats.latest ? formatGrade(row.stats.latest) : "—"}
+                      </span>
+                      {/* « — » et non une flèche quand une seule note existe :
+                          deux points font une variation, pas une tendance. */}
+                      <span
+                        className={cn(
+                          "grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-bold",
+                          row.trend.direction === "hausse" ? "bg-accent/[0.14] text-accent" : "bg-inset text-muted"
+                        )}
+                        role="img"
+                        aria-label={row.trend.direction === "insuffisant" ? "tendance non mesurable" : `tendance ${TREND_WORDS[row.trend.direction]}`}
+                      >
+                        {row.trend.direction === "insuffisant"
+                          ? "–"
+                          : row.trend.direction === "hausse"
+                            ? "↑"
+                            : row.trend.direction === "baisse"
+                              ? "↓"
+                              : "→"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Section>
+            )}
+
+            <Section
+              variant="panel"
+              title="Toutes tes épreuves"
+              description={`${result.grades.length} note${result.grades.length > 1 ? "s" : ""}, de la plus récente à la plus ancienne.`}
+              className={bySubject.length > 1 ? undefined : "lg:col-span-2"}
+            >
+              <ul className="-mx-2 space-y-0.5">
+                {[...result.grades].reverse().map((grade) => (
+                  <li key={grade.id} className="row-hover flex items-center gap-3 rounded-xl py-2 pl-2">
+                    <SubjectAvatar subject={grade.subject} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[0.9375rem] font-semibold text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
+                      <span className="t-meta mt-0.5 block truncate text-2xs">
+                        {GRADE_KIND_META[grade.kind].short} · {longDate.format(new Date(`${grade.date}T00:00:00`))}
+                        {formatPrediction(grade) && <> · pronostic {formatPrediction(grade)}</>}
+                      </span>
                     </span>
-                    <span className="t-meta tabular w-16 shrink-0 whitespace-nowrap text-right text-2xs">
-                      moy. {row.stats.average !== null ? formatAverage(row.stats.average) : "—"}
-                    </span>
-                    {/* « — » et non une flèche quand une seule note existe :
-                        deux points font une variation, pas une tendance. */}
-                    <span className="w-6 shrink-0 text-right text-sm">
-                      {row.trend.direction === "insuffisant"
-                        ? "—"
-                        : row.trend.direction === "hausse"
-                          ? "↑"
-                          : row.trend.direction === "baisse"
-                            ? "↓"
-                            : "→"}
-                    </span>
+                    <span className="t-figure-sm tabular shrink-0 whitespace-nowrap text-xl">{formatGrade(grade)}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label={`Supprimer la note ${formatGrade(grade)} du ${grade.date}`}
+                      onClick={() => onSave(removeGrade(grades, grade.id))}
+                    >
+                      <Trash2 size={15} />
+                    </Button>
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
-
-          <ul className="divide-y divide-line border-y border-line">
-            {[...result.grades].reverse().map((grade) => (
-              <li key={grade.id} className="flex items-center gap-3 py-2.5">
-                <SubjectAvatar subject={grade.subject} size="sm" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
-                  <span className="t-meta mt-0.5 block truncate text-2xs">
-                    {GRADE_KIND_META[grade.kind].short} · {longDate.format(new Date(`${grade.date}T00:00:00`))}
-                    {formatPrediction(grade) && <> · pronostic {formatPrediction(grade)}</>}
-                  </span>
-                </span>
-                <span className="t-figure-sm tabular shrink-0 whitespace-nowrap">{formatGrade(grade)}</span>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label={`Supprimer la note ${formatGrade(grade)} du ${grade.date}`}
-                  onClick={() => onSave(removeGrade(grades, grade.id))}
-                >
-                  <Trash2 size={14} />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </div>
+            </Section>
+          </div>
+        </>
       )}
 
       {/* ── Calibration : pronostics face aux notes ── */}
-      <CalibrationPanel grades={grades} className="mt-7" />
-    </Section>
+      <CalibrationPanel grades={grades} />
+    </div>
   );
 }
 

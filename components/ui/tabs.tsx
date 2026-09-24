@@ -167,7 +167,7 @@ export function Tabs({
                 tabIndex={selected ? 0 : -1}
                 onClick={() => select(item.id)}
                 className={cn(
-                  "press relative z-10 min-h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-semibold transition-colors max-lg:min-h-10 sm:px-5",
+                  "press relative z-10 min-h-9 shrink-0 whitespace-nowrap rounded-full px-2.5 text-[0.8125rem] font-semibold transition-colors max-lg:min-h-11 min-[400px]:px-4 sm:px-5 sm:text-sm",
                   selected ? "text-ink" : "text-muted hover:text-ink"
                 )}
               >

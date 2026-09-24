@@ -1,22 +1,27 @@
 import { CapacityForm } from "@/components/work/capacity-form";
 import { DataBackup } from "@/components/data-backup";
-import { PageBar, Stack } from "@/components/ui/layout";
+import { PageHero } from "@/components/ui/page-hero";
 import { PreferencesForm } from "@/components/preferences-form";
 import { ThemePicker } from "@/components/theme-picker";
 
 /**
- * Composition `Stack` : un écran de saisie se lit et se remplit dans une
- * colonne, pas sur 1 140 px — un champ de 900 px de large n'aide personne, et
- * une étiquette perdue à l'autre bout de l'écran non plus.
+ * RÉGLAGES — l'app Réglages d'iOS : un grand titre, puis des LISTES
+ * GROUPÉES (components/ui/grouped.tsx), chacune avec son titre au-dessus et
+ * sa note en gris au-dessous. Une seule colonne bornée à la mesure de
+ * lecture : un champ de 900 px de large n'aide personne, et une étiquette
+ * perdue à l'autre bout de l'écran non plus.
+ *
+ * L'apparence vient en premier : c'est le réglage qu'on vient toucher pour
+ * le plaisir, et il se voit immédiatement.
  */
 export default function SettingsPage() {
   return (
-    <Stack className="space-y-8">
-      <PageBar title="Réglages" lede="Ton identité de travail, ton rythme, ton temps disponible et tes sauvegardes." />
+    <div className="mx-auto max-w-[44rem] space-y-12">
+      <PageHero title="Réglages" lede="Ton apparence, tes objectifs, ton temps disponible et tes sauvegardes." />
+      <ThemePicker />
       <PreferencesForm />
       <CapacityForm />
-      <ThemePicker />
       <DataBackup />
-    </Stack>
+    </div>
   );
 }

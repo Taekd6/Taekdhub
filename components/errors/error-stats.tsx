@@ -16,24 +16,8 @@ import {
   recentErrors,
 } from "@/lib/error-log";
 import type { ErrorEntry } from "@/lib/storage";
+import { subjectMeta } from "@/lib/study";
 import type { Subject } from "@/lib/supabase/types";
-
-/**
- * Remplissage PLEIN de chaque matière, pour les segments de barre. Les
- * pastilles (`subjectMeta`) utilisent la teinte 400 à 22 % d'opacité — trop
- * pâle pour un segment de 6 px de haut. Mêmes jetons (`violet-400`,
- * `sky-400`…, définis en variables CSS dans tailwind.config.ts), opacité
- * pleine : la matière se reconnaît à sa couleur comme partout ailleurs.
- */
-const SUBJECT_FILL: Record<Subject, string> = {
-  Mathématiques: "bg-violet-400",
-  Physique: "bg-sky-400",
-  Chimie: "bg-amber-400",
-  "Informatique TC": "bg-emerald-400",
-  "Informatique Spé": "bg-teal-400",
-  Français: "bg-orange-400",
-  Anglais: "bg-rose-400",
-};
 
 export type StatsPeriod = "recent" | "all";
 
@@ -119,6 +103,11 @@ export function ErrorStats({
         {inPeriod.length === 0 ? (
           <p className="t-meta mt-2 text-2xs">Aucune erreur notée {period === "recent" ? `ces ${ERROR_PERIOD_DAYS} derniers jours` : "pour l'instant"}.</p>
         ) : (
+          /* Chaque barre est découpée par matière, au PALIER DE GRIS de
+             chacune (`subjectMeta[…].fill`, app/globals.css) — refonte
+             « Apple » : plus de teinte par matière. Les paliers sont assez
+             écartés pour que deux segments voisins se distinguent, un liseré
+             les sépare, et la légende nomme chaque matière. */
           <ul className="mt-2.5 space-y-2.5">
             {byType.map((row) => (
               <li key={row.type}>
@@ -129,11 +118,11 @@ export function ErrorStats({
                 <div
                   role="img"
                   aria-label={`${ERROR_TYPE_META[row.type].label} : ${row.count}${row.bySubject.length ? ` — ${row.bySubject.map((part) => `${part.subject} ${part.count}`).join(", ")}` : ""}`}
-                  className="mt-1 flex h-1.5 overflow-hidden rounded-full bg-hairline/[0.10]"
+                  className="mt-1.5 flex h-2 overflow-hidden rounded-full bg-hairline/[0.10]"
                 >
                   <div className="flex h-full" style={{ width: `${(row.count / max) * 100}%` }}>
                     {row.bySubject.map((part) => (
-                      <span key={part.subject} className={cn("h-full", SUBJECT_FILL[part.subject])} style={{ width: `${(part.count / row.count) * 100}%` }} />
+                      <span key={part.subject} className="h-full border-r-2 border-panel last:border-r-0" style={{ width: `${(part.count / row.count) * 100}%`, backgroundColor: subjectMeta[part.subject].fill }} />
                     ))}
                   </div>
                 </div>
@@ -145,7 +134,7 @@ export function ErrorStats({
           <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1" aria-label="Légende des couleurs">
             {bySubject.map((row) => (
               <li key={row.subject} className="t-meta inline-flex items-center gap-1.5 text-2xs">
-                <span className={cn("h-2 w-2 rounded-full", SUBJECT_FILL[row.subject])} aria-hidden />
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: subjectMeta[row.subject].fill }} aria-hidden />
                 {row.subject}
               </li>
             ))}
@@ -174,7 +163,7 @@ export function ErrorStats({
       )}
 
       {dominant && (
-        <div className="rounded-lg bg-inset p-3">
+        <div className="well p-4">
           <p className="t-label">Que faire · {ERROR_TYPE_META[dominant].label}</p>
           <p className="mt-1 text-[0.8125rem] leading-5 text-ink">{ERROR_TYPE_META[dominant].advice}</p>
           {dominant === "cours" && (
@@ -199,7 +188,7 @@ export function ErrorStats({
  */
 export function WhyItWorks() {
   return (
-    <details className="group rounded-lg border border-line px-3 py-2">
+    <details className="group px-1">
       <summary className="t-meta min-h-6 cursor-pointer list-none text-2xs text-accent max-lg:flex max-lg:min-h-11 max-lg:items-center">
         Pourquoi ça marche
       </summary>

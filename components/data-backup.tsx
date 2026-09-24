@@ -4,7 +4,7 @@ import { AlertTriangle, Download, Upload } from "lucide-react";
 import { ChangeEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
-import { Section } from "@/components/ui/section";
+import { Group, Row } from "@/components/ui/grouped";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { exportBackup, restoreBackup, validateBackupPayload, type BackupPayload } from "@/lib/storage";
 
@@ -100,85 +100,88 @@ export function DataBackup() {
   }
 
   return (
-    <Section
-      variant="panel"
-      label="Données locales"
-      title="Tes données restent sous ton contrôle."
-      className="max-w-2xl"
-    >
+    <div className="space-y-4">
       {/* Dit franchement ce que « local » implique. TaekdHub n'a pas de compte :
           l'élève doit pouvoir décider en connaissance de cause, pas découvrir
           la contrainte le jour où il perd son année. */}
-      <p className="t-body max-w-[64ch] text-muted">
-        TaekdHub fonctionne sans compte : tes séances, tes échéances, tes notes et tes carnets sont enregistrés dans ce navigateur, sur cet
-        appareil, et nulle part ailleurs. Ils ne partent sur aucun serveur — mais ils ne te suivent pas non plus d&apos;un appareil à
-        l&apos;autre, et vider les données du navigateur les efface.
-      </p>
-      <p className="t-body mt-3 max-w-[64ch] text-muted">
-        La sauvegarde est donc ta seule copie : exporte-la régulièrement, et restaure-la sur ton nouvel appareil.
-        L&apos;import remplace les données de cet appareil, jamais celles d&apos;un autre.
-      </p>
-      <div className="mt-5 flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={exportData}>
-          <Download size={16} /> Exporter
-        </Button>
-        <Button variant="secondary" onClick={() => input.current?.click()}>
-          <Upload size={16} /> Restaurer
-        </Button>
-        <input ref={input} onChange={importData} type="file" accept="application/json" className="hidden" />
-      </div>
+      <Group
+        title="Tes données"
+        footer={
+          <>
+            <p>
+              TaekdHub fonctionne sans compte : tes séances, tes échéances, tes notes et tes carnets sont enregistrés dans ce navigateur, sur
+              cet appareil, et nulle part ailleurs. Ils ne partent sur aucun serveur — mais ils ne te suivent pas non plus d&apos;un appareil à
+              l&apos;autre, et vider les données du navigateur les efface.
+            </p>
+            <p className="mt-2">
+              La sauvegarde est donc ta seule copie : exporte-la régulièrement, et restaure-la sur ton nouvel appareil. L&apos;import remplace
+              les données de cet appareil, jamais celles d&apos;un autre.
+            </p>
+          </>
+        }
+      >
+        <Row label="Exporter une sauvegarde" hint="Un fichier à garder en lieu sûr.">
+          <Button variant="secondary" size="sm" onClick={exportData}>
+            <Download size={15} aria-hidden /> Exporter
+          </Button>
+        </Row>
+        <Row label="Restaurer une sauvegarde" hint="Remplace les données de cet appareil.">
+          <Button variant="secondary" size="sm" onClick={() => input.current?.click()}>
+            <Upload size={15} aria-hidden /> Restaurer
+          </Button>
+          <input ref={input} onChange={importData} type="file" accept="application/json" className="hidden" aria-label="Fichier de sauvegarde" />
+        </Row>
+      </Group>
 
-      <>
-        {pendingImport && (
-          <div className="animate-rise mt-5 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-300" />
-              <div className="t-body text-muted">
-                <p className="t-subhead text-ink">Remplacer tes données locales ?</p>
-                <p className="mt-1">
-                  Ce fichier contient <span className="font-medium text-ink">{pendingImport.sessions.length}</span> séance
-                  {pendingImport.sessions.length > 1 ? "s" : ""}
-                  {pendingImport.reviewItems?.length ? (
-                    <>
-                      , <span className="font-medium text-ink">{pendingImport.reviewItems.length}</span> ligne
-                      {pendingImport.reviewItems.length > 1 ? "s" : ""} du carnet « À revoir »
-                    </>
-                  ) : null}
-                  {pendingImport.errors?.length ? (
-                    <>
-                      , <span className="font-medium text-ink">{pendingImport.errors.length}</span> erreur
-                      {pendingImport.errors.length > 1 ? "s" : ""} du carnet d&apos;erreurs
-                    </>
-                  ) : null}
-                  {pendingImport.weekSnapshots?.length ? (
-                    <>
-                      {" "}
-                      et <span className="font-medium text-ink">{pendingImport.weekSnapshots.length}</span> semaine
-                      {pendingImport.weekSnapshots.length > 1 ? "s" : ""} figée{pendingImport.weekSnapshots.length > 1 ? "s" : ""}
-                    </>
-                  ) : null}
-                  {pendingImport.exportedAt && ` (exporté le ${new Date(pendingImport.exportedAt).toLocaleDateString("fr-FR")})`}. Cette
-                  action remplacera définitivement tes séances, échéances, notes, carnet « À revoir », carnet d&apos;erreurs, préférences et historique de progression actuels sur cet appareil.
-                </p>
-              </div>
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={cancelImport}>
-                Annuler
-              </Button>
-              <Button variant="danger" size="sm" onClick={confirmImport}>
-                Confirmer le remplacement
-              </Button>
+      {pendingImport && (
+        <div role="alertdialog" aria-label="Remplacer tes données locales ?" className="surface border-amber-400/30 p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={20} className="mt-0.5 shrink-0 text-amber-300" aria-hidden />
+            <div className="t-body text-muted">
+              <p className="t-subhead text-ink">Remplacer tes données locales ?</p>
+              <p className="mt-1 text-[0.9375rem]">
+                Ce fichier contient <span className="font-medium text-ink">{pendingImport.sessions.length}</span> séance
+                {pendingImport.sessions.length > 1 ? "s" : ""}
+                {pendingImport.reviewItems?.length ? (
+                  <>
+                    , <span className="font-medium text-ink">{pendingImport.reviewItems.length}</span> ligne
+                    {pendingImport.reviewItems.length > 1 ? "s" : ""} du carnet « À revoir »
+                  </>
+                ) : null}
+                {pendingImport.errors?.length ? (
+                  <>
+                    , <span className="font-medium text-ink">{pendingImport.errors.length}</span> erreur
+                    {pendingImport.errors.length > 1 ? "s" : ""} du carnet d&apos;erreurs
+                  </>
+                ) : null}
+                {pendingImport.weekSnapshots?.length ? (
+                  <>
+                    {" "}
+                    et <span className="font-medium text-ink">{pendingImport.weekSnapshots.length}</span> semaine
+                    {pendingImport.weekSnapshots.length > 1 ? "s" : ""} figée{pendingImport.weekSnapshots.length > 1 ? "s" : ""}
+                  </>
+                ) : null}
+                {pendingImport.exportedAt && ` (exporté le ${new Date(pendingImport.exportedAt).toLocaleDateString("fr-FR")})`}. Cette
+                action remplacera définitivement tes séances, échéances, notes, carnet « À revoir », carnet d&apos;erreurs, préférences et historique de progression actuels sur cet appareil.
+              </p>
             </div>
           </div>
-        )}
-      </>
+          <div className="mt-5 flex flex-wrap justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={cancelImport}>
+              Annuler
+            </Button>
+            <Button variant="danger" size="sm" onClick={confirmImport}>
+              Confirmer le remplacement
+            </Button>
+          </div>
+        </div>
+      )}
 
       {message && (
-        <p role={failed ? "alert" : "status"} className={cn("mt-4 text-sm", failed ? "text-rose-300" : "text-accent")}>
+        <p role={failed ? "alert" : "status"} className={cn("px-1 text-sm font-semibold sm:px-5", failed ? "text-rose-300" : "text-accent")}>
           {message}
         </p>
       )}
-    </Section>
+    </div>
   );
 }

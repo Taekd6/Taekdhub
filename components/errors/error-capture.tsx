@@ -194,7 +194,7 @@ export function ErrorCapture({
                 aria-checked={active}
                 onClick={() => chooseType(value)}
                 className={cn(
-                  "min-h-11 rounded-lg border px-2.5 py-1.5 text-left transition-colors",
+                  "press min-h-11 rounded-xl border px-3 py-2 text-left transition-colors",
                   active ? "border-accent bg-accent/[0.08]" : "border-transparent bg-inset hover:border-line",
                   missingType && !active && "border-rose-400/40"
                 )}
@@ -222,9 +222,10 @@ export function ErrorCapture({
                 title={item}
                 onClick={() => chooseSubject(item)}
                 className={cn(
-                  "grid h-8 min-w-8 place-items-center rounded-md px-1 text-[0.6875rem] font-semibold leading-none transition-[box-shadow,opacity] max-lg:h-11",
-                  subjectMeta[item].className,
-                  active ? "bg-panel ring-2 ring-accent ring-offset-2 ring-offset-canvas" : "bg-inset opacity-70 hover:opacity-100"
+                  // Même pastille que la saisie rapide de temps et le carnet
+                  // « À revoir » : la matière retenue est INVERSÉE.
+                  "press grid h-9 min-w-9 place-items-center rounded-full px-1.5 text-xs font-extrabold leading-none max-lg:h-11",
+                  active ? "bg-ink text-canvas" : cn(subjectMeta[item].className, "hover:brightness-125")
                 )}
               >
                 {subjectMeta[item].short}
@@ -246,8 +247,8 @@ export function ErrorCapture({
                 aria-checked={active}
                 onClick={() => setSource(value)}
                 className={cn(
-                  "min-h-8 rounded-md px-2.5 text-[0.8125rem] transition-colors max-lg:min-h-11",
-                  active ? "bg-panel font-medium text-ink ring-1 ring-line" : "bg-inset text-muted hover:text-ink"
+                  "press min-h-9 rounded-full px-3.5 text-[0.8125rem] font-semibold max-lg:min-h-11",
+                  active ? "chip-on" : "bg-inset text-muted hover:text-ink"
                 )}
               >
                 {ERROR_SOURCE_META[value].label}
