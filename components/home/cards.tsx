@@ -32,7 +32,7 @@ export interface SubjectCard {
  * caractères de texte, jamais des émojis (le « ⚛ » de la maquette tombe en
  * émoji minuscule hors appareil Apple : λ le remplace), pour qu'ils prennent le blanc de la carte.
  */
-const SUBJECT_GLYPH: Record<Subject, string> = {
+export const SUBJECT_GLYPH: Record<Subject, string> = {
   Mathématiques: "∫",
   Physique: "λ",
   Chimie: "pH",
@@ -43,7 +43,7 @@ const SUBJECT_GLYPH: Record<Subject, string> = {
 };
 
 /** Nom court sur la carte (158 px de large) — le nom complet reste dans l'`aria-label`. */
-const SUBJECT_CARD_NAME: Record<Subject, string> = {
+export const SUBJECT_CARD_NAME: Record<Subject, string> = {
   Mathématiques: "Maths",
   Physique: "Physique",
   Chimie: "Chimie",

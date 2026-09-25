@@ -36,13 +36,13 @@ export function Group({
 }) {
   return (
     <section id={id} className={cn("reveal scroll-mt-[calc(var(--nav-h)+1.5rem)]", className)} style={{ "--i": index ?? 0 } as CSSProperties}>
-      {title && <h2 className="t-heading mb-3 px-1">{title}</h2>}
+      {title && <h2 className="mb-2.5 px-1 text-xl font-black tracking-[-0.02em] text-ink">{title}</h2>}
       {/* Le filet commence après la marge gauche, comme sur iOS : chaque
           rangée porte la marge, la liste porte les filets. */}
       <div className="surface overflow-hidden">
         <div className="divide-y divide-line pl-4 sm:pl-5">{children}</div>
       </div>
-      {footer && <div className="t-meta mt-2.5 max-w-[62ch] px-1 sm:px-5">{footer}</div>}
+      {footer && <div className="mt-2 max-w-[62ch] px-1 text-[0.8125rem] font-semibold leading-snug text-muted sm:px-5">{footer}</div>}
     </section>
   );
 }
@@ -78,7 +78,7 @@ export function Row({
       <span className="flex min-w-0 items-center gap-3">
         {icon}
         <span className="min-w-0">
-          <Label htmlFor={htmlFor} className="block text-[0.9375rem] font-semibold leading-snug text-ink">
+          <Label htmlFor={htmlFor} className="block text-[0.9375rem] font-bold leading-snug text-ink">
             {label}
           </Label>
           {hint && <span className="t-meta mt-0.5 block text-[0.8125rem]">{hint}</span>}

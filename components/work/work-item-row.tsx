@@ -4,8 +4,9 @@ import Link from "next/link";
 import { ArrowRight, Check, Trash2 } from "lucide-react";
 import { IntentionEditor } from "@/components/work/intention-editor";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Meter } from "@/components/ui/progress";
+import { DateBadge } from "@/components/ui/list-card";
 import { cn } from "@/lib/cn";
 import { explainPriority, type WorkItemPriority } from "@/lib/deadlines";
 import { progressPercent, WORK_ITEM_KIND_META } from "@/lib/work-items";
@@ -35,6 +36,7 @@ import type { WorkItemPlan } from "@/lib/storage";
  */
 export function WorkItemRow({
   priority,
+  tone = 0,
   sessions,
   onComplete,
   onAbandon,
@@ -42,6 +44,8 @@ export function WorkItemRow({
   onPlan,
 }: {
   priority: WorkItemPriority;
+  /** Rang dans sa liste : décale le dégradé de la pastille datée (`--dl-1..3`). */
+  tone?: number;
   sessions: WorkSession[];
   onComplete: (id: string) => void;
   onAbandon: (id: string) => void;
@@ -59,29 +63,37 @@ export function WorkItemRow({
   const due = item.dueDate ? new Date(`${item.dueDate}T00:00:00`) : null;
 
   return (
-    <li className="flex gap-4 py-5 sm:gap-6">
-      <div className={cn("w-12 shrink-0 pt-0.5 text-center sm:w-14", overdue ? "text-rose-300" : "text-ink")} aria-hidden>
-        {due ? (
-          <>
-            <span className={cn("block text-2xs font-semibold", overdue ? "text-rose-300" : "text-subtle")}>{WEEKDAYS_SHORT[due.getDay()]}</span>
-            <span className="t-figure-md block">{due.getDate()}</span>
-            <span className={cn("block text-2xs font-semibold", overdue ? "text-rose-300" : "text-subtle")}>{MONTHS_SHORT[due.getMonth()]}</span>
-          </>
+    <li className="flex gap-3 py-4 sm:gap-4">
+      {/* LA PASTILLE DATÉE en dégradé (celle de l'accueil), le jour de la
+          semaine dessous ; rose sur fond rose quand c'est en retard. */}
+      <div className="flex w-11 shrink-0 flex-col items-center gap-1" aria-hidden>
+        {overdue ? (
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-rose-400/[0.14] text-rose-300">
+            {due ? (
+              <span className="flex flex-col items-center leading-none">
+                <span className="text-base font-black tabular">{due.getDate()}</span>
+                <span className="mt-0.5 text-[0.5625rem] font-extrabold">{MONTHS_SHORT[due.getMonth()].replace(".", "").toUpperCase()}</span>
+              </span>
+            ) : (
+              "—"
+            )}
+          </span>
         ) : (
-          <span className="mt-2 block text-2xs font-semibold text-subtle">sans date</span>
+          <DateBadge date={due} tone={tone} />
         )}
+        {due && <span className={cn("text-2xs font-bold", overdue ? "text-rose-300" : "text-subtle")}>{WEEKDAYS_SHORT[due.getDay()]}</span>}
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-3">
-          <p className="t-subhead min-w-0 flex-1">{item.title}</p>
+          <p className="min-w-0 flex-1 text-[0.9375rem] font-extrabold leading-snug text-ink">{item.title}</p>
           <p className="shrink-0 whitespace-nowrap text-right">
-            <span className="tabular text-[0.9375rem] font-bold text-ink">{formatSpan(remainingMinutes * 60)}</span>
-            <span className="block text-2xs text-subtle">à faire</span>
+            <span className="tabular text-[0.9375rem] font-black text-ink">{formatSpan(remainingMinutes * 60)}</span>
+            <span className="block text-2xs font-bold text-subtle">à faire</span>
           </p>
         </div>
 
-        <p className="t-meta mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem] font-bold text-subtle">
           <span className="min-w-0">
             {WORK_ITEM_KIND_META[item.kind].label}
             {item.subject && ` · ${item.subject}`}
@@ -94,7 +106,7 @@ export function WorkItemRow({
           {item.important && <Badge variant="accent">Important</Badge>}
         </p>
 
-        {explanation && <p className="t-meta mt-1.5 text-[0.8125rem]">{explanation}</p>}
+        {explanation && <p className="mt-1 text-[0.8125rem] font-semibold text-muted">{explanation}</p>}
 
         {done > 0 && (
           <div className="mt-3 flex items-center gap-3">
@@ -111,11 +123,15 @@ export function WorkItemRow({
             dans un lien (deux arrêts de tabulation pour une action). */}
         {onPlan && remainingMinutes > 0 && <IntentionEditor item={item} onPlan={onPlan} />}
 
-        <div className="mt-4 flex flex-wrap items-center gap-1.5">
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
           {remainingMinutes > 0 ? (
             <>
-              <Link href={workHref} className={buttonVariants({ size: "sm", variant: "secondary" })}>
-                Travailler <ArrowRight size={13} aria-hidden />
+              {/* Le geste de la rangée, en pastille à dégradé : il part au chrono. */}
+              <Link
+                href={workHref}
+                className="grad-brand bounce-press inline-flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-extrabold [box-shadow:0_8px_18px_-8px_var(--g1)] max-lg:min-h-11"
+              >
+                Travailler <ArrowRight size={14} strokeWidth={2.6} aria-hidden />
               </Link>
               <Button size="sm" variant="ghost" onClick={() => onPostpone(item.id)} aria-label={`Reporter « ${item.title} »`}>
                 Reporter

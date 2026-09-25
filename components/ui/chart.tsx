@@ -113,6 +113,7 @@ export function LineChart({
   max?: number;
   className?: string;
 }) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const measured = points.filter((point) => point.value !== null) as { label: string; value: number }[];
   if (measured.length === 0) return null;
 
@@ -157,10 +158,17 @@ export function LineChart({
             </div>
           ))}
           <svg role="img" aria-label={ariaLabel} viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
+            {/* Le trait et le voile en DÉGRADÉ de palette (g1 → g2), comme la
+                courbe de l'accueil. Identifiants uniques : deux courbes sur un
+                même écran ne se volent plus leur dégradé. */}
             <defs>
-              <linearGradient id="line-chart-veil" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="rgb(var(--accent-ink-rgb))" stopOpacity={0.22} />
-                <stop offset="100%" stopColor="rgb(var(--accent-ink-rgb))" stopOpacity={0} />
+              <linearGradient id={`line-veil-${uid}`} x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="var(--g1)" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="var(--g1)" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id={`line-stroke-${uid}`} x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0" stopColor="var(--g1)" />
+                <stop offset="1" stopColor="var(--g2)" />
               </linearGradient>
             </defs>
             {segments.map((segment, index) =>
@@ -169,7 +177,7 @@ export function LineChart({
                   key={`veil-${index}`}
                   className="reveal"
                   style={{ "--i": 3 } as CSSProperties}
-                  fill="url(#line-chart-veil)"
+                  fill={`url(#line-veil-${uid})`}
                   points={[
                     `${fx(segment[0].index) * VIEW.width},${VIEW.height * 0.94}`,
                     ...toSvg(segment),
@@ -182,8 +190,8 @@ export function LineChart({
               <polyline
                 key={index}
                 fill="none"
-                stroke="rgb(var(--accent-ink-rgb))"
-                strokeWidth={2.25}
+                stroke={`url(#line-stroke-${uid})`}
+                strokeWidth={3}
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 vectorEffect="non-scaling-stroke"
@@ -207,8 +215,8 @@ export function LineChart({
                 <span
                   aria-hidden
                   className={cn(
-                    "reveal block rounded-full border-2 border-[rgb(var(--accent-ink-rgb))] transition-transform duration-200 group-hover:scale-150",
-                    point === lastMeasured ? "h-3 w-3 bg-[rgb(var(--accent-ink-rgb))]" : "h-2.5 w-2.5 bg-panel"
+                    "reveal block rounded-full border-2 border-[var(--g1)] transition-transform duration-200 group-hover:scale-150",
+                    point === lastMeasured ? "h-3.5 w-3.5 bg-white [box-shadow:0_0_0_5px_rgb(var(--g1-rgb)/0.16)]" : cn("h-2.5 w-2.5 bg-panel", points.length > 14 && "scale-0 group-hover:scale-150")
                   )}
                   style={{ "--i": 4 } as CSSProperties}
                 />
@@ -293,11 +301,11 @@ export function PairedBars({
           {bars.map((bar, index) => (
             <div key={bar.id} className="group relative flex h-full min-w-0 flex-1 items-end justify-center gap-1">
               <span
-                className={cn("grow-y w-full max-w-[1.25rem] rounded-t-[0.75rem] bg-zinc-700", bar.planned === null && "invisible")}
+                className={cn("grow-y w-full max-w-[1.25rem] rounded-full bg-hairline/[0.10]", bar.planned === null && "invisible")}
                 style={{ height: bar.planned === null ? "0%" : height(bar.planned), "--i": index } as CSSProperties}
               />
               <span
-                className="grow-y w-full max-w-[1.25rem] rounded-t-[0.75rem] bg-[rgb(var(--accent-ink-rgb))] transition-opacity group-hover:opacity-80"
+                className="bar-grad grow-y w-full max-w-[1.25rem] rounded-full transition-opacity group-hover:opacity-80"
                 style={{ height: height(bar.actual), "--i": index } as CSSProperties}
               />
               <Tip index={index} count={bars.length}>
@@ -407,12 +415,11 @@ export function VolumeBars({
                 <div
                   className={cn(
                     "grow-y w-full transition-colors duration-200",
-                    dense ? "rounded-t-[3px]" : "max-w-[2.5rem] rounded-t-[0.875rem]",
-                    bar.minutes === 0
-                      ? "bg-line"
-                      : last
-                        ? "bg-[rgb(var(--accent-ink-rgb))]"
-                        : "bg-zinc-600 group-hover:bg-[rgb(var(--accent-ink-rgb)/0.7)]"
+                    dense ? "rounded-t-[4px]" : "max-w-[2.5rem] rounded-[0.875rem]",
+                    // Le dégradé de palette partout : plein sur la dernière
+                    // barre (celle qu'on cherche), voilé sur les autres, qui
+                    // s'allument au survol.
+                    bar.minutes === 0 ? "bg-line" : last ? "bar-grad" : "bar-grad-soft"
                   )}
                   style={{ height: bar.minutes > 0 ? `${Math.max(2, (bar.minutes / max) * 100)}%` : "1px", "--i": index } as CSSProperties}
                 />

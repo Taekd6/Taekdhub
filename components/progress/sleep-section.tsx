@@ -76,6 +76,7 @@ export function SleepSection({ checkins, sessions }: { checkins: DailyCheckin[];
         label="Ton état"
         title="Sommeil et énergie"
         description="Ce que tu notes chaque soir dans le check-in."
+        wideAction
         action={
           <SegmentedControl
             size="sm"
@@ -115,7 +116,7 @@ export function SleepSection({ checkins, sessions }: { checkins: DailyCheckin[];
       <Section
         variant="panel"
         title="Tes nuits et tes journées"
-        description={`Les ${CHART_DAYS} derniers jours : la nuit, puis le temps travaillé le lendemain. Survole une colonne pour ses valeurs.`}
+        description={`Les ${CHART_DAYS} derniers jours.`}
       >
         <SleepWorkChart days={series} />
 
@@ -171,7 +172,7 @@ function ScaleFigure({ label, value, low, high }: { label: string; value: number
       </p>
       <div aria-hidden className="mt-3 flex items-center gap-1.5">
         {Array.from({ length: 5 }).map((_, index) => (
-          <span key={index} className={cn("h-2 flex-1 rounded-full", index < filled ? "bg-ink" : "bg-hairline/[0.10]")} />
+          <span key={index} className={cn("h-2 flex-1 rounded-full", index < filled ? "grad-brand" : "bg-hairline/[0.10]")} />
         ))}
       </div>
       <p aria-hidden className="t-meta mt-1.5 flex justify-between text-2xs">
@@ -216,7 +217,7 @@ function SleepWorkChart({ days }: { days: SleepWorkDay[] }) {
               {day.sleepHours !== null ? (
                 <span
                   aria-hidden
-                  className={cn("grow-y w-full max-w-[0.875rem] rounded-t-[4px]", day.sleepHours >= SLEEP_THRESHOLD_HOURS ? "bg-zinc-500" : "bg-zinc-700")}
+                  className={cn("grow-y w-full max-w-[0.875rem] rounded-t-[4px]", day.sleepHours >= SLEEP_THRESHOLD_HOURS ? "bg-[var(--dl-3)]" : "bg-[var(--dl-3)] opacity-40")}
                   style={{ height: `${(day.sleepHours / CHECKIN_SLEEP_MAX) * 100}%`, "--i": index } as CSSProperties}
                 />
               ) : (
@@ -225,7 +226,7 @@ function SleepWorkChart({ days }: { days: SleepWorkDay[] }) {
               {day.minutes !== null ? (
                 <span
                   aria-hidden
-                  className={cn("grow-y w-full max-w-[0.875rem] rounded-t-[4px]", day.minutes > 0 ? "bg-[rgb(var(--accent-ink-rgb))]" : "bg-line")}
+                  className={cn("grow-y w-full max-w-[0.875rem] rounded-t-[4px]", day.minutes > 0 ? "bar-grad" : "bg-line")}
                   style={{ height: day.minutes > 0 ? `${Math.max(3, (day.minutes / maxMinutes) * 100)}%` : "1px", "--i": index } as CSSProperties}
                 />
               ) : (
@@ -257,10 +258,10 @@ function SleepWorkChart({ days }: { days: SleepWorkDay[] }) {
       </div>
       <figcaption className="t-meta mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[0.8125rem]">
         <span className="inline-flex items-center gap-2">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-zinc-500" /> nuit, sur 10 h (pâle : moins de {SLEEP_THRESHOLD_HOURS} h)
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[var(--dl-3)]" /> nuit, sur 10 h (pâle : moins de {SLEEP_THRESHOLD_HOURS} h)
         </span>
         <span className="inline-flex items-center gap-2">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[rgb(var(--accent-ink-rgb))]" /> temps travaillé (max {formatSpan(maxMinutes * 60)})
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[var(--g1)]" /> temps travaillé (max {formatSpan(maxMinutes * 60)})
         </span>
       </figcaption>
     </figure>

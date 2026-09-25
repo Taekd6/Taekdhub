@@ -136,3 +136,38 @@ export function ListRow({
     </div>
   );
 }
+
+/**
+ * PASTILLE DE SCORE — une note (ou un pourcentage) posée sur un disque en
+ * DÉGRADÉ, le chiffre en blanc et en 900. Le dégradé suit la valeur
+ * ramenée sur 1 : vert → cyan au-dessus de 0,7 (`.score-hi`), le dégradé
+ * de marque au milieu (`.score-mid`), orange → rose sous 0,5 (`.score-lo`,
+ * celui des révisions : « à reprendre », jamais « rouge d'échec »).
+ *
+ * `ratio` null (note en attente) : disque en creux, tiret.
+ */
+export function ScoreBadge({
+  ratio,
+  children,
+  size = "md",
+  className,
+}: {
+  ratio: number | null;
+  children: React.ReactNode;
+  size?: "md" | "lg";
+  className?: string;
+}) {
+  const tone = ratio === null ? "bg-inset text-muted" : ratio >= 0.7 ? "score-hi" : ratio >= 0.5 ? "score-mid" : "score-lo";
+  return (
+    <span
+      className={cn(
+        "score-badge tracking-[-0.02em]",
+        tone,
+        size === "md" ? "h-11 w-11 text-[0.9375rem]" : "h-14 w-14 text-lg",
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
+}

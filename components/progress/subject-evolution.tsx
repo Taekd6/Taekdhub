@@ -35,7 +35,8 @@ export function SubjectEvolution({ sessions }: { sessions: WorkSession[] }) {
       variant="panel"
       label="Tes matières"
       title="Où part ton temps"
-      description="Le temps de la période, sa part, et son écart à la période précédente."
+      description="Face à la période précédente."
+      wideAction
       action={
         <SegmentedControl
           size="sm"
@@ -71,7 +72,7 @@ export function SubjectEvolution({ sessions }: { sessions: WorkSession[] }) {
                 <p className="truncate text-[0.9375rem] font-semibold text-ink">{row.subject}</p>
                 <div className="col-span-3 sm:col-span-1">
                   {row.minutes > 0 ? (
-                    <Meter value={row.percent} tone={row.subject === leader ? "accent" : "neutral"} index={index} className="h-2" />
+                    <Meter value={row.percent} tone="accent" barClassName={row.subject === leader ? undefined : "opacity-45"} index={index} className="h-2" />
                   ) : (
                     <span className="t-meta text-2xs">Aucun temps sur cette période</span>
                   )}

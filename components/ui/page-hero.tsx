@@ -1,16 +1,20 @@
+import type { CSSProperties } from "react";
 import { cn } from "@/lib/cn";
 
 /**
- * EN-TÊTE ILLUSTRÉ — le haut d'une page d'apple.com : un petit dessin, un
- * grand titre gras, une phrase en gris. Rien d'autre.
+ * EN-TÊTE D'ÉCRAN — style « Revolut clair » : un grand titre en 900, UNE
+ * ligne grise dessous (« moins de blabla » : la phrase dit ce qu'on trouve
+ * ici, jamais comment ça marche), et le petit dessin de la page posé dans
+ * une pastille BLANCHE RONDE qui flotte, à droite.
  *
- * Le dessin (components/ui/illustrations.tsx) passe AU-DESSUS du titre sur
- * téléphone et à sa GAUCHE sur grand écran, où il y a la place. Il est
+ * Le dessin (components/ui/illustrations.tsx) garde ses traits d'encre et
+ * sa pointe d'accent : sur un disque en dégradé, l'accent disparaîtrait —
+ * d'où le disque blanc, comme les boutons ronds de l'accueil. Il est
  * décoratif : le titre dit déjà ce que montre la page.
  *
  *   illustration  un nœud React — `<Illustration name=… />` ou
  *                 `<SubjectIllustration subject=… />`, 48 à 64 px.
- *   eyebrow       une ligne courte AU-DESSUS du titre (« Suivi par
+ *   eyebrow       une pastille courte AU-DESSUS du titre (« Suivi par
  *                 matière »), pour un écran de détail. Facultative.
  *   actions       à droite du bloc sur grand écran, dessous sur téléphone.
  */
@@ -32,19 +36,23 @@ export function PageHero({
   children?: React.ReactNode;
 }) {
   return (
-    <header className={cn("reveal flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between", className)}>
-      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+    <header className={cn("reveal flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className)}>
+      <div className="flex min-w-0 items-center gap-4">
+        <div className="min-w-0 flex-1">
+          {eyebrow && <div className="mb-2 inline-flex max-w-full items-center rounded-full bg-accent/10 px-3 py-1 text-[0.8125rem] font-extrabold text-accent">{eyebrow}</div>}
+          <h1 className="t-display">{title}</h1>
+          {lede && <p className="mt-1.5 max-w-[46ch] text-[0.9375rem] font-semibold leading-snug text-muted sm:text-base">{lede}</p>}
+          {children}
+        </div>
         {illustration && (
-          <span aria-hidden className="grid h-20 w-20 shrink-0 place-items-center rounded-[1.75rem] bg-inset text-ink sm:h-24 sm:w-24">
+          <span
+            aria-hidden
+            className="floaty grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[var(--action-bg)] text-ink [box-shadow:var(--action-lift)] sm:order-first sm:h-20 sm:w-20 [&_svg]:h-10 [&_svg]:w-10 sm:[&_svg]:h-12 sm:[&_svg]:w-12"
+            style={{ "--i": 1 } as CSSProperties}
+          >
             {illustration}
           </span>
         )}
-        <div className="min-w-0">
-          {eyebrow && <div className="t-label mb-1.5">{eyebrow}</div>}
-          <h1 className="t-display">{title}</h1>
-          {lede && <p className="t-lede mt-2 max-w-[56ch]">{lede}</p>}
-          {children}
-        </div>
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </header>

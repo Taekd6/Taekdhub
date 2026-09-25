@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useId, type CSSProperties } from "react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -66,13 +66,22 @@ export function Ring({
   value,
   size = 76,
   strokeWidth = 6,
+  variant = "grad",
   children,
 }: {
   value: number;
   size?: number;
   strokeWidth?: number;
+  /**
+   * `grad`  : l'arc en dégradé de palette (g1 → g2), sur fond clair ;
+   * `white` : l'arc blanc sur piste translucide, POSÉ SUR UNE CARTE EN
+   *           DÉGRADÉ (galerie des matières, héros d'une matière).
+   */
+  variant?: "grad" | "white";
   children?: React.ReactNode;
 }) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const white = variant === "white";
   const clamped = Math.min(100, Math.max(0, Number.isFinite(value) ? value : 0));
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -80,14 +89,22 @@ export function Ring({
   return (
     <div className="relative grid shrink-0 place-items-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90" aria-hidden>
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgb(var(--hairline-rgb) / 0.07)" strokeWidth={strokeWidth} />
+        {!white && (
+          <defs>
+            <linearGradient id={`ring-${uid}`} x1="0" x2="1" y1="1" y2="0">
+              <stop offset="0" stopColor="var(--g2)" />
+              <stop offset="1" stopColor="var(--g1)" />
+            </linearGradient>
+          </defs>
+        )}
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={white ? "rgb(255 255 255 / 0.25)" : "rgb(var(--hairline-rgb) / 0.07)"} strokeWidth={strokeWidth} />
         {clamped > 0 && (
           <circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="rgb(var(--accent-ink-rgb))"
+            stroke={white ? "#fff" : `url(#ring-${uid})`}
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             strokeDashoffset={circumference - (clamped / 100) * circumference}

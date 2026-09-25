@@ -66,7 +66,7 @@ export function SubjectTargetList({
                   <span className="text-muted"> / {formatMinutesSpan(row.targetMinutes)}</span>
                 </span>
               </div>
-              <Meter value={row.percent} color={subjectMeta[row.subject].fill} index={index} className={compact ? "mt-1" : "mt-2"} />
+              <Meter value={row.percent} index={index} className={compact ? "mt-1" : "mt-2"} />
               {!compact && (
                 <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-2xs">
                   <span className={cn("font-bold", pace.className)}>{pace.label}</span>

@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PageHero } from "@/components/ui/page-hero";
 import { Illustration } from "@/components/ui/illustrations";
+import { DateBadge } from "@/components/ui/list-card";
 import { EmptyState, Skeleton } from "@/components/ui/state";
 import { HistoryFilters } from "@/components/history/history-filters";
 import { HistorySummary } from "@/components/history/history-summary";
@@ -144,41 +145,42 @@ export function SessionHistory() {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="mx-auto max-w-[68rem] space-y-8">
       <PageHero
         title="Séances"
-        lede="La trace exacte du travail accompli : ce qui a été travaillé, quand, et combien de temps."
+        lede="Tout ce que tu as travaillé, jour par jour."
         illustration={<Illustration name="chrono" size={56} />}
       />
-
-      {/* Les filtres appartiennent au bord de ce qu'ils filtrent : en tête du
-          journal, jamais dans le rail — sur téléphone, le rail passe sous cent
-          lignes. */}
-      <HistoryFilters filters={filters} onChange={updateFilters} subjects={subjectCounts} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.38fr)] lg:gap-8">
         <aside aria-label="Synthèse de la période" className="lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)] lg:order-2 lg:h-fit">
           <HistorySummary summary={summary} />
         </aside>
 
-        <section aria-label="Journal des séances" className="min-w-0 lg:order-1">
+        <section aria-label="Journal des séances" className="min-w-0 space-y-5 lg:order-1">
+          {/* Les filtres appartiennent au bord de ce qu'ils filtrent : en tête
+              du journal, SOUS la carte de synthèse sur téléphone (la synthèse
+              ouvre l'écran, comme le héros de l'accueil), jamais dans le rail. */}
+          <HistoryFilters filters={filters} onChange={updateFilters} subjects={subjectCounts} />
           <h2 className="sr-only">
             {sorted.length} séance{sorted.length > 1 ? "s" : ""}
           </h2>
           {sorted.length ? (
             <div className="space-y-4">
               {visibleDays.map((day, index) => (
-                <section key={day.key} className="surface reveal p-2 sm:p-3" style={{ "--i": Math.min(index, 4) } as React.CSSProperties}>
-                  {/* L'en-tête du jour : son nom, son total. */}
-                  <h3 className="flex items-baseline justify-between gap-3 px-3 pb-2 pt-3 sm:px-4">
-                    <span className="t-subhead first-letter:uppercase">{formatDayLabel(day.date)}</span>
-                    <span className="tabular shrink-0 whitespace-nowrap text-[0.9375rem] font-bold text-ink">
+                <section key={day.key} className="surface reveal px-1.5 py-2" style={{ "--i": Math.min(index, 4) } as React.CSSProperties}>
+                  {/* L'en-tête du jour : la pastille datée en dégradé (celle
+                      des échéances), son nom, son total. */}
+                  <h3 className="flex items-center gap-3 px-3 pb-1 pt-2">
+                    <DateBadge date={day.date} tone={index} />
+                    <span className="min-w-0 flex-1 truncate text-lg font-black tracking-[-0.01em] text-ink first-letter:uppercase">{formatDayLabel(day.date)}</span>
+                    <span className="tabular shrink-0 whitespace-nowrap rounded-full bg-accent/10 px-3 py-1.5 text-[0.8125rem] font-black text-accent">
                       {formatSpan(day.seconds)}
                       {/* Les mots disparaissent sous `sm` : à 320 px, ils
                           faisaient déborder toute la page horizontalement.
                           Les deux chiffres, eux, restent. */}
                       {isToday(day.date) && plannedToday > 0 && (
-                        <span className="font-medium text-subtle">
+                        <span className="font-bold text-accent/70">
                           <span className="hidden sm:inline"> réalisées</span> · {formatSpan(plannedToday * 60)}
                           <span className="hidden sm:inline"> encore au planning</span>
                         </span>
@@ -229,7 +231,7 @@ export function SessionHistory() {
   );
 }
 
-const dayFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+const dayFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long" });
 
 /**
  * En-tête d'un jour du journal.
@@ -244,6 +246,8 @@ function formatDayLabel(date: Date): string {
   const days = Math.round((startOfDay(new Date()) - startOfDay(date)) / 86400000);
   if (days === 0) return "Aujourd'hui";
   if (days === 1) return "Hier";
+  // Le jour de la semaine seul : la pastille datée à sa gauche porte déjà
+  // le quantième et le mois (« mercredi 23 septembre » se coupait à 390 px).
   return dayFormatter.format(date);
 }
 

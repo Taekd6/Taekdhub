@@ -49,7 +49,7 @@ export function ThemePicker() {
   }
 
   return (
-    <Group title="Apparence" footer="Une ambiance en dégradé pour les cartes, la courbe et les boutons. Le texte reste toujours lisible, quelle que soit la palette.">
+    <Group title="Apparence" footer="Le dégradé des cartes, de la courbe et des boutons.">
       <Row label="Mode" stack>
         <div role="group" aria-label="Mode d'apparence" className="flex w-full items-center gap-0.5 rounded-full bg-inset p-1 sm:w-auto">
           {THEME_MODES.map((option) => {
@@ -90,7 +90,9 @@ export function ThemePicker() {
               >
                 <span
                   className={cn(
-                    "sheen relative grid aspect-square w-full max-w-[4.5rem] place-items-center overflow-hidden rounded-[1.25rem] ring-offset-[3px] ring-offset-panel",
+                    // Un DISQUE en dégradé, comme les boutons ronds : la
+                    // palette se choisit du doigt, pas dans une liste.
+                    "sheen relative grid aspect-square w-full max-w-[4.25rem] place-items-center overflow-hidden rounded-full ring-offset-[3px] ring-offset-[var(--surface-bg)]",
                     active && "ring-[2.5px] ring-ink"
                   )}
                   style={{
@@ -99,9 +101,9 @@ export function ThemePicker() {
                   }}
                 >
                   {/* Les deux premières cartes de la palette, en petit. */}
-                  <span aria-hidden className="absolute bottom-2 right-2 flex gap-1">
+                  <span aria-hidden className="absolute bottom-[18%] right-[14%] flex -space-x-1">
                     {option.cards.slice(0, 2).map(([a, b]) => (
-                      <span key={a} className="h-3 w-3 rounded-[5px] ring-2 ring-white/60" style={{ background: `linear-gradient(135deg, ${a}, ${b})` }} />
+                      <span key={a} className="h-3 w-3 rounded-full ring-2 ring-white/70" style={{ background: `linear-gradient(135deg, ${a}, ${b})` }} />
                     ))}
                   </span>
                   {active && (

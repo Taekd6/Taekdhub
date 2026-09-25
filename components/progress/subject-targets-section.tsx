@@ -36,7 +36,7 @@ export function SubjectTargetsSection({ sessions, preferences }: { sessions: Wor
       variant="panel"
       label="Cette semaine"
       title="Ton budget par matière"
-      description="Le temps noté depuis lundi, face à ce que tu t'es fixé pour chaque matière."
+      description="Depuis lundi, face à ton budget."
       action={
         <Link href="/settings#budgets" className={buttonVariants({ variant: "link", size: "sm" })}>
           Régler les budgets

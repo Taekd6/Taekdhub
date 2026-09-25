@@ -86,12 +86,12 @@ export function ChapterList({
           pour estimer quand tu risques de les oublier.
         </p>
       ) : (
-        <ul className="divide-y divide-line border-y border-line" aria-label="Chapitres suivis">
+        <ul className="divide-y divide-line border-t border-line" aria-label="Chapitres suivis">
           {active.map(({ chapter, retrievability }) => {
             const reminder = reminderDay(chapter);
             const selected = selectedId === chapter.id;
             return (
-              <li key={chapter.id} className={cn("py-4", selected && "-mx-3 rounded-xl bg-inset px-3")} data-chapter={chapter.title}>
+              <li key={chapter.id} className={cn("py-4 transition-colors", selected && "-mx-3 rounded-[1.125rem] bg-accent/[0.07] px-3")} data-chapter={chapter.title}>
                 {editing === chapter.id ? (
                   <EditChapterForm
                     chapter={chapter}
@@ -105,36 +105,32 @@ export function ChapterList({
                 ) : (
                   <>
                     <div className="flex items-start gap-3">
-                      {!subject && (
-                        <span className="translate-y-0.5">
-                          <SubjectAvatar subject={chapter.subject} size="sm" />
-                        </span>
-                      )}
+                      {!subject && <SubjectAvatar subject={chapter.subject} size="md" />}
                       <div className="min-w-0 flex-1">
-                        {onSelect ? (
-                          <button
-                            type="button"
-                            onClick={() => onSelect(chapter.id)}
-                            aria-pressed={selected}
-                            className="break-words text-left font-semibold text-ink hover:underline"
-                          >
-                            {chapter.title}
-                          </button>
-                        ) : (
-                          <p className="break-words font-semibold text-ink">{chapter.title}</p>
-                        )}
-                        <div className="mt-2 flex items-center gap-3">
-                          <RetentionBar retrievability={retrievability} className="min-w-0 flex-1 sm:max-w-xs" />
-                          <span className="tabular shrink-0 text-2xs font-semibold text-ink">{formatChance(retrievability)}</span>
+                        <div className="flex items-baseline justify-between gap-3">
+                          {onSelect ? (
+                            <button
+                              type="button"
+                              onClick={() => onSelect(chapter.id)}
+                              aria-pressed={selected}
+                              className="min-w-0 break-words text-left text-[0.9375rem] font-extrabold text-ink hover:underline"
+                            >
+                              {chapter.title}
+                            </button>
+                          ) : (
+                            <p className="min-w-0 break-words text-[0.9375rem] font-extrabold text-ink">{chapter.title}</p>
+                          )}
+                          <span className="tabular shrink-0 text-[0.9375rem] font-black text-ink">{formatChance(retrievability)}</span>
                         </div>
-                        <p className="t-meta mt-1 text-2xs">
+                        <RetentionBar retrievability={retrievability} className="mt-2" />
+                        <p className="mt-1.5 text-[0.8125rem] font-bold text-subtle">
                           <span className="sr-only">{chanceSentence(retrievability)}. </span>
                           {reminder <= today ? "À revoir maintenant" : `Prochain rappel ${formatDay(reminder, today)}`} · appris {formatDay(chapter.learnedAt, today)}
                           {chapter.reviews.length > 0 && ` · ${chapter.reviews.length} révision${chapter.reviews.length > 1 ? "s" : ""}`}
                         </p>
                       </div>
                     </div>
-                    <div className={cn("mt-3 flex flex-wrap items-center gap-2", !subject && "pl-10")}>
+                    <div className={cn("mt-3 flex flex-wrap items-center gap-2", !subject && "pl-11")}>
                       <Button variant="secondary" size="sm" onClick={() => setRating(rating === chapter.id ? null : chapter.id)} aria-expanded={rating === chapter.id}>
                         C&apos;est révisé
                       </Button>
@@ -147,7 +143,7 @@ export function ChapterList({
                       </Button>
                     </div>
                     {rating === chapter.id && (
-                      <div className={cn(!subject && "pl-10")}>
+                      <div className={cn(!subject && "pl-11")}>
                         <RatingPanel chapter={chapter} today={today} onRate={(value) => rate(chapter, value)} onCancel={() => setRating(null)} />
                       </div>
                     )}

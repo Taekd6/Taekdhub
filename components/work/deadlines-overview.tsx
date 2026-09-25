@@ -4,7 +4,10 @@ import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import { CountUp } from "@/components/ui/count-up";
 import { Illustration } from "@/components/ui/illustrations";
+import { GradientCard } from "@/components/ui/gradient-card";
 import { Split } from "@/components/ui/layout";
+import { BlockHeader } from "@/components/ui/list-card";
+import { PageHero } from "@/components/ui/page-hero";
 import { Section } from "@/components/ui/section";
 import { Notice, Skeleton } from "@/components/ui/state";
 import { DayPlan } from "@/components/work/day-plan";
@@ -112,46 +115,66 @@ export function DeadlinesOverview() {
   const weekPlanned = week.reduce((sum, day) => sum + day.load.plannedMinutes, 0);
   const groups = groupByPeriod(open);
 
+  /*
+   * MISE EN PAGE « REVOLUT CLAIR » (`Split`, components/ui/layout.tsx).
+   * Une colonne sur téléphone : l'en-tête, la carte-héros en dégradé (le
+   * reste à faire en très grand, qui compte), la saisie, la frise des
+   * échéances en cartes-listes blanches, puis la semaine. Sur grand écran,
+   * la semaine passe dans le rail collant à droite, dans sa propre tuile.
+   */
   return (
     <Split
       railLabel="Les 7 prochains jours"
       rail={
-        <div>
-          <h2 className="t-subhead">Les 7 prochains jours</h2>
-          <p className="t-meta mt-1">
-            <span className="tabular font-semibold text-ink">{formatSpan(weekPlanned * 60)}</span> prévues sur{" "}
-            <span className="tabular">{formatSpan(weekCapacity * 60)}</span> disponibles.
+        /* LES 7 PROCHAINS JOURS — la capacité en barres à dégradé, puis le
+           détail jour par jour. */
+        <>
+          <h2 className="text-xl font-black tracking-[-0.02em] text-ink">Les 7 prochains jours</h2>
+          <p className="mt-1 text-[0.875rem] font-semibold text-muted">
+            <span className="tabular font-extrabold text-ink">{formatSpan(weekPlanned * 60)}</span> prévues sur{" "}
+            <span className="tabular">{formatSpan(weekCapacity * 60)}</span>
           </p>
-          <div className="mt-4 divide-y divide-line border-y border-line">
+          <CapacityBars days={week} />
+          <div className="mt-4 divide-y divide-line border-t border-line">
             {week.map((day, index) => (
               <DayPlan key={day.date} day={day} label={dayLabel(day.date, index)} dense />
             ))}
           </div>
-        </div>
+        </>
       }
     >
-      <div className="space-y-12">
-        <header className="reveal">
-          <Illustration name="echeances" size={56} className="text-muted" />
-          <h1 className="t-display mt-5">Échéances.</h1>
-          <p className="t-lede mt-3 max-w-[46ch]">Ce que tu as à rendre, ce que ça représente encore, et quand le travailler.</p>
+      <div className="min-w-0 space-y-8 sm:space-y-10">
+        <PageHero title="Échéances" lede="Ce que tu as à rendre, et quand le travailler." illustration={<Illustration name="echeances" size={48} />} />
 
-          {/* TROIS CHIFFRES — pas des tuiles : des nombres posés sur le fond,
-              séparés par un filet, comme les caractéristiques d'une fiche
-              produit. Ils montent quand on les voit. */}
-          <dl className="mt-8 grid grid-cols-3 divide-x divide-line border-y border-line">
-            <Figure label="Reste à faire" value={totalRemaining} format={(minutes) => formatSpan(minutes * 60)} />
-            <Figure label={open.length > 1 ? "Échéances" : "Échéance"} value={open.length} />
-            <Figure label="Libre sur 7 j" value={Math.max(0, weekCapacity - weekPlanned)} format={(minutes) => formatSpan(minutes * 60)} />
+        {/* LES TROIS CHIFFRES, dans une carte en dégradé : le reste à faire en
+            très grand, puis deux pastilles de verre. Ils montent quand on
+            les voit. */}
+        <GradientCard tone="brand" tilt={false} className="reveal p-5 sm:p-7" style={{ "--i": 1 } as CSSProperties}>
+          <dl>
+            <div>
+              <dt className="text-[0.8125rem] font-bold opacity-80">Reste à faire</dt>
+              <dd className="t-card-figure mt-1 whitespace-nowrap">
+                <CountUp value={totalRemaining} duration={1400} format={(minutes) => formatSpan(minutes * 60)} />
+              </dd>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2 text-[0.8125rem] font-extrabold">
+              <div className="flex items-baseline gap-1.5 rounded-full bg-white/20 px-3 py-1.5">
+                <dd className="tabular text-[0.9375rem] font-black">
+                  <CountUp value={open.length} />
+                </dd>
+                <dt>{open.length > 1 ? "échéances" : "échéance"}</dt>
+              </div>
+              <div className="flex items-baseline gap-1.5 rounded-full bg-white/20 px-3 py-1.5">
+                <dd className="tabular text-[0.9375rem] font-black">
+                  <CountUp value={Math.max(0, weekCapacity - weekPlanned)} format={(minutes) => formatSpan(minutes * 60)} />
+                </dd>
+                <dt>libres sur 7 j</dt>
+              </div>
+            </div>
           </dl>
-        </header>
+        </GradientCard>
 
-        <Section
-          variant="panel"
-          label="Ajouter"
-          title="Qu'est-ce que tu as à faire ?"
-          description="Le titre suffit — TaekdHub s'occupe de caser le reste dans tes journées."
-        >
+        <Section variant="panel" label="Ajouter" title="Qu'est-ce que tu as à faire ?" description="Le titre suffit : le reste se case tout seul.">
           <WorkItemForm workItems={workItems} sessions={sessions} onCreate={create} />
         </Section>
 
@@ -171,13 +194,12 @@ export function DeadlinesOverview() {
         {/* CE QUI NE TIENT PAS, EN TÊTE — jamais masqué, jamais glissé après
             l'échéance en douce. Chaque ligne cite le temps qui manque. */}
         {plan.unplaceable.length > 0 && (
-          <section aria-labelledby="arbitrer-titre" className="reveal rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] p-6 sm:p-8">
+          <section aria-labelledby="arbitrer-titre" className="reveal rounded-[1.625rem] border border-amber-400/30 bg-amber-400/[0.06] p-5 sm:p-7">
             <h2 id="arbitrer-titre" className="t-heading">
               Ce qui ne rentre pas dans tes journées
             </h2>
-            <p className="t-meta mt-1.5 max-w-[60ch]">
-              Ton échéance n&apos;a pas été déplacée — c&apos;est à toi de décider. Réduire une autre tâche, libérer du temps, ou accepter de
-              rendre moins.
+            <p className="mt-1 max-w-[60ch] text-[0.875rem] font-semibold text-muted">
+              L&apos;échéance n&apos;a pas bougé : à toi d&apos;arbitrer.
             </p>
             <ul className="mt-4 divide-y divide-line">
               {plan.unplaceable.map(({ item, reason }) => (
@@ -192,17 +214,29 @@ export function DeadlinesOverview() {
 
         {/* LA FRISE — une tuile par période, dans l'ordre du temps. */}
         {groups.length > 0 ? (
-          <div className="space-y-10">
+          <div className="space-y-6">
             {groups.map((group, index) => (
-              <section key={group.id} aria-labelledby={`periode-${group.id}`} className="reveal" style={{ "--i": index } as CSSProperties}>
-                <h2 id={`periode-${group.id}`} className={`t-heading ${group.id === "retard" ? "text-rose-300" : ""}`}>
-                  {group.title} <span className="tabular font-semibold text-subtle">· {group.items.length}</span>
-                </h2>
-                <ul className="surface mt-4 divide-y divide-line px-5 sm:px-8">
-                  {group.items.map((priority) => (
+              <section
+                key={group.id}
+                aria-labelledby={`periode-${group.id}`}
+                className="surface reveal px-1.5 py-2"
+                style={{ "--i": index } as CSSProperties}
+              >
+                <BlockHeader
+                  id={`periode-${group.id}`}
+                  className={`px-3 pb-1 pt-2.5 ${group.id === "retard" ? "[&_h2]:text-rose-300" : ""}`}
+                  title={
+                    <>
+                      {group.title} <span className="tabular font-bold text-subtle">· {group.items.length}</span>
+                    </>
+                  }
+                />
+                <ul className="divide-y divide-line px-3">
+                  {group.items.map((priority, position) => (
                     <WorkItemRow
                       key={priority.item.id}
                       priority={priority}
+                      tone={position}
                       sessions={sessions}
                       onComplete={complete}
                       onAbandon={abandon}
@@ -218,24 +252,59 @@ export function DeadlinesOverview() {
           <div className="reveal flex flex-col items-center py-12 text-center">
             <Illustration name="echeances" size={72} className="text-subtle" />
             <p className="t-heading mt-6">Rien à rendre pour l&apos;instant.</p>
-            <p className="t-meta mt-2 max-w-[44ch]">
-              Note un DM, un DS ou une révision ci-dessus : TaekdHub le répartira sur tes journées et te dira s&apos;il tient.
-            </p>
+            <p className="t-meta mt-2 max-w-[44ch]">Note un DM, un DS ou une révision ci-dessus : il se répartit sur tes journées.</p>
           </div>
         )}
       </div>
+
     </Split>
   );
 }
 
-function Figure({ label, value, format }: { label: string; value: number; format?: (value: number) => string }) {
+/**
+ * LA CAPACITÉ DE LA SEMAINE EN BARRES — une colonne par jour : sa hauteur
+ * est ce que la journée peut porter (le creux gris), le dégradé ce qui y
+ * est prévu. Orange → rose quand la journée déborde : c'est le seul jour
+ * qui demande une décision. Les barres poussent en cascade à l'entrée.
+ */
+function CapacityBars({ days }: { days: { date: string; load: { plannedMinutes: number; capacityMinutes: number } }[] }) {
+  const max = Math.max(1, ...days.map((day) => Math.max(day.load.capacityMinutes, day.load.plannedMinutes)));
   return (
-    <div className="min-w-0 px-3 py-4 first:pl-0 sm:px-6">
-      <dt className="t-label truncate">{label}</dt>
-      <dd className="t-figure mt-1.5 text-[clamp(1.25rem,0.9rem+1.6vw,2rem)]">
-        <CountUp value={value} format={format} />
-      </dd>
-    </div>
+    <figure
+      className="mt-5"
+      role="img"
+      aria-label={`Capacité des 7 prochains jours : ${days
+        .map((day, index) => `${dayLabel(day.date, index)}, ${formatSpan(day.load.plannedMinutes * 60)} prévues sur ${formatSpan(day.load.capacityMinutes * 60)}`)
+        .join(" ; ")}.`}
+    >
+      <div aria-hidden className="flex h-28 items-end gap-2">
+        {days.map((day, index) => {
+          const { plannedMinutes, capacityMinutes } = day.load;
+          const over = plannedMinutes > capacityMinutes;
+          const track = (Math.max(capacityMinutes, plannedMinutes) / max) * 100;
+          const fill = capacityMinutes > 0 ? Math.min(100, (plannedMinutes / Math.max(capacityMinutes, plannedMinutes)) * 100) : plannedMinutes > 0 ? 100 : 0;
+          return (
+            <div key={day.date} className="group flex h-full min-w-0 flex-1 items-end justify-center" title={`${dayLabel(day.date, index)} — ${formatSpan(plannedMinutes * 60)} / ${formatSpan(capacityMinutes * 60)}`}>
+              <div className="relative flex w-full max-w-[1.75rem] items-end overflow-hidden rounded-[0.625rem] bg-hairline/[0.07]" style={{ height: `${Math.max(track, 6)}%` }}>
+                {fill > 0 && (
+                  <span
+                    className={`grow-y block w-full rounded-[0.625rem] ${over ? "bg-[image:var(--review-grad)]" : "bar-grad"}`}
+                    style={{ height: `${Math.max(fill, 8)}%`, "--i": index } as CSSProperties}
+                  />
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div aria-hidden className="mt-2 flex gap-2">
+        {days.map((day, index) => (
+          <span key={day.date} className={`min-w-0 flex-1 text-center text-2xs font-bold ${index === 0 ? "text-ink" : "text-subtle"}`}>
+            {index === 0 ? "Auj." : WEEKDAYS[new Date(`${day.date}T00:00:00`).getDay()].slice(0, 3)}
+          </span>
+        ))}
+      </div>
+    </figure>
   );
 }
 

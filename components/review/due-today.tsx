@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useMemo } from "react";
-import { buttonVariants } from "@/components/ui/button";
+import { CountUp } from "@/components/ui/count-up";
+import { GradientCard } from "@/components/ui/gradient-card";
 import { cn } from "@/lib/cn";
 import { dueReviewItems, formatDueDay, nextReviewDay } from "@/lib/spaced-repetition";
 import type { ReviewItem } from "@/lib/storage";
@@ -57,19 +57,26 @@ export function DueToday({
     );
   }
 
+  // La bannière des révisions de l'accueil (components/home/cards.tsx#ReviewBanner) :
+  // le dégradé orange → rose, le compte dans un carré de verre, « Go » en
+  // pastille blanche. La carte entière est le lien.
   return (
-    <div className={cn("flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-line bg-panel px-4 py-3", className)}>
-      <div className="min-w-0">
-        <p className="t-subhead">
-          Révisions du jour · <span className="tabular">{due}</span>
-        </p>
-        <p className="t-meta mt-0.5 text-2xs">
-          {due > 1 ? `${due} entrées du carnet à` : "Une entrée du carnet à"} retrouver de tête — quelques minutes.
-        </p>
-      </div>
-      <Link href={href} className={cn(buttonVariants({ variant: "secondary", size: "sm" }), "shrink-0")}>
-        Réviser <ArrowRight size={14} aria-hidden />
-      </Link>
-    </div>
+    <GradientCard
+      tone="review"
+      href={href}
+      className={cn("flex items-center gap-3.5 p-[1.125rem]", className)}
+      aria-label={`${due} ${due > 1 ? "entrées" : "entrée"} du carnet à revoir aujourd'hui${subject ? ` en ${subject}` : ""}, environ ${due * 2} minutes. Réviser.`}
+    >
+      <span aria-hidden className="grid h-[3.25rem] w-[3.25rem] shrink-0 place-items-center rounded-2xl bg-white/20 text-2xl font-black tabular">
+        <CountUp value={due} />
+      </span>
+      <span aria-hidden className="min-w-0 flex-1">
+        <span className="t-card-title block">Révisions du jour</span>
+        <span className="block truncate text-[0.8125rem] font-bold opacity-80">≈ {due * 2} min, de tête</span>
+      </span>
+      <span aria-hidden className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white px-4 py-2.5 text-sm font-black text-[#0b0b14]">
+        Go <ArrowRight size={14} strokeWidth={2.8} />
+      </span>
+    </GradientCard>
   );
 }

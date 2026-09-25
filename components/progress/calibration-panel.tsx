@@ -108,7 +108,7 @@ export function CalibrationPanel({ grades, className }: { grades: Grade[]; class
     <Section
       variant="panel"
       title="Tes pronostics face à tes notes"
-      description="Ce que tu pensais avoir en sortant de l'épreuve, face à la note rendue."
+      description="Ton pronostic face à la note rendue."
       className={className}
     >
       {!overall.sufficient ? (
@@ -191,7 +191,7 @@ function CalibrationChart({ points }: { points: CalibrationPoint[] }) {
                     aria-hidden
                     className={cn(
                       "absolute left-1/2 w-full max-w-[1rem] -translate-x-1/2",
-                      over ? "grow-y bottom-1/2 rounded-t-[0.75rem] bg-[rgb(var(--accent-ink-rgb))]" : "grow-y top-1/2 rounded-b-md bg-zinc-600"
+                      over ? "bar-grad grow-y bottom-1/2 rounded-t-[0.75rem]" : "grow-y top-1/2 rounded-b-[0.75rem] bg-[var(--review-a)] opacity-80"
                     )}
                     style={{ height, "--i": index, transformOrigin: over ? undefined : "center top" } as React.CSSProperties}
                   />
@@ -228,10 +228,10 @@ function CalibrationChart({ points }: { points: CalibrationPoint[] }) {
       </div>
       <figcaption className="t-meta mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[0.8125rem]">
         <span className="inline-flex items-center gap-2">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[rgb(var(--accent-ink-rgb))]" /> surestimé
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[var(--g1)]" /> surestimé
         </span>
         <span className="inline-flex items-center gap-2">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-zinc-600" /> sous-estimé
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[var(--review-a)]" /> sous-estimé
         </span>
         <span className="inline-flex items-center gap-2">
           <span aria-hidden className="h-2 w-2 rounded-full bg-ink" /> vu juste

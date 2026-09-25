@@ -10,7 +10,7 @@ import { Group, Row } from "@/components/ui/grouped";
  */
 export function OnboardingRestartEntry() {
   return (
-    <Group title="Premiers pas" footer="Reprend tes objectifs, tes heures par matière, ton temps libre et la date des concours, un écran à la fois.">
+    <Group title="Premiers pas" footer="Tes réglages, un écran à la fois.">
       <Row
         label="Refaire la configuration"
         hint="L'accueil guidé du premier lancement"

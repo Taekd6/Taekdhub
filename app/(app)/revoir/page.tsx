@@ -9,7 +9,7 @@ export const metadata = { title: "À revoir — TaekdHub" };
  * (voir components/app-nav.tsx), et le carnet se remplit là où l'on est
  * déjà, pas dans un lieu où il faudrait se rendre.
  *
- * Titre porté par la composition elle-même (voir `PageBar`).
+ * Titre porté par la composition elle-même (voir `PageHero`, components/ui/page-hero.tsx).
  */
 export default function RevoirPage() {
   return <ReviewNotebook />;

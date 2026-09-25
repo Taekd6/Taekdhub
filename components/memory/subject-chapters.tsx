@@ -32,7 +32,7 @@ export function SubjectChapters({
       <Section
         variant="panel"
         title="Chapitres"
-        description="Ce que tu as appris, et combien de chances tu as de t'en souvenir aujourd'hui (estimation FSRS)."
+        description="Ta chance de t'en souvenir aujourd'hui."
         action={
           <Link href="/memoire" className={buttonVariants({ variant: "link", size: "sm" })}>
             Ma mémoire <ArrowRight size={14} aria-hidden />

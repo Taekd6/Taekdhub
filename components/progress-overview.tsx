@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type CSSProperties } from "react";
 import { Section } from "@/components/ui/section";
 import { Stat, StatRow } from "@/components/ui/stat";
 import { Skeleton } from "@/components/ui/state";
 import { Tabs } from "@/components/ui/tabs";
 import { CountUp } from "@/components/ui/count-up";
-import { Meter } from "@/components/ui/progress";
-import { Illustration } from "@/components/ui/illustrations";
-import { PageHero } from "@/components/ui/page-hero";
+import { Ring } from "@/components/ui/progress";
+import { GradientCard } from "@/components/ui/gradient-card";
+import { WeekCurve } from "@/components/home/hero";
 import { WeekSection } from "@/components/progress/week-section";
 import { ConsistencySection } from "@/components/progress/consistency-section";
 import { EvolutionOverview } from "@/components/progress/evolution-overview";
@@ -23,6 +23,7 @@ import { computeStreak } from "@/lib/gamification";
 import { computeWeeklyReview } from "@/lib/weekly-review";
 import type { Preferences, WeekSnapshot, WorkItem } from "@/lib/storage";
 import { totalSeconds } from "@/lib/study";
+import { weekDayStacks } from "@/lib/day-stack";
 import { computePeriodTotals, computeTrackingOverview } from "@/lib/tracking";
 import { compareToPreviousWeek, findPreviousWeekSnapshot } from "@/lib/week-snapshot";
 import { formatMinutesSpan, formatSpan } from "@/lib/utils";
@@ -39,10 +40,13 @@ const TAB_IDS = ["temps", "notes", "regularite", "sommeil", "bilan"];
  * savoir, en ouvrant la page, ce qu'elle contenait plus bas. Refonte
  * « Apple » :
  *
- *   1. UN EN-TÊTE QUI RÉPOND TOUT DE SUITE. Quatre grands chiffres qui
- *      montent quand on les voit (`CountUp`) : cette semaine, la série en
- *      cours, la moyenne par jour, l'objectif de la semaine. C'est ce qu'on
- *      vient chercher neuf fois sur dix.
+ *   1. UN HÉROS QUI RÉPOND TOUT DE SUITE (style « Revolut clair », comme
+ *      l'accueil). Le temps de la semaine en TRÈS grand, qui compte jusqu'à
+ *      sa valeur (`CountUp`), la courbe des minutes jour par jour qui se
+ *      dessine dessous (`WeekCurve`, la même que l'accueil), puis trois
+ *      tuiles : la série, la moyenne par jour, et l'objectif de la semaine
+ *      en carte à dégradé avec son anneau. C'est ce qu'on vient chercher
+ *      neuf fois sur dix.
  *   2. DES ONGLETS pour le reste (`Tabs`, ancrés dans l'URL : /progress#notes
  *      ouvre directement les notes). Cinq questions distinctes, cinq
  *      onglets : combien je travaille (Temps), ce que disent mes notes
@@ -74,6 +78,7 @@ export function ProgressOverview() {
       todayMinutes: overview.todayMinutes,
       streak: computeStreak(sessions),
       dailyAverage: week.dailyAverage,
+      week: weekDayStacks(sessions, now),
       totalTime: totalSeconds(sessions),
       sessionCount: sessions.length,
     };
@@ -113,32 +118,66 @@ export function ProgressOverview() {
   const goalPercent = goal > 0 ? Math.round((hero.weekMinutes / goal) * 100) : 0;
 
   return (
-    <div className="space-y-10 sm:space-y-12">
-      <PageHero
-        title="Mon évolution"
-        lede="Ton temps, tes notes, ton sommeil — et ce qu'ils racontent ensemble."
-        illustration={<Illustration name="chrono" size={56} />}
-      />
+    <div className="mx-auto max-w-[68rem] space-y-10 sm:space-y-12">
+      {/* ── LE HÉROS : la semaine en énorme, sa courbe, trois tuiles ──
+          Sur grand écran, le chiffre et la courbe à gauche dans une tuile,
+          les trois tuiles empilées à droite. */}
+      <div className="grid gap-5 lg:grid-cols-12 lg:items-stretch lg:gap-6">
+        <section aria-labelledby="progres-titre" className="min-w-0 lg:surface lg:col-span-7 lg:px-2 lg:pb-4 lg:pt-7">
+          <div className="reveal text-center">
+            <h1 id="progres-titre" className="text-sm font-bold text-muted">
+              Mon évolution · cette semaine
+            </h1>
+            <p className="t-hero mt-1.5 text-ink">
+              <span className="sr-only">{formatSpan(hero.weekMinutes * 60)} de travail cette semaine</span>
+              <span aria-hidden>
+                <CountUp value={hero.weekMinutes} duration={1500} format={(value) => <WeekFigure minutes={value} />} />
+              </span>
+            </p>
+            <p className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
+              <span className="pop inline-flex items-center rounded-full bg-inset px-3 py-1.5 text-[0.8125rem] font-extrabold text-muted" style={{ "--pop-delay": "1.1s" } as CSSProperties}>
+                aujourd&apos;hui {formatSpan(hero.todayMinutes * 60)}
+              </span>
+              {goal > 0 && (
+                <span className="pop inline-flex items-center rounded-full bg-accent/10 px-3 py-1.5 text-[0.8125rem] font-extrabold text-accent" style={{ "--pop-delay": "1.25s" } as CSSProperties}>
+                  {goalPercent} % de l&apos;objectif
+                </span>
+              )}
+            </p>
+          </div>
+          <WeekCurve week={hero.week} className="-mx-4 mt-4 sm:-mx-6 lg:mx-0" />
+        </section>
 
-      {/* ── LES QUATRE CHIFFRES ─────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <HeroFigure index={0} label="Cette semaine" detail={`aujourd'hui ${formatSpan(hero.todayMinutes * 60)}`}>
-          <CountUp value={hero.weekMinutes} format={(value) => formatSpan(value * 60)} />
-        </HeroFigure>
-        <HeroFigure index={1} label="Série en cours" detail={hero.streak > 1 ? "jours d'affilée" : hero.streak === 1 ? "jour — on continue demain" : "une séance la relance"}>
-          <CountUp value={hero.streak} format={(value) => `${value} j`} />
-        </HeroFigure>
-        <HeroFigure index={2} label="Moyenne par jour" detail="sur les 7 derniers jours">
-          <CountUp value={hero.dailyAverage} format={(value) => formatSpan(value * 60)} />
-        </HeroFigure>
-        <HeroFigure
-          index={3}
-          label="Objectif de la semaine"
-          detail={goal > 0 ? `${formatSpan(hero.weekMinutes * 60)} sur ${formatMinutesSpan(goal)}` : "aucun objectif fixé"}
-          meter={goal > 0 ? goalPercent : undefined}
-        >
-          <CountUp value={goalPercent} format={(value) => `${value} %`} />
-        </HeroFigure>
+        <div className="grid grid-cols-2 gap-3 lg:col-span-5 lg:grid-cols-1 lg:gap-4">
+          <HeroTile index={3} label="Série" detail={hero.streak > 1 ? "jours d'affilée" : hero.streak === 1 ? "on continue demain" : "une séance la relance"}>
+            <CountUp value={hero.streak} format={(value) => `${value} j`} />
+          </HeroTile>
+          <HeroTile index={4} label="Moyenne / jour" detail="7 derniers jours">
+            <CountUp value={hero.dailyAverage} format={(value) => formatSpan(value * 60)} />
+          </HeroTile>
+          {/* L'OBJECTIF en carte à dégradé : c'est le seul chiffre de
+              l'en-tête qui dit « où j'en suis » plutôt que « combien ». */}
+          <GradientCard
+            tone="brand"
+            index={5}
+            href="/settings"
+            aria-label={goal > 0 ? `Objectif de la semaine : ${goalPercent} %, ${formatSpan(hero.weekMinutes * 60)} sur ${formatMinutesSpan(goal)}. Régler.` : "Aucun objectif hebdomadaire — en fixer un"}
+            className="reveal col-span-2 flex items-center gap-4 p-5 lg:col-span-1 lg:flex-1"
+            style={{ "--i": 5 } as CSSProperties}
+          >
+            <Ring value={goal > 0 ? goalPercent : 0} size={64} strokeWidth={7} variant="white">
+              <span aria-hidden className="text-sm font-black tabular">
+                <CountUp value={goalPercent} format={(value) => `${value}%`} />
+              </span>
+            </Ring>
+            <span aria-hidden className="min-w-0 flex-1">
+              <span className="t-card-title block">Objectif de la semaine</span>
+              <span className="block truncate text-[0.8125rem] font-bold opacity-80">
+                {goal > 0 ? `${formatSpan(hero.weekMinutes * 60)} sur ${formatMinutesSpan(goal)}` : "Aucun objectif fixé"}
+              </span>
+            </span>
+          </GradientCard>
+        </div>
       </div>
 
       <div ref={tabsRef} className="scroll-mt-[calc(var(--nav-h)+1rem)]">
@@ -213,34 +252,42 @@ export function ProgressOverview() {
 }
 
 /**
- * UN GRAND CHIFFRE — une tuile, une étiquette, le nombre qui monte, une
- * ligne de contexte. `meter` (0–100) ajoute sous le chiffre la barre de
- * l'objectif, qui pousse à l'accent en même temps que le nombre monte.
+ * Le chiffre du héros : « 12 h 25 », l'unité plus petite et grise, comme
+ * celui de l'accueil (components/home/hero.tsx) ; « 45 min » sous l'heure.
  */
-function HeroFigure({
-  label,
-  detail,
-  meter,
-  index,
-  children,
-}: {
-  label: string;
-  detail: string;
-  meter?: number;
-  index: number;
-  children: React.ReactNode;
-}) {
+function WeekFigure({ minutes }: { minutes: number }) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const unit = "text-[0.47em] font-extrabold text-subtle/70";
+  if (h === 0) {
+    return (
+      <>
+        {m}
+        <span className={unit}> min</span>
+      </>
+    );
+  }
   return (
-    <div className="surface reveal flex min-w-0 flex-col justify-between gap-6 p-5 sm:p-6" style={{ "--i": index } as React.CSSProperties}>
-      <p className="t-label">{label}</p>
-      <div className="min-w-0">
-        <p className="t-figure-md whitespace-nowrap sm:text-5xl">{children}</p>
-        {meter !== undefined && <Meter value={meter} index={2} className="mt-3" />}
-        <p className="t-meta mt-1.5 text-[0.8125rem]">{detail}</p>
-      </div>
+    <>
+      {h}
+      <span className={unit}> h </span>
+      {String(m).padStart(2, "0")}
+    </>
+  );
+}
+
+/**
+ * UNE PETITE TUILE — blanche, qui flotte : une étiquette, le nombre qui
+ * monte en 900 (`.t-stat`), une ligne de contexte. Rien d'autre.
+ */
+function HeroTile({ label, detail, index, children }: { label: string; detail: string; index: number; children: React.ReactNode }) {
+  return (
+    <div className="surface reveal lift flex min-w-0 flex-col p-4 sm:p-5" style={{ "--i": index } as CSSProperties}>
+      <p className="text-[0.8125rem] font-bold text-muted">{label}</p>
+      <p className="t-stat mt-1 whitespace-nowrap text-ink">{children}</p>
+      <p className="mt-0.5 truncate text-xs font-bold text-subtle">{detail}</p>
     </div>
   );
-
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -351,7 +398,7 @@ function WeeklyReviewSection({
   }
 
   return (
-    <Section variant="feature" label="Cette semaine" title="Ton bilan" description="Ce que les données de la semaine permettent réellement de dire — et rien d'autre.">
+    <Section variant="feature" label="Cette semaine" title="Ton bilan">
       <StatRow>
         <Stat label="Travaillé" value={formatSpan(review.totalMinutes * 60)} size="sm" />
         {review.bySubject.slice(0, 2).map((entry) => (

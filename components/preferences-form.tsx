@@ -68,8 +68,8 @@ export function PreferencesForm() {
   const subjectTotal = subjects.reduce((sum, subject) => sum + prefs.weeklySubjectTargets[subject], 0);
 
   return (
-    <form onSubmit={save} className="space-y-12">
-      <Group title="Toi" footer="La date des concours affiche le compte à rebours sur l'accueil. Laisse-la vide si tu ne veux pas le voir.">
+    <form onSubmit={save} className="space-y-10">
+      <Group title="Toi" footer="La date des concours donne le J− de l'accueil.">
         {!ready ? (
           <div className="py-3 pr-4">
             <Skeleton className="h-20 w-full" />
@@ -96,7 +96,7 @@ export function PreferencesForm() {
           plein : régler n'est pas agir, et le seul aplat d'accent de l'écran
           reste « Enregistrer ». Le champ nombre à côté couvre toute valeur
           hors préréglage. */}
-      <Group title="Objectifs" footer="Tes objectifs alimentent l'accueil, le plan du jour et la mesure de ta semaine. Le quotidien et l'hebdomadaire sont indépendants.">
+      <Group title="Objectifs" footer="Le quotidien et l'hebdomadaire sont indépendants.">
         {!ready ? (
           <div className="py-3 pr-4">
             <Skeleton className="h-20 w-full" />
@@ -155,7 +155,7 @@ export function PreferencesForm() {
         footer={
           ready ? (
             <>
-              Minutes par semaine, du lundi au dimanche — 0 pour ne pas suivre une matière. Soit{" "}
+              Minutes par semaine, 0 pour ne pas suivre. Soit{" "}
               <span className="tabular font-semibold text-ink">{formatMinutesSpan(subjectTotal)}</span> au total
               {/* Deux objectifs saisis séparément finissent par diverger ; le
                   dire ici, au moment où on les règle, évite de le découvrir

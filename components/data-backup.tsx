@@ -108,15 +108,9 @@ export function DataBackup() {
         title="Tes données"
         footer={
           <>
-            <p>
-              TaekdHub fonctionne sans compte : tes séances, tes échéances, tes notes et tes carnets sont enregistrés dans ce navigateur, sur
-              cet appareil, et nulle part ailleurs. Ils ne partent sur aucun serveur — mais ils ne te suivent pas non plus d&apos;un appareil à
-              l&apos;autre, et vider les données du navigateur les efface.
-            </p>
-            <p className="mt-2">
-              La sauvegarde est donc ta seule copie : exporte-la régulièrement, et restaure-la sur ton nouvel appareil. L&apos;import remplace
-              les données de cet appareil, jamais celles d&apos;un autre.
-            </p>
+            {/* Une ligne, mais la vraie : sans compte, la sauvegarde est la
+                seule copie, et vider le navigateur efface tout. */}
+            <p>Tout reste dans ce navigateur, sans compte : la sauvegarde est ta seule copie. L&apos;import remplace les données de cet appareil.</p>
           </>
         }
       >

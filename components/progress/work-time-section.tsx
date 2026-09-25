@@ -76,7 +76,8 @@ export function WorkTimeSection({ sessions, preferences }: { sessions: WorkSessi
       variant="panel"
       label="Ton temps"
       title="Combien tu travailles"
-      description="Le temps réellement enregistré, jour après jour. Survole une barre pour sa valeur."
+      description="Jour après jour."
+      wideAction
       action={
         <SegmentedControl
           size="sm"

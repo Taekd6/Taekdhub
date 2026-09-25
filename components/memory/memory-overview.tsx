@@ -9,7 +9,7 @@ import { Illustration } from "@/components/ui/illustrations";
 import { PageHero } from "@/components/ui/page-hero";
 import { Section } from "@/components/ui/section";
 import { Skeleton } from "@/components/ui/state";
-import { SubjectAvatar } from "@/components/subject-avatar";
+import { ScoreBadge } from "@/components/ui/list-card";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { AT_RISK_THRESHOLD, dueDay, forecastCurve, reminderDay, retrievabilityToday, summarizeBySubject } from "@/lib/chapter-memory";
 import type { ChapterMemory } from "@/lib/storage";
@@ -54,10 +54,10 @@ export function MemoryOverview() {
   }
 
   return (
-    <div className="space-y-10 sm:space-y-12">
+    <div className="mx-auto max-w-[68rem] space-y-8 sm:space-y-10">
       <PageHero
         title="Ma mémoire"
-        lede="Les chapitres que tu as appris, et la probabilité estimée que tu t'en souviennes aujourd'hui. Quand elle passe sous 85 %, c'est le moment de les revoir — dans Anki ou ailleurs."
+        lede="Ta chance de te souvenir de chaque chapitre, aujourd'hui."
         illustration={<Illustration name="revisions" size={56} />}
       />
 
@@ -67,19 +67,23 @@ export function MemoryOverview() {
 
       {summary.length > 0 && (
         <Section variant="panel" title="Par matière">
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="-mx-3 -mb-2 grid sm:grid-cols-2 lg:grid-cols-3">
             {summary.map((entry) => (
-              <li key={entry.subject} className="flex items-start gap-3 rounded-2xl bg-inset p-4">
-                <SubjectAvatar subject={entry.subject} size="sm" />
+              <li key={entry.subject} className="row-slide flex min-h-[4.25rem] items-center gap-3 rounded-[1.125rem] px-3 py-2.5">
+                {/* La moyenne dans la pastille en dégradé, du même palier
+                    que les barres de rétention. */}
+                <ScoreBadge ratio={entry.meanRetrievability === null ? null : entry.meanRetrievability >= 0.9 ? 1 : entry.meanRetrievability >= AT_RISK_THRESHOLD ? 0.6 : 0}>
+                  {entry.meanRetrievability !== null ? <span className="text-[0.8125rem]">{Math.round(entry.meanRetrievability * 100)}%</span> : "—"}
+                </ScoreBadge>
                 <div className="min-w-0">
-                  <p className="font-semibold text-ink">{entry.subject}</p>
-                  <p className="t-meta text-2xs">
+                  <p className="truncate text-[0.9375rem] font-extrabold text-ink">{entry.subject}</p>
+                  <p className="text-[0.8125rem] font-bold text-subtle">
                     {entry.count} chapitre{entry.count > 1 ? "s" : ""}
-                    {entry.meanRetrievability !== null && <> · ≈ {Math.round(entry.meanRetrievability * 100)} % en moyenne</>}
+                    {entry.meanRetrievability !== null && <span className="sr-only"> · ≈ {Math.round(entry.meanRetrievability * 100)} % en moyenne</span>}
                   </p>
-                  <p className="t-meta text-2xs">
+                  <p className="text-[0.8125rem] font-bold text-subtle">
                     {entry.atRisk > 0 ? (
-                      <span className="font-semibold text-ink">
+                      <span className="text-[var(--review-a)]">
                         {entry.atRisk} à revoir maintenant
                       </span>
                     ) : entry.nextReminder ? (
@@ -93,7 +97,7 @@ export function MemoryOverview() {
         </Section>
       )}
 
-      <Section variant="panel" title="Tous les chapitres" description="Le plus menacé d'abord. Touche un titre pour voir sa courbe.">
+      <Section variant="panel" title="Tous les chapitres" description="Le plus menacé d'abord · touche un titre pour sa courbe.">
         <ChapterList chapters={chapterMemory} saveChapters={saveChapterMemory} selectedId={selected?.id ?? null} onSelect={setPicked} />
       </Section>
 

@@ -6,7 +6,8 @@ import { AnkiLink } from "@/components/memory/anki-link";
 import { chanceSentence, RatingPanel, RetentionBar } from "@/components/memory/memory-bits";
 import { Button } from "@/components/ui/button";
 import { SubjectAvatar } from "@/components/subject-avatar";
-import { atRisk, rateChapter } from "@/lib/chapter-memory";
+import { CountUp } from "@/components/ui/count-up";
+import { AT_RISK_THRESHOLD, atRisk, formatChance, rateChapter } from "@/lib/chapter-memory";
 import type { FsrsRating } from "@/lib/fsrs";
 import type { ChapterMemory } from "@/lib/storage";
 import { dayKey } from "@/lib/study";
@@ -70,7 +71,26 @@ export function MemoryCard({
   }
 
   return (
-    <section aria-labelledby="memoire-titre" className="surface reveal p-6 sm:p-8" data-memory-card>
+    <section aria-labelledby="memoire-titre" className="surface reveal p-5 sm:p-7" data-memory-card>
+      {/* Sur /memoire, les chapitres menacés sont annoncés par la BANNIÈRE
+          des révisions (dégradé orange → rose, le compte qui monte) : c'est
+          la première chose à faire sur cette page. Sur l'accueil, la
+          bannière du jour est déjà juste au-dessus : un titre suffit. */}
+      {onMemoryPage && risky.length > 0 ? (
+        <header className="grad-card tone-review sheen -mx-1 -mt-1 flex items-center gap-3.5 p-[1.125rem]">
+          <span aria-hidden className="grid h-[3.25rem] w-[3.25rem] shrink-0 place-items-center rounded-2xl bg-white/20 text-2xl font-black tabular">
+            <CountUp value={risky.length} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <h2 id="memoire-titre" className="t-card-title">
+              À ne pas oublier
+            </h2>
+            <span className="block text-[0.8125rem] font-bold opacity-85">
+              {risky.length} chapitre{risky.length > 1 ? "s" : ""} sous {Math.round(AT_RISK_THRESHOLD * 100)} %, à revoir
+            </span>
+          </span>
+        </header>
+      ) : (
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div className="min-w-0">
           <h2 id="memoire-titre" className="t-heading">
@@ -88,31 +108,34 @@ export function MemoryCard({
           </Link>
         )}
       </header>
+      )}
 
       {risky.length > 0 && (
-        <ul className="mt-5 divide-y divide-line border-t border-line">
+        <ul className="mt-3 divide-y divide-line">
           {risky.slice(0, onMemoryPage ? risky.length : SHOWN).map(({ chapter, retrievability }) => (
             <li key={chapter.id} className="py-4" data-chapter={chapter.title}>
               <div className="flex items-start gap-3">
-                <span className="translate-y-0.5">
-                  <SubjectAvatar subject={chapter.subject} size="sm" />
-                </span>
+                <SubjectAvatar subject={chapter.subject} size="md" />
                 <div className="min-w-0 flex-1">
-                  <p className="break-words font-semibold text-ink">{chapter.title}</p>
-                  <p className="t-meta text-2xs">
-                    {chapter.subject} · <span className="tabular">{chanceSentence(retrievability)}</span>
+                  <p className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 break-words text-[0.9375rem] font-extrabold text-ink">{chapter.title}</span>
+                    <span className="tabular shrink-0 text-[0.9375rem] font-black text-ink">{formatChance(retrievability)}</span>
                   </p>
-                  <RetentionBar retrievability={retrievability} className="mt-2 max-w-xs" />
+                  <p className="text-[0.8125rem] font-bold text-subtle">
+                    {chapter.subject}
+                    <span className="sr-only"> · {chanceSentence(retrievability)}</span>
+                  </p>
+                  <RetentionBar retrievability={retrievability} className="mt-2" />
                 </div>
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2 pl-10">
+              <div className="mt-3 flex flex-wrap items-center gap-2 pl-11">
                 <AnkiLink deck={chapter.ankiDeck} />
                 <Button variant="ghost" size="sm" onClick={() => setRating(rating === chapter.id ? null : chapter.id)} aria-expanded={rating === chapter.id}>
                   C&apos;est révisé
                 </Button>
               </div>
               {rating === chapter.id && (
-                <div className="pl-10">
+                <div className="pl-11">
                   <RatingPanel chapter={chapter} today={today} onRate={(value) => rate(chapter.id, value)} onCancel={() => setRating(null)} />
                 </div>
               )}

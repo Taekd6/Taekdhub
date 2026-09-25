@@ -9,11 +9,15 @@ const DAY_LETTERS = ["D", "L", "M", "M", "J", "V", "S"];
 const STEPS = [0, 0.28, 0.5, 0.74, 1];
 
 function cellColor(step: number): string {
-  // Reprend les variables CSS du thème (app/globals.css) — jamais une
-  // teinte figée : la case suit l'accent choisi par l'élève (lib/theme.ts),
-  // et la case vide reste visible dans les deux thèmes grâce à
-  // `--hairline-rgb`, qui s'inverse avec eux.
-  return step === 0 ? "rgb(var(--hairline-rgb) / 0.08)" : `rgb(var(--accent-ink-rgb) / ${STEPS[step]})`;
+  // Reprend les variables CSS de la palette (app/globals.css) — jamais une
+  // teinte figée : la case suit la palette choisie par l'élève
+  // (lib/theme.ts). Les paliers montent en intensité sur la teinte g1, et
+  // la plus haute marche est le DÉGRADÉ de marque lui-même. La case vide
+  // reste visible dans les deux thèmes grâce à `--hairline-rgb`, qui
+  // s'inverse avec eux.
+  if (step === 0) return "rgb(var(--hairline-rgb) / 0.07)";
+  if (step === 4) return "linear-gradient(135deg, var(--g1), var(--g2))";
+  return `rgb(var(--g1-rgb) / ${STEPS[step]})`;
 }
 
 /**
@@ -49,7 +53,7 @@ export function Heatmap({ workByDay, days = 84 }: { workByDay: Record<string, nu
           ))}
         </div>
         <div className="scrollbar-none grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto sm:gap-[5px]">
-          {range.map((date) => {
+          {range.map((date, index) => {
             const key = dayKey(date);
             const seconds = workByDay[key] || 0;
             const step = seconds === 0 ? 0 : Math.min(4, Math.ceil((seconds / maxDay) * 4));
@@ -57,8 +61,9 @@ export function Heatmap({ workByDay, days = 84 }: { workByDay: Record<string, nu
               <span
                 key={key}
                 title={`${date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} : ${seconds ? formatSpan(seconds) : "rien"}`}
-                className="h-4 w-4 rounded-[4px] transition-transform duration-200 hover:scale-125 sm:h-5 sm:w-5 sm:rounded-[5px]"
-                style={{ backgroundColor: cellColor(step) }}
+                className="pop h-4 w-4 rounded-[5px] transition-transform duration-200 hover:scale-125 sm:h-5 sm:w-5 sm:rounded-[6px]"
+                // Les cases apparaissent colonne après colonne, en rebond.
+                style={{ background: cellColor(step), "--pop-delay": `${Math.floor(index / 7) * 40}ms` } as React.CSSProperties}
               />
             );
           })}
@@ -67,7 +72,7 @@ export function Heatmap({ workByDay, days = 84 }: { workByDay: Record<string, nu
       <div aria-hidden className="t-meta mt-3 flex items-center justify-end gap-1.5 text-2xs">
         moins
         {STEPS.map((_, step) => (
-          <span key={step} className="h-3 w-3 rounded-[4px]" style={{ backgroundColor: cellColor(step) }} />
+          <span key={step} className="h-3 w-3 rounded-[4px]" style={{ background: cellColor(step) }} />
         ))}
         plus
       </div>

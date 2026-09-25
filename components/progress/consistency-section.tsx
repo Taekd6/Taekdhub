@@ -46,7 +46,7 @@ export function ConsistencySection({ sessions }: { sessions: WorkSession[] }) {
       variant="panel"
       label="Ta régularité"
       title="À quelle fréquence tu t'y mets"
-      description="Douze semaines, une case par journée ; l'intensité suit le temps travaillé."
+      description="Douze semaines, une case par jour."
     >
       {!hasActivity ? (
         <Insufficient

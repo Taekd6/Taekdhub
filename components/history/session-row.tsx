@@ -46,24 +46,24 @@ export function SessionRow({
   const title = workItemTitle ?? note ?? session.subject;
 
   return (
-    <li className="row-hover relative flex items-center gap-3 rounded-xl px-3 py-3 sm:gap-4 sm:px-4">
-      <span className={cn("tabular shrink-0 text-[0.8125rem] font-semibold text-subtle", dateInHeader ? "w-11" : "hidden")}>{dateInHeader && when}</span>
+    <li className="row-slide relative flex min-h-[4rem] items-center gap-3 rounded-[1.125rem] px-3 py-2.5 sm:gap-4">
+      <span className={cn("tabular shrink-0 text-[0.8125rem] font-bold text-subtle", dateInHeader ? "w-11 text-center" : "hidden")}>{dateInHeader && when}</span>
       <span className="relative flex shrink-0 self-stretch">
         {/* Le fil : du centre de la pastille jusqu'à la ligne suivante. */}
         {!last && <span aria-hidden className="absolute left-1/2 top-1/2 h-[calc(100%+1.5rem)] w-px -translate-x-1/2 bg-line" />}
         <span className="relative my-auto">
-          <SubjectAvatar subject={session.subject} />
+          <SubjectAvatar subject={session.subject} size="md" />
         </span>
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[0.9375rem] font-semibold text-ink">{title}</p>
-        <p className="t-meta mt-0.5 truncate text-[0.8125rem]">
+        <p className="truncate text-[0.9375rem] font-extrabold text-ink">{title}</p>
+        <p className="truncate text-[0.8125rem] font-bold text-subtle">
           {!dateInHeader && `${when} · `}
           {title !== session.subject ? session.subject : "Séance"}
           {workItemTitle && note && ` · ${note}`}
         </p>
       </div>
-      <p className="tabular shrink-0 whitespace-nowrap text-right text-[0.9375rem] font-bold text-ink">{formatSpan(session.duration_seconds)}</p>
+      <p className="tabular shrink-0 whitespace-nowrap text-right text-[0.9375rem] font-black text-ink">{formatSpan(session.duration_seconds)}</p>
     </li>
   );
 }

@@ -51,7 +51,7 @@ export function WeekSection({ dayPlans, sessions }: { dayPlans: DayPlanRecord[];
       variant="panel"
       label="Ta semaine"
       title="Prévu et réalisé"
-      description="Ce que ton planning réservait la veille, face au temps réellement enregistré."
+      description="Prévu la veille, fait le jour même."
     >
       {accuracy.daysCompared === 0 && settled.daysCompared === 0 ? (
         <Insufficient
@@ -85,10 +85,10 @@ export function WeekSection({ dayPlans, sessions }: { dayPlans: DayPlanRecord[];
           />
           <p className="t-meta mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-[0.8125rem]">
             <span className="inline-flex items-center gap-2">
-              <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-zinc-700" /> prévu la veille
+              <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-hairline/[0.10]" /> prévu la veille
             </span>
             <span className="inline-flex items-center gap-2">
-              <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[rgb(var(--accent-ink-rgb))]" /> réalisé
+              <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[var(--g1)]" /> réalisé
             </span>
           </p>
 

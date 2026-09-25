@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PageHero } from "@/components/ui/page-hero";
+import { CountUp } from "@/components/ui/count-up";
 import { Illustration } from "@/components/ui/illustrations";
 import { FilterPills } from "@/components/ui/pills";
 import { Button } from "@/components/ui/button";
@@ -79,10 +80,10 @@ export function ReviewNotebook() {
   const subjectOptions = subjects.filter((entry) => counts.some((count) => count.subject === entry) || entry === subject);
 
   return (
-    <div className="space-y-10">
+    <div className="mx-auto max-w-[68rem] space-y-8">
       <PageHero
         title="À revoir"
-        lede="Ce que tu as noté en relisant tes corrigés — à revoir, à apprendre, et les méthodes que tu en as tirées."
+        lede="Ce que tu as noté en relisant tes corrigés."
         illustration={<Illustration name="revisions" size={56} />}
       />
 
@@ -91,7 +92,7 @@ export function ReviewNotebook() {
           {/* Révisions espacées — suit le filtre de matière du carnet. */}
           <DueToday items={reviewItems} subject={subject === "all" ? null : subject} />
 
-          <Section variant="panel" title="Noter" description="Une ligne, Entrée, c'est noté — la matière est retenue d'une fois sur l'autre.">
+          <Section variant="panel" title="Noter" description="Une ligne, Entrée, c'est noté.">
             <ReviewCapture items={reviewItems} saveItems={saveReviewItems} ready={ready} showList={false} />
           </Section>
 
@@ -154,9 +155,11 @@ export function ReviewNotebook() {
         {/* L'ÉTAT DU CARNET — une tuile collante à droite sur grand écran,
             sous la liste sur téléphone (l'action d'abord). */}
         <aside aria-label="État du carnet" className="surface h-fit p-6 lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)]">
-          <p className="t-label">Ouvertes</p>
-          <p className="t-figure-lg tabular mt-1">{openTotal}</p>
-          <p className="t-meta mt-1 text-[0.8125rem]">
+          <p className="text-[0.8125rem] font-bold text-muted">Ouvertes</p>
+          <p className="t-figure-lg text-grad mt-1 tabular">
+            <CountUp value={openTotal} />
+          </p>
+          <p className="mt-1 text-[0.8125rem] font-semibold text-muted">
             sur {reviewItems.length} entrée{reviewItems.length > 1 ? "s" : ""} notée{reviewItems.length > 1 ? "s" : ""}
           </p>
           {counts.length > 0 && (
@@ -168,13 +171,13 @@ export function ReviewNotebook() {
                     onClick={() => setSubject(subject === entry.subject ? "all" : entry.subject)}
                     aria-pressed={subject === entry.subject}
                     className={cn(
-                      "row-hover flex min-h-11 w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left",
-                      subject === entry.subject && "bg-inset"
+                      "row-slide flex min-h-[3.25rem] w-full items-center gap-3 rounded-[1rem] px-2 py-2 text-left",
+                      subject === entry.subject && "bg-accent/[0.08]"
                     )}
                   >
-                    <SubjectAvatar subject={entry.subject} size="sm" />
-                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{entry.subject}</span>
-                    <span className="tabular shrink-0 text-[0.8125rem] text-muted">
+                    <SubjectAvatar subject={entry.subject} size="md" />
+                    <span className="min-w-0 flex-1 truncate text-sm font-extrabold text-ink">{entry.subject}</span>
+                    <span className="tabular shrink-0 text-[0.8125rem] font-bold text-muted">
                       {entry.open} / {entry.total}
                     </span>
                   </button>
@@ -182,9 +185,7 @@ export function ReviewNotebook() {
               ))}
             </ul>
           )}
-          <p className="t-meta mt-4 text-2xs">
-            Une méthode cochée est « maîtrisée » : elle quitte l&apos;accueil mais reste dans le recueil de sa matière.
-          </p>
+          <p className="mt-4 text-2xs font-semibold text-subtle">Une méthode cochée reste dans le recueil de sa matière.</p>
         </aside>
       </div>
     </div>

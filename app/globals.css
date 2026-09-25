@@ -598,6 +598,17 @@
     line-height: 1;
   }
 
+  /* CHIFFRE D'UNE CARTE EN DÉGRADÉ (« 10 h 30 » à faire, le temps d'une
+     matière, le total d'une période) — 44 px sur téléphone, 60 px sur
+     grand écran : sous le héros de l'accueil, au-dessus des tuiles. */
+  .t-card-figure {
+    font-size: clamp(2.5rem, 2rem + 2.2vw, 3.75rem);
+    font-weight: 900;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.045em;
+    line-height: 1;
+  }
+
   /* Chiffre d'une petite tuile (« 8 jours », « 14 h 20 ») — 32 px. */
   .t-stat {
     font-size: 2rem;
@@ -922,6 +933,81 @@
     /* L'ombre prend la couleur de la carte : la carte « éclaire » le fond
        sous elle, au lieu d'y poser une tache grise. */
     box-shadow: 0 14px 30px -12px color-mix(in srgb, var(--gc1, var(--g1)) 65%, transparent);
+  }
+
+  /* BARRE DE GRAPHIQUE EN DÉGRADÉ — de g2 en bas à g1 en haut : la barre
+     « monte » vers la couleur la plus vive. `.bar-grad` est la barre qu'on
+     cherche (aujourd'hui, la semaine en cours), avec une ombre de sa
+     couleur ; `.bar-grad-soft` les autres, voilées, qui s'allument au
+     survol de leur colonne (`.group`). */
+  .bar-grad {
+    background: linear-gradient(0deg, var(--g2), var(--g1));
+    box-shadow: 0 8px 18px -8px rgb(var(--g1-rgb) / 0.7);
+  }
+
+  .bar-grad-soft {
+    background: linear-gradient(0deg, rgb(var(--g2-rgb) / 0.32), rgb(var(--g1-rgb) / 0.42));
+    transition: background 0.25s ease;
+  }
+
+  .group:hover .bar-grad-soft {
+    background: linear-gradient(0deg, rgb(var(--g2-rgb) / 0.7), rgb(var(--g1-rgb) / 0.85));
+  }
+
+  /* PASTILLES DE NOTE D'UNE RÉVISION (Oublié · Dur · Bien · Facile) — des
+     pilules colorées, texte blanc, ombre de leur couleur. Rose → orange
+     pour « oublié » (le dégradé des révisions), ambre pour « dur », la
+     marque pour « bien », vert → cyan pour « facile ». */
+  .rate-again {
+    background: linear-gradient(135deg, #f43f5e, var(--review-a));
+    box-shadow: 0 10px 22px -12px #f43f5e;
+    color: #fff;
+  }
+
+  .rate-hard {
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    box-shadow: 0 10px 22px -12px #f59e0b;
+    color: #fff;
+  }
+
+  .rate-good {
+    background: linear-gradient(135deg, var(--g1), var(--g2));
+    box-shadow: 0 10px 22px -12px var(--g1);
+    color: #fff;
+  }
+
+  .rate-easy {
+    background: linear-gradient(135deg, #10b981, #06b6d4);
+    box-shadow: 0 10px 22px -12px #10b981;
+    color: #fff;
+  }
+
+  /* PASTILLE DE SCORE — un disque en dégradé qui porte un chiffre (note,
+     pourcentage) : `.score-hi` vert → cyan, `.score-mid` palette,
+     `.score-lo` orange → rose (le dégradé des révisions). */
+  .score-badge {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: #fff;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    border-radius: 9999px;
+  }
+
+  .score-hi {
+    background: linear-gradient(135deg, #10b981, #06b6d4);
+    box-shadow: 0 8px 18px -10px #10b981;
+  }
+
+  .score-mid {
+    background: linear-gradient(135deg, var(--g1), var(--g2));
+    box-shadow: 0 8px 18px -10px var(--g1);
+  }
+
+  .score-lo {
+    background: var(--review-grad);
+    box-shadow: 0 8px 18px -10px var(--review-a);
   }
 
   /* Encre de palette en dégradé, pour un chiffre ou un mot qu'on veut

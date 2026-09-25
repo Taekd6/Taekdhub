@@ -90,10 +90,10 @@ export function ErrorLog() {
   const freshCours = lastSaved && lastSaved.type === "cours" && canSendToReview(lastSaved, reviewItems) ? lastSaved : null;
 
   return (
-    <div className="space-y-10">
+    <div className="mx-auto max-w-[68rem] space-y-8">
       <PageHero
         title="Carnet d'erreurs"
-        lede="Chaque erreur de colle, de DS ou d'exercice, notée en dix secondes avec la bonne idée — pour voir ce qui revient et le travailler."
+        lede="L'erreur, la bonne idée — et ce qui revient."
         illustration={<Illustration name="erreurs" size={56} />}
       />
 
@@ -151,8 +151,8 @@ export function ErrorLog() {
               <div className="space-y-6">
                 {groups.map((group) => (
                   <div key={group.key}>
-                    <p className="t-label mb-1.5">
-                      {group.label} · <span className="tabular">{group.entries.length}</span>
+                    <p className="mb-1 text-[0.9375rem] font-black text-ink">
+                      {group.label} <span className="tabular font-bold text-subtle">· {group.entries.length}</span>
                     </p>
                     <ul className="divide-y divide-line">
                       {group.entries.map((entry) => (
@@ -213,18 +213,14 @@ function ErrorRow({
   const sendable = entry.type === "cours" && canSendToReview(entry, reviewItems);
   const sent = entry.type === "cours" && !sendable;
   return (
-    <li className={cn("flex items-start gap-2.5 py-2.5", fresh && "animate-fade-in")}>
-      {showSubject && (
-        <span className="translate-y-px">
-          <SubjectAvatar subject={entry.subject} size="sm" />
-        </span>
-      )}
+    <li className={cn("flex items-start gap-3 py-3", fresh && "animate-fade-in")}>
+      {showSubject && <SubjectAvatar subject={entry.subject} size="md" />}
       <div className="min-w-0 flex-1">
-        <p className="break-words text-[0.8125rem] leading-5 text-ink">{entry.description}</p>
-        {entry.fix && <p className="break-words text-[0.8125rem] leading-5 text-muted">→ {entry.fix}</p>}
-        <p className="t-meta mt-0.5 text-2xs">
-          <span className="font-medium text-ink">{ERROR_TYPE_META[entry.type].label}</span>
-          {" · "}
+        <p className="break-words text-[0.9375rem] font-bold leading-snug text-ink">{entry.description}</p>
+        {entry.fix && <p className="mt-0.5 break-words text-[0.875rem] font-semibold leading-snug text-muted">→ {entry.fix}</p>}
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-2xs font-bold text-subtle">
+          {/* Le TYPE en pastille : c'est la colonne qu'on parcourt des yeux. */}
+          <span className="rounded-full bg-accent/10 px-2 py-0.5 text-accent">{ERROR_TYPE_META[entry.type].label}</span>
           {ERROR_SOURCE_META[entry.source].label}
           {" · "}
           {dateFormat.format(new Date(`${entry.date}T00:00:00`))}

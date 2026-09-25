@@ -2,8 +2,6 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { Maximize2, Minimize2, Pause, Play, Square } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Illustration } from "@/components/ui/illustrations";
 import { Select } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -223,7 +221,9 @@ export function Timer() {
               onClick={() => setContext({ subject, workItemId: context.workItemId ?? null })}
               className={cn(
                 "press min-h-11 shrink-0 rounded-full px-4 text-sm font-semibold lg:min-h-10",
-                active ? "bg-ink text-canvas" : "bg-inset text-ink hover:bg-zinc-700",
+                // La matière choisie en pastille à DÉGRADÉ de marque, les
+                // autres en creux : le choix se voit de loin.
+                active ? "grad-brand [box-shadow:0_8px_18px_-8px_var(--g1)]" : "bg-inset text-ink hover:bg-hairline/[0.10]",
                 "disabled:cursor-not-allowed disabled:opacity-35"
               )}
             >
@@ -237,45 +237,58 @@ export function Timer() {
 
   const dial = (
     <FocusRing percent={dayPercent} large={fullscreen}>
-      <p className="flex items-center justify-center gap-2 text-sm font-semibold text-muted">
+      <p
+        className={cn(
+          "inline-flex items-center justify-center gap-2 rounded-full px-3 py-1 text-sm font-extrabold",
+          running ? "bg-accent/10 text-accent" : "text-muted"
+        )}
+      >
         {running && <span aria-hidden className="h-2 w-2 animate-pulse-soft rounded-full bg-accent" />}
         {running ? "En cours" : seconds > 0 ? "En pause" : context.subject}
       </p>
-      {/* `role="timer"` : lu à la demande, jamais annoncé chaque seconde. */}
-      <p role="timer" aria-label={`Durée de la séance : ${formatSpan(seconds)}`} className={cn("t-figure mt-2", seconds >= 3600 ? "text-[17cqw]" : "text-[24cqw]")}>
+      {/* `role="timer"` : lu à la demande, jamais annoncé chaque seconde.
+          Les chiffres ÉNORMES, en 900 serré, comme le héros de l'accueil. */}
+      <p
+        role="timer"
+        aria-label={`Durée de la séance : ${formatSpan(seconds)}`}
+        className={cn("t-figure mt-1 tracking-[-0.05em] text-ink", seconds >= 3600 ? "text-[18cqw]" : "text-[26cqw]")}
+      >
         {clock(seconds)}
       </p>
-      <p className="t-meta mt-3 font-semibold">
-        <span className="tabular text-ink">{formatSpan(daySeconds)}</span> sur {formatSpan(goalSeconds)} aujourd&apos;hui
+      <p className="mt-2 text-sm font-bold text-muted">
+        <span className="tabular font-black text-ink">{formatSpan(daySeconds)}</span> sur {formatSpan(goalSeconds)} aujourd&apos;hui
       </p>
     </FocusRing>
   );
 
+  /*
+   * LES BOUTONS RONDS — la rangée de l'accueil, en plus grand : le geste
+   * principal (Démarrer / Pause) est un disque de 84 px en DÉGRADÉ, avec
+   * l'ombre de sa couleur ; « Terminer » et le plein écran, des disques
+   * blancs à ombre douce. Le nom sous le disque ; toute la colonne est
+   * cliquable, et le disque rebondit à l'appui (`bounce-press`).
+   */
   const actions = (
-    <div className="flex flex-wrap items-center justify-center gap-3">
-      {running ? (
-        <Button size="lg" variant="secondary" onClick={toggle} className="min-h-14 min-w-[10rem] px-9 text-lg">
-          <Pause size={20} aria-hidden /> Pause
-        </Button>
+    <div className="flex items-start justify-center gap-6 sm:gap-8">
+      {seconds > 0 ? (
+        <RoundAction label="Terminer" onClick={handleStop}>
+          <Square size={22} strokeWidth={2.4} aria-hidden />
+        </RoundAction>
       ) : (
-        <Button size="lg" onClick={start} className="min-h-14 min-w-[10rem] px-9 text-lg">
-          <Play size={20} aria-hidden /> {seconds ? "Reprendre" : "Démarrer"}
-        </Button>
+        <span aria-hidden className="w-16" />
       )}
-      {seconds > 0 && (
-        <Button size="lg" variant="secondary" onClick={handleStop} className="min-h-14 px-7 text-lg">
-          <Square size={18} aria-hidden /> Terminer
-        </Button>
+      {running ? (
+        <RoundAction label="Pause" onClick={toggle} primary>
+          <Pause size={34} strokeWidth={2.4} aria-hidden />
+        </RoundAction>
+      ) : (
+        <RoundAction label={seconds ? "Reprendre" : "Démarrer"} onClick={start} primary>
+          <Play size={34} strokeWidth={2.4} className="translate-x-0.5" aria-hidden />
+        </RoundAction>
       )}
-      <Button
-        size="icon"
-        variant="secondary"
-        className="h-14 w-14 max-lg:h-14 max-lg:w-14"
-        onClick={() => setFullscreen((value) => !value)}
-        aria-label={fullscreen ? "Quitter le plein écran" : "Plein écran"}
-      >
-        {fullscreen ? <Minimize2 size={20} aria-hidden /> : <Maximize2 size={20} aria-hidden />}
-      </Button>
+      <RoundAction label={fullscreen ? "Réduire" : "Plein écran"} ariaLabel={fullscreen ? "Quitter le plein écran" : "Plein écran"} onClick={() => setFullscreen((value) => !value)}>
+        {fullscreen ? <Minimize2 size={22} aria-hidden /> : <Maximize2 size={22} aria-hidden />}
+      </RoundAction>
     </div>
   );
 
@@ -292,17 +305,16 @@ export function Timer() {
   return (
     <div className="mx-auto max-w-3xl text-center">
       <header className="reveal">
-        <Illustration name="chrono" size={56} className="mx-auto text-muted" />
-        <h1 className="t-display mt-5">Chrono.</h1>
-        <p className="t-lede mx-auto mt-3 max-w-[40ch]">Une feuille d&apos;exercices, un DM, une relecture de cours : lance-le quand tu t&apos;y mets.</p>
+        <h1 className="t-display">Chrono</h1>
+        <p className="mx-auto mt-1.5 max-w-[40ch] text-[0.9375rem] font-semibold text-muted sm:text-base">Lance-le quand tu t&apos;y mets.</p>
       </header>
 
-      <section aria-label="Séance" className="surface reveal mt-10 space-y-10 px-5 py-8 sm:mt-14 sm:p-12" style={{ "--i": 1 } as CSSProperties}>
+      <section aria-label="Séance" className="surface reveal mt-7 space-y-8 px-5 py-7 sm:mt-10 sm:space-y-10 sm:p-12" style={{ "--i": 1 } as CSSProperties}>
         {controls}
         <div className="flex justify-center">{dial}</div>
         {selectedItem && (
-          <p className="t-meta -mt-4">
-            Il reste <span className="font-semibold text-ink">{formatSpan(remainingMinutes(selectedItem, sessions) * 60)}</span> sur « {selectedItem.title} ».
+          <p className="-mt-3 text-sm font-semibold text-muted">
+            Il reste <span className="font-black text-ink">{formatSpan(remainingMinutes(selectedItem, sessions) * 60)}</span> sur « {selectedItem.title} ».
           </p>
         )}
         {actions}
@@ -313,8 +325,41 @@ export function Timer() {
   );
 }
 
+/** Un bouton rond et son nom dessous — voir `actions`. */
+function RoundAction({
+  label,
+  ariaLabel,
+  onClick,
+  primary = false,
+  children,
+}: {
+  label: string;
+  ariaLabel?: string;
+  onClick: () => void;
+  primary?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button type="button" onClick={onClick} aria-label={ariaLabel} className="group flex w-16 flex-col items-center gap-2 rounded-2xl outline-offset-4 first:mt-0">
+      <span
+        aria-hidden
+        className={cn(
+          "grid place-items-center rounded-full transition-transform duration-[250ms] ease-[cubic-bezier(.34,1.56,.64,1)] group-hover:-translate-y-[3px] group-hover:scale-[1.06] group-active:scale-[.92] motion-reduce:transform-none",
+          primary
+            ? "grad-brand h-[5.25rem] w-[5.25rem] [box-shadow:0_14px_30px_-10px_var(--g1)]"
+            : "mt-2.5 h-16 w-16 bg-[var(--action-bg)] text-ink [box-shadow:var(--action-lift)]"
+        )}
+      >
+        {children}
+      </span>
+      <span className="whitespace-nowrap text-[0.8125rem] font-bold text-ink">{label}</span>
+    </button>
+  );
+}
+
 /**
- * L'ANNEAU FOCUS — un tracé à l'accent sur une piste grise, dessiné dans un
+ * L'ANNEAU FOCUS — un tracé en DÉGRADÉ de palette sur une piste grise, avec
+ * un halo doux de la même couleur derrière le cadran ; dessiné dans un
  * `viewBox` pour suivre la largeur de l'écran (un `Ring` a une taille fixe
  * en pixels ; celui-ci doit remplir un téléphone ET rester raisonnable sur
  * un grand écran). Il se TRACE à l'arrivée (`.ring-draw`), puis avance en
@@ -328,7 +373,14 @@ function FocusRing({ percent, large, children }: { percent: number; large: boole
   const clamped = Math.min(100, Math.max(0, percent));
   return (
     <div className={cn("relative mx-auto aspect-square [container-type:inline-size]", large ? "w-[min(86vw,72vh,34rem)]" : "w-[min(84vw,24rem)]")}>
+      <span aria-hidden className="absolute inset-[12%] rounded-full bg-[radial-gradient(circle,rgb(var(--g1-rgb)/0.14),transparent_70%)]" />
       <svg viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 h-full w-full -rotate-90" aria-hidden>
+        <defs>
+          <linearGradient id="focus-ring-grad" x1="0" x2="1" y1="1" y2="0">
+            <stop offset="0" stopColor="var(--g2)" />
+            <stop offset="1" stopColor="var(--g1)" />
+          </linearGradient>
+        </defs>
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgb(var(--hairline-rgb) / 0.07)" strokeWidth={stroke} />
         {clamped > 0 && (
           <circle
@@ -336,7 +388,7 @@ function FocusRing({ percent, large, children }: { percent: number; large: boole
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="rgb(var(--accent-ink-rgb))"
+            stroke="url(#focus-ring-grad)"
             strokeWidth={stroke}
             strokeLinecap="round"
             strokeDasharray={circumference}

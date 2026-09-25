@@ -52,17 +52,21 @@ export function MinuteStepper({
   className?: string;
 }) {
   const large = size === "lg";
+  // Deux disques : « − » blanc à ombre douce, « + » en DÉGRADÉ de marque —
+  // les boutons ronds de l'accueil. Ils rebondissent à l'appui.
   const button = cn(
-    "press grid shrink-0 place-items-center rounded-full bg-inset text-ink hover:bg-accent/15 hover:text-accent disabled:pointer-events-none disabled:opacity-30",
-    large ? "h-14 w-14" : "h-11 w-11"
+    "bounce-press grid shrink-0 place-items-center rounded-full disabled:pointer-events-none disabled:opacity-30",
+    large ? "h-16 w-16" : "h-11 w-11"
   );
+  const minus = cn(button, "bg-[var(--action-bg)] text-ink [box-shadow:var(--action-lift)]");
+  const plus = cn(button, "grad-brand [box-shadow:0_10px_22px_-10px_var(--g1)]");
   const shown = value === 0 && emptyLabel ? emptyLabel : formatMinutesSpan(value);
 
   return (
     <div role="group" aria-label={label} className={cn("flex shrink-0 items-center", large ? "gap-5" : "gap-1.5", className)}>
       <button
         type="button"
-        className={button}
+        className={minus}
         onClick={() => onChange(Math.max(min, value - step))}
         disabled={value <= min}
         aria-label={`Retirer ${step} min — ${label}`}
@@ -73,7 +77,7 @@ export function MinuteStepper({
         aria-live="polite"
         className={cn(
           "tabular text-center",
-          large ? "t-figure-lg min-w-[5ch]" : "min-w-[4.25rem] text-[0.9375rem] font-bold",
+          large ? "t-card-figure min-w-[5ch]" : "min-w-[4.25rem] text-[0.9375rem] font-black",
           value === 0 && "text-subtle"
         )}
       >
@@ -81,7 +85,7 @@ export function MinuteStepper({
       </output>
       <button
         type="button"
-        className={button}
+        className={plus}
         onClick={() => onChange(Math.min(max, value + step))}
         disabled={value >= max}
         aria-label={`Ajouter ${step} min — ${label}`}
@@ -100,22 +104,28 @@ export function MinuteStepper({
  * L'étape en cours est aussi dite en toutes lettres (« Étape 2 sur 6 »)
  * pour les lecteurs d'écran : des points ne se lisent pas.
  */
+/**
+ * LA PROGRESSION DE L'ACCUEIL GUIDÉ — une barre en DÉGRADÉ qui avance d'un
+ * écran à l'autre (transition douce sur la largeur), et le compte « 2/6 »
+ * en 900 à côté. Remplace les points : une barre dit « presque fini » d'un
+ * regard, sept points demandaient de compter.
+ */
 export function ProgressDots({ count, current }: { count: number; current: number }) {
+  const percent = ((current + 1) / count) * 100;
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex min-w-0 flex-1 items-center gap-3">
       <span className="sr-only">
         Étape {current + 1} sur {count}
       </span>
-      {Array.from({ length: count }, (_, index) => (
+      <span aria-hidden className="h-2.5 min-w-0 max-w-[16rem] flex-1 overflow-hidden rounded-full bg-hairline/[0.07]">
         <span
-          key={index}
-          aria-hidden
-          className={cn(
-            "h-2 rounded-full transition-all duration-500 ease-out",
-            index === current ? "w-7 bg-accent" : index < current ? "w-2 bg-accent/40" : "w-2 bg-hairline/[0.14]"
-          )}
+          className="block h-full rounded-full bg-[linear-gradient(90deg,var(--g1),var(--g2))] transition-[width] duration-700 ease-[cubic-bezier(.16,1,.3,1)] [box-shadow:0_4px_12px_-4px_var(--g1)]"
+          style={{ width: `${percent}%` }}
         />
-      ))}
+      </span>
+      <span aria-hidden className="shrink-0 text-[0.8125rem] font-black tabular text-ink">
+        {current + 1}/{count}
+      </span>
     </div>
   );
 }

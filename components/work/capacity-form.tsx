@@ -82,8 +82,7 @@ export function CapacityForm() {
         title="Temps disponible"
         footer={
           <>
-            Ce que TaekdHub a le droit de remplir quand il répartit tes échéances — à ne pas confondre avec ton objectif :
-            l&apos;objectif est ce que tu vises, la capacité est ce dont tu disposes.
+            Ce dont tu disposes vraiment, jour par jour — pas ce que tu vises.
             {suggestions.length > 0 && (
               <span className="mt-2 flex flex-wrap items-center gap-x-2">
                 {/* On DIT sur combien de journées repose la suggestion : sans
@@ -128,7 +127,7 @@ export function CapacityForm() {
 
       <Group
         title="Marge"
-        footer={`Part de chaque journée que TaekdHub ne planifie jamais — pour les cours qui débordent, les exercices plus longs que prévu et les trajets. Il te reste ${formatSpan(plannableWeek * 60)} planifiables par semaine.`}
+        footer={`Jamais planifiée, pour les imprévus. Reste ${formatSpan(plannableWeek * 60)} planifiables par semaine.`}
       >
         <Row label="Garder libre" stack>
           <SegmentedControl

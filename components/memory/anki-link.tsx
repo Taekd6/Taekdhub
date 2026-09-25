@@ -2,7 +2,7 @@
 
 import { ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
-import { buttonVariants } from "@/components/ui/button";
+
 import { ankiDeckSearchUrl, ankiOpenUrl, detectAnkiPlatform, type AnkiPlatform } from "@/lib/anki";
 import { cn } from "@/lib/cn";
 
@@ -36,8 +36,17 @@ export function AnkiLink({ deck, size = "sm", className }: { deck?: string; size
 
   return (
     <span className={cn("inline-flex flex-wrap items-center gap-x-3 gap-y-1", className)}>
-      <a href={open} className={buttonVariants({ variant: "secondary", size })} data-anki-link="open">
-        <ExternalLink size={14} aria-hidden /> Ouvrir Anki
+      {/* La PASTILLE EN DÉGRADÉ de marque : c'est la sortie vers l'outil où
+          l'on révise vraiment — le geste à faire, pas une option. */}
+      <a
+        href={open}
+        className={cn(
+          "grad-brand bounce-press inline-flex items-center gap-1.5 rounded-full font-extrabold [box-shadow:0_8px_18px_-8px_var(--g1)]",
+          size === "sm" ? "min-h-9 px-4 text-sm max-lg:min-h-11" : "min-h-11 px-5 text-[0.9375rem]"
+        )}
+        data-anki-link="open"
+      >
+        <ExternalLink size={14} strokeWidth={2.6} aria-hidden /> Ouvrir Anki
       </a>
       {deck && (
         <span className="t-meta text-2xs">

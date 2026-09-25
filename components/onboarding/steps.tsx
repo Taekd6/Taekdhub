@@ -67,7 +67,8 @@ export function StepShell({
 }) {
   return (
     <div>
-      <span className="reveal grid h-14 w-14 place-items-center rounded-full bg-accent/15 text-accent" aria-hidden>
+      {/* Le signe de l'écran sur un disque en dégradé qui flotte. */}
+      <span className="grad-brand floaty grid h-16 w-16 place-items-center rounded-full [box-shadow:0_14px_28px_-12px_var(--g1)]" aria-hidden>
         {icon}
       </span>
       <h1 id={titleId} tabIndex={-1} className="t-display mt-6 outline-none">
@@ -87,7 +88,7 @@ export function NameStep({ draft, onChange }: StepProps) {
       titleId="step-title"
       icon={<UserRound size={26} strokeWidth={2.2} />}
       title="Bienvenue sur TaekdHub"
-      lede="Deux minutes pour fixer tes objectifs : ton temps, tes matières, tes concours. Tout se modifie ensuite dans Réglages."
+      lede="Deux minutes pour fixer tes objectifs. Tout se modifie ensuite."
     >
       <label htmlFor="onb-name" className="t-label block">
         Comment tu t&apos;appelles ?
@@ -128,7 +129,7 @@ export function GoalStep({ draft, onChange }: StepProps) {
       titleId="step-title"
       icon={<Target size={26} strokeWidth={2.2} />}
       title="Ton objectif du jour"
-      lede="Le temps de travail personnel que tu veux faire chaque jour, en plus des cours. Un objectif que tu tiens vaut mieux qu'un objectif héroïque."
+      lede="En plus des cours. Mieux vaut un objectif tenu qu'héroïque."
     >
       <div className="surface flex flex-col items-center gap-6 px-5 py-8">
         <MinuteStepper
@@ -185,7 +186,7 @@ export function SubjectsStep({ draft, onChange, marginPercent }: StepProps) {
       titleId="step-title"
       icon={<Sparkles size={26} strokeWidth={2.2} />}
       title="Tes heures par matière"
-      lede="Combien de temps tu veux consacrer à chaque matière, par semaine. Laisse à zéro celles que tu ne veux pas suivre."
+      lede="Par semaine. Zéro pour ne pas suivre une matière."
     >
       <ul className="surface divide-y divide-line overflow-hidden pl-4 sm:pl-5">
         {subjects.map((subject, index) => (
@@ -239,7 +240,7 @@ export function CapacityStep({ draft, onChange, marginPercent }: StepProps) {
       titleId="step-title"
       icon={<Clock3 size={26} strokeWidth={2.2} />}
       title="Ton temps libre par jour"
-      lede="Ce dont tu disposes vraiment pour travailler, une fois les cours, les colles et les trajets passés. TaekdHub ne planifiera jamais au-delà."
+      lede="Une fois les cours, les colles et les trajets passés."
     >
       <div className="flex flex-wrap gap-2" role="group" aria-label="Profils de semaine">
         {CAPACITY_PRESETS.map((preset) => {
@@ -317,7 +318,7 @@ export function ContestStep({ draft, onChange }: StepProps) {
       titleId="step-title"
       icon={<CalendarDays size={26} strokeWidth={2.2} />}
       title="Tes concours, c'est quand ?"
-      lede="La date de la première épreuve écrite. L'accueil affichera le compte à rebours — facultatif, tu peux laisser vide."
+      lede="La première épreuve écrite, pour le compte à rebours. Facultatif."
     >
       <label htmlFor="onb-contest" className="t-label block">
         Date des concours
@@ -376,7 +377,7 @@ export function RecapStep({ draft, marginPercent, onEdit }: StepProps & { onEdit
       titleId="step-title"
       icon={<Sparkles size={26} strokeWidth={2.2} />}
       title={draft.displayName.trim() ? `C'est prêt, ${draft.displayName.trim()}.` : "C'est prêt."}
-      lede="Voici ce que tu t'es fixé. Tout reste modifiable à tout moment dans Réglages."
+      lede="Tout reste modifiable dans Réglages."
     >
       <dl className="surface divide-y divide-line overflow-hidden pl-4 sm:pl-5">
         {rows.map((row, index) => (

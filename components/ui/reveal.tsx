@@ -54,11 +54,23 @@ export function RevealObserver() {
     const root = document.documentElement;
     if (root.getAttribute("data-reveal") !== "armed" || typeof IntersectionObserver === "undefined") return;
 
+    /*
+     * UNE CIBLE PEUT PORTER PLUSIEURS ÉLÉMENTS. Une barre qui pousse
+     * (`.grow-x`, `.grow-y`) ou une pastille qui rebondit (`.pop`) est, en
+     * attendant son tour, écrasée à l'échelle 0 : sa boîte est VIDE, et
+     * Chrome ne la signale jamais comme visible une fois qu'on l'a fait
+     * défiler dans l'écran — la barre restait à zéro pour toujours (vu sur
+     * « Où part ton temps », en bas de Progression). On observe donc son
+     * PARENT, qui a une vraie taille, et on arme tous les éléments qu'il
+     * porte d'un coup.
+     */
+    const waiting = new Map<Element, Element[]>();
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
-          entry.target.setAttribute("data-revealed", "");
+          for (const element of waiting.get(entry.target) ?? []) element.setAttribute("data-revealed", "");
+          waiting.delete(entry.target);
           observer.unobserve(entry.target);
         }
       },
@@ -71,7 +83,13 @@ export function RevealObserver() {
       for (const element of document.querySelectorAll(ANIMATED)) {
         if (element.hasAttribute("data-revealed") || element.hasAttribute("data-reveal-watched")) continue;
         element.setAttribute("data-reveal-watched", "");
-        observer.observe(element);
+        const target = element.matches(".grow-x, .grow-y, .pop") ? (element.parentElement ?? element) : element;
+        const list = waiting.get(target);
+        if (list) list.push(element);
+        else {
+          waiting.set(target, [element]);
+          observer.observe(target);
+        }
       }
     };
 
@@ -91,6 +109,7 @@ export function RevealObserver() {
     return () => {
       mutations.disconnect();
       observer.disconnect();
+      waiting.clear();
       cancelAnimationFrame(frame);
     };
   }, []);

@@ -8,7 +8,7 @@ import { Section } from "@/components/ui/section";
 import { FilterPills } from "@/components/ui/pills";
 import { cn } from "@/lib/cn";
 import { LineChart } from "@/components/ui/chart";
-import { SubjectAvatar } from "@/components/subject-avatar";
+import { ScoreBadge } from "@/components/ui/list-card";
 import { Insufficient } from "@/components/progress/insufficient";
 import { GradeErrorsLink } from "@/components/errors/error-links";
 import { computeGradesByKind, computeGradesBySubject } from "@/lib/tracking";
@@ -75,7 +75,7 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
         variant="panel"
         label="Tes résultats"
         title="Ajouter une note"
-        description="Saisies par toi : c'est le seul regard extérieur sur ton travail. Un pronostic seul crée l'épreuve « en attente » de la copie."
+        description="Un pronostic seul crée l'épreuve « en attente »."
       >
         <GradeForm
           onCreate={(grade) => {
@@ -100,7 +100,7 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
           <Section
             variant="panel"
             title="Ta courbe"
-            description="Les barèmes sont ramenés sur 20 pour être comparables, en moyenne simple. Survole un point pour l'épreuve."
+            description="Ramenée sur 20."
           >
             <div className="space-y-3">
               {byKind.length > 1 && (
@@ -129,7 +129,7 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
                 <div className="mb-6 flex flex-wrap items-end gap-x-8 gap-y-3">
                   <div>
                     <p className="t-label">Moyenne</p>
-                    <p className="t-figure-lg mt-1">
+                    <p className="t-figure-lg text-grad mt-1">
                       {formatAverage(result.stats.average ?? 0)}
                       <span className="text-2xl font-semibold text-subtle"> /20</span>
                     </p>
@@ -176,18 +176,19 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
                 « quand », il dit « où j'en suis ». */}
             {bySubject.length > 1 && (
               <Section variant="panel" title="Par matière" description={kindScope ? GRADE_KIND_META[kindScope].label : "Toutes épreuves confondues."}>
-                <ul className="-mx-2 space-y-0.5">
+                <ul className="-mx-3 -mb-2">
                   {bySubject.map((row) => (
-                    <li key={row.subject} className="row-hover flex items-center gap-3 rounded-xl px-2 py-2.5">
-                      <SubjectAvatar subject={row.subject} />
+                    <li key={row.subject} className="row-slide flex min-h-[4.25rem] items-center gap-3 rounded-[1.125rem] px-3 py-2.5">
+                      {/* La MOYENNE dans la pastille en dégradé : c'est le
+                          chiffre qu'on cherche en premier sur cette carte. */}
+                      <ScoreBadge ratio={row.stats.average !== null ? row.stats.average / 20 : null}>
+                        {row.stats.average !== null ? formatAverage(row.stats.average) : "—"}
+                      </ScoreBadge>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[0.9375rem] font-semibold text-ink">{row.subject}</span>
-                        <span className="t-meta tabular block text-2xs">
-                          moy. {row.stats.average !== null ? formatAverage(row.stats.average) : "—"}
+                        <span className="block truncate text-[0.9375rem] font-extrabold text-ink">{row.subject}</span>
+                        <span className="tabular block truncate text-[0.8125rem] font-bold text-subtle">
+                          dernière {row.stats.latest ? formatGrade(row.stats.latest) : "—"}
                         </span>
-                      </span>
-                      <span className="tabular shrink-0 whitespace-nowrap text-right text-[0.9375rem] font-bold text-ink">
-                        {row.stats.latest ? formatGrade(row.stats.latest) : "—"}
                       </span>
                       {/* « — » et non une flèche quand une seule note existe :
                           deux points font une variation, pas une tendance. */}
@@ -216,21 +217,23 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
             <Section
               variant="panel"
               title="Toutes tes épreuves"
-              description={`${result.grades.length} note${result.grades.length > 1 ? "s" : ""}, de la plus récente à la plus ancienne.`}
+              description={`${result.grades.length} note${result.grades.length > 1 ? "s" : ""}, la plus récente d'abord.`}
               className={bySubject.length > 1 ? undefined : "lg:col-span-2"}
             >
-              <ul className="-mx-2 space-y-0.5">
-                {[...result.grades].reverse().map((grade) => (
-                  <li key={grade.id} className="row-hover flex items-center gap-3 rounded-xl py-2 pl-2">
-                    <SubjectAvatar subject={grade.subject} />
+              <ul className="-mx-3 -mb-2">
+                {[...result.grades].reverse().map((grade) => {
+                  const ratio = normalizedScore(grade) / 20;
+                  return (
+                  <li key={grade.id} className="row-slide flex min-h-[4.25rem] items-center gap-3 rounded-[1.125rem] py-2.5 pl-3 pr-1">
+                    <ScoreBadge ratio={ratio}>{formatAverage(normalizedScore(grade))}</ScoreBadge>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[0.9375rem] font-semibold text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
-                      <span className="t-meta mt-0.5 block truncate text-2xs">
-                        {GRADE_KIND_META[grade.kind].short} · {longDate.format(new Date(`${grade.date}T00:00:00`))}
+                      <span className="block truncate text-[0.9375rem] font-extrabold text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
+                      <span className="block truncate text-[0.8125rem] font-bold text-subtle">
+                        {grade.subject} · {GRADE_KIND_META[grade.kind].short} · {longDate.format(new Date(`${grade.date}T00:00:00`))}
                         {formatPrediction(grade) && <> · pronostic {formatPrediction(grade)}</>}
                       </span>
                     </span>
-                    <span className="t-figure-sm tabular shrink-0 whitespace-nowrap text-xl">{formatGrade(grade)}</span>
+                    <span className="tabular shrink-0 whitespace-nowrap text-[0.9375rem] font-black text-ink">{formatGrade(grade)}</span>
                     <Button
                       size="icon"
                       variant="ghost"
@@ -240,7 +243,8 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
                       <Trash2 size={15} />
                     </Button>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </Section>
           </div>

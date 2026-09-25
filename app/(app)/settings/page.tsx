@@ -19,8 +19,8 @@ import { OnboardingRestartEntry } from "@/components/onboarding/restart-entry";
  */
 export default function SettingsPage() {
   return (
-    <div className="mx-auto max-w-[44rem] space-y-12">
-      <PageHero title="Réglages" lede="Ton apparence, tes objectifs, ton temps disponible et tes sauvegardes." />
+    <div className="mx-auto max-w-[44rem] space-y-10">
+      <PageHero title="Réglages" lede="Apparence, objectifs, temps et sauvegardes." />
       <ThemePicker />
       <PreferencesForm />
       <CapacityForm />

@@ -2,18 +2,24 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo } from "react";
-import { ArrowRight, ChevronRight, LayoutGrid } from "lucide-react";
+import { useMemo, type CSSProperties } from "react";
+import { ArrowRight, BookOpen, ChevronLeft, Copy, LayoutGrid, PenLine, Timer } from "lucide-react";
 import { Section } from "@/components/ui/section";
 import { Tabs } from "@/components/ui/tabs";
 import { ChapterNav } from "@/components/ui/chapter-nav";
 import { PageHero } from "@/components/ui/page-hero";
 import { Illustration, SubjectIllustration } from "@/components/ui/illustrations";
-import { Meter } from "@/components/ui/progress";
+import { Meter, Ring } from "@/components/ui/progress";
+import { GradientCard } from "@/components/ui/gradient-card";
+import { ActionButtons, type ActionItem } from "@/components/ui/action-buttons";
+import { CountUp } from "@/components/ui/count-up";
+import { DateBadge, ScoreBadge } from "@/components/ui/list-card";
+import { SUBJECT_CARD_NAME, SUBJECT_GLYPH } from "@/components/home/cards";
+import { dueReviewItems } from "@/lib/spaced-repetition";
 import { VolumeBars } from "@/components/ui/chart";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState, Skeleton } from "@/components/ui/state";
-import { SubjectAvatar } from "@/components/subject-avatar";
+
 import { SubjectTargetList } from "@/components/work/subject-targets";
 import { ReviewCapture, ReviewList } from "@/components/review/review-capture";
 import { DueToday } from "@/components/review/due-today";
@@ -28,7 +34,7 @@ import { countByType, ERROR_SOURCE_META, ERROR_TYPE_META, errorLogHref, sortErro
 import { methodsFor, selectReviewItems } from "@/lib/review-items";
 import { computePeriodTotals } from "@/lib/tracking";
 import { subjects as allSubjects } from "@/lib/study";
-import { formatSpan } from "@/lib/utils";
+import { formatMinutesSpan, formatSpan } from "@/lib/utils";
 import { cn } from "@/lib/cn";
 import type { ErrorEntry, Grade, ReviewItem } from "@/lib/storage";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
@@ -52,9 +58,18 @@ import type { Subject, WorkSession } from "@/lib/supabase/types";
  *                              envie d'entrer.
  *   /preparation?subject=…     la PAGE d'une matière : la rangée illustrée
  *                              des matières en haut (`ChapterNav`) pour
- *                              passer de l'une à l'autre, un grand titre, et
- *                              quatre onglets ancrés dans l'URL —
- *                              `#apercu`, `#revoir`, `#erreurs`, `#notes`.
+ *                              passer de l'une à l'autre, la CARTE-HÉROS en
+ *                              dégradé (temps de la semaine face au budget,
+ *                              révisions dues, moyenne), les quatre gestes
+ *                              en boutons ronds (Chrono · Noter · Réviser ·
+ *                              Chapitres), et les onglets ancrés dans l'URL —
+ *                              `#apercu`, `#revoir`, `#chapitres`,
+ *                              `#erreurs`, `#notes`.
+ *
+ * STYLE « REVOLUT CLAIR » (le même que l'accueil) : la galerie est faite de
+ * cartes en DÉGRADÉ, tons cyclés (carte 1, 2, 3, 4, 1…) — la couleur dit
+ * « carte suivante », jamais « c'est les maths » ; la matière ouverte garde
+ * le ton de sa carte dans la galerie, pour qu'on la « reconnaisse » en entrant.
  *
  * La matière vient de l'URL (`useSearchParams`) : un lien partagé, le bouton
  * précédent et l'accueil (« ?subject= ») ouvrent tous la bonne page. La page
@@ -93,9 +108,11 @@ export function SubjectHub() {
   // suivre (lien direct vers une matière vide) : sinon aucune vignette ne
   // serait allumée.
   const navSubjects = available.includes(active) ? available : [...available, active];
+  const tone = Math.max(0, navSubjects.indexOf(active));
+  const dueCount = dueReviewItems(reviewItems, new Date(), active).length;
 
   return (
-    <div className="space-y-10 sm:space-y-12">
+    <div className="mx-auto max-w-[68rem] space-y-8 sm:space-y-10">
       <ChapterNav
         ariaLabel="Matières"
         activeHref={subjectHref(active)}
@@ -105,20 +122,12 @@ export function SubjectHub() {
         ]}
       />
 
-      <PageHero
-        eyebrow={
-          <Link href="/preparation" className="inline-flex min-h-6 items-center gap-1 rounded hover:text-ink max-lg:min-h-11">
-            Suivi par matière
-          </Link>
-        }
-        title={active}
-        lede={
-          activeModel.workload.recentMinutes > 0
-            ? `${formatSpan(activeModel.workload.recentMinutes * 60)} ces ${HUB_RECENT_DAYS} derniers jours.`
-            : `Aucune séance ces ${HUB_RECENT_DAYS} derniers jours.`
-        }
-        illustration={<SubjectIllustration subject={active} size={60} />}
-      />
+      <div className="grid gap-7 lg:grid-cols-12 lg:items-center lg:gap-10">
+        <SubjectHero subject={active} model={activeModel} tone={tone} due={dueCount} className="lg:col-span-7" />
+        <div className="reveal lg:col-span-5" style={{ "--i": 2 } as CSSProperties}>
+          <ActionButtons items={subjectActions(active)} className="lg:mx-auto lg:max-w-md" />
+        </div>
+      </div>
 
       {/* `key` : changer de matière remet l'onglet d'ouverture à zéro, comme
           une nouvelle page — l'ancre, elle, est effacée par le lien. */}
@@ -129,7 +138,7 @@ export function SubjectHub() {
         items={[
           {
             id: "apercu",
-            label: "Vue d'ensemble",
+            label: "Aperçu",
             content: <Overview subject={active} model={activeModel} sessions={sessions} />,
           },
           {
@@ -157,6 +166,93 @@ export function SubjectHub() {
         ]}
       />
     </div>
+  );
+}
+
+/**
+ * Les quatre gestes d'une matière, en boutons ronds sous la carte-héros —
+ * la même rangée que l'accueil. Le chrono en dégradé ; « Noter » ouvre la
+ * saisie d'une note (Progression, onglet Notes) ; « Réviser » lance la
+ * séance du jour FILTRÉE sur la matière ; « Chapitres » ouvre l'onglet de
+ * la page (`Tabs` suit l'ancre).
+ */
+function subjectActions(subject: Subject): ActionItem[] {
+  return [
+    { label: "Chrono", icon: Timer, href: "/timer", primary: true },
+    { label: "Noter", icon: PenLine, href: "/progress#notes" },
+    { label: "Réviser", icon: Copy, href: `/revoir/session?subject=${encodeURIComponent(subject)}` },
+    { label: "Chapitres", icon: BookOpen, href: "#chapitres" },
+  ];
+}
+
+/**
+ * LA CARTE-HÉROS D'UNE MATIÈRE — en dégradé, du ton de sa carte dans la
+ * galerie : le signe de la matière, son nom, le temps de la semaine en très
+ * grand (il compte jusqu'à sa valeur), l'anneau blanc du budget, puis trois
+ * pastilles de verre — révisions dues, moyenne, échéances.
+ */
+function SubjectHero({
+  subject,
+  model,
+  tone,
+  due,
+  className,
+}: {
+  subject: Subject;
+  model: HubSubjectModel;
+  tone: number;
+  due: number;
+  className?: string;
+}) {
+  const { target, workload } = model;
+  const weekMinutes = target ? target.doneMinutes : workload.recentMinutes;
+  const deadlines = model.deadlines.length;
+  return (
+    <GradientCard tone={tone} tilt={false} className={cn("reveal p-5 sm:p-7", className)} style={{ "--i": 1 } as CSSProperties}>
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href="/preparation"
+          className="inline-flex min-h-9 items-center gap-1 rounded-full bg-white/20 py-1 pl-2 pr-3.5 text-[0.8125rem] font-extrabold text-white transition-colors hover:bg-white/30 max-lg:min-h-11"
+        >
+          <ChevronLeft size={16} strokeWidth={2.6} aria-hidden /> Matières
+        </Link>
+        <span aria-hidden className="t-glyph whitespace-nowrap opacity-90">
+          {SUBJECT_GLYPH[subject]}
+        </span>
+      </div>
+      <div className="mt-5 flex items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="t-title">{subject}</h1>
+          <p className="t-card-figure mt-2 whitespace-nowrap">
+            <span className="sr-only">{formatSpan(weekMinutes * 60)} {target ? "cette semaine" : `ces ${HUB_RECENT_DAYS} jours`}</span>
+            <span aria-hidden>
+              <CountUp value={weekMinutes} duration={1400} format={(value) => formatSpan(value * 60)} />
+            </span>
+          </p>
+          <p className="mt-1.5 text-[0.8125rem] font-bold opacity-80">
+            {target ? `cette semaine · sur ${formatMinutesSpan(target.targetMinutes)}` : `ces ${HUB_RECENT_DAYS} jours · pas de budget`}
+          </p>
+        </div>
+        {target && (
+          <Ring value={target.percent} size={88} strokeWidth={8} variant="white">
+            <span className="text-base font-black tabular">{target.percent}%</span>
+          </Ring>
+        )}
+      </div>
+      <ul className="mt-5 flex flex-wrap gap-2 text-[0.8125rem] font-extrabold">
+        <li className="rounded-full bg-white/20 px-3 py-1.5">
+          <span className="tabular">{due}</span> à réviser aujourd&apos;hui
+        </li>
+        {model.grades.average !== null && (
+          <li className="rounded-full bg-white/20 px-3 py-1.5">
+            moy. <span className="tabular">{formatAverage(model.grades.average)}</span>
+          </li>
+        )}
+        <li className="rounded-full bg-white/20 px-3 py-1.5">
+          <span className="tabular">{deadlines}</span> échéance{deadlines > 1 ? "s" : ""}
+        </li>
+      </ul>
+    </GradientCard>
   );
 }
 
@@ -190,10 +286,11 @@ function HubSkeleton() {
    ══════════════════════════════════════════════════════════════════ */
 
 /**
- * Une tuile par matière suivie — le dessin, le nom, le temps de la semaine,
- * la barre du budget, et ce qui attend (échéances, carnet). La tuile entière
- * est un lien ; elle grossit d'un pour cent au survol (`.lift`), et entre en
- * cascade au chargement.
+ * Une CARTE EN DÉGRADÉ par matière suivie (tons cyclés, comme la galerie de
+ * l'accueil) — le signe, l'anneau blanc du budget, le nom, le temps de la
+ * semaine qui compte jusqu'à sa valeur, et ce qui attend (échéances,
+ * carnet). La carte entière est un lien ; elle flotte, s'incline au survol,
+ * et entre en cascade au chargement.
  */
 function HubLanding({
   available,
@@ -205,11 +302,8 @@ function HubLanding({
   reviewItems: ReviewItem[];
 }) {
   return (
-    <div className="space-y-10 sm:space-y-12">
-      <PageHero
-        title="Tes matières"
-        lede="Ce que tu y as mis, ce qui arrive, ce qu'il reste à revoir et tes notes — matière par matière."
-      />
+    <div className="mx-auto max-w-[68rem] space-y-8 sm:space-y-10">
+      <PageHero title="Tes matières" lede="Ta semaine, matière par matière." illustration={<Illustration name="notes" size={48} />} />
 
       {available.length === 0 ? (
         <EmptyState
@@ -223,55 +317,49 @@ function HubLanding({
           }
         />
       ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">
           {available.map((subject, index) => {
             const model = models.get(subject);
             if (!model) return null;
             const open = selectReviewItems(reviewItems, { subject, openOnly: true }).length;
             const deadlines = model.deadlines.length;
+            const target = model.target;
+            const minutes = target ? target.doneMinutes : model.workload.recentMinutes;
+            const waiting = [deadlines > 0 && `${deadlines} échéance${deadlines > 1 ? "s" : ""}`, open > 0 && `${open} à revoir`].filter(Boolean).join(" · ");
             return (
-              <li key={subject} className="reveal" style={{ "--i": index } as React.CSSProperties}>
-                <Link
+              <li key={subject} className="reveal" style={{ "--i": index } as CSSProperties}>
+                <GradientCard
+                  tone={index}
+                  index={index}
+                  float
                   href={subjectHref(subject)}
-                  className="surface lift group flex h-full min-h-[15rem] flex-col p-6 sm:p-7"
-                  aria-label={`${subject} — ${formatSpan(model.workload.recentMinutes * 60)} ces ${HUB_RECENT_DAYS} jours`}
+                  aria-label={`${subject} — ${formatSpan(minutes * 60)} ${target ? `cette semaine sur ${formatMinutesSpan(target.targetMinutes)}` : `ces ${HUB_RECENT_DAYS} jours`}${waiting ? `, ${waiting}` : ""}`}
+                  wrapperClassName="h-full"
+                  className="flex h-full min-h-[12.5rem] flex-col justify-between p-4 sm:min-h-[13.5rem] sm:p-5"
                 >
-                  <div className="flex items-start justify-between">
-                    <span className="text-ink transition-transform duration-500 ease-[cubic-bezier(.16,1,.3,1)] group-hover:-translate-y-1 motion-reduce:group-hover:translate-y-0">
-                      <SubjectIllustration subject={subject} size={56} />
-                    </span>
-                    <span className="grid h-8 w-8 place-items-center rounded-full bg-inset text-muted transition-colors group-hover:text-ink">
-                      <ChevronRight size={16} strokeWidth={2.4} aria-hidden />
-                    </span>
-                  </div>
-                  <h2 className="t-heading mt-5">{subject}</h2>
-                  <p className="t-meta mt-1">
-                    <span className="tabular font-semibold text-ink">{formatSpan(model.workload.recentMinutes * 60)}</span> ces {HUB_RECENT_DAYS} jours
-                    {model.workload.sharePercent !== null && model.workload.sharePercent > 0 && <> · {model.workload.sharePercent} % du mois</>}
-                  </p>
-                  <div className="mt-auto pt-6">
-                    {model.target ? (
-                      <>
-                        <Meter value={model.target.percent} tone={model.target.percent >= 100 ? "accent" : "neutral"} index={index} />
-                        <p className="t-meta mt-2 flex justify-between gap-2 text-2xs">
-                          <span>budget de la semaine</span>
-                          <span className="tabular">
-                            {formatSpan(model.target.doneSeconds)} / {formatSpan(model.target.targetMinutes * 60)}
-                          </span>
-                        </p>
-                      </>
-                    ) : (
-                      <p className="t-meta text-2xs">Pas de budget hebdomadaire</p>
+                  <span aria-hidden className="flex items-start justify-between gap-2">
+                    <span className="t-glyph whitespace-nowrap">{SUBJECT_GLYPH[subject]}</span>
+                    {target && (
+                      <Ring value={target.percent} size={44} strokeWidth={5} variant="white">
+                        <span className="text-[0.625rem] font-black tabular">{target.percent}%</span>
+                      </Ring>
                     )}
-                    <p className="mt-3 flex flex-wrap gap-1.5 text-2xs font-semibold">
-                      <Tag active={deadlines > 0}>
-                        {deadlines} échéance{deadlines > 1 ? "s" : ""}
-                      </Tag>
-                      <Tag active={open > 0}>{open} à revoir</Tag>
-                      {model.grades.average !== null && <Tag>moy. {formatAverage(model.grades.average)}</Tag>}
-                    </p>
-                  </div>
-                </Link>
+                  </span>
+                  <span aria-hidden className="mt-4 block min-w-0">
+                    <span className="block truncate text-base font-extrabold">{SUBJECT_CARD_NAME[subject]}</span>
+                    <span className="block whitespace-nowrap text-2xl font-black tabular tracking-[-0.02em] sm:text-3xl">
+                      <CountUp value={minutes} format={(value) => formatSpan(value * 60)} />
+                    </span>
+                    <span className="block truncate text-xs font-bold opacity-80">
+                      {target ? `sur ${formatMinutesSpan(target.targetMinutes)}` : `ces ${HUB_RECENT_DAYS} jours`}
+                    </span>
+                    <span className="mt-2.5 flex flex-wrap gap-1 text-[0.6875rem] font-extrabold">
+                      {deadlines > 0 && <span className="rounded-full bg-white/20 px-2 py-0.5">{deadlines} éch.</span>}
+                      {open > 0 && <span className="rounded-full bg-white/20 px-2 py-0.5">{open} à revoir</span>}
+                      {model.grades.average !== null && <span className="rounded-full bg-white/20 px-2 py-0.5">moy. {formatAverage(model.grades.average)}</span>}
+                    </span>
+                  </span>
+                </GradientCard>
               </li>
             );
           })}
@@ -281,22 +369,18 @@ function HubLanding({
   );
 }
 
-function Tag({ active = false, children }: { active?: boolean; children: React.ReactNode }) {
-  return <span className={cn("rounded-full px-2.5 py-1", active ? "bg-accent/[0.14] text-accent" : "bg-inset text-muted")}>{children}</span>;
-}
-
 /* ══════════════════════════════════════════════════════════════════
    LA PAGE D'UNE MATIÈRE — quatre onglets
    ══════════════════════════════════════════════════════════════════ */
 
 const DAY_MONTH = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
 
-/** Un chiffre dans un creux gris. */
+/** Un chiffre dans un creux gris — en 900, arrondi, comme les tuiles de l'accueil. */
 function Figure({ label, value, detail }: { label: string; value: React.ReactNode; detail?: string }) {
   return (
     <div className="well min-w-0 p-4 sm:p-5">
-      <p className="t-label text-[0.8125rem]">{label}</p>
-      <p className="t-figure-sm mt-2 whitespace-nowrap">{value}</p>
+      <p className="text-[0.8125rem] font-bold text-muted">{label}</p>
+      <p className="t-stat mt-1 whitespace-nowrap text-ink">{value}</p>
       {detail && <p className="t-meta mt-1 text-2xs">{detail}</p>}
     </div>
   );
@@ -318,7 +402,7 @@ function Overview({ subject, model, sessions }: { subject: Subject; model: HubSu
 
   return (
     <div className="space-y-5">
-      <Section variant="panel" title="Temps de travail" description="Le temps que tu as réellement mis dans cette matière.">
+      <Section variant="panel" title="Temps de travail">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Figure label={`Ces ${HUB_RECENT_DAYS} jours`} value={formatSpan(workload.recentMinutes * 60)} />
           <Figure
@@ -380,26 +464,27 @@ function Overview({ subject, model, sessions }: { subject: Subject; model: HubSu
           {deadlines.length === 0 ? (
             <p className="t-meta">Aucune échéance ouverte en {subject}. Elles se saisissent depuis l&apos;écran Échéances.</p>
           ) : (
-            <ul className="-mx-2 space-y-0.5">
-              {deadlines.slice(0, 5).map((priority) => (
-                <li key={priority.item.id} className="row-hover flex items-center gap-3 rounded-xl px-2 py-2.5">
-                  <span
-                    className={cn(
-                      "grid h-11 w-11 shrink-0 place-items-center rounded-xl text-center text-2xs font-bold leading-tight tabular",
-                      priority.overdue ? "bg-rose-400/[0.14] text-rose-300" : priority.daysUntilDue !== null && priority.daysUntilDue <= 2 ? "bg-accent/[0.14] text-accent" : "bg-inset text-muted"
-                    )}
-                  >
-                    {priority.daysUntilDue === null
-                      ? "—"
-                      : priority.overdue
-                        ? `−${Math.abs(priority.daysUntilDue)} j`
-                        : priority.daysUntilDue === 0
-                          ? "auj."
-                          : `${priority.daysUntilDue} j`}
-                  </span>
+            <ul className="-mx-3 -mb-2">
+              {deadlines.slice(0, 5).map((priority, index) => (
+                <li key={priority.item.id} className="row-slide flex min-h-[4.25rem] items-center gap-3 rounded-[1.125rem] px-3 py-2.5">
+                  <DateBadge date={priority.item.dueDate ? new Date(`${priority.item.dueDate}T00:00:00`) : null} tone={index} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[0.9375rem] font-semibold text-ink">{priority.item.title}</p>
-                    <p className="t-meta mt-0.5 truncate text-[0.8125rem]">{priority.feasibility.reason}</p>
+                    <p className="truncate text-[0.9375rem] font-extrabold text-ink">{priority.item.title}</p>
+                    <p
+                      className={cn(
+                        "mt-0.5 truncate text-[0.8125rem] font-bold",
+                        priority.overdue ? "text-rose-300" : priority.daysUntilDue !== null && priority.daysUntilDue <= 2 ? "text-accent" : "text-subtle"
+                      )}
+                    >
+                      {priority.daysUntilDue === null
+                        ? "Sans date"
+                        : priority.overdue
+                          ? `En retard de ${Math.abs(priority.daysUntilDue)} j`
+                          : priority.daysUntilDue === 0
+                            ? "Aujourd'hui"
+                            : `Dans ${priority.daysUntilDue} j`}
+                      <span className="text-subtle/80"> · {priority.feasibility.reason}</span>
+                    </p>
                   </div>
                 </li>
               ))}
@@ -444,7 +529,7 @@ function ReviewTab({
       <Section
         variant="panel"
         title="À revoir"
-        description="Ce que tu as noté en relisant tes corrigés."
+        description="Noté en relisant tes corrigés."
         action={
           <Link href={`/revoir?subject=${encodeURIComponent(subject)}`} className={buttonVariants({ variant: "link", size: "sm" })}>
             Tout le carnet <ArrowRight size={14} aria-hidden />
@@ -465,7 +550,7 @@ function ReviewTab({
         title="Cartouches"
         description={
           methods.length > 0
-            ? `${mastered} maîtrisée${mastered > 1 ? "s" : ""} sur ${methods.length} — un recueil qu'on relit avant un DS.`
+            ? `${mastered} maîtrisée${mastered > 1 ? "s" : ""} sur ${methods.length}.`
             : "Les manières de penser tirées de tes corrigés."
         }
       >
@@ -592,7 +677,7 @@ function GradesTab({ subject, model, grades }: { subject: Subject; model: HubSub
       <Section
         variant="panel"
         title="Tes moyennes"
-        description="Une moyenne par nature d'épreuve : un DM et un DS ne se passent pas dans les mêmes conditions."
+        description="Une par nature d'épreuve."
         action={
           <Link href="/progress#notes" className={buttonVariants({ variant: "link", size: "sm" })}>
             Ajouter une note <ArrowRight size={14} aria-hidden />
@@ -628,17 +713,19 @@ function GradesTab({ subject, model, grades }: { subject: Subject; model: HubSub
 
       {recent.length > 0 && (
         <Section variant="panel" title="Dernières notes">
-          <ul className="-mx-2 space-y-0.5">
+          <ul className="-mx-3 -mb-2">
             {recent.map((grade) => (
-              <li key={grade.id} className="row-hover flex items-center gap-3 rounded-xl px-2 py-2.5">
-                <SubjectAvatar subject={grade.subject} />
+              <li key={grade.id} className="row-slide flex min-h-[4.25rem] items-center gap-3 rounded-[1.125rem] px-3 py-2.5">
+                <ScoreBadge ratio={grade.score !== null ? grade.score / grade.maxScore : null}>
+                  {grade.score !== null ? formatAverage((grade.score / grade.maxScore) * 20) : "—"}
+                </ScoreBadge>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[0.9375rem] font-semibold text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
-                  <span className="t-meta block truncate text-2xs">
+                  <span className="block truncate text-[0.9375rem] font-extrabold text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
+                  <span className="block truncate text-[0.8125rem] font-bold text-subtle">
                     {GRADE_KIND_META[grade.kind].short} · {DAY_MONTH.format(new Date(`${grade.date}T00:00:00`))}
                   </span>
                 </span>
-                <span className="t-figure-sm tabular shrink-0 whitespace-nowrap text-xl">{formatGrade(grade)}</span>
+                <span className="tabular shrink-0 whitespace-nowrap text-[0.9375rem] font-black text-ink">{formatGrade(grade)}</span>
               </li>
             ))}
           </ul>

@@ -7,8 +7,9 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { PageHero } from "@/components/ui/page-hero";
 import { Illustration } from "@/components/ui/illustrations";
 import { Meter } from "@/components/ui/progress";
+import { CountUp } from "@/components/ui/count-up";
+import { GradientCard } from "@/components/ui/gradient-card";
 import { Section } from "@/components/ui/section";
-import { Stat, StatRow } from "@/components/ui/stat";
 import { EmptyState, Skeleton } from "@/components/ui/state";
 import { SubjectAvatar } from "@/components/subject-avatar";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -59,6 +60,14 @@ import type { Subject } from "@/lib/supabase/types";
  */
 
 type Phase = "start" | "run" | "end";
+
+/** La pilule colorée de chaque note — voir `.rate-*` (app/globals.css). */
+const RATE_CLASS: Record<ReviewRating, string> = {
+  again: "rate-again",
+  hard: "rate-hard",
+  good: "rate-good",
+  easy: "rate-easy",
+};
 
 interface RatedEntry {
   id: string;
@@ -170,61 +179,68 @@ export function ReviewSession() {
     const done = Math.min(index, queue.length);
     return (
       <div className="space-y-5">
-        <div className="flex items-center justify-between gap-4">
-          <p className="t-label">Révisions du jour</p>
+        {/* LA BARRE DE PROGRESSION en dégradé, le compte à droite, la sortie
+            en pastille ronde. */}
+        <div className="flex items-center gap-3">
+          <Meter value={(done / queue.length) * 100} className="h-2.5 flex-1" />
+          <span className="tabular shrink-0 text-[0.8125rem] font-black text-ink" aria-label={`Carte ${done + 1} sur ${queue.length}`}>
+            {done + 1} / {queue.length}
+          </span>
           <button
             type="button"
             onClick={() => setPhase("end")}
-            className="t-meta inline-flex min-h-6 items-center text-2xs hover:text-ink max-lg:min-h-11"
+            className="inline-flex min-h-8 shrink-0 items-center rounded-full bg-inset px-3 text-[0.8125rem] font-bold text-muted transition-colors hover:text-ink max-lg:min-h-11"
           >
             Terminer
           </button>
         </div>
-        <div className="flex items-center gap-3">
-          <Meter value={(done / queue.length) * 100} className="flex-1" />
-          <span className="tabular t-meta shrink-0 text-2xs" aria-label={`Carte ${done + 1} sur ${queue.length}`}>
-            {done + 1} / {queue.length}
-          </span>
-        </div>
 
-        <Section variant="panel" className="min-h-[16rem] sm:p-7">
-          <div className="flex items-center gap-2">
-            <SubjectAvatar subject={current.subject} size="sm" />
-            <span className="t-meta text-2xs">
+        {/* LA CARTE — une grande tuile blanche qui flotte ; la question en
+            900, la réponse sous un filet une fois retournée. La `key` rejoue
+            l'entrée à chaque carte. */}
+        <section key={current.id} className="surface tab-in-next min-h-[19rem] rounded-[2rem] p-6 sm:p-9">
+          <div className="flex items-center gap-2.5">
+            <SubjectAvatar subject={current.subject} size="md" />
+            <span className="text-[0.8125rem] font-bold text-subtle">
               {current.subject} · {REVIEW_KIND_META[current.kind].label}
             </span>
           </div>
-          <h2 ref={cardHeading} tabIndex={-1} className="t-heading mt-4 break-words outline-none">
+          <h2 ref={cardHeading} tabIndex={-1} className="t-title mt-5 break-words text-ink outline-none">
             {current.text}
           </h2>
 
           {hasAnswer ? (
             revealed ? (
-              <div className="mt-5 border-t border-line pt-5">
-                <p className="t-label">Réponse</p>
-                <p className="t-body mt-1.5 whitespace-pre-line break-words text-ink">{current.answer}</p>
+              <div className="mt-6 border-t border-line pt-5">
+                <p className="text-[0.8125rem] font-extrabold text-accent">Réponse</p>
+                <p className="t-body mt-1.5 whitespace-pre-line break-words font-semibold text-ink">{current.answer}</p>
               </div>
             ) : (
-              <div className="mt-6">
-                <p className="t-lede">Essaie de répondre de tête avant de retourner la carte — même approximativement.</p>
-                <Button className="mt-4 w-full sm:w-auto" onClick={() => setRevealed(true)}>
+              <div className="mt-7">
+                <p className="text-[0.9375rem] font-semibold text-muted">Réponds de tête d&apos;abord, même à peu près.</p>
+                <button
+                  type="button"
+                  className="grad-brand bounce-press mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full px-7 text-base font-extrabold [box-shadow:0_12px_26px_-10px_var(--g1)] sm:w-auto"
+                  onClick={() => setRevealed(true)}
+                >
                   Afficher la réponse
-                  <kbd className="rounded border border-current px-1.5 text-2xs font-normal opacity-60 max-lg:hidden">Espace</kbd>
-                </Button>
+                  <kbd className="rounded-md border border-white/50 px-1.5 text-2xs font-bold opacity-80 max-lg:hidden">Espace</kbd>
+                </button>
               </div>
             )
           ) : (
-            <p className="t-lede mt-6">Tu t&apos;en souviens ? Redis-le de tête, puis note-toi honnêtement.</p>
+            <p className="mt-6 text-[0.9375rem] font-semibold text-muted">Redis-le de tête, puis note-toi honnêtement.</p>
           )}
-        </Section>
+        </section>
 
         {canRate && (
           <div>
-            <p className="t-meta mb-2 text-2xs">
+            <p className="mb-2.5 text-[0.8125rem] font-semibold text-muted">
               {hasAnswer ? "Compare avec ce que tu avais en tête." : "Sois honnête : c'est ce qui règle la prochaine révision."}
             </p>
-            <div role="group" aria-label="Ta note" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {REVIEW_RATINGS.map((rating) => {
+            {/* LES QUATRE NOTES en pilules colorées : on les touche sans les lire. */}
+            <div role="group" aria-label="Ta note" className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              {REVIEW_RATINGS.map((rating, position) => {
                 const meta = REVIEW_RATING_META[rating];
                 return (
                   <button
@@ -232,13 +248,17 @@ export function ReviewSession() {
                     type="button"
                     onClick={() => rate(rating)}
                     title={meta.hint}
-                    className="surface press flex min-h-16 flex-col items-center justify-center gap-0.5 px-2 py-2.5 text-ink hover:bg-inset"
+                    className={cn(
+                      "bounce-press pop flex min-h-16 flex-col items-center justify-center gap-0.5 rounded-full px-3 py-2.5",
+                      RATE_CLASS[rating]
+                    )}
+                    style={{ "--pop-delay": `${position * 60}ms` } as React.CSSProperties}
                   >
-                    <span className="flex items-center gap-1.5 text-sm font-medium">
-                      <kbd className="tabular rounded border border-line px-1 text-2xs font-normal text-subtle max-lg:hidden">{meta.key}</kbd>
+                    <span className="flex items-center gap-1.5 text-[0.9375rem] font-black">
+                      <kbd className="tabular rounded-md border border-white/50 px-1 text-2xs font-bold opacity-80 max-lg:hidden">{meta.key}</kbd>
                       {meta.label}
                     </span>
-                    <span className="tabular text-2xs text-muted">{preview[rating] === 1 ? "demain" : formatInterval(preview[rating])}</span>
+                    <span className="tabular text-2xs font-bold opacity-85">{preview[rating] === 1 ? "demain" : formatInterval(preview[rating])}</span>
                   </button>
                 );
               })}
@@ -292,7 +312,7 @@ function SessionStart({
     <div className="space-y-8">
       <PageHero
         title="Révisions du jour"
-        lede="Les entrées de ton carnet qui arrivent à échéance aujourd'hui. Pour chacune : cherche la réponse de tête, retourne la carte, note-toi."
+        lede="Cherche de tête, retourne la carte, note-toi."
         illustration={<Illustration name="revisions" size={56} />}
       />
 
@@ -322,31 +342,39 @@ function SessionStart({
           }
         />
       ) : (
-        <Section variant="panel">
+        // LA CARTE DU JOUR en dégradé orange → rose (celui de la bannière des
+        // révisions de l'accueil) : le compte en énorme, qui monte, et
+        // « Commencer » en pilule blanche.
+        <GradientCard tone="review" tilt={false} className="reveal p-6 sm:p-8">
           <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
             <div>
-              <p className="t-figure-lg tabular">{due.length}</p>
-              <p className="t-meta mt-1">
-                entrée{due.length > 1 ? "s" : ""} à réviser
-                {withAnswer > 0 && withAnswer < due.length && ` · ${withAnswer} avec une réponse à retrouver`}
+              <p className="t-hero">
+                <CountUp value={due.length} />
+              </p>
+              <p className="mt-1.5 text-[0.9375rem] font-bold opacity-90">
+                entrée{due.length > 1 ? "s" : ""} à réviser · ≈ {due.length * 2} min
+                {withAnswer > 0 && withAnswer < due.length && ` · ${withAnswer} avec réponse`}
               </p>
             </div>
             {perSubject.length > 1 && (
-              <ul className="flex flex-wrap items-center gap-3" aria-label="Par matière">
+              <ul className="flex flex-wrap items-center gap-1.5" aria-label="Par matière">
                 {perSubject.map((entry) => (
-                  <li key={entry.subject} className="flex items-center gap-1.5" title={entry.subject}>
-                    <SubjectAvatar subject={entry.subject} size="sm" />
-                    <span className="tabular text-2xs text-muted">{entry.count}</span>
+                  <li key={entry.subject} className="rounded-full bg-white/20 px-2.5 py-1 text-[0.8125rem] font-extrabold" title={entry.subject}>
+                    {entry.subject} <span className="tabular">{entry.count}</span>
                   </li>
                 ))}
               </ul>
             )}
           </div>
-          <Button size="lg" className="mt-6 w-full sm:w-auto" onClick={onStart}>
+          <button
+            type="button"
+            className="bounce-press mt-6 inline-flex min-h-14 w-full items-center justify-center rounded-full bg-white px-9 text-base font-black text-[#0b0b14] sm:w-auto"
+            onClick={onStart}
+          >
             Commencer
-          </Button>
-          <p className="t-meta mt-3 text-2xs max-lg:hidden">Au clavier : Espace pour retourner la carte, 1 à 4 pour te noter.</p>
-        </Section>
+          </button>
+          <p className="mt-3 text-2xs font-bold opacity-80 max-lg:hidden">Espace pour retourner la carte, 1 à 4 pour te noter.</p>
+        </GradientCard>
       )}
 
       <WhyItWorks />
@@ -365,7 +393,7 @@ function SessionStart({
 function WhyItWorks() {
   return (
     <details className="group px-1">
-      <summary className="flex min-h-8 cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-ink max-lg:min-h-11 [&::-webkit-details-marker]:hidden">
+      <summary className="inline-flex min-h-9 cursor-pointer list-none items-center gap-1.5 rounded-full bg-inset px-3.5 text-sm font-bold text-ink transition-colors hover:bg-hairline/[0.10] max-lg:min-h-11 [&::-webkit-details-marker]:hidden">
         <ChevronDown size={15} aria-hidden className="text-subtle transition-transform group-open:rotate-180" />
         Pourquoi ça marche
       </summary>
@@ -435,11 +463,15 @@ function SessionEnd({
 
       {rated.length > 0 && (
         <>
-          <StatRow>
-            {counts.map(({ rating, count }) => (
-              <Stat key={rating} label={REVIEW_RATING_META[rating].label} value={<span className="tabular">{count}</span>} size="sm" />
+          {/* Le compte de chaque note, dans sa pilule de couleur. */}
+          <ul className="grid grid-cols-4 gap-2" aria-label="Tes notes">
+            {counts.map(({ rating, count }, position) => (
+              <li key={rating} className={cn("pop flex flex-col items-center rounded-[1.25rem] px-2 py-3", RATE_CLASS[rating])} style={{ "--pop-delay": `${position * 80}ms` } as React.CSSProperties}>
+                <span className="text-2xl font-black leading-none tabular">{count}</span>
+                <span className="mt-1 text-2xs font-bold opacity-90">{REVIEW_RATING_META[rating].label}</span>
+              </li>
             ))}
-          </StatRow>
+          </ul>
 
           <Section variant="panel" label="Prochaines échéances" title="Quand elles reviendront">
             <ul className="divide-y divide-line border-y border-line">
@@ -447,12 +479,10 @@ function SessionEnd({
                 const item = byId.get(entry.id);
                 if (!item) return null;
                 return (
-                  <li key={entry.id} className="flex items-start gap-2.5 py-2">
-                    <span className="translate-y-px">
-                      <SubjectAvatar subject={item.subject} size="sm" />
-                    </span>
-                    <p className="min-w-0 flex-1 break-words text-[0.8125rem] leading-5 text-ink">{item.text}</p>
-                    <span className={cn("tabular shrink-0 text-2xs", entry.rating === "again" ? "text-ink" : "text-muted")}>
+                  <li key={entry.id} className="flex items-center gap-3 py-2.5">
+                    <SubjectAvatar subject={item.subject} size="md" />
+                    <p className="min-w-0 flex-1 break-words text-[0.875rem] font-bold leading-5 text-ink">{item.text}</p>
+                    <span className={cn("tabular shrink-0 text-[0.8125rem] font-bold", entry.rating === "again" ? "text-ink" : "text-muted")}>
                       {formatDueDay(effectiveSchedule(item).dueAt)}
                     </span>
                   </li>
