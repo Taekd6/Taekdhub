@@ -1,6 +1,6 @@
 import { subjects } from "@/lib/study";
 import { SRS_LADDER } from "@/lib/spaced-repetition";
-import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, LEGACY_DEFAULT_ACCENTS, THEME_MODES, hexToRgb, type ThemeMode } from "@/lib/theme";
+import { DEFAULT_PALETTE, DEFAULT_THEME_MODE, THEME_MODES, resolvePaletteId, type PaletteId, type ThemeMode } from "@/lib/theme";
 import type { AttemptResult, Subject, WorkSession } from "@/lib/supabase/types";
 
 const ATTEMPT_RESULTS: readonly AttemptResult[] = ["réussi", "partiel", "échoué"];
@@ -19,8 +19,10 @@ const errorsKey = "prepahub:errors";
 const checkinsKey = "prepahub:checkins";
 
 /**
- * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
- * `themeMode` (Sprint personnalisation) : clair/sombre/système — voir lib/theme.ts#ThemeMode, indépendant de `accent`.
+ * `palette` (refonte « Revolut clair ») : identifiant de la palette en dégradé — voir lib/theme.ts#PALETTES.
+ *   Remplace l'ancien `accent` (un hex) : une préférence qui ne porte que lui est MIGRÉE vers la palette
+ *   de la même famille de teinte (lib/theme.ts#resolvePaletteId), puis l'ancien champ est abandonné.
+ * `themeMode` (Sprint personnalisation) : clair/sombre/système — voir lib/theme.ts#ThemeMode, indépendant de `palette`.
  * `weeklyGoalMinutes` (Sprint Plan de travail) : objectif hebdomadaire, indépendant de `dailyGoalMinutes`
  * (voir lib/week.ts#computeWeeklySummary) — alimente le Dashboard ("Cette semaine") et les statistiques.
  * Absents d'une préférence enregistrée avant leur sprint respectif : retombent sur `defaults` via le
@@ -31,7 +33,7 @@ export type Preferences = {
   dailyGoalMinutes: number;
   weeklyGoalMinutes: number;
   contestDate: string;
-  accent: string;
+  palette: PaletteId;
   themeMode: ThemeMode;
   /**
    * CAPACITÉ DÉCLARÉE de travail personnel, en minutes, du lundi (index 0) au
@@ -152,7 +154,7 @@ const defaults: Preferences = {
   dailyGoalMinutes: 60,
   weeklyGoalMinutes: 300,
   contestDate: "",
-  accent: DEFAULT_ACCENT,
+  palette: DEFAULT_PALETTE,
   themeMode: DEFAULT_THEME_MODE,
   capacityByWeekday: DEFAULT_CAPACITY_BY_WEEKDAY,
   planningMarginPercent: DEFAULT_PLANNING_MARGIN_PERCENT,
@@ -1016,8 +1018,8 @@ export function normalizePreferences(raw: unknown): Preferences {
    * entrait dans les préférences. Deux conséquences dont on ne se relève
    * pas depuis l'interface :
    *
-   *   — `accent: 42` → lib/theme.ts#hexToRgb fait `hex.trim()` sur un
-   *     nombre, ce qui LÈVE. `ThemeSync` étant monté dans app/layout.tsx,
+   *   — `accent: 42` (ancien champ) → `hex.trim()` sur un nombre, ce qui
+   *     LÈVAIT. `ThemeSync` étant monté dans app/layout.tsx,
    *     l'effet plante sur TOUTES les routes, /settings comprise : plus
    *     aucun moyen d'exporter ni de réparer sans la console du navigateur.
    *   — `contestDate: "pas-une-date"` → `Intl.DateTimeFormat#format` lève
@@ -1038,14 +1040,12 @@ export function normalizePreferences(raw: unknown): Preferences {
     weeklyGoalMinutes: positiveInteger(item.weeklyGoalMinutes) ?? defaults.weeklyGoalMinutes,
     // "" = pas de concours renseigné, seule autre valeur admise qu'un jour calendaire.
     contestDate: calendarDay(item.contestDate) ?? defaults.contestDate,
-    // Validé par le MÊME analyseur que celui qui l'utilisera (lib/theme.ts),
-    // pour qu'une valeur acceptée ici ne puisse pas faire échouer celui-là.
-    // L'ancien défaut (« Miel ») est migré vers le nouveau : voir
-    // lib/theme.ts#LEGACY_DEFAULT_ACCENTS — il n'a jamais été un choix.
-    accent:
-      typeof item.accent === "string" && hexToRgb(item.accent) && !LEGACY_DEFAULT_ACCENTS.includes(item.accent.trim().toLowerCase())
-        ? item.accent
-        : defaults.accent,
+    // Palette : un identifiant connu, sinon DÉDUITE des anciens champs
+    // (`accent` de la refonte « Apple », `subjectPalette` de « Nuit ») par
+    // lib/theme.ts#resolvePaletteId — la même fonction que le script
+    // anti-flash exécute, pour que le premier rendu et l'application
+    // tranchent pareil. Les anciens champs ne sont pas recopiés.
+    palette: resolvePaletteId(item),
     themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE,
     // Un tableau de capacité de longueur ≠ 7, ou contenant autre chose que
     // des nombres, ferait lire `undefined` au planificateur pour un jour de
@@ -1056,8 +1056,8 @@ export function normalizePreferences(raw: unknown): Preferences {
     capacityByWeekday: normalizeCapacityByWeekday(item.capacityByWeekday),
     planningMarginPercent: normalizeMarginPercent(item.planningMarginPercent),
     weeklySubjectTargets: normalizeWeeklySubjectTargets(item.weeklySubjectTargets),
-    // `subjectPalette` et `subjectColors` (refonte « Nuit ») ne sont pas
-    // recopiés : lus sans erreur, puis abandonnés.
+    // `accent`, `subjectPalette` et `subjectColors` ne sont pas recopiés :
+    // lus (pour la migration ci-dessus), puis abandonnés.
   };
 }
 

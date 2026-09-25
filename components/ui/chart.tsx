@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useId, type CSSProperties } from "react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -534,6 +534,171 @@ export function StackedColumns({
         {columns.map((column) => (
           <span key={column.id} className={cn("min-w-0 flex-1 text-center text-2xs font-bold", column.highlight ? "text-ink" : "text-subtle")}>
             <span className={cn("inline-grid h-6 min-w-6 place-items-center rounded-full px-1", column.highlight && "chip-on")}>{column.label}</span>
+          </span>
+        ))}
+      </div>
+    </figure>
+  );
+}
+
+export interface AreaPoint {
+  /** Ce qui s'écrit sous le point (« L », « M »…). */
+  label: string;
+  /** Libellé complet, lu au survol (« jeudi 24 septembre »). */
+  title: string;
+  /** `null` = pas encore de mesure (jour à venir) : la courbe s'arrête avant. */
+  value: number | null;
+  /** Le point à allumer — aujourd'hui. */
+  highlight?: boolean;
+}
+
+/**
+ * Tracé LISSE qui passe par tous les points sans jamais les dépasser —
+ * interpolation cubique monotone (Fritsch–Carlson), celle de `curveMonotoneX`
+ * de d3. Une spline de Catmull-Rom ordinaire « déborde » entre deux points
+ * voisins très différents : la courbe plongerait SOUS zéro entre une journée
+ * vide et une journée pleine, et raconterait un temps négatif.
+ */
+export function monotonePath(points: [number, number][]): string {
+  const n = points.length;
+  if (n === 0) return "";
+  if (n === 1) return `M${points[0][0]},${points[0][1]}`;
+  const dx: number[] = [];
+  const slope: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    dx.push(points[i + 1][0] - points[i][0]);
+    slope.push((points[i + 1][1] - points[i][1]) / (dx[i] || 1));
+  }
+  const tangent: number[] = [slope[0]];
+  for (let i = 1; i < n - 1; i++) {
+    tangent.push(
+      slope[i - 1] * slope[i] <= 0 ? 0 : (3 * (dx[i - 1] + dx[i])) / ((2 * dx[i] + dx[i - 1]) / slope[i - 1] + (dx[i] + 2 * dx[i - 1]) / slope[i])
+    );
+  }
+  tangent.push(slope[n - 2]);
+  const r = (value: number) => Math.round(value * 100) / 100;
+  let d = `M${r(points[0][0])},${r(points[0][1])}`;
+  for (let i = 0; i < n - 1; i++) {
+    const [x0, y0] = points[i];
+    const [x1, y1] = points[i + 1];
+    const h = dx[i] / 3;
+    d += ` C${r(x0 + h)},${r(y0 + h * tangent[i])} ${r(x1 - h)},${r(y1 - h * tangent[i + 1])} ${r(x1)},${r(y1)}`;
+  }
+  return d;
+}
+
+/** Proportions du repère de la courbe d'aire — celles de la maquette (390 × 150). */
+const AREA = { width: 390, height: 150, top: 0.14, bottom: 0.86 };
+
+/**
+ * COURBE D'AIRE — la semaine de l'accueil, telle que dessinée dans la
+ * maquette « Revolut clair » : un trait LISSE en dégradé de marque (c1 → c2),
+ * un voile dégradé qui s'efface vers le bas, et le point du jour allumé.
+ *
+ *   — Le trait SE DESSINE quand la figure entre dans l'écran (`.line-draw`,
+ *     1,8 s), le voile arrive en fondu derrière (`.area-fade`), le point du
+ *     jour « poppe » en dernier (`.pop`).
+ *   — La courbe entre par le bord gauche (palier jusqu'au premier jour) et
+ *     s'ARRÊTE au dernier jour mesuré : les jours à venir ne sont pas des
+ *     zéros, et une chute à zéro raconterait un abandon qui n'a pas eu lieu.
+ *   — Comme `LineChart`, le SVG est étiré (`preserveAspectRatio="none"`) :
+ *     les points et les étiquettes sont en HTML par-dessus, en
+ *     pourcentages, pour rester ronds à toutes les largeurs.
+ *
+ * Aucun axe, aucune grille : la courbe dit « ça monte, ça descend » ; les
+ * valeurs exactes sont au survol et dans l'`aria-label`.
+ */
+export function AreaChart({
+  points,
+  ariaLabel,
+  formatValue,
+  className,
+  heightClassName = "h-[9.375rem]",
+}: {
+  points: AreaPoint[];
+  ariaLabel: string;
+  formatValue: (value: number) => string;
+  className?: string;
+  heightClassName?: string;
+}) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const n = points.length;
+  if (n === 0) return null;
+
+  const measured = points
+    .map((point, index) => ({ ...point, index }))
+    .filter((point): point is AreaPoint & { index: number; value: number } => point.value !== null);
+  const max = Math.max(0, ...measured.map((point) => point.value));
+  const fx = (index: number) => (index + 0.5) / n;
+  const fy = (value: number) => AREA.top + (max > 0 ? 1 - value / max : 1) * (AREA.bottom - AREA.top);
+
+  const coords: [number, number][] = measured.map((point) => [fx(point.index) * AREA.width, fy(point.value) * AREA.height]);
+  // Entrée par le bord gauche ; sortie par le bord droit si le dernier jour est mesuré.
+  if (coords.length > 0) {
+    coords.unshift([0, coords[0][1]]);
+    if (measured[measured.length - 1].index === n - 1) coords.push([AREA.width, coords[coords.length - 1][1]]);
+  }
+  const line = monotonePath(coords);
+  const lastX = coords.length > 0 ? coords[coords.length - 1][0] : 0;
+  const area = coords.length > 1 ? `${line} L${lastX},${AREA.height} L0,${AREA.height} Z` : "";
+
+  return (
+    <figure role="img" aria-label={ariaLabel} className={cn("w-full", className)}>
+      <div className={cn("relative w-full", heightClassName)} aria-hidden>
+        <svg viewBox={`0 0 ${AREA.width} ${AREA.height}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
+          <defs>
+            <linearGradient id={`area-line-${uid}`} x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stopColor="var(--g1)" />
+              <stop offset="1" stopColor="var(--g2)" />
+            </linearGradient>
+            <linearGradient id={`area-fill-${uid}`} x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stopColor="var(--g1)" stopOpacity={0.45} />
+              <stop offset="1" stopColor="var(--g1)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          {area && <path className="area-fade" d={area} fill={`url(#area-fill-${uid})`} />}
+          {coords.length > 1 && (
+            <path
+              className="line-draw"
+              d={line}
+              fill="none"
+              stroke={`url(#area-line-${uid})`}
+              strokeWidth={3.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+              pathLength={1}
+            />
+          )}
+        </svg>
+        {measured.map((point) => (
+          <span
+            key={point.index}
+            className="group absolute -ml-4 -mt-4 grid h-8 w-8 place-items-center"
+            style={{ left: `${fx(point.index) * 100}%`, top: `${fy(point.value) * 100}%` }}
+          >
+            {point.highlight ? (
+              <span
+                className="pop block h-[1.125rem] w-[1.125rem] rounded-full border-[3px] border-[var(--g1)] bg-white"
+                style={{ "--pop-delay": "1.6s", boxShadow: "0 0 0 6px rgb(var(--g1-rgb) / 0.16)" } as CSSProperties}
+              />
+            ) : (
+              <span className="block h-2 w-2 scale-0 rounded-full bg-[var(--g1)] transition-transform duration-200 group-hover:scale-100" />
+            )}
+            <Tip index={point.index} count={n}>
+              <span className="font-bold tabular">{formatValue(point.value)}</span>
+              <span className="text-muted"> · {point.title}</span>
+            </Tip>
+          </span>
+        ))}
+      </div>
+      <div aria-hidden className="mt-2 grid" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+        {points.map((point, index) => (
+          <span
+            key={index}
+            className={cn("text-center text-xs font-bold", point.highlight ? "text-ink" : point.value === null ? "text-subtle/50" : "text-subtle/80")}
+          >
+            {point.label}
           </span>
         ))}
       </div>

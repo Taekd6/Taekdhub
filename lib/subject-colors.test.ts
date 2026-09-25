@@ -5,10 +5,11 @@ import { subjects, subjectMeta } from "@/lib/study";
 import { SUBJECT_KEYS, subjectFill } from "@/lib/subject-colors";
 
 /**
- * Refonte « Apple » : les matières n'ont plus de couleur, seulement un palier
- * de gris (app/globals.css). Ces tests gardent les deux promesses qui
- * restent : chaque matière a sa variable, et aucune teinte ne revient par la
- * bande.
+ * Les matières n'ont plus de couleur PROPRE (refonte « Apple », confirmée
+ * par la refonte « Revolut clair ») : seulement un palier de gris ardoise
+ * (app/globals.css), légèrement bleuté pour s'accorder au fond. Ces tests
+ * gardent les deux promesses qui restent : chaque matière a sa variable, et
+ * aucune teinte ne revient par la bande.
  */
 const css = readFileSync(path.resolve(process.cwd(), "app/globals.css"), "utf8");
 
@@ -32,15 +33,18 @@ describe("clés de matière", () => {
 });
 
 describe("paliers de gris (app/globals.css)", () => {
-  const dark = css.slice(css.indexOf(":root {"), css.indexOf(':root[data-theme="light"]'));
-  const light = css.slice(css.indexOf(':root[data-theme="light"]'), css.indexOf("@media (prefers-color-scheme: light)"));
+  // Clair par défaut (`:root` nu), sombre sous `data-theme="dark"`.
+  const light = css.slice(css.indexOf(":root {"), css.indexOf(':root[data-theme="dark"]'));
+  const dark = css.slice(css.indexOf(':root[data-theme="dark"]'), css.indexOf("@media (prefers-color-scheme: dark)"));
 
-  it("chaque matière a un palier dans les deux thèmes, et c'est un GRIS (r = g ≈ b)", () => {
+  it("chaque matière a un palier dans les deux thèmes, et c'est un GRIS ARDOISE (r = g, bleu à peine plus haut)", () => {
     for (const block of [dark, light]) {
       for (const key of Object.values(SUBJECT_KEYS)) {
         const [r, g, b] = grayOf(key, block);
         expect(r).toBe(g);
-        expect(Math.abs(b - r)).toBeLessThanOrEqual(4);
+        // Une pointe de bleu, jamais une teinte : au-delà de 40, on lit « violet ».
+        expect(b - r).toBeGreaterThanOrEqual(0);
+        expect(b - r).toBeLessThanOrEqual(40);
       }
     }
   });

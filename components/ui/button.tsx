@@ -2,31 +2,31 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/cn";
 
 /**
- * BOUTON — des pilules, comme chez Apple. Aucune ombre.
+ * BOUTON — des pilules, grasses et rondes (refonte « Revolut clair »).
  *
  * Règle de composition qui vaut pour tout l'écran : UN SEUL bouton `primary`
  * par vue. Dès qu'il y en a deux, aucun des deux ne veut plus dire « c'est
  * ici qu'on clique ».
  *
- *   `primary`    aplat d'accent, texte BLANC (l'aplat est assombri juste
- *                assez pour que le blanc tienne 4,5:1 — lib/theme.ts#accentSolid).
- *   `secondary`  aplat gris (#2c2c2e en sombre, #e8e8ed en clair), sans
- *                filet : la « pilule grise » des boutons secondaires d'Apple.
+ *   `primary`    le DÉGRADÉ des boutons de la palette (`.grad-btn`), texte
+ *                BLANC — deux teintes profondes choisies pour tenir 4,5:1
+ *                (lib/theme.ts#Palette.solid) —, avec une ombre de sa couleur.
+ *   `secondary`  pilule claire (blanche à ombre douce en clair, verre en
+ *                sombre) : le bouton rond blanc de la maquette, en long.
  *   `ghost`      texte seul, fond gris au survol.
  *   `danger`     texte rouge système sur un voile rouge très léger.
  *   `link`       texte à l'accent — « En savoir plus › ».
  *
- * TOUS en pilule : sur apple.com, un bouton est rond ou n'est pas un
- * bouton. Retour d'appui : le bouton s'ENFONCE (`.press`, 97 %). Le survol
- * éclaircit (sombre) ou fonce (clair) d'un cran, rien de plus.
+ * TOUS en pilule. Retour d'appui : le bouton s'ENFONCE (`.press`, 97 %).
  */
 const buttonVariants = cva(
-  "press relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold tracking-[-0.01em] disabled:pointer-events-none disabled:opacity-40",
+  "press relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-extrabold tracking-[-0.01em] disabled:pointer-events-none disabled:opacity-40",
   {
     variants: {
       variant: {
-        primary: "bg-accent-solid text-accent-solid-foreground hover:brightness-110 active:brightness-95",
-        secondary: "bg-zinc-800 text-ink hover:bg-zinc-700",
+        primary:
+          "grad-btn [box-shadow:0_10px_24px_-10px_var(--btn-g1)] hover:brightness-110 active:brightness-95",
+        secondary: "bg-[var(--action-bg)] text-ink [box-shadow:var(--action-lift)] hover:bg-zinc-900",
         ghost: "text-muted hover:bg-inset hover:text-ink",
         danger: "bg-rose-400/[0.12] text-rose-300 hover:bg-rose-400/[0.18]",
         /**

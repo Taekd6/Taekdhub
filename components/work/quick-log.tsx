@@ -100,13 +100,10 @@ export function QuickLog({
       {/* MATIÈRE — sept pastilles NEUTRES, pas une liste déroulante : sept
           cibles visibles d'un coup valent mieux qu'un menu à ouvrir.
 
-          La matière retenue passe en INVERSE (fond à l'encre, lettre à la
-          couleur du fond) — la sélection d'iOS. Avant, elle prenait le
-          palier de gris de la matière (`subjectMeta.solid`) avec une lettre
-          quasi noire codée en dur : en thème clair, les paliers partent du
-          NOIR (maths = #1d1d1f), et la lettre disparaissait. L'inverse
-          encre / fond tient 15:1 et plus dans les deux thèmes, pour toutes
-          les matières. */}
+          La matière retenue prend le DÉGRADÉ des boutons de la palette
+          (`.grad-btn`, lettre blanche à ≥ 4,5:1 dans toutes les palettes —
+          lib/theme.test.ts) et « poppe » en rebondissant : le choix se
+          voit ET se sent. Même traitement pour la durée retenue. */}
       <div role="radiogroup" aria-label="Matière" className="grid grid-cols-7 gap-1.5">
         {subjects.map((item) => {
           const active = item === subject;
@@ -121,7 +118,7 @@ export function QuickLog({
               onClick={() => setSubject(item)}
               className={cn(
                 "press grid h-11 place-items-center rounded-full text-[0.8125rem] font-bold leading-none",
-                active ? "bg-ink text-canvas" : "bg-inset text-ink hover:bg-zinc-700"
+                active ? "grad-btn pop [box-shadow:0_8px_18px_-8px_var(--btn-g1)]" : "bg-inset text-ink hover:bg-zinc-700"
               )}
             >
               {subjectMeta[item].short}
@@ -147,7 +144,7 @@ export function QuickLog({
               }}
               className={cn(
                 "press tabular min-h-10 rounded-full text-[0.8125rem] font-bold max-lg:min-h-11",
-                active ? "bg-ink text-canvas" : "bg-inset text-muted hover:text-ink"
+                active ? "grad-btn pop [box-shadow:0_8px_18px_-8px_var(--btn-g1)]" : "bg-inset text-muted hover:text-ink"
               )}
             >
               {preset < 60 ? `${preset}′` : `${Math.floor(preset / 60)}h${preset % 60 ? preset % 60 : ""}`}
@@ -187,10 +184,10 @@ export function QuickLog({
         />
       </div>
 
-      <Button variant="secondary" size="lg" className="mt-5 w-full" disabled={!ready || !valid} onClick={add}>
+      <Button size="lg" className="mt-5 w-full" disabled={!ready || !valid} onClick={add}>
         {justAdded ? (
           <>
-            <Check size={15} className="text-emerald-300" /> Ajouté
+            <Check size={16} strokeWidth={3} /> Ajouté
           </>
         ) : (
           <>
