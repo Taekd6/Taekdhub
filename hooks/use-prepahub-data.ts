@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { type ChapterMemory } from "@/lib/storage"; // mémoire des chapitres (FSRS)
 import { lastStorageWriteFailure, localData, purgeRetiredBankData, type DayPlanRecord, type ErrorEntry, type Grade, type Preferences, type ReviewItem, type WeekSnapshot, type WorkItem, type DailyCheckin } from "@/lib/storage";
 import { buildWeeklyPlan } from "@/lib/planning";
 import { dayKey } from "@/lib/study";
@@ -21,6 +22,8 @@ type DataState = {
   errors: ErrorEntry[];
   /** Check-in du soir (sommeil, énergie, stress) — voir `DailyCheckin` (lib/storage.ts). */
   checkins: DailyCheckin[];
+  /** Mémoire des chapitres (FSRS) — voir `ChapterMemory` (lib/storage.ts). */
+  chapterMemory: ChapterMemory[];
   weekSnapshots: WeekSnapshot[];
   lastBackupAt: string | null;
   preferences: Preferences;
@@ -102,6 +105,7 @@ function readAll(): Omit<DataState, "ready" | "writeFailedAt"> {
     reviewItems: localData.reviewItems(),
     errors: localData.errors(),
     checkins: localData.checkins(),
+    chapterMemory: localData.chapterMemory(),
     weekSnapshots,
     lastBackupAt: localData.lastBackupAt(),
     preferences,
@@ -117,6 +121,7 @@ export function usePrepahubData() {
     reviewItems: [],
     errors: [],
     checkins: [],
+    chapterMemory: [],
     weekSnapshots: [],
     lastBackupAt: null,
     preferences: localData.preferences(),
@@ -226,10 +231,20 @@ export function usePrepahubData() {
     setData((prev) => ({ ...prev, checkins: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
+  /* ── Mémoire des chapitres (FSRS) ──
+   * REMPLACEMENT, même règle que `saveReviewItems` : écriture refusée ⇒
+   * l'état reçoit ce qui est RÉELLEMENT sur le disque. */
+  const saveChapterMemory = useCallback((chapterMemory: ChapterMemory[]) => {
+    const written = localData.saveChapterMemory(chapterMemory);
+    const stored = written ? chapterMemory : localData.chapterMemory();
+    setData((prev) => ({ ...prev, chapterMemory: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
+  }, []);
+  /* ── fin mémoire des chapitres ── */
+
   const savePreferences = useCallback((preferences: Preferences) => {
     localData.savePreferences(preferences);
     setData((prev) => ({ ...prev, preferences, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
-  return { ...data, refresh, saveSessions, removeSession, saveWorkItems, saveGrades, saveReviewItems, saveErrors, saveCheckins, savePreferences };
+  return { ...data, refresh, saveSessions, removeSession, saveWorkItems, saveGrades, saveReviewItems, saveErrors, saveCheckins, saveChapterMemory, savePreferences };
 }

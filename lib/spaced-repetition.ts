@@ -1,3 +1,4 @@
+import { emptyMemory, FSRS_RATINGS, reviewMemory, type FsrsMemory, type FsrsRating } from "@/lib/fsrs";
 import { dayKey } from "@/lib/study";
 import type { ReviewItem, ReviewSchedule } from "@/lib/storage";
 import type { Subject } from "@/lib/supabase/types";
@@ -9,7 +10,7 @@ import type { Subject } from "@/lib/supabase/types";
  * localStorage, React ou au DOM. La persistance du calendrier vit dans
  * `ReviewItem.srs` (lib/storage.ts).
  *
- * CE QUE L'ON EMPRUNTE À LA RECHERCHE, ET CE QU'ON N'Y PREND PAS.
+ * CE QUE L'ON EMPRUNTE À LA RECHERCHE.
  *
  *   — L'effet d'espacement (méta-analyse de Cepeda et al., 2006,
  *     Psychological Bulletin) : à temps de travail égal, des révisions
@@ -18,26 +19,29 @@ import type { Subject } from "@/lib/supabase/types";
  *     chercher la réponse de tête consolide davantage que relire. C'est la
  *     raison d'être du verso (`ReviewItem.answer`) et de la séance qui le
  *     cache (components/review/review-session.tsx).
+ *   — FSRS (lib/fsrs.ts) pour CHOISIR les intervalles : un modèle de la
+ *     mémoire (stabilité, difficulté, courbe d'oubli) dont les coefficients
+ *     ont été ajustés sur des centaines de millions de révisions Anki. On
+ *     programme la prochaine révision au jour où la probabilité estimée de
+ *     s'en souvenir retombe à 90 %.
  *
- * Ni l'un ni l'autre ne fournit LA bonne suite d'intervalles : l'écart
- * optimal dépend de l'horizon visé, et les algorithmes « optimaux » (SM-2,
- * FSRS…) supposent des milliers de révisions pour s'ajuster. On retient donc
- * une ÉCHELLE FIXE et croissante, qu'un élève peut comprendre et prévoir :
+ * HISTOIRE. Le carnet utilisait d'abord une ÉCHELLE FIXE (1 → 3 → 7 → 16 →
+ * 35 → 90 jours), facile à prévoir mais aveugle : un « Bien » obtenu en
+ * retard de dix jours comptait comme un « Bien » à l'heure. FSRS en tient
+ * compte. Les calendriers écrits avec l'échelle sont convertis à la lecture
+ * (lib/storage.ts#normalizeReviewSchedule) sans que leur échéance bouge.
  *
- *     1 → 3 → 7 → 16 → 35 → 90 jours
+ * Quatre notes, comme Anki :
  *
- * Quatre notes, quatre règles, rien d'autre :
+ *   « À revoir »  oublié. FSRS réduit fortement la stabilité : retour demain
+ *                 (ou presque), un oubli de plus.
+ *   « Difficile » retrouvé de justesse. La stabilité grandit peu.
+ *   « Bien »      retrouvé. La stabilité grandit — d'autant plus que le
+ *                 souvenir était fragile au moment de la révision.
+ *   « Facile »    évident. La stabilité grandit fortement.
  *
- *   « À revoir »  oublié. Retour au premier barreau : demain. Un oubli de plus.
- *   « Difficile » retrouvé de justesse. On NE monte PAS : l'intervalle actuel
- *                 × 1,2 (au moins un jour) — un pas prudent.
- *   « Bien »      retrouvé. Barreau suivant.
- *   « Facile »    évident. On saute un barreau.
- *
- * Pas de facteur de facilité propre à chaque carte (le « ease » de SM-2) :
- * c'est lui qui rend les intervalles d'Anki impossibles à anticiper, et sur
- * un carnet de quelques dizaines de lignes il n'aurait jamais le temps de
- * converger. Le barreau `step` en tient lieu.
+ * Chaque bouton affiche l'intervalle qu'il produirait (`previewRatings`) :
+ * FSRS n'est pas prévisible de tête, l'aperçu est ce qui le rend lisible.
  *
  * TOUT EST EN JOURS CALENDAIRES LOCAUX (`dayKey`). « À réviser demain » veut
  * dire la prochaine date du calendrier de l'élève, qu'il révise à 7 h ou à
@@ -46,11 +50,15 @@ import type { Subject } from "@/lib/supabase/types";
  * autour de minuit.
  */
 
-/** L'échelle des intervalles, en jours. Le dernier barreau est un plafond : trois mois, c'est déjà l'horizon d'un trimestre de prépa. */
+/**
+ * HÉRITAGE — l'ancienne échelle fixe, en jours. Plus utilisée pour
+ * programmer ; seulement pour relire un ancien calendrier dont l'intervalle
+ * serait illisible (lib/storage.ts#normalizeReviewSchedule).
+ */
 export const SRS_LADDER = [1, 3, 7, 16, 35, 90] as const;
 
-export type ReviewRating = "again" | "hard" | "good" | "easy";
-export const REVIEW_RATINGS: readonly ReviewRating[] = ["again", "hard", "good", "easy"];
+export type ReviewRating = FsrsRating;
+export const REVIEW_RATINGS: readonly ReviewRating[] = FSRS_RATINGS;
 
 /** `key` : le raccourci clavier de la séance. */
 export const REVIEW_RATING_META: Record<ReviewRating, { label: string; key: string; hint: string }> = {
@@ -59,8 +67,6 @@ export const REVIEW_RATING_META: Record<ReviewRating, { label: string; key: stri
   good: { label: "Bien", key: "3", hint: "Retrouvé" },
   easy: { label: "Facile", key: "4", hint: "Évident" },
 };
-
-const MAX_STEP = SRS_LADDER.length - 1;
 
 /**
  * `AAAA-MM-JJ` décalé de `days` jours du calendrier.
@@ -88,7 +94,7 @@ export function daysBetween(from: string, to: string): number {
 /**
  * Le calendrier d'une entrée, qu'elle ait déjà été révisée ou non.
  *
- * Jamais révisée : due le LENDEMAIN de sa création, au premier barreau. Le
+ * Jamais révisée : due le LENDEMAIN de sa création, état FSRS « new ». Le
  * lendemain, pas le jour même — relire le soir ce qu'on vient de noter
  * l'après-midi n'est pas une révision, c'est encore de la mémoire immédiate.
  */
@@ -96,61 +102,55 @@ export function effectiveSchedule(item: ReviewItem): ReviewSchedule {
   if (item.srs) return item.srs;
   return {
     dueAt: addDays(dayKey(item.createdAt), 1),
-    intervalDays: SRS_LADDER[0],
-    step: 0,
+    intervalDays: 1,
+    stability: 0,
+    difficulty: 0,
+    state: "new",
     reviews: 0,
     lapses: 0,
     lastReviewedAt: null,
   };
 }
 
-/** Le plus haut barreau dont l'intervalle ne dépasse pas `interval` — pour qu'un « Bien » après des « Difficile » reparte toujours VERS LE HAUT. */
-function stepFor(interval: number): number {
-  let step = 0;
-  for (let index = 0; index <= MAX_STEP; index += 1) if (SRS_LADDER[index] <= interval) step = index;
-  return step;
+/**
+ * L'état FSRS d'un calendrier. Le jour de la dernière note vient de
+ * `lastReviewedAt` ; à défaut (calendrier ancien sans horodatage), de
+ * `dueAt − intervalDays`, qui est exactement le jour où l'intervalle a été
+ * posé.
+ */
+export function memoryOf(current: ReviewSchedule): FsrsMemory {
+  if (current.state === "new" || current.stability <= 0) return { ...emptyMemory(current.dueAt), reps: current.reviews, lapses: current.lapses };
+  return {
+    stability: current.stability,
+    difficulty: current.difficulty,
+    state: current.state,
+    reps: current.reviews,
+    lapses: current.lapses,
+    lastReview: current.lastReviewedAt ? dayKey(current.lastReviewedAt) : addDays(current.dueAt, -current.intervalDays),
+    due: current.dueAt,
+  };
 }
 
 /**
- * Le nouveau calendrier après une note. Voir l'en-tête pour les règles.
+ * Le nouveau calendrier après une note — voir lib/fsrs.ts#reviewMemory.
  *
  * `now` fixe le jour de la révision : une carte en retard de dix jours et
  * notée « Bien » repart de AUJOURD'HUI, pas de son ancienne échéance — c'est
- * aujourd'hui qu'on vient de vérifier qu'on s'en souvient.
+ * aujourd'hui qu'on vient de vérifier qu'on s'en souvient, et FSRS compte le
+ * retard (un souvenir retrouvé malgré le retard était plus solide qu'on ne
+ * le pensait).
  */
 export function schedule(current: ReviewSchedule, rating: ReviewRating, now: Date = new Date()): ReviewSchedule {
-  let step = current.step;
-  let intervalDays: number;
-  let lapses = current.lapses;
-
-  switch (rating) {
-    case "again":
-      step = 0;
-      intervalDays = SRS_LADDER[0];
-      lapses += 1;
-      break;
-    case "hard":
-      intervalDays = Math.max(1, Math.round(current.intervalDays * 1.2));
-      step = stepFor(intervalDays);
-      break;
-    case "good":
-      step = Math.min(MAX_STEP, current.step + 1);
-      // `max` : au plafond, ou après une série de « Difficile » au-delà de
-      // 90 jours, « Bien » ne doit jamais RACCOURCIR l'intervalle.
-      intervalDays = Math.max(SRS_LADDER[step], current.intervalDays);
-      break;
-    case "easy":
-      step = Math.min(MAX_STEP, current.step + 2);
-      intervalDays = Math.max(SRS_LADDER[step], current.intervalDays);
-      break;
-  }
-
+  const today = dayKey(now);
+  const next = reviewMemory(memoryOf(current), today, rating);
   return {
-    dueAt: addDays(dayKey(now), intervalDays),
-    intervalDays,
-    step,
+    dueAt: next.due,
+    intervalDays: Math.max(1, daysBetween(next.lastReview ?? today, next.due)),
+    stability: next.stability,
+    difficulty: next.difficulty,
+    state: next.state,
     reviews: current.reviews + 1,
-    lapses,
+    lapses: next.lapses,
     lastReviewedAt: now.toISOString(),
   };
 }
@@ -220,8 +220,17 @@ export function formatDueDay(day: string, now: Date = new Date()): string {
   return `le ${date === 1 ? "1er" : date} ${MONTHS[month - 1]}`;
 }
 
-/** Intervalle court pour les boutons de note : « 1 j », « 16 j », « 3 mois ». */
+/**
+ * Intervalle court pour les boutons de note : « 1 j », « 16 j », « 3 mois »,
+ * « 1,5 an ». FSRS produit des intervalles quelconques (47 j, 113 j) : au-delà
+ * de deux mois on arrondit au mois, au-delà d'un an au demi-an — l'ordre de
+ * grandeur est ce qui compte pour choisir un bouton.
+ */
 export function formatInterval(days: number): string {
-  if (days >= 60 && days % 30 === 0) return `${days / 30} mois`;
+  if (days >= 365) {
+    const years = Math.round((days / 365) * 2) / 2;
+    return `${years.toLocaleString("fr-FR")} an${years >= 2 ? "s" : ""}`;
+  }
+  if (days >= 60) return `${Math.round(days / 30)} mois`;
   return `${days} j`;
 }

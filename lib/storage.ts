@@ -1,5 +1,6 @@
 import { subjects } from "@/lib/study";
 import { SRS_LADDER } from "@/lib/spaced-repetition";
+import { FSRS_RATINGS, normalizeFsrsMemory, replayMemory, type FsrsMemory, type FsrsRating, type FsrsState } from "@/lib/fsrs";
 import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, LEGACY_DEFAULT_ACCENTS, THEME_MODES, hexToRgb, type ThemeMode } from "@/lib/theme";
 import type { AttemptResult, Subject, WorkSession } from "@/lib/supabase/types";
 
@@ -17,6 +18,8 @@ const reviewItemsKey = "prepahub:reviewItems";
 const errorsKey = "prepahub:errors";
 /* ── Check-in du soir — voir `DailyCheckin` ── */
 const checkinsKey = "prepahub:checkins";
+/* ── Mémoire des chapitres (FSRS) — voir `ChapterMemory` ── */
+const chapterMemoryKey = "prepahub:chapterMemory";
 
 /**
  * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
@@ -307,22 +310,32 @@ export interface ReviewItem {
 }
 
 /**
- * L'état de révision espacée d'une entrée — un objet entier ou rien. Les six
- * champs n'ont de sens qu'ensemble (un `dueAt` sans `step` ne dit pas quel
- * intervalle viendrait ensuite) : les regrouper permet à la normalisation de
- * jeter d'un bloc un calendrier illisible et de retomber sur « jamais
- * révisée », plutôt que de recoller des morceaux.
+ * L'état de révision espacée d'une entrée — un objet entier ou rien. Les
+ * champs n'ont de sens qu'ensemble (un `dueAt` sans stabilité ne dit pas
+ * quel intervalle viendrait ensuite) : les regrouper permet à la
+ * normalisation de jeter d'un bloc un calendrier illisible et de retomber
+ * sur « jamais révisée », plutôt que de recoller des morceaux.
+ *
+ * DEPUIS FSRS (voir lib/fsrs.ts), l'état porte la STABILITÉ et la DIFFICULTÉ
+ * du souvenir. Un calendrier écrit du temps de l'ancienne échelle fixe
+ * (1, 3, 7, 16, 35, 90 jours — champ `step`, sans stabilité) est CONVERTI À
+ * LA LECTURE par `normalizeReviewSchedule`, sans toucher à son `dueAt` :
+ * aucune entrée ne change de jour d'échéance à la mise à jour.
  */
 export interface ReviewSchedule {
   /** Jour CALENDAIRE local (AAAA-MM-JJ) où l'entrée redevient à réviser — jamais un instant ISO : « à réviser demain » ne doit pas dépendre du fuseau. */
   dueAt: string;
   /** Écart, en jours, entre la dernière révision et `dueAt`. ≥ 1. */
   intervalDays: number;
-  /** Barreau atteint sur l'échelle 1, 3, 7, 16, 35, 90 jours (0 = le premier). Voir `SRS_LADDER`. */
-  step: number;
+  /** FSRS : jours avant que la probabilité de s'en souvenir retombe à 90 %. `0` pour une entrée jamais notée. */
+  stability: number;
+  /** FSRS : 1 (facile) à 10 (difficile). `0` pour une entrée jamais notée. */
+  difficulty: number;
+  /** FSRS : « new » tant que l'entrée n'a jamais été notée, « review »/« relearning » ensuite. */
+  state: FsrsState;
   /** Nombre de révisions notées, toutes notes confondues. */
   reviews: number;
-  /** Nombre de « À revoir » — les oublis. Informatif : ne change pas le calcul. */
+  /** Nombre de « À revoir » — les oublis. */
   lapses: number;
   /** ISO de la dernière note, ou `null`. */
   lastReviewedAt: string | null;
@@ -831,24 +844,141 @@ export function normalizeReviewItem(raw: unknown): ReviewItem | null {
  * l'entrée redevient due le lendemain de sa création).
  *
  * Seul `dueAt` est indispensable : sans jour d'échéance, on ne sait plus
- * quand la montrer, et inventer une date mentirait. Le reste se répare — un
- * barreau hors échelle est ramené dans l'échelle, un intervalle illisible
- * reprend la valeur de son barreau, un compteur abîmé repart de zéro.
+ * quand la montrer, et inventer une date mentirait. Le reste se répare.
+ *
+ * MIGRATION DE L'ANCIENNE ÉCHELLE → FSRS. Un calendrier sans `stability`
+ * vient de l'échelle fixe (1, 3, 7, 16, 35, 90 jours). On le convertit ainsi :
+ *
+ *   — `dueAt` et `intervalDays` : CONSERVÉS tels quels. L'échéance promise à
+ *     l'élève ne bouge pas.
+ *   — stabilité = l'intervalle en cours. C'est la lecture exacte de FSRS :
+ *     avec une rétention visée de 90 %, l'intervalle programmé EST la
+ *     stabilité (R(S) = 0,9). On suppose donc que l'ancienne échéance
+ *     tombait au jour où la probabilité de s'en souvenir atteignait 90 % —
+ *     l'hypothèse la plus neutre, et celle qui ne déplace rien.
+ *   — difficulté = 5, le MILIEU de l'échelle 1–10, alourdie de 1 par oubli
+ *     déjà compté, bornée à 10. L'échelle n'avait aucune notion de
+ *     difficulté : ne sachant rien, on ne suppose ni facile ni difficile.
+ *     (La difficulté d'une première note « Bien », D₀ ≈ 2,1, aurait fait
+ *     passer d'un coup un intervalle de 7 jours à plus d'un mois — trop
+ *     optimiste pour une carte dont on ignore tout.) Les révisions
+ *     suivantes corrigent D d'elles-mêmes.
+ *   — état « review » : l'entrée a déjà été notée au moins une fois, sinon
+ *     elle n'aurait pas de calendrier.
+ *
+ * Le champ `step` de l'ancienne échelle n'est plus écrit : il ne sert qu'à
+ * retrouver un intervalle illisible (`SRS_LADDER[step]`).
  */
+/** Difficulté FSRS supposée d'un calendrier de l'ancienne échelle — voir ci-dessus. */
+const LEGACY_DIFFICULTY = 5;
+
 export function normalizeReviewSchedule(raw: unknown): ReviewSchedule | undefined {
   if (!isRecord(raw)) return undefined;
   const dueAt = calendarDay(raw.dueAt);
   if (!dueAt) return undefined;
-  const step = Math.min(SRS_LADDER.length - 1, nonNegativeInteger(raw.step) ?? 0);
+  const legacyStep = Math.min(SRS_LADDER.length - 1, nonNegativeInteger(raw.step) ?? 0);
+  const intervalDays = positiveInteger(raw.intervalDays) ?? SRS_LADDER[legacyStep];
+  const lapses = nonNegativeInteger(raw.lapses) ?? 0;
+  const storedStability = typeof raw.stability === "number" && Number.isFinite(raw.stability) && raw.stability > 0 ? raw.stability : null;
+  const storedDifficulty =
+    typeof raw.difficulty === "number" && Number.isFinite(raw.difficulty) ? Math.min(10, Math.max(1, raw.difficulty)) : null;
+  const storedState = (["learning", "review", "relearning"] as const).find((state) => state === raw.state);
   return {
     dueAt,
-    intervalDays: positiveInteger(raw.intervalDays) ?? SRS_LADDER[step],
-    step,
+    intervalDays,
+    stability: storedStability ?? intervalDays,
+    difficulty: storedDifficulty ?? Math.min(10, LEGACY_DIFFICULTY + lapses),
+    state: storedStability !== null && storedState ? storedState : "review",
     reviews: nonNegativeInteger(raw.reviews) ?? 0,
-    lapses: nonNegativeInteger(raw.lapses) ?? 0,
+    lapses,
     lastReviewedAt: isoDate(raw.lastReviewedAt),
   };
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   MÉMOIRE DES CHAPITRES (FSRS) — début du bloc
+   ══════════════════════════════════════════════════════════════════
+
+   Un chapitre de cours appris (« Intégrales généralisées », « Thermo 2 »),
+   et ce que FSRS en déduit : quand il risque de s'effacer. L'élève révise
+   souvent ailleurs — dans Anki, sur son téléphone — et vient dire ici
+   « c'est révisé » avec une note ; TaekdHub tient la courbe d'oubli et le
+   rappelle au bon moment. Logique pure dans lib/chapter-memory.ts, modèle
+   dans lib/fsrs.ts.
+
+   L'APPRENTISSAGE EST LA PREMIÈRE RÉVISION. `learnedAt` est le jour où le
+   chapitre a été vu (en cours, ou appris seul) ; il compte comme une
+   première note « Bien ». `reviews` ne contient que les révisions
+   SUIVANTES. `card` est l'état FSRS qui en résulte — conservé tel quel
+   pour ne pas dépendre d'une future version des coefficients, mais
+   entièrement reconstructible depuis `learnedAt` + `reviews` : c'est ce que
+   fait la normalisation quand il est illisible, et ce que fait
+   lib/chapter-memory.ts quand l'élève corrige la date d'apprentissage.
+*/
+export interface ChapterReview {
+  /** Jour calendaire local (AAAA-MM-JJ). */
+  day: string;
+  rating: FsrsRating;
+}
+
+export interface ChapterMemory {
+  id: string;
+  subject: Subject;
+  /** Tel que l'élève l'a tapé, espaces de bord retirés. Jamais vide. */
+  title: string;
+  /** Jour où le chapitre a été appris — la première « révision ». */
+  learnedAt: string;
+  /** Nom du paquet Anki correspondant (`Maths::Intégrales`), s'il en a un — voir lib/anki.ts. Absent plutôt que `""`. */
+  ankiDeck?: string;
+  /** État FSRS après `learnedAt` puis `reviews`. */
+  card: FsrsMemory;
+  /** Les révisions après l'apprentissage, dans l'ordre des jours. */
+  reviews: ChapterReview[];
+  /** Rangé : ne rappelle plus rien, mais garde son historique. */
+  archived: boolean;
+  createdAt: string;
+}
+
+/**
+ * Un chapitre lisible, ou `null`. Écarté sans titre, sans matière
+ * reconnaissable ou sans date d'apprentissage : sans elle, aucune courbe
+ * n'est calculable, et en inventer une ferait mentir chaque pourcentage.
+ * Les révisions illisibles sont jetées une à une (pas le chapitre) ; un
+ * état FSRS illisible est reconstruit en rejouant l'historique.
+ */
+export function normalizeChapterMemory(raw: unknown): ChapterMemory | null {
+  const item = isRecord(raw) ? raw : {};
+  const title = typeof item.title === "string" ? item.title.trim() : "";
+  if (!title) return null;
+  const subject = migrateSubjectOrNull(item.subject);
+  if (!subject) return null;
+  const learnedAt = calendarDay(item.learnedAt);
+  if (!learnedAt) return null;
+  const reviews = (Array.isArray(item.reviews) ? item.reviews : [])
+    .map((entry): ChapterReview | null => {
+      if (!isRecord(entry)) return null;
+      const day = calendarDay(entry.day);
+      const rating = FSRS_RATINGS.find((value) => value === entry.rating);
+      return day && rating ? { day, rating } : null;
+    })
+    .filter((entry): entry is ChapterReview => entry !== null)
+    .sort((a, b) => a.day.localeCompare(b.day));
+  const stored = normalizeFsrsMemory(item.card, learnedAt);
+  const card = stored && stored.lastReview !== null ? stored : replayMemory(learnedAt, "good", reviews);
+  const ankiDeck = typeof item.ankiDeck === "string" ? item.ankiDeck.trim() : "";
+  return {
+    id: typeof item.id === "string" && item.id ? item.id : crypto.randomUUID(),
+    subject,
+    title,
+    learnedAt,
+    ...(ankiDeck ? { ankiDeck } : {}),
+    card,
+    reviews,
+    archived: item.archived === true,
+    createdAt: isoDate(item.createdAt) ?? new Date().toISOString(),
+  };
+}
+/* ── MÉMOIRE DES CHAPITRES — fin du bloc ── */
 
 /* ── Carnet d'erreurs ─────────────────────────────────────────────── */
 
@@ -1376,6 +1506,14 @@ export const localData = {
    * `mergeStored` n'aurait aucune prise ici.
    */
   saveCheckins: (items: DailyCheckin[]): boolean => writeKey(checkinsKey, JSON.stringify(items)),
+  /* ── Mémoire des chapitres (FSRS) ── */
+  chapterMemory: (): ChapterMemory[] =>
+    typeof window === "undefined"
+      ? []
+      : readList(chapterMemoryKey).map(normalizeChapterMemory).filter((item): item is ChapterMemory => item !== null),
+  /** REMPLACE — même profil que `saveReviewItems` (un chapitre se corrige, et la liste entrante est la vérité). */
+  saveChapterMemory: (items: ChapterMemory[]): boolean => writeKey(chapterMemoryKey, JSON.stringify(items)),
+  /* ── fin mémoire des chapitres ── */
 };
 
 /* ══════════════════════════════════════════════════════════════════
@@ -1470,7 +1608,7 @@ export function daysSinceBackup(lastBackupAt: string | null, now: Date = new Dat
  * l'ancien « réussi » inconditionnel.
  */
 export interface RestoreOutcome {
-  /** Vrai seulement si TOUTES les collections ont été écrites (neuf depuis le retrait de la banque d'exercices). */
+  /** Vrai seulement si TOUTES les collections ont été écrites (dix depuis la mémoire des chapitres). */
   ok: boolean;
   /** Collections réellement écrites, dans l'ordre de tentative. */
   restored: string[];
@@ -1522,6 +1660,8 @@ export function restoreBackup(payload: BackupPayload): RestoreOutcome {
     ["le carnet d'erreurs", () => localData.saveErrors(payload.errors ?? [])],
     // Check-in du soir : absent d'une sauvegarde antérieure ⇒ `[]`.
     ["les check-ins du soir", () => localData.saveCheckins(payload.checkins ?? [])],
+    // Mémoire des chapitres : absente d'une sauvegarde antérieure ⇒ `[]`.
+    ["la mémoire des chapitres", () => localData.saveChapterMemory(payload.chapterMemory ?? [])],
     ["le planning", () => localData.saveDayPlans(payload.dayPlans ?? [])],
     ["les bilans de semaine", () => localData.saveWeekSnapshots(payload.weekSnapshots ?? [])],
     ["les réglages", () => localData.savePreferences(normalizePreferences(payload.preferences))],
@@ -1567,6 +1707,8 @@ export function buildBackupPayload(now: Date = new Date()): BackupPayload {
     errors: localData.errors(),
     // Check-in du soir : saisie manuelle, jour après jour — irrécupérable.
     checkins: localData.checkins(),
+    // Mémoire des chapitres : saisie manuelle et historique de révisions — irrécupérable.
+    chapterMemory: localData.chapterMemory(),
   };
 }
 
@@ -1622,6 +1764,8 @@ export interface BackupPayload {
   errors?: ErrorEntry[];
   /** Optionnel, même raison — voir `DailyCheckin`. */
   checkins?: DailyCheckin[];
+  /** Optionnel, même raison — voir `ChapterMemory`. */
+  chapterMemory?: ChapterMemory[];
 }
 
 /**
@@ -1681,5 +1825,7 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   if (data.errors !== undefined && !Array.isArray(data.errors)) return false;
   // Check-in du soir : même règle, dès sa naissance.
   if (data.checkins !== undefined && !Array.isArray(data.checkins)) return false;
+  // Mémoire des chapitres : même règle, dès sa naissance.
+  if (data.chapterMemory !== undefined && !Array.isArray(data.chapterMemory)) return false;
   return true;
 }

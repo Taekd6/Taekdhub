@@ -17,6 +17,9 @@ import { SubjectAvatar } from "@/components/subject-avatar";
 import { SubjectTargetList } from "@/components/work/subject-targets";
 import { ReviewCapture, ReviewList } from "@/components/review/review-capture";
 import { DueToday } from "@/components/review/due-today";
+/* ── Mémoire des chapitres (FSRS) ── */
+import { SubjectChapters } from "@/components/memory/subject-chapters";
+/* ── fin ── */
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { buildSubjectHub, hubSubjects, HUB_RECENT_DAYS, HUB_WINDOW_DAYS, type HubSubjectModel } from "@/lib/hub";
 import { describeConfidence } from "@/lib/analytics/trend";
@@ -62,7 +65,7 @@ import type { Subject, WorkSession } from "@/lib/supabase/types";
  * aucune statistique n'est née ici.
  */
 export function SubjectHub() {
-  const { sessions, workItems, grades, reviewItems, errors, preferences, ready, saveReviewItems } = usePrepahubData();
+  const { sessions, workItems, grades, reviewItems, errors, preferences, ready, saveReviewItems, chapterMemory, saveChapterMemory } = usePrepahubData();
   const searchParams = useSearchParams();
   const wanted = searchParams.get("subject");
   const active = wanted && (allSubjects as string[]).includes(wanted) ? (wanted as Subject) : null;
@@ -134,6 +137,13 @@ export function SubjectHub() {
             label: "À revoir",
             content: <ReviewTab subject={active} reviewItems={reviewItems} saveReviewItems={saveReviewItems} ready={ready} />,
           },
+          /* ── Mémoire des chapitres (FSRS) — onglet ── */
+          {
+            id: "chapitres",
+            label: "Chapitres",
+            content: <SubjectChapters subject={active} chapters={chapterMemory} saveChapters={saveChapterMemory} />,
+          },
+          /* ── fin ── */
           {
             id: "erreurs",
             label: "Erreurs",

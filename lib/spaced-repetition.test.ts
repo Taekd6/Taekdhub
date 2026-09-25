@@ -30,8 +30,19 @@ function item(overrides: Partial<ReviewItem> = {}): ReviewItem {
   };
 }
 
+/** Un calendrier déjà noté une fois (« Bien » il y a 3 jours) — la forme FSRS. */
 function state(overrides: Partial<ReviewSchedule> = {}): ReviewSchedule {
-  return { dueAt: "2026-09-23", intervalDays: 1, step: 0, reviews: 0, lapses: 0, lastReviewedAt: null, ...overrides };
+  return {
+    dueAt: "2026-09-23",
+    intervalDays: 3,
+    stability: 2.3065,
+    difficulty: 2.118,
+    state: "review",
+    reviews: 1,
+    lapses: 0,
+    lastReviewedAt: at(2026, 9, 20).toISOString(),
+    ...overrides,
+  };
 }
 
 describe("jours calendaires — pas d'heures, pas de fuseau", () => {
@@ -64,14 +75,24 @@ describe("jours calendaires — pas d'heures, pas de fuseau", () => {
   });
 
   it("une note à 0 h 05 compte pour le jour qui commence", () => {
-    expect(schedule(state(), "again", at(2026, 3, 1, 0, 5)).dueAt).toBe("2026-03-02");
+    const february = state({ dueAt: "2026-02-26", lastReviewedAt: at(2026, 2, 23).toISOString() });
+    expect(schedule(february, "again", at(2026, 3, 1, 0, 5)).dueAt).toBe("2026-03-02");
   });
 });
 
 describe("une entrée jamais révisée", () => {
-  it("est due le lendemain de sa création, au premier barreau", () => {
+  it("est due le lendemain de sa création, état FSRS « new »", () => {
     const fresh = item({ createdAt: at(2026, 1, 31, 22).toISOString() });
-    expect(effectiveSchedule(fresh)).toEqual({ dueAt: "2026-02-01", intervalDays: 1, step: 0, reviews: 0, lapses: 0, lastReviewedAt: null });
+    expect(effectiveSchedule(fresh)).toEqual({
+      dueAt: "2026-02-01",
+      intervalDays: 1,
+      stability: 0,
+      difficulty: 0,
+      state: "new",
+      reviews: 0,
+      lapses: 0,
+      lastReviewedAt: null,
+    });
   });
 
   it("n'est pas due le jour même", () => {
@@ -81,60 +102,94 @@ describe("une entrée jamais révisée", () => {
   });
 });
 
-describe("les quatre notes", () => {
+describe("les quatre notes — FSRS", () => {
   const now = at(2026, 9, 23);
 
-  it("« Bien » monte l'échelle 1 → 3 → 7 → 16 → 35 → 90, puis plafonne", () => {
-    let current = state();
+  it("première note : les stabilités initiales w₀…w₃ de FSRS, et des intervalles strictement croissants", () => {
+    const first = previewRatings(item(), now);
+    // Oublié 1 j · Dur 2 j · Bien 3 j · Facile 8 j — valeurs FSRS-6 par défaut,
+    // l'ordre « Dur < Bien < Facile » étant imposé comme dans Anki.
+    expect(first).toEqual({ again: 1, hard: 2, good: 3, easy: 8 });
+    const good = schedule(effectiveSchedule(item()), "good", now);
+    expect(good.stability).toBeCloseTo(2.3065, 4);
+    expect(good.state).toBe("review");
+    expect(good.reviews).toBe(1);
+  });
+
+  it("« Bien » à l'heure fait grandir l'intervalle révision après révision", () => {
+    let current = effectiveSchedule(item());
+    let day = now;
     const intervals: number[] = [];
-    for (let index = 0; index < 7; index += 1) {
-      current = schedule(current, "good", now);
+    for (let index = 0; index < 6; index += 1) {
+      current = schedule(current, "good", day);
       intervals.push(current.intervalDays);
+      day = at(...(current.dueAt.split("-").map(Number) as [number, number, number]));
     }
-    expect(intervals).toEqual([3, 7, 16, 35, 90, 90, 90]);
-    expect(current.step).toBe(SRS_LADDER.length - 1);
-    expect(current.reviews).toBe(7);
+    for (let index = 1; index < intervals.length; index += 1) expect(intervals[index]).toBeGreaterThan(intervals[index - 1]);
+    expect(current.reviews).toBe(6);
   });
 
-  it("« Facile » saute un barreau", () => {
-    const first = schedule(state(), "easy", now);
-    expect(first.intervalDays).toBe(7);
-    expect(schedule(first, "easy", now).intervalDays).toBe(35);
-    expect(schedule(state({ step: 4, intervalDays: 35 }), "easy", now).intervalDays).toBe(90);
+  it("l'ordre des boutons est toujours respecté : Oublié ≤ Dur < Bien < Facile", () => {
+    for (const srs of [state(), state({ stability: 16, intervalDays: 16, dueAt: "2026-09-23", lastReviewedAt: at(2026, 9, 7).toISOString() })]) {
+      const preview = previewRatings(item({ srs }), now);
+      expect(preview.again).toBeLessThanOrEqual(preview.hard);
+      expect(preview.hard).toBeLessThan(preview.good);
+      expect(preview.good).toBeLessThan(preview.easy);
+    }
   });
 
-  it("« À revoir » remet à demain, au premier barreau, et compte l'oubli", () => {
-    const next = schedule(state({ step: 3, intervalDays: 16, lapses: 1, reviews: 5 }), "again", now);
-    expect(next).toMatchObject({ dueAt: "2026-09-24", intervalDays: 1, step: 0, lapses: 2, reviews: 6 });
+  it("« À revoir » fait chuter la stabilité, ramène à très court terme et compte l'oubli", () => {
+    const before = state({ stability: 16, intervalDays: 16, lapses: 1, reviews: 5, lastReviewedAt: at(2026, 9, 7).toISOString() });
+    const next = schedule(before, "again", now);
+    expect(next.stability).toBeLessThan(before.stability / 2);
+    expect(next.intervalDays).toBeLessThanOrEqual(3);
+    expect(next).toMatchObject({ lapses: 2, reviews: 6 });
+    expect(next.difficulty).toBeGreaterThan(before.difficulty);
     expect(next.lastReviewedAt).toBe(now.toISOString());
   });
 
-  it("« Difficile » multiplie par 1,2 sans jamais descendre sous un jour", () => {
-    expect(schedule(state({ intervalDays: 1 }), "hard", now).intervalDays).toBe(1);
-    expect(schedule(state({ step: 1, intervalDays: 3 }), "hard", now).intervalDays).toBe(4);
-    expect(schedule(state({ step: 3, intervalDays: 16 }), "hard", now).intervalDays).toBe(19);
-  });
-
-  it("« Bien » après des « Difficile » repart toujours vers le haut", () => {
-    let current = state({ step: 1, intervalDays: 3 });
-    for (let index = 0; index < 4; index += 1) current = schedule(current, "hard", now);
-    // 3 → 4 → 5 → 6 → 7 : au barreau « 7 jours ».
-    expect(current.intervalDays).toBe(7);
-    const good = schedule(current, "good", now);
-    expect(good.intervalDays).toBeGreaterThan(current.intervalDays);
-    expect(good.intervalDays).toBe(16);
-  });
-
-  it("« Bien » ne raccourcit jamais un intervalle au-delà du plafond", () => {
-    expect(schedule(state({ step: 5, intervalDays: 108 }), "good", now).intervalDays).toBe(108);
+  it("un « Bien » en retard compte davantage qu'un « Bien » à l'heure (FSRS voit que le souvenir a tenu)", () => {
+    const onTime = schedule(state({ lastReviewedAt: at(2026, 9, 20).toISOString() }), "good", now);
+    const late = schedule(state({ lastReviewedAt: at(2026, 9, 3).toISOString() }), "good", now);
+    expect(late.stability).toBeGreaterThan(onTime.stability);
   });
 
   it("une carte en retard repart d'aujourd'hui, pas de son ancienne échéance", () => {
-    expect(schedule(state({ dueAt: "2026-09-01" }), "good", now).dueAt).toBe("2026-09-26");
+    const next = schedule(state({ dueAt: "2026-09-01" }), "good", now);
+    expect(next.dueAt).toBe(addDays("2026-09-23", next.intervalDays));
+  });
+});
+
+describe("migration de l'ancienne échelle fixe", () => {
+  const now = at(2026, 9, 23, 9);
+  /** Un calendrier tel que l'ancienne version l'écrivait : `step`, pas de stabilité. */
+  const legacy = { dueAt: "2026-09-30", intervalDays: 16, step: 3, reviews: 4, lapses: 1, lastReviewedAt: at(2026, 9, 14, 20).toISOString() };
+
+  it("garde l'échéance et l'intervalle, prend l'intervalle pour stabilité", () => {
+    const converted = normalizeReviewSchedule(legacy)!;
+    // Difficulté : le milieu de l'échelle (5), +1 par oubli déjà compté.
+    expect(converted).toMatchObject({ dueAt: "2026-09-30", intervalDays: 16, stability: 16, difficulty: 6, state: "review", reviews: 4, lapses: 1 });
+    expect(converted.difficulty).toBeGreaterThanOrEqual(1);
+    expect(converted.difficulty).toBeLessThanOrEqual(10);
+    expect("step" in converted).toBe(false);
   });
 
-  it("previewRatings annonce ce que donnerait chaque bouton", () => {
-    expect(previewRatings(item(), now)).toEqual({ again: 1, hard: 1, good: 3, easy: 7 });
+  it("une entrée migrée n'est PAS due avant son ancienne échéance, et l'est à partir d'elle", () => {
+    const migrated = normalizeReviewItem(item({ id: "m", srs: legacy as unknown as ReviewSchedule }))!;
+    expect(isDue(migrated, now)).toBe(false);
+    expect(isDue(migrated, at(2026, 9, 30, 8))).toBe(true);
+    expect(dueReviewItems([migrated], at(2026, 10, 2)).map((entry) => entry.id)).toEqual(["m"]);
+  });
+
+  it("noter une entrée migrée à l'échéance prolonge l'intervalle (le souvenir a tenu 16 jours)", () => {
+    const migrated = normalizeReviewItem(item({ id: "m", srs: legacy as unknown as ReviewSchedule }))!;
+    const next = rateReviewItem([migrated], "m", "good", at(2026, 9, 30))[0].srs!;
+    expect(next.intervalDays).toBeGreaterThan(16);
+    expect(next.stability).toBeGreaterThan(16);
+  });
+
+  it("un intervalle illisible reprend la valeur de l'ancien barreau", () => {
+    expect(normalizeReviewSchedule({ dueAt: "2026-09-23", step: 2 })?.intervalDays).toBe(SRS_LADDER[2]);
   });
 });
 
@@ -167,7 +222,7 @@ describe("la file du jour", () => {
     const list = [item({ id: "a" }), item({ id: "b" })];
     const rated = rateReviewItem(list, "a", "good", now);
     expect(rated[1]).toBe(list[1]);
-    expect(rated[0].srs).toMatchObject({ dueAt: "2026-09-26", step: 1, reviews: 1 });
+    expect(rated[0].srs).toMatchObject({ dueAt: "2026-09-26", state: "review", reviews: 1 });
     expect(dueReviewItems(rated, now).map((entry) => entry.id)).toEqual(["b"]);
   });
 
@@ -198,13 +253,17 @@ describe("formats", () => {
     expect(formatInterval(1)).toBe("1 j");
     expect(formatInterval(16)).toBe("16 j");
     expect(formatInterval(90)).toBe("3 mois");
+    expect(formatInterval(47)).toBe("47 j");
+    expect(formatInterval(113)).toBe("4 mois");
+    expect(formatInterval(400)).toBe("1 an");
+    expect(formatInterval(550)).toBe("1,5 an");
   });
 });
 
 describe("normalisation du calendrier — frontière de confiance", () => {
   it("un aller-retour JSON ne perd rien, verso et calendrier compris", () => {
     const rated = rateReviewItem([item({ id: "x", answer: "Monotone + bornée\n⇒ convergente" })], "x", "good", at(2026, 9, 23))[0];
-    expect(rated.srs?.step).toBe(1);
+    expect(rated.srs?.stability).toBeGreaterThan(0);
     expect(normalizeReviewItem(JSON.parse(JSON.stringify(rated)))).toEqual(rated);
   });
 
@@ -219,13 +278,19 @@ describe("normalisation du calendrier — frontière de confiance", () => {
   it("jette un calendrier sans échéance lisible, répare le reste", () => {
     expect(normalizeReviewSchedule({ dueAt: "bientôt", step: 2 })).toBeUndefined();
     expect(normalizeReviewSchedule("2026-09-23")).toBeUndefined();
-    expect(normalizeReviewSchedule({ dueAt: "2026-09-23", step: 42, intervalDays: -3, reviews: "beaucoup", lapses: 1.6, lastReviewedAt: "hier" })).toEqual({
+    expect(normalizeReviewSchedule({ dueAt: "2026-09-23", step: 42, intervalDays: -3, reviews: "beaucoup", lapses: 1.6, lastReviewedAt: "hier" })).toMatchObject({
       dueAt: "2026-09-23",
       intervalDays: 90,
-      step: 5,
+      stability: 90,
+      state: "review",
       reviews: 0,
       lapses: 2,
       lastReviewedAt: null,
+    });
+    // Une stabilité FSRS aberrante retombe sur l'intervalle, une difficulté hors bornes est ramenée dans [1, 10].
+    expect(normalizeReviewSchedule({ dueAt: "2026-09-23", intervalDays: 5, stability: -2, difficulty: 42, state: "review" })).toMatchObject({
+      stability: 5,
+      difficulty: 10,
     });
   });
 

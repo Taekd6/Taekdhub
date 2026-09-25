@@ -537,7 +537,7 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     const outcome = withQuotaStorage({}, 1_000_000, () => restoreBackup(backup()));
     expect(outcome.ok).toBe(true);
     expect(outcome.failedAt).toBeNull();
-    expect(outcome.restored).toHaveLength(9);
+    expect(outcome.restored).toHaveLength(10);
   });
 
   it("les séances ne passent pas → RIEN n'est touché, et c'est dit", () => {
@@ -1054,5 +1054,48 @@ describe("calibration — prédictions et notes en attente dans la sauvegarde", 
     });
     expect(restored).toEqual(grades);
     expect("predictedScore" in restored[2]).toBe(false);
+  });
+});
+
+describe("mémoire des chapitres (FSRS) — dans la sauvegarde", () => {
+  const chapters = [
+    {
+      id: "c-1",
+      subject: "Mathématiques",
+      title: "Intégrales généralisées",
+      learnedAt: "2026-09-01",
+      ankiDeck: "Maths::Intégrales",
+      card: { stability: 10.97, difficulty: 2.1, state: "review", reps: 2, lapses: 0, lastReview: "2026-09-04", due: "2026-09-15" },
+      reviews: [{ day: "2026-09-04", rating: "good" }],
+      archived: false,
+      createdAt: "2026-09-01T18:00:00.000Z",
+    },
+  ];
+
+  it("export → JSON → validation → restauration : rien ne se perd", () => {
+    const file = withWritableStorage({ "prepahub:chapterMemory": JSON.stringify(chapters) }, () =>
+      JSON.parse(JSON.stringify(buildBackupPayload(new Date("2026-09-24T12:00:00.000Z"))))
+    );
+    expect(file.chapterMemory).toEqual(chapters);
+    expect(validateBackupPayload(file)).toBe(true);
+    const restored = withWritableStorage({}, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.chapterMemory();
+    });
+    expect(restored).toEqual(chapters);
+  });
+
+  it("une sauvegarde d'avant la mémoire des chapitres reste importable, et remplace par une liste vide", () => {
+    const legacy = { version: 1, exportedAt: "2026-09-01T00:00:00.000Z", sessions: [], preferences: {} };
+    expect(validateBackupPayload(legacy)).toBe(true);
+    const after = withWritableStorage({ "prepahub:chapterMemory": JSON.stringify(chapters) }, () => {
+      restoreBackup(legacy as never);
+      return localData.chapterMemory();
+    });
+    expect(after).toEqual([]);
+  });
+
+  it("refuse un fichier dont la mémoire des chapitres n'est pas une liste", () => {
+    expect(validateBackupPayload({ sessions: [], preferences: {}, chapterMemory: "oups" })).toBe(false);
   });
 });

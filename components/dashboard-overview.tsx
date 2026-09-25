@@ -7,6 +7,7 @@ import { BackupReminder } from "@/components/backup-reminder";
 import { QuickLog } from "@/components/work/quick-log";
 import { ReviewCapture } from "@/components/review/review-capture";
 import { DailyCheckinCard } from "@/components/checkin/daily-checkin"; // check-in du soir
+import { MemoryCard } from "@/components/memory/memory-card"; // mémoire des chapitres (FSRS)
 import { ChapterHeading } from "@/components/home/tile";
 import { DeadlinesTile, ReviewsTile, TodayTile } from "@/components/home/today-tiles";
 import { SubjectCarousel, WeekTiles } from "@/components/home/week-and-subjects";
@@ -74,7 +75,7 @@ const SHORTCUTS = [
  * l'état, et une seconde copie resterait figée après une saisie.
  */
 export function DashboardOverview() {
-  const { sessions, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems, checkins, saveCheckins } = usePrepahubData();
+  const { sessions, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems, checkins, saveCheckins, chapterMemory, saveChapterMemory } = usePrepahubData();
 
   const model = useMemo(() => {
     const now = new Date();
@@ -208,6 +209,11 @@ export function DashboardOverview() {
         <DeadlinesTile deadlines={upcomingDeadlines} today={workPlan.days[0]} index={1} />
         <ReviewsTile due={reviews.due} next={reviews.next} index={2} />
       </section>
+
+      {/* ── MÉMOIRE DES CHAPITRES (FSRS) — « À ne pas oublier », juste après
+          les révisions du jour. Voir components/memory/memory-card.tsx. ── */}
+      <MemoryCard chapters={chapterMemory} saveChapters={saveChapterMemory} ready={ready} />
+      {/* ── fin mémoire des chapitres ── */}
 
       {/* ── 4. NOTER DU TEMPS — la cible du bouton secondaire du haut.
           Deux colonnes : la promesse à gauche, les contrôles à droite. ── */}

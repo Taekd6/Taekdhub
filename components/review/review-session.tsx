@@ -238,7 +238,7 @@ export function ReviewSession() {
                       <kbd className="tabular rounded border border-line px-1 text-2xs font-normal text-subtle max-lg:hidden">{meta.key}</kbd>
                       {meta.label}
                     </span>
-                    <span className="tabular text-2xs text-muted">{rating === "again" ? "demain" : formatInterval(preview[rating])}</span>
+                    <span className="tabular text-2xs text-muted">{preview[rating] === 1 ? "demain" : formatInterval(preview[rating])}</span>
                   </button>
                 );
               })}
@@ -380,8 +380,14 @@ function WhyItWorks() {
           temps égal, des révisions réparties dans le temps donnent une meilleure rétention à long terme que des révisions groupées.
         </p>
         <p>
-          Dunlosky et al. (2013) classent ces deux techniques « d&apos;utilité élevée », la relecture « d&apos;utilité faible ». Les intervalles utilisés ici
-          (1, 3, 7, 16, 35, 90 jours) sont une règle simple inspirée de ces travaux, pas un réglage optimal démontré.
+          Dunlosky et al. (2013) classent ces deux techniques « d&apos;utilité élevée », la relecture « d&apos;utilité faible ».
+        </p>
+        <p>
+          <span className="text-ink">Quand revoir : FSRS.</span> Les intervalles sont calculés par FSRS, l&apos;algorithme de Jarrett Ye et du projet
+          open-spaced-repetition, qu&apos;Anki propose depuis sa version 23.10. Chaque entrée a une <i>stabilité</i> (le nombre de jours avant que la
+          probabilité de t&apos;en souvenir retombe à 90 %) et une <i>difficulté</i>, mises à jour à chaque note ; l&apos;entrée revient quand cette
+          probabilité estimée atteint 90 %. Les coefficients sont ceux par défaut, ajustés sur des centaines de millions de révisions Anki : une
+          moyenne, pas un réglage fait pour toi.
         </p>
       </div>
     </details>
