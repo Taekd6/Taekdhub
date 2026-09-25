@@ -5,14 +5,17 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Section } from "@/components/ui/section";
-import { SegmentedControl } from "@/components/ui/segmented";
+import { FilterPills } from "@/components/ui/pills";
+import { cn } from "@/lib/cn";
 import { LineChart } from "@/components/ui/chart";
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
+import { ScoreBadge } from "@/components/ui/list-card";
 import { Insufficient } from "@/components/progress/insufficient";
+import { GradeErrorsLink } from "@/components/errors/error-links";
 import { computeGradesByKind, computeGradesBySubject } from "@/lib/tracking";
-import { computeGradeTrend, createGrade, formatAverage, formatGrade, GRADE_KIND_META, gradedSubjects, normalizedScore, removeGrade } from "@/lib/grades";
+import { computeGradeTrend, createGrade, formatAverage, formatGrade, formatPrediction, GRADE_KIND_META, gradedSubjects, isScored, normalizedScore, removeGrade } from "@/lib/grades";
+import { CalibrationPanel, PendingGrades } from "@/components/progress/calibration-panel"; // calibration des notes
 import { describeConfidence, withSign } from "@/lib/analytics/trend";
-import { subjectMeta, subjects } from "@/lib/study";
+import { subjects } from "@/lib/study";
 import { GRADE_KINDS, type Grade, type GradeKind } from "@/lib/storage";
 import type { Subject } from "@/lib/supabase/types";
 
@@ -35,6 +38,8 @@ import type { Subject } from "@/lib/supabase/types";
  */
 export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (grades: Grade[]) => void }) {
   const [subject, setSubject] = useState<Subject | "toutes">("toutes");
+  /** Dernière note ajoutée — porte le lien « Noter les erreurs de ce DS » (carnet d'erreurs). */
+  const [justAdded, setJustAdded] = useState<Grade | null>(null);
   /*
    * FILTRE PAR NATURE, distinct du filtre par matière.
    *
@@ -57,141 +62,208 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
   /** Une ligne par matière : dernière note, moyenne, tendance — bornée à la nature choisie. */
   const bySubject = useMemo(() => computeGradesBySubject(scopedByKind), [scopedByKind]);
 
+  /*
+   * QUATRE TUILES, dans l'ordre d'un retour de copie : on NOTE (saisie et
+   * épreuves en attente), on REGARDE la courbe, on COMPARE matière par
+   * matière et épreuve par épreuve, puis on confronte ses PRONOSTICS. Tout
+   * tenait auparavant dans une seule section de 2 000 px, où la courbe se
+   * perdait entre le formulaire et la liste.
+   */
   return (
-    <Section
-      label="Tes résultats"
-      title="Tes notes"
-      description="Saisies par toi : c'est le seul regard extérieur sur ton travail. Les barèmes sont ramenés sur 20 pour être comparables, en moyenne simple."
-    >
-      <GradeForm onCreate={(grade) => onSave([grade, ...grades])} />
+    <div className="space-y-5">
+      <Section
+        variant="panel"
+        label="Tes résultats"
+        title="Ajouter une note"
+        description="Un pronostic seul crée l'épreuve « en attente »."
+      >
+        <GradeForm
+          onCreate={(grade) => {
+            onSave([grade, ...grades]);
+            setJustAdded(grade);
+          }}
+        />
+        {/* Carnet d'erreurs : la copie est encore sous les yeux, c'est le moment. */}
+        {justAdded && grades.some((grade) => grade.id === justAdded.id) && <GradeErrorsLink grade={justAdded} className="mt-3" />}
 
-      {grades.length === 0 ? (
+        {/* ── Calibration : épreuves en attente de la copie ── */}
+        <PendingGrades grades={grades} onSave={onSave} className="mt-7" />
+      </Section>
+
+      {!grades.some(isScored) ? (
         <Insufficient
-          className="mt-6"
           what="Aucune note enregistrée."
           how="Ajoute un DS ou une interro ci-dessus : deux notes suffisent à voir une variation, quatre à dégager une tendance."
         />
       ) : (
-        <div className="mt-7 space-y-5">
-          {byKind.length > 1 && (
-            <SegmentedControl
-              size="sm"
-              ariaLabel="Nature d'épreuve affichée"
-              value={kind}
-              onChange={(value) => setKind(value as GradeKind | "toutes")}
-              options={[
-                { value: "toutes" as const, label: "Toutes" },
-                ...byKind.map((entry) => ({ value: entry.kind, label: GRADE_KIND_META[entry.kind].short })),
-              ]}
-            />
-          )}
-
-          {available.length > 1 && (
-            <SegmentedControl
-              size="sm"
-              ariaLabel="Matière affichée"
-              value={subject}
-              onChange={setSubject}
-              options={[{ value: "toutes" as const, label: "Toutes" }, ...available.map((entry) => ({ value: entry, label: subjectMeta[entry].short }))]}
-            />
-          )}
-
-          {result.grades.length >= 2 ? (
-            <>
-              <LineChart
-                points={result.grades.map((grade) => ({ label: shortDate.format(new Date(`${grade.date}T00:00:00`)), value: normalizedScore(grade) }))}
-                min={0}
-                max={20}
-                formatValue={(value) => String(Math.round(value))}
-                ariaLabel={`Notes ${scope ?? "toutes matières"} : ${result.grades
-                  .map((grade) => `${shortDate.format(new Date(`${grade.date}T00:00:00`))} ${formatGrade(grade)}`)
-                  .join(", ")}.`}
-              />
-              <p className="t-body">
-                Moyenne <span className="font-medium">{formatAverage(result.stats.average ?? 0)}/20</span> sur {result.stats.count} note
-                {result.stats.count > 1 ? "s" : ""}
-                {result.trend.direction !== "insuffisant" && result.trend.delta !== null && (
-                  <> · {withSign(Math.round(result.trend.delta * 10) / 10, " pt")} de la première à la dernière</>
-                )}
-                .
-              </p>
-              {result.trend.direction !== "insuffisant" && (
-                <p className="t-meta">
-                  Tes notes sont {TREND_WORDS[result.trend.direction]}.
-                  {describeConfidence(result.trend) && <> {describeConfidence(result.trend)}</>}
-                </p>
+        <>
+          <Section
+            variant="panel"
+            title="Ta courbe"
+            description="Ramenée sur 20."
+          >
+            <div className="space-y-3">
+              {byKind.length > 1 && (
+                <FilterPills
+                  ariaLabel="Nature d'épreuve affichée"
+                  value={kind}
+                  onChange={(value) => setKind(value as GradeKind | "toutes")}
+                  options={[
+                    { value: "toutes" as const, label: "Toutes les épreuves" },
+                    ...byKind.map((entry) => ({ value: entry.kind, label: GRADE_KIND_META[entry.kind].label })),
+                  ]}
+                />
               )}
-            </>
-          ) : (
-            <Insufficient
-              what={`${result.stats.count} note enregistrée${scope ? ` en ${scope}` : ""} — pas encore de courbe.`}
-              how="Il en faut au moins deux pour voir une variation."
-            />
-          )}
-
-          {/* UNE LIGNE PAR MATIÈRE : dernière note, moyenne, tendance. Le
-              tableau que la liste chronologique ne remplace pas — elle dit
-              « quand », il dit « où j'en suis ». */}
-          {bySubject.length > 1 && (
-            <div>
-              <p className="t-label mb-2">Par matière{kindScope ? ` · ${GRADE_KIND_META[kindScope].label}` : ""}</p>
-              <ul className="divide-y divide-line border-y border-line">
-                {bySubject.map((row) => (
-                  <li key={row.subject} className="flex items-center gap-3 py-2.5">
-                    <SubjectAvatar subject={row.subject} size="sm" />
-                    <span className="min-w-0 flex-1 truncate text-sm text-ink">{row.subject}</span>
-                    <span className="tabular w-14 shrink-0 whitespace-nowrap text-right text-sm text-ink">
-                      {row.stats.latest ? formatGrade(row.stats.latest) : "—"}
-                    </span>
-                    <span className="t-meta tabular w-16 shrink-0 whitespace-nowrap text-right text-2xs">
-                      moy. {row.stats.average !== null ? formatAverage(row.stats.average) : "—"}
-                    </span>
-                    {/* « — » et non une flèche quand une seule note existe :
-                        deux points font une variation, pas une tendance. */}
-                    <span className="w-6 shrink-0 text-right text-sm">
-                      {row.trend.direction === "insuffisant"
-                        ? "—"
-                        : row.trend.direction === "hausse"
-                          ? "↑"
-                          : row.trend.direction === "baisse"
-                            ? "↓"
-                            : "→"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              {available.length > 1 && (
+                <FilterPills
+                  ariaLabel="Matière affichée"
+                  value={subject}
+                  onChange={setSubject}
+                  options={[{ value: "toutes" as const, label: "Toutes les matières" }, ...available.map((entry) => ({ value: entry, label: entry }))]}
+                />
+              )}
             </div>
-          )}
 
-          <ul className="divide-y divide-line border-y border-line">
-            {[...result.grades].reverse().map((grade) => (
-              <li key={grade.id} className="flex items-center gap-3 py-2.5">
-                <SubjectAvatar subject={grade.subject} size="sm" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
-                  <span className="t-meta mt-0.5 block truncate text-2xs">
-                    {GRADE_KIND_META[grade.kind].short} · {longDate.format(new Date(`${grade.date}T00:00:00`))}
-                  </span>
-                </span>
-                <span className="t-figure-sm tabular shrink-0 whitespace-nowrap">{formatGrade(grade)}</span>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label={`Supprimer la note ${formatGrade(grade)} du ${grade.date}`}
-                  onClick={() => onSave(removeGrade(grades, grade.id))}
-                >
-                  <Trash2 size={14} />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </div>
+            {result.grades.length >= 2 ? (
+              <div className="mt-8">
+                <div className="mb-6 flex flex-wrap items-end gap-x-8 gap-y-3">
+                  <div>
+                    <p className="t-label">Moyenne</p>
+                    <p className="t-figure-lg text-grad mt-1">
+                      {formatAverage(result.stats.average ?? 0)}
+                      <span className="text-2xl font-semibold text-subtle"> /20</span>
+                    </p>
+                  </div>
+                  <p className="t-meta pb-1.5">
+                    sur {result.stats.count} note{result.stats.count > 1 ? "s" : ""}
+                    {result.trend.direction !== "insuffisant" && result.trend.delta !== null && (
+                      <> · {withSign(Math.round(result.trend.delta * 10) / 10, " pt")} de la première à la dernière</>
+                    )}
+                    {result.trend.direction !== "insuffisant" && (
+                      <>
+                        <br />
+                        Tes notes sont {TREND_WORDS[result.trend.direction]}.
+                        {describeConfidence(result.trend) && <> {describeConfidence(result.trend)}</>}
+                      </>
+                    )}
+                  </p>
+                </div>
+                <LineChart
+                  points={result.grades.map((grade) => ({
+                    label: `${grade.title || GRADE_KIND_META[grade.kind].label} · ${shortDate.format(new Date(`${grade.date}T00:00:00`))}`,
+                    value: normalizedScore(grade),
+                  }))}
+                  min={0}
+                  max={20}
+                  formatValue={(value) => formatAverage(value)}
+                  ariaLabel={`Notes ${scope ?? "toutes matières"} : ${result.grades
+                    .map((grade) => `${shortDate.format(new Date(`${grade.date}T00:00:00`))} ${formatGrade(grade)}`)
+                    .join(", ")}.`}
+                />
+              </div>
+            ) : (
+              <Insufficient
+                className="mt-6"
+                what={`${result.stats.count} note enregistrée${scope ? ` en ${scope}` : ""} — pas encore de courbe.`}
+                how="Il en faut au moins deux pour voir une variation."
+              />
+            )}
+          </Section>
+
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+            {/* UNE LIGNE PAR MATIÈRE : dernière note, moyenne, tendance. Le
+                tableau que la liste chronologique ne remplace pas — elle dit
+                « quand », il dit « où j'en suis ». */}
+            {bySubject.length > 1 && (
+              <Section variant="panel" title="Par matière" description={kindScope ? GRADE_KIND_META[kindScope].label : "Toutes épreuves confondues."}>
+                <ul className="-mx-3 -mb-2">
+                  {bySubject.map((row) => (
+                    <li key={row.subject} className="row-slide flex min-h-[4.25rem] items-center gap-3 rounded-[1.125rem] px-3 py-2.5">
+                      {/* La MOYENNE dans la pastille en dégradé : c'est le
+                          chiffre qu'on cherche en premier sur cette carte. */}
+                      <ScoreBadge ratio={row.stats.average !== null ? row.stats.average / 20 : null}>
+                        {row.stats.average !== null ? formatAverage(row.stats.average) : "—"}
+                      </ScoreBadge>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[0.9375rem] font-extrabold text-ink">{row.subject}</span>
+                        <span className="tabular block truncate text-[0.8125rem] font-bold text-subtle">
+                          dernière {row.stats.latest ? formatGrade(row.stats.latest) : "—"}
+                        </span>
+                      </span>
+                      {/* « — » et non une flèche quand une seule note existe :
+                          deux points font une variation, pas une tendance. */}
+                      <span
+                        className={cn(
+                          "grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-bold",
+                          row.trend.direction === "hausse" ? "bg-accent/[0.14] text-accent" : "bg-inset text-muted"
+                        )}
+                        role="img"
+                        aria-label={row.trend.direction === "insuffisant" ? "tendance non mesurable" : `tendance ${TREND_WORDS[row.trend.direction]}`}
+                      >
+                        {row.trend.direction === "insuffisant"
+                          ? "–"
+                          : row.trend.direction === "hausse"
+                            ? "↑"
+                            : row.trend.direction === "baisse"
+                              ? "↓"
+                              : "→"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Section>
+            )}
+
+            <Section
+              variant="panel"
+              title="Toutes tes épreuves"
+              description={`${result.grades.length} note${result.grades.length > 1 ? "s" : ""}, la plus récente d'abord.`}
+              className={bySubject.length > 1 ? undefined : "lg:col-span-2"}
+            >
+              <ul className="-mx-3 -mb-2">
+                {[...result.grades].reverse().map((grade) => {
+                  const ratio = normalizedScore(grade) / 20;
+                  return (
+                  <li key={grade.id} className="row-slide flex min-h-[4.25rem] items-center gap-3 rounded-[1.125rem] py-2.5 pl-3 pr-1">
+                    <ScoreBadge ratio={ratio}>{formatAverage(normalizedScore(grade))}</ScoreBadge>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[0.9375rem] font-extrabold text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
+                      <span className="block truncate text-[0.8125rem] font-bold text-subtle">
+                        {grade.subject} · {GRADE_KIND_META[grade.kind].short} · {longDate.format(new Date(`${grade.date}T00:00:00`))}
+                        {formatPrediction(grade) && <> · pronostic {formatPrediction(grade)}</>}
+                      </span>
+                    </span>
+                    <span className="tabular shrink-0 whitespace-nowrap text-[0.9375rem] font-black text-ink">{formatGrade(grade)}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label={`Supprimer la note ${formatGrade(grade)} du ${grade.date}`}
+                      onClick={() => onSave(removeGrade(grades, grade.id))}
+                    >
+                      <Trash2 size={15} />
+                    </Button>
+                  </li>
+                  );
+                })}
+              </ul>
+            </Section>
+          </div>
+        </>
       )}
-    </Section>
+
+      {/* ── Calibration : pronostics face aux notes ── */}
+      <CalibrationPanel grades={grades} />
+    </div>
   );
 }
 
-/** Saisie d'une note — tout tient sur deux rangées, et seul le score est obligatoire. */
+/**
+ * Saisie d'une note — tout tient sur deux rangées.
+ *
+ * Il faut une note OU un pronostic. Avec un pronostic seul, la note est
+ * créée EN ATTENTE : on la complète le jour où la copie est rendue (voir
+ * components/progress/calibration-panel.tsx#PendingGrades).
+ */
 function GradeForm({ onCreate }: { onCreate: (grade: Grade) => void }) {
   const [subject, setSubject] = useState<Subject>("Mathématiques");
   const [kind, setKind] = useState<GradeKind>("ds");
@@ -199,16 +271,20 @@ function GradeForm({ onCreate }: { onCreate: (grade: Grade) => void }) {
   const [date, setDate] = useState(new Date().toLocaleDateString("en-CA"));
   const [score, setScore] = useState("");
   const [maxScore, setMaxScore] = useState(20);
+  const [prediction, setPrediction] = useState("");
 
-  const parsed = Number(score.replace(",", "."));
-  const valid = score.trim() !== "" && Number.isFinite(parsed) && parsed >= 0;
+  const parsed = parseScore(score);
+  const predicted = parseScore(prediction);
+  const valid = parsed !== null || predicted !== null;
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!valid) return;
-    onCreate(createGrade({ subject, title, kind, date, score: parsed, maxScore }));
+    const grade = createGrade({ subject, title, kind, date, score: parsed, maxScore, predictedScore: predicted });
+    if (!grade) return;
+    onCreate(grade);
     setTitle("");
     setScore("");
+    setPrediction("");
   }
 
   return (
@@ -240,7 +316,7 @@ function GradeForm({ onCreate }: { onCreate: (grade: Grade) => void }) {
         />
       </label>
       <Button type="submit" disabled={!valid} className="shrink-0">
-        <Plus size={15} /> Ajouter
+        <Plus size={15} /> {parsed === null && predicted !== null ? "En attente" : "Ajouter"}
       </Button>
 
       <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap">
@@ -266,9 +342,29 @@ function GradeForm({ onCreate }: { onCreate: (grade: Grade) => void }) {
           <span className="sr-only">Date de l&apos;épreuve</span>
           <Input aria-label="Date de l'épreuve" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
         </label>
+        {/* Calibration : ce que tu penses avoir, AVANT la copie. */}
+        <label className="col-span-2 flex min-w-0 items-center gap-2 sm:col-span-1">
+          <span className="t-meta shrink-0 text-2xs">Pronostic</span>
+          <Input
+            aria-label="Pronostic, avant la copie"
+            inputMode="decimal"
+            value={prediction}
+            onChange={(event) => setPrediction(event.target.value)}
+            placeholder="facultatif"
+            className="w-24 text-center"
+          />
+          <span className="t-meta">/{maxScore}</span>
+        </label>
       </div>
     </form>
   );
+}
+
+/** Champ numérique à la française (« 11,5 ») — `null` si vide ou illisible. */
+function parseScore(raw: string): number | null {
+  if (raw.trim() === "") return null;
+  const value = Number(raw.replace(",", "."));
+  return Number.isFinite(value) && value >= 0 ? value : null;
 }
 
 const TREND_WORDS: Record<"hausse" | "baisse" | "stable", string> = {

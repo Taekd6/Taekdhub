@@ -23,9 +23,10 @@
  *
  * ─── CE QUI N'EST JAMAIS MIS EN CACHE ──────────────────────────────────
  *
- * `/api/…` — la seule route dynamique est /api/ai (le copilote), qui doit
- * parler au serveur ou échouer franchement. Une réponse d'IA rejouée depuis
- * un cache serait un mensonge.
+ * `/api/…` — aucune route n'y répond aujourd'hui (le copilote IA, /api/ai,
+ * a été retiré avec la banque d'exercices), mais toute route dynamique
+ * future doit parler au serveur ou échouer franchement : une réponse
+ * rejouée depuis un cache serait un mensonge.
  *
  * Et rien d'autre que des GET de même origine : pas de POST, pas de
  * ressource tierce.
@@ -40,7 +41,10 @@
  * portée d'un service worker : il ne peut ni le lire, ni l'effacer.
  */
 
-const VERSION = "v1";
+// v3 : ajout de /memoire (mémoire des chapitres, FSRS).
+// v2 : retrait de la banque d'exercices — les coquilles de /exercises,
+// /session et /concours précachées en v1 sont supprimées à l'activation.
+const VERSION = "v3";
 const SHELL = `taekdhub-shell-${VERSION}`;
 const ASSETS = `taekdhub-assets-${VERSION}`;
 const CURRENT = [SHELL, ASSETS];
@@ -59,14 +63,17 @@ const CURRENT = [SHELL, ASSETS];
 const PRECACHE = [
   "/dashboard",
   "/preparation",
-  "/concours",
   "/progress",
   "/echeances",
+  "/revoir",
+  "/revoir/session",
+  "/memoire",
+  "/erreurs",
   "/history",
-  "/session",
   "/timer",
   "/settings",
-  "/exercises",
+  // Premier lancement — l'accueil guidé (app/(app)/bienvenue/page.tsx).
+  "/bienvenue",
 ];
 
 self.addEventListener("install", (event) => {

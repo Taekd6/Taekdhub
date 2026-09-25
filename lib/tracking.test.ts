@@ -9,17 +9,11 @@ import {
   granularityFor,
   PERIOD_DAYS,
 } from "@/lib/tracking";
-import type { Chapter, Grade, WeekSnapshot } from "@/lib/storage";
-import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
+import type { Grade } from "@/lib/storage";
+import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 /** Dimanche 20 septembre 2026, 20 h — la fin d'une semaine, pour que « semaine en cours » soit complète. */
 const NOW = new Date("2026-09-20T20:00:00");
-
-const chapters: Chapter[] = [
-  { id: "ch-1", subject: "Mathématiques", label: "Suites" },
-  { id: "ch-2", subject: "Mathématiques", label: "Intégrales" },
-  { id: "ch-3", subject: "Physique", label: "Oscillateurs" },
-];
 
 function session(startedAt: string, minutes: number, subject: Subject = "Mathématiques"): WorkSession {
   return {
@@ -34,46 +28,6 @@ function session(startedAt: string, minutes: number, subject: Subject = "Mathém
     result: null,
     hints_used: null,
     work_item_id: null,
-  };
-}
-
-function exercise(overrides: Partial<Exercise> = {}): Exercise {
-  return {
-    id: crypto.randomUUID(),
-    subject: "Mathématiques",
-    title: "Fiche",
-    statement: "s",
-    chapter_id: "ch-1",
-    source: "TD",
-    year: null,
-    competition: null,
-    programme_level: null,
-    license_status: null,
-    external_id: null,
-    epreuve: null,
-    filieres: [],
-    exercise_number: null,
-    provenance: "originale",
-    source_url: null,
-    prerequisites: [],
-    pedagogical_goal: null,
-    level: null,
-    type: "TD",
-    difficulty: 3,
-    mastery: 50,
-    status: "en cours",
-    estimated_minutes: null,
-    attempts: 1,
-    note: null,
-    created_at: "2026-09-01T08:00:00.000Z",
-    updated_at: "2026-09-01T08:00:00.000Z",
-    tags: [],
-    favorite: false,
-    archived: false,
-    hints: [],
-    correction: null,
-    last_worked_at: "2026-09-19T10:00:00.000Z",
-    ...overrides,
   };
 }
 
@@ -175,10 +129,9 @@ describe("totaux d'une période", () => {
 
 describe("vue d'ensemble", () => {
   const sessions = [daysBefore(0, 45), daysBefore(2, 60), daysBefore(25, 90)];
-  const exercises = [exercise({ chapter_id: "ch-1", attempts: 2 }), exercise({ chapter_id: "ch-2", attempts: 0, last_worked_at: null })];
 
   it("sépare aujourd'hui, la semaine et le mois", () => {
-    const overview = computeTrackingOverview(sessions, exercises, chapters, NOW);
+    const overview = computeTrackingOverview(sessions, NOW);
     expect(overview.todayMinutes).toBe(45);
     expect(overview.weekMinutes).toBe(105);
     expect(overview.monthMinutes).toBe(105);
@@ -186,24 +139,19 @@ describe("vue d'ensemble", () => {
 
   it("le dénominateur des jours travaillés est le nombre de jours ÉCOULÉS de la semaine", () => {
     // NOW est un dimanche : 7 jours écoulés.
-    expect(computeTrackingOverview(sessions, exercises, chapters, NOW).elapsedDaysThisWeek).toBe(7);
+    expect(computeTrackingOverview(sessions, NOW).elapsedDaysThisWeek).toBe(7);
     const mardi = new Date("2026-09-15T12:00:00");
-    expect(computeTrackingOverview(sessions, exercises, chapters, mardi).elapsedDaysThisWeek).toBe(2);
-  });
-
-  it("ne compte que les chapitres dont une fiche a été engagée", () => {
-    expect(computeTrackingOverview(sessions, exercises, chapters, NOW).chaptersWorked).toBe(1);
+    expect(computeTrackingOverview(sessions, mardi).elapsedDaysThisWeek).toBe(2);
   });
 
   it("aucune tendance affirmée sans historique", () => {
-    expect(computeTrackingOverview([daysBefore(0, 45)], [], [], NOW).trend.direction).toBe("insuffisant");
+    expect(computeTrackingOverview([daysBefore(0, 45)], NOW).trend.direction).toBe("insuffisant");
   });
 
   it("un compte vierge ne produit que des zéros mesurés, sans tendance", () => {
-    const overview = computeTrackingOverview([], [], [], NOW);
+    const overview = computeTrackingOverview([], NOW);
     expect(overview.todayMinutes).toBe(0);
     expect(overview.streak).toBe(0);
-    expect(overview.chaptersWorked).toBe(0);
     expect(overview.trend.direction).toBe("insuffisant");
   });
 });
@@ -212,78 +160,32 @@ describe("vue d'ensemble", () => {
    RÉPARTITION PAR MATIÈRE
    ══════════════════════════════════════════════════════════════════ */
 
-describe("répartition et progression par matière", () => {
+describe("répartition du temps par matière", () => {
   const sessions = [daysBefore(1, 120, "Mathématiques"), daysBefore(2, 60, "Physique"), daysBefore(9, 60, "Mathématiques")];
-  const exercises = [exercise({ subject: "Mathématiques" }), exercise({ subject: "Physique", chapter_id: "ch-3" })];
 
   it("ventile le temps de la période par matière", () => {
-    const rows = computeSubjectTracking(sessions, exercises, chapters, [], "7j", NOW);
+    const rows = computeSubjectTracking(sessions, "7j", NOW);
     expect(rows.find((r) => r.subject === "Mathématiques")?.minutes).toBe(120);
     expect(rows.find((r) => r.subject === "Physique")?.minutes).toBe(60);
   });
 
   it("les pourcentages portent sur le temps de la période", () => {
-    const rows = computeSubjectTracking(sessions, exercises, chapters, [], "7j", NOW);
+    const rows = computeSubjectTracking(sessions, "7j", NOW);
     expect(rows.find((r) => r.subject === "Mathématiques")?.percent).toBe(67);
   });
 
   it("compare à la période précédente, matière par matière", () => {
-    const rows = computeSubjectTracking(sessions, exercises, chapters, [], "7j", NOW);
+    const rows = computeSubjectTracking(sessions, "7j", NOW);
     const maths = rows.find((r) => r.subject === "Mathématiques");
     expect(maths?.previousMinutes).toBe(60);
     expect(maths?.deltaMinutes).toBe(60);
   });
 
-  it("sans instantané, l'évolution de maîtrise est `null` — jamais « 0 % → 50 % »", () => {
-    const rows = computeSubjectTracking(sessions, exercises, chapters, [], "7j", NOW);
-    expect(rows.every((row) => row.completionRateBefore === null)).toBe(true);
-  });
-
-  it("avec un instantané, l'évolution est réelle et datée", () => {
-    const snapshots: WeekSnapshot[] = [
-      {
-        weekStart: "2026-09-07T00:00:00.000Z",
-        capturedAt: "2026-09-13T20:00:00.000Z",
-        totalSeconds: 0,
-        bySubject: [],
-        activeCount: 2,
-        masteredCount: 0,
-        completionRate: 0,
-        bySubjectProgress: [{ subject: "Mathématiques", total: 4, mastered: 1, completionRate: 25 }],
-      },
-    ];
-    const rows = computeSubjectTracking(sessions, exercises, chapters, snapshots, "7j", NOW);
-    expect(rows.find((r) => r.subject === "Mathématiques")?.completionRateBefore).toBe(25);
-    expect(rows.find((r) => r.subject === "Physique")?.completionRateBefore).toBeNull();
-  });
-
-  it("un instantané SANS fiche pour la matière ne fabrique pas un point de départ", () => {
-    const snapshots: WeekSnapshot[] = [
-      {
-        weekStart: "2026-09-07T00:00:00.000Z",
-        capturedAt: "2026-09-13T20:00:00.000Z",
-        totalSeconds: 0,
-        bySubject: [],
-        activeCount: 0,
-        masteredCount: 0,
-        completionRate: 0,
-        bySubjectProgress: [{ subject: "Mathématiques", total: 0, mastered: 0, completionRate: 0 }],
-      },
-    ];
-    const rows = computeSubjectTracking(sessions, exercises, chapters, snapshots, "7j", NOW);
-    expect(rows.find((r) => r.subject === "Mathématiques")?.completionRateBefore).toBeNull();
-  });
-
-  it("n'affiche pas une matière sans temps ni contenu", () => {
-    const rows = computeSubjectTracking(sessions, exercises, chapters, [], "7j", NOW);
+  it("n'affiche pas une matière sans temps", () => {
+    const rows = computeSubjectTracking(sessions, "7j", NOW);
     expect(rows.map((r) => r.subject)).toEqual(["Mathématiques", "Physique"]);
   });
 
-  it("une banque jamais ouverte n'est pas « mesurée »", () => {
-    const jamais = [exercise({ subject: "Chimie", attempts: 0, last_worked_at: null, status: "à faire", chapter_id: null })];
-    const rows = computeSubjectTracking([], jamais, chapters, [], "7j", NOW);
-    expect(rows.find((r) => r.subject === "Chimie")).toBeUndefined();
-  });
 });
 
 /* ══════════════════════════════════════════════════════════════════

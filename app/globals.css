@@ -4,254 +4,355 @@
 
 /**
  * =====================================================================
- * TAEKDHUB — SYSTÈME VISUEL « PAPIER & ENCRE »
+ * TAEKDHUB — SYSTÈME VISUEL « REVOLUT CLAIR »
  * =====================================================================
  *
- * UNE SEULE feuille de style. L'ancien couple `globals.css` +
- * `ui-redesign.css` définissait puis redéfinissait `.surface`, `.eyebrow`,
- * `aside`, `button`, `input` — deux systèmes qui se battaient sur les mêmes
- * sélecteurs, dont l'un par balise. Toute correction dans l'un était annulée
- * par l'autre. Il n'en reste qu'un, et il ne cible aucune balise nue.
+ * UNE SEULE feuille de style, et aucune règle posée sur une balise nue de
+ * contrôle ou de mise en page (voir lib/design-system.test.ts) : ce qu'un
+ * composant affiche se lit dans ses classes, jamais ailleurs.
  *
- * ─── LE PARTI PRIS ───────────────────────────────────────────────────
+ * ─── L'HISTOIRE, POUR NE PAS LA REFAIRE ─────────────────────────────
  *
- * TaekdHub n'est pas un tableau de bord : c'est un BUREAU DE TRAVAIL. Deux
- * matières coexistent, et leur contraste EST l'identité du produit :
+ * Papier crème et laiton : « moche ». « Nuit », sombre avec une couleur
+ * par matière : « bizarre ». « Apple », gris monochrome : « pas fou, pas
+ * envie ». Revolut sombre : « le noir, ça rend pas envie ». La maquette
+ * VALIDÉE est « D2 · Style Revolut clair » :
  *
- *   CHROME    navigation, contrôles, métadonnées, chiffres d'appoint.
- *             Sans-serif, compact, discret, contraste modéré. On ne le
- *             regarde pas, on s'en sert.
+ *   FOND      BLANC lumineux (#f5f6fa), traversé par deux HALOS pastel
+ *             teintés par la palette, qui dérivent très lentement
+ *             (`.halo`, posés par components/app-shell.tsx).
  *
- *   CONTENU   titres, énoncés, corrections, grands nombres.
- *             Serif de lecture (Newsreader), généreux, contraste maximal.
- *             On le lit longtemps.
+ *   CARTES    des tuiles BLANCHES qui flottent : 26 px de rayon, aucune
+ *             bordure visible, une ombre douce et bleutée
+ *             (0 10px 30px -10px rgba(20,20,60,.12)).
  *
- * Le serif n'est pas décoratif : KaTeX compose les mathématiques en Computer
- * Modern, un serif. Un énoncé mêlant texte sans-serif et formules serif
- * change de police à chaque symbole. Passer la colonne de lecture en serif
- * supprime cette rupture — c'est d'abord une correction de lisibilité.
+ *   COULEUR   des DÉGRADÉS VIFS, réservés à ce qui compte : les cartes de
+ *             matière (quatre paires, en liste cyclée), la bannière des
+ *             révisions, le bouton rond du chrono, le bouton principal.
+ *             Chacune porte une ombre DE SA COULEUR et un reflet qui passe
+ *             (`.sheen`). Quatre palettes au choix — lib/theme.ts.
  *
- * ─── NEUTRES CHAUDS ──────────────────────────────────────────────────
+ *   TYPO      SF Pro Rounded sur appareil Apple (`ui-rounded`), Nunito
+ *             ailleurs. Franchement GRASSE : 800–900 pour les chiffres et
+ *             les titres, 600–700 pour le reste. Peu de texte : « moins de
+ *             blabla ».
  *
- * Les gris « zinc » sont bleutés. Sur des séances de deux heures, un fond
- * froid fatigue. Toute l'échelle est retendue vers le papier (teinte ~40°,
- * saturation très basse) : même hiérarchie de valeurs, température opposée.
+ *   MOUVEMENT beaucoup, et doux : les blocs montent en fondu en entrant
+ *             dans l'écran, les chiffres comptent, la courbe se dessine, les
+ *             cartes flottent et s'inclinent au survol, les boutons ronds
+ *             rebondissent à l'appui, les pastilles « poppent ». Tout est
+ *             coupé sous `prefers-reduced-motion`.
  *
- * ─── PAS D'OMBRES ────────────────────────────────────────────────────
+ * ─── CLAIR PAR DÉFAUT ────────────────────────────────────────────────
  *
- * Une carte ne se détache plus par un halo mais par sa VALEUR et par un
- * FILET d'1 px. Empiler des ombres produit exactement le « tas de cartes »
- * qu'on veut éviter ; les filets produisent une mise en page éditoriale.
- * `--shadow-surface` ne subsiste que pour les couches réellement flottantes
- * (feuille modale, menu) — jamais pour du contenu en place.
+ * `:root` nu porte les neutres CLAIRS. Le sombre (maquette « D ») n'existe
+ * que sous `data-theme="dark"`, ou sous `data-theme="system"` quand le
+ * système est sombre (lib/theme.ts#applyThemeMode).
+ *
+ * ─── LES VARIABLES DE PALETTE ────────────────────────────────────────
+ *
+ * `--g1`/`--g2` (dégradé de marque), `--btn-g1/2` (boutons à texte),
+ * `--card-Na/b` + `--card-grad-N` (cartes cyclées), `--review-*`, `--dl-N`,
+ * et les anciens `--accent-*` remappés : posés au démarrage par le script
+ * anti-flash (app/layout.tsx), puis par `ThemeSync`, depuis
+ * lib/theme.ts#paletteVariables. Les valeurs ci-dessous ne sont que le
+ * repli « Aurora » d'une page lue sans JavaScript.
  */
 
 @layer base {
   :root {
     color-scheme: light;
 
-    /* ── ACCENT ────────────────────────────────────────────────────
-       Piloté par l'élève (lib/theme.ts). `--accent-rgb` est la couleur de
-       marque brute ; `--accent-ink-rgb` sa version lisible en tant que TEXTE
-       (recalculée par le script anti-flash) ; `--accent-solid-rgb` le
-       remplissage du bouton principal. Inchangé dans son principe. */
-    /* Valeurs de repli pour l'accent par défaut « Miel » (#e0a758), utilisées
-       avant l'exécution du script anti-flash et pour qui n'a jamais choisi de
-       couleur. Calculées avec les mêmes formules que lib/theme.ts
-       (`accentInk` → 4,67:1 sur le papier, `accentDeep` → 10,99:1 sous du
-       blanc), pas estimées à l'œil. */
-    --accent-rgb: 224 167 88;
-    --accent-ink-base-rgb: 142 106 56;
-    --accent-ink-rgb: var(--accent-ink-base-rgb);
-    --accent-fg-rgb: 0 0 0;
-    --accent-deep-base-rgb: 76 57 30;
-    --accent-solid-rgb: var(--accent-deep-base-rgb);
+    /* ── POLICE ────────────────────────────────────────────────────
+       SF Pro Rounded d'abord (`ui-rounded` = son nom générique sur
+       macOS/iOS). Partout ailleurs, Nunito (next/font, app/layout.tsx). */
+    --font-sans: ui-rounded, "SF Pro Rounded", var(--font-nunito), system-ui, sans-serif;
+
+    /* ── PALETTE (repli Aurora — voir lib/theme.ts) ─────────────── */
+    --g1: #7c5cff;
+    --g2: #22d3ee;
+    --g1-rgb: 124 92 255;
+    --g2-rgb: 34 211 238;
+    --btn-g1: #6d28d9;
+    --btn-g2: #2563eb;
+    --card-1a: #6d28d9;
+    --card-1b: #2563eb;
+    --card-2a: #db2777;
+    --card-2b: #7c3aed;
+    --card-3a: #0891b2;
+    --card-3b: #4f46e5;
+    --card-4a: #9333ea;
+    --card-4b: #ec4899;
+    --card-grad-1: linear-gradient(135deg, var(--card-1a), var(--card-1b));
+    --card-grad-2: linear-gradient(135deg, var(--card-2a), var(--card-2b));
+    --card-grad-3: linear-gradient(135deg, var(--card-3a), var(--card-3b));
+    --card-grad-4: linear-gradient(135deg, var(--card-4a), var(--card-4b));
+    --review-a: #f97316;
+    --review-b: #ec4899;
+    --review-grad: linear-gradient(135deg, var(--review-a), var(--review-b));
+    --dl-1: #7c3aed;
+    --dl-2: #2563eb;
+    --dl-3: #0891b2;
+
+    /* ── ACCENT (anciens noms, remappés sur la palette) ─────────────
+         `--accent-rgb`            c1, la couleur de marque brute ;
+         `--accent-ink-base-rgb`   l'encre de la palette en CLAIR (≥ 4,5:1) ;
+         `--accent-ink-dark-rgb`   c2, l'encre en SOMBRE (la maquette « D ») ;
+         `--accent-solid-base-rgb` première teinte du dégradé des boutons ;
+         `--accent-fg-rgb`         noir ou blanc, lisible sur c1 brut. */
+    --accent-rgb: 124 92 255;
+    --accent-ink-base-rgb: 91 63 214;
+    --accent-ink-dark-rgb: 34 211 238;
+    --accent-fg-rgb: 255 255 255;
+    --accent-solid-base-rgb: 109 40 217;
+    --accent-solid-rgb: var(--accent-solid-base-rgb);
     --accent-solid-fg-rgb: 255 255 255;
+    --accent-ink-rgb: var(--accent-ink-base-rgb);
+    /* `--ink` : l'encre de palette, prête à poser (`color: var(--ink)`). */
+    --ink: rgb(var(--accent-ink-rgb));
 
     /* ── NEUTRES — THÈME CLAIR (défaut) ────────────────────────────
-       `paper` n'est pas blanc : le blanc pur est réservé aux surfaces, pour
-       qu'une carte se détache du fond sans avoir besoin d'ombre. */
-    --canvas-rgb: 250 248 243;   /* le bureau — papier, un rien crémeux */
-    --panel-rgb: 255 254 252;    /* une surface posée dessus */
-    --elevated-rgb: 255 254 252;
-    --line-rgb: 231 226 216;     /* filet */
-    --ink-rgb: 26 24 21;         /* texte principal */
-    --muted-rgb: 90 85 78;       /* texte secondaire */
-    /* Texte tertiaire (étiquettes de rubrique, légendes). Mesuré au
-       navigateur : la valeur précédente (138 132 123) donnait 3,52:1 sur le
-       fond papier — sous le seuil AA de 4,5:1 pour un texte de cette taille.
-       Ramenée à 4,65:1 sur le fond et 4,90:1 sur une surface. */
-    --subtle-rgb: 118 112 104;
-    --hairline-rgb: 26 24 21;    /* teinte des filets/fonds en opacité */
-    --inset-rgb: 26 24 21;
-    --inset-alpha: 0.045;
-    --surface-bg: rgb(var(--panel-rgb));
-    --shadow-surface: 0 1px 2px rgb(26 24 21 / 0.05), 0 12px 32px rgb(26 24 21 / 0.09);
+       Un gris très légèrement bleuté, comme la maquette : le blanc des
+       cartes s'en détache sans qu'aucun filet soit nécessaire. */
+    --canvas-rgb: 245 246 250;
+    --panel-rgb: 255 255 255;
+    --elevated-rgb: 255 255 255;
+    --line-rgb: 232 233 241;
+    --ink-rgb: 11 11 20;
+    /* #6b6b7b (maquette) : 5,2:1 sur blanc. */
+    --muted-rgb: 107 107 123;
+    /* #6e6e7e : 4,9:1 sur blanc, 4,6:1 sur le fond — AA. Le #a0a0b0 des
+       jours de la maquette ne sert qu'aux étiquettes décoratives. */
+    --subtle-rgb: 110 110 126;
+    --hairline-rgb: 11 11 20;
+    /* Remplissage (« fill ») : un voile bleu-nuit très léger — champ,
+       piste de sélecteur, pastille éteinte. */
+    --inset-rgb: 20 20 60;
+    --inset-alpha: 0.06;
+    --surface-bg: rgb(255 255 255);
+    --surface-border: rgb(20 20 60 / 0.035);
+    --surface-border-hover: rgb(20 20 60 / 0.07);
+    /* L'ombre de la maquette, et sa version « soulevée » au survol. */
+    --surface-lift-rest: 0 10px 30px -10px rgb(20 20 60 / 0.12);
+    --surface-lift-up: 0 22px 44px -14px rgb(20 20 60 / 0.2);
+    --surface-shadow: var(--surface-lift-rest);
+    --shadow-surface: 0 2px 6px rgb(20 20 60 / 0.06), 0 28px 60px -12px rgb(20 20 60 / 0.25);
+    /* Bouton rond blanc (`ActionButtons`). */
+    --action-bg: rgb(255 255 255);
+    --action-lift: 0 6px 18px -6px rgb(20 20 60 / 0.18);
+    /* Verre dépoli : barre haute, pastille de date. */
+    --glass-bg: rgb(255 255 255 / 0.75);
+    --glass-edge: 0 4px 16px rgb(20 20 60 / 0.06);
+    /* Intensité des halos du fond. */
+    --halo-a: 0.2;
+    --halo-b: 0.18;
+    --chip-on-bg: rgb(255 255 255);
+    --chip-on-ring: rgb(20 20 60 / 0.05);
+    --chip-on-shadow: 0 2px 8px rgb(20 20 60 / 0.12);
 
-    /* Échelle « zinc » réchauffée. Les noms de classes existants
-       (text-zinc-400, bg-zinc-900…) sont conservés — seules les valeurs
-       changent, et elles s'inversent avec le thème comme auparavant. */
-    --zinc-50-rgb: 12 11 10;
-    --zinc-100-rgb: 26 24 21;
-    --zinc-200-rgb: 41 38 34;
-    --zinc-300-rgb: 66 62 56;
-    --zinc-400-rgb: 90 85 78;
-    --zinc-500-rgb: 116 110 101;
-    --zinc-600-rgb: 160 153 143;
-    --zinc-700-rgb: 203 197 187;
-    --zinc-800-rgb: 231 227 219;
-    --zinc-900-rgb: 243 240 234;
-    --zinc-950-rgb: 250 249 246;
+    /* Échelle « zinc » — mêmes noms de classes qu'avant (text-zinc-400,
+       bg-zinc-800…), valeurs INVERSÉES en clair : 50 est l'encre, 950 le
+       blanc. 800 = le gris des boutons secondaires. */
+    --zinc-50-rgb: 11 11 20;
+    --zinc-100-rgb: 11 11 20;
+    --zinc-200-rgb: 38 38 52;
+    --zinc-300-rgb: 64 64 80;
+    --zinc-400-rgb: 98 98 114;
+    --zinc-500-rgb: 110 110 126;
+    --zinc-600-rgb: 138 138 154;
+    --zinc-700-rgb: 220 221 232;
+    --zinc-800-rgb: 236 237 245;
+    --zinc-900-rgb: 242 243 249;
+    --zinc-950-rgb: 250 250 253;
 
     /* ── STATUT ────────────────────────────────────────────────────
-       Trois familles seulement : acquis / à surveiller / raté. Les teintes
-       200-300 servent de TEXTE (donc sombres en thème clair), 400-500 de
-       fond ou de bordure en faible opacité (donc stables). */
-    --emerald-200-rgb: 21 105 78;
-    --emerald-300-rgb: 21 105 78;
-    --emerald-400-rgb: 27 148 105;
-    --emerald-500-rgb: 22 128 92;
-    --amber-200-rgb: 155 90 12;
-    --amber-300-rgb: 155 90 12;
-    --amber-400-rgb: 217 143 36;
-    --amber-500-rgb: 196 124 24;
-    --rose-200-rgb: 172 38 58;
-    --rose-300-rgb: 172 38 58;
-    --rose-400-rgb: 216 79 99;
-    --rose-500-rgb: 199 55 78;
+       Vert, orange, rouge : les seules couleurs qui portent un VERDICT.
+       200-300 = TEXTE (assombri pour le fond clair), 400-500 = fond/trait. */
+    --emerald-200-rgb: 22 128 61;
+    --emerald-300-rgb: 22 128 61;
+    --emerald-400-rgb: 34 197 94;
+    --emerald-500-rgb: 22 163 74;
+    --amber-200-rgb: 180 83 9;
+    --amber-300-rgb: 180 83 9;
+    --amber-400-rgb: 249 115 22;
+    --amber-500-rgb: 234 88 12;
+    --rose-200-rgb: 225 29 72;
+    --rose-300-rgb: 225 29 72;
+    --rose-400-rgb: 244 63 94;
+    --rose-500-rgb: 225 29 72;
 
-    /* Identité de matière — désaturée pour rester sur le papier. */
-    --violet-200-rgb: 88 56 158;
-    --violet-400-rgb: 132 105 200;
-    --sky-200-rgb: 21 90 140;
-    --sky-400-rgb: 62 141 190;
-    --teal-200-rgb: 19 108 105;
-    --teal-400-rgb: 45 158 152;
-    --orange-200-rgb: 168 74 22;
-    --orange-400-rgb: 214 122 58;
+    /* Anciennes teintes d'identité : alias neutres ou d'accent. */
+    --violet-200-rgb: var(--zinc-300-rgb);
+    --violet-400-rgb: var(--zinc-500-rgb);
+    --sky-200-rgb: var(--accent-ink-rgb);
+    --sky-400-rgb: var(--accent-rgb);
+    --teal-200-rgb: var(--zinc-300-rgb);
+    --teal-400-rgb: var(--zinc-500-rgb);
+    --orange-200-rgb: var(--amber-200-rgb);
+    --orange-400-rgb: var(--amber-400-rgb);
 
-    /* ── RYTHME ───────────────────────────────────────────────────
-       Une mesure de lecture, pas « ce que la largeur donne ». 66 caractères
-       est l'optimum admis pour du texte long ; les énoncés y sont composés,
-       quelle que soit la taille de l'écran. */
+    /* ── MATIÈRES — des paliers, pas des identités ─────────────────
+       L'élève a rejeté la couleur PAR matière (« Nuit ») : les graphiques
+       empilés découpent en paliers d'un gris bleuté, le nom fait
+       l'identification. Les cartes en dégradé de l'accueil, elles, suivent
+       la liste cyclée de la palette (`--card-grad-N`), sans attribution. */
+    --subj-math: 40 40 80;
+    --subj-phys: 70 70 108;
+    --subj-chim: 98 98 134;
+    --subj-itc: 124 124 158;
+    --subj-isp: 150 150 180;
+    --subj-fr: 176 176 202;
+    --subj-en: 200 200 222;
+    --subj-math-ink: var(--ink-rgb);
+    --subj-phys-ink: var(--ink-rgb);
+    --subj-chim-ink: var(--ink-rgb);
+    --subj-itc-ink: var(--ink-rgb);
+    --subj-isp-ink: var(--ink-rgb);
+    --subj-fr-ink: var(--ink-rgb);
+    --subj-en-ink: var(--ink-rgb);
+
+    /* ── RYTHME ─────────────────────────────────────────────────── */
     --measure: 34rem;
     --measure-wide: 46rem;
-    --shell-max: 1140px;
+    --shell-max: 1180px;
     --nav-h: 3.5rem;
+    /* Hauteur de la barre d'onglets mobile (hors marge de sécurité) — réutilisée
+       par ce qui doit se poser juste au-dessus (barres d'actions collantes). Le
+       disque du chrono déborde vers le haut sans changer cette hauteur. */
+    --tabbar-h: 3.5rem;
+
+    /* ── MOUVEMENT ─────────────────────────────────────────────────
+       Deux courbes. `--ease-out` pour ce qui entre ou pousse (départ vif,
+       arrivée très douce) ; `--ease-spring` pour ce qu'on touche : elle
+       dépasse sa cible et revient, c'est le « rebond » de la maquette. */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --stagger: 80ms;
   }
 
-  /* ── THÈME SOMBRE ─────────────────────────────────────────────────
-     Pas un simple négatif : le fond descend vers un brun très sombre plutôt
-     qu'un noir bleuté, pour garder la même température que le thème clair.
-     Les deux blocs ci-dessous (choix explicite / préférence système) sont
-     identiques par construction — seule leur condition d'application diffère. */
+  /* ── THÈME SOMBRE — la maquette « D » ────────────────────────────
+     Presque noir (#07070b), tuiles en verre blanc à 6 %, halos plus
+     intenses, encre de palette = c2. Les deux blocs ci-dessous (choix
+     explicite / système sombre) sont identiques par construction. */
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --canvas-rgb: 19 17 15;
-    --panel-rgb: 27 25 22;
-    --elevated-rgb: 34 31 28;
-    --line-rgb: 49 45 40;
-    --ink-rgb: 246 243 238;
-    --muted-rgb: 168 162 152;
-    /* 4,99:1 sur le fond sombre et 4,58:1 sur une surface — voir la note
-       du thème clair. Mesuré page par page au navigateur, pas estimé. */
-    --subtle-rgb: 138 132 122;
-    --hairline-rgb: 255 253 248;
-    --inset-rgb: 255 253 248;
-    --inset-alpha: 0.05;
-    --accent-ink-rgb: var(--accent-rgb);
-    --accent-solid-rgb: var(--accent-rgb);
-    --accent-solid-fg-rgb: var(--accent-fg-rgb);
-    --surface-bg: rgb(var(--panel-rgb));
-    --shadow-surface: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.45);
-
-    --zinc-50-rgb: 250 249 246;
-    --zinc-100-rgb: 245 243 239;
-    --zinc-200-rgb: 224 220 213;
-    --zinc-300-rgb: 196 190 181;
-    --zinc-400-rgb: 168 162 152;
-    --zinc-500-rgb: 124 118 109;
-    --zinc-600-rgb: 100 95 87;
-    --zinc-700-rgb: 72 68 62;
-    --zinc-800-rgb: 48 45 41;
-    --zinc-900-rgb: 33 31 28;
-    --zinc-950-rgb: 18 17 15;
-
-    --emerald-200-rgb: 126 222 178;
-    --emerald-300-rgb: 110 214 168;
-    --emerald-400-rgb: 62 190 138;
-    --emerald-500-rgb: 40 168 118;
-    --amber-200-rgb: 246 205 132;
-    --amber-300-rgb: 242 191 108;
-    --amber-400-rgb: 231 168 66;
-    --amber-500-rgb: 214 148 44;
-    --rose-200-rgb: 250 176 186;
-    --rose-300-rgb: 246 154 168;
-    --rose-400-rgb: 236 116 136;
-    --rose-500-rgb: 224 88 112;
-
-    --violet-200-rgb: 197 182 246;
-    --violet-400-rgb: 160 137 232;
-    --sky-200-rgb: 158 205 238;
-    --sky-400-rgb: 104 174 224;
-    --teal-200-rgb: 138 225 216;
-    --teal-400-rgb: 78 196 186;
-    --orange-200-rgb: 246 194 156;
-    --orange-400-rgb: 232 154 100;
+    --accent-ink-rgb: var(--accent-ink-dark-rgb);
+    --canvas-rgb: 7 7 11;
+    --panel-rgb: 22 22 28;
+    --elevated-rgb: 30 30 38;
+    --line-rgb: 40 40 50;
+    --ink-rgb: 246 246 250;
+    --muted-rgb: 150 150 164;
+    --subtle-rgb: 132 132 146;
+    --hairline-rgb: 255 255 255;
+    --inset-rgb: 255 255 255;
+    --inset-alpha: 0.08;
+    --surface-bg: rgb(255 255 255 / 0.06);
+    --surface-border: rgb(255 255 255 / 0.06);
+    --surface-border-hover: rgb(255 255 255 / 0.12);
+    --surface-lift-rest: none;
+    --surface-lift-up: 0 20px 44px -16px rgb(0 0 0 / 0.7);
+    --shadow-surface: 0 1px 2px rgb(0 0 0 / 0.5), 0 24px 60px rgb(0 0 0 / 0.6);
+    --action-bg: rgb(255 255 255 / 0.1);
+    --action-lift: none;
+    --glass-bg: rgb(255 255 255 / 0.08);
+    --glass-edge: none;
+    --halo-a: 0.33;
+    --halo-b: 0.25;
+    --chip-on-bg: rgb(255 255 255 / 0.18);
+    --chip-on-ring: transparent;
+    --chip-on-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    --zinc-50-rgb: 250 250 252;
+    --zinc-100-rgb: 245 245 248;
+    --zinc-200-rgb: 229 229 236;
+    --zinc-300-rgb: 199 199 208;
+    --zinc-400-rgb: 161 161 172;
+    --zinc-500-rgb: 134 134 146;
+    --zinc-600-rgb: 99 99 110;
+    --zinc-700-rgb: 64 64 76;
+    --zinc-800-rgb: 38 38 48;
+    --zinc-900-rgb: 24 24 32;
+    --zinc-950-rgb: 14 14 20;
+    --emerald-200-rgb: 74 222 128;
+    --emerald-300-rgb: 74 222 128;
+    --emerald-400-rgb: 34 197 94;
+    --emerald-500-rgb: 22 163 74;
+    --amber-200-rgb: 251 191 36;
+    --amber-300-rgb: 251 191 36;
+    --amber-400-rgb: 249 115 22;
+    --amber-500-rgb: 234 88 12;
+    --rose-200-rgb: 251 113 133;
+    --rose-300-rgb: 251 113 133;
+    --rose-400-rgb: 244 63 94;
+    --rose-500-rgb: 225 29 72;
+    --subj-math: 236 236 246;
+    --subj-phys: 206 206 224;
+    --subj-chim: 178 178 202;
+    --subj-itc: 150 150 178;
+    --subj-isp: 124 124 154;
+    --subj-fr: 100 100 130;
+    --subj-en: 80 80 108;
   }
 
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
+    :root[data-theme="system"] {
       color-scheme: dark;
-      --canvas-rgb: 19 17 15;
-      --panel-rgb: 27 25 22;
-      --elevated-rgb: 34 31 28;
-      --line-rgb: 49 45 40;
-      --ink-rgb: 246 243 238;
-      --muted-rgb: 168 162 152;
-      --subtle-rgb: 138 132 122;
-      --hairline-rgb: 255 253 248;
-      --inset-rgb: 255 253 248;
-      --inset-alpha: 0.05;
-      --accent-ink-rgb: var(--accent-rgb);
-      --accent-solid-rgb: var(--accent-rgb);
-      --accent-solid-fg-rgb: var(--accent-fg-rgb);
-      --surface-bg: rgb(var(--panel-rgb));
-      --shadow-surface: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.45);
-
-      --zinc-50-rgb: 250 249 246;
-      --zinc-100-rgb: 245 243 239;
-      --zinc-200-rgb: 224 220 213;
-      --zinc-300-rgb: 196 190 181;
-      --zinc-400-rgb: 168 162 152;
-      --zinc-500-rgb: 124 118 109;
-      --zinc-600-rgb: 100 95 87;
-      --zinc-700-rgb: 72 68 62;
-      --zinc-800-rgb: 48 45 41;
-      --zinc-900-rgb: 33 31 28;
-      --zinc-950-rgb: 18 17 15;
-
-      --emerald-200-rgb: 126 222 178;
-      --emerald-300-rgb: 110 214 168;
-      --emerald-400-rgb: 62 190 138;
-      --emerald-500-rgb: 40 168 118;
-      --amber-200-rgb: 246 205 132;
-      --amber-300-rgb: 242 191 108;
-      --amber-400-rgb: 231 168 66;
-      --amber-500-rgb: 214 148 44;
-      --rose-200-rgb: 250 176 186;
-      --rose-300-rgb: 246 154 168;
-      --rose-400-rgb: 236 116 136;
-      --rose-500-rgb: 224 88 112;
-
-      --violet-200-rgb: 197 182 246;
-      --violet-400-rgb: 160 137 232;
-      --sky-200-rgb: 158 205 238;
-      --sky-400-rgb: 104 174 224;
-      --teal-200-rgb: 138 225 216;
-      --teal-400-rgb: 78 196 186;
-      --orange-200-rgb: 246 194 156;
-      --orange-400-rgb: 232 154 100;
+      --accent-ink-rgb: var(--accent-ink-dark-rgb);
+      --canvas-rgb: 7 7 11;
+      --panel-rgb: 22 22 28;
+      --elevated-rgb: 30 30 38;
+      --line-rgb: 40 40 50;
+      --ink-rgb: 246 246 250;
+      --muted-rgb: 150 150 164;
+      --subtle-rgb: 132 132 146;
+      --hairline-rgb: 255 255 255;
+      --inset-rgb: 255 255 255;
+      --inset-alpha: 0.08;
+      --surface-bg: rgb(255 255 255 / 0.06);
+      --surface-border: rgb(255 255 255 / 0.06);
+      --surface-border-hover: rgb(255 255 255 / 0.12);
+      --surface-lift-rest: none;
+      --surface-lift-up: 0 20px 44px -16px rgb(0 0 0 / 0.7);
+      --shadow-surface: 0 1px 2px rgb(0 0 0 / 0.5), 0 24px 60px rgb(0 0 0 / 0.6);
+      --action-bg: rgb(255 255 255 / 0.1);
+      --action-lift: none;
+      --glass-bg: rgb(255 255 255 / 0.08);
+      --glass-edge: none;
+      --halo-a: 0.33;
+      --halo-b: 0.25;
+      --chip-on-bg: rgb(255 255 255 / 0.18);
+      --chip-on-ring: transparent;
+      --chip-on-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+      --zinc-50-rgb: 250 250 252;
+      --zinc-100-rgb: 245 245 248;
+      --zinc-200-rgb: 229 229 236;
+      --zinc-300-rgb: 199 199 208;
+      --zinc-400-rgb: 161 161 172;
+      --zinc-500-rgb: 134 134 146;
+      --zinc-600-rgb: 99 99 110;
+      --zinc-700-rgb: 64 64 76;
+      --zinc-800-rgb: 38 38 48;
+      --zinc-900-rgb: 24 24 32;
+      --zinc-950-rgb: 14 14 20;
+      --emerald-200-rgb: 74 222 128;
+      --emerald-300-rgb: 74 222 128;
+      --emerald-400-rgb: 34 197 94;
+      --emerald-500-rgb: 22 163 74;
+      --amber-200-rgb: 251 191 36;
+      --amber-300-rgb: 251 191 36;
+      --amber-400-rgb: 249 115 22;
+      --amber-500-rgb: 234 88 12;
+      --rose-200-rgb: 251 113 133;
+      --rose-300-rgb: 251 113 133;
+      --rose-400-rgb: 244 63 94;
+      --rose-500-rgb: 225 29 72;
+      --subj-math: 236 236 246;
+      --subj-phys: 206 206 224;
+      --subj-chim: 178 178 202;
+      --subj-itc: 150 150 178;
+      --subj-isp: 124 124 154;
+      --subj-fr: 100 100 130;
+      --subj-en: 80 80 108;
     }
   }
 
@@ -267,34 +368,26 @@
   body {
     margin: 0;
     min-height: 100vh;
-    background: rgb(var(--canvas-rgb));
+    /* Les galeries pleine largeur sortent de leur colonne : `clip` coupe ce
+       débordement SANS créer de conteneur de défilement — la barre haute
+       reste collante. */
+    overflow-x: clip;
+    /* PAS de fond ici : l'aplat est porté par `html` (qui le donne au
+       canevas). Un fond sur `body` serait peint PAR-DESSUS le calque des
+       halos (components/app-shell.tsx, en `z-index` négatif) et les
+       masquerait entièrement. */
+    background: transparent;
     color: rgb(var(--ink-rgb));
-    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-    /* 16 px. On est passé par 14 (défaut Tailwind) puis 15 ; les deux
-       étaient en dessous du confort d'une session de deux heures, et le 15
-       poussait encore à écrire des `text-xs` un peu partout ensuite. Toute
-       l'échelle a été remontée d'un cran avec lui — voir les rôles plus bas. */
+    font-family: var(--font-sans);
     font-size: 1rem;
-    line-height: 1.6;
-    /* `tnum` est posé LOCALEMENT (`.tabular`), jamais globalement : des
-       chiffres tabulaires dans du texte courant s'écartent mal. Le reste des
-       fonctions d'Instrument Sans (crénage, ligatures standard) est déjà actif
-       par défaut et n'a pas à être répété ici. */
+    /* Nunito à 400 paraît maigre à côté des chiffres en 900 : le corps de
+       texte passe à 500, comme la maquette. */
+    font-weight: 500;
+    line-height: 1.5;
     font-kerning: normal;
-    /*
-     * Instrument Sans a une chasse d'espace serrée (0,20 em, contre ~0,26 em
-     * pour la plupart des grotesques) et un point médian d'à peine 0,10 em.
-     * Résultat mesuré au navigateur : dans « 321 exercices · 0 % maîtrisés »,
-     * le blanc AVANT le point disparaissait presque, et le séparateur se
-     * collait au mot précédent. Ces 0,055 em rendent à l'espace sa largeur
-     * normale — c'est une correction de chasse, pas un effet.
-     *
-     * Les rôles composés en serif la neutralisent : Fraunces a déjà l'espace
-     * qu'il faut, et l'élargir abîmerait la couleur d'un paragraphe.
-     */
-    word-spacing: 0.055em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   button,
@@ -306,27 +399,26 @@
   }
 
   ::selection {
-    background: rgb(var(--accent-rgb) / 0.35);
+    background: rgb(var(--accent-rgb) / 0.3);
     color: rgb(var(--ink-rgb));
   }
 
-  /* Une seule règle de focus pour toute l'application, posée sur la balise :
-     aucun contrôle ne peut être oublié, et aucun composant n'a besoin de
-     penser à l'ajouter. */
+  /* Une seule règle de focus pour toute l'application. */
   :focus-visible {
     outline: 2px solid rgb(var(--accent-ink-rgb));
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 8px;
   }
 
-  /* Le défilement fluide est agréable au clic sur une ancre et pénible quand
-     on saute d'écran en écran au clavier — donc seulement là où il est
-     demandé explicitement, jamais globalement. */
+  /* MOUVEMENT RÉDUIT — tout s'arrête, y compris les DÉLAIS de cascade
+     (sans quoi un élément resterait invisible le temps de son délai), et
+     rien ne se déplace au survol. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
       animation-duration: 0.01ms !important;
+      animation-delay: 0s !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
@@ -339,125 +431,107 @@
      TYPOGRAPHIE
      ═══════════════════════════════════════════════════════════════
 
-     Deux familles, six rôles. Un écran ne choisit JAMAIS une taille : il
-     choisit un rôle. C'est ce qui empêche la dérive où chaque page finit
-     avec sa propre taille en rem, écrite à la main.
+     Une famille ronde (SF Pro Rounded / Nunito), des rôles. Un écran ne
+     choisit JAMAIS une taille : il choisit un rôle.
 
-       .t-display   titre d'écran            serif   28→36 px
-       .t-heading   titre de section         serif   19→21 px
-       .t-subhead   titre de bloc            sans    15 px  600
-       .t-body      texte courant d'interface sans   15 px
-       .t-meta      métadonnée, légende      sans    13 px
-       .t-label     étiquette de champ/rubrique sans 11.5 px capitales
-       .t-read      CONTENU LU (énoncé, correction) serif 17→18 px / 1.8
+       .t-display   titre d'écran            800   36→60 px, très serré
+       .t-title     titre de la carte phare  700   24→32 px
+       .t-heading   titre de section         700   20→24 px
+       .t-subhead   titre de bloc            600   17 px
+       .t-body      texte courant            400   17 px
+       .t-meta      métadonnée, légende      400   14 px   gris
+       .t-label     étiquette de champ       600   14 px   gris — casse
+                                                           normale, JAMAIS de
+                                                           capitales
+       .t-lede      chapeau sous un titre    400   17→20 px gris
+       .t-figure    grand nombre             700   tabulaire, serré
+       .t-read      CONTENU LU (énoncé)      serif de lecture — seule
+                                             exception à la famille unique
   */
-  /* Voir la note sur `word-spacing` dans `body` : les rôles serif reprennent
-     la chasse d'espace normale de Fraunces. */
-  .t-display,
-  .t-heading,
-  .t-lede,
-  .t-read,
-  .t-read-quiet,
-  .t-figure,
-  .t-wordmark {
-    word-spacing: normal;
-  }
-
   .t-display {
-    font-family: var(--font-serif), Georgia, serif;
-    font-size: clamp(2.125rem, 1.65rem + 1.7vw, 3rem);
-    font-weight: 400;
-    /* `opsz` poussé à fond plutôt que laissé à la taille réelle : Fraunces
-       creuse ses contrastes à mesure que la taille optique monte, et c'est
-       exactement ce qu'on veut d'un titre — un dessin d'affiche, pas un gros
-       texte courant.
-       `wght` DOIT figurer ici : `font-variation-settings` reprend la main sur
-       tous les axes, y compris ceux qu'on ne nomme pas. */
-    font-variation-settings: "opsz" 144, "wght" 400;
-    line-height: 1.06;
+    font-size: clamp(2.25rem, 1.2rem + 3.4vw, 3.75rem);
+    font-weight: 900;
+    line-height: 1.05;
     letter-spacing: -0.028em;
     text-wrap: balance;
   }
 
+  /* Titre de la carte PRINCIPALE d'un écran (`Section variant="feature"`) :
+     entre le titre d'écran et le titre de section. */
+  .t-title {
+    font-size: clamp(1.5rem, 1.2rem + 1.1vw, 2rem);
+    font-weight: 900;
+    line-height: 1.12;
+    letter-spacing: -0.022em;
+    text-wrap: balance;
+  }
+
   .t-heading {
-    font-family: var(--font-serif), Georgia, serif;
-    font-size: clamp(1.3125rem, 1.2rem + 0.5vw, 1.5rem);
-    font-weight: 500;
-    font-variation-settings: "opsz" 60, "wght" 500;
-    line-height: 1.25;
-    letter-spacing: -0.016em;
+    font-size: clamp(1.25rem, 1.12rem + 0.45vw, 1.5rem);
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: -0.018em;
     text-wrap: balance;
   }
 
   .t-subhead {
-    font-size: 1rem;
-    font-weight: 600;
-    line-height: 1.4;
-    letter-spacing: -0.008em;
+    font-size: 1.0625rem;
+    font-weight: 800;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
   }
 
   .t-body {
-    font-size: 1rem;
-    line-height: 1.65;
+    font-size: 1.0625rem;
+    line-height: 1.55;
   }
 
   .t-meta {
     font-size: 0.875rem;
-    line-height: 1.5;
+    line-height: 1.45;
+    font-weight: 600;
     color: rgb(var(--muted-rgb));
   }
 
-  /* Remplace `.eyebrow`. Nom explicite : c'est une ÉTIQUETTE de rubrique, et
-     elle est en capitales parce qu'elle ne doit surtout pas se lire comme un
-     titre — pas pour « faire premium ». */
+  /**
+   * ÉTIQUETTE — jamais un « sur-titre ».
+   *
+   * Plus de petites capitales espacées au-dessus de chaque bloc : chez
+   * Apple, une étiquette est une phrase courte, en casse normale, en gris
+   * semi-gras. Elle nomme un champ ou un chiffre, elle ne titre pas.
+   */
   .t-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1.4;
-    letter-spacing: 0.085em;
-    text-transform: uppercase;
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: -0.005em;
+    text-transform: none;
     color: rgb(var(--subtle-rgb));
   }
 
-  /**
-   * CHAPEAU — la phrase qui suit un titre de section.
-   *
-   * En italique serif, pas en sans-serif gris. C'est le geste éditorial le
-   * plus rentable de toute la page : deux lignes d'italique sous un titre
-   * disent « ceci commente ce qui précède » sans avoir besoin d'être plus
-   * petites ni plus pâles, et donnent à l'écran une voix au lieu d'une
-   * légende.
-   */
+  /** CHAPEAU — la phrase qui suit un titre : plus grande que le corps, en gris, comme sous un titre d'apple.com. */
   .t-lede {
-    font-family: var(--font-serif), Georgia, serif;
-    font-style: italic;
-    font-size: 1.0625rem;
-    line-height: 1.55;
-    font-variation-settings: "opsz" 24, "wght" 400;
+    font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+    line-height: 1.45;
+    letter-spacing: -0.008em;
     color: rgb(var(--muted-rgb));
     text-wrap: pretty;
   }
 
   /*
-   * Le texte qu'on LIT — et le réglage le plus délicat de toute la feuille.
+   * Le texte qu'on LIT — seule exception à la famille unique.
    *
    * Un énoncé de maths n'est jamais composé dans une seule police : KaTeX
-   * insère ses formules en Computer Modern, un caractère clair et très
-   * contrasté. Fraunces à sa coupe « texte » (opsz 14, graisse 400) paraissait
-   * nettement plus gras que les formules au milieu desquelles il se trouve —
-   * comparé côte à côte au navigateur, le déséquilibre sautait aux yeux à
-   * chaque symbole.
-   *
-   * `opsz` 40 et `wght` 360 remontent le contraste et allègent le trait juste
-   * assez pour que le texte et les mathématiques aient la même couleur sur la
-   * page. Le corps réel reste 19 px : la taille optique est un réglage de
-   * DESSIN, indépendant de la taille rendue.
+   * insère ses formules en Computer Modern, un serif clair et contrasté. Un
+   * sans-serif rond au milieu de ces formules changerait de dessin à chaque
+   * symbole. La colonne de lecture garde donc un serif de lecture
+   * (Newsreader, `opsz` réglé pour le corps de texte), et lui seul.
    */
   .t-read {
     font-family: var(--font-serif), Georgia, serif;
     font-size: 1.125rem;
     line-height: 1.78;
-    font-variation-settings: "opsz" 40, "wght" 360;
+    font-variation-settings: "opsz" 18;
     letter-spacing: -0.002em;
     text-wrap: pretty;
   }
@@ -468,14 +542,12 @@
     }
   }
 
-  /* Contenu lu SECONDAIRE — un indice, une correction. Même famille et même
-     interligne que `.t-read`, un cran plus bas : ce qui accompagne l'énoncé
-     ne doit jamais peser autant que lui. */
+  /* Contenu lu SECONDAIRE — un indice, une correction. Même famille, un cran plus bas. */
   .t-read-quiet {
     font-family: var(--font-serif), Georgia, serif;
     font-size: 1.0625rem;
     line-height: 1.75;
-    font-variation-settings: "opsz" 40, "wght" 350;
+    font-variation-settings: "opsz" 16;
     letter-spacing: -0.002em;
     text-wrap: pretty;
   }
@@ -491,88 +563,147 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Nombre d'un indicateur : serif, parce qu'un résultat scolaire se lit
-     comme un bulletin, pas comme une métrique de supervision.
-     TROIS tailles nommées — sans elles, chaque écran réinventait la sienne
-     (`text-[1.75rem]` ici, `text-[2.5rem]` là) et deux indicateurs voisins
-     finissaient à des corps différents sans raison. */
+  /* Grand nombre : gras, tabulaire, approche serrée — un chiffre se lit
+     comme une forme avant de se lire comme une valeur. Trois tailles
+     nommées pour que deux indicateurs voisins ne divergent jamais. */
   .t-figure {
-    font-family: var(--font-serif), Georgia, serif;
-    font-weight: 500;
+    font-weight: 900;
     font-variant-numeric: tabular-nums lining-nums;
-    font-variation-settings: "opsz" 72, "wght" 500;
-    letter-spacing: -0.022em;
+    letter-spacing: -0.035em;
     line-height: 1;
   }
 
   .t-figure-sm {
     @apply t-figure;
-    font-size: 1.375rem;
+    font-size: 1.5rem;
   }
 
   .t-figure-md {
     @apply t-figure;
-    font-size: 2rem;
+    font-size: 2.25rem;
   }
 
   .t-figure-lg {
     @apply t-figure;
-    font-size: 2.875rem;
+    font-size: clamp(2.75rem, 2rem + 2.4vw, 3.75rem);
+  }
+
+  /* ÉNORME CHIFFRE du héros de l'accueil (« 2 h 15 ») — 64 px sur
+     téléphone, comme la maquette, un peu plus sur grand écran. */
+  .t-hero {
+    font-size: clamp(4rem, 3.2rem + 2.4vw, 5.25rem);
+    font-weight: 900;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.045em;
+    line-height: 1;
+  }
+
+  /* CHIFFRE D'UNE CARTE EN DÉGRADÉ (« 10 h 30 » à faire, le temps d'une
+     matière, le total d'une période) — 44 px sur téléphone, 60 px sur
+     grand écran : sous le héros de l'accueil, au-dessus des tuiles. */
+  .t-card-figure {
+    font-size: clamp(2.5rem, 2rem + 2.2vw, 3.75rem);
+    font-weight: 900;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.045em;
+    line-height: 1;
+  }
+
+  /* Chiffre d'une petite tuile (« 8 jours », « 14 h 20 ») — 32 px. */
+  .t-stat {
+    font-size: 2rem;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+
+  /* Signe d'une carte de matière (« ∫ », « Aa ») — 26 px. */
+  .t-glyph {
+    font-size: 1.625rem;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  /* Titre d'une carte en dégradé (« Révisions du jour ») — 17 px. */
+  .t-card-title {
+    font-size: 1.0625rem;
+    font-weight: 900;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
+  /* Signature « TaekdHub » dans la barre haute. */
+  .t-wordmark {
+    font-size: 1.1875rem;
+    font-weight: 900;
+    letter-spacing: -0.025em;
+    line-height: 1;
   }
 
   /* ═══════════════════════════════════════════════════════════════
-     SURFACES — trois seulement, et jamais d'ombre sur du contenu en place.
+     SURFACES
      ═══════════════════════════════════════════════════════════════ */
 
-  /** Bloc posé sur le bureau. Se détache par sa valeur + un filet. */
+  /**
+   * Tuile BLANCHE qui flotte sur le fond : 26 px de rayon, un filet
+   * quasi invisible, l'ombre douce et bleutée de la maquette. En sombre,
+   * un verre blanc à 6 %, sans ombre.
+   */
   .surface {
     background: var(--surface-bg);
-    border: 1px solid rgb(var(--line-rgb));
-    border-radius: 0.75rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 1.625rem;
+    box-shadow: var(--surface-shadow);
   }
 
-  /** Zone en creux DANS une surface (tuile de liste, encart). Ni filet ni
-      ombre : deux cadres emboîtés font du bruit, pas de la hiérarchie. */
+  /** Zone en creux DANS une tuile (encart, tuile de chiffre). Ni filet ni ombre. */
   .well {
     background: rgb(var(--inset-rgb) / var(--inset-alpha));
-    border-radius: 0.625rem;
+    border-radius: 1rem;
   }
 
-  /** Couche réellement flottante — feuille modale, menu. Le seul endroit où
-      une ombre porte encore du sens : l'objet est AU-DESSUS de la page. */
+  /** Couche réellement flottante — feuille modale, menu. Le seul endroit où une ombre franche porte du sens. */
   .floating {
-    background: rgb(var(--panel-rgb));
-    border: 1px solid rgb(var(--line-rgb));
+    background: rgb(var(--elevated-rgb));
+    border: 1px solid var(--surface-border);
     box-shadow: var(--shadow-surface);
   }
 
-  /** Séparateur horizontal — l'outil de mise en page principal, à la place
-      des cadres. */
+  /**
+   * OPTION RETENUE d'un sélecteur segmenté (et des pastilles de choix) — le
+   * « segmented control » d'iOS : en sombre un gris plus clair que la piste,
+   * en clair une pastille blanche avec une ombre d'un pixel.
+   */
+  .chip-on {
+    background: var(--chip-on-bg);
+    box-shadow:
+      inset 0 0 0 1px var(--chip-on-ring),
+      var(--chip-on-shadow);
+    color: rgb(var(--ink-rgb));
+  }
+
+  /** Séparateur horizontal. */
   .rule {
     height: 1px;
     background: rgb(var(--line-rgb));
   }
 
   /* ═══════════════════════════════════════════════════════════════
-     RANGÉE INTERACTIVE — le motif le plus répété de l'app.
+     RANGÉE INTERACTIVE
      ═══════════════════════════════════════════════════════════════
-     Le survol ne déplace rien et ne pose pas d'ombre : il change la valeur du
-     fond. C'est instantané, ça ne provoque aucun recalcul de mise en page, et
-     ça ne « saute » pas quand on parcourt une liste de trente lignes. */
+     Le survol change la valeur du fond, rien d'autre : une liste de trente
+     lignes ne doit pas « sauter » sous le curseur. */
   .row-hover {
-    transition: background-color 130ms ease;
+    transition: background-color 200ms ease;
   }
 
   .row-hover:hover {
-    background: rgb(var(--inset-rgb) / var(--inset-alpha));
+    background: rgb(var(--inset-rgb) / calc(var(--inset-alpha) * 0.7));
   }
 
-  /**
-   * RANGÉE QU'ON VIENT DE QUITTER — le repère qu'on cherche des yeux en
-   * revenant du lecteur. Posé par un `data-` depuis le gestionnaire de la
-   * banque et retiré au bout d'une seconde et demie : rien à nettoyer côté
-   * classes, et l'effet disparaît de lui-même.
-   */
+  /** RANGÉE QU'ON VIENT DE QUITTER — repère posé par un `data-`, qui s'efface seul. */
   [data-just-read] {
     animation: justRead 1.6s ease-out;
   }
@@ -587,14 +718,522 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════
+     KIT DE MOUVEMENT — les gestes d'ENTRÉE (uniques, jamais en boucle).
+     Les gestes de CONTACT (reflet, flottement, rebond…) suivent plus bas.
+     ═══════════════════════════════════════════════════════════════
+
+     `.reveal`     entrée : fondu + 24 px de montée, 0,8 s, en cascade via
+                   `style={{ "--i": n }}` (70 ms par rang, plafonnée à 6
+                   rangs : un bloc lointain ne doit pas attendre une seconde).
+     `.grow-x/y`   une barre / une colonne pousse depuis zéro.
+     `.ring-draw`  un arc se trace (`--ring-len` = longueur du tracé).
+     `.lift`       tuile cliquable : grossit de 1 %, son filet s'éclaire.
+     `.press`      contrôle : s'enfonce à 97 % à l'appui.
+
+     DÉCLENCHEMENT AU DÉFILEMENT. Les quatre premiers gestes sont des
+     animations CSS ordinaires, qui jouent au montage… sauf quand le script
+     anti-flash (app/layout.tsx) a posé `data-reveal="armed"` sur `<html>` :
+     elles restent alors EN PAUSE sur leur première image (invisible, à
+     zéro) jusqu'à ce que `RevealObserver` (components/ui/reveal.tsx) voie
+     l'élément entrer dans l'écran et lui pose `data-revealed`. Une seule
+     IntersectionObserver pour toute la page — jamais d'écouteur de
+     défilement. Sans JavaScript, ou sous `prefers-reduced-motion`, rien
+     n'est armé : tout s'affiche normalement.
+
+     `backwards` et non `both` : une fois l'entrée finie, l'élément revient
+     à ses propres styles (identiques à la dernière image). Avec `both`,
+     l'animation garderait la main sur `transform`, et `.lift:hover` ne
+     pourrait plus rien déplacer. */
+  .reveal {
+    animation: reveal 0.8s var(--ease-out) backwards;
+    animation-delay: calc(min(var(--i, 0), 6) * var(--stagger));
+  }
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(22px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .grow-x {
+    transform-origin: left center;
+    animation: growX 1s var(--ease-out) backwards;
+    animation-delay: calc(150ms + min(var(--i, 0), 10) * var(--stagger));
+  }
+
+  .grow-y {
+    transform-origin: center bottom;
+    animation: growY 1s var(--ease-out) backwards;
+    animation-delay: calc(150ms + min(var(--i, 0), 10) * var(--stagger));
+  }
+
+  @keyframes growX {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  @keyframes growY {
+    from {
+      transform: scaleY(0);
+    }
+  }
+
+  .ring-draw {
+    animation: ringDraw 1.4s var(--ease-out) backwards;
+    animation-delay: calc(200ms + var(--i, 0) * 90ms);
+  }
+
+  /* Seule la valeur de DÉPART est donnée : l'arrivée est le
+     `stroke-dashoffset` réel de l'élément. */
+  @keyframes ringDraw {
+    from {
+      stroke-dashoffset: var(--ring-len, 0);
+    }
+  }
+
+  /* Variante pour un SEGMENT d'anneau : c'est le motif de tirets qui
+     s'allonge depuis `--ring-from` (« 0 <circonférence> »), pour que le
+     segment pousse depuis son point de départ au lieu de glisser. */
+  .ring-grow {
+    animation: ringGrow 1.4s var(--ease-out) backwards;
+    animation-delay: calc(200ms + var(--i, 0) * 110ms);
+  }
+
+  @keyframes ringGrow {
+    from {
+      stroke-dasharray: var(--ring-from, 0 1000);
+    }
+  }
+
+  /* En attente d'entrer dans l'écran : figé sur la première image. */
+  :root[data-reveal="armed"] :is(.reveal, .grow-x, .grow-y, .ring-draw, .ring-grow, .line-draw, .area-fade, .pop):not([data-revealed]) {
+    animation-play-state: paused;
+  }
+
+  /* PANNEAU D'ONGLET (components/ui/tabs.tsx) — entre en fondu en venant du
+     côté vers lequel on s'est déplacé : l'œil comprend « à droite » ou « à
+     gauche » sans avoir à lire l'onglet. 16 px, pas plus : c'est un
+     glissement, pas une diapositive. */
+  .tab-in-next {
+    animation: tabInNext 0.5s var(--ease-out) backwards;
+  }
+
+  .tab-in-prev {
+    animation: tabInPrev 0.5s var(--ease-out) backwards;
+  }
+
+  @keyframes tabInNext {
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+  }
+
+  @keyframes tabInPrev {
+    from {
+      opacity: 0;
+      transform: translateX(-16px);
+    }
+  }
+
+  .lift {
+    transition:
+      transform 0.5s var(--ease-out),
+      border-color 0.3s ease,
+      box-shadow 0.5s var(--ease-out),
+      background-color 0.3s ease;
+  }
+
+  /* Une tuile cliquable se SOULÈVE : elle monte de 4 px et son ombre
+     s'allonge — la carte flotte, elle ne grossit pas. */
+  .lift:hover {
+    transform: translateY(-4px);
+    border-color: var(--surface-border-hover);
+    box-shadow: var(--surface-lift-up);
+  }
+
+  .press {
+    transition-property: transform, background-color, border-color, color, opacity, filter, box-shadow;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+  }
+
+  .press:active {
+    transform: scale(0.97);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lift:hover,
+    .press:active {
+      transform: none;
+    }
+  }
+
+  /* SQUELETTE — un reflet qui passe, très lentement : la seule boucle du
+     système, et elle ne vit que le temps d'un chargement. */
+  .shimmer {
+    background: linear-gradient(
+        100deg,
+        rgb(var(--hairline-rgb) / 0.05) 20%,
+        rgb(var(--hairline-rgb) / 0.1) 40%,
+        rgb(var(--hairline-rgb) / 0.05) 60%
+      )
+      0 0 / 250% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -150% 0;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     DÉGRADÉS — la signature de la maquette « Revolut clair »
+     ═══════════════════════════════════════════════════════════════
+
+     `.grad-brand`   le dégradé de marque c1 → c2 (avatar, bouton rond du
+                     chrono, pastille active). Porte des ICÔNES, pas du texte
+                     courant : du blanc sur c2 ne tient pas 4,5:1.
+     `.grad-btn`     le dégradé des BOUTONS À TEXTE (`--btn-g1/2`, deux
+                     teintes profondes choisies pour porter du blanc).
+     `.grad-card`    une carte en dégradé : texte blanc, 26 px de rayon,
+                     ombre DE SA COULEUR. Sa paire vient d'un ton :
+                       `.tone-1` … `.tone-4`  les cartes cyclées de la palette
+                       `.tone-review`         la bannière des révisions
+                       `.tone-brand`          le dégradé de marque
+     Toutes les teintes sont des variables posées depuis lib/theme.ts :
+     changer de palette recolore tout sans toucher un composant. */
+  .grad-brand {
+    background: linear-gradient(135deg, var(--g1), var(--g2));
+    color: #fff;
+  }
+
+  .grad-btn {
+    background: linear-gradient(135deg, var(--btn-g1), var(--btn-g2));
+    color: #fff;
+  }
+
+  .grad-card {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    color: #fff;
+    border-radius: 1.625rem;
+    background: linear-gradient(135deg, var(--gc1, var(--g1)), var(--gc2, var(--g2)));
+    /* L'ombre prend la couleur de la carte : la carte « éclaire » le fond
+       sous elle, au lieu d'y poser une tache grise. */
+    box-shadow: 0 14px 30px -12px color-mix(in srgb, var(--gc1, var(--g1)) 65%, transparent);
+  }
+
+  /* BARRE DE GRAPHIQUE EN DÉGRADÉ — de g2 en bas à g1 en haut : la barre
+     « monte » vers la couleur la plus vive. `.bar-grad` est la barre qu'on
+     cherche (aujourd'hui, la semaine en cours), avec une ombre de sa
+     couleur ; `.bar-grad-soft` les autres, voilées, qui s'allument au
+     survol de leur colonne (`.group`). */
+  .bar-grad {
+    background: linear-gradient(0deg, var(--g2), var(--g1));
+    box-shadow: 0 8px 18px -8px rgb(var(--g1-rgb) / 0.7);
+  }
+
+  .bar-grad-soft {
+    background: linear-gradient(0deg, rgb(var(--g2-rgb) / 0.32), rgb(var(--g1-rgb) / 0.42));
+    transition: background 0.25s ease;
+  }
+
+  .group:hover .bar-grad-soft {
+    background: linear-gradient(0deg, rgb(var(--g2-rgb) / 0.7), rgb(var(--g1-rgb) / 0.85));
+  }
+
+  /* PASTILLES DE NOTE D'UNE RÉVISION (Oublié · Dur · Bien · Facile) — des
+     pilules colorées, texte blanc, ombre de leur couleur. Rose → orange
+     pour « oublié » (le dégradé des révisions), ambre pour « dur », la
+     marque pour « bien », vert → cyan pour « facile ». */
+  .rate-again {
+    background: linear-gradient(135deg, #f43f5e, var(--review-a));
+    box-shadow: 0 10px 22px -12px #f43f5e;
+    color: #fff;
+  }
+
+  .rate-hard {
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    box-shadow: 0 10px 22px -12px #f59e0b;
+    color: #fff;
+  }
+
+  .rate-good {
+    background: linear-gradient(135deg, var(--g1), var(--g2));
+    box-shadow: 0 10px 22px -12px var(--g1);
+    color: #fff;
+  }
+
+  .rate-easy {
+    background: linear-gradient(135deg, #10b981, #06b6d4);
+    box-shadow: 0 10px 22px -12px #10b981;
+    color: #fff;
+  }
+
+  /* PASTILLE DE SCORE — un disque en dégradé qui porte un chiffre (note,
+     pourcentage) : `.score-hi` vert → cyan, `.score-mid` palette,
+     `.score-lo` orange → rose (le dégradé des révisions). */
+  .score-badge {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: #fff;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    border-radius: 9999px;
+  }
+
+  .score-hi {
+    background: linear-gradient(135deg, #10b981, #06b6d4);
+    box-shadow: 0 8px 18px -10px #10b981;
+  }
+
+  .score-mid {
+    background: linear-gradient(135deg, var(--g1), var(--g2));
+    box-shadow: 0 8px 18px -10px var(--g1);
+  }
+
+  .score-lo {
+    background: var(--review-grad);
+    box-shadow: 0 8px 18px -10px var(--review-a);
+  }
+
+  /* Encre de palette en dégradé, pour un chiffre ou un mot qu'on veut
+     « allumer » sans en faire un bouton. */
+  .text-grad {
+    background: linear-gradient(100deg, rgb(var(--accent-ink-rgb)), var(--g1));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Verre dépoli : pastille de date, boutons de la barre de l'accueil. */
+  .glass {
+    background: var(--glass-bg);
+    box-shadow: var(--glass-edge);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(20px) saturate(1.4);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     HALOS DU FOND — deux grands disques flous, teintés par la palette,
+     posés dans un calque `fixed` derrière tout le contenu
+     (components/app-shell.tsx).
+     Ils dérivent en 18 s : on ne les voit pas bouger, on voit le fond
+     « vivre ». Jamais cliquables.
+     ═══════════════════════════════════════════════════════════════ */
+  .halo {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 9999px;
+    animation: haloDrift 18s ease-in-out infinite;
+  }
+
+  .halo-a {
+    width: 34rem;
+    height: 34rem;
+    left: -12rem;
+    top: -13rem;
+    background: radial-gradient(circle, rgb(var(--g1-rgb) / var(--halo-a)), transparent 65%);
+  }
+
+  .halo-b {
+    width: 30rem;
+    height: 30rem;
+    right: -13rem;
+    top: 9rem;
+    background: radial-gradient(circle, rgb(var(--g2-rgb) / var(--halo-b)), transparent 65%);
+    animation-delay: -9s;
+  }
+
+  @keyframes haloDrift {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(30px, 40px) scale(1.2);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     KIT DE MOUVEMENT « REVOLUT » — ce qu'on TOUCHE bouge
+     ═══════════════════════════════════════════════════════════════
+
+     `.sheen`        un reflet blanc qui traverse la carte toutes les 5 s
+                     (pseudo-élément : aucun balisage à ajouter).
+     `.floaty`       la carte flotte de 4 px, en boucle lente — décalée
+                     par `--i` pour que deux voisines ne bougent pas ensemble.
+     `.pop`          une pastille apparaît en rebondissant (`--pop-delay`).
+     `.tilt-hover`   une carte se soulève et s'incline au survol.
+     `.bounce-press` un bouton rond monte au survol, s'écrase à l'appui, et
+                     revient en rebondissant (`--ease-spring`).
+     `.row-slide`    une rangée de liste glisse de 4 px au survol.
+
+     Tous coupés sous `prefers-reduced-motion` (fin de ce bloc). */
+  .sheen {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sheen::after {
+    content: "";
+    position: absolute;
+    top: -40%;
+    left: 0;
+    width: 40%;
+    height: 180%;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.28), transparent);
+    transform: translateX(-150%) rotate(20deg);
+    animation: sheen 5s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * 0.7s);
+  }
+
+  @keyframes sheen {
+    0% {
+      transform: translateX(-150%) rotate(20deg);
+    }
+    60%,
+    100% {
+      transform: translateX(250%) rotate(20deg);
+    }
+  }
+
+  .floaty {
+    animation: floaty 4s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * -0.6s);
+  }
+
+  @keyframes floaty {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+
+  .pop {
+    animation: pop 0.6s var(--ease-spring) backwards;
+    animation-delay: var(--pop-delay, 0s);
+  }
+
+  @keyframes pop {
+    0% {
+      transform: scale(0.4);
+      opacity: 0;
+    }
+    70% {
+      transform: scale(1.12);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .tilt-hover {
+    transition:
+      transform 0.5s var(--ease-out),
+      box-shadow 0.5s var(--ease-out);
+  }
+
+  .tilt-hover:hover {
+    transform: translateY(-6px) rotate(-1deg);
+  }
+
+  .bounce-press {
+    transition:
+      transform 0.25s var(--ease-spring),
+      box-shadow 0.25s ease,
+      filter 0.25s ease;
+  }
+
+  .bounce-press:hover {
+    transform: translateY(-3px) scale(1.06);
+  }
+
+  .bounce-press:active {
+    transform: scale(0.92);
+  }
+
+  .row-slide {
+    transition:
+      background-color 0.25s ease,
+      transform 0.35s var(--ease-out);
+  }
+
+  .row-slide:hover {
+    background: rgb(var(--inset-rgb) / calc(var(--inset-alpha) * 0.7));
+    transform: translateX(4px);
+  }
+
+  /* La COURBE qui se dessine (`AreaChart`) : un tracé de longueur
+     normalisée à 1 dont le tiret glisse de 1 à 0 ; le voile arrive en fondu
+     juste derrière. */
+  .line-draw {
+    stroke-dasharray: 1;
+    animation: lineDraw 1.8s var(--ease-out) 0.3s backwards;
+  }
+
+  @keyframes lineDraw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .area-fade {
+    animation: areaFade 1.2s ease 0.9s backwards;
+  }
+
+  @keyframes areaFade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .halo,
+    .floaty,
+    .sheen::after {
+      animation: none;
+    }
+    .sheen::after {
+      display: none;
+    }
+    .tilt-hover:hover,
+    .bounce-press:hover,
+    .bounce-press:active,
+    .row-slide:hover {
+      transform: none;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
      MATHÉMATIQUES
      ═══════════════════════════════════════════════════════════════ */
 
   /* Voir le commentaire de `RichMath` : `text-wrap: pretty` fait PLANTER le
      moteur de rendu de Chromium quand le bloc de lecture contient une
      formule centrée (`.katex-display`). On revient à la césure ordinaire
-     dans ces blocs-là uniquement — le marqueur est posé par `RichMath`, qui
-     est le seul à produire ce genre de bloc. */
+     dans ces blocs-là uniquement — le marqueur est posé par `RichMath`. */
   [data-display-math],
   .t-read[data-display-math],
   .t-read-quiet[data-display-math],
@@ -602,16 +1241,15 @@
     text-wrap: wrap;
   }
 
-  /* KaTeX compose en Computer Modern, dont l'œil est plus petit que celui de
-     Newsreader : sans compensation, les formules paraissent rétrécies au
-     milieu de la phrase. */
+  /* KaTeX compose en Computer Modern, dont l'œil est plus petit que celui du
+     texte qui l'entoure : sans compensation, les formules paraissent
+     rétrécies au milieu de la phrase. */
   .katex {
     font-size: 1.06em;
   }
 
-  /* Une formule centrée est un paragraphe à elle seule : elle respire
-     au-dessus et au-dessous, et défile horizontalement plutôt que de forcer
-     toute la page à s'élargir sur mobile. */
+  /* Une formule centrée respire au-dessus et au-dessous, et défile
+     horizontalement plutôt que de forcer toute la page à s'élargir. */
   .katex-display {
     margin: 1.4em 0 !important;
     overflow-x: auto;
@@ -643,8 +1281,7 @@
     scrollbar-width: none;
   }
 
-  /* Masque le débordement d'une bande défilable horizontalement (onglets,
-     filtres) sans afficher de barre, tout en gardant l'accrochage au doigt. */
+  /* Bande défilable horizontalement (onglets, filtres), sans barre visible. */
   .rail {
     display: flex;
     overflow-x: auto;
@@ -656,3 +1293,38 @@
     scroll-snap-align: start;
   }
 }
+
+/*
+ * TONS DES CARTES EN DÉGRADÉ — HORS de toute `@layer`, volontairement.
+ *
+ * Tailwind élague les classes d'une `@layer components` qu'il ne trouve
+ * écrites nulle part dans les sources. Or ces noms sont COMPOSÉS au rendu
+ * (`tone-${k}`, components/ui/gradient-card.tsx#toneClass) : ils étaient
+ * retirés du CSS de production, et toutes les cartes retombaient sur le
+ * dégradé de marque. Une règle hors couche n'est jamais élaguée.
+ */
+.tone-1 {
+  --gc1: var(--card-1a);
+  --gc2: var(--card-1b);
+}
+.tone-2 {
+  --gc1: var(--card-2a);
+  --gc2: var(--card-2b);
+}
+.tone-3 {
+  --gc1: var(--card-3a);
+  --gc2: var(--card-3b);
+}
+.tone-4 {
+  --gc1: var(--card-4a);
+  --gc2: var(--card-4b);
+}
+.tone-review {
+  --gc1: var(--review-a);
+  --gc2: var(--review-b);
+}
+.tone-brand {
+  --gc1: var(--g1);
+  --gc2: var(--g2);
+}
+

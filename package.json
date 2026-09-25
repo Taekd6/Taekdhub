@@ -7,25 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "vitest run",
-    "test:e2e": "node scripts/regression-lecteur.mjs && node scripts/regression-import.mjs && node scripts/regression-banque.mjs",
-    "prebuild": "node scripts/copy-pdfjs-assets.mjs",
-    "predev": "node scripts/copy-pdfjs-assets.mjs",
-    "pdfjs:assets": "node scripts/copy-pdfjs-assets.mjs"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.126.0",
     "@supabase/supabase-js": "^2.49.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "katex": "^0.18.3",
     "lucide-react": "^0.468.0",
     "next": "15.5.23",
-    "pdfjs-dist": "^6.3.289",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "server-only": "^0.0.1",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "ts-fsrs": "^5.4.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",

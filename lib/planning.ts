@@ -15,14 +15,11 @@ import type { Preferences, WorkItem, WorkItemKind } from "@/lib/storage";
  *   ÉCHÉANCES (lib/deadlines.ts)   ce qui presse, et pourquoi.
  *   CAPACITÉ  (lib/capacity.ts)    combien de minutes chaque jour peut absorber.
  *   PLANNING  (ce module)          QUEL JOUR, et COMBIEN DE MINUTES.
- *   RECOMMANDATION (lib/recommendation.ts)  QUELS EXERCICES, le moment venu.
  *
- * Ce module ne choisit JAMAIS un exercice. Il réserve du temps. Quand vient
- * l'heure de travailler un créneau qui porte sur la banque (`exercices`,
- * `chapitre`), c'est `computeDailyPlan` (lib/plan.ts) — donc
- * `recommendExercises` — qui décide du contenu, avec la portée et le budget
- * que ce créneau lui donne. Aucun exercice n'est jamais figé des jours à
- * l'avance : ce serait décider du « quoi » avec des données périmées.
+ * Ce module ne décide JAMAIS du contenu : il réserve du temps. Ce qu'il y a
+ * dans un créneau — la feuille d'exercices, le DM, le chapitre à relire —
+ * l'élève le sait ; TaekdHub ne fait que chronométrer (le créneau part au
+ * chrono, rattaché à son travail).
  *
  * LE PLAN N'EST PAS PERSISTÉ. Il est recalculé à chaque affichage à partir
  * des travaux, des séances, de la capacité et de la date. Le stocker créerait
@@ -320,9 +317,8 @@ function roundSlot(minutes: number): number {
 
 /**
  * Pourquoi ce travail est placé là — une phrase, dérivée de la priorité
- * réellement calculée. Même principe que
- * lib/recommendation.ts#explainReasons : on ne fabrique jamais une
- * justification, on formule celle qui existe.
+ * réellement calculée. On ne fabrique jamais une justification, on formule
+ * celle qui existe.
  */
 export function explainPlanningDecision(priority: WorkItemPriority): string {
   if (priority.overdue) return `${priority.reasons[0]} — replacé dès que possible.`;

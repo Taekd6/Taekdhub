@@ -1,17 +1,20 @@
 "use client";
 
-import { ChevronDown, Clock3 } from "lucide-react";
+import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Section } from "@/components/ui/section";
-import { PageBar, Split } from "@/components/ui/layout";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { PageHero } from "@/components/ui/page-hero";
+import { Illustration } from "@/components/ui/illustrations";
+import { DateBadge } from "@/components/ui/list-card";
 import { EmptyState, Skeleton } from "@/components/ui/state";
 import { HistoryFilters } from "@/components/history/history-filters";
 import { HistorySummary } from "@/components/history/history-summary";
 import { SessionRow } from "@/components/history/session-row";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { buildWeeklyPlan } from "@/lib/planning";
-import { defaultHistoryFilters, filterSessions, resultCounts, summarizeSessions, type HistoryFilters as HistoryFiltersState } from "@/lib/history";
+import { defaultHistoryFilters, filterSessions, summarizeSessions, type HistoryFilters as HistoryFiltersState } from "@/lib/history";
+import { subjects } from "@/lib/study";
 import { formatSpan } from "@/lib/utils";
 
 /** Lignes montées d'un coup — voir `visibleCount`. */
@@ -22,9 +25,15 @@ const HISTORY_PAGE_SIZE = 100;
  * agrégation viennent de lib/history.ts, l'affichage des filtres/de
  * l'agrégat/des lignes vient de components/history/*. Ce fichier ne fait
  * que les assembler.
+ *
+ * REFONTE « APPLE » : un grand titre illustré, les filtres en pastilles
+ * juste dessous, puis le journal en FRISE — une tuile par jour, les séances
+ * reliées par un fil vertical, l'heure à gauche, la durée à droite. La
+ * synthèse (total, séances, part de chaque matière) est une tuile collante
+ * à droite sur grand écran, et passe sous les filtres sur téléphone.
  */
 export function SessionHistory() {
-  const { sessions, exercises, chapters, workItems, preferences, ready } = usePrepahubData();
+  const { sessions, workItems, preferences, ready } = usePrepahubData();
   const [filters, setFilters] = useState<HistoryFiltersState>(defaultHistoryFilters);
   // Combien de lignes sont réellement montées dans le DOM.
   //
@@ -36,54 +45,54 @@ export function SessionHistory() {
   // jamais la mesure.
   const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
 
-  const exerciseById = useMemo(() => new Map(exercises.map((item) => [item.id, item])), [exercises]);
-  const chapterById = useMemo(() => new Map(chapters.map((item) => [item.id, item])), [chapters]);
+  const workItemTitleById = useMemo(() => new Map(workItems.map((item) => [item.id, item.title])), [workItems]);
 
   const filtered = useMemo(() => filterSessions(sessions, filters), [sessions, filters]);
   const summary = useMemo(() => summarizeSessions(filtered), [filtered]);
-  const results = useMemo(() => resultCounts(filtered), [filtered]);
   const sorted = useMemo(
     () => [...filtered].sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()),
     [filtered]
   );
+  // Les pastilles de matière comptent les séances de la PÉRIODE choisie,
+  // toutes matières confondues : le compte ne s'effondre pas quand on en
+  // choisit une.
+  const subjectCounts = useMemo(() => {
+    const inPeriod = filterSessions(sessions, { ...filters, subject: "Toutes" });
+    return subjects
+      .map((subject) => ({ subject, count: inPeriod.filter((session) => session.subject === subject).length }))
+      .filter((entry) => entry.count > 0 || entry.subject === filters.subject);
+  }, [sessions, filters]);
 
-  /*
-   * LE JOURNAL EST GROUPÉ PAR JOUR.
-   *
-   * À plat, trente-six lignes portant chacune « 14 sept. 2026, 05:30 » se
-   * lisent comme un export de base de données : la date est répétée sur
-   * chaque ligne, et pourtant on ne voit pas ce qu'a été une journée. Groupé,
-   * la même liste répond à « qu'est-ce que j'ai fait mardi » — et le total du
-   * jour, qui n'existait nulle part, s'y écrit gratuitement.
-   *
-   * Le regroupement se fait APRÈS la pagination (`visibleCount`), jamais
-   * avant : la garde qui plafonne le nombre de lignes montées reste
-   * exactement celle d'avant, et un groupe peut légitimement être coupé au
-   * bord de la page — il se complète en affichant la suite.
-   */
   /*
    * PRÉVU vs RÉALISÉ — pour AUJOURD'HUI seulement, et c'est délibéré.
    *
    * Le planning n'est pas persisté : il est recalculé à chaque affichage
    * (voir lib/planning.ts). On ne peut donc pas savoir ce qui était prévu
    * un mardi passé — et l'inventer à partir du planning d'aujourd'hui serait
-   * exactement le genre d'affirmation que ce produit s'interdit. Le journal
-   * reste donc un historique de ce qui a EU LIEU ; seule la journée en cours
-   * peut honnêtement afficher les deux chiffres côte à côte.
+   * exactement le genre d'affirmation que ce produit s'interdit.
    *
-   * ATTENTION AU LIBELLÉ, et c'est tout l'objet de la correction : ce nombre
-   * est le RESTE À CASER, pas l'intention de la journée. `buildWeeklyPlan`
-   * ampute déjà la capacité d'aujourd'hui du temps déjà travaillé
-   * (lib/planning.ts#remainingPlannableToday). L'afficher comme « prévues »
-   * en face de « réalisées » présentait les deux nombres comme les deux
-   * termes d'une même comparaison — alors qu'ils n'ont pas le même
-   * périmètre, et que le second DÉCROÎT à mesure que le premier croît.
+   * ATTENTION AU LIBELLÉ : ce nombre est le RESTE À CASER, pas l'intention
+   * de la journée. `buildWeeklyPlan` ampute déjà la capacité d'aujourd'hui du
+   * temps déjà travaillé (lib/planning.ts#remainingPlannableToday).
    */
   const plannedToday = useMemo(
     () => buildWeeklyPlan(workItems, sessions, preferences, new Date()).days[0]?.load.plannedMinutes ?? 0,
     [workItems, sessions, preferences]
   );
 
+  /*
+   * LE JOURNAL EST GROUPÉ PAR JOUR — une tuile chacun.
+   *
+   * À plat, trente-six lignes portant chacune « 14 sept. 2026, 05:30 » se
+   * lisent comme un export de base de données. Groupée, la même liste répond
+   * à « qu'est-ce que j'ai fait mardi » — et le total du jour s'y écrit
+   * gratuitement.
+   *
+   * Le regroupement se fait APRÈS la pagination (`visibleCount`), jamais
+   * avant : la garde qui plafonne le nombre de lignes montées reste
+   * exactement celle d'avant, et un groupe peut légitimement être coupé au
+   * bord de la page — il se complète en affichant la suite.
+   */
   const visibleDays = useMemo(() => {
     const groups: { key: string; date: Date; sessions: typeof sorted; seconds: number }[] = [];
     for (const session of sorted.slice(0, visibleCount)) {
@@ -107,11 +116,11 @@ export function SessionHistory() {
 
   if (!ready) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
+        <Skeleton className="h-24 w-72" />
         <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-20 w-full" />
-        {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton key={index} className="h-12 w-full" />
+        {Array.from({ length: 3 }).map((_, index) => (
+          <Skeleton key={index} className="h-40 w-full rounded-2xl" />
         ))}
       </div>
     );
@@ -119,99 +128,110 @@ export function SessionHistory() {
 
   if (!sessions.length) {
     return (
-      <EmptyState
-        icon={Clock3}
-        title="Ton journal est prêt."
-        description="Chaque exercice travaillé y laissera sa durée, son résultat et sa date. Rien n'y est écrit à ta place."
-      />
+      <div className="space-y-10">
+        <PageHero title="Séances" />
+        <EmptyState
+          illustration={<Illustration name="chrono" size={56} />}
+          title="Ton journal est prêt."
+          description="Chaque séance chronométrée ou déclarée y laissera sa durée, sa matière et ta note. Rien n'y est écrit à ta place."
+          action={
+            <Link href="/timer" className={buttonVariants({ variant: "primary" })}>
+              Lancer le chronomètre
+            </Link>
+          }
+        />
+      </div>
     );
   }
 
-
   return (
-    <Split
-      railLabel="Synthèse de la période"
-      rail={<HistorySummary summary={summary} results={results} />}
-    >
-      <div className="space-y-8">
-        <PageBar
-          title="Séances"
-          lede="La trace exacte du travail accompli : ce qui a été travaillé, combien de temps, avec quel résultat."
-        />
+    <div className="mx-auto max-w-[68rem] space-y-8">
+      <PageHero
+        title="Séances"
+        lede="Tout ce que tu as travaillé, jour par jour."
+        illustration={<Illustration name="chrono" size={56} />}
+      />
 
-      {/* Les filtres vivaient dans le rail, donc SOUS le journal sur
-          téléphone : il fallait dépasser cent lignes pour restreindre la
-          liste qu'on est en train de lire. Un filtre appartient au bord de ce
-          qu'il filtre — il est ici l'action de la section, à côté du compte
-          qu'il fait varier. Le rail ne garde que la synthèse. */}
-      <Section
-        label="Journal"
-        title={`${sorted.length} séance${sorted.length > 1 ? "s" : ""}`}
-        action={<HistoryFilters filters={filters} onChange={updateFilters} />}
-      >
-        {sorted.length ? (
-          <div className="border-t border-line">
-            {visibleDays.map((day) => (
-              <section key={day.key}>
-                {/* L'en-tête de jour n'est pas une barre teintée : une
-                    étiquette et un total, séparés du jour précédent par le
-                    filet de la liste. C'est ce que fait un relevé. */}
-                <h3 className="flex items-baseline justify-between gap-3 border-b border-line pb-1.5 pt-5 first:pt-3">
-                  <span className="t-label">{formatDayLabel(day.date)}</span>
-                  <span className="t-meta tabular shrink-0 whitespace-nowrap">
-                    {formatSpan(day.seconds)}
-                    {/* Les mots disparaissent sous `sm` : à 320 px, « 3 h 55
-                        réalisées · 4 h 30 prévues » mesurait 210 px dans une
-                        rangée qui n'en offre que ~180, et faisait déborder
-                        toute la page horizontalement. Les deux chiffres, eux,
-                        restent — c'est l'information. */}
-                    {isToday(day.date) && plannedToday > 0 && (
-                      <span className="text-subtle">
-                        <span className="hidden sm:inline"> réalisées</span> · {formatSpan(plannedToday * 60)}
-                        <span className="hidden sm:inline"> encore au planning</span>
-                      </span>
-                    )}
-                  </span>
-                </h3>
-                <ul className="divide-y divide-line border-b border-line">
-                  {day.sessions.map((session) => {
-                    const exercise = session.exercise_id ? exerciseById.get(session.exercise_id) : undefined;
-                    const chapter = exercise?.chapter_id ? chapterById.get(exercise.chapter_id) : undefined;
-                    return (
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.38fr)] lg:gap-8">
+        <aside aria-label="Synthèse de la période" className="lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)] lg:order-2 lg:h-fit">
+          <HistorySummary summary={summary} />
+        </aside>
+
+        <section aria-label="Journal des séances" className="min-w-0 space-y-5 lg:order-1">
+          {/* Les filtres appartiennent au bord de ce qu'ils filtrent : en tête
+              du journal, SOUS la carte de synthèse sur téléphone (la synthèse
+              ouvre l'écran, comme le héros de l'accueil), jamais dans le rail. */}
+          <HistoryFilters filters={filters} onChange={updateFilters} subjects={subjectCounts} />
+          <h2 className="sr-only">
+            {sorted.length} séance{sorted.length > 1 ? "s" : ""}
+          </h2>
+          {sorted.length ? (
+            <div className="space-y-4">
+              {visibleDays.map((day, index) => (
+                <section key={day.key} className="surface reveal px-1.5 py-2" style={{ "--i": Math.min(index, 4) } as React.CSSProperties}>
+                  {/* L'en-tête du jour : la pastille datée en dégradé (celle
+                      des échéances), son nom, son total. */}
+                  <h3 className="flex items-center gap-3 px-3 pb-1 pt-2">
+                    <DateBadge date={day.date} tone={index} />
+                    <span className="min-w-0 flex-1 truncate text-lg font-black tracking-[-0.01em] text-ink first-letter:uppercase">{formatDayLabel(day.date)}</span>
+                    <span className="tabular shrink-0 whitespace-nowrap rounded-full bg-accent/10 px-3 py-1.5 text-[0.8125rem] font-black text-accent">
+                      {formatSpan(day.seconds)}
+                      {/* Les mots disparaissent sous `sm` : à 320 px, ils
+                          faisaient déborder toute la page horizontalement.
+                          Les deux chiffres, eux, restent. */}
+                      {isToday(day.date) && plannedToday > 0 && (
+                        <span className="font-bold text-accent/70">
+                          <span className="hidden sm:inline"> réalisées</span> · {formatSpan(plannedToday * 60)}
+                          <span className="hidden sm:inline"> encore au planning</span>
+                        </span>
+                      )}
+                    </span>
+                  </h3>
+                  <ul>
+                    {day.sessions.map((session, position) => (
                       <SessionRow
                         key={session.id}
                         session={session}
-                        exerciseTitle={exercise?.title}
-                        chapterLabel={chapter?.label}
+                        workItemTitle={session.work_item_id ? workItemTitleById.get(session.work_item_id) : undefined}
                         dateInHeader
+                        last={position === day.sessions.length - 1}
                       />
-                    );
-                  })}
-                </ul>
-              </section>
-            ))}
-          </div>
-        ) : (
-          <p className="t-meta border-y border-line py-6 text-center">Aucune séance ne correspond à ces filtres.</p>
-        )}
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              className="surface"
+              illustration={<Illustration name="chrono" size={56} />}
+              title="Aucune séance ne correspond."
+              description="Change de période ou de matière pour retrouver ton journal."
+              action={
+                <Button variant="secondary" onClick={() => updateFilters(defaultHistoryFilters)}>
+                  Tout afficher
+                </Button>
+              }
+            />
+          )}
 
-        {sorted.length > visibleCount && (
-          <div className="mt-4 flex flex-col items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setVisibleCount((count) => count + HISTORY_PAGE_SIZE)}>
-              Afficher {Math.min(HISTORY_PAGE_SIZE, sorted.length - visibleCount)} de plus <ChevronDown size={14} />
-            </Button>
-            <p className="t-meta tabular">
-              {visibleCount} sur {sorted.length}
-            </p>
-          </div>
-        )}
-      </Section>
+          {sorted.length > visibleCount && (
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <Button variant="secondary" onClick={() => setVisibleCount((count) => count + HISTORY_PAGE_SIZE)}>
+                Afficher {Math.min(HISTORY_PAGE_SIZE, sorted.length - visibleCount)} de plus <ChevronDown size={15} />
+              </Button>
+              <p className="t-meta tabular">
+                {visibleCount} sur {sorted.length}
+              </p>
+            </div>
+          )}
+        </section>
       </div>
-    </Split>
+    </div>
   );
 }
 
-const dayFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+const dayFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long" });
 
 /**
  * En-tête d'un jour du journal.
@@ -226,6 +246,8 @@ function formatDayLabel(date: Date): string {
   const days = Math.round((startOfDay(new Date()) - startOfDay(date)) / 86400000);
   if (days === 0) return "Aujourd'hui";
   if (days === 1) return "Hier";
+  // Le jour de la semaine seul : la pastille datée à sa gauche porte déjà
+  // le quantième et le mois (« mercredi 23 septembre » se coupait à 390 px).
   return dayFormatter.format(date);
 }
 

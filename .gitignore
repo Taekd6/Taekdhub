@@ -4,11 +4,5 @@ node_modules/
 .vercel/
 tsconfig.tsbuildinfo
 
-# Sortie de scripts/ingest-concours.py : contenu tiers, jamais versionné.
-/concours-import*.json
-/exos.zip
-
-# Bytecode Python de scripts/
-__pycache__/
-*.pyc
-/public/pdfjs/
+# Copies de travail des agents Claude Code
+.claude/worktrees/

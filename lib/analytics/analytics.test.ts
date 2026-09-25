@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { computeSubjectDistribution, computeWeeklyComparison, computeWorkTimeSeries, minutesBetween } from "@/lib/analytics/work-time";
-import { computeExerciseOutcomeStats, describeSampleSize, OUTCOME_SOLID_SAMPLE } from "@/lib/analytics/outcomes";
 import { computeConsistency, currentStreak } from "@/lib/analytics/consistency";
 import { computePlanningAccuracy, computeWeekPlanVsActual, describePlanningAccuracy } from "@/lib/analytics/planning";
-import { computeChapterMastery, computeMasteryTrend } from "@/lib/analytics/mastery";
-import type { Chapter, DayPlanRecord, WeekSnapshot } from "@/lib/storage";
-import type { AttemptResult, Exercise, WorkSession } from "@/lib/supabase/types";
+import type { DayPlanRecord } from "@/lib/storage";
+import type { WorkSession } from "@/lib/supabase/types";
 
 /** Dimanche 20 septembre 2026, 20 h — le moment où l'on ouvre /progress. */
 const NOW = new Date("2026-09-20T20:00:00");
@@ -23,46 +21,6 @@ function session(startedAt: string, minutes: number, overrides: Partial<WorkSess
     result: null,
     hints_used: null,
     work_item_id: null,
-    ...overrides,
-  };
-}
-
-function exercise(id: string, overrides: Partial<Exercise> = {}): Exercise {
-  return {
-    id,
-    subject: "Mathématiques",
-    title: `Ex ${id}`,
-    statement: "",
-    chapter_id: null,
-    source: "test",
-    year: null,
-    competition: null,
-    programme_level: null,
-    license_status: null,
-    external_id: null,
-    epreuve: null,
-    filieres: [],
-    exercise_number: null,
-    provenance: "originale",
-    source_url: null,
-    prerequisites: [],
-    pedagogical_goal: null,
-    level: null,
-    type: "TD",
-    difficulty: 3,
-    mastery: 0,
-    status: "à faire",
-    estimated_minutes: 20,
-    attempts: 0,
-    note: null,
-    created_at: "2026-09-01T00:00:00.000Z",
-    updated_at: "2026-09-01T00:00:00.000Z",
-    tags: [],
-    favorite: false,
-    archived: false,
-    hints: [],
-    correction: null,
-    last_worked_at: null,
     ...overrides,
   };
 }
@@ -147,57 +105,6 @@ describe("comparaison hebdomadaire", () => {
 
   it("aucune séance : aucune tendance de rythme", () => {
     expect(computeWeeklyComparison([], NOW).trend.direction).toBe("insuffisant");
-  });
-});
-
-/* ═══════════════════════ RÉSULTATS ═══════════════════════ */
-
-describe("taux de réussite — définition explicite du dénominateur", () => {
-  const attempt = (result: AttemptResult | null, hints: number | null = null) =>
-    session("2026-09-16T10:00:00", 20, { exercise_id: crypto.randomUUID(), result, hints_used: hints });
-
-  it("ne compte QUE les tentatives portant un résultat déclaré", () => {
-    const stats = computeExerciseOutcomeStats([attempt("réussi"), attempt("échoué"), attempt(null)], null, NOW);
-    expect(stats.evaluated).toBe(2);
-    expect(stats.successRate).toBe(50);
-    expect(stats.unevaluated).toBe(1);
-  });
-
-  it("une séance sans résultat n'est JAMAIS comptée comme un échec", () => {
-    const stats = computeExerciseOutcomeStats([attempt("réussi"), attempt(null), attempt(null)], null, NOW);
-    expect(stats.failed).toBe(0);
-    expect(stats.successRate).toBe(100);
-  });
-
-  it("une séance libre (sans exercice) ne compte pas comme un exercice travaillé", () => {
-    const stats = computeExerciseOutcomeStats([session("2026-09-16T10:00:00", 60)], null, NOW);
-    expect(stats.exercisesWorked).toBe(0);
-    expect(stats.evaluated).toBe(0);
-  });
-
-  it("un même exercice repris trois fois compte pour UN exercice travaillé", () => {
-    const sessions = Array.from({ length: 3 }, () => session("2026-09-16T10:00:00", 20, { exercise_id: "ex-1", result: "réussi" as const }));
-    expect(computeExerciseOutcomeStats(sessions, null, NOW).exercisesWorked).toBe(1);
-  });
-
-  it("aucune tentative évaluable : pas de taux, et surtout pas « 0 % »", () => {
-    expect(computeExerciseOutcomeStats([attempt(null)], null, NOW).successRate).toBeNull();
-  });
-
-  it("l'autonomie vaut null quand aucune réussite ne porte l'information", () => {
-    expect(computeExerciseOutcomeStats([attempt("réussi", null)], null, NOW).autonomousSuccesses).toBeNull();
-    expect(computeExerciseOutcomeStats([attempt("réussi", 0)], null, NOW).autonomousSuccesses).toBe(1);
-  });
-
-  it("un échantillon trop mince est signalé, un échantillon suffisant ne l'est pas", () => {
-    const few = computeExerciseOutcomeStats([attempt("réussi"), attempt("réussi")], null, NOW);
-    expect(describeSampleSize(few)).toContain("échantillon encore limité");
-    const many = computeExerciseOutcomeStats(
-      Array.from({ length: OUTCOME_SOLID_SAMPLE }, () => attempt("réussi")),
-      null,
-      NOW
-    );
-    expect(describeSampleSize(many)).toBeNull();
   });
 });
 
@@ -315,76 +222,6 @@ describe("prévu vs réalisé", () => {
     const plans = [record("2026-09-20", 120)];
     const accuracy = computeWeekPlanVsActual(plans, [session("2026-09-20T10:00:00", 30)], NOW);
     expect(accuracy.days.some((day) => day.key === "2026-09-20")).toBe(false);
-  });
-});
-
-/* ═══════════════════════ MAÎTRISE ═══════════════════════ */
-
-describe("maîtrise", () => {
-  const snapshot = (weekStart: string, rate: number): WeekSnapshot => ({
-    weekStart,
-    capturedAt: weekStart,
-    totalSeconds: 0,
-    bySubject: [],
-    activeCount: 10,
-    masteredCount: rate / 10,
-    completionRate: rate,
-    bySubjectProgress: [{ subject: "Mathématiques", total: 10, mastered: rate / 10, completionRate: rate }],
-  });
-
-  it("la série se termine par la mesure du JOUR, pas par le dernier instantané", () => {
-    const exercises = [exercise("a", { status: "maîtrisé" }), exercise("b")];
-    const trend = computeMasteryTrend(
-      "Mathématiques",
-      [snapshot("2026-09-07T00:00:00.000Z", 20), snapshot("2026-09-14T00:00:00.000Z", 30)],
-      exercises,
-      NOW
-    );
-    expect(trend.currentRate).toBe(50);
-    expect(trend.points[trend.points.length - 1].rate).toBe(50);
-    expect(trend.trend.direction).toBe("hausse");
-  });
-
-  it("aucun instantané : un seul point, donc aucune tendance", () => {
-    const trend = computeMasteryTrend("Mathématiques", [], [exercise("a")], NOW);
-    expect(trend.points).toHaveLength(1);
-    expect(trend.trend.direction).toBe("insuffisant");
-  });
-
-  it("une matière absente d'un instantané n'y crée pas un point à zéro", () => {
-    const trend = computeMasteryTrend("Physique", [snapshot("2026-09-07T00:00:00.000Z", 20)], [exercise("a", { subject: "Physique" })], NOW);
-    expect(trend.points).toHaveLength(1);
-  });
-});
-
-describe("chapitres — un chapitre jamais commencé n'est PAS un chapitre faible", () => {
-  const chapters: Chapter[] = [
-    { id: "c1", subject: "Mathématiques", label: "Intégration" },
-    { id: "c2", subject: "Mathématiques", label: "Probabilités" },
-  ];
-
-  it("sépare le non mesuré du fragile", () => {
-    const exercises = [
-      exercise("a", { chapter_id: "c1", mastery: 25, attempts: 2, last_worked_at: "2026-09-14T00:00:00.000Z" }),
-      exercise("b", { chapter_id: "c2" }),
-    ];
-    const board = computeChapterMastery(exercises, chapters);
-    expect(board.fragile.map((row) => row.chapter.label)).toEqual(["Intégration"]);
-    expect(board.untouched.map((row) => row.chapter.label)).toEqual(["Probabilités"]);
-  });
-
-  it("un chapitre acquis rejoint les solides, pas les fragiles", () => {
-    const exercises = [exercise("a", { chapter_id: "c1", mastery: 100, status: "maîtrisé", attempts: 3, last_worked_at: "2026-09-14T00:00:00.000Z" })];
-    const board = computeChapterMastery(exercises, chapters);
-    expect(board.solid.map((row) => row.chapter.label)).toEqual(["Intégration"]);
-    expect(board.fragile).toEqual([]);
-  });
-
-  it("aucun exercice : les trois listes sont vides, aucune conclusion", () => {
-    const board = computeChapterMastery([], chapters);
-    expect(board.fragile).toEqual([]);
-    expect(board.solid).toEqual([]);
-    expect(board.untouched).toEqual([]);
   });
 });
 
@@ -512,24 +349,5 @@ describe("une série ne compte qu'UNE fois — gamification et analytics ne peuv
       session("2026-09-19T10:00:00", 60),
     ];
     expect(currentStreak(cumul, NOW)).toBe(2);
-  });
-});
-
-describe("un zéro MESURÉ n'est pas une absence de données", () => {
-  it("une matière à 0 % de fiches maîtrisées sur plusieurs semaines garde ses mesures", () => {
-    const snapshots: WeekSnapshot[] = ["2026-08-24", "2026-08-31", "2026-09-07", "2026-09-14"].map((weekStart) => ({
-      weekStart: `${weekStart}T00:00:00.000Z`,
-      capturedAt: `${weekStart}T20:00:00.000Z`,
-      totalSeconds: 0,
-      bySubject: [],
-      activeCount: 10,
-      masteredCount: 0,
-      completionRate: 0,
-      bySubjectProgress: [{ subject: "Mathématiques", total: 10, mastered: 0, completionRate: 0 }],
-    }));
-    const trend = computeMasteryTrend("Mathématiques", snapshots, [], NOW).trend;
-    // Cinq mesures réelles à 0 % : « stable » est le bon verdict, pas « aucune donnée ».
-    expect(trend.direction).toBe("stable");
-    expect(trend.samples).toBe(5);
   });
 });

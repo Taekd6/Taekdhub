@@ -1,24 +1,22 @@
-import { computeGlobalProgress, computeProgressBySubject } from "@/lib/progress";
-import { sessionsInWeek, startOfWeek, timeBySubjectInWeek } from "@/lib/week";
+import { sessionsInWeek, startOfWeek } from "@/lib/week";
 import { subjects, totalSeconds } from "@/lib/study";
 import type { WeekSnapshot } from "@/lib/storage";
-import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
+import type { WorkSession } from "@/lib/supabase/types";
 
 /**
- * Mémoire hebdomadaire de la progression (Sprint 5).
+ * Mémoire hebdomadaire du temps de travail (Sprint 5).
  *
  * Complémentaire de lib/week.ts (qui répond à "qu'a fait l'élève CETTE
- * semaine", toujours en direct) et de lib/progress.ts (l'état ACTUEL de la
- * banque) : ce module répond à "où en était l'élève la semaine dernière",
- * en figeant une seule fois par semaine écoulée un instantané (`WeekSnapshot`,
- * voir lib/storage.ts) qui ne change plus jamais ensuite.
+ * semaine", toujours en direct) : ce module répond à "combien avait-il
+ * travaillé la semaine dernière", en figeant une seule fois par semaine
+ * écoulée un instantané (`WeekSnapshot`, voir lib/storage.ts) qui ne change
+ * plus jamais ensuite.
  *
  * Volontairement PAS de rattrapage rétroactif de plusieurs semaines
  * manquées : seule la semaine immédiatement précédente est figée, la
  * première fois qu'une nouvelle semaine est détectée (voir
- * `findMissingSnapshotWeekStart`). La maîtrise n'étant pas elle-même
- * historisée, tenter de reconstituer un état plus ancien que ça reviendrait
- * à inventer une donnée plutôt qu'à la mesurer.
+ * `findMissingSnapshotWeekStart`). Les semaines plus anciennes restent de
+ * toute façon lisibles en direct depuis les séances (lib/tracking.ts).
  */
 
 function previousWeekStart(now: Date): Date {
@@ -35,7 +33,6 @@ function previousWeekStart(now: Date): Date {
  * mesurer" côté UI).
  */
 export function findMissingSnapshotWeekStart(
-  exercises: Exercise[],
   sessions: WorkSession[],
   snapshots: WeekSnapshot[],
   now: Date = new Date()
@@ -46,27 +43,19 @@ export function findMissingSnapshotWeekStart(
 
   if (snapshots.some((snapshot) => snapshot.weekStart === targetIso)) return null;
 
-  const hadActivityBeforeThisWeek =
-    sessions.some((session) => new Date(session.started_at) < currentWeekStart) ||
-    exercises.some((exercise) => new Date(exercise.created_at) < currentWeekStart);
+  const hadActivityBeforeThisWeek = sessions.some((session) => new Date(session.started_at) < currentWeekStart);
   return hadActivityBeforeThisWeek ? target : null;
 }
 
-/** Fige l'état réel de `weekStart` (temps investi cette semaine-là, progression actuelle) — ne modifie jamais `exercises`/`sessions`, fonction pure. */
-export function captureWeekSnapshot(exercises: Exercise[], sessions: WorkSession[], weekStart: Date, now: Date = new Date()): WeekSnapshot {
+/** Fige le temps réellement investi durant la semaine `weekStart`, au total et par matière — ne modifie jamais `sessions`, fonction pure. */
+export function captureWeekSnapshot(sessions: WorkSession[], weekStart: Date, now: Date = new Date()): WeekSnapshot {
   const weekSessions = sessionsInWeek(sessions, weekStart);
-  const progress = computeGlobalProgress(exercises);
-  const bySubjectProgress = computeProgressBySubject(exercises);
 
   return {
     weekStart: weekStart.toISOString(),
     capturedAt: now.toISOString(),
     totalSeconds: totalSeconds(weekSessions),
     bySubject: subjects.map((subject) => ({ subject, seconds: totalSeconds(weekSessions.filter((session) => session.subject === subject)) })),
-    activeCount: progress.activeCount,
-    masteredCount: progress.masteredCount,
-    completionRate: progress.completionRate,
-    bySubjectProgress: bySubjectProgress.map(({ subject, total, mastered, completionRate }) => ({ subject, total, mastered, completionRate })),
   };
 }
 
@@ -76,98 +65,14 @@ export function findPreviousWeekSnapshot(snapshots: WeekSnapshot[], now: Date = 
   return snapshots.find((snapshot) => snapshot.weekStart === targetIso) ?? null;
 }
 
-export interface SubjectMasteryDelta {
-  subject: Subject;
-  previousCompletionRate: number;
-  currentCompletionRate: number;
-  deltaCompletionRate: number;
-}
-
-export interface SubjectTimeDelta {
-  subject: Subject;
-  previousSeconds: number;
-  currentSeconds: number;
-  deltaSeconds: number;
-}
-
 export interface WeekComparison {
   previous: WeekSnapshot;
   currentTotalSeconds: number;
-  currentMasteredCount: number;
-  currentCompletionRate: number;
   deltaTotalSeconds: number;
-  deltaMasteredCount: number;
-  deltaCompletionRate: number;
-  /** Matière avec la plus forte progression de maîtrise depuis la semaine précédente — `null` si aucune matière n'a progressé. */
-  mostImprovedSubject: SubjectMasteryDelta | null;
-  /**
-   * Matière la moins travaillée cette semaine, parmi celles qui ont encore
-   * des exercices actifs non maîtrisés en attente — pas une "régression" au
-   * sens strict (la maîtrise ne diminue jamais toute seule dans ce modèle,
-   * décision Sprint 2.5), mais le signal le plus proche et le plus
-   * actionnable disponible avec les données existantes (même logique que
-   * lib/week.ts#neglectedSubjects). `null` si aucune matière active n'a
-   * d'exercice en attente.
-   */
-  mostNeglectedSubject: SubjectTimeDelta | null;
 }
 
-/** Compare l'état ACTUEL (exercices + séances de la semaine en cours) au dernier `WeekSnapshot` figé. Fonction pure. */
-export function compareToPreviousWeek(exercises: Exercise[], sessions: WorkSession[], previous: WeekSnapshot, now: Date = new Date()): WeekComparison {
-  const currentWeekStart = startOfWeek(now);
-  const currentSubjectSeconds = timeBySubjectInWeek(sessions, currentWeekStart);
-  const currentTotalSeconds = totalSeconds(sessionsInWeek(sessions, currentWeekStart));
-  const currentProgress = computeGlobalProgress(exercises);
-  const currentBySubject = computeProgressBySubject(exercises);
-
-  const masteryDeltas: SubjectMasteryDelta[] = subjects.map((subject) => {
-    const previousRate = previous.bySubjectProgress.find((entry) => entry.subject === subject)?.completionRate ?? 0;
-    const currentRate = currentBySubject.find((entry) => entry.subject === subject)?.completionRate ?? 0;
-    return { subject, previousCompletionRate: previousRate, currentCompletionRate: currentRate, deltaCompletionRate: currentRate - previousRate };
-  });
-  /*
-   * UNE ÉGALITÉ NE DÉSIGNE PERSONNE.
-   *
-   * Le tri seul faisait trancher l'ordre du tableau `subjects` : deux
-   * matières passant toutes deux de 0 à 50 % affichaient « A le plus
-   * progressé : Mathématiques » — un verdict produit par lib/study.ts, pas
-   * par les données. C'est exactement la règle que lib/weekly-review.ts
-   * applique déjà à la « journée la plus chargée » (comparaison STRICTE) ;
-   * elle vaut ici aussi.
-   */
-  const improvedRanked = masteryDeltas
-    .filter((delta) => delta.deltaCompletionRate > 0)
-    .sort((a, b) => b.deltaCompletionRate - a.deltaCompletionRate);
-  const mostImprovedSubject =
-    improvedRanked.length > 0 && (improvedRanked.length === 1 || improvedRanked[0].deltaCompletionRate > improvedRanked[1].deltaCompletionRate)
-      ? improvedRanked[0]
-      : null;
-
-  const timeDeltas: SubjectTimeDelta[] = subjects.map((subject) => {
-    const previousSecondsValue = previous.bySubject.find((entry) => entry.subject === subject)?.seconds ?? 0;
-    const currentSecondsValue = currentSubjectSeconds.find((entry) => entry.subject === subject)?.seconds ?? 0;
-    return { subject, previousSeconds: previousSecondsValue, currentSeconds: currentSecondsValue, deltaSeconds: currentSecondsValue - previousSecondsValue };
-  });
-  const pendingSubjects = new Set(currentBySubject.filter((entry) => entry.total - entry.mastered > 0).map((entry) => entry.subject));
-  // Même règle : trois matières à 0 seconde ne font pas de la première du
-  // catalogue « la moins travaillée ».
-  const neglectedRanked = timeDeltas
-    .filter((delta) => pendingSubjects.has(delta.subject))
-    .sort((a, b) => a.currentSeconds - b.currentSeconds || a.deltaSeconds - b.deltaSeconds);
-  const mostNeglectedSubject =
-    neglectedRanked.length > 0 && (neglectedRanked.length === 1 || neglectedRanked[0].currentSeconds < neglectedRanked[1].currentSeconds)
-      ? neglectedRanked[0]
-      : null;
-
-  return {
-    previous,
-    currentTotalSeconds,
-    currentMasteredCount: currentProgress.masteredCount,
-    currentCompletionRate: currentProgress.completionRate,
-    deltaTotalSeconds: currentTotalSeconds - previous.totalSeconds,
-    deltaMasteredCount: currentProgress.masteredCount - previous.masteredCount,
-    deltaCompletionRate: currentProgress.completionRate - previous.completionRate,
-    mostImprovedSubject,
-    mostNeglectedSubject,
-  };
+/** Compare le temps de la semaine EN COURS au dernier `WeekSnapshot` figé. Fonction pure. */
+export function compareToPreviousWeek(sessions: WorkSession[], previous: WeekSnapshot, now: Date = new Date()): WeekComparison {
+  const currentTotalSeconds = totalSeconds(sessionsInWeek(sessions, startOfWeek(now)));
+  return { previous, currentTotalSeconds, deltaTotalSeconds: currentTotalSeconds - previous.totalSeconds };
 }

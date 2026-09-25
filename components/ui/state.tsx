@@ -10,12 +10,19 @@ import { cn } from "@/lib/cn";
  */
 export function EmptyState({
   icon: Icon,
+  illustration,
   title,
   description,
   action,
   className,
 }: {
   icon?: LucideIcon;
+  /**
+   * Un dessin au trait (components/ui/illustrations.tsx) à la place de
+   * l'icône : un état vide est le seul moment où l'écran n'a rien d'autre à
+   * montrer, c'est là qu'une illustration a toute sa place.
+   */
+  illustration?: React.ReactNode;
   title: string;
   description?: string;
   action?: React.ReactNode;
@@ -23,9 +30,13 @@ export function EmptyState({
 }) {
   return (
     <div className={cn("flex flex-col items-center px-6 py-14 text-center", className)}>
-      {Icon && (
-        <span className="mb-4 grid h-10 w-10 place-items-center rounded-full border border-line text-subtle">
-          <Icon size={17} strokeWidth={1.6} />
+      {illustration ? (
+        <span aria-hidden className="mb-5 grid h-24 w-24 place-items-center rounded-[1.75rem] bg-inset text-ink">
+          {illustration}
+        </span>
+      ) : Icon && (
+        <span className="mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-inset text-muted">
+          <Icon size={20} strokeWidth={1.8} />
         </span>
       )}
       <p className="t-heading">{title}</p>
@@ -41,10 +52,11 @@ export function EmptyState({
  * Toutes les données de TaekdHub viennent de localStorage : l'attente se
  * compte en dizaines de millisecondes. Le squelette existe pour que la page
  * ne SAUTE pas quand elles arrivent — donc il doit avoir exactement la
- * hauteur du contenu réel, et pulser très discrètement.
+ * hauteur du contenu réel. Un reflet lent le traverse (`.shimmer`) : la
+ * seule boucle du système, et elle ne dure que le temps du chargement.
  */
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn("animate-pulse-soft rounded-md bg-hairline/[0.07]", className)} aria-hidden />;
+  return <div className={cn("shimmer rounded-xl", className)} aria-hidden />;
 }
 
 /**
@@ -73,7 +85,7 @@ export function Notice({
   return (
     <div
       role={tone === "danger" ? "alert" : "status"}
-      className={cn("flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3", tones[tone], className)}
+      className={cn("flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3.5", tones[tone], className)}
     >
       <div className="min-w-0">
         {title && <p className="t-subhead">{title}</p>}

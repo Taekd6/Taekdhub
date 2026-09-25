@@ -1,88 +1,69 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { SubjectAvatar } from "@/components/exercises/exercise-badges";
-import { MathInline } from "@/components/rich-math";
+import { SubjectAvatar } from "@/components/subject-avatar";
+import { cn } from "@/lib/cn";
 import { formatSpan } from "@/lib/utils";
-import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
-
-/** Étiquette + couleur du résultat d'une tentative — un seul point de vérité pour tout affichage de `WorkSession.result`. */
-const RESULT_BADGE: Record<AttemptResult, { label: string; variant: "success" | "warning" | "danger" }> = {
-  réussi: { label: "Réussi", variant: "success" },
-  partiel: { label: "Partiel", variant: "warning" },
-  échoué: { label: "Échoué", variant: "danger" },
-};
+import type { WorkSession } from "@/lib/supabase/types";
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
 /** Dans un journal DÉJÀ groupé par jour, la date est portée par l'en-tête du groupe : la ligne n'a plus qu'à dire l'heure. */
 const timeFormatter = new Intl.DateTimeFormat("fr-FR", { timeStyle: "short" });
 
 /**
- * Une ligne de journal — partagée entre l'écran Séances et la fiche exercice,
- * pour ne jamais dupliquer ce rendu. Purement présentationnel.
+ * Une ligne de journal — purement présentationnelle.
  *
- * L'animation d'entrée a disparu : cent lignes qui montent de 6 px en même
- * temps au chargement du journal, ce n'est pas une transition, c'est un
- * frémissement. La durée n'est plus non plus en couleur d'accent : dans une
- * colonne de cent valeurs, l'accent perd tout son sens et c'est le RÉSULTAT
- * (réussi / partiel / échoué) qui mérite la couleur.
+ * Ce que la ligne dit, dans l'ordre : le travail planifié que la séance
+ * servait (s'il y en a un), sinon la note que l'élève a laissée, sinon la
+ * matière. (L'ancienne version titrait la ligne par l'exercice de la banque
+ * et affichait le résultat de la tentative ; la banque retirée, ces deux
+ * informations n'existent plus.)
+ *
+ * EN FRISE : l'heure à gauche, dans une colonne alignée ; la pastille de la
+ * matière posée sur un FIL vertical qui relie les séances du jour (il
+ * s'arrête à la dernière) ; le titre et la matière ; la durée à droite, en
+ * gras tabulaire — c'est la valeur qu'on compare d'une ligne à l'autre. La
+ * rangée entière s'éclaire au survol.
  */
 export function SessionRow({
   session,
-  exerciseTitle,
-  chapterLabel,
+  workItemTitle,
   /**
    * `true` quand la ligne vit sous un en-tête de jour (écran Séances) : la
-   * date y est déjà écrite une fois pour tout le groupe, la répéter sur
-   * chaque ligne ne fait que voler de la place au titre. La fiche exercice,
-   * elle, aligne des séances de dates quelconques — elle garde la date.
+   * date y est déjà écrite une fois pour tout le groupe.
    */
   dateInHeader = false,
+  /** Dernière séance du jour : le fil s'arrête à sa pastille. */
+  last = false,
 }: {
   session: WorkSession;
-  /** Titre de l'exercice lié, si `session.exercise_id` en référence un — omis pour une séance libre. */
-  exerciseTitle?: string | null;
-  chapterLabel?: string | null;
+  /** Titre du travail planifié lié (`session.work_item_id`), s'il existe encore. */
+  workItemTitle?: string | null;
   dateInHeader?: boolean;
+  last?: boolean;
 }) {
-  const resultBadge = session.result ? RESULT_BADGE[session.result] : null;
   const when = (dateInHeader ? timeFormatter : dateFormatter).format(new Date(session.started_at));
+  const note = session.note?.trim() || null;
+  const title = workItemTitle ?? note ?? session.subject;
 
-  /*
-   * DEUX LIGNES, PAS QUATRE COLONNES.
-   *
-   * Le titre, le résultat et la durée se partageaient la même ligne : à
-   * 390 px, l'étiquette de résultat et la durée prenaient 120 px, et il
-   * restait de quoi écrire « Translation des polynômes … » — le titre de
-   * l'exercice, c'est-à-dire la seule chose qui permet de reconnaître la
-   * séance, était systématiquement coupé.
-   *
-   * La DURÉE monte à droite du titre : c'est la valeur qu'on compare d'une
-   * ligne à l'autre, elle mérite une colonne alignée. Le RÉSULTAT redescend
-   * dans la ligne de métadonnées, avec l'heure et le chapitre — c'est un
-   * fait de la séance au même titre qu'eux, pas une colonne.
-   */
   return (
-    <li className="flex items-start gap-3 py-2.5">
-      <SubjectAvatar subject={session.subject} size="sm" />
+    <li className="row-slide relative flex min-h-[4rem] items-center gap-3 rounded-[1.125rem] px-3 py-2.5 sm:gap-4">
+      <span className={cn("tabular shrink-0 text-[0.8125rem] font-bold text-subtle", dateInHeader ? "w-11 text-center" : "hidden")}>{dateInHeader && when}</span>
+      <span className="relative flex shrink-0 self-stretch">
+        {/* Le fil : du centre de la pastille jusqu'à la ligne suivante. */}
+        {!last && <span aria-hidden className="absolute left-1/2 top-1/2 h-[calc(100%+1.5rem)] w-px -translate-x-1/2 bg-line" />}
+        <span className="relative my-auto">
+          <SubjectAvatar subject={session.subject} size="md" />
+        </span>
+      </span>
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-3">
-          <p className="min-w-0 flex-1 truncate text-sm text-ink">
-            {exerciseTitle ? <MathInline text={exerciseTitle} /> : session.subject}
-          </p>
-          <p className="tabular shrink-0 whitespace-nowrap text-right text-sm text-ink">
-            {formatSpan(session.duration_seconds)}
-          </p>
-        </div>
-        <p className="t-meta mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-          <span className="min-w-0 truncate">
-            {when}
-            {exerciseTitle && ` · ${session.subject}`}
-            {chapterLabel && ` · ${chapterLabel}`}
-          </span>
-          {resultBadge && <Badge variant={resultBadge.variant}>{resultBadge.label}</Badge>}
+        <p className="truncate text-[0.9375rem] font-extrabold text-ink">{title}</p>
+        <p className="truncate text-[0.8125rem] font-bold text-subtle">
+          {!dateInHeader && `${when} · `}
+          {title !== session.subject ? session.subject : "Séance"}
+          {workItemTitle && note && ` · ${note}`}
         </p>
       </div>
+      <p className="tabular shrink-0 whitespace-nowrap text-right text-[0.9375rem] font-black text-ink">{formatSpan(session.duration_seconds)}</p>
     </li>
   );
 }

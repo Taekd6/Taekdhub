@@ -1,68 +1,80 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Instrument_Sans } from "next/font/google";
+import { Newsreader, Nunito } from "next/font/google";
 import { ThemeSync } from "@/components/theme-sync";
 import { ServiceWorker } from "@/components/service-worker";
-import "katex/dist/katex.min.css";
+import { RevealObserver } from "@/components/ui/reveal";
+import { PALETTES, paletteVariables, resolvePaletteId } from "@/lib/theme";
 import "./globals.css";
 
 /**
- * Applique l'accent ET le mode d'apparence persistés AVANT l'hydratation
- * React, pour éviter un flash (accent par défaut, ou thème sombre par défaut
- * chez qui a choisi "clair") — même principe pour les deux : petit script
- * inline (ne peut pas importer de module, voir lib/theme.ts pour la version
- * "propre"), `ThemeSync` prend le relais après hydratation.
+ * SCRIPT ANTI-FLASH — applique la palette et le mode d'apparence persistés
+ * AVANT l'hydratation React. Sans lui, chaque page s'afficherait d'abord
+ * avec les valeurs par défaut, puis « sauterait » vers celles de l'élève.
+ * `ThemeSync` prend le relais après hydratation.
  *
- * Calcule aussi `--accent-ink-base-rgb` (encre) et `--accent-deep-base-rgb`
- * (aplat du bouton principal en thème clair) — mêmes formules que
- * `accentInk`/`accentDeep` (lib/theme.ts),
- * dupliquée ici pour la même raison que le reste de ce script : il ne peut
- * pas importer de module.
+ * Un script inline ne peut pas importer de module. Rien n'y est pourtant
+ * réécrit à la main :
  *
- * Mode : "light"/"dark" pose `data-theme` sur `<html>` ; "system" (ou
- * préférence absente/invalide) ne pose rien — voir app/globals.css, qui
- * laisse alors `prefers-color-scheme` décider. C'est la même règle que
- * `applyThemeMode` (lib/theme.ts), dupliquée ici pour la même raison que
- * l'accent ci-dessus.
+ *   — la TABLE des variables de chaque palette (lib/theme.ts#paletteVariables)
+ *     est calculée au rendu serveur et injectée en JSON ;
+ *   — le CHOIX de la palette (lib/theme.ts#resolvePaletteId, qui migre aussi
+ *     les anciens `accent` / `subjectPalette`) est recopié par sa propre
+ *     source (`Function#toString`) — la fonction est écrite pour ça :
+ *     autonome, sans syntaxe récente.
+ *
+ * Le script et `normalizePreferences` ne peuvent donc pas trancher
+ * différemment.
+ *
+ * Mode : "light" / "dark" / "system" est écrit tel quel dans `data-theme`
+ * (lib/theme.ts#applyThemeMode) ; une préférence absente ou invalide pose
+ * "light", le défaut du produit — que app/globals.css applique d'ailleurs
+ * aussi sans attribut.
+ *
+ * ENTRÉES AU DÉFILEMENT — `data-reveal="armed"` fige les animations
+ * d'entrée (`.reveal`, `.grow-*`, `.ring-*`, `.area-fade`) sur leur première
+ * image jusqu'à ce que `RevealObserver` voie l'élément entrer dans l'écran
+ * (voir app/globals.css et components/ui/reveal.tsx). Posé ICI, avant le
+ * premier rendu, pour qu'aucun bloc n'apparaisse puis disparaisse. Jamais
+ * armé sous `prefers-reduced-motion` ni sans IntersectionObserver. Filet de
+ * sécurité : si l'observateur ne s'est pas signalé (`__revealLive`) au bout
+ * de 4 s, on désarme, et tout s'affiche. Un contenu ne doit jamais rester
+ * invisible.
  */
-const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('prepahub:preferences');if(!raw)return;var prefs=JSON.parse(raw);var accent=prefs.accent;if(/^#?[0-9a-fA-F]{6}$/.test(accent||'')){var hex=accent.replace('#','');var r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);var lin=function(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);};var L=function(rr,gg,bb){return 0.2126*lin(rr)+0.7152*lin(gg)+0.0722*lin(bb);};var lum=L(r,g,b);var fg=lum>Math.sqrt(1.05*0.05)-0.05?'0 0 0':'255 255 255';var root=document.documentElement.style;root.setProperty('--accent-rgb',r+' '+g+' '+b);root.setProperty('--accent-fg-rgb',fg);var dk=function(t){var lo=0,hi=1;if(lum<=t)return[r,g,b];for(var i=0;i<24;i++){var m=(lo+hi)/2;if(L(r*m,g*m,b*m)>t){hi=m;}else{lo=m;}}return[Math.round(r*lo),Math.round(g*lo),Math.round(b*lo)];};root.setProperty('--accent-ink-base-rgb',dk(0.163).join(' '));root.setProperty('--accent-deep-base-rgb',dk(0.045).join(' '));}var mode=prefs.themeMode;if(mode==='light'||mode==='dark'){document.documentElement.setAttribute('data-theme',mode);}}catch(e){}})();`;
+const PALETTE_TABLE = Object.fromEntries(PALETTES.map((palette) => [palette.id, paletteVariables(palette)]));
+
+const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement,st=d.style;var raw=localStorage.getItem('prepahub:preferences');var prefs={};if(raw){try{prefs=JSON.parse(raw)||{};}catch(e){prefs={};}}
+var resolve=(${resolvePaletteId.toString()});var table=${JSON.stringify(PALETTE_TABLE)};var pid=resolve(prefs);var vars=table[pid];
+if(vars){for(var k in vars){st.setProperty(k,vars[k]);}d.setAttribute('data-palette',pid);}
+var mode=prefs.themeMode;d.setAttribute('data-theme',(mode==='light'||mode==='dark'||mode==='system')?mode:'light');
+}catch(e){}
+try{var r=document.documentElement;if('IntersectionObserver' in window&&!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)){r.setAttribute('data-reveal','armed');setTimeout(function(){if(!window.__revealLive)r.removeAttribute('data-reveal');},4000);}}catch(e){}})();`;
 
 /**
- * DEUX FAMILLES, DEUX RÔLES — voir l'en-tête d'app/globals.css.
+ * DEUX FAMILLES, DEUX RÔLES TRÈS INÉGAUX — voir l'en-tête d'app/globals.css.
  *
- * `Instrument Sans` porte le CHROME (navigation, contrôles, métadonnées).
- * Il remplace Inter pour deux raisons mesurables : une hauteur d'x plus
- * grande (0,74 em contre 0,727), donc un texte qui paraît plus gros à taille
- * égale — et une construction moins neutre, qui sort l'interface du gris des
- * outils de productivité sans jamais gêner la lecture d'une étiquette.
+ * L'interface est composée en SF Pro Rounded sur les appareils Apple
+ * (`ui-rounded`, en tête de `--font-sans`) : c'est la référence de l'élève,
+ * et elle est déjà installée — rien à télécharger. `Nunito` n'est que le
+ * RELAIS pour les autres systèmes : ronde et charnue comme elle, variable
+ * (un seul fichier de 400 à 900), chiffres tabulaires. Exposée sous
+ * `--font-nunito`, jamais appliquée directement : c'est la pile de
+ * `--font-sans` qui décide.
  *
- * `Fraunces` porte le CONTENU (titres, énoncés, corrections, grands nombres).
- * C'est un serif à TAILLE OPTIQUE VARIABLE : l'axe `opsz` change réellement
- * le dessin de la lettre selon le corps. Une seule famille tient donc les
- * deux registres que la page demande — un titre à 48 px très contrasté,
- * presque d'affiche, et un énoncé à 19 px robuste et calme — là où il aurait
- * fallu deux fichiers de police. Seul cet axe est chargé —
- * voir la note sur les axes écartés juste en dessous.
- *
- * Les deux familles sont variables : un seul fichier par famille couvre
- * toutes les graisses réellement utilisées.
+ * `Newsreader` ne sert qu'aux textes de LECTURE (`.t-read`) et aux grands
+ * titres en serif. Seul l'axe `opsz` est chargé. (Il accompagnait aussi les
+ * formules KaTeX des énoncés de l'ancienne banque d'exercices, retirée avec
+ * KaTeX lui-même.)
  */
-const sans = Instrument_Sans({
+const sans = Nunito({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-sans",
+  variable: "--font-nunito",
 });
 
-const serif = Fraunces({
+const serif = Newsreader({
   subsets: ["latin"],
   display: "swap",
   style: ["normal", "italic"],
-  // SEUL `opsz` est chargé, et c'est l'axe qui justifie tout le choix (voir
-  // ci-dessus). Les axes décoratifs de Fraunces ont été écartés après mesure
-  // au build : `SOFT` (arrondi des terminaisons) doublait à lui seul le poids
-  // des fichiers de police — 460 ko contre 250 ko — pour un adoucissement
-  // qu'on ne distingue qu'en comparant deux captures côte à côte. `WONK`
-  // (formes alternatives fantaisistes) n'a jamais été chargé : de la
-  // personnalité, pas des pitreries dans un énoncé de mathématiques.
   axes: ["opsz"],
   variable: "--font-serif",
 });
@@ -76,7 +88,7 @@ const serif = Fraunces({
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://taekdhub.vercel.app";
 const TITLE = "TaekdHub — Ton système de travail en prépa";
 const DESCRIPTION =
-  "TaekdHub regarde ce que tu réussis, ce que tu rates et ce que tu n'obtiens qu'avec des indices, puis te dit quoi travailler maintenant — et pourquoi.";
+  "TaekdHub suit ton travail de prépa : ton temps par matière, tes échéances, tes notes, tes révisions et tes erreurs — tout reste dans ton navigateur.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -98,19 +110,16 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "TaekdHub",
   },
 };
 
 export const viewport: Viewport = {
   // Doit correspondre à `--canvas-rgb` (app/globals.css) : c'est la couleur
-  // que le navigateur mobile étend derrière la barre d'état. Un écart, même
-  // faible, dessine une bande au-dessus de la page.
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf9f6" },
-    { media: "(prefers-color-scheme: dark)", color: "#12110f" },
-  ],
+  // que le navigateur mobile étend derrière la barre d'état. Le thème étant
+  // clair PAR DÉFAUT quel que soit le système, une seule valeur : le fond clair.
+  themeColor: "#f5f6fa",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -121,10 +130,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
      *
      * Le script anti-flash ci-dessous pose `data-theme` sur cette balise
      * AVANT que React n'hydrate, précisément pour éviter l'éclair de thème
-     * clair au chargement. React compare alors un `<html>` serveur sans
+     * au chargement. React compare alors un `<html>` serveur sans
      * `data-theme` à un `<html>` client qui en porte un, et signale une
-     * divergence d'hydratation dans la console à chaque page, en thème
-     * sombre. La divergence est voulue et sans conséquence : l'attribut est
+     * divergence d'hydratation dans la console à chaque page. La divergence est voulue et sans conséquence : l'attribut est
      * écrit par le script, jamais par le rendu. On la tait ici, à la portée
      * la plus étroite possible — aucun contenu rendu par React n'est couvert
      * par cette exemption.
@@ -136,6 +144,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         {children}
         <ThemeSync />
+        <RevealObserver />
         <ServiceWorker />
       </body>
     </html>

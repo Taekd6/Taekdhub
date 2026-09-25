@@ -5,36 +5,25 @@ import { Stat, StatRow } from "@/components/ui/stat";
 import { computeTrackingOverview } from "@/lib/tracking";
 import { describeConfidence } from "@/lib/analytics/trend";
 import { formatSpan } from "@/lib/utils";
-import type { Chapter } from "@/lib/storage";
-import type { Exercise, WorkSession } from "@/lib/supabase/types";
+import type { WorkSession } from "@/lib/supabase/types";
 
 const ARROWS = { hausse: "↑", baisse: "↓", stable: "→", insuffisant: "—" } as const;
 
 /**
- * VUE D'ENSEMBLE — cinq chiffres, délibérément.
+ * VUE D'ENSEMBLE — quatre chiffres, délibérément.
  *
  * La tentation d'un écran d'évolution est d'aligner quinze indicateurs ; on
  * n'en retient que ce qui répond à une question qu'on se pose vraiment en
  * ouvrant la page : combien cette semaine, à quel rythme, avec quelle
- * régularité, sur quel contenu, et dans quel sens ça va.
+ * régularité, et dans quel sens ça va. (« Chapitres abordés » comptait les
+ * chapitres de l'ancienne banque d'exercices, retirée.)
  *
  * Le dénominateur des jours travaillés est le nombre de jours ÉCOULÉS, pas 7 :
  * afficher « 3 / 7 » un mardi est un reproche adressé à des jours qui ne sont
  * pas arrivés.
  */
-export function EvolutionOverview({
-  sessions,
-  exercises,
-  chapters,
-}: {
-  sessions: WorkSession[];
-  exercises: Exercise[];
-  chapters: Chapter[];
-}) {
-  const overview = useMemo(
-    () => computeTrackingOverview(sessions, exercises, chapters, new Date()),
-    [sessions, exercises, chapters]
-  );
+export function EvolutionOverview({ sessions }: { sessions: WorkSession[] }) {
+  const overview = useMemo(() => computeTrackingOverview(sessions, new Date()), [sessions]);
 
   return (
     <StatRow>
@@ -50,7 +39,6 @@ export function EvolutionOverview({
         detail={overview.streak > 1 ? `cette semaine · ${overview.streak} d'affilée` : "cette semaine"}
         size="sm"
       />
-      <Stat label="Chapitres abordés" value={overview.chaptersWorked} size="sm" />
       <Stat
         label="Rythme"
         value={ARROWS[overview.trend.direction]}

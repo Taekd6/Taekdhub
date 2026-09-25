@@ -1,172 +1,24 @@
-"use client";
-
-import { ChevronDown } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 
 /**
- * SYSTÈME DE MISE EN PAGE.
+ * SYSTÈME DE MISE EN PAGE — deux compositions, choisies selon la QUESTION
+ * que l'écran doit résoudre (un écran n'écrit pas sa propre grille : deux
+ * gabarits écrits sur place finissent par ne plus s'aligner).
  *
- * Ce qui manquait jusqu'ici : TOUS les écrans étaient la même colonne
- * centrée, un en-tête en haut puis des sections empilées de haut en bas. On
- * pouvait changer les polices, les couleurs et les composants — la structure
- * restait identique d'un écran à l'autre, et surtout identique à ce qu'elle
- * avait toujours été. Un empilement vertical impose deux choses fausses :
- *
- *   — il n'existe qu'UN axe de lecture, donc toute information secondaire
- *     coûte un défilement à l'information principale ;
- *   — sur un écran de 1440 px, la moitié droite est vide pendant qu'on fait
- *     défiler la moitié gauche.
- *
- * Trois compositions, choisies selon la QUESTION que l'écran doit résoudre :
- *
- *   `Workbench`   un volet de navigation persistant + une zone de travail.
- *                 Pour explorer un ensemble (la banque d'exercices) : on doit
- *                 pouvoir changer de chapitre sans perdre sa liste.
- *
- *   `Split`       une colonne principale + un rail secondaire.
- *                 Pour décider (l'accueil) : « ce que je fais » à gauche,
- *                 « où j'en suis » à droite, simultanément.
+ *   `Split`       une colonne principale + un RAIL à droite sur grand
+ *                 écran. Pour décider : « ce que je fais » à gauche, « où
+ *                 j'en suis » à droite, simultanément (Échéances). Depuis la
+ *                 refonte « Revolut clair », le rail est une TUILE blanche
+ *                 collante (`.surface`), plus un volet séparé par un filet.
  *
  *   `Stack`       une colonne unique bornée à la mesure de lecture.
- *                 Pour lire ou saisir (réglages, un formulaire).
+ *                 Pour lire ou saisir (la séance de révision).
  *
- * En dessous de `lg`, les trois se replient sur une colonne — mais dans un
- * ORDRE choisi par l'appelant, pas dans l'ordre du DOM.
+ * Le titre d'écran, lui, est `PageHero` (components/ui/page-hero.tsx),
+ * posé DANS la colonne principale. En dessous de `lg`, tout se replie sur
+ * une colonne, le rail en dernier.
  */
 
-/** Bandeau d'écran : le titre vit DANS la composition, pas au-dessus d'elle. */
-export function PageBar({
-  title,
-  meta,
-  lede,
-  actions,
-  rank = "display",
-  className,
-}: {
-  title: React.ReactNode;
-  /** Une ligne de DONNÉES : un compte, une date, un fil d'Ariane. Composée en sans-serif, comme le reste du chrome. */
-  meta?: React.ReactNode;
-  /**
-   * Une PHRASE, qui explique ce que fait l'écran. Composée en italique serif
-   * (`t-lede`) : c'est de la prose, pas une légende de tableau, et la
-   * distinguer typographiquement du chrome évite qu'elle se lise comme une
-   * métadonnée de plus.
-   */
-  lede?: React.ReactNode;
-  actions?: React.ReactNode;
-  /**
-   * `display` (défaut) — le titre EST la question de l'écran, il est composé
-   * en grand.
-   *
-   * `quiet` — le titre n'est qu'une civilité : l'écran a déjà un élément
-   * dominant plus bas, et deux `t-display` empilés ne désignent plus rien.
-   * C'est le cas de l'accueil, où la question n'est pas « qui es-tu » mais
-   * « que fais-tu maintenant » : la salutation passe en titre de section et
-   * sa métadonnée se range sur la même ligne, ce qui rend au bloc « La
-   * séance » les ~120 px qu'il perdait — sur un téléphone, exactement de quoi
-   * ramener le bouton « Commencer » au-dessus de la ligne de flottaison.
-   */
-  rank?: "display" | "quiet";
-  className?: string;
-}) {
-  const quiet = rank === "quiet";
-
-  return (
-    <div className={cn("flex flex-wrap items-end justify-between gap-x-6 gap-y-3", className)}>
-      <div className={cn("min-w-0", quiet && "flex flex-wrap items-baseline gap-x-3 gap-y-1")}>
-        <h1 className={quiet ? "t-heading" : "t-display"}>{title}</h1>
-        {meta && <div className={cn("t-meta", quiet ? "min-w-0" : "mt-2")}>{meta}</div>}
-        {lede && <p className="t-lede mt-2 max-w-[58ch]">{lede}</p>}
-      </div>
-      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
-    </div>
-  );
-}
-
-/**
- * VOLET + ZONE DE TRAVAIL.
- *
- * Le volet est COLLANT et défile indépendamment : on garde l'arborescence des
- * chapitres sous les yeux pendant qu'on parcourt trois cents exercices. C'est
- * la différence entre un site qu'on visite et un outil qu'on utilise.
- */
-export function Workbench({
-  pane,
-  children,
-  paneLabel,
-  paneSummary,
-  scopeKey,
-}: {
-  pane: React.ReactNode;
-  children: React.ReactNode;
-  /** Nomme le volet pour les lecteurs d'écran — « Navigation de la banque », par exemple. */
-  paneLabel: string;
-  /** Ce que le déclencheur mobile affiche : la sélection courante. */
-  paneSummary: React.ReactNode;
-  /**
-   * Identifie la sélection courante. Quand elle change, le volet mobile se
-   * referme tout seul — parce qu'on vient précisément de choisir, et que ce
-   * qu'on veut voir ensuite est le résultat, pas de nouveau la liste des
-   * choix. Passer par une clé plutôt que par un callback évite d'enfiler une
-   * fonction « fermer le volet » à travers tout le navigateur.
-   */
-  scopeKey: string;
-}) {
-  /*
-   * SUR MOBILE, LE VOLET EST REPLIÉ PAR DÉFAUT.
-   *
-   * Déplié, il plaçait 26 chapitres avant le premier exercice : il fallait
-   * traverser tout l'arbre pour atteindre le contenu, ce qui est exactement
-   * le défaut qu'un volet persistant est censé corriger sur grand écran.
-   * Replié, on arrive sur la liste, et l'arbre est à une frappe.
-   */
-  const [open, setOpen] = useState(false);
-  const previousScope = useRef(scopeKey);
-  useEffect(() => {
-    if (previousScope.current === scopeKey) return;
-    previousScope.current = scopeKey;
-    setOpen(false);
-  }, [scopeKey]);
-
-  return (
-    <div className="lg:grid lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:gap-9">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        className="row-hover mb-4 flex min-h-11 w-full items-center gap-2 rounded-lg border border-line px-3 text-left text-sm lg:hidden"
-      >
-        <span className="t-label shrink-0">Parcourir</span>
-        <span className="min-w-0 flex-1 truncate font-medium text-ink">{paneSummary}</span>
-        <ChevronDown size={15} className={cn("shrink-0 text-subtle transition-transform duration-150", open && "rotate-180")} />
-      </button>
-
-      <aside
-        aria-label={paneLabel}
-        className={cn(
-          "scrollbar-none",
-          open ? "mb-6 border-b border-line pb-5" : "hidden",
-          // À partir de `lg`, le volet est toujours là, collant et défilant
-          // indépendamment de la zone de travail.
-          "lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)] lg:mb-0 lg:block lg:max-h-[calc(100vh-var(--nav-h)-3rem)] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:pb-0 lg:pr-8"
-        )}
-      >
-        {pane}
-      </aside>
-
-      <div className="min-w-0">{children}</div>
-    </div>
-  );
-}
-
-/**
- * COLONNE PRINCIPALE + RAIL.
- *
- * Le rail passe SOUS le contenu principal en dessous de `lg` — jamais
- * au-dessus : sur un téléphone, la première chose à l'écran doit rester
- * l'action, pas les compteurs.
- */
 export function Split({
   children,
   rail,
@@ -177,11 +29,11 @@ export function Split({
   railLabel: string;
 }) {
   return (
-    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-12">
+    <div className="mx-auto max-w-[68rem] lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-10">
       <div className="min-w-0">{children}</div>
       <aside
         aria-label={railLabel}
-        className="mt-10 border-t border-line pt-8 lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)] lg:mt-0 lg:h-fit lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"
+        className="surface reveal mt-8 p-5 sm:p-6 lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)] lg:mt-0 lg:h-fit"
       >
         {rail}
       </aside>

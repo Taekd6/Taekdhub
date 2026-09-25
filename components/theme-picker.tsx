@@ -1,15 +1,11 @@
 "use client";
 
-import { Check, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
-import { Section } from "@/components/ui/section";
+import { Check, Monitor, Moon, Sun } from "lucide-react";
+import { Group, Row } from "@/components/ui/grouped";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { localData } from "@/lib/storage";
-import { ACCENT_PRESETS, DEFAULT_ACCENT, accentForegroundCss, applyAccent, applyThemeMode, THEME_MODES, type ThemeMode, hexToRgb } from "@/lib/theme";
+import { applyPalette, applyThemeMode, DEFAULT_PALETTE, PALETTES, THEME_MODES, type PaletteId, type ThemeMode } from "@/lib/theme";
 import { cn } from "@/lib/cn";
-
-function sameHex(a: string, b: string) {
-  return a.toLowerCase() === b.toLowerCase();
-}
 
 /** Icône + libellé par mode — ordre d'affichage volontaire (clair, sombre, système), voir lib/theme.ts#THEME_MODES. */
 const MODE_META: Record<ThemeMode, { label: string; icon: typeof Sun }> = {
@@ -18,26 +14,33 @@ const MODE_META: Record<ThemeMode, { label: string; icon: typeof Sun }> = {
   system: { label: "Système", icon: Monitor },
 };
 
+/**
+ * APPARENCE — deux réglages, et seulement deux.
+ *
+ *   MODE      clair / sombre / système, en sélecteur segmenté.
+ *   PALETTE   quatre PASTILLES EN DÉGRADÉ (Aurora, Sunset, Océan, Néon) : on
+ *             choisit une ambiance, pas une couleur. Chaque pastille montre
+ *             le dégradé de marque ET, en petit dessous, les deux premières
+ *             cartes qu'il colore — ce qu'on verra vraiment à l'accueil.
+ *
+ * Plus de sélecteur de couleur libre : une palette est un ensemble réglé à
+ * la main (encre lisible, boutons à 4,5:1, cartes accordées) qu'un hex
+ * isolé ne peut pas reconstituer.
+ */
 export function ThemePicker() {
   const { preferences, savePreferences, ready } = usePrepahubData();
-  const accent = ready && hexToRgb(preferences.accent) ? preferences.accent : DEFAULT_ACCENT;
-  const isPreset = ACCENT_PRESETS.some((preset) => sameHex(preset.hex, accent));
-  const mode = ready ? preferences.themeMode : "system";
+  const palette = ready ? preferences.palette : DEFAULT_PALETTE;
+  const mode = ready ? preferences.themeMode : "light";
 
   // `usePrepahubData` n'est pas un contexte partagé : chaque composant monté a
   // sa propre instance, et `preferences` n'est donc qu'un INSTANTANÉ pris au
-  // montage de celui-ci. Repartir de cet instantané pour sauvegarder écrasait
-  // silencieusement les réglages faits entre-temps ailleurs sur la page :
-  // choisir une couleur d'accent ici, puis changer l'objectif quotidien dans
-  // le formulaire juste au-dessus, et la couleur revenait à sa valeur
-  // précédente. On relit donc le disque au moment d'écrire, et on n'y modifie
-  // que le champ que ce composant possède réellement.
-  function choose(hex: string) {
-    // Applique la variable CSS directement ici (en plus de la persistance) :
-    // aucune autre instance ne "verrait" ce changement avant un rechargement —
-    // `applyAccent` agit sur le DOM, donc immédiatement visible partout.
-    applyAccent(hex);
-    savePreferences({ ...localData.preferences(), accent: hex });
+  // montage de celui-ci. On relit donc le disque au moment d'écrire, et on
+  // n'y modifie que le champ que ce composant possède réellement. Les
+  // variables CSS sont posées tout de suite sur `<html>` : aucune autre
+  // instance ne « verrait » le changement avant un rechargement.
+  function choose(id: PaletteId) {
+    applyPalette(id);
+    savePreferences({ ...localData.preferences(), palette: id });
   }
 
   function chooseMode(next: ThemeMode) {
@@ -46,16 +49,9 @@ export function ThemePicker() {
   }
 
   return (
-    <Section
-      variant="panel"
-      label="Apparence"
-      title="Comment TaekdHub s'affiche"
-      description="Le mode suit ton système par défaut ; la couleur d'accent s'applique instantanément à toute l'interface."
-      className="max-w-2xl"
-    >
-      <div>
-        <h3 className="t-subhead">Mode</h3>
-        <div className="mt-3 flex flex-wrap gap-2">
+    <Group title="Apparence" footer="Le dégradé des cartes, de la courbe et des boutons.">
+      <Row label="Mode" stack>
+        <div role="group" aria-label="Mode d'apparence" className="flex w-full items-center gap-0.5 rounded-full bg-inset p-1 sm:w-auto">
           {THEME_MODES.map((option) => {
             const meta = MODE_META[option];
             const Icon = meta.icon;
@@ -67,77 +63,63 @@ export function ThemePicker() {
                 onClick={() => chooseMode(option)}
                 aria-pressed={active}
                 className={cn(
-                  "flex min-h-9 items-center gap-2 rounded-lg border px-3.5 text-sm font-medium transition-colors max-lg:min-h-11",
-                  active ? "border-accent/40 bg-accent/10 text-accent" : "border-line text-muted hover:text-ink"
+                  "press flex min-h-9 flex-1 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold max-lg:min-h-11 sm:flex-none",
+                  active ? "chip-on" : "text-muted hover:text-ink"
                 )}
               >
-                <Icon size={15} /> {meta.label}
+                <Icon size={15} strokeWidth={2.2} aria-hidden /> {meta.label}
+              </button>
+            );
+          })}
+        </div>
+      </Row>
+
+      <div className="py-4 pr-4 sm:pr-5">
+        <p className="text-[0.9375rem] font-bold text-ink">Palette</p>
+        <div role="group" aria-label="Palette" className="mt-4 grid grid-cols-4 gap-3 sm:gap-4">
+          {PALETTES.map((option) => {
+            const active = option.id === palette;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => choose(option.id)}
+                aria-pressed={active}
+                aria-label={option.label}
+                className="bounce-press group flex min-w-0 flex-col items-center gap-2 rounded-2xl py-1"
+              >
+                <span
+                  className={cn(
+                    // Un DISQUE en dégradé, comme les boutons ronds : la
+                    // palette se choisit du doigt, pas dans une liste.
+                    "sheen relative grid aspect-square w-full max-w-[4.25rem] place-items-center overflow-hidden rounded-full ring-offset-[3px] ring-offset-[var(--surface-bg)]",
+                    active && "ring-[2.5px] ring-ink"
+                  )}
+                  style={{
+                    background: `linear-gradient(135deg, ${option.c1}, ${option.c2})`,
+                    boxShadow: `0 10px 22px -10px ${option.c1}`,
+                  }}
+                >
+                  {/* Les deux premières cartes de la palette, en petit. */}
+                  <span aria-hidden className="absolute bottom-[18%] right-[14%] flex -space-x-1">
+                    {option.cards.slice(0, 2).map(([a, b]) => (
+                      <span key={a} className="h-3 w-3 rounded-full ring-2 ring-white/70" style={{ background: `linear-gradient(135deg, ${a}, ${b})` }} />
+                    ))}
+                  </span>
+                  {active && (
+                    <span className="pop grid h-7 w-7 place-items-center rounded-full bg-white/90 text-[#0b0b14]">
+                      <Check size={16} strokeWidth={3.2} aria-hidden />
+                    </span>
+                  )}
+                </span>
+                <span aria-hidden className={cn("text-2xs font-bold", active ? "text-ink" : "text-subtle")}>
+                  {option.label}
+                </span>
               </button>
             );
           })}
         </div>
       </div>
-
-      <div className="mt-7 border-t border-line pt-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="t-subhead">Couleur principale</h3>
-            <p className="t-meta mt-1.5 max-w-[52ch]">
-              Le texte posé sur l&apos;accent reste toujours lisible : la teinte est assombrie automatiquement quand le
-              fond est clair.
-            </p>
-          </div>
-          {accent !== DEFAULT_ACCENT && (
-            <button
-              type="button"
-              onClick={() => choose(DEFAULT_ACCENT)}
-              className="row-hover flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-subtle hover:text-ink max-lg:min-h-11"
-            >
-              <RotateCcw size={13} /> Réinitialiser
-            </button>
-          )}
-        </div>
-
-        <div className="mt-5 flex flex-wrap gap-3">
-        {ACCENT_PRESETS.map((preset) => {
-          const active = sameHex(preset.hex, accent);
-          return (
-            <button
-              key={preset.id}
-              type="button"
-              onClick={() => choose(preset.hex)}
-              aria-pressed={active}
-              title={preset.label}
-              className="focus-ring flex flex-col items-center gap-1.5 rounded-lg p-1"
-            >
-              <span
-                className="grid h-10 w-10 place-items-center rounded-xl border-2 transition-transform hover:scale-105"
-                style={{ background: preset.hex, borderColor: active ? "rgba(255,255,255,0.55)" : "transparent" }}
-              >
-                {active && <Check size={16} style={{ color: accentForegroundCss(preset.hex) }} />}
-              </span>
-              <span className={cn("text-2xs", active ? "text-ink" : "text-muted")}>{preset.label}</span>
-            </button>
-          );
-        })}
-
-        <label className="focus-ring flex flex-col items-center gap-1.5 rounded-lg p-1">
-          <span
-            className="grid h-10 w-10 cursor-pointer place-items-center overflow-hidden rounded-xl border-2"
-            style={{ borderColor: !isPreset ? "rgba(255,255,255,0.55)" : "transparent" }}
-          >
-            <input
-              type="color"
-              value={accent}
-              onChange={(event) => choose(event.target.value)}
-              aria-label="Couleur d'accent personnalisée"
-              className="h-12 w-12 cursor-pointer border-none bg-transparent p-0"
-            />
-          </span>
-          <span className={cn("text-2xs", !isPreset ? "text-ink" : "text-muted")}>Personnalisé</span>
-        </label>
-        </div>
-      </div>
-    </Section>
+    </Group>
   );
 }

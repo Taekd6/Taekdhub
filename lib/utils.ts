@@ -1,10 +1,10 @@
 /**
  * Conversions de durées — point d'entrée unique pour éviter les `/ 60` ou
  * `* 60` implicites dispersés dans les composants (voir lib/supabase/types.ts
- * pour le rappel des unités : WorkSession = secondes, Exercise = minutes).
+ * pour le rappel des unités : WorkSession = secondes, estimations = minutes).
  */
 
-/** Arrondit des secondes à la minute inférieure (perte du reste) — utilisé notamment par `minutesSpentOnExercise` (lib/study.ts) pour dériver le temps passé sur un exercice à partir de ses `WorkSession`. */
+/** Arrondit des secondes à la minute inférieure (perte du reste) — utilisé notamment par l'objectif du jour (lib/daily-objective.ts). */
 export function secondsToWholeMinutes(seconds: number) {
   return Math.floor(seconds / 60);
 }
@@ -16,9 +16,8 @@ export function minutesToSeconds(minutes: number) {
 /**
  * CHRONOMÈTRE — un compteur qui TOURNE, lu en `m:ss`.
  *
- * Réservé aux deux endroits où une durée s'écoule sous les yeux : le
- * chronomètre (components/timer.tsx) et le lecteur d'exercice
- * (components/exercises/focus-view.tsx). Pour toute durée déjà ÉCOULÉE —
+ * Réservé à l'endroit où une durée s'écoule sous les yeux : le chronomètre
+ * (components/timer.tsx). Pour toute durée déjà ÉCOULÉE —
  * un total de semaine, la durée d'une séance passée, un cumul par matière —
  * c'est `formatSpan` qu'il faut, jamais celle-ci : voir la note qui l'ouvre.
  */
@@ -57,37 +56,7 @@ export function formatSpan(seconds: number): string {
   return m ? `${h} h ${String(m).padStart(2, "0")}` : `${h} h`;
 }
 
-/** Même forme que `formatSpan`, à partir de MINUTES (unité d'`Exercise.estimated_minutes`). */
+/** Même forme que `formatSpan`, à partir de MINUTES (unité des estimations, des budgets et des objectifs). */
 export function formatMinutesSpan(minutes: number): string {
   return formatSpan(minutesToSeconds(minutes));
-}
-
-export function formatMinutes(minutes: number) {
-  return formatDuration(minutesToSeconds(minutes));
-}
-
-/**
- * Forme canonique d'un libellé (titre d'exercice, libellé de chapitre) pour
- * le dédoublonnage et le rapprochement banque ↔ local.
- *
- * `trim().toLowerCase()` ne suffisait pas : deux fiches rigoureusement
- * identiques passaient au travers dès que l'une écrivait l'apostrophe typo-
- * graphique U+2019 et l'autre l'apostrophe ASCII U+0027 — cas réel,
- * « Déterminant d'une matrice tridiagonale », entrée deux fois dans la banque.
- * Même effet avec une espace insécable ou une double espace. Et le problème ne
- * s'arrête pas au doublon : `reconcileSeedBank` utilise la MÊME clé pour
- * retrouver la fiche locale correspondante — une apostrophe changée d'un
- * dataset à l'autre détachait la progression de l'élève de sa fiche et
- * réinsérait la version banque à côté, à zéro tentative.
- *
- * NFKC unifie les variantes de compatibilité (dont l'espace insécable), la
- * classe explicite couvre les apostrophes/accents que NFKC laisse distincts.
- */
-export function canonicalLabel(value: string): string {
-  return value
-    .normalize("NFKC")
-    .replace(/[\u2018\u2019\u201B\u02BC\u00B4\u0060]/g, "'")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
 }

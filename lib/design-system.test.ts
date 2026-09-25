@@ -250,7 +250,7 @@ describe("les animations restent en CSS", () => {
 
 describe("la mise en page passe par le système de composition", () => {
   /**
-   * `Workbench`, `Split` et `Stack` (components/ui/layout.tsx) existent pour
+   * `Split` et `Stack` (components/ui/layout.tsx) existent pour
    * qu'un écran choisisse une COMPOSITION plutôt que d'écrire sa propre
    * grille. Sans cette règle, on retrouve `lg:grid-cols-[280px_1fr]` dans un
    * écran et `lg:grid-cols-[15rem_1fr]` dans le suivant, pour le même rôle —
@@ -262,46 +262,20 @@ describe("la mise en page passe par le système de composition", () => {
       .map((entry) => `${entry.file}: ${entry.value}`);
     expect(
       offenders,
-      "Utiliser Workbench / Split / Stack (components/ui/layout.tsx) plutôt qu'une grille écrite sur place."
+      "Utiliser Split / Stack (components/ui/layout.tsx) plutôt qu'une grille écrite sur place."
     ).toEqual([]);
   });
 
-  it("les trois compositions sont réellement utilisées", () => {
+  it("les compositions sont réellement utilisées", () => {
     const sources = allSources();
-    for (const name of ["Workbench", "Split", "Stack"]) {
+    // `Workbench` (volet collant + zone de travail) n'avait qu'un usage : le
+    // navigateur de l'ancienne banque d'exercices. Il est parti avec elle, et
+    // ne doit pas revenir comme code mort.
+    const layout = readFileSync(path.resolve(process.cwd(), "components/ui/layout.tsx"), "utf8");
+    expect(layout).not.toMatch(/export function Workbench/);
+    for (const name of ["Split", "Stack"]) {
       const used = sources.filter(({ file, content }) => file !== "components/ui/layout.tsx" && content.includes(`<${name}`));
       expect(used.length, `Composition inutilisée : ${name}`).toBeGreaterThan(0);
     }
-  });
-});
-
-describe("text-wrap: pretty ne s'applique jamais à une formule centrée", () => {
-  /**
-   * RÉGRESSION MESURÉE AU NAVIGATEUR — pas une précaution théorique.
-   *
-   * `text-wrap: pretty` sur le bloc de lecture (`.t-read`, `.t-read-quiet`)
-   * fait PLANTER le moteur de rendu de Chromium dès que ce bloc contient une
-   * formule centrée (`.katex-display`) : onglet mort, page blanche, aucune
-   * erreur JavaScript. 85 exercices actifs de la banque en contiennent une —
-   * ils étaient tous inouvrables.
-   *
-   * Le correctif tient en deux moitiés qui n'ont de sens qu'ensemble :
-   * `RichMath` marque le bloc qui contient une formule centrée, la feuille de
-   * style y rétablit la césure ordinaire. Supprimer l'une des deux ramène le
-   * plantage sans qu'aucun test unitaire ne le voie — d'où ce garde-fou.
-   */
-  it("la feuille de style neutralise `pretty` sur les blocs marqués", () => {
-    const css = readFileSync(path.resolve(process.cwd(), "app/globals.css"), "utf8");
-    if (!css.includes("text-wrap: pretty")) return;
-    expect(css, "app/globals.css doit rétablir `text-wrap: wrap` sur [data-display-math]").toMatch(
-      /\[data-display-math\][\s\S]{0,200}text-wrap:\s*wrap/
-    );
-  });
-
-  it("RichMath marque les blocs contenant une formule centrée", () => {
-    const source = readFileSync(path.resolve(process.cwd(), "components/rich-math.tsx"), "utf8");
-    expect(source, "components/rich-math.tsx doit poser `data-display-math` sur son conteneur").toContain(
-      "data-display-math"
-    );
   });
 });

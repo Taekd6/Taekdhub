@@ -1,56 +1,57 @@
 "use client";
 
-import { Select } from "@/components/ui/input";
+import { FilterPills } from "@/components/ui/pills";
+import { SegmentedControl } from "@/components/ui/segmented";
 import { historyPeriodOptions, type HistoryFilters as HistoryFiltersState } from "@/lib/history";
-import { subjects } from "@/lib/study";
 import type { Subject } from "@/lib/supabase/types";
 
-/** Purement présentationnel — toute la logique de filtrage vit dans lib/history.ts. */
+const SHORT_PERIOD: Record<HistoryFiltersState["period"], string> = {
+  week: "Cette semaine",
+  month: "Ce mois-ci",
+  all: "Tout",
+};
+
+/**
+ * Purement présentationnel — toute la logique de filtrage vit dans lib/history.ts.
+ *
+ * REFONTE « APPLE » : deux menus déroulants (« Toutes », « Tout ») sont
+ * devenus une PÉRIODE en sélecteur segmenté (trois options courtes, toujours
+ * visibles) et des PASTILLES de matière. Un menu cache ses options derrière
+ * un clic ; les pastilles montrent d'emblée ce qu'on peut filtrer, et combien
+ * de séances chaque matière compte — c'est ce qui donne envie de cliquer.
+ * Seules les matières qui ont au moins une séance sont proposées.
+ */
 export function HistoryFilters({
   filters,
   onChange,
+  subjects,
 }: {
   filters: HistoryFiltersState;
   onChange: (patch: Partial<HistoryFiltersState>) => void;
+  /** Matières proposées, avec leur nombre de séances sur la période choisie. */
+  subjects: { subject: Subject; count: number }[];
 }) {
-  /*
-   * DEUX MENUS DE MÊME LARGEUR, CÔTE À CÔTE.
-   *
-   * Ils étaient dimensionnés sur leur contenu (`w-auto min-w-[170px]`) : sur
-   * un téléphone, le premier passait à la ligne et le second s'affichait plus
-   * étroit, en escalier. Deux contrôles de même rang doivent avoir la même
-   * chasse — `flex-1` sur une base commune le garantit à toutes les largeurs.
-   *
-   * Et chacun se nomme : « Filtrer » en tête de rangée ne qualifiait que le
-   * premier menu, le second annonçait « Tout » sans dire tout QUOI. Les deux
-   * portent désormais un `aria-label` explicite — jusqu'ici, un lecteur
-   * d'écran ne lisait que « Toutes » et « Tout », deux boutons sans objet.
-   */
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="t-label shrink-0">Filtrer</span>
-      <Select
-        aria-label="Filtrer par matière"
-        value={filters.subject}
-        onChange={(event) => onChange({ subject: event.target.value as Subject | "Toutes" })}
-        wrapperClassName="min-w-[8.5rem] flex-1 sm:w-auto sm:flex-none sm:min-w-[10.5rem]"
-      >
-        {["Toutes", ...subjects].map((value) => (
-          <option key={value}>{value}</option>
-        ))}
-      </Select>
-      <Select
-        aria-label="Filtrer par période"
+    <div className="space-y-3">
+      <SegmentedControl
+        ariaLabel="Filtrer par période"
         value={filters.period}
-        onChange={(event) => onChange({ period: event.target.value as HistoryFiltersState["period"] })}
-        wrapperClassName="min-w-[8.5rem] flex-1 sm:w-auto sm:flex-none sm:min-w-[10.5rem]"
-      >
-        {historyPeriodOptions.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </Select>
+        onChange={(value) => onChange({ period: value })}
+        // Libellés courts : « Semaine en cours » se coupait en « Semaine en
+        // co… » dans un tiers de 390 px. Le libellé long reste celui de lib/history.ts.
+        options={historyPeriodOptions.map((option) => ({ value: option.value, label: SHORT_PERIOD[option.value] }))}
+      />
+      {subjects.length > 1 && (
+        <FilterPills
+          ariaLabel="Filtrer par matière"
+          value={filters.subject}
+          onChange={(value) => onChange({ subject: value })}
+          options={[
+            { value: "Toutes" as const, label: "Toutes les matières" },
+            ...subjects.map((entry) => ({ value: entry.subject, label: entry.subject, count: entry.count })),
+          ]}
+        />
+      )}
     </div>
   );
 }

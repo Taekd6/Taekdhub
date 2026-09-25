@@ -1,22 +1,31 @@
-import { exerciseStatuses, exerciseTypes, subjects } from "@/lib/study";
-import { DEFAULT_ACCENT, DEFAULT_THEME_MODE, THEME_MODES, hexToRgb, type ThemeMode } from "@/lib/theme";
-import type { AttemptResult, Difficulty, Exercise, ExerciseLevel, ExerciseStatus, ExerciseType, Filiere, LicenseStatus, Mastery, ProgrammeLevel, Provenance, Subject, WorkSession } from "@/lib/supabase/types";
+import { subjects } from "@/lib/study";
+import { SRS_LADDER } from "@/lib/spaced-repetition";
+import { FSRS_RATINGS, normalizeFsrsMemory, replayMemory, type FsrsMemory, type FsrsRating, type FsrsState } from "@/lib/fsrs";
+import { DEFAULT_PALETTE, DEFAULT_THEME_MODE, THEME_MODES, resolvePaletteId, type PaletteId, type ThemeMode } from "@/lib/theme";
+import type { AttemptResult, Subject, WorkSession } from "@/lib/supabase/types";
 
 const ATTEMPT_RESULTS: readonly AttemptResult[] = ["réussi", "partiel", "échoué"];
 
 const sessionsKey = "prepahub:sessions";
-const exercisesKey = "prepahub:exercises";
 const preferencesKey = "prepahub:preferences";
-const chaptersKey = "prepahub:chapters";
 const lastBackupKey = "prepahub:last-backup";
 const weekSnapshotsKey = "prepahub:week-snapshots";
 const workItemsKey = "prepahub:work-items";
 const gradesKey = "prepahub:grades";
 const dayPlansKey = "prepahub:day-plans";
+const reviewItemsKey = "prepahub:reviewItems";
+/* ── Carnet d'erreurs — voir `ErrorEntry` ── */
+const errorsKey = "prepahub:errors";
+/* ── Check-in du soir — voir `DailyCheckin` ── */
+const checkinsKey = "prepahub:checkins";
+/* ── Mémoire des chapitres (FSRS) — voir `ChapterMemory` ── */
+const chapterMemoryKey = "prepahub:chapterMemory";
 
 /**
- * `accent` (Sprint identité visuelle) : hex de la couleur d'accent choisie — voir lib/theme.ts.
- * `themeMode` (Sprint personnalisation) : clair/sombre/système — voir lib/theme.ts#ThemeMode, indépendant de `accent`.
+ * `palette` (refonte « Revolut clair ») : identifiant de la palette en dégradé — voir lib/theme.ts#PALETTES.
+ *   Remplace l'ancien `accent` (un hex) : une préférence qui ne porte que lui est MIGRÉE vers la palette
+ *   de la même famille de teinte (lib/theme.ts#resolvePaletteId), puis l'ancien champ est abandonné.
+ * `themeMode` (Sprint personnalisation) : clair/sombre/système — voir lib/theme.ts#ThemeMode, indépendant de `palette`.
  * `weeklyGoalMinutes` (Sprint Plan de travail) : objectif hebdomadaire, indépendant de `dailyGoalMinutes`
  * (voir lib/week.ts#computeWeeklySummary) — alimente le Dashboard ("Cette semaine") et les statistiques.
  * Absents d'une préférence enregistrée avant leur sprint respectif : retombent sur `defaults` via le
@@ -27,7 +36,7 @@ export type Preferences = {
   dailyGoalMinutes: number;
   weeklyGoalMinutes: number;
   contestDate: string;
-  accent: string;
+  palette: PaletteId;
   themeMode: ThemeMode;
   /**
    * CAPACITÉ DÉCLARÉE de travail personnel, en minutes, du lundi (index 0) au
@@ -66,6 +75,50 @@ export type Preferences = {
    * lib/capacity.ts#plannableMinutes.
    */
   planningMarginPercent: number;
+  /**
+   * BUDGET HEBDOMADAIRE PAR MATIÈRE, en minutes par semaine (lundi → dimanche).
+   *
+   * Existe parce que l'objectif hebdomadaire global (`weeklyGoalMinutes`) ne
+   * dit rien de la RÉPARTITION : cinq heures de maths et zéro minute
+   * d'anglais le remplissent aussi bien que l'inverse. Or c'est justement la
+   * répartition que l'élève s'est fixée (« Anki 30 min par jour, français
+   * 4 h, info 1 h 30 le week-end + 1 h en semaine ») et qu'aucun écran ne
+   * lui permettait de vérifier.
+   *
+   * Toujours COMPLET après normalisation (une entrée par matière de
+   * lib/study.ts#subjects) : les consommateurs n'ont jamais à se demander
+   * si une clé manque. `0` veut dire « pas de budget pour cette matière » —
+   * elle est alors simplement absente du suivi (voir lib/subject-targets.ts),
+   * jamais affichée comme « 0 % ».
+   *
+   * Un OBJECTIF, pas une capacité : même distinction que `dailyGoalMinutes`
+   * face à `capacityByWeekday`. Ce budget ne réserve rien dans le planning.
+   */
+  weeklySubjectTargets: Record<Subject, number>;
+  /* ── Premier lancement (lib/onboarding.ts) ── */
+  /**
+   * Horodatage ISO du moment où l'élève a TERMINÉ l'accueil guidé
+   * (app/(app)/bienvenue/page.tsx), ou `null` s'il ne l'a jamais fait.
+   *
+   * `null` ne veut PAS dire « à envoyer sur /bienvenue » : une préférence
+   * enregistrée avant ce champ le reçoit aussi, alors que son propriétaire
+   * travaille avec TaekdHub depuis des semaines. La décision appartient à
+   * lib/onboarding.ts#shouldOnboard, qui regarde aussi les données déjà
+   * saisies et les réglages déjà personnalisés.
+   *
+   * Voyage dans la sauvegarde avec le reste des préférences : restaurer sur
+   * un nouvel appareil ne redemande pas une configuration déjà faite.
+   */
+  onboardingCompletedAt: string | null;
+  /* ── fin premier lancement ── */
+  /*
+   * `subjectPalette` / `subjectColors` (palette et surcharges de couleur par
+   * matière, refonte « Nuit ») n'existent plus : les matières n'ont plus de
+   * couleur (lib/subject-colors.ts). Une préférence ou une sauvegarde qui
+   * les porte encore est lue sans erreur, et les deux clés sont
+   * simplement abandonnées — `normalizePreferences` reconstruit l'objet
+   * champ par champ.
+   */
 };
 
 /**
@@ -83,6 +136,32 @@ export const DEFAULT_PLANNING_MARGIN_PERCENT = 20;
 export const MAX_PLANNING_MARGIN_PERCENT = 50;
 /** Plafond par jour — 16 h. Au-delà, c'est une saisie erronée, pas une journée de travail. */
 export const MAX_DAILY_CAPACITY_MINUTES = 960;
+/**
+ * Budgets hebdomadaires par matière, en minutes — VALEURS DE DÉPART, tirées
+ * du plan que l'élève s'est fixé, et modifiables dans Réglages :
+ *
+ *   — Informatique : 1 h 30 le week-end + 1 h en semaine = 2 h 30, partagées
+ *     à parts égales entre le tronc commun et la spécialité (75 + 75). Deux
+ *     matières distinctes dans lib/study.ts, donc deux budgets : un seul
+ *     budget « informatique » masquerait qu'une des deux est à l'abandon.
+ *   — Anglais : 30 à 40 min par jour (Anki dans les transports) ≈ 4 h.
+ *   — Français : environ 4 h.
+ *   — Maths 8 h, physique 6 h : cours en semaine, exercices le week-end. Le
+ *     plan ne donnait pas de chiffre ; ce sont des ordres de grandeur à
+ *     corriger, pas une prescription.
+ *   — Chimie : 0, donc pas suivie tant que l'élève ne le décide pas.
+ */
+export const DEFAULT_WEEKLY_SUBJECT_TARGETS: Record<Subject, number> = {
+  Mathématiques: 480,
+  Physique: 360,
+  Chimie: 0,
+  "Informatique TC": 75,
+  "Informatique Spé": 75,
+  Français: 240,
+  Anglais: 240,
+};
+/** Plafond par matière — 50 h par semaine. Au-delà, c'est une faute de frappe (un zéro de trop), pas un budget. */
+export const MAX_WEEKLY_SUBJECT_TARGET_MINUTES = 3000;
 // `dailyGoalMinutes: 60` correspond exactement au plus haut des trois préréglages du
 // Dashboard/Réglages (PLAN_DURATION_PRESETS = [30, 45, 60], lib/plan.ts) : un premier
 // objectif ambitieux mais tenable, jamais un chiffre hors de tout préréglage cliquable
@@ -94,31 +173,18 @@ const defaults: Preferences = {
   dailyGoalMinutes: 60,
   weeklyGoalMinutes: 300,
   contestDate: "",
-  accent: DEFAULT_ACCENT,
+  palette: DEFAULT_PALETTE,
   themeMode: DEFAULT_THEME_MODE,
   capacityByWeekday: DEFAULT_CAPACITY_BY_WEEKDAY,
   planningMarginPercent: DEFAULT_PLANNING_MARGIN_PERCENT,
+  weeklySubjectTargets: DEFAULT_WEEKLY_SUBJECT_TARGETS,
+  onboardingCompletedAt: null,
 };
-
-/**
- * Chapitre/thème (Sprint 3D) — créé et géré par l'utilisateur, jamais
- * pré-rempli (voir lib/chapters.ts). Pas de miroir Supabase : comme
- * `Preferences`, ce concept n'existe qu'en local pour l'instant.
- */
-export type Chapter = { id: string; subject: Subject; label: string };
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
 export interface WeekSnapshotSubjectTime {
   subject: Subject;
   seconds: number;
-}
-
-/** Progression d'une matière au moment où la semaine a été figée — mêmes champs que `SubjectProgress` (lib/progress.ts), dupliqués ici en valeur (pas en référence) pour que le snapshot reste correct même si les règles de calcul évoluent plus tard. */
-export interface WeekSnapshotSubjectProgress {
-  subject: Subject;
-  total: number;
-  mastered: number;
-  completionRate: number;
 }
 
 /**
@@ -129,11 +195,11 @@ export interface WeekSnapshotSubjectProgress {
  * `weekStart` (lundi 00:00 ISO, voir lib/week.ts#startOfWeek) sert
  * d'identifiant unique — c'est la clé de dédoublonnage.
  *
- * Approximation assumée : `activeCount`/`masteredCount`/`completionRate`/
- * `bySubjectProgress` reflètent l'état de la banque au moment de la capture
- * (`capturedAt`), pas exactement à minuit le dimanche soir — la maîtrise
- * n'étant pas elle-même historisée, c'est la meilleure donnée honnête
- * disponible sans l'inventer.
+ * Ne fige que du TEMPS. Les instantanés capturés du temps de l'ancienne
+ * banque d'exercices portaient aussi `activeCount`/`masteredCount`/
+ * `completionRate`/`bySubjectProgress` (maîtrise des exercices) : ces champs
+ * sont simplement ignorés à la lecture (voir `normalizeWeekSnapshot`), la
+ * banque ayant été retirée de l'application.
  */
 export interface WeekSnapshot {
   weekStart: string;
@@ -141,10 +207,6 @@ export interface WeekSnapshot {
   capturedAt: string;
   totalSeconds: number;
   bySubject: WeekSnapshotSubjectTime[];
-  activeCount: number;
-  masteredCount: number;
-  completionRate: number;
-  bySubjectProgress: WeekSnapshotSubjectProgress[];
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -161,7 +223,7 @@ export interface WeekSnapshot {
    saurait quoi faire, et rien qui transformerait la saisie en corvée.
 */
 
-/** Nature de l'épreuve — reprend le vocabulaire déjà employé par `ExerciseType` et `WorkItemKind`, sans en inventer un troisième. */
+/** Nature de l'épreuve — reprend le vocabulaire déjà employé par `WorkItemKind`, sans en inventer un autre. */
 export type GradeKind = "ds" | "dm" | "interro" | "colle" | "concours" | "autre";
 export const GRADE_KINDS: readonly GradeKind[] = ["ds", "dm", "interro", "colle", "concours", "autre"];
 
@@ -173,10 +235,181 @@ export interface Grade {
   kind: GradeKind;
   /** "AAAA-MM-JJ" — le jour de l'épreuve, pas celui de la saisie. */
   date: string;
-  /** Note obtenue. Décimales permises (11,5). Toujours ≥ 0 et ≤ `maxScore`. */
-  score: number;
+  /**
+   * Note obtenue. Décimales permises (11,5). Toujours ≥ 0 et ≤ `maxScore`.
+   *
+   * `null` = NOTE EN ATTENTE (calibration) : l'épreuve est passée, la copie
+   * n'est pas rendue, et l'élève a seulement noté ce qu'il PENSE avoir. Une
+   * note en attente n'entre dans AUCUNE moyenne, courbe ni tendance — voir
+   * lib/grades.ts#isScored, le filtre unique que tous les agrégats appliquent.
+   */
+  score: number | null;
   /** Barème. 20 dans l'immense majorité des cas, mais une colle sur 10 ou un concours blanc sur 40 existent. */
   maxScore: number;
+  /**
+   * CALIBRATION — la note que l'élève PRÉDISAIT avant de connaître le
+   * résultat, sur le même barème que `maxScore`. Facultative et absente de
+   * toute note antérieure à ce champ (`undefined` ⇒ pas de prédiction).
+   * Voir lib/calibration.ts.
+   */
+  predictedScore?: number | null;
+  createdAt: string;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CARNET « À REVOIR » — ce qu'on se promet de reprendre
+   ══════════════════════════════════════════════════════════════════
+
+   En maths, l'élève dissèque les corrigés pendant la semaine pour en
+   extraire des « cartouches » : non pas un résultat à réciter, mais une
+   manière de penser (« montrer qu'une suite converge → monotone bornée »).
+   À côté de ça, il y a tout ce qu'on se note en passant — « revoir l'IPP »,
+   « refaire l'exo 12 du TD4 », « apprendre les formules de trigo ». Tout
+   cela finissait sur un coin de cahier, et donc nulle part.
+
+   Volontairement minimal, pour la même raison que `Grade` : une ligne de
+   texte, une matière, une nature. Ni chapitre, ni échéance, ni priorité —
+   chaque champ de plus coûte une décision à la saisie, et une saisie qui
+   dépasse cinq secondes est une saisie qu'on ne fait plus.
+
+   Le carnet ne renvoie à aucun catalogue : « l'exo 12 du TD4 » est une
+   ligne de texte libre, et c'est précisément ce que l'élève a besoin de noter.
+*/
+
+/**
+ * Nature d'une entrée — trois valeurs, parce que l'élève en distingue trois :
+ *
+ *   « à revoir »    une notion vue, pas encore solide. Se coche quand c'est fait.
+ *   « à apprendre » du par-cœur (formules, définitions). Se coche quand c'est su.
+ *   « méthode »     une CARTOUCHE. Ce n'est pas une tâche mais une fiche de
+ *                   référence, qu'on garde toute l'année — voir `ReviewItem.doneAt`.
+ */
+export type ReviewKind = "à revoir" | "à apprendre" | "méthode";
+export const REVIEW_KINDS: readonly ReviewKind[] = ["à revoir", "à apprendre", "méthode"];
+
+export interface ReviewItem {
+  id: string;
+  subject: Subject;
+  /** Ce qu'il y a à revoir, tel que l'élève l'a tapé (espaces de bord retirés). Jamais vide. */
+  text: string;
+  kind: ReviewKind;
+  createdAt: string;
+  /**
+   * ISO, ou `null` tant que l'entrée est ouverte.
+   *
+   * Pour « à revoir » / « à apprendre », c'est le moment où c'est FAIT :
+   * l'entrée quitte les listes ouvertes.
+   *
+   * Pour une « méthode », c'est le moment où la cartouche est MAÎTRISÉE — et
+   * elle ne disparaît pas pour autant : elle reste dans la liste des
+   * cartouches de sa matière, qui est un aide-mémoire, pas une liste de
+   * tâches. Voir lib/review-items.ts pour le raisonnement complet.
+   */
+  doneAt: string | null;
+  /**
+   * LE VERSO — facultatif. La question est `text` (« Montrer qu'une suite
+   * converge ? »), la réponse vit ici (« monotone + bornée ⇒ convergente »).
+   * Avec un verso, la séance de révision peut CACHER la réponse et demander
+   * de la retrouver de tête — c'est tout l'intérêt (voir
+   * lib/spaced-repetition.ts). Sans verso, l'entrée se révise quand même :
+   * on se demande simplement si l'on s'en souvient.
+   *
+   * Absent plutôt que `""` : une sauvegarde antérieure au verso n'a pas ce
+   * champ, et « pas de réponse » n'a qu'une seule écriture.
+   */
+  answer?: string;
+  /**
+   * LE CALENDRIER DE RÉVISION — absent tant que l'entrée n'a jamais été
+   * révisée. Une entrée sans calendrier est due le LENDEMAIN de sa création
+   * (voir `effectiveSchedule` dans lib/spaced-repetition.ts) : pas besoin de
+   * l'écrire à la saisie, et les entrées notées avant l'existence des
+   * révisions rejoignent la file sans migration.
+   */
+  srs?: ReviewSchedule;
+}
+
+/**
+ * L'état de révision espacée d'une entrée — un objet entier ou rien. Les
+ * champs n'ont de sens qu'ensemble (un `dueAt` sans stabilité ne dit pas
+ * quel intervalle viendrait ensuite) : les regrouper permet à la
+ * normalisation de jeter d'un bloc un calendrier illisible et de retomber
+ * sur « jamais révisée », plutôt que de recoller des morceaux.
+ *
+ * DEPUIS FSRS (voir lib/fsrs.ts), l'état porte la STABILITÉ et la DIFFICULTÉ
+ * du souvenir. Un calendrier écrit du temps de l'ancienne échelle fixe
+ * (1, 3, 7, 16, 35, 90 jours — champ `step`, sans stabilité) est CONVERTI À
+ * LA LECTURE par `normalizeReviewSchedule`, sans toucher à son `dueAt` :
+ * aucune entrée ne change de jour d'échéance à la mise à jour.
+ */
+export interface ReviewSchedule {
+  /** Jour CALENDAIRE local (AAAA-MM-JJ) où l'entrée redevient à réviser — jamais un instant ISO : « à réviser demain » ne doit pas dépendre du fuseau. */
+  dueAt: string;
+  /** Écart, en jours, entre la dernière révision et `dueAt`. ≥ 1. */
+  intervalDays: number;
+  /** FSRS : jours avant que la probabilité de s'en souvenir retombe à 90 %. `0` pour une entrée jamais notée. */
+  stability: number;
+  /** FSRS : 1 (facile) à 10 (difficile). `0` pour une entrée jamais notée. */
+  difficulty: number;
+  /** FSRS : « new » tant que l'entrée n'a jamais été notée, « review »/« relearning » ensuite. */
+  state: FsrsState;
+  /** Nombre de révisions notées, toutes notes confondues. */
+  reviews: number;
+  /** Nombre de « À revoir » — les oublis. */
+  lapses: number;
+  /** ISO de la dernière note, ou `null`. */
+  lastReviewedAt: string | null;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CARNET D'ERREURS — ce qui s'est mal passé, et pourquoi
+   ══════════════════════════════════════════════════════════════════
+
+   Après une colle, un DS ou un exercice, l'élève note chaque erreur en une
+   dizaine de secondes : où (matière, source, date), QUEL GENRE d'erreur
+   (six types, voir lib/error-log.ts), ce qui s'est passé, et — s'il l'a —
+   la bonne idée qui l'aurait évitée.
+
+   Distinct du carnet « À revoir » : une entrée À revoir est une PROMESSE
+   (« revoir l'IPP »), qui se coche et s'efface. Une erreur est un CONSTAT
+   daté, qu'on ne coche pas — elle sert à voir, sur un mois, ce qui revient.
+   La fusionner avec le carnet aurait mêlé deux usages et rendu les comptes
+   par type impossibles.
+
+   `chapterId` et `exerciseId` sont des renvois HÉRITÉS de l'ancienne banque
+   d'exercices (retirée) : conservés tels quels à la lecture pour qu'une
+   entrée ancienne ne perde rien, mais plus rien ne les saisit ni ne les
+   affiche.
+*/
+
+/** Où l'erreur a été commise — le vocabulaire des élèves, pas celui de `GradeKind`, qui ignore l'exercice fait seul. */
+export type ErrorSource = "colle" | "DS" | "DM" | "exercice" | "concours blanc" | "autre";
+export const ERROR_SOURCES: readonly ErrorSource[] = ["colle", "DS", "DM", "exercice", "concours blanc", "autre"];
+
+/** Le GENRE d'erreur — six types, décrits en une ligne chacun dans lib/error-log.ts#ERROR_TYPE_META. */
+export type ErrorType = "calcul" | "méthode" | "cours" | "lecture" | "rédaction" | "temps";
+export const ERROR_TYPES: readonly ErrorType[] = ["calcul", "méthode", "cours", "lecture", "rédaction", "temps"];
+
+export interface ErrorEntry {
+  id: string;
+  subject: Subject;
+  /** "AAAA-MM-JJ" — le jour de l'épreuve ou de l'exercice, pas celui de la saisie. */
+  date: string;
+  source: ErrorSource;
+  type: ErrorType;
+  /** Ce qui s'est mal passé, en une ligne. Jamais vide. */
+  description: string;
+  /** « La bonne idée » : ce qu'il fallait faire. `null` quand l'élève ne l'a pas (encore) notée. */
+  fix: string | null;
+  /** HÉRITAGE — renvoi vers un chapitre de l'ancienne banque. Conservé, jamais affiché ; `null` pour toute nouvelle entrée. */
+  chapterId: string | null;
+  /** HÉRITAGE — renvoi vers un exercice de l'ancienne banque. Conservé, jamais affiché ; `null` pour toute nouvelle entrée. */
+  exerciseId: string | null;
+  /**
+   * Identifiant de l'entrée « À revoir » créée à partir de cette erreur, ou
+   * `null`. Sert uniquement à ne pas proposer deux fois « ajouter au
+   * carnet » — si l'entrée a été supprimée depuis, le bouton reparaît.
+   */
+  reviewItemId: string | null;
   createdAt: string;
 }
 
@@ -221,34 +454,22 @@ export interface DayPlanRecord {
    TRAVAIL PLANIFIABLE — le modèle du « quand »
    ══════════════════════════════════════════════════════════════════
 
-   TaekdHub savait répondre à « quoi travailler » (lib/recommendation.ts) et
-   « combien de temps » (lib/plan.ts). Il ne savait pas répondre à « pour
-   quand ». `WorkItem` est le seul concept ajouté pour ça, et il est
-   volontairement AU-DESSUS de la banque, pas dedans :
+   `WorkItem` répond à « pour quand ». L'élève travaille sur ses propres
+   feuilles : TaekdHub ne connaît pas le contenu d'un travail, il en réserve
+   le temps et en suit l'avancement.
 
-     RESSOURCE            un exercice, un chapitre. Existe déjà, ne bouge pas.
      TRAVAIL PLANIFIABLE  `WorkItem` — « préparer le DS de physique »,
                           « faire le DM de maths », « réviser les intégrales ».
      ÉCHÉANCE             `WorkItem.dueDate` — le jour pour lequel c'est dû.
-
-   Un exercice n'est donc JAMAIS une échéance : il est le contenu qu'on
-   servira à l'intérieur du temps qu'un `WorkItem` réserve. C'est ce qui
-   permet à « DM de maths jeudi » d'exister sans qu'aucun exercice de la
-   banque ne lui corresponde.
 */
 
 /**
  * Nature du travail. Six valeurs, en français comme tous les domaines
- * persistés du projet (`ExerciseStatus`, `AttemptResult`…), et pas une de
+ * persistés du projet (`WorkItemStatus`, `ErrorSource`…), et pas une de
  * plus : ce qui se distingue ici doit se distinguer pour l'ÉLÈVE, pas pour
- * le modèle.
- *
- * `exercices` et `chapitre` sont les deux seuls types dont TaekdHub sait
- * choisir le contenu tout seul (le moteur de recommandation sait ce qu'est
- * un exercice et ce qu'est un chapitre). `dm`, `ds`, `concours` et `autre`
- * sont du travail dont l'élève seul connaît le contenu — TaekdHub en
- * réserve le temps et suit sa progression, sans prétendre savoir ce qu'il y
- * a dedans.
+ * le modèle. Dans tous les cas, l'élève seul connaît le contenu — TaekdHub
+ * en réserve le temps et suit sa progression, sans prétendre savoir ce qu'il
+ * y a dedans.
  */
 export type WorkItemKind = "dm" | "ds" | "exercices" | "chapitre" | "concours" | "autre";
 export const WORK_ITEM_KINDS: readonly WorkItemKind[] = ["dm", "ds", "exercices", "chapitre", "concours", "autre"];
@@ -264,6 +485,17 @@ export const WORK_ITEM_KINDS: readonly WorkItemKind[] = ["dm", "ds", "exercices"
  */
 export type WorkItemStatus = "à faire" | "en cours" | "terminé" | "abandonné";
 export const WORK_ITEM_STATUSES: readonly WorkItemStatus[] = ["à faire", "en cours", "terminé", "abandonné"];
+
+/**
+ * PLAN « SI… ALORS… » — l'intention d'implémentation d'un travail : QUAND
+ * (jour, heure facultative) et OÙ (facultatif) l'élève s'est engagé à s'y
+ * mettre. Voir lib/intentions.ts pour la science et le modèle.
+ */
+export interface WorkItemPlan {
+  day: string;
+  time: string | null;
+  place: string | null;
+}
 
 /** Un report subi par un travail — conservé pour le bilan hebdomadaire (« 2 reports cette semaine »), jamais pour recalculer quoi que ce soit. */
 export interface WorkItemPostponement {
@@ -290,10 +522,8 @@ export interface WorkItem {
    *
    * Le temps RÉELLEMENT fait n'est pas stocké ici. Il se somme à la demande
    * depuis les `WorkSession` portant ce `work_item_id` (voir
-   * lib/work-items.ts#doneMinutes) — même règle que `Exercise`, qui ne
-   * stocke aucune durée cumulée depuis le Sprint 2.6, et pour la même
-   * raison : deux sources de vérité pour une même durée finissent toujours
-   * par diverger.
+   * lib/work-items.ts#doneMinutes) : deux sources de vérité pour une même
+   * durée finissent toujours par diverger.
    */
   estimatedMinutes: number;
   /**
@@ -331,34 +561,18 @@ export interface WorkItem {
    */
   notBeforeDate: string | null;
   /**
-   * Chapitres concernés — la PORTÉE du travail, pas son contenu.
-   *
-   * Aucun `exerciseIds` volontairement : figer une liste d'exercices à la
-   * création reviendrait à décider du « quoi » des semaines à l'avance, en
-   * court-circuitant le moteur de recommandation. La portée (matière +
-   * chapitres) est passée au moteur au moment de travailler, et c'est lui
-   * qui choisit — voir lib/planning.ts.
+   * HÉRITAGE — chapitres de l'ancienne banque d'exercices (retirée) auxquels
+   * le travail renvoyait. Conservé à la lecture pour qu'aucune donnée ne se
+   * perde à l'aller-retour d'une sauvegarde ; plus rien ne le saisit ni ne
+   * l'exploite, et tout nouveau travail l'écrit à `[]`.
    */
   chapterIds: string[];
   createdAt: string;
   completedAt: string | null;
   postponements: WorkItemPostponement[];
+  /** Plan « si… alors… », ou `null` — absent de tout travail antérieur à ce champ. */
+  plan?: WorkItemPlan | null;
 }
-
-/**
- * Valeurs par défaut pour les champs Sprint 2.5 — proposées, à ajuster si
- * besoin (voir rapport de sprint). Utilisées à la fois pour la migration des
- * anciennes données (ci-dessous) et pour la création d'un nouvel exercice
- * (components/exercises/exercise-manager.tsx), afin de n'avoir qu'une seule
- * source de vérité pour ces défauts.
- */
-export const DEFAULT_MASTERY: Mastery = 0;
-const MASTERY_VALUES: readonly Mastery[] = [0, 25, 50, 75, 100];
-const PROGRAMME_LEVELS: readonly ProgrammeLevel[] = ["sup", "spe", "sup_spe"];
-const EXERCISE_LEVELS: readonly ExerciseLevel[] = [1, 2, 3, 4, 5, 6];
-const LICENSE_STATUSES: readonly LicenseStatus[] = ["libre", "à vérifier", "restreint"];
-const FILIERES: readonly Filiere[] = ["MP", "MPI", "PC", "PSI", "PT", "TSI"];
-const PROVENANCES: readonly Provenance[] = ["concours-verifie", "concours-partiel", "enseignant", "originale"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -423,9 +637,6 @@ function positiveInteger(raw: unknown): number | null {
 const LEGACY_SUBJECT_MAP: Record<string, Subject> = {
   Informatique: "Informatique TC",
 };
-const LEGACY_STATUS_MAP: Record<string, ExerciseStatus> = {
-  terminé: "maîtrisé",
-};
 
 function migrateSubject(raw: unknown): Subject {
   if (typeof raw === "string") {
@@ -440,7 +651,7 @@ function migrateSubject(raw: unknown): Subject {
  * LÉGITIME (`WorkItem.subject`) ou disqualifiante (`Grade`) — on ne veut pas
  * y retomber silencieusement sur « Mathématiques ».
  *
- * Séances, exercices, chapitres et instantanés migraient déjà une matière
+ * Séances et instantanés migraient déjà une matière
  * renommée ; les notes et les travaux, arrivés après le renommage
  * « Informatique » → « Informatique TC », ne le faisaient pas. Aucune donnée
  * n'était menacée AUJOURD'HUI, mais le prochain renommage dans lib/study.ts
@@ -452,32 +663,6 @@ function migrateSubjectOrNull(raw: unknown): Subject | null {
   if (typeof raw !== "string") return null;
   if ((subjects as string[]).includes(raw)) return raw as Subject;
   return LEGACY_SUBJECT_MAP[raw] ?? null;
-}
-
-function migrateStatus(raw: unknown): ExerciseStatus {
-  if (typeof raw === "string") {
-    if ((exerciseStatuses as string[]).includes(raw)) return raw as ExerciseStatus;
-    if (raw in LEGACY_STATUS_MAP) return LEGACY_STATUS_MAP[raw];
-  }
-  return "à faire";
-}
-
-function migrateType(raw: unknown): ExerciseType {
-  if (typeof raw === "string" && (exerciseTypes as string[]).includes(raw)) return raw as ExerciseType;
-  return "Personnel";
-}
-
-function migrateDifficulty(raw: unknown): Difficulty {
-  return typeof raw === "number" && raw >= 1 && raw <= 5 ? (Math.round(raw) as Difficulty) : 3;
-}
-
-
-function migrateMastery(raw: unknown): Mastery {
-  return typeof raw === "number" && (MASTERY_VALUES as number[]).includes(raw) ? (raw as Mastery) : DEFAULT_MASTERY;
-}
-
-function stringArray(raw: unknown): string[] {
-  return Array.isArray(raw) ? raw.filter((value): value is string => typeof value === "string") : [];
 }
 
 /**
@@ -493,7 +678,9 @@ export function normalizeSession(raw: unknown): WorkSession {
   return {
     id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
     subject: migrateSubject(item.subject),
-    /** Absent avant le Sprint 2.5 : aucune ancienne session n'était liée à un exercice. */
+    // HÉRITAGE de l'ancienne banque d'exercices (comme `result` et
+    // `hints_used` plus bas) : relu tel quel pour qu'une ancienne séance ou
+    // sauvegarde ne perde rien, jamais affiché — voir lib/supabase/types.ts.
     exercise_id: typeof item.exercise_id === "string" ? item.exercise_id : null,
     started_at: startedAt,
     ended_at: isoDate(item.ended_at),
@@ -524,6 +711,15 @@ function calendarDay(value: unknown): string | null {
   return Number.isNaN(new Date(`${value}T00:00:00`).getTime()) ? null : value;
 }
 
+/** Plan « si… alors… » lisible, ou `null` : sans jour valide, il n'y a pas de plan. */
+function normalizeWorkItemPlan(raw: unknown): WorkItemPlan | null {
+  if (!isRecord(raw)) return null;
+  const day = calendarDay(raw.day);
+  if (!day) return null;
+  const place = typeof raw.place === "string" && raw.place.trim() ? raw.place.trim().slice(0, 60) : null;
+  return { day, time: clockTime(raw.time), place };
+}
+
 /** "HH:MM" sur 24 h, ou `null`. Purement informatif — voir `WorkItem.dueTime`. */
 function clockTime(value: unknown): string | null {
   if (typeof value !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) return null;
@@ -533,7 +729,7 @@ function clockTime(value: unknown): string | null {
 /**
  * Ramène un travail planifié potentiellement corrompu (édition manuelle du
  * localStorage, sauvegarde tronquée) vers une forme valide. Même contrat que
- * `normalizeSession`/`normalizeExercise` : rien d'invalide ne ressort d'ici.
+ * `normalizeSession` : rien d'invalide ne ressort d'ici.
  *
  * Un travail sans titre exploitable reçoit un libellé neutre plutôt que
  * d'être écarté : l'élève l'a créé, il doit pouvoir le retrouver et le
@@ -557,6 +753,7 @@ export function normalizeWorkItem(raw: unknown): WorkItem {
     estimatedMinutes: Math.max(1, nonNegativeInteger(item.estimatedMinutes) ?? 30),
     dueDate: calendarDay(item.dueDate),
     dueTime: clockTime(item.dueTime),
+    plan: normalizeWorkItemPlan(item.plan),
     status,
     important: item.important === true,
     notBeforeDate: calendarDay(item.notBeforeDate),
@@ -580,87 +777,6 @@ export function normalizeWorkItem(raw: unknown): WorkItem {
   };
 }
 
-/** Ramène un exercice, potentiellement issu d'une ancienne sauvegarde (Sprint 1/2A), vers la forme actuelle de `Exercise`. */
-function normalizeExercise(raw: unknown): Exercise {
-  const item = isRecord(raw) ? raw : {};
-  // Sprint 2.5 : `chapter` (Sprint 1/2A) devient `title` ; `chapter_id` est un
-  // nouveau champ qui référencera le futur catalogue de chapitres.
-  const title = typeof item.title === "string" ? item.title : typeof item.chapter === "string" ? item.chapter : "";
-  // Absent de toute donnée antérieure à ce champ (import/localStorage/sauvegarde) :
-  // "" par défaut, jamais deviné à partir d'un autre champ (voir la doc du
-  // champ dans lib/supabase/types.ts).
-  const statement = typeof item.statement === "string" ? item.statement : "";
-  const createdAt = isoDate(item.created_at) ?? new Date().toISOString();
-  // Sprint 2.5 : `last_opened_at` renommé `last_worked_at`.
-  // Même garde que `created_at` : une date illisible ici cassait la Heatmap et le calcul de récence du moteur.
-  const lastWorkedAt = isoDate(item.last_worked_at) ?? isoDate(item.last_opened_at);
-  return {
-    id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
-    subject: migrateSubject(item.subject),
-    title,
-    statement,
-    chapter_id: typeof item.chapter_id === "string" ? item.chapter_id : null,
-    source: typeof item.source === "string" ? item.source : "",
-    year: typeof item.year === "number" ? item.year : null,
-    // Champs ajoutés pour l'infrastructure banque concours (sourcing/licence/
-    // niveau de programme) — absents de toute donnée antérieure, normalisés à
-    // `null` plutôt que devinés (voir lib/exercise-import.ts pour ce qui les
-    // renseigne réellement).
-    competition: typeof item.competition === "string" && item.competition.trim() ? item.competition : null,
-    programme_level: (PROGRAMME_LEVELS as string[]).includes(item.programme_level as string) ? (item.programme_level as ProgrammeLevel) : null,
-    license_status: (LICENSE_STATUSES as string[]).includes(item.license_status as string) ? (item.license_status as LicenseStatus) : null,
-    external_id: typeof item.external_id === "string" && item.external_id.trim() ? item.external_id : null,
-    // Champs de provenance (Sprint banque concours) — absents de toute donnée
-    // antérieure : normalisés à null, et `provenance` DÉDUITE prudemment
-    // plutôt que supposée vérifiée (voir lib/supabase/types.ts#Provenance).
-    epreuve: typeof item.epreuve === "string" && item.epreuve.trim() ? item.epreuve : null,
-    // Rétrocompatibilité : les fiches enregistrées avant le passage à une
-    // liste portaient un `filiere` unique. On le relit tel quel plutôt que de
-    // le perdre.
-    filieres: Array.isArray(item.filieres)
-      ? item.filieres.filter((value): value is Filiere => (FILIERES as string[]).includes(value as string))
-      : (FILIERES as string[]).includes(item.filiere as string)
-        ? [item.filiere as Filiere]
-        : [],
-    exercise_number: typeof item.exercise_number === "string" && item.exercise_number.trim() ? item.exercise_number : null,
-    provenance: (PROVENANCES as string[]).includes(item.provenance as string)
-      ? (item.provenance as Provenance)
-      : typeof item.competition === "string" && item.competition.trim()
-        ? "concours-partiel"
-        : "originale",
-    source_url: typeof item.source_url === "string" && item.source_url.trim() ? item.source_url : null,
-    prerequisites: stringArray(item.prerequisites),
-    pedagogical_goal: typeof item.pedagogical_goal === "string" && item.pedagogical_goal.trim() ? item.pedagogical_goal : null,
-    level: (EXERCISE_LEVELS as number[]).includes(item.level as number) ? (item.level as ExerciseLevel) : null,
-    type: migrateType(item.type),
-    difficulty: migrateDifficulty(item.difficulty),
-    mastery: migrateMastery(item.mastery),
-    status: migrateStatus(item.status),
-    // Sprint 2.6 : `duration_minutes` n'existe plus — le temps passé se
-    // calcule à la demande via `minutesSpentOnExercise` (lib/study.ts). Un
-    // éventuel `duration_minutes` présent dans d'anciennes données (Sprint 1
-    // à 2.5) est simplement ignoré ici, pas migré.
-    estimated_minutes: nonNegativeInteger(item.estimated_minutes),
-    attempts: nonNegativeInteger(item.attempts) ?? 0,
-    note: typeof item.note === "string" ? item.note : null,
-    created_at: createdAt,
-    updated_at: isoDate(item.updated_at) ?? createdAt,
-    tags: stringArray(item.tags),
-    favorite: Boolean(item.favorite),
-    archived: Boolean(item.archived),
-    hints: stringArray(item.hints),
-    correction: typeof item.correction === "string" ? item.correction : null,
-    last_worked_at: lastWorkedAt,
-  };
-}
-
-/** Ramène un chapitre potentiellement corrompu (édition manuelle du localStorage) vers une forme valide, ou l'écarte. */
-function normalizeChapter(raw: unknown): Chapter | null {
-  const item = isRecord(raw) ? raw : {};
-  if (typeof item.id !== "string" || typeof item.label !== "string" || !item.label.trim()) return null;
-  return { id: item.id, subject: migrateSubject(item.subject), label: item.label };
-}
-
 function isNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
@@ -671,28 +787,18 @@ function normalizeWeekSnapshotSubjectTime(raw: unknown): WeekSnapshotSubjectTime
   return { subject: migrateSubject(item.subject), seconds: item.seconds };
 }
 
-function normalizeWeekSnapshotSubjectProgress(raw: unknown): WeekSnapshotSubjectProgress | null {
-  const item = isRecord(raw) ? raw : {};
-  if (typeof item.subject !== "string" || !isNumber(item.total) || !isNumber(item.mastered) || !isNumber(item.completionRate)) return null;
-  return { subject: migrateSubject(item.subject), total: item.total, mastered: item.mastered, completionRate: item.completionRate };
-}
-
 /** Ramène un snapshot hebdomadaire potentiellement corrompu vers une forme valide, ou l'écarte — entièrement généré par l'app (jamais saisi ni importé), donc peu de cas réels à couvrir. */
 function normalizeWeekSnapshot(raw: unknown): WeekSnapshot | null {
   const item = isRecord(raw) ? raw : {};
   if (typeof item.weekStart !== "string" || typeof item.capturedAt !== "string") return null;
-  if (!isNumber(item.totalSeconds) || !isNumber(item.activeCount) || !isNumber(item.masteredCount) || !isNumber(item.completionRate)) return null;
+  if (!isNumber(item.totalSeconds)) return null;
   return {
     weekStart: item.weekStart,
     capturedAt: item.capturedAt,
     totalSeconds: item.totalSeconds,
     bySubject: Array.isArray(item.bySubject) ? item.bySubject.map(normalizeWeekSnapshotSubjectTime).filter((entry): entry is WeekSnapshotSubjectTime => entry !== null) : [],
-    activeCount: item.activeCount,
-    masteredCount: item.masteredCount,
-    completionRate: item.completionRate,
-    bySubjectProgress: Array.isArray(item.bySubjectProgress)
-      ? item.bySubjectProgress.map(normalizeWeekSnapshotSubjectProgress).filter((entry): entry is WeekSnapshotSubjectProgress => entry !== null)
-      : [],
+    // `activeCount`, `masteredCount`, `completionRate`, `bySubjectProgress` :
+    // champs de l'ancienne banque d'exercices, volontairement non relus.
   };
 }
 
@@ -711,7 +817,12 @@ export function normalizeGrade(raw: unknown): Grade | null {
 
   const maxScore = typeof item.maxScore === "number" && Number.isFinite(item.maxScore) && item.maxScore > 0 ? item.maxScore : 20;
   const rawScore = typeof item.score === "number" && Number.isFinite(item.score) ? item.score : null;
-  if (rawScore === null) return null;
+  // Calibration : une prédiction lisible, bornée au barème comme la note.
+  const rawPrediction =
+    typeof item.predictedScore === "number" && Number.isFinite(item.predictedScore) ? Math.max(0, Math.min(maxScore, item.predictedScore)) : null;
+  // Sans note NI prédiction, il ne reste rien à mesurer : écartée, comme
+  // avant. Avec une prédiction seule, c'est une note EN ATTENTE, légitime.
+  if (rawScore === null && rawPrediction === null) return null;
 
   return {
     id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
@@ -721,11 +832,243 @@ export function normalizeGrade(raw: unknown): Grade | null {
     date,
     // Bornée au barème : une note de 25/20 vient forcément d'une saisie ou
     // d'un fichier abîmé, et elle contaminerait toutes les moyennes.
-    score: Math.max(0, Math.min(maxScore, rawScore)),
+    score: rawScore === null ? null : Math.max(0, Math.min(maxScore, rawScore)),
     maxScore,
+    // Le champ n'est posé que s'il existe : une note sans prédiction garde
+    // exactement la forme qu'elle avait avant la calibration.
+    ...(rawPrediction !== null ? { predictedScore: rawPrediction } : {}),
     createdAt: isoDate(item.createdAt) ?? new Date().toISOString(),
   };
 }
+
+/**
+ * Ramène une entrée du carnet « À revoir » potentiellement corrompue vers une
+ * forme valide, ou l'écarte (`null`).
+ *
+ * Écartée seulement quand elle ne veut plus rien dire : sans texte, il n'y a
+ * rien à revoir ; sans matière reconnaissable (même après
+ * `migrateSubjectOrNull`, qui rattrape les renommages), on ne saurait pas où
+ * la ranger — la déposer d'office en « Mathématiques » mentirait. Tout le
+ * reste se répare : une nature inconnue retombe sur « à revoir », une date
+ * illisible sur maintenant.
+ *
+ * Le texte n'est PAS tronqué ici, alors que la saisie le borne (voir
+ * lib/review-items.ts#REVIEW_TEXT_MAX) : un fichier édité à la main avec une
+ * ligne plus longue reste lisible, et couper la pensée de l'élève au milieu
+ * serait une perte de donnée pour un gain purement cosmétique.
+ */
+export function normalizeReviewItem(raw: unknown): ReviewItem | null {
+  const item = isRecord(raw) ? raw : {};
+  const text = typeof item.text === "string" ? item.text.trim() : "";
+  if (!text) return null;
+  const subject = migrateSubjectOrNull(item.subject);
+  if (!subject) return null;
+  // Le verso garde ses retours à la ligne (une méthode s'écrit souvent en
+  // deux temps) mais perd ses espaces de bord ; vide, il n'existe pas.
+  const answer = typeof item.answer === "string" ? item.answer.trim() : "";
+  const srs = normalizeReviewSchedule(item.srs);
+  return {
+    id: typeof item.id === "string" && item.id ? item.id : crypto.randomUUID(),
+    subject,
+    text,
+    kind: (REVIEW_KINDS as string[]).includes(item.kind as string) ? (item.kind as ReviewKind) : "à revoir",
+    createdAt: isoDate(item.createdAt) ?? new Date().toISOString(),
+    doneAt: isoDate(item.doneAt),
+    // Ajoutés seulement s'ils existent : un aller-retour JSON d'une entrée
+    // sans verso ni calendrier doit redonner EXACTEMENT la même entrée.
+    ...(answer ? { answer } : {}),
+    ...(srs ? { srs } : {}),
+  };
+}
+
+/**
+ * Un calendrier de révision lisible, ou `undefined` (= « jamais révisée »,
+ * l'entrée redevient due le lendemain de sa création).
+ *
+ * Seul `dueAt` est indispensable : sans jour d'échéance, on ne sait plus
+ * quand la montrer, et inventer une date mentirait. Le reste se répare.
+ *
+ * MIGRATION DE L'ANCIENNE ÉCHELLE → FSRS. Un calendrier sans `stability`
+ * vient de l'échelle fixe (1, 3, 7, 16, 35, 90 jours). On le convertit ainsi :
+ *
+ *   — `dueAt` et `intervalDays` : CONSERVÉS tels quels. L'échéance promise à
+ *     l'élève ne bouge pas.
+ *   — stabilité = l'intervalle en cours. C'est la lecture exacte de FSRS :
+ *     avec une rétention visée de 90 %, l'intervalle programmé EST la
+ *     stabilité (R(S) = 0,9). On suppose donc que l'ancienne échéance
+ *     tombait au jour où la probabilité de s'en souvenir atteignait 90 % —
+ *     l'hypothèse la plus neutre, et celle qui ne déplace rien.
+ *   — difficulté = 5, le MILIEU de l'échelle 1–10, alourdie de 1 par oubli
+ *     déjà compté, bornée à 10. L'échelle n'avait aucune notion de
+ *     difficulté : ne sachant rien, on ne suppose ni facile ni difficile.
+ *     (La difficulté d'une première note « Bien », D₀ ≈ 2,1, aurait fait
+ *     passer d'un coup un intervalle de 7 jours à plus d'un mois — trop
+ *     optimiste pour une carte dont on ignore tout.) Les révisions
+ *     suivantes corrigent D d'elles-mêmes.
+ *   — état « review » : l'entrée a déjà été notée au moins une fois, sinon
+ *     elle n'aurait pas de calendrier.
+ *
+ * Le champ `step` de l'ancienne échelle n'est plus écrit : il ne sert qu'à
+ * retrouver un intervalle illisible (`SRS_LADDER[step]`).
+ */
+/** Difficulté FSRS supposée d'un calendrier de l'ancienne échelle — voir ci-dessus. */
+const LEGACY_DIFFICULTY = 5;
+
+export function normalizeReviewSchedule(raw: unknown): ReviewSchedule | undefined {
+  if (!isRecord(raw)) return undefined;
+  const dueAt = calendarDay(raw.dueAt);
+  if (!dueAt) return undefined;
+  const legacyStep = Math.min(SRS_LADDER.length - 1, nonNegativeInteger(raw.step) ?? 0);
+  const intervalDays = positiveInteger(raw.intervalDays) ?? SRS_LADDER[legacyStep];
+  const lapses = nonNegativeInteger(raw.lapses) ?? 0;
+  const storedStability = typeof raw.stability === "number" && Number.isFinite(raw.stability) && raw.stability > 0 ? raw.stability : null;
+  const storedDifficulty =
+    typeof raw.difficulty === "number" && Number.isFinite(raw.difficulty) ? Math.min(10, Math.max(1, raw.difficulty)) : null;
+  const storedState = (["learning", "review", "relearning"] as const).find((state) => state === raw.state);
+  return {
+    dueAt,
+    intervalDays,
+    stability: storedStability ?? intervalDays,
+    difficulty: storedDifficulty ?? Math.min(10, LEGACY_DIFFICULTY + lapses),
+    state: storedStability !== null && storedState ? storedState : "review",
+    reviews: nonNegativeInteger(raw.reviews) ?? 0,
+    lapses,
+    lastReviewedAt: isoDate(raw.lastReviewedAt),
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   MÉMOIRE DES CHAPITRES (FSRS) — début du bloc
+   ══════════════════════════════════════════════════════════════════
+
+   Un chapitre de cours appris (« Intégrales généralisées », « Thermo 2 »),
+   et ce que FSRS en déduit : quand il risque de s'effacer. L'élève révise
+   souvent ailleurs — dans Anki, sur son téléphone — et vient dire ici
+   « c'est révisé » avec une note ; TaekdHub tient la courbe d'oubli et le
+   rappelle au bon moment. Logique pure dans lib/chapter-memory.ts, modèle
+   dans lib/fsrs.ts.
+
+   L'APPRENTISSAGE EST LA PREMIÈRE RÉVISION. `learnedAt` est le jour où le
+   chapitre a été vu (en cours, ou appris seul) ; il compte comme une
+   première note « Bien ». `reviews` ne contient que les révisions
+   SUIVANTES. `card` est l'état FSRS qui en résulte — conservé tel quel
+   pour ne pas dépendre d'une future version des coefficients, mais
+   entièrement reconstructible depuis `learnedAt` + `reviews` : c'est ce que
+   fait la normalisation quand il est illisible, et ce que fait
+   lib/chapter-memory.ts quand l'élève corrige la date d'apprentissage.
+*/
+export interface ChapterReview {
+  /** Jour calendaire local (AAAA-MM-JJ). */
+  day: string;
+  rating: FsrsRating;
+}
+
+export interface ChapterMemory {
+  id: string;
+  subject: Subject;
+  /** Tel que l'élève l'a tapé, espaces de bord retirés. Jamais vide. */
+  title: string;
+  /** Jour où le chapitre a été appris — la première « révision ». */
+  learnedAt: string;
+  /** Nom du paquet Anki correspondant (`Maths::Intégrales`), s'il en a un — voir lib/anki.ts. Absent plutôt que `""`. */
+  ankiDeck?: string;
+  /** État FSRS après `learnedAt` puis `reviews`. */
+  card: FsrsMemory;
+  /** Les révisions après l'apprentissage, dans l'ordre des jours. */
+  reviews: ChapterReview[];
+  /** Rangé : ne rappelle plus rien, mais garde son historique. */
+  archived: boolean;
+  createdAt: string;
+}
+
+/**
+ * Un chapitre lisible, ou `null`. Écarté sans titre, sans matière
+ * reconnaissable ou sans date d'apprentissage : sans elle, aucune courbe
+ * n'est calculable, et en inventer une ferait mentir chaque pourcentage.
+ * Les révisions illisibles sont jetées une à une (pas le chapitre) ; un
+ * état FSRS illisible est reconstruit en rejouant l'historique.
+ */
+export function normalizeChapterMemory(raw: unknown): ChapterMemory | null {
+  const item = isRecord(raw) ? raw : {};
+  const title = typeof item.title === "string" ? item.title.trim() : "";
+  if (!title) return null;
+  const subject = migrateSubjectOrNull(item.subject);
+  if (!subject) return null;
+  const learnedAt = calendarDay(item.learnedAt);
+  if (!learnedAt) return null;
+  const reviews = (Array.isArray(item.reviews) ? item.reviews : [])
+    .map((entry): ChapterReview | null => {
+      if (!isRecord(entry)) return null;
+      const day = calendarDay(entry.day);
+      const rating = FSRS_RATINGS.find((value) => value === entry.rating);
+      return day && rating ? { day, rating } : null;
+    })
+    .filter((entry): entry is ChapterReview => entry !== null)
+    .sort((a, b) => a.day.localeCompare(b.day));
+  const stored = normalizeFsrsMemory(item.card, learnedAt);
+  const card = stored && stored.lastReview !== null ? stored : replayMemory(learnedAt, "good", reviews);
+  const ankiDeck = typeof item.ankiDeck === "string" ? item.ankiDeck.trim() : "";
+  return {
+    id: typeof item.id === "string" && item.id ? item.id : crypto.randomUUID(),
+    subject,
+    title,
+    learnedAt,
+    ...(ankiDeck ? { ankiDeck } : {}),
+    card,
+    reviews,
+    archived: item.archived === true,
+    createdAt: isoDate(item.createdAt) ?? new Date().toISOString(),
+  };
+}
+/* ── MÉMOIRE DES CHAPITRES — fin du bloc ── */
+
+/* ── Carnet d'erreurs ─────────────────────────────────────────────── */
+
+function optionalText(raw: unknown): string | null {
+  return typeof raw === "string" && raw.trim() ? raw.trim() : null;
+}
+
+/**
+ * Ramène une erreur notée potentiellement corrompue vers une forme valide, ou
+ * l'écarte (`null`).
+ *
+ * Écartée quand elle ne veut plus rien dire : sans description, sans matière
+ * reconnaissable, ou sans TYPE reconnu. Ce dernier point est un choix : le
+ * type est la seule chose que le carnet compte, et le remplacer par une
+ * valeur inventée fausserait précisément les statistiques qui justifient le
+ * carnet (« ton erreur n°1 : calcul » alors que l'élève n'a jamais dit
+ * calcul). Une source inconnue, elle, retombe sur « autre » — c'est une
+ * valeur honnête, qui existe pour ça.
+ *
+ * La date manquante retombe sur le jour de saisie quand il est lisible : une
+ * erreur notée le soir même d'une colle, c'est le cas normal.
+ */
+export function normalizeErrorEntry(raw: unknown): ErrorEntry | null {
+  const item = isRecord(raw) ? raw : {};
+  const description = typeof item.description === "string" ? item.description.trim() : "";
+  if (!description) return null;
+  const subject = migrateSubjectOrNull(item.subject);
+  if (!subject) return null;
+  if (!(ERROR_TYPES as string[]).includes(item.type as string)) return null;
+  const createdAt = isoDate(item.createdAt) ?? new Date().toISOString();
+  const date = calendarDay(item.date) ?? calendarDay(createdAt.slice(0, 10));
+  if (!date) return null;
+  return {
+    id: typeof item.id === "string" && item.id ? item.id : crypto.randomUUID(),
+    subject,
+    date,
+    source: (ERROR_SOURCES as string[]).includes(item.source as string) ? (item.source as ErrorSource) : "autre",
+    type: item.type as ErrorType,
+    description,
+    fix: optionalText(item.fix),
+    chapterId: optionalText(item.chapterId),
+    exerciseId: optionalText(item.exerciseId),
+    reviewItemId: optionalText(item.reviewItemId),
+    createdAt,
+  };
+}
+
+/* ── fin carnet d'erreurs ─────────────────────────────────────────── */
 
 /** Voir `DayPlanRecord` — un enregistrement sans jour valide n'a aucun sens et disparaît. */
 export function normalizeDayPlanRecord(raw: unknown): DayPlanRecord | null {
@@ -739,10 +1082,98 @@ export function normalizeDayPlanRecord(raw: unknown): DayPlanRecord | null {
   };
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   CHECK-IN DU SOIR — sommeil, énergie, stress (dix secondes par jour)
+   ══════════════════════════════════════════════════════════════════
+
+   Tout le reste du fichier décrit le TRAVAIL. Le check-in décrit l'état
+   dans lequel on le fait : combien on a dormi la nuit dernière, l'énergie et
+   le stress ressentis dans la journée. Trois chiffres et, au besoin, une
+   ligne de texte — une saisie qui dépasse dix secondes est une saisie qu'on
+   cesse de faire au bout d'une semaine.
+
+   UN CHECK-IN PAR JOUR CALENDAIRE, identifié par `date` et non par un
+   identifiant : refaire le check-in le même soir CORRIGE celui du jour (voir
+   lib/checkin-insights.ts#upsertCheckin), il n'en crée pas un second. Deux
+   valeurs pour la même nuit n'auraient aucun sens.
+
+   Le sommeil porte sur la nuit PRÉCÉDANT `date` : c'est la nuit qui a
+   précédé la journée de travail décrite. Voir lib/checkin-insights.ts pour
+   le rapprochement avec le temps travaillé.
+*/
+
+/** Bornes du sommeil saisissable, par pas d'une demi-heure — au-delà, c'est une faute de frappe, pas une nuit. */
+export const CHECKIN_SLEEP_MIN = 4;
+export const CHECKIN_SLEEP_MAX = 10;
+
+export interface DailyCheckin {
+  /** "AAAA-MM-JJ" — le jour décrit, clé unique de la collection. */
+  date: string;
+  /** Heures dormies la nuit précédente, par pas de 0,5, bornées à [4 ; 10]. */
+  sleepHours: number;
+  /** Énergie ressentie, de 1 (à plat) à 5 (en pleine forme). */
+  energy: number;
+  /** Stress ressenti, de 1 (serein) à 5 (sous pression). */
+  stress: number;
+  /** Une ligne facultative — `null` plutôt qu'une chaîne vide. */
+  note: string | null;
+  /** Dernière saisie (création ou correction). */
+  updatedAt: string;
+}
+
+function scaleOneToFive(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.max(1, Math.min(5, Math.round(value)));
+}
+
+/**
+ * Ramène un check-in corrompu vers une forme valide, ou l'écarte (`null`).
+ *
+ * Écarté sans jour valide (il n'y a plus de clé), ou quand l'une des trois
+ * mesures est illisible : inventer « 7 h de sommeil » ou « énergie 3 »
+ * fausserait précisément les moyennes et le rapprochement que la
+ * collection existe pour permettre. Une valeur HORS BORNES mais lisible est
+ * en revanche ramenée dans les bornes (12 h → 10 h), et arrondie à la
+ * demi-heure : c'est une saisie maladroite, pas une donnée absente.
+ */
+export function normalizeCheckin(raw: unknown): DailyCheckin | null {
+  const item = isRecord(raw) ? raw : {};
+  const date = calendarDay(item.date);
+  if (!date) return null;
+  if (typeof item.sleepHours !== "number" || !Number.isFinite(item.sleepHours)) return null;
+  const energy = scaleOneToFive(item.energy);
+  const stress = scaleOneToFive(item.stress);
+  if (energy === null || stress === null) return null;
+  const note = typeof item.note === "string" && item.note.trim() ? item.note.trim() : null;
+  return {
+    date,
+    sleepHours: Math.max(CHECKIN_SLEEP_MIN, Math.min(CHECKIN_SLEEP_MAX, Math.round(item.sleepHours * 2) / 2)),
+    energy,
+    stress,
+    note,
+    updatedAt: isoDate(item.updatedAt) ?? `${date}T20:00:00.000Z`,
+  };
+}
+
+/**
+ * Lecture dédupliquée : si un fichier (édition manuelle, fusion de deux
+ * sauvegardes) porte deux check-ins pour le même jour, le plus récent gagne.
+ * Triée par jour croissant — l'ordre d'une série.
+ */
+function dedupeCheckins(items: DailyCheckin[]): DailyCheckin[] {
+  const byDay = new Map<string, DailyCheckin>();
+  for (const item of items) {
+    const existing = byDay.get(item.date);
+    if (!existing || existing.updatedAt <= item.updatedAt) byDay.set(item.date, item);
+  }
+  return [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+/* ── fin du bloc check-in du soir ── */
+
 /**
  * Fusionne une préférence potentiellement partielle/corrompue (import, ancienne
  * sauvegarde, édition manuelle du localStorage) avec `defaults` — même principe
- * que `normalizeExercise`/`normalizeChapter` : un champ absent ou invalide
+ * que `normalizeSession` : un champ absent ou invalide
  * retombe sur sa valeur par défaut plutôt que de propager une valeur incohérente
  * (notamment `themeMode`, posé tel quel en attribut DOM par `applyThemeMode`).
  */
@@ -757,8 +1188,8 @@ export function normalizePreferences(raw: unknown): Preferences {
    * entrait dans les préférences. Deux conséquences dont on ne se relève
    * pas depuis l'interface :
    *
-   *   — `accent: 42` → lib/theme.ts#hexToRgb fait `hex.trim()` sur un
-   *     nombre, ce qui LÈVE. `ThemeSync` étant monté dans app/layout.tsx,
+   *   — `accent: 42` (ancien champ) → `hex.trim()` sur un nombre, ce qui
+   *     LÈVAIT. `ThemeSync` étant monté dans app/layout.tsx,
    *     l'effet plante sur TOUTES les routes, /settings comprise : plus
    *     aucun moyen d'exporter ni de réparer sans la console du navigateur.
    *   — `contestDate: "pas-une-date"` → `Intl.DateTimeFormat#format` lève
@@ -767,7 +1198,7 @@ export function normalizePreferences(raw: unknown): Preferences {
    * Le vecteur n'est pas théorique : `validateBackupPayload` n'inspecte
    * `preferences` que par `isRecord`, donc un fichier de sauvegarde édité à
    * la main, tronqué ou fusionné suffit. Chaque champ est désormais validé
-   * par le même helper que le reste du module, et RIEN d'autre que les huit
+   * par le même helper que le reste du module, et RIEN d'autre que les
    * clés connues ne ressort d'ici.
    */
   return {
@@ -779,9 +1210,12 @@ export function normalizePreferences(raw: unknown): Preferences {
     weeklyGoalMinutes: positiveInteger(item.weeklyGoalMinutes) ?? defaults.weeklyGoalMinutes,
     // "" = pas de concours renseigné, seule autre valeur admise qu'un jour calendaire.
     contestDate: calendarDay(item.contestDate) ?? defaults.contestDate,
-    // Validé par le MÊME analyseur que celui qui l'utilisera (lib/theme.ts),
-    // pour qu'une valeur acceptée ici ne puisse pas faire échouer celui-là.
-    accent: typeof item.accent === "string" && hexToRgb(item.accent) ? item.accent : defaults.accent,
+    // Palette : un identifiant connu, sinon DÉDUITE des anciens champs
+    // (`accent` de la refonte « Apple », `subjectPalette` de « Nuit ») par
+    // lib/theme.ts#resolvePaletteId — la même fonction que le script
+    // anti-flash exécute, pour que le premier rendu et l'application
+    // tranchent pareil. Les anciens champs ne sont pas recopiés.
+    palette: resolvePaletteId(item),
     themeMode: (THEME_MODES as string[]).includes(item.themeMode as string) ? (item.themeMode as ThemeMode) : DEFAULT_THEME_MODE,
     // Un tableau de capacité de longueur ≠ 7, ou contenant autre chose que
     // des nombres, ferait lire `undefined` au planificateur pour un jour de
@@ -791,7 +1225,35 @@ export function normalizePreferences(raw: unknown): Preferences {
     // sur son défaut, et la longueur est garantie.
     capacityByWeekday: normalizeCapacityByWeekday(item.capacityByWeekday),
     planningMarginPercent: normalizeMarginPercent(item.planningMarginPercent),
+    weeklySubjectTargets: normalizeWeeklySubjectTargets(item.weeklySubjectTargets),
+    // Premier lancement : un instant ISO lisible, sinon « jamais fait ». Même
+    // analyseur que les horodatages des séances (`isoDate`).
+    onboardingCompletedAt: isoDate(item.onboardingCompletedAt),
+    // `accent`, `subjectPalette` et `subjectColors` ne sont pas recopiés :
+    // lus (pour la migration ci-dessus), puis abandonnés.
   };
+}
+
+/*
+ * Reconstruit matière par matière, sur le modèle de
+ * `normalizeCapacityByWeekday` : une matière valide est conservée, une
+ * matière absente ou douteuse retombe sur SON défaut, et les autres ne sont
+ * pas touchées. Un seul budget corrompu ne doit pas effacer les six autres.
+ *
+ * ABSENT ≠ ZÉRO. Une préférence enregistrée avant ce chantier n'a pas la
+ * clé : elle reçoit les défauts. Un `0` explicite, lui, est un choix
+ * (« je ne suis pas la chimie ») et doit survivre à l'aller-retour — d'où
+ * `nonNegativeInteger` et non `positiveInteger`, qui l'aurait remplacé par
+ * le défaut. Toute clé qui n'est pas une matière connue est ignorée.
+ */
+function normalizeWeeklySubjectTargets(raw: unknown): Record<Subject, number> {
+  const item = isRecord(raw) ? raw : {};
+  const out = { ...DEFAULT_WEEKLY_SUBJECT_TARGETS };
+  for (const subject of subjects) {
+    const value = nonNegativeInteger(item[subject]);
+    if (value !== null) out[subject] = Math.min(MAX_WEEKLY_SUBJECT_TARGET_MINUTES, value);
+  }
+  return out;
 }
 
 function normalizeCapacityByWeekday(raw: unknown): number[] {
@@ -847,14 +1309,11 @@ let lastWriteFailure: { key: string; at: string } | null = null;
 
 /**
  * Lecture/écriture BLINDÉES d'un drapeau brut (pas de JSON, pas de liste) —
- * pour les clés techniques hors `localData` : drapeau et version d'amorçage.
+ * pour les clés techniques hors `localData`.
  *
- * hooks/use-prepahub-data.ts les manipulait par `localStorage` direct :
- * `getItem` hors de son `try` faisait rejeter `maybeSeedBank` quand le
- * stockage est bloqué, et un `setItem` refusé laissait la version NON
- * marquée — donc la réconciliation de toute la banque rejouée à chaque
- * montage de composant, indéfiniment, sans que `lastStorageWriteFailure`
- * n'en sache rien. Ces deux fonctions ferment les deux cas d'un coup.
+ * `localStorage.getItem` LÈVE quand le stockage est bloqué, et un `setItem`
+ * refusé doit être connu de `lastStorageWriteFailure` comme toute autre
+ * écriture : ces deux fonctions ferment les deux cas d'un coup.
  */
 export function readFlag(key: string): string | null {
   if (typeof window === "undefined") return null;
@@ -882,20 +1341,17 @@ export function lastStorageWriteFailure(): { key: string; at: string } | null {
  * `localStorage.setItem` LÈVE (`QuotaExceededError`, ou `SecurityError` quand
  * le stockage est désactivé/bloqué). Aucun appel n'était protégé : l'erreur
  * remontait telle quelle depuis un gestionnaire de clic React, ce qui
- * annulait la SUITE du gestionnaire. Concrètement, dans
- * components/exercises/focus-view.tsx#commitResult : `saveSessions(...)`
- * lève → `update(...)` (attempts/last_worked_at) et `onClose(...)` ne
- * s'exécutent jamais → l'écran « Comment s'est passé l'exercice ? » reste
- * affiché, la séance ET le résultat sont perdus, sans le moindre message.
- * Chaque nouveau clic reproduisait exactement le même échec.
+ * annulait la SUITE du gestionnaire : la séance qu'on venait de terminer
+ * était perdue, sans le moindre message, et chaque nouveau clic reproduisait
+ * exactement le même échec.
  *
- * Ce n'est pas une hypothèse d'école, et les chiffres ci-dessous sont
- * MESURÉS, pas estimés : la banque amorcée sérialise à elle seule 1 471 490
- * caractères, soit 2,81 Mo en UTF-16 — l'unité que les navigateurs facturent
- * réellement — sur un quota de 5 Mo par origine. Plus de la moitié du budget
- * est consommée avant la première séance.
+ * Le quota est de 5 Mo par origine (UTF-16 — l'unité que les navigateurs
+ * facturent réellement). L'ancienne banque d'exercices intégrée en
+ * consommait à elle seule 2,81 Mo avant la première séance ; elle a été
+ * retirée (voir `purgeRetiredBankData`), et tout le budget revient
+ * désormais aux données de l'élève.
  *
- * Et le reste s'accumule sans jamais être élagué. Poids unitaires MESURÉS au
+ * Ces données s'accumulent sans jamais être élaguées. Poids unitaires MESURÉS au
  * navigateur (UTF-16) : une séance 742 o, un travail 828 o, un instantané
  * 1 982 o, une note 402 o, une intention de planning 164 o. Sur une année
  * scolaire (4 séances/jour, 5 travaux/semaine sur 40 semaines, 52
@@ -903,13 +1359,11 @@ export function lastStorageWriteFailure(): { key: string; at: string } | null {
  * SÉANCES à elles seules représentent 1,03 Mo — les trois quarts de la
  * croissance.
  *
- * Donc : 4,19 Mo à la fin de la première année, 5,56 Mo à la fin de la
- * seconde. Le plafond n'est pas atteint en première année ; il l'est vers le
- * seizième mois d'usage, c'est-à-dire en plein deuxième année de prépa.
- * L'échec d'écriture n'est pas un cas limite, c'est une échéance — et c'est
- * la raison d'être de tout ce qui suit. Voir le README pour la stratégie
- * recommandée (ne rien élaguer : ne persister que l'écart à la banque
- * livrée, dont 60 % du poids est du contenu déjà présent dans le dataset).
+ * Donc, sans la banque : environ 1,4 Mo la première année, 2,8 Mo la
+ * seconde — sous le plafond pour les deux années de prépa, mais sans marge
+ * infinie (voir le README). L'échec d'écriture reste possible (stockage
+ * bloqué, disque plein, autres données du même site) : c'est la raison
+ * d'être de tout ce qui suit.
  *
  * Renvoie `false` au lieu de lever : la valeur déjà stockée reste intacte
  * (setItem est atomique), l'appelant décide quoi faire, et
@@ -939,29 +1393,25 @@ function writeKey(key: string, value: string): boolean {
  * REMPLACEMENTS intégraux de la clé (`saveSessions([nouvelle, ...sessions])`),
  * il suffit qu'une copie soit périmée — ou pas encore chargée — pour effacer
  * tout le reste. Cas réel reproductible : components/timer.tsx n'attend pas
- * `ready`, donc tant que `maybeSeedBank()` n'a pas résolu (import dynamique
- * de 1,35 Mo de JSON + reconstruction de 537 exercices), `sessions` vaut
- * encore `[]` ; or `useWorkTimer` restaure un chrono persisté dès le premier
+ * `ready`, donc tant que le premier `refresh()` n'a pas eu lieu, `sessions`
+ * vaut encore `[]` ; or `useWorkTimer` restaure un chrono persisté dès le premier
  * effet, donc le bouton « Terminer » est cliquable immédiatement. Un
  * rechargement en pleine séance suivi de « Terminer » écrivait
  * `[la séance en cours]` — TOUT l'historique effacé, sans erreur ni retour
  * en arrière possible.
  *
- * La fusion est correcte ici parce que RIEN, dans toute l'application, ne
- * supprime jamais une séance ni un exercice (archivage seulement) : une
+ * La fusion est correcte ici parce que rien ne supprime une séance en
+ * passant par ce chemin (l'annulation a le sien, `removeSession`) : une
  * entrée présente sur le disque et absente de la liste entrante ne peut donc
  * être qu'une entrée que l'appelant n'avait pas encore vue.
  *
  * Réservée aux écritures INCRÉMENTALES : la restauration d'une sauvegarde
  * (components/data-backup.tsx) doit remplacer, et continue d'utiliser
- * `saveSessions`/`saveExercises`.
+ * `saveSessions`/`saveWorkItems`.
  *
  * Les entrées du disque sont comparées à l'état BRUT (pas de `normalize*` sur
- * toute la liste) : `update` est appelé à chaque frappe dans le champ énoncé
- * (components/exercises/exercise-detail.tsx), et normaliser 537 exercices à
- * chaque touche coûtait trois fois le prix de l'écriture elle-même. Seules
- * les entrées réellement absentes de la liste entrante — zéro dans le cas
- * courant — sont normalisées.
+ * toute la liste) : seules les entrées réellement absentes de la liste
+ * entrante — zéro dans le cas courant — sont normalisées.
  */
 /**
  * Fusionne, écrit, et renvoie CE QUI EST RÉELLEMENT SUR LE DISQUE.
@@ -999,16 +1449,18 @@ export const localData = {
   mergeSessions: (items: WorkSession[]): WorkSession[] => {
     return mergeAndStore(sessionsKey, items, normalizeSession);
   },
-  exercises: (): Exercise[] => (typeof window === "undefined" ? [] : readList(exercisesKey).map(normalizeExercise)),
-  /** REMPLACE intégralement la banque stockée — amorçage/réconciliation/restauration, voir `mergeExercises` pour une écriture incrémentale. */
-  saveExercises: (items: Exercise[]): boolean => writeKey(exercisesKey, JSON.stringify(items)),
-  /** Écriture incrémentale sûre : fusionne avec le disque (voir `mergeById`) et renvoie la liste réellement enregistrée. */
-  mergeExercises: (items: Exercise[]): Exercise[] => {
-    return mergeAndStore(exercisesKey, items, normalizeExercise);
+  /**
+   * SUPPRIME une séance — relue depuis le disque, jamais depuis une copie
+   * React : `mergeSessions` ne sait pas retirer (une séance absente de la
+   * liste passée est conservée par la fusion), c'est voulu pour les écritures
+   * incrémentales et c'est pourquoi l'annulation a son propre chemin. Seul
+   * appelant : l'annulation d'une saisie rapide (components/work/quick-log.tsx).
+   */
+  removeSession: (id: string): WorkSession[] => {
+    const remaining = localData.sessions().filter((session) => session.id !== id);
+    writeKey(sessionsKey, JSON.stringify(remaining));
+    return remaining;
   },
-  chapters: (): Chapter[] =>
-    typeof window === "undefined" ? [] : readList(chaptersKey).map(normalizeChapter).filter((item): item is Chapter => item !== null),
-  saveChapters: (items: Chapter[]): boolean => writeKey(chaptersKey, JSON.stringify(items)),
   preferences: (): Preferences => (typeof window === "undefined" ? defaults : normalizePreferences(readRecord(preferencesKey))),
   savePreferences: (preferences: Preferences): boolean => writeKey(preferencesKey, JSON.stringify(preferences)),
   /**
@@ -1036,7 +1488,7 @@ export const localData = {
   /** REMPLACE intégralement les travaux stockés — restauration d'une sauvegarde uniquement, voir `mergeWorkItems`. */
   saveWorkItems: (items: WorkItem[]): boolean => writeKey(workItemsKey, JSON.stringify(items)),
   /**
-   * Écriture incrémentale sûre — même contrat que `mergeSessions`/`mergeExercises`.
+   * Écriture incrémentale sûre — même contrat que `mergeSessions`.
    *
    * Utilisable ici pour la même raison qu'ailleurs, et à une seule condition :
    * un travail n'est JAMAIS retiré de la liste, il passe au statut
@@ -1050,12 +1502,11 @@ export const localData = {
     typeof window === "undefined" ? [] : readList(gradesKey).map(normalizeGrade).filter((item): item is Grade => item !== null),
   /** REMPLACE intégralement les notes — restauration d'une sauvegarde uniquement, voir `mergeGrades`. */
   saveGrades: (items: Grade[]): boolean => writeKey(gradesKey, JSON.stringify(items)),
-  /**
-   * Écriture incrémentale. Une note SE SUPPRIME (contrairement à une séance
-   * ou un exercice) : on saisit 14 au lieu de 4, on corrige. La fusion par
+  /*
+   * Pas de `mergeGrades` : une note SE SUPPRIME (contrairement à une
+   * séance) — on saisit 14 au lieu de 4, on corrige. La fusion par
    * identifiant ressusciterait la note effacée depuis une copie React
-   * périmée — `saveGrades` remplace donc, comme `saveChapters`, qui a
-   * exactement le même profil.
+   * périmée ; `saveGrades` remplace donc.
    */
   weekSnapshots: (): WeekSnapshot[] =>
     typeof window === "undefined" ? [] : readList(weekSnapshotsKey).map(normalizeWeekSnapshot).filter((item): item is WeekSnapshot => item !== null),
@@ -1065,7 +1516,108 @@ export const localData = {
       ? []
       : readList(dayPlansKey).map(normalizeDayPlanRecord).filter((item): item is DayPlanRecord => item !== null),
   saveDayPlans: (items: DayPlanRecord[]): boolean => writeKey(dayPlansKey, JSON.stringify(items)),
+  reviewItems: (): ReviewItem[] =>
+    typeof window === "undefined"
+      ? []
+      : readList(reviewItemsKey).map(normalizeReviewItem).filter((item): item is ReviewItem => item !== null),
+  /**
+   * REMPLACE, jamais de fusion — même profil que `saveGrades`. Une entrée du carnet SE SUPPRIME (faute de frappe, ligne
+   * devenue inutile) : la fusion par identifiant de `mergeStored` conserve
+   * toute entrée présente sur le disque et absente de la liste entrante, elle
+   * ressusciterait donc à l'écriture suivante la ligne que l'élève vient
+   * d'effacer.
+   */
+  saveReviewItems: (items: ReviewItem[]): boolean => writeKey(reviewItemsKey, JSON.stringify(items)),
+  /* ── Carnet d'erreurs ── */
+  errors: (): ErrorEntry[] =>
+    typeof window === "undefined" ? [] : readList(errorsKey).map(normalizeErrorEntry).filter((item): item is ErrorEntry => item !== null),
+  /**
+   * REMPLACE, jamais de fusion — même profil que `saveGrades` et
+   * `saveReviewItems` : une erreur mal saisie SE SUPPRIME, et la fusion par
+   * identifiant la ressusciterait à l'écriture suivante.
+   */
+  saveErrors: (items: ErrorEntry[]): boolean => writeKey(errorsKey, JSON.stringify(items)),
+  /* ── Check-in du soir ── */
+  checkins: (): DailyCheckin[] =>
+    typeof window === "undefined"
+      ? []
+      : dedupeCheckins(readList(checkinsKey).map(normalizeCheckin).filter((item): item is DailyCheckin => item !== null)),
+  /**
+   * REMPLACE — la liste entière, déjà mise à jour par
+   * lib/checkin-insights.ts#upsertCheckin. Un check-in ne se supprime pas,
+   * mais il se CORRIGE, et la clé est le jour : une fusion par `id` comme
+   * `mergeStored` n'aurait aucune prise ici.
+   */
+  saveCheckins: (items: DailyCheckin[]): boolean => writeKey(checkinsKey, JSON.stringify(items)),
+  /* ── Mémoire des chapitres (FSRS) ── */
+  chapterMemory: (): ChapterMemory[] =>
+    typeof window === "undefined"
+      ? []
+      : readList(chapterMemoryKey).map(normalizeChapterMemory).filter((item): item is ChapterMemory => item !== null),
+  /** REMPLACE — même profil que `saveReviewItems` (un chapitre se corrige, et la liste entrante est la vérité). */
+  saveChapterMemory: (items: ChapterMemory[]): boolean => writeKey(chapterMemoryKey, JSON.stringify(items)),
+  /* ── fin mémoire des chapitres ── */
 };
+
+/* ══════════════════════════════════════════════════════════════════
+   BANQUE D'EXERCICES RETIRÉE — ménage unique du stockage
+   ══════════════════════════════════════════════════════════════════
+
+   TaekdHub embarquait une banque d'exercices (≈ 540 énoncés, amorcée au
+   premier lancement dans `prepahub:exercises`, avec ses chapitres dans
+   `prepahub:chapters`). L'élève travaille sur ses propres feuilles et n'en
+   a pas besoin : la banque a été retirée, et avec elle tout ce qui n'existait
+   que pour elle.
+
+   Mais la retirer du CODE ne la retire pas du NAVIGATEUR : sur un appareil
+   déjà utilisé, ces clés restent là et occupent ≈ 2,8 Mo en UTF-16, soit
+   plus de la moitié du quota de 5 Mo par origine — du poids mort qui
+   rapprocherait d'autant le jour où une séance ne pourrait plus s'écrire
+   (voir `writeKey`). On les efface donc au chargement.
+
+   UNE SEULE FOIS en pratique, sans drapeau : une fois supprimées, les clés
+   n'existent plus et `removeItem` sur une clé absente ne fait rien. Pas de
+   drapeau « purge faite » à stocker, donc rien de plus à écrire dans un
+   stockage qu'on cherche précisément à alléger. Appelée par
+   hooks/use-prepahub-data.ts avant la première lecture.
+
+   Les champs hérités qui RENVOYAIENT à la banque (`WorkSession.exercise_id`,
+   `result`, `hints_used`, `ErrorEntry.chapterId`/`exerciseId`,
+   `WorkItem.chapterIds`) ne sont PAS touchés : ils vivent dans les données
+   de l'élève, sont relus tels quels et simplement plus affichés. Seul le
+   CONTENU de la banque part.
+*/
+const RETIRED_BANK_KEYS = [
+  "prepahub:exercises",
+  "prepahub:chapters",
+  // Drapeau et version d'amorçage de la banque.
+  "prepahub:seeded",
+  "prepahub:seeded:version",
+  // Plan de séance d'exercices en attente (ancienne page « Séance »).
+  "prepahub:plan:pending",
+] as const;
+
+/** Voir le bloc ci-dessus. Renvoie les clés réellement supprimées (vide dès le deuxième appel). Ne lève jamais. */
+export function purgeRetiredBankData(): string[] {
+  if (typeof window === "undefined") return [];
+  const removed: string[] = [];
+  for (const key of RETIRED_BANK_KEYS) {
+    try {
+      if (localStorage.getItem(key) !== null) {
+        localStorage.removeItem(key);
+        removed.push(key);
+      }
+    } catch {
+      // Stockage bloqué : rien à libérer de toute façon.
+    }
+    try {
+      sessionStorage.removeItem(key);
+    } catch {
+      // Idem.
+    }
+  }
+  return removed;
+}
 
 /**
  * Au-delà de ce nombre de jours sans export, la sauvegarde est périmée.
@@ -1099,7 +1651,7 @@ export function daysSinceBackup(lastBackupAt: string | null, now: Date = new Dat
  * l'ancien « réussi » inconditionnel.
  */
 export interface RestoreOutcome {
-  /** Vrai seulement si les HUIT collections ont été écrites. */
+  /** Vrai seulement si TOUTES les collections ont été écrites (dix depuis la mémoire des chapitres). */
   ok: boolean;
   /** Collections réellement écrites, dans l'ordre de tentative. */
   restored: string[];
@@ -1112,23 +1664,25 @@ export interface RestoreOutcome {
 /**
  * Restaure une sauvegarde, et DIT LA VÉRITÉ sur ce qui a été écrit.
  *
- * L'ancienne version (components/data-backup.tsx) enchaînait huit écritures
- * sans lire un seul des huit booléens de `writeKey`, puis affichait
- * « Sauvegarde restaurée » quoi qu'il arrive. Sur un stockage saturé — le cas
- * NORMAL ici, puisqu'on réécrit une banque de ~2,8 Mo par-dessus une autre —
- * l'élève se retrouvait avec un mélange de deux appareils : des séances
- * important d'un fichier, des exercices restés ceux de la machine, ses notes
- * effacées et jamais remplacées, et la certitude que tout était en place.
+ * L'ancienne version (components/data-backup.tsx) enchaînait les écritures
+ * sans lire un seul des booléens de `writeKey`, puis affichait « Sauvegarde
+ * restaurée » quoi qu'il arrive. Sur un stockage saturé, l'élève se
+ * retrouvait avec un mélange de deux appareils : des séances importées d'un
+ * fichier, ses notes effacées et jamais remplacées, et la certitude que tout
+ * était en place.
  *
  * DEUX RÈGLES, et elles suffisent :
  *
- *  1. LA BANQUE D'ABORD. C'est de loin la plus grosse écriture, donc celle
- *     qui échoue en premier ; la tenter en tête garantit que le refus le plus
+ *  1. LES SÉANCES D'ABORD. C'est la plus grosse écriture, donc celle qui
+ *     échoue en premier ; la tenter en tête garantit que le refus le plus
  *     probable survient quand RIEN n'a encore été touché (`intact: true`).
  *  2. ON S'ARRÊTE AU PREMIER REFUS. Poursuivre ne « sauve » rien : cela
- *     fabrique un état mi-fichier mi-appareil, avec des `exercise_id`
- *     orphelins. Mieux vaut un état cohérent d'avant qu'un état incohérent
- *     d'après.
+ *     fabrique un état mi-fichier mi-appareil. Mieux vaut un état cohérent
+ *     d'avant qu'un état incohérent d'après.
+ *
+ * Une ANCIENNE sauvegarde contient encore `exercises` (et `chapters`) :
+ * ces champs sont acceptés et IGNORÉS — la banque n'existe plus, et les
+ * réécrire reviendrait à remettre 2,8 Mo de poids mort dans le navigateur.
  *
  * Les préférences passent en dernier : ce sont les plus petites, et les
  * seules dont la perte ne coûte que quelques clics.
@@ -1139,13 +1693,18 @@ export interface RestoreOutcome {
  */
 export function restoreBackup(payload: BackupPayload): RestoreOutcome {
   const steps: Array<[string, () => boolean]> = [
-    ["les exercices", () => localData.saveExercises(payload.exercises)],
-    // Juste après la banque : les exercices y renvoient par `chapter_id`, les
-    // séparer d'une écriture ratée laisserait des chapitres fantômes.
-    ["les chapitres", () => localData.saveChapters(payload.chapters ?? [])],
     ["les séances", () => localData.saveSessions(payload.sessions)],
     ["les échéances", () => localData.saveWorkItems(payload.workItems ?? [])],
     ["les notes", () => localData.saveGrades(payload.grades ?? [])],
+    // Absent d'une sauvegarde antérieure au carnet : `[]`, comme les autres
+    // collections optionnelles — l'import REMPLACE, il ne complète pas.
+    ["le carnet à revoir", () => localData.saveReviewItems(payload.reviewItems ?? [])],
+    // Même règle : absent d'une sauvegarde antérieure au carnet d'erreurs ⇒ `[]`.
+    ["le carnet d'erreurs", () => localData.saveErrors(payload.errors ?? [])],
+    // Check-in du soir : absent d'une sauvegarde antérieure ⇒ `[]`.
+    ["les check-ins du soir", () => localData.saveCheckins(payload.checkins ?? [])],
+    // Mémoire des chapitres : absente d'une sauvegarde antérieure ⇒ `[]`.
+    ["la mémoire des chapitres", () => localData.saveChapterMemory(payload.chapterMemory ?? [])],
     ["le planning", () => localData.saveDayPlans(payload.dayPlans ?? [])],
     ["les bilans de semaine", () => localData.saveWeekSnapshots(payload.weekSnapshots ?? [])],
     ["les réglages", () => localData.savePreferences(normalizePreferences(payload.preferences))],
@@ -1159,35 +1718,45 @@ export function restoreBackup(payload: BackupPayload): RestoreOutcome {
   return { ok: true, restored, failedAt: null, intact: false };
 }
 
+/**
+ * Le CONTENU d'une sauvegarde, lu depuis le disque — séparé de
+ * `exportBackup` (qui, lui, déclenche un téléchargement) pour que le
+ * round-trip export → JSON → `validateBackupPayload` → `restoreBackup` se
+ * teste sans navigateur (lib/storage.test.ts). Sans cette séparation, une
+ * collection oubliée à l'export ne se voyait qu'au jour du changement
+ * d'ordinateur — c'est-à-dire trop tard.
+ */
+export function buildBackupPayload(now: Date = new Date()): BackupPayload {
+  return {
+    version: 1,
+    exportedAt: now.toISOString(),
+    sessions: localData.sessions(),
+    preferences: localData.preferences(),
+    weekSnapshots: localData.weekSnapshots(),
+    // Les échéances et les travaux planifiés sont de la saisie MANUELLE de
+    // l'élève — la donnée la moins reconstituable de tout le fichier.
+    workItems: localData.workItems(),
+    // Les notes sont saisies à la main et ne se recalculent pas : une
+    // sauvegarde qui les oublierait perdrait un trimestre de résultats.
+    grades: localData.grades(),
+    // Les intentions de planning passées ne sont pas reconstituables non
+    // plus — voir `DayPlanRecord`.
+    dayPlans: localData.dayPlans(),
+    // Le carnet « À revoir » est de la saisie manuelle pure, et les
+    // cartouches de méthode sont le fruit d'une année de corrigés
+    // disséqués : irremplaçable.
+    reviewItems: localData.reviewItems(),
+    // Le carnet d'erreurs : saisie manuelle pure, irremplaçable.
+    errors: localData.errors(),
+    // Check-in du soir : saisie manuelle, jour après jour — irrécupérable.
+    checkins: localData.checkins(),
+    // Mémoire des chapitres : saisie manuelle et historique de révisions — irrécupérable.
+    chapterMemory: localData.chapterMemory(),
+  };
+}
+
 export function exportBackup(): void {
-  const data = JSON.stringify(
-    {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      exercises: localData.exercises(),
-      sessions: localData.sessions(),
-      preferences: localData.preferences(),
-      // `chapters` (Sprint 3D) : indispensable dans la sauvegarde — les
-      // exercices y renvoient par `chapter_id`. Sans lui, un changement
-      // d'ordinateur restaurerait des exercices avec des chapitres
-      // fantômes (chapter_id pointant vers un catalogue vide).
-      chapters: localData.chapters(),
-      weekSnapshots: localData.weekSnapshots(),
-      // Les échéances et les travaux planifiés sont de la saisie MANUELLE de
-      // l'élève — la donnée la moins reconstituable de tout le fichier. Une
-      // sauvegarde qui les oublierait perdrait exactement ce qu'aucun
-      // amorçage ne peut recréer.
-      workItems: localData.workItems(),
-      // Les notes sont saisies à la main et ne se recalculent pas : une
-      // sauvegarde qui les oublierait perdrait un trimestre de résultats.
-      grades: localData.grades(),
-      // Les intentions de planning passées ne sont pas reconstituables non
-      // plus — voir `DayPlanRecord`.
-      dayPlans: localData.dayPlans(),
-    },
-    null,
-    2
-  );
+  const data = JSON.stringify(buildBackupPayload(), null, 2);
   const url = URL.createObjectURL(new Blob([data], { type: "application/json" }));
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -1216,11 +1785,15 @@ export function exportBackup(): void {
 export interface BackupPayload {
   version: number;
   exportedAt: string;
-  exercises: Exercise[];
   sessions: WorkSession[];
   preferences: Preferences;
-  /** Optionnel : une sauvegarde exportée avant l'ajout des chapitres à l'export n'a pas ce champ ; restauré à `[]` dans ce cas (voir components/data-backup.tsx#confirmImport). */
-  chapters?: Chapter[];
+  /**
+   * HÉRITAGE — présents dans les sauvegardes exportées du temps de la banque
+   * d'exercices. Acceptés sans être validés finement, puis IGNORÉS par
+   * `restoreBackup` ; jamais écrits par `buildBackupPayload`.
+   */
+  exercises?: unknown[];
+  chapters?: unknown[];
   weekSnapshots?: WeekSnapshot[];
   /** Optionnel : une sauvegarde exportée avant ce chantier n'a pas ce champ ; restauré à `[]` dans ce cas (voir components/data-backup.tsx#confirmImport). */
   workItems?: WorkItem[];
@@ -1228,33 +1801,24 @@ export interface BackupPayload {
   grades?: Grade[];
   /** Optionnel, même raison — voir `DayPlanRecord`. */
   dayPlans?: DayPlanRecord[];
+  /** Optionnel, même raison — voir `ReviewItem`. */
+  reviewItems?: ReviewItem[];
+  /** Optionnel, même raison — voir `ErrorEntry`. */
+  errors?: ErrorEntry[];
+  /** Optionnel, même raison — voir `DailyCheckin`. */
+  checkins?: DailyCheckin[];
+  /** Optionnel, même raison — voir `ChapterMemory`. */
+  chapterMemory?: ChapterMemory[];
 }
 
 /**
  * Vérifie la forme MINIMALE d'un JSON importé (frontière de confiance du
  * fichier utilisateur — voir components/data-backup.tsx). Volontairement
- * permissif sur les valeurs de `subject`/`status` (juste `string`, pas la
- * liste exacte) et accepte aussi bien `title` (Sprint 2.5) que l'ancien
- * `chapter` (Sprint 1/2A) : une sauvegarde exportée avant ce sprint doit
- * rester importable, `normalizeExercise`/`normalizeSession` se chargent
- * ensuite de migrer ses valeurs au prochain chargement.
+ * permissif sur les valeurs de `subject` (juste `string`, pas la liste
+ * exacte) : une sauvegarde ancienne doit rester importable,
+ * `normalizeSession` se charge ensuite de migrer ses valeurs au prochain
+ * chargement.
  */
-function isValidExerciseShape(value: unknown): value is Exercise {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    typeof value.subject === "string" &&
-    (typeof value.title === "string" || typeof value.chapter === "string") &&
-    typeof value.source === "string" &&
-    typeof value.difficulty === "number" &&
-    typeof value.status === "string" &&
-    // `duration_minutes` n'est plus exigé (Sprint 2.6) : les sauvegardes
-    // exportées désormais ne l'ont plus (valeur dérivée, jamais stockée) ;
-    // celles exportées avant ce sprint l'ont encore mais il est ignoré.
-    typeof value.created_at === "string"
-  );
-}
-
 function isValidSessionShape(value: unknown): value is WorkSession {
   return (
     isRecord(value) &&
@@ -1267,17 +1831,17 @@ function isValidSessionShape(value: unknown): value is WorkSession {
 
 export function validateBackupPayload(data: unknown): data is BackupPayload {
   if (!isRecord(data)) return false;
-  if (!Array.isArray(data.exercises) || !data.exercises.every(isValidExerciseShape)) return false;
+  // `exercises`/`chapters` ne sont plus EXIGÉS (la banque a été retirée) :
+  // absents d'une sauvegarde récente, présents dans une ancienne. Une
+  // ancienne sauvegarde reste acceptée telle quelle — ces deux champs sont
+  // ignorés à la restauration, leur contenu n'a donc pas à être validé.
   if (!Array.isArray(data.sessions) || !data.sessions.every(isValidSessionShape)) return false;
   if (!isRecord(data.preferences)) return false;
   // Absent (sauvegarde d'avant le Sprint 2.1) ou tableau — jamais required :
   // c'est tout le sens de la rétrocompatibilité ici. La forme fine de chaque
   // entrée est revalidée par `normalizeWeekSnapshot` à la prochaine lecture
-  // (même principe que exercises/sessions, voir plus haut).
+  // (même principe que les séances, voir plus haut).
   if (data.weekSnapshots !== undefined && !Array.isArray(data.weekSnapshots)) return false;
-  // Idem : absent d'une sauvegarde exportée avant l'ajout des chapitres à
-  // l'export ; chaque entrée est revalidée par `normalizeChapter` à la lecture.
-  if (data.chapters !== undefined && !Array.isArray(data.chapters)) return false;
   /*
    * Les trois collections des chantiers Planning et Analytics ÉCHAPPAIENT à
    * cette validation — oubli, pas décision. Un fichier dont `workItems` est
@@ -1295,5 +1859,16 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   if (data.workItems !== undefined && !Array.isArray(data.workItems)) return false;
   if (data.grades !== undefined && !Array.isArray(data.grades)) return false;
   if (data.dayPlans !== undefined && !Array.isArray(data.dayPlans)) return false;
+  // Le carnet « À revoir » suit la même règle dès sa naissance, plutôt que
+  // d'attendre qu'on redécouvre l'oubli : absent (sauvegarde antérieure) ⇒
+  // restauré à `[]` ; présent mais pas un tableau ⇒ fichier refusé, jamais
+  // un carnet effacé en silence.
+  if (data.reviewItems !== undefined && !Array.isArray(data.reviewItems)) return false;
+  // Carnet d'erreurs : même règle dès sa naissance.
+  if (data.errors !== undefined && !Array.isArray(data.errors)) return false;
+  // Check-in du soir : même règle, dès sa naissance.
+  if (data.checkins !== undefined && !Array.isArray(data.checkins)) return false;
+  // Mémoire des chapitres : même règle, dès sa naissance.
+  if (data.chapterMemory !== undefined && !Array.isArray(data.chapterMemory)) return false;
   return true;
 }

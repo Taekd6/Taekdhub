@@ -1,7 +1,6 @@
-import { computeProgressBySubject } from "@/lib/progress";
 import { subjects, totalSeconds } from "@/lib/study";
 import { minutesToSeconds } from "@/lib/utils";
-import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
+import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
  * Bilan hebdomadaire (Sprint 3E) — lundi 00:00 → maintenant.
@@ -11,10 +10,8 @@ import type { Exercise, Subject, WorkSession } from "@/lib/supabase/types";
  * pour son propre repère "Cette semaine" (avant ce sprint, cette borne était
  * calculée localement dans le composant, avec un bug — voir plus bas).
  *
- * Complémentaire de lib/progress.ts (qui répond à "où en est l'élève",
- * cumulatif) : ce module répond à "qu'a fait l'élève CETTE semaine". Aucune
- * duplication de `computeProgressBySubject` : la détection de matière
- * délaissée le réutilise directement pour savoir ce qui reste en attente.
+ * Ce module répond à "qu'a fait l'élève CETTE semaine", à partir des seules
+ * séances.
  */
 
 /**
@@ -66,10 +63,6 @@ export function sessionsInWeek(sessions: WorkSession[], weekStart: Date, now: Da
   });
 }
 
-function sessionsThisWeek(sessions: WorkSession[], now: Date): WorkSession[] {
-  return sessionsInWeek(sessions, startOfWeek(now), now);
-}
-
 export interface SubjectWeekTime {
   subject: Subject;
   seconds: number;
@@ -89,53 +82,12 @@ export function weeklyTimeBySubject(sessions: WorkSession[], now: Date = new Dat
   return timeBySubjectInWeek(sessions, startOfWeek(now), now);
 }
 
-export interface NeglectedSubject {
-  subject: Subject;
-  /** Exercices actifs non maîtrisés en attente dans cette matière — sert à trier et à justifier le signal auprès de l'utilisateur. */
-  pendingCount: number;
-}
-
-/**
- * Matières "délaissées cette semaine" — critère volontairement strict et
- * explicable en une phrase, pas un score composite :
- *
- *   0 seconde investie cette semaine ET au moins un exercice actif non
- *   maîtrisé en attente dans cette matière.
- *
- * Une matière sans exercice, ou déjà entièrement maîtrisée, n'est jamais
- * signalée : un temps à 0 n'y a rien d'anormal à signaler (rien n'attend).
- *
- * N'évalue rien avant que 2 jours pleins se soient écoulés depuis lundi
- * (donc pas avant mercredi) : plus tôt dans la semaine, un temps à 0 est
- * normal pour toutes les matières et ne prouve rien — pas assez de données
- * pour conclure, plutôt que d'inventer un signal à partir de presque rien.
- */
-export function neglectedSubjects(exercises: Exercise[], sessions: WorkSession[], now: Date = new Date()): NeglectedSubject[] {
-  const daysElapsed = Math.floor((now.getTime() - startOfWeek(now).getTime()) / 86400000);
-  if (daysElapsed < 2) return [];
-
-  const timeBySubject = weeklyTimeBySubject(sessions, now);
-  const progress = computeProgressBySubject(exercises);
-
-  return subjects
-    .map((subject) => {
-      const seconds = timeBySubject.find((entry) => entry.subject === subject)?.seconds ?? 0;
-      const subjectProgress = progress.find((entry) => entry.subject === subject);
-      const pendingCount = subjectProgress ? subjectProgress.total - subjectProgress.mastered : 0;
-      return { subject, seconds, pendingCount };
-    })
-    .filter((entry) => entry.seconds === 0 && entry.pendingCount > 0)
-    .sort((a, b) => b.pendingCount - a.pendingCount)
-    .map(({ subject, pendingCount }) => ({ subject, pendingCount }));
-}
-
 export interface WeeklySummary {
   totalSeconds: number;
   objectiveSeconds: number;
   /** 0-100, plafonné — même convention que `model.objective` dans dashboard-overview.tsx. */
   progressPercent: number;
   bySubject: SubjectWeekTime[];
-  neglected: NeglectedSubject[];
 }
 
 /**
@@ -149,7 +101,7 @@ export interface WeeklySummary {
  * comme simple multiple de l'objectif quotidien (rythme différent selon les
  * jours de la semaine).
  */
-export function computeWeeklySummary(exercises: Exercise[], sessions: WorkSession[], weeklyGoalMinutes: number, now: Date = new Date()): WeeklySummary {
+export function computeWeeklySummary(sessions: WorkSession[], weeklyGoalMinutes: number, now: Date = new Date()): WeeklySummary {
   const bySubject = weeklyTimeBySubject(sessions, now);
   const total = bySubject.reduce((sum, entry) => sum + entry.seconds, 0);
   const objectiveSeconds = minutesToSeconds(weeklyGoalMinutes);
@@ -159,6 +111,5 @@ export function computeWeeklySummary(exercises: Exercise[], sessions: WorkSessio
     objectiveSeconds,
     progressPercent: objectiveSeconds ? Math.min(100, Math.round((total / objectiveSeconds) * 100)) : 0,
     bySubject,
-    neglected: neglectedSubjects(exercises, sessions, now),
   };
 }

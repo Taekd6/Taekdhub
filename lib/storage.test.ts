@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { lastStorageWriteFailure, localData, normalizePreferences, normalizeSession, normalizeWorkItem, restoreBackup, validateBackupPayload } from "@/lib/storage";
-import { hexToRgb } from "@/lib/theme";
+import { buildBackupPayload, lastStorageWriteFailure, localData, normalizeCheckin, normalizeErrorEntry, normalizeGrade, normalizePreferences, normalizeSession, normalizeWorkItem, purgeRetiredBankData, restoreBackup, validateBackupPayload } from "@/lib/storage";
+import { DEFAULT_PALETTE, PALETTE_IDS } from "@/lib/theme";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -143,11 +143,11 @@ describe("export → JSON → import — round-trip complet (Phase 7)", () => {
  * valeur incohérente à `applyThemeMode` (lib/theme.ts).
  */
 describe("normalizePreferences — thème et rétrocompatibilité", () => {
-  it("une préférence vide retombe entièrement sur les défauts (dont themeMode: \"system\")", () => {
+  it("une préférence vide retombe entièrement sur les défauts (dont themeMode: \"light\", défaut « Revolut clair »)", () => {
     const prefs = normalizePreferences({});
-    expect(prefs.themeMode).toBe("system");
+    expect(prefs.themeMode).toBe("light");
     expect(prefs.weeklyGoalMinutes).toBe(300);
-    expect(prefs.accent).toMatch(/^#/);
+    expect(prefs.palette).toBe("aurora");
   });
 
   it("conserve un themeMode valide", () => {
@@ -155,10 +155,14 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     expect(normalizePreferences({ themeMode: "dark" }).themeMode).toBe("dark");
   });
 
-  it("retombe sur \"system\" pour un themeMode invalide ou corrompu", () => {
-    expect(normalizePreferences({ themeMode: "bleu" }).themeMode).toBe("system");
-    expect(normalizePreferences({ themeMode: 42 }).themeMode).toBe("system");
-    expect(normalizePreferences({ themeMode: null }).themeMode).toBe("system");
+  it("retombe sur le défaut (clair) pour un themeMode invalide ou corrompu", () => {
+    expect(normalizePreferences({ themeMode: "bleu" }).themeMode).toBe("light");
+    expect(normalizePreferences({ themeMode: 42 }).themeMode).toBe("light");
+    expect(normalizePreferences({ themeMode: null }).themeMode).toBe("light");
+  });
+
+  it("conserve un choix explicite \"system\"", () => {
+    expect(normalizePreferences({ themeMode: "system" }).themeMode).toBe("system");
   });
 
   it("une ancienne sauvegarde sans themeMode ni weeklyGoalMinutes reste valide et n'invente rien d'autre", () => {
@@ -166,8 +170,10 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     const prefs = normalizePreferences(legacy);
     expect(prefs.displayName).toBe("Ancien utilisateur");
     expect(prefs.dailyGoalMinutes).toBe(120);
-    expect(prefs.accent).toBe("#6366f1");
-    expect(prefs.themeMode).toBe("system");
+    // Un indigo choisi à l'époque « Apple » devient Aurora (famille bleu-violet).
+    expect(prefs.palette).toBe("aurora");
+    expect(prefs).not.toHaveProperty("accent");
+    expect(prefs.themeMode).toBe("light");
     expect(prefs.weeklyGoalMinutes).toBe(300);
   });
 });
@@ -204,13 +210,13 @@ describe("localData — lecture blindée d'un stockage corrompu", () => {
 
   it("du JSON illisible ne lève pas — la liste est simplement vide", () => {
     expect(withStorage({ "prepahub:sessions": "{{{cassé" }, () => localData.sessions())).toEqual([]);
-    expect(withStorage({ "prepahub:exercises": "<html>" }, () => localData.exercises())).toEqual([]);
-    expect(withStorage({ "prepahub:chapters": "" }, () => localData.chapters())).toEqual([]);
+    expect(withStorage({ "prepahub:work-items": "<html>" }, () => localData.workItems())).toEqual([]);
+    expect(withStorage({ "prepahub:grades": "" }, () => localData.grades())).toEqual([]);
   });
 
   it("une valeur qui n'est pas un tableau est traitée comme absente", () => {
     expect(withStorage({ "prepahub:sessions": "42" }, () => localData.sessions())).toEqual([]);
-    expect(withStorage({ "prepahub:exercises": '{"pas":"un tableau"}' }, () => localData.exercises())).toEqual([]);
+    expect(withStorage({ "prepahub:work-items": '{"pas":"un tableau"}' }, () => localData.workItems())).toEqual([]);
   });
 
   it("des préférences illisibles retombent sur les valeurs par défaut", () => {
@@ -272,9 +278,8 @@ function rawSession(id: string, startedAt: string): Record<string, unknown> {
  *
  * Chaque appel à `usePrepahubData()` a sa PROPRE copie React (ce n'est pas un
  * contexte partagé). components/timer.tsx, en particulier, n'attend pas
- * `ready` : tant que `maybeSeedBank()` n'a pas résolu (import dynamique de
- * 1,35 Mo de JSON puis reconstruction de 477 exercices), sa liste `sessions`
- * vaut encore `[]` — alors que `useWorkTimer` a déjà restauré le chrono
+ * `ready` : tant que le premier `refresh()` n'a pas eu lieu, sa liste
+ * `sessions` vaut encore `[]` — alors que `useWorkTimer` a déjà restauré le chrono
  * persisté et que le bouton « Terminer » est cliquable. Un rechargement en
  * pleine séance suivi de « Terminer » écrivait `[la séance en cours]` par
  * REMPLACEMENT : toutes les séances précédentes disparaissaient d'un coup.
@@ -317,34 +322,13 @@ describe("localData.mergeSessions — le scénario 'Terminer avant chargement'",
   });
 });
 
-describe("localData.mergeExercises — une progression enregistrée ailleurs n'est pas annulée", () => {
-  it("garde les exercices absents de la liste entrante et applique la modification sur celui qu'elle contient", () => {
-    const disk = [
-      { id: "ex-1", subject: "Mathématiques", title: "A", source: "s", difficulty: 3, status: "à faire", created_at: "2026-01-01T00:00:00.000Z", attempts: 0 },
-      { id: "ex-2", subject: "Physique", title: "B", source: "s", difficulty: 3, status: "maîtrisé", created_at: "2026-01-01T00:00:00.000Z", attempts: 7 },
-    ];
-    const stored = withWritableStorage({ "prepahub:exercises": JSON.stringify(disk) }, () => {
-      const current = localData.exercises();
-      const patched = current.filter((item) => item.id === "ex-1").map((item) => ({ ...item, attempts: 1 }));
-      return localData.mergeExercises(patched);
-    });
-
-    expect(stored).toHaveLength(2);
-    expect(stored.find((item) => item.id === "ex-1")!.attempts).toBe(1);
-    expect(stored.find((item) => item.id === "ex-2")!.attempts).toBe(7);
-  });
-});
-
 /**
  * Régression P0 — quota atteint = résultat perdu EN SILENCE.
  *
  * `localStorage.setItem` lève un `QuotaExceededError`, et aucun appel n'était
- * protégé. Dans components/exercises/focus-view.tsx#commitResult, l'exception
- * partait depuis un gestionnaire de clic React : `update(...)` et `onClose(...)`
- * ne s'exécutaient jamais, l'écran « Comment s'est passé l'exercice ? » restait
- * figé, et la séance était perdue sans aucun message. Ce n'est pas théorique :
- * la banque amorcée sérialise à elle seule ~1,20 M caractères, soit ~2,3 Mo
- * en UTF-16, sur un quota de 5 Mo par origine.
+ * protégé : l'exception partait depuis un gestionnaire de clic React, la suite
+ * du gestionnaire ne s'exécutait jamais, et la séance était perdue sans aucun
+ * message.
  */
 describe("écriture refusée par le navigateur (quota) — ne lève jamais, et ne ment jamais", () => {
   it("saveSessions renvoie false au lieu de faire exploser le gestionnaire de clic", () => {
@@ -361,16 +345,16 @@ describe("écriture refusée par le navigateur (quota) — ne lève jamais, et n
   });
 
   it("l'échec est signalé, pour que l'app puisse le dire plutôt que de laisser croire que c'est enregistré", () => {
-    withWritableStorage({}, () => localData.saveExercises([]), true);
-    expect(lastStorageWriteFailure()?.key).toBe("prepahub:exercises");
+    withWritableStorage({}, () => localData.saveSessions([]), true);
+    expect(lastStorageWriteFailure()?.key).toBe("prepahub:sessions");
     // …et un écriture qui repasse efface le signal.
-    withWritableStorage({}, () => localData.saveExercises([]));
+    withWritableStorage({}, () => localData.saveSessions([]));
     expect(lastStorageWriteFailure()).toBeNull();
   });
 
-  it("saveChapters/savePreferences/saveWeekSnapshots ne lèvent pas non plus", () => {
+  it("saveGrades/savePreferences/saveWeekSnapshots ne lèvent pas non plus", () => {
     withWritableStorage({}, () => {
-      expect(() => localData.saveChapters([])).not.toThrow();
+      expect(() => localData.saveGrades([])).not.toThrow();
       expect(() => localData.saveWeekSnapshots([])).not.toThrow();
       expect(() => localData.saveLastBackupAt("2026-01-01T00:00:00.000Z")).not.toThrow();
       expect(() => localData.savePreferences(normalizePreferences({}))).not.toThrow();
@@ -380,7 +364,7 @@ describe("écriture refusée par le navigateur (quota) — ne lève jamais, et n
 
 /**
  * Compteurs négatifs — une seule valeur suffit à fausser durablement tout ce
- * qui s'additionne (temps du jour, bilan hebdo, XP), sans qu'aucune erreur
+ * qui s'additionne (temps du jour, bilan hebdo), sans qu'aucune erreur
  * ne soit levée nulle part.
  */
 describe("normalize* — un compteur négatif ne franchit jamais la frontière de confiance", () => {
@@ -392,12 +376,6 @@ describe("normalize* — un compteur négatif ne franchit jamais la frontière d
     expect(normalizeSession(makeRawSession({ duration_seconds: 599.6 })).duration_seconds).toBe(600);
   });
 
-  it("des tentatives négatives et une durée estimée négative sont écartées", () => {
-    const raw = [{ id: "ex-1", subject: "Mathématiques", title: "A", source: "s", difficulty: 3, status: "à faire", created_at: "2026-01-01T00:00:00.000Z", attempts: -5, estimated_minutes: -30 }];
-    const [exercise] = withWritableStorage({ "prepahub:exercises": JSON.stringify(raw) }, () => localData.exercises());
-    expect(exercise.attempts).toBe(0);
-    expect(exercise.estimated_minutes).toBeNull();
-  });
 });
 
 /* ══════════════════════════════════════════════════════════════════
@@ -546,10 +524,8 @@ function withQuotaStorage<T>(entries: Record<string, string>, budget: number, ru
 
 function backup(overrides: Record<string, unknown> = {}) {
   return {
-    exercises: [],
     sessions: [],
     preferences: { displayName: "Léo", dailyGoalMinutes: 90 },
-    chapters: [],
     weekSnapshots: [],
     workItems: [],
     grades: [],
@@ -563,17 +539,17 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     const outcome = withQuotaStorage({}, 1_000_000, () => restoreBackup(backup()));
     expect(outcome.ok).toBe(true);
     expect(outcome.failedAt).toBeNull();
-    expect(outcome.restored).toHaveLength(8);
+    expect(outcome.restored).toHaveLength(10);
   });
 
-  it("la banque ne passe pas → RIEN n'est touché, et c'est dit", () => {
+  it("les séances ne passent pas → RIEN n'est touché, et c'est dit", () => {
     const outcome = withQuotaStorage({}, 1, () =>
-      restoreBackup(backup({ exercises: [{ id: "x", subject: "Mathématiques", title: "t", source: "s", difficulty: 3, status: "à faire", created_at: "2026-01-01T00:00:00.000Z" }] }))
+      restoreBackup(backup({ sessions: [normalizeSession(rawSession("s-1", "2026-01-01T08:00:00.000Z"))] }))
     );
     expect(outcome.ok).toBe(false);
     expect(outcome.intact).toBe(true);
     expect(outcome.restored).toEqual([]);
-    expect(outcome.failedAt).toBe("les exercices");
+    expect(outcome.failedAt).toBe("les séances");
   });
 
   it("un refus EN COURS de restauration s'arrête net et nomme ce qui est passé", () => {
@@ -587,9 +563,9 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     expect(outcome.restored).not.toContain(outcome.failedAt);
   });
 
-  it("la banque est tentée EN PREMIER — c'est ce qui rend l'échec inoffensif", () => {
+  it("les séances — la plus grosse écriture — sont tentées EN PREMIER : c'est ce qui rend l'échec inoffensif", () => {
     const outcome = withQuotaStorage({}, 1_000_000, () => restoreBackup(backup()));
-    expect(outcome.restored[0]).toBe("les exercices");
+    expect(outcome.restored[0]).toBe("les séances");
   });
 
   it("les préférences restaurées passent par la normalisation, jamais telles quelles", () => {
@@ -601,22 +577,112 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
       expect(outcome.ok).toBe(true);
       return localData.preferences();
     });
-    expect(hexToRgb(prefs.accent)).not.toBeNull();
+    expect(PALETTE_IDS).toContain(prefs.palette);
     expect(prefs.contestDate).toBe("");
     expect(prefs.dailyGoalMinutes).toBeGreaterThan(0);
+  });
+
+  it("les budgets par matière font l'aller-retour export → fichier → restauration", () => {
+    // Le cycle réel d'`exportBackup` : les préférences telles que lues, puis
+    // sérialisées en JSON, puis restaurées sur un autre appareil. Un 0
+    // explicite (« je ne suis pas l'anglais ») doit survivre, pas redevenir
+    // le défaut.
+    const exported = normalizePreferences({ weeklySubjectTargets: { Anglais: 0, Mathématiques: 540, Chimie: 90 } });
+    const file = JSON.parse(JSON.stringify(backup({ preferences: exported })));
+    const prefs = withQuotaStorage({}, 1_000_000, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.preferences();
+    });
+    expect(prefs.weeklySubjectTargets).toEqual(exported.weeklySubjectTargets);
+    expect(prefs.weeklySubjectTargets.Anglais).toBe(0);
+  });
+
+  it("une ancienne sauvegarde qui porte encore palette et couleurs de matière se restaure sans erreur, et les abandonne", () => {
+    const file = JSON.parse(
+      JSON.stringify(backup({ preferences: { ...normalizePreferences({ displayName: "Ancien" }), subjectPalette: "ocean", subjectColors: { Chimie: "#ff8800" } } }))
+    );
+    const prefs = withQuotaStorage({}, 1_000_000, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.preferences();
+    }) as Record<string, unknown>;
+    expect(prefs.displayName).toBe("Ancien");
+    expect(prefs).not.toHaveProperty("subjectPalette");
+    expect(prefs).not.toHaveProperty("subjectColors");
+  });
+});
+
+describe("normalizePreferences — couleurs de matière retirées (refonte « Apple »)", () => {
+  it("une préférence « Nuit » (palette + surcharges) est lue sans erreur, et les deux clés disparaissent", () => {
+    for (const legacy of [
+      { subjectPalette: "neon", subjectColors: {} },
+      { subjectPalette: "ocean", subjectColors: { Chimie: "#FF8800", Physique: "bleu", Latin: "#000000" } },
+      { subjectPalette: 3, subjectColors: "violet" },
+      { subjectPalette: null, subjectColors: null },
+    ]) {
+      const prefs = normalizePreferences({ displayName: "Ancien", accent: "#6366f1", ...legacy }) as Record<string, unknown>;
+      expect(prefs.displayName).toBe("Ancien");
+      expect(prefs.palette).toBe("aurora");
+      expect(prefs).not.toHaveProperty("accent");
+      expect(prefs).not.toHaveProperty("subjectPalette");
+      expect(prefs).not.toHaveProperty("subjectColors");
+    }
+  });
+
+  it("les anciens accents PAR DÉFAUT (bleu Apple, « Miel », « Menthe ») donnent Aurora : ils n'ont jamais été choisis", () => {
+    for (const accent of ["#0a84ff", "#e0a758", "#E0A758", "#5eead4"]) {
+      expect(normalizePreferences({ accent }).palette, accent).toBe(DEFAULT_PALETTE);
+    }
+    expect(DEFAULT_PALETTE).toBe("aurora");
+  });
+});
+
+describe("normalizePreferences — migration de l'accent vers une palette (refonte « Revolut clair »)", () => {
+  it("un accent choisi garde sa famille de teinte", () => {
+    // Les six préréglages de la refonte « Apple ».
+    expect(normalizePreferences({ accent: "#5e5ce6" }).palette).toBe("aurora"); // Indigo
+    expect(normalizePreferences({ accent: "#30d158" }).palette).toBe("neon"); // Vert
+    expect(normalizePreferences({ accent: "#ff9f0a" }).palette).toBe("sunset"); // Orange
+    expect(normalizePreferences({ accent: "#ff375f" }).palette).toBe("sunset"); // Rose
+    expect(normalizePreferences({ accent: "#8e8e93" }).palette).toBe("aurora"); // Graphite (gris)
+    expect(normalizePreferences({ accent: "#38bdf8" }).palette).toBe("ocean"); // un bleu ciel personnalisé
+    expect(normalizePreferences({ accent: "#d4f36b" }).palette).toBe("neon");
+  });
+
+  it("une palette explicite l'emporte sur tout ancien champ", () => {
+    expect(normalizePreferences({ palette: "ocean", accent: "#ff375f", subjectPalette: "sunset" }).palette).toBe("ocean");
+  });
+
+  it("à défaut d'accent choisi, l'ancienne palette « Nuit » est reprise quand elle existe encore", () => {
+    expect(normalizePreferences({ subjectPalette: "sunset" }).palette).toBe("sunset");
+    expect(normalizePreferences({ subjectPalette: "ocean", accent: "#0a84ff" }).palette).toBe("ocean");
+    // « neon » était le défaut « Nuit », « pastel » n'existe plus.
+    expect(normalizePreferences({ subjectPalette: "neon" }).palette).toBe("aurora");
+    expect(normalizePreferences({ subjectPalette: "pastel" }).palette).toBe("aurora");
+  });
+
+  it("une palette inconnue ou corrompue retombe sur Aurora", () => {
+    for (const palette of ["arc-en-ciel", 42, null, { id: "ocean" }]) {
+      expect(normalizePreferences({ palette }).palette).toBe("aurora");
+    }
+  });
+
+  it("la palette fait l'aller-retour export → fichier → restauration", () => {
+    const exported = normalizePreferences({ palette: "neon", themeMode: "dark" });
+    const file = JSON.parse(JSON.stringify(backup({ preferences: exported })));
+    const prefs = withQuotaStorage({}, 1_000_000, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.preferences();
+    });
+    expect(prefs.palette).toBe("neon");
+    expect(prefs.themeMode).toBe("dark");
   });
 });
 
 describe("normalizePreferences — frontière de trust réelle, pas trois champs sur huit", () => {
-  it("un accent non textuel retombe sur le défaut au lieu de faire planter applyAccent", () => {
-    const prefs = normalizePreferences({ accent: 42 });
-    expect(typeof prefs.accent).toBe("string");
-    // Le vrai critère : la valeur produite doit être ACCEPTÉE par l'analyseur qui l'utilisera.
-    expect(hexToRgb(prefs.accent)).not.toBeNull();
-  });
-
-  it("un accent textuel mais invalide est refusé lui aussi", () => {
-    expect(hexToRgb(normalizePreferences({ accent: "rouge vif" }).accent)).not.toBeNull();
+  it("un ancien accent non textuel ou invalide ne fait rien planter et donne la palette par défaut", () => {
+    for (const accent of [42, "rouge vif", null, { hex: "#fff" }]) {
+      expect(normalizePreferences({ accent }).palette).toBe("aurora");
+    }
   });
 
   it("une date de concours illisible ne peut plus atteindre Intl.DateTimeFormat", () => {
@@ -646,8 +712,100 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
   it("aucune clé étrangère ne ressort des préférences", () => {
     const prefs = normalizePreferences({ __proto__: null, intrus: "oui", autre: 1 }) as Record<string, unknown>;
     expect(Object.keys(prefs).sort()).toEqual(
-      ["accent", "capacityByWeekday", "contestDate", "dailyGoalMinutes", "displayName", "planningMarginPercent", "themeMode", "weeklyGoalMinutes"]
+      [
+        "capacityByWeekday",
+        "contestDate",
+        "dailyGoalMinutes",
+        "displayName",
+        "onboardingCompletedAt",
+        "palette",
+        "planningMarginPercent",
+        "themeMode",
+        "weeklyGoalMinutes",
+        "weeklySubjectTargets",
+      ]
     );
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   BANQUE D'EXERCICES RETIRÉE — ménage du stockage, anciennes sauvegardes
+   ══════════════════════════════════════════════════════════════════ */
+
+describe("banque d'exercices retirée — les anciennes données ne gênent plus, et ne se perdent pas", () => {
+  const oldExercise = { id: "x", subject: "Mathématiques", title: "t", source: "s", difficulty: 3, status: "à faire", created_at: "2026-01-01T00:00:00.000Z" };
+
+  it("le ménage efface l'ancienne banque, ses chapitres et ses drapeaux d'amorçage", () => {
+    const { removed, remaining } = withWritableStorage(
+      {
+        "prepahub:exercises": JSON.stringify([oldExercise]),
+        "prepahub:chapters": "[]",
+        "prepahub:seeded": "2026-01-01T00:00:00.000Z",
+        "prepahub:seeded:version": "12",
+        "prepahub:sessions": JSON.stringify([rawSession("s-1", "2026-01-01T08:00:00.000Z")]),
+      },
+      () => {
+        const globals = globalThis as unknown as { localStorage: { removeItem?: (key: string) => void } };
+        globals.localStorage.removeItem = (key: string) => {
+          delete writeStore[key];
+        };
+        try {
+          return { removed: purgeRetiredBankData(), remaining: { ...writeStore } };
+        } finally {
+          delete globals.localStorage.removeItem;
+        }
+      }
+    );
+    expect(removed.sort()).toEqual(["prepahub:chapters", "prepahub:exercises", "prepahub:seeded", "prepahub:seeded:version"]);
+    // Les données de l'élève, elles, ne sont pas touchées.
+    expect(Object.keys(remaining)).toEqual(["prepahub:sessions"]);
+  });
+
+  it("le ménage ne fait rien la deuxième fois, et ne lève jamais", () => {
+    const removed = withWritableStorage({}, () => {
+      const globals = globalThis as unknown as { localStorage: { removeItem?: (key: string) => void } };
+      globals.localStorage.removeItem = () => {
+        throw new Error("SecurityError");
+      };
+      try {
+        return purgeRetiredBankData();
+      } finally {
+        delete globals.localStorage.removeItem;
+      }
+    });
+    expect(removed).toEqual([]);
+  });
+
+  it("l'export ne contient plus ni exercices ni chapitres", () => {
+    const payload = withWritableStorage({}, () => buildBackupPayload(new Date("2026-09-20T12:00:00.000Z")));
+    expect(payload).not.toHaveProperty("exercises");
+    expect(payload).not.toHaveProperty("chapters");
+    expect(validateBackupPayload(JSON.parse(JSON.stringify(payload)))).toBe(true);
+  });
+
+  it("une ANCIENNE sauvegarde avec des exercices et des chapitres reste valide…", () => {
+    const legacy = {
+      version: 1,
+      exportedAt: "2026-05-01T00:00:00.000Z",
+      exercises: [oldExercise],
+      chapters: [{ id: "c-1", subject: "Mathématiques", label: "Suites" }],
+      sessions: [rawSession("s-1", "2026-01-01T08:00:00.000Z")],
+      preferences: {},
+    };
+    expect(validateBackupPayload(JSON.parse(JSON.stringify(legacy)))).toBe(true);
+  });
+
+  it("… et sa restauration écrit les séances sans jamais réécrire la banque", () => {
+    const legacy = backup({
+      exercises: [oldExercise],
+      chapters: [{ id: "c-1", subject: "Mathématiques", label: "Suites" }],
+      sessions: [normalizeSession(rawSession("s-1", "2026-01-01T08:00:00.000Z"))],
+    });
+    const { outcome, keys } = withWritableStorage({}, () => ({ outcome: restoreBackup(legacy), keys: Object.keys(writeStore) }));
+    expect(outcome.ok).toBe(true);
+    expect(keys).toContain("prepahub:sessions");
+    expect(keys).not.toContain("prepahub:exercises");
+    expect(keys).not.toContain("prepahub:chapters");
   });
 });
 
@@ -716,5 +874,268 @@ describe("merge* — l'état React reçoit ce qui est sur le DISQUE, pas l'inten
       localData.mergeSessions([normalizeSession(rawSession("s-2", "2026-02-01T08:00:00.000Z"))])
     );
     expect(stored.map((session) => session.id).sort()).toEqual(["s-1", "s-2"]);
+  });
+});
+
+/**
+ * CARNET « À REVOIR » — la seule collection née APRÈS la leçon des trois
+ * collections oubliées par `validateBackupPayload`. On vérifie donc d'emblée
+ * les trois promesses : le carnet voyage dans la sauvegarde, une sauvegarde
+ * ancienne (sans le champ) reste importable et REMPLACE par un carnet vide,
+ * et une suppression n'est jamais ressuscitée par l'écriture suivante.
+ */
+describe("carnet « À revoir » — sauvegarde, restauration, suppression", () => {
+  const entries = [
+    { id: "r-1", subject: "Mathématiques", text: "Cartouche : suite convergente → monotone bornée", kind: "méthode", createdAt: "2026-09-20T10:00:00.000Z", doneAt: null },
+    { id: "r-2", subject: "Physique", text: "Refaire exo 12 TD4", kind: "à revoir", createdAt: "2026-09-21T10:00:00.000Z", doneAt: "2026-09-22T10:00:00.000Z" },
+  ];
+
+  it("export → JSON → validation → restauration sur un autre appareil : rien ne se perd", () => {
+    const file = withWritableStorage({ "prepahub:reviewItems": JSON.stringify(entries) }, () =>
+      JSON.parse(JSON.stringify(buildBackupPayload(new Date("2026-09-23T12:00:00.000Z"))))
+    );
+    expect(file.reviewItems).toEqual(entries);
+    expect(validateBackupPayload(file)).toBe(true);
+
+    const restored = withWritableStorage({}, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.reviewItems();
+    });
+    expect(restored).toEqual(entries);
+  });
+
+  it("une sauvegarde d'avant le carnet reste importable, et le carnet de l'appareil est remplacé par un carnet vide", () => {
+    const legacy = { version: 1, exportedAt: "2026-09-01T00:00:00.000Z", exercises: [], sessions: [], preferences: {} };
+    expect(validateBackupPayload(legacy)).toBe(true);
+    const after = withWritableStorage({ "prepahub:reviewItems": JSON.stringify(entries) }, () => {
+      restoreBackup(legacy as never);
+      return localData.reviewItems();
+    });
+    expect(after).toEqual([]);
+  });
+
+  it("refuse un fichier dont le carnet n'est pas une liste", () => {
+    expect(validateBackupPayload({ exercises: [], sessions: [], preferences: {}, reviewItems: "oups" })).toBe(false);
+  });
+
+  it("une entrée supprimée ne revient pas : l'écriture REMPLACE", () => {
+    const after = withWritableStorage({ "prepahub:reviewItems": JSON.stringify(entries) }, () => {
+      localData.saveReviewItems(localData.reviewItems().filter((entry) => entry.id !== "r-1"));
+      return localData.reviewItems();
+    });
+    expect(after.map((entry) => entry.id)).toEqual(["r-2"]);
+  });
+});
+
+/* ── Carnet d'erreurs ─────────────────────────────────────────────────
+ * Les mêmes trois promesses que le carnet « À revoir » — voyager dans la
+ * sauvegarde, rester importable depuis une sauvegarde ancienne, ne jamais
+ * ressusciter une suppression — plus la frontière de confiance propre au
+ * carnet : un type inconnu écarte l'entrée plutôt que d'inventer un type.
+ */
+describe("carnet d'erreurs — normalisation, sauvegarde, restauration, suppression", () => {
+  const errors = [
+    {
+      id: "e-1",
+      subject: "Physique",
+      date: "2026-09-20",
+      source: "colle",
+      type: "calcul",
+      description: "Signe oublié dans la projection",
+      fix: "Faire un schéma avec les axes",
+      chapterId: null,
+      exerciseId: null,
+      reviewItemId: null,
+      createdAt: "2026-09-20T18:00:00.000Z",
+    },
+    {
+      id: "e-2",
+      subject: "Mathématiques",
+      date: "2026-09-21",
+      source: "DS",
+      type: "cours",
+      description: "Définition de la continuité uniforme",
+      fix: null,
+      chapterId: "ch-1",
+      exerciseId: "ex-1",
+      reviewItemId: "r-9",
+      createdAt: "2026-09-21T18:00:00.000Z",
+    },
+  ];
+
+  it("répare ce qui se répare, écarte ce qui ne veut plus rien dire", () => {
+    expect(normalizeErrorEntry({ ...errors[0], source: "khôlle", fix: "  ", chapterId: 3 })).toMatchObject({ source: "autre", fix: null, chapterId: null });
+    expect(normalizeErrorEntry({ ...errors[0], description: "   " })).toBeNull();
+    expect(normalizeErrorEntry({ ...errors[0], subject: "Latin" })).toBeNull();
+    // Type inconnu : écartée, jamais rangée d'office dans un type inventé.
+    expect(normalizeErrorEntry({ ...errors[0], type: "fatigue" })).toBeNull();
+    // Date illisible : retombe sur le jour de saisie.
+    expect(normalizeErrorEntry({ ...errors[0], date: "hier" })?.date).toBe("2026-09-20");
+    // Matière renommée : migrée, pas perdue.
+    expect(normalizeErrorEntry({ ...errors[0], subject: "Informatique" })?.subject).toBe("Informatique TC");
+  });
+
+  it("export → JSON → validation → restauration sur un autre appareil : rien ne se perd", () => {
+    const file = withWritableStorage({ "prepahub:errors": JSON.stringify(errors) }, () =>
+      JSON.parse(JSON.stringify(buildBackupPayload(new Date("2026-09-23T12:00:00.000Z"))))
+    );
+    expect(file.errors).toEqual(errors);
+    expect(validateBackupPayload(file)).toBe(true);
+    const restored = withWritableStorage({}, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.errors();
+    });
+    expect(restored).toEqual(errors);
+  });
+
+  it("une sauvegarde d'avant le carnet reste importable, et le carnet de l'appareil est remplacé par un carnet vide", () => {
+    const legacy = { version: 1, exportedAt: "2026-09-01T00:00:00.000Z", exercises: [], sessions: [], preferences: {} };
+    expect(validateBackupPayload(legacy)).toBe(true);
+    const after = withWritableStorage({ "prepahub:errors": JSON.stringify(errors) }, () => {
+      restoreBackup(legacy as never);
+      return localData.errors();
+    });
+    expect(after).toEqual([]);
+  });
+
+  it("refuse un fichier dont le carnet d'erreurs n'est pas une liste", () => {
+    expect(validateBackupPayload({ exercises: [], sessions: [], preferences: {}, errors: { a: 1 } })).toBe(false);
+  });
+
+  it("une erreur supprimée ne revient pas : l'écriture REMPLACE", () => {
+    const after = withWritableStorage({ "prepahub:errors": JSON.stringify(errors) }, () => {
+      localData.saveErrors(localData.errors().filter((entry) => entry.id !== "e-1"));
+      return localData.errors();
+    });
+    expect(after.map((entry) => entry.id)).toEqual(["e-2"]);
+  });
+});
+
+
+/* ── Check-in du soir et calibration des notes ────────────────────── */
+
+describe("check-in du soir — normalisation, sauvegarde, restauration", () => {
+  const entries = [
+    { date: "2026-09-21", sleepHours: 6.5, energy: 2, stress: 4, note: null, updatedAt: "2026-09-21T20:00:00.000Z" },
+    { date: "2026-09-22", sleepHours: 8, energy: 4, stress: 2, note: "Colle de maths OK", updatedAt: "2026-09-22T20:30:00.000Z" },
+  ];
+
+  it("écarte un check-in sans jour ou sans mesure lisible — rien n'est inventé", () => {
+    expect(normalizeCheckin({ sleepHours: 7, energy: 3, stress: 3 })).toBeNull();
+    expect(normalizeCheckin({ date: "2026-09-22", energy: 3, stress: 3 })).toBeNull();
+    expect(normalizeCheckin({ date: "2026-09-22", sleepHours: 7, energy: "fort", stress: 3 })).toBeNull();
+  });
+
+  it("ramène dans les bornes une saisie maladroite mais lisible", () => {
+    expect(normalizeCheckin({ date: "2026-09-22", sleepHours: 13, energy: 8, stress: 0, note: "   " })).toMatchObject({
+      sleepHours: 10,
+      energy: 5,
+      stress: 1,
+      note: null,
+    });
+    expect(normalizeCheckin({ date: "2026-09-22", sleepHours: 6.8, energy: 3, stress: 3 })?.sleepHours).toBe(7);
+  });
+
+  it("un seul check-in par jour à la lecture : le plus récent gagne", () => {
+    const duplicated = [...entries, { ...entries[1], sleepHours: 5, updatedAt: "2026-09-22T19:00:00.000Z" }];
+    const read = withWritableStorage({ "prepahub:checkins": JSON.stringify(duplicated) }, () => localData.checkins());
+    expect(read).toEqual(entries);
+  });
+
+  it("export → JSON → validation → restauration : rien ne se perd", () => {
+    const file = withWritableStorage({ "prepahub:checkins": JSON.stringify(entries) }, () =>
+      JSON.parse(JSON.stringify(buildBackupPayload(new Date("2026-09-23T12:00:00.000Z"))))
+    );
+    expect(file.checkins).toEqual(entries);
+    expect(validateBackupPayload(file)).toBe(true);
+    const restored = withWritableStorage({}, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.checkins();
+    });
+    expect(restored).toEqual(entries);
+  });
+
+  it("une sauvegarde d'avant le check-in reste importable, et remplace par une liste vide", () => {
+    const legacy = { version: 1, exportedAt: "2026-09-01T00:00:00.000Z", exercises: [], sessions: [], preferences: {} };
+    expect(validateBackupPayload(legacy)).toBe(true);
+    const after = withWritableStorage({ "prepahub:checkins": JSON.stringify(entries) }, () => {
+      restoreBackup(legacy as never);
+      return localData.checkins();
+    });
+    expect(after).toEqual([]);
+  });
+
+  it("refuse un fichier dont les check-ins ne sont pas une liste", () => {
+    expect(validateBackupPayload({ exercises: [], sessions: [], preferences: {}, checkins: "oups" })).toBe(false);
+  });
+});
+
+describe("calibration — prédictions et notes en attente dans la sauvegarde", () => {
+  const grades = [
+    { id: "g-1", subject: "Physique", title: "DS 1", kind: "ds", date: "2026-09-10", score: 12, maxScore: 20, predictedScore: 14, createdAt: "2026-09-10T18:00:00.000Z" },
+    { id: "g-2", subject: "Physique", title: "DS 2", kind: "ds", date: "2026-09-20", score: null, maxScore: 20, predictedScore: 13, createdAt: "2026-09-20T18:00:00.000Z" },
+    { id: "g-3", subject: "Chimie", title: "", kind: "colle", date: "2026-09-12", score: 15, maxScore: 20, createdAt: "2026-09-12T18:00:00.000Z" },
+  ];
+
+  it("une note en attente a besoin d'une prédiction ; sans l'une ni l'autre, elle est écartée", () => {
+    expect(normalizeGrade(grades[1])).toEqual(grades[1]);
+    expect(normalizeGrade({ ...grades[1], predictedScore: undefined })).toBeNull();
+    expect(normalizeGrade({ ...grades[0], predictedScore: 30 })?.predictedScore).toBe(20);
+  });
+
+  it("export → JSON → restauration : prédictions, notes en attente et anciennes notes intactes", () => {
+    const file = withWritableStorage({ "prepahub:grades": JSON.stringify(grades) }, () =>
+      JSON.parse(JSON.stringify(buildBackupPayload(new Date("2026-09-23T12:00:00.000Z"))))
+    );
+    expect(file.grades).toEqual(grades);
+    const restored = withWritableStorage({}, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.grades();
+    });
+    expect(restored).toEqual(grades);
+    expect("predictedScore" in restored[2]).toBe(false);
+  });
+});
+
+describe("mémoire des chapitres (FSRS) — dans la sauvegarde", () => {
+  const chapters = [
+    {
+      id: "c-1",
+      subject: "Mathématiques",
+      title: "Intégrales généralisées",
+      learnedAt: "2026-09-01",
+      ankiDeck: "Maths::Intégrales",
+      card: { stability: 10.97, difficulty: 2.1, state: "review", reps: 2, lapses: 0, lastReview: "2026-09-04", due: "2026-09-15" },
+      reviews: [{ day: "2026-09-04", rating: "good" }],
+      archived: false,
+      createdAt: "2026-09-01T18:00:00.000Z",
+    },
+  ];
+
+  it("export → JSON → validation → restauration : rien ne se perd", () => {
+    const file = withWritableStorage({ "prepahub:chapterMemory": JSON.stringify(chapters) }, () =>
+      JSON.parse(JSON.stringify(buildBackupPayload(new Date("2026-09-24T12:00:00.000Z"))))
+    );
+    expect(file.chapterMemory).toEqual(chapters);
+    expect(validateBackupPayload(file)).toBe(true);
+    const restored = withWritableStorage({}, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.chapterMemory();
+    });
+    expect(restored).toEqual(chapters);
+  });
+
+  it("une sauvegarde d'avant la mémoire des chapitres reste importable, et remplace par une liste vide", () => {
+    const legacy = { version: 1, exportedAt: "2026-09-01T00:00:00.000Z", sessions: [], preferences: {} };
+    expect(validateBackupPayload(legacy)).toBe(true);
+    const after = withWritableStorage({ "prepahub:chapterMemory": JSON.stringify(chapters) }, () => {
+      restoreBackup(legacy as never);
+      return localData.chapterMemory();
+    });
+    expect(after).toEqual([]);
+  });
+
+  it("refuse un fichier dont la mémoire des chapitres n'est pas une liste", () => {
+    expect(validateBackupPayload({ sessions: [], preferences: {}, chapterMemory: "oups" })).toBe(false);
   });
 });

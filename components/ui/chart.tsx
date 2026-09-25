@@ -1,5 +1,6 @@
 "use client";
 
+import { useId, type CSSProperties } from "react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -11,7 +12,7 @@ import { cn } from "@/lib/cn";
  * pèsent plusieurs centaines de kilo-octets pour deux formes que trente
  * lignes de SVG produisent, et arrivent avec leur propre langage visuel :
  * grilles, tooltips, légendes, couleurs par défaut — tout ce qu'il faudrait
- * ensuite neutraliser pour rester en papier & encre. Les couleurs viennent
+ * ensuite neutraliser pour rester dans le système « Apple ». Les couleurs viennent
  * ici des mêmes variables CSS que le reste de l'application, donc elles
  * suivent l'accent choisi par l'élève et s'inversent avec le thème sans une
  * ligne de configuration.
@@ -29,9 +30,44 @@ import { cn } from "@/lib/cn";
  * descendent jamais sous 11 px.
  */
 
-/** Marges internes du repère, en unités du `viewBox`. Assez pour les étiquettes d'axe, pas plus. */
-const PAD = { top: 6, right: 4, bottom: 6, left: 4 };
-const VIEW = { width: 320, height: 110 };
+/** Proportions du repère de la courbe, en unités du `viewBox`. Le tracé est étiré à la largeur disponible (`preserveAspectRatio="none"`). */
+const VIEW = { width: 320, height: 120 };
+
+/**
+ * ÉCHELLE « RONDE » — le haut de l'axe tombe sur une valeur qu'on lit sans
+ * calculer : l'heure entière au-delà d'une heure, le quart d'heure en deçà.
+ * Un axe qui culmine à « 3 h 47 » oblige à deviner la hauteur de chaque
+ * barre ; un axe à « 4 h » la donne.
+ */
+function niceMinutes(value: number): number {
+  if (value <= 0) return 60;
+  if (value <= 60) return Math.ceil(value / 15) * 15;
+  if (value <= 360) return Math.ceil(value / 60) * 60;
+  return Math.ceil(value / 120) * 120;
+}
+
+/**
+ * INFO-BULLE D'UNE COLONNE — posée au-dessus de la colonne survolée.
+ *
+ * Alignée à GAUCHE pour le premier quart de la série, à DROITE pour le
+ * dernier, centrée ailleurs : une bulle centrée sur la première barre
+ * sortirait du graphique. Purement visuelle (`aria-hidden`) : la valeur est
+ * déjà dans l'`aria-label` de la figure.
+ */
+function Tip({ index, count, children }: { index: number; count: number; children: React.ReactNode }) {
+  const side = index < count / 4 ? "left-0" : index >= (count * 3) / 4 ? "right-0" : "left-1/2 -translate-x-1/2";
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "floating pointer-events-none absolute bottom-full z-10 mb-2 whitespace-nowrap rounded-xl px-2.5 py-1.5 text-2xs leading-tight text-ink opacity-0 transition-opacity duration-200 group-hover:opacity-100",
+        side
+      )}
+    >
+      {children}
+    </span>
+  );
+}
 
 export interface LinePoint {
   label: string;
@@ -40,17 +76,25 @@ export interface LinePoint {
 }
 
 /**
- * COURBE — pour ce qui évolue dans le temps : volume de travail, maîtrise,
- * notes.
+ * COURBE — pour ce qui évolue dans le temps (les notes, sur 20).
  *
  * Une valeur `null` INTERROMPT le tracé au lieu de le ramener à zéro. La
- * distinction est capitale : une semaine sans tentative notée n'est pas une
- * semaine à 0 % de réussite, et une courbe qui plonge à chaque vacance
- * raconterait une régression qui n'a pas eu lieu.
+ * distinction est capitale : une semaine sans note n'est pas une semaine à
+ * zéro, et une courbe qui plonge à chaque vacance raconterait une
+ * régression qui n'a pas eu lieu.
  *
- * Pas de grille, pas d'info-bulle, pas de légende : une ligne de base, deux
- * repères d'axe, et les valeurs extrêmes. Le reste est dit en texte par
- * l'appelant.
+ * REFONTE « APPLE ». Un trait à l'accent sur un voile d'accent très pâle,
+ * trois repères d'axe en filets presque invisibles, et un point par mesure.
+ * Le trait SE DESSINE quand la figure entre dans l'écran (`.ring-draw` sur
+ * un tracé de longueur normalisée à 1 : le même geste que les anneaux), le
+ * voile arrive en fondu juste derrière.
+ *
+ * AUCUN TEXTE NI AUCUN POINT DANS LE SVG. Le tracé a besoin de
+ * `preserveAspectRatio="none"` pour occuper toute la largeur ; or cet
+ * attribut étire aussi les lettres et change les cercles en ellipses. Les
+ * étiquettes d'axe ET les points sont donc composés en HTML par-dessus, en
+ * pourcentages : ils ne se déforment jamais, et chaque point porte son
+ * info-bulle au survol.
  */
 export function LineChart({
   points,
@@ -69,6 +113,7 @@ export function LineChart({
   max?: number;
   className?: string;
 }) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const measured = points.filter((point) => point.value !== null) as { label: string; value: number }[];
   if (measured.length === 0) return null;
 
@@ -80,9 +125,9 @@ export function LineChart({
   // qu'il faut montrer.
   const span = highest - lowest || 1;
 
-  const x = (index: number) =>
-    PAD.left + (points.length === 1 ? (VIEW.width - PAD.left - PAD.right) / 2 : (index * (VIEW.width - PAD.left - PAD.right)) / (points.length - 1));
-  const y = (value: number) => PAD.top + (1 - (value - lowest) / span) * (VIEW.height - PAD.top - PAD.bottom);
+  // Positions en FRACTIONS (0–1), partagées par le SVG et par les points HTML.
+  const fx = (index: number) => (points.length === 1 ? 0.5 : 0.02 + (index * 0.96) / (points.length - 1));
+  const fy = (value: number) => 0.06 + (1 - (value - lowest) / span) * 0.88;
 
   // Segments continus : chaque interruption (`null`) ouvre un nouveau tracé.
   const segments: { index: number; value: number }[][] = [];
@@ -97,68 +142,104 @@ export function LineChart({
   });
   if (current.length > 0) segments.push(current);
 
-  const lastMeasured = [...points].reverse().find((point) => point.value !== null);
-  const lastIndex = lastMeasured ? points.lastIndexOf(lastMeasured) : -1;
+  const toSvg = (segment: { index: number; value: number }[]) =>
+    segment.map((point) => `${fx(point.index) * VIEW.width},${fy(point.value) * VIEW.height}`);
+  const middle = lowest + span / 2;
+  const lastMeasured = measured[measured.length - 1];
 
-  /*
-   * AUCUN TEXTE DANS LE SVG — défaut constaté à l'écran.
-   *
-   * Le tracé a besoin de `preserveAspectRatio="none"` pour occuper toute la
-   * largeur disponible ; or cet attribut étire AUSSI les lettres, d'un
-   * facteur qui vaut ici plus de deux sur un écran large. Les étiquettes
-   * d'axe s'affichaient donc distordues horizontalement, et à 9 px — sous le
-   * seuil de lisibilité que ce chantier s'impose.
-   *
-   * Les repères sont donc composés en HTML autour du SVG : ils reprennent
-   * les rôles typographiques du produit, ne se déforment jamais, et
-   * n'échappent pas au contrôle de taille du reste de l'interface.
-   */
   return (
     <div className={cn("w-full", className)}>
-      <div className="flex gap-2">
-        <div className="flex w-10 shrink-0 flex-col justify-between py-0.5 text-right">
-          <span className="tabular t-meta text-2xs">{formatValue(highest)}</span>
-          <span className="tabular t-meta text-2xs">{formatValue(lowest)}</span>
-        </div>
-        <svg
-          role="img"
-          aria-label={ariaLabel}
-          viewBox={`0 0 ${VIEW.width} ${VIEW.height}`}
-          preserveAspectRatio="none"
-          className="h-28 min-w-0 flex-1"
-        >
-          <line
-            x1={0}
-            x2={VIEW.width}
-            y1={VIEW.height - 1}
-            y2={VIEW.height - 1}
-            stroke="rgb(var(--line-rgb))"
-            strokeWidth={1}
-            vectorEffect="non-scaling-stroke"
-          />
-          {segments.map((segment, index) => (
-            <polyline
-              key={index}
-              fill="none"
-              stroke="rgb(var(--accent-ink-rgb))"
-              strokeWidth={1.5}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-              points={segment.map((point) => `${x(point.index)},${y(point.value)}`).join(" ")}
-            />
+      <div className="flex gap-3">
+        <div className="relative h-44 min-w-0 flex-1">
+          {/* Repères : haut, milieu, bas — des filets, l'étiquette à droite. */}
+          {[highest, middle, lowest].map((value, index) => (
+            <div key={index} aria-hidden className="absolute inset-x-0 flex items-center gap-2" style={{ top: `${fy(value) * 100}%` }}>
+              <span className={cn("h-px flex-1", index === 2 ? "bg-line" : "bg-hairline/[0.07]")} />
+            </div>
           ))}
-          {/* Un seul point marqué : le dernier mesuré. Les marquer tous
-              ajoute du bruit dès qu'il y en a plus de six. */}
-          {lastIndex >= 0 && points[lastIndex].value !== null && (
-            <circle cx={x(lastIndex)} cy={y(points[lastIndex].value as number)} r={3} fill="rgb(var(--accent-ink-rgb))" />
+          <svg role="img" aria-label={ariaLabel} viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
+            {/* Le trait et le voile en DÉGRADÉ de palette (g1 → g2), comme la
+                courbe de l'accueil. Identifiants uniques : deux courbes sur un
+                même écran ne se volent plus leur dégradé. */}
+            <defs>
+              <linearGradient id={`line-veil-${uid}`} x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="var(--g1)" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="var(--g1)" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id={`line-stroke-${uid}`} x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0" stopColor="var(--g1)" />
+                <stop offset="1" stopColor="var(--g2)" />
+              </linearGradient>
+            </defs>
+            {segments.map((segment, index) =>
+              segment.length > 1 ? (
+                <polygon
+                  key={`veil-${index}`}
+                  className="reveal"
+                  style={{ "--i": 3 } as CSSProperties}
+                  fill={`url(#line-veil-${uid})`}
+                  points={[
+                    `${fx(segment[0].index) * VIEW.width},${VIEW.height * 0.94}`,
+                    ...toSvg(segment),
+                    `${fx(segment[segment.length - 1].index) * VIEW.width},${VIEW.height * 0.94}`,
+                  ].join(" ")}
+                />
+              ) : null
+            )}
+            {segments.map((segment, index) => (
+              <polyline
+                key={index}
+                fill="none"
+                stroke={`url(#line-stroke-${uid})`}
+                strokeWidth={3}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+                pathLength={1}
+                strokeDasharray={1}
+                strokeDashoffset={0}
+                className="ring-draw"
+                style={{ "--ring-len": 1 } as CSSProperties}
+                points={toSvg(segment).join(" ")}
+              />
+            ))}
+          </svg>
+          {/* Les points, en HTML : ronds à toutes les largeurs, survolables. */}
+          {points.map((point, index) =>
+            point.value === null ? null : (
+              <span
+                key={index}
+                className="group absolute -ml-3 -mt-3 grid h-6 w-6 place-items-center"
+                style={{ left: `${fx(index) * 100}%`, top: `${fy(point.value) * 100}%` }}
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    "reveal block rounded-full border-2 border-[var(--g1)] transition-transform duration-200 group-hover:scale-150",
+                    point === lastMeasured ? "h-3.5 w-3.5 bg-white [box-shadow:0_0_0_5px_rgb(var(--g1-rgb)/0.16)]" : cn("h-2.5 w-2.5 bg-panel", points.length > 14 && "scale-0 group-hover:scale-150")
+                  )}
+                  style={{ "--i": 4 } as CSSProperties}
+                />
+                <Tip index={index} count={points.length}>
+                  <span className="font-bold tabular">{formatValue(point.value)}</span>
+                  <span className="text-muted"> · {point.label}</span>
+                </Tip>
+              </span>
+            )
           )}
-        </svg>
+        </div>
+        <div aria-hidden className="relative w-8 shrink-0">
+          {[highest, middle, lowest].map((value, index) => (
+            <span key={index} className="tabular t-meta absolute left-0 -translate-y-1/2 text-2xs" style={{ top: `${fy(value) * 100}%` }}>
+              {formatValue(value)}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* Première et dernière abscisse seulement : toutes les afficher les
-          ferait se chevaucher à 320 px, ce qui est pire que l'absence. */}
-      <div className="mt-1.5 flex justify-between pl-12">
+          ferait se chevaucher à 390 px, ce qui est pire que l'absence. */}
+      <div aria-hidden className="mr-11 mt-2 flex justify-between">
         <span className="t-meta text-2xs">{points[0]?.label}</span>
         <span className="t-meta text-2xs">{points[points.length - 1]?.label}</span>
       </div>
@@ -178,15 +259,15 @@ export interface PairedBar {
 /**
  * BARRES APPARIÉES — prévu contre réalisé, jour par jour.
  *
- * DEUX BARRES CÔTE À CÔTE, et non superposées. La première version
- * dessinait le prévu en contour DERRIÈRE le réalisé : dès que le réalisé
- * atteignait le prévu, le contour disparaissait complètement, et la
+ * DEUX BARRES CÔTE À CÔTE, et non superposées : dès que le réalisé
+ * atteignait le prévu, un contour dessiné derrière disparaissait, et la
  * comparaison — la seule raison d'être de la figure — devenait invisible.
- * Constaté à l'écran, pas supposé.
  *
- * Les barres sont aussi BORNÉES EN LARGEUR : réparties sur toute la largeur
- * d'un écran de 1440 px, sept paires devenaient des pavés de cent pixels,
- * qui ne se lisent plus comme des barres.
+ * LE PRÉVU EN GRIS, LE RÉALISÉ À L'ACCENT : l'œil va d'abord à ce qui a eu
+ * lieu. Les barres sont BORNÉES EN LARGEUR (sept paires étalées sur 1 440 px
+ * deviennent des pavés) et poussent depuis la ligne de base, en cascade,
+ * quand la figure entre dans l'écran. Au survol, une info-bulle donne les
+ * deux valeurs.
  *
  * Un jour sans intention enregistrée n'a PAS de barre « prévu » — il n'est
  * pas « prévu à zéro », il est hors comparaison, et cette différence-là doit
@@ -195,40 +276,56 @@ export interface PairedBar {
 export function PairedBars({
   bars,
   ariaLabel,
+  formatValue = (value) => String(value),
   className,
 }: {
   bars: PairedBar[];
   ariaLabel: string;
+  formatValue?: (value: number) => string;
   className?: string;
 }) {
   if (bars.length === 0) return null;
-  const highest = Math.max(1, ...bars.flatMap((bar) => [bar.planned ?? 0, bar.actual]));
+  const highest = niceMinutes(Math.max(1, ...bars.flatMap((bar) => [bar.planned ?? 0, bar.actual])));
   // Un minimum visible pour toute valeur non nulle : une séance de dix
   // minutes ne doit pas disparaître face à une journée de quatre heures.
-  const height = (value: number) => `${Math.max(value > 0 ? 4 : 0, (value / highest) * 100)}%`;
+  const height = (value: number) => `${Math.max(value > 0 ? 3 : 0, (value / highest) * 100)}%`;
 
   return (
-    <div role="img" aria-label={ariaLabel} className={cn("flex items-end gap-2", className)}>
-      {bars.map((bar) => (
-        <div key={bar.id} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-          <div className="flex h-20 w-full items-end justify-center gap-1">
-            {/* PRÉVU — un contour, donc reconnaissable comme une intention. */}
-            <span
-              aria-hidden
-              className={cn("w-3 rounded-sm border border-dashed border-line", bar.planned === null && "invisible")}
-              style={{ height: bar.planned === null ? "0%" : height(bar.planned) }}
-            />
-            {/* RÉALISÉ — un aplat. */}
-            <span
-              aria-hidden
-              className="w-3 rounded-sm"
-              style={{ height: height(bar.actual), backgroundColor: "rgb(var(--accent-ink-rgb) / 0.55)" }}
-            />
-          </div>
-          <span className="t-meta w-full truncate text-center text-2xs">{bar.label}</span>
+    <figure role="img" aria-label={ariaLabel} className={cn("w-full", className)}>
+      <div className="relative">
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 flex items-center gap-2">
+          <span className="h-px flex-1 bg-hairline/[0.07]" />
+          <span className="tabular t-meta text-2xs">{formatValue(highest)}</span>
         </div>
-      ))}
-    </div>
+        <div aria-hidden className="flex h-44 items-end gap-2 border-b border-line pr-12 pt-3 sm:gap-4">
+          {bars.map((bar, index) => (
+            <div key={bar.id} className="group relative flex h-full min-w-0 flex-1 items-end justify-center gap-1">
+              <span
+                className={cn("grow-y w-full max-w-[1.25rem] rounded-full bg-hairline/[0.10]", bar.planned === null && "invisible")}
+                style={{ height: bar.planned === null ? "0%" : height(bar.planned), "--i": index } as CSSProperties}
+              />
+              <span
+                className="bar-grad grow-y w-full max-w-[1.25rem] rounded-full transition-opacity group-hover:opacity-80"
+                style={{ height: height(bar.actual), "--i": index } as CSSProperties}
+              />
+              <Tip index={index} count={bars.length}>
+                <span className="text-muted">prévu </span>
+                <span className="font-bold tabular">{bar.planned === null ? "—" : formatValue(bar.planned)}</span>
+                <span className="text-muted"> · fait </span>
+                <span className="font-bold tabular">{formatValue(bar.actual)}</span>
+              </Tip>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div aria-hidden className="mt-2 flex gap-2 pr-12 sm:gap-4">
+        {bars.map((bar) => (
+          <span key={bar.id} className="t-meta min-w-0 flex-1 truncate text-center text-2xs font-semibold">
+            {bar.label}
+          </span>
+        ))}
+      </div>
+    </figure>
   );
 }
 
@@ -247,60 +344,371 @@ export interface VolumeBar {
  *
  * Une seule série, donc une seule barre par période : c'est la figure la plus
  * simple possible, et c'est voulu. La question posée est « est-ce que je
- * travaille régulièrement, et combien », à laquelle une courbe répond moins
- * bien qu'un peigne — un trou s'y voit immédiatement.
+ * travaille régulièrement, et combien », à laquelle un peigne répond mieux
+ * qu'une courbe — un trou s'y voit immédiatement.
  *
- * UN JOUR À ZÉRO GARDE SA PLACE, avec une barre résiduelle d'un pixel : c'est
+ * GRIS ET UN ACCENT. Toutes les barres en gris ; la DERNIÈRE (aujourd'hui,
+ * ou la semaine en cours) à l'accent — c'est celle qu'on cherche. Au survol,
+ * la barre passe à l'accent et son info-bulle donne la date et la durée.
+ *
+ * UN AXE QU'ON LIT : deux filets (le haut arrondi à l'heure et sa moitié),
+ * étiquetés à droite, et — quand l'appelant le fournit — la ligne de
+ * l'OBJECTIF en pointillé d'accent, qui dit d'un regard quels jours l'ont
+ * atteint.
+ *
+ * UN JOUR À ZÉRO GARDE SA PLACE, avec un socle d'un pixel : c'est
  * l'information principale de la figure. Le masquer donnerait une série
  * continue là où il y a eu une interruption.
  *
- * AUCUNE INFO-BULLE N'EST NÉCESSAIRE pour comprendre : le total et la moyenne
- * sont dits en texte par l'appelant, la valeur maximale est écrite sur l'axe,
- * et chaque barre porte son libellé complet dans `title` + `aria-label`. Sur
- * mobile, où le survol n'existe pas, rien n'est donc perdu.
+ * Les barres POUSSENT depuis la base, en cascade, quand la figure entre dans
+ * l'écran (`.grow-y`). Sur mobile, où le survol n'existe pas, rien n'est
+ * perdu : le total et la moyenne sont dits en texte par l'appelant, et
+ * chaque barre est décrite dans l'`aria-label`.
  */
 export function VolumeBars({
   bars,
   ariaLabel,
   formatValue,
+  goal,
+  goalLabel = "objectif",
   className,
 }: {
   bars: VolumeBar[];
   ariaLabel: string;
   formatValue: (minutes: number) => string;
+  /** Repère horizontal (minutes par barre) — l'objectif quotidien, typiquement. Omis : pas de ligne. */
+  goal?: number;
+  goalLabel?: string;
   className?: string;
 }) {
   if (bars.length === 0) return null;
-  const max = Math.max(...bars.map((bar) => bar.minutes), 1);
+  const observed = Math.max(...bars.map((bar) => bar.minutes), 1);
+  const showGoal = goal !== undefined && goal > 0 && goal <= observed * 1.6;
+  const max = niceMinutes(Math.max(observed, showGoal ? (goal as number) : 0));
+  const dense = bars.length > 14;
 
   return (
-    <figure className={cn("mt-4", className)} role="img" aria-label={ariaLabel}>
-      <div className="flex h-32 items-end gap-[3px]" aria-hidden>
-        {bars.map((bar) => (
-          <div key={bar.id} className="group relative flex h-full min-w-0 flex-1 items-end" title={`${bar.title} — ${formatValue(bar.minutes)}`}>
-            <div
-              className={cn(
-                "w-full rounded-t-[2px] transition-[height]",
-                bar.minutes > 0 ? "bg-accent/70" : "bg-line"
-              )}
-              /* Minimum d'un pixel : un jour sans travail reste visible comme
-                 un creux, et non comme une absence de colonne. */
-              style={{ height: bar.minutes > 0 ? `${Math.max(2, (bar.minutes / max) * 100)}%` : "1px" }}
-            />
+    <figure className={cn("w-full", className)} role="img" aria-label={ariaLabel}>
+      <div className="relative">
+        {/* Filets de repère, étiquetés dans la marge droite. */}
+        {[1, 0.5].map((ratio) => (
+          <div key={ratio} aria-hidden className="pointer-events-none absolute inset-x-0 flex items-center gap-2" style={{ bottom: `${ratio * 100}%` }}>
+            <span className="h-px flex-1 bg-hairline/[0.07]" />
+            {/* Étiquette tue quand la ligne d'objectif passe tout près : deux
+                valeurs superposées dans la marge ne se lisent plus. */}
+            <span className={cn("tabular t-meta w-10 translate-y-1/2 text-2xs", showGoal && Math.abs(ratio - (goal as number) / max) < 0.12 && "invisible")}>
+              {formatValue(max * ratio)}
+            </span>
           </div>
         ))}
+        {showGoal && (
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 z-[1] flex items-center gap-2" style={{ bottom: `${((goal as number) / max) * 100}%` }}>
+            <span className="h-0 flex-1 border-t border-dashed border-[rgb(var(--accent-ink-rgb)/0.7)]" />
+            <span className="tabular w-10 translate-y-1/2 text-2xs font-bold text-accent">{formatValue(goal as number)}</span>
+          </div>
+        )}
+        <div aria-hidden className={cn("flex h-48 items-end border-b border-line pr-12", dense ? "gap-[3px]" : "gap-2 sm:gap-4")}>
+          {bars.map((bar, index) => {
+            const last = index === bars.length - 1;
+            return (
+              <div key={bar.id} className="group relative flex h-full min-w-0 flex-1 items-end justify-center">
+                <div
+                  className={cn(
+                    "grow-y w-full transition-colors duration-200",
+                    dense ? "rounded-t-[4px]" : "max-w-[2.5rem] rounded-[0.875rem]",
+                    // Le dégradé de palette partout : plein sur la dernière
+                    // barre (celle qu'on cherche), voilé sur les autres, qui
+                    // s'allument au survol.
+                    bar.minutes === 0 ? "bg-line" : last ? "bar-grad" : "bar-grad-soft"
+                  )}
+                  style={{ height: bar.minutes > 0 ? `${Math.max(2, (bar.minutes / max) * 100)}%` : "1px", "--i": index } as CSSProperties}
+                />
+                <Tip index={index} count={bars.length}>
+                  <span className="font-bold tabular">{formatValue(bar.minutes)}</span>
+                  <span className="text-muted"> · {bar.title}</span>
+                </Tip>
+              </div>
+            );
+          })}
+        </div>
       </div>
       {/* Les libellés en HTML, jamais dans le SVG : voir `LineChart`. */}
-      <div className="mt-1.5 flex gap-[3px]" aria-hidden>
-        {bars.map((bar) => (
-          <span key={bar.id} className="t-meta min-w-0 flex-1 truncate text-center text-2xs">
+      <div className={cn("mt-2 flex pr-12", dense ? "gap-[3px]" : "gap-2 sm:gap-4")} aria-hidden>
+        {bars.map((bar, index) => (
+          <span
+            key={bar.id}
+            className={cn("t-meta min-w-0 flex-1 overflow-visible whitespace-nowrap text-center text-2xs font-semibold", index === bars.length - 1 && "text-ink")}
+          >
             {bar.label}
           </span>
         ))}
       </div>
-      <figcaption className="t-meta mt-2 flex items-baseline justify-between text-2xs">
-        <span>maximum {formatValue(max)}</span>
-      </figcaption>
+    {showGoal && (
+        <figcaption aria-hidden className="t-meta mt-3 flex items-center gap-2 text-[0.8125rem]">
+          <span className="w-4 border-t border-dashed border-[rgb(var(--accent-ink-rgb))]" />
+          {goalLabel} · <span className="tabular font-semibold text-ink">{formatValue(goal as number)}</span>
+        </figcaption>
+      )}
+    </figure>
+  );
+}
+
+export interface StackSegment {
+  /** Identifiant stable dans la colonne (la matière). */
+  id: string;
+  value: number;
+  /** Couleur CSS du segment. */
+  color: string;
+}
+
+export interface StackColumn {
+  /** Identifiant STABLE — la date, jamais le libellé. */
+  id: string;
+  /** Ce qui s'écrit sous la colonne (« L », « M »…). */
+  label: string;
+  /** Libellé complet, lu au survol et par les lecteurs d'écran. */
+  title: string;
+  /** La colonne du jour est soulignée : c'est le repère qu'on cherche. */
+  highlight?: boolean;
+  /** Jour à venir : pas de socle, pour ne pas le lire comme « zéro ». */
+  muted?: boolean;
+  /** De bas en haut. */
+  segments: StackSegment[];
+}
+
+/**
+ * COLONNES EMPILÉES — la semaine en sept colonnes, chacune découpée par
+ * matière.
+ *
+ * Répond à deux questions d'un seul regard : « ai-je travaillé chaque
+ * jour ? » (la hauteur) et « sur quoi ? » (les paliers de gris, un par matière). Les segments sont
+ * séparés par un liseré de la couleur de la tuile plutôt que par un espace
+ * mesuré : la colonne garde sa hauteur exacte.
+ *
+ * Chaque colonne POUSSE depuis le bas au montage, en cascade (`.grow-y`).
+ * Un jour passé sans travail garde un socle de 3 px — l'interruption doit
+ * se voir ; un jour à venir n'en a pas.
+ */
+export function StackedColumns({
+  columns,
+  ariaLabel,
+  formatValue,
+  className,
+  heightClassName = "h-36",
+}: {
+  columns: StackColumn[];
+  ariaLabel: string;
+  formatValue: (value: number) => string;
+  className?: string;
+  /** Hauteur de la zone des colonnes — plus haute quand la carte a la place. */
+  heightClassName?: string;
+}) {
+  if (columns.length === 0) return null;
+  const max = Math.max(1, ...columns.map((column) => column.segments.reduce((sum, segment) => sum + segment.value, 0)));
+
+  return (
+    <figure role="img" aria-label={ariaLabel} className={cn("w-full", className)}>
+      <div className={cn("flex items-end gap-2 sm:gap-3", heightClassName)} aria-hidden>
+        {columns.map((column, index) => {
+          const total = column.segments.reduce((sum, segment) => sum + segment.value, 0);
+          return (
+            <div
+              key={column.id}
+              className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+              title={`${column.title} — ${formatValue(total)}`}
+            >
+              {total > 0 ? (
+                <div
+                  className="grow-y flex w-full max-w-[2.75rem] flex-col-reverse overflow-hidden rounded-lg"
+                  style={{ height: `${Math.max(4, (total / max) * 100)}%`, "--i": index } as React.CSSProperties}
+                >
+                  {column.segments.map((segment) => (
+                    <span
+                      key={segment.id}
+                      className="block w-full border-t-2 border-panel last:border-t-0"
+                      style={{ height: `${(segment.value / total) * 100}%`, backgroundColor: segment.color }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className={cn("h-[3px] w-full max-w-[2.75rem] rounded-full", column.muted ? "bg-transparent" : "bg-hairline/[0.10]")} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-2 flex gap-2 sm:gap-3" aria-hidden>
+        {columns.map((column) => (
+          <span key={column.id} className={cn("min-w-0 flex-1 text-center text-2xs font-bold", column.highlight ? "text-ink" : "text-subtle")}>
+            <span className={cn("inline-grid h-6 min-w-6 place-items-center rounded-full px-1", column.highlight && "chip-on")}>{column.label}</span>
+          </span>
+        ))}
+      </div>
+    </figure>
+  );
+}
+
+export interface AreaPoint {
+  /** Ce qui s'écrit sous le point (« L », « M »…). */
+  label: string;
+  /** Libellé complet, lu au survol (« jeudi 24 septembre »). */
+  title: string;
+  /** `null` = pas encore de mesure (jour à venir) : la courbe s'arrête avant. */
+  value: number | null;
+  /** Le point à allumer — aujourd'hui. */
+  highlight?: boolean;
+}
+
+/**
+ * Tracé LISSE qui passe par tous les points sans jamais les dépasser —
+ * interpolation cubique monotone (Fritsch–Carlson), celle de `curveMonotoneX`
+ * de d3. Une spline de Catmull-Rom ordinaire « déborde » entre deux points
+ * voisins très différents : la courbe plongerait SOUS zéro entre une journée
+ * vide et une journée pleine, et raconterait un temps négatif.
+ */
+export function monotonePath(points: [number, number][]): string {
+  const n = points.length;
+  if (n === 0) return "";
+  if (n === 1) return `M${points[0][0]},${points[0][1]}`;
+  const dx: number[] = [];
+  const slope: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    dx.push(points[i + 1][0] - points[i][0]);
+    slope.push((points[i + 1][1] - points[i][1]) / (dx[i] || 1));
+  }
+  const tangent: number[] = [slope[0]];
+  for (let i = 1; i < n - 1; i++) {
+    tangent.push(
+      slope[i - 1] * slope[i] <= 0 ? 0 : (3 * (dx[i - 1] + dx[i])) / ((2 * dx[i] + dx[i - 1]) / slope[i - 1] + (dx[i] + 2 * dx[i - 1]) / slope[i])
+    );
+  }
+  tangent.push(slope[n - 2]);
+  const r = (value: number) => Math.round(value * 100) / 100;
+  let d = `M${r(points[0][0])},${r(points[0][1])}`;
+  for (let i = 0; i < n - 1; i++) {
+    const [x0, y0] = points[i];
+    const [x1, y1] = points[i + 1];
+    const h = dx[i] / 3;
+    d += ` C${r(x0 + h)},${r(y0 + h * tangent[i])} ${r(x1 - h)},${r(y1 - h * tangent[i + 1])} ${r(x1)},${r(y1)}`;
+  }
+  return d;
+}
+
+/** Proportions du repère de la courbe d'aire — celles de la maquette (390 × 150). */
+const AREA = { width: 390, height: 150, top: 0.14, bottom: 0.86 };
+
+/**
+ * COURBE D'AIRE — la semaine de l'accueil, telle que dessinée dans la
+ * maquette « Revolut clair » : un trait LISSE en dégradé de marque (c1 → c2),
+ * un voile dégradé qui s'efface vers le bas, et le point du jour allumé.
+ *
+ *   — Le trait SE DESSINE quand la figure entre dans l'écran (`.line-draw`,
+ *     1,8 s), le voile arrive en fondu derrière (`.area-fade`), le point du
+ *     jour « poppe » en dernier (`.pop`).
+ *   — La courbe entre par le bord gauche (palier jusqu'au premier jour) et
+ *     s'ARRÊTE au dernier jour mesuré : les jours à venir ne sont pas des
+ *     zéros, et une chute à zéro raconterait un abandon qui n'a pas eu lieu.
+ *   — Comme `LineChart`, le SVG est étiré (`preserveAspectRatio="none"`) :
+ *     les points et les étiquettes sont en HTML par-dessus, en
+ *     pourcentages, pour rester ronds à toutes les largeurs.
+ *
+ * Aucun axe, aucune grille : la courbe dit « ça monte, ça descend » ; les
+ * valeurs exactes sont au survol et dans l'`aria-label`.
+ */
+export function AreaChart({
+  points,
+  ariaLabel,
+  formatValue,
+  className,
+  heightClassName = "h-[9.375rem]",
+}: {
+  points: AreaPoint[];
+  ariaLabel: string;
+  formatValue: (value: number) => string;
+  className?: string;
+  heightClassName?: string;
+}) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const n = points.length;
+  if (n === 0) return null;
+
+  const measured = points
+    .map((point, index) => ({ ...point, index }))
+    .filter((point): point is AreaPoint & { index: number; value: number } => point.value !== null);
+  const max = Math.max(0, ...measured.map((point) => point.value));
+  const fx = (index: number) => (index + 0.5) / n;
+  const fy = (value: number) => AREA.top + (max > 0 ? 1 - value / max : 1) * (AREA.bottom - AREA.top);
+
+  const coords: [number, number][] = measured.map((point) => [fx(point.index) * AREA.width, fy(point.value) * AREA.height]);
+  // Entrée par le bord gauche ; sortie par le bord droit si le dernier jour est mesuré.
+  if (coords.length > 0) {
+    coords.unshift([0, coords[0][1]]);
+    if (measured[measured.length - 1].index === n - 1) coords.push([AREA.width, coords[coords.length - 1][1]]);
+  }
+  const line = monotonePath(coords);
+  const lastX = coords.length > 0 ? coords[coords.length - 1][0] : 0;
+  const area = coords.length > 1 ? `${line} L${lastX},${AREA.height} L0,${AREA.height} Z` : "";
+
+  return (
+    <figure role="img" aria-label={ariaLabel} className={cn("w-full", className)}>
+      <div className={cn("relative w-full", heightClassName)} aria-hidden>
+        <svg viewBox={`0 0 ${AREA.width} ${AREA.height}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
+          <defs>
+            <linearGradient id={`area-line-${uid}`} x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stopColor="var(--g1)" />
+              <stop offset="1" stopColor="var(--g2)" />
+            </linearGradient>
+            <linearGradient id={`area-fill-${uid}`} x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stopColor="var(--g1)" stopOpacity={0.45} />
+              <stop offset="1" stopColor="var(--g1)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          {area && <path className="area-fade" d={area} fill={`url(#area-fill-${uid})`} />}
+          {coords.length > 1 && (
+            <path
+              className="line-draw"
+              d={line}
+              fill="none"
+              stroke={`url(#area-line-${uid})`}
+              strokeWidth={3.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+              pathLength={1}
+            />
+          )}
+        </svg>
+        {measured.map((point) => (
+          <span
+            key={point.index}
+            className="group absolute -ml-4 -mt-4 grid h-8 w-8 place-items-center"
+            style={{ left: `${fx(point.index) * 100}%`, top: `${fy(point.value) * 100}%` }}
+          >
+            {point.highlight ? (
+              <span
+                className="pop block h-[1.125rem] w-[1.125rem] rounded-full border-[3px] border-[var(--g1)] bg-white"
+                style={{ "--pop-delay": "1.6s", boxShadow: "0 0 0 6px rgb(var(--g1-rgb) / 0.16)" } as CSSProperties}
+              />
+            ) : (
+              <span className="block h-2 w-2 scale-0 rounded-full bg-[var(--g1)] transition-transform duration-200 group-hover:scale-100" />
+            )}
+            <Tip index={point.index} count={n}>
+              <span className="font-bold tabular">{formatValue(point.value)}</span>
+              <span className="text-muted"> · {point.title}</span>
+            </Tip>
+          </span>
+        ))}
+      </div>
+      <div aria-hidden className="mt-2 grid" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+        {points.map((point, index) => (
+          <span
+            key={index}
+            className={cn("text-center text-xs font-bold", point.highlight ? "text-ink" : point.value === null ? "text-subtle/50" : "text-subtle/80")}
+          >
+            {point.label}
+          </span>
+        ))}
+      </div>
     </figure>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Section } from "@/components/ui/section";
+import { Group, Row } from "@/components/ui/grouped";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -72,86 +72,84 @@ export function CapacityForm() {
    * rendu serveur. Les autres écrans qui affichent des données locales
    * attendent déjà `ready` pour cette raison (voir components/timer.tsx).
    */
-  if (!ready) return <Skeleton className="h-64 w-full rounded-xl" />;
+  if (!ready) return <Skeleton className="h-96 w-full rounded-2xl" />;
 
   return (
-    <Section
-      variant="panel"
-      label="Planning"
-      title="Ton temps réellement disponible"
-      description="Ce que TaekdHub a le droit de remplir quand il répartit tes échéances. À ne pas confondre avec ton objectif : l'objectif est ce que tu vises, la capacité est ce dont tu disposes."
-      className="max-w-2xl"
-    >
-      <form onSubmit={save} className="space-y-6">
-        <div>
-          <span className="t-subhead mb-2 block">Capacité par jour</span>
-          {/* Deux colonnes sur téléphone : sept champs empilés feraient un
-              formulaire de trois écrans pour sept nombres. */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
-            {WEEKDAY_LABELS.map((label, index) => (
-              <label key={label} className="flex items-center justify-between gap-2">
-                <span className="t-meta min-w-0 truncate">{label}</span>
-                <span className="flex shrink-0 items-center gap-1">
-                  <Input
-                    type="number"
-                    min={0}
-                    step={15}
-                    max={MAX_DAILY_CAPACITY_MINUTES}
-                    value={capacity[index]}
-                    onChange={(event) => {
-                      const value = Math.max(0, Math.min(MAX_DAILY_CAPACITY_MINUTES, Math.round(Number(event.target.value) || 0)));
-                      setCapacity((current) => current.map((entry, position) => (position === index ? value : entry)));
-                    }}
-                    className="w-[4.5rem] text-center"
-                    aria-label={`Capacité du ${label.toLowerCase()}, en minutes`}
-                  />
-                  <span className="t-meta text-2xs">min</span>
-                </span>
-              </label>
-            ))}
-          </div>
+    <form onSubmit={save} className="space-y-12">
+      {/* Sept rangées, une par jour, parce qu'une semaine de prépa n'est pas
+          uniforme. La lecture en heures s'écrit sous le jour. */}
+      <Group
+        title="Temps disponible"
+        footer={
+          <>
+            Ce dont tu disposes vraiment, jour par jour — pas ce que tu vises.
+            {suggestions.length > 0 && (
+              <span className="mt-2 flex flex-wrap items-center gap-x-2">
+                {/* On DIT sur combien de journées repose la suggestion : sans
+                    ce nombre, « d'après ton historique » est une affirmation
+                    invérifiable. */}
+                {`D'après tes séances : ${suggestions
+                  .map((entry) => `${WEEKDAY_LABELS[entry.weekday].toLowerCase()} ${entry.minutes} min (${entry.samples} j)`)
+                  .join(", ")}.`}
+                <Button type="button" variant="link" size="sm" className="px-0" onClick={applySuggestions}>
+                  {applied ? "Appliqué" : "Utiliser"}
+                </Button>
+              </span>
+            )}
+          </>
+        }
+      >
+        {WEEKDAY_LABELS.map((label, index) => {
+          const id = `capacity-${index}`;
+          return (
+            <Row key={label} label={label} htmlFor={id} hint={capacity[index] > 0 ? formatSpan(capacity[index] * 60) : "aucun temps"}>
+              <Input
+                id={id}
+                type="number"
+                min={0}
+                step={15}
+                max={MAX_DAILY_CAPACITY_MINUTES}
+                value={capacity[index]}
+                onChange={(event) => {
+                  const value = Math.max(0, Math.min(MAX_DAILY_CAPACITY_MINUTES, Math.round(Number(event.target.value) || 0)));
+                  setCapacity((current) => current.map((entry, position) => (position === index ? value : entry)));
+                }}
+                className="w-20 text-center"
+                aria-describedby={`${id}-unit`}
+              />
+              <span id={`${id}-unit`} className="t-meta w-7 text-[0.8125rem]">
+                min
+              </span>
+            </Row>
+          );
+        })}
+      </Group>
 
-          {suggestions.length > 0 && (
-            <p className="t-meta mt-3 flex flex-wrap items-center gap-x-2 gap-y-1">
-              {/* On DIT sur combien de journées repose la suggestion : sans ce
-                  nombre, « d'après ton historique » est une affirmation
-                  invérifiable. */}
-              {`D'après tes séances : ${suggestions
-                .map((entry) => `${WEEKDAY_LABELS[entry.weekday].toLowerCase()} ${entry.minutes} min (${entry.samples} j)`)
-                .join(", ")}.`}
-              <Button type="button" variant="link" size="sm" onClick={applySuggestions}>
-                {applied ? "Appliqué" : "Utiliser"}
-              </Button>
-            </p>
-          )}
-        </div>
-
-        <div>
-          <span className="t-subhead mb-2 block">Marge</span>
+      <Group
+        title="Marge"
+        footer={`Jamais planifiée, pour les imprévus. Reste ${formatSpan(plannableWeek * 60)} planifiables par semaine.`}
+      >
+        <Row label="Garder libre" stack>
           <SegmentedControl
             ariaLabel="Marge de planification"
             value={margin}
             onChange={setMargin}
             options={MARGIN_PRESETS.map((preset) => ({ value: preset, label: `${preset} %` }))}
           />
-          <span className="t-meta mt-2 block max-w-[56ch]">
-            Part de chaque journée que TaekdHub ne planifie jamais — pour les cours qui débordent, les exercices plus longs
-            que prévu et les trajets. Il te reste {formatSpan(plannableWeek * 60)} planifiables par semaine.
-          </span>
-        </div>
+        </Row>
+      </Group>
 
-        <div className="border-t border-line pt-5">
-          <Button type="submit">
-            {saved ? (
-              <>
-                <Check size={16} /> Enregistré
-              </>
-            ) : (
-              "Enregistrer"
-            )}
-          </Button>
-        </div>
-      </form>
-    </Section>
+      <div className="flex justify-end px-1">
+        <Button type="submit" size="lg" className="max-sm:w-full">
+          {saved ? (
+            <>
+              <Check size={16} aria-hidden /> Enregistré
+            </>
+          ) : (
+            "Enregistrer mon temps disponible"
+          )}
+        </Button>
+      </div>
+    </form>
   );
 }

@@ -4,6 +4,9 @@ export default {
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
+    // lib/study.ts porte les classes des matières et des statuts
+    // (`subjectMeta`, `statusMeta`) : sans lui, leurs fonds n'étaient jamais générés.
+    "./lib/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {
@@ -84,41 +87,65 @@ export default {
           400: "rgb(var(--rose-400-rgb) / <alpha-value>)",
           500: "rgb(var(--rose-500-rgb) / <alpha-value>)",
         },
-        // Identité de matière (lib/study.ts#subjectMeta) — même principe : 200 (texte) s'assombrit en clair, 400 (fond, faible opacité) inchangé.
+        // Anciennes teintes d'identité — désormais des ALIAS neutres (gris, accent ou orange de statut), voir app/globals.css : plus aucune couleur décorative.
         violet: { 200: "rgb(var(--violet-200-rgb) / <alpha-value>)", 400: "rgb(var(--violet-400-rgb) / <alpha-value>)" },
         sky: { 200: "rgb(var(--sky-200-rgb) / <alpha-value>)", 400: "rgb(var(--sky-400-rgb) / <alpha-value>)" },
         teal: { 200: "rgb(var(--teal-200-rgb) / <alpha-value>)", 400: "rgb(var(--teal-400-rgb) / <alpha-value>)" },
         orange: { 200: "rgb(var(--orange-200-rgb) / <alpha-value>)", 400: "rgb(var(--orange-400-rgb) / <alpha-value>)" },
+        /*
+         * MATIÈRES (refonte « Apple ») — plus de teinte par matière : un
+         * PALIER DE GRIS chacune, pour distinguer deux segments voisins d'un
+         * graphique empilé, et l'encre ordinaire pour le texte. Mêmes noms de
+         * classes qu'avant (`bg-subj-math`, `text-subj-math-ink`) ; les
+         * valeurs vivent dans app/globals.css et s'inversent avec le thème.
+         */
+        subj: {
+          math: "rgb(var(--subj-math) / <alpha-value>)",
+          "math-ink": "rgb(var(--subj-math-ink) / <alpha-value>)",
+          phys: "rgb(var(--subj-phys) / <alpha-value>)",
+          "phys-ink": "rgb(var(--subj-phys-ink) / <alpha-value>)",
+          chim: "rgb(var(--subj-chim) / <alpha-value>)",
+          "chim-ink": "rgb(var(--subj-chim-ink) / <alpha-value>)",
+          itc: "rgb(var(--subj-itc) / <alpha-value>)",
+          "itc-ink": "rgb(var(--subj-itc-ink) / <alpha-value>)",
+          isp: "rgb(var(--subj-isp) / <alpha-value>)",
+          "isp-ink": "rgb(var(--subj-isp-ink) / <alpha-value>)",
+          fr: "rgb(var(--subj-fr) / <alpha-value>)",
+          "fr-ink": "rgb(var(--subj-fr-ink) / <alpha-value>)",
+          en: "rgb(var(--subj-en) / <alpha-value>)",
+          "en-ink": "rgb(var(--subj-en-ink) / <alpha-value>)",
+        },
       },
       fontFamily: {
-        // Voir app/layout.tsx : `sans` = chrome, `serif` = contenu lu.
-        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        // Voir app/globals.css (`--font-sans`) : SF Pro Rounded sur appareil
+        // Apple, Nunito ailleurs = toute l'interface ; `serif` (Newsreader) =
+        // la colonne de lecture d'un énoncé, et elle seule. La pile entière
+        // vit dans UNE variable, pour que `font-sans` et `body` ne puissent
+        // pas diverger.
+        sans: ["var(--font-sans)"],
         serif: ["var(--font-serif)", "Georgia", "serif"],
       },
       /*
-       * RAYONS — quatre marches, resserrées.
-       *
-       * L'ancienne échelle montait à 1,75 rem : au-delà d'une douzaine de
-       * pixels, un coin arrondi cesse de dire « ceci est un bloc » et
-       * commence à dire « ceci est un coussin ». Les blocs de contenu
-       * s'arrondissent peu (10-12 px), les contrôles un peu moins (8 px), et
-       * seules les pastilles sont pleinement rondes.
+       * RAYONS — refonte « Apple » : grands et doux. Contrôles à 14 px
+       * (`rounded-lg`), tuiles à 24 px (`rounded-2xl`, et `.surface`), 28 px
+       * pour une feuille (`rounded-3xl`), boutons et pastilles en
+       * `rounded-full`. Mêmes NOMS de classes qu'avant : seules les valeurs
+       * changent, et tout l'écran suit.
        */
       borderRadius: {
-        sm: "0.375rem",
-        DEFAULT: "0.5rem",
-        md: "0.5rem",
-        lg: "0.625rem",
-        xl: "0.75rem",
-        "2xl": "0.75rem",
-        "3xl": "0.875rem",
+        sm: "0.5rem",
+        DEFAULT: "0.625rem",
+        md: "0.75rem",
+        lg: "0.875rem",
+        xl: "1.125rem",
+        "2xl": "1.5rem",
+        "3xl": "1.75rem",
       },
       /*
-       * OMBRES — une seule, et elle ne sert QU'AUX couches flottantes
-       * (feuille modale, menu déroulant, barre collante au moment où elle se
-       * décolle). Le contenu en place se détache par sa valeur et par un
-       * filet : voir `.surface` dans app/globals.css. `glow` et `card` ont
-       * été supprimées avec les surfaces qui les portaient.
+       * OMBRES — une seule classe, et elle ne sert QU'AUX couches flottantes
+       * (feuille modale, menu). Les tuiles en place portent la leur,
+       * presque invisible et en clair seulement, dans `.surface`
+       * (app/globals.css).
        */
       boxShadow: {
         surface: "var(--shadow-surface)",
@@ -129,16 +156,15 @@ export default {
         "2xs": ["0.75rem", { lineHeight: "1.0625rem" }],
       },
       /*
-       * ANIMATIONS — trois, toutes courtes et toutes fonctionnelles.
-       * `slide-up` (l'ancienne, 8 px sur 400 ms) faisait « monter » chaque
-       * carte au chargement : sur une liste, trente éléments qui glissent
-       * ensemble sont un effet, pas une information. Ne restent que
-       * l'apparition d'un élément qui n'était pas là, et le battement du
-       * témoin de chronomètre en marche.
+       * ANIMATIONS utilitaires. Le kit de mouvement de l'écran (entrée en
+       * cascade, barres qui poussent, anneau qui se trace…) vit en classes
+       * dans app/globals.css (`.reveal`, `.grow-x`, …) ; ici ne restent que
+       * l'apparition ponctuelle d'un élément et le battement du témoin de
+       * chronomètre.
        */
       animation: {
-        "fade-in": "fadeIn .18s ease-out",
-        "rise": "rise .22s cubic-bezier(.32,.72,0,1)",
+        "fade-in": "fadeIn .2s ease-out",
+        "rise": "rise .5s cubic-bezier(.16,1,.3,1)",
         "pulse-soft": "pulseSoft 2.4s ease-in-out infinite",
       },
       keyframes: {
@@ -147,7 +173,7 @@ export default {
           to: { opacity: "1" },
         },
         rise: {
-          from: { opacity: "0", transform: "translateY(4px)" },
+          from: { opacity: "0", transform: "translateY(16px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
         pulseSoft: {

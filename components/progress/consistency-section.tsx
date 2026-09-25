@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { Section } from "@/components/ui/section";
 import { Heatmap } from "@/components/heatmap";
 import { Insufficient } from "@/components/progress/insufficient";
-import { Stat, StatRow } from "@/components/ui/stat";
 import { computeRegularity } from "@/lib/tracking";
 import { formatSpan } from "@/lib/utils";
 import { computeConsistency, currentStreak } from "@/lib/analytics/consistency";
@@ -43,66 +42,87 @@ export function ConsistencySection({ sessions }: { sessions: WorkSession[] }) {
   const hasActivity = Object.values(workByDay).some((seconds) => seconds > 0);
 
   return (
-    <Section label="Ta régularité" title="À quelle fréquence tu t'y mets" description="Chaque case est une journée ; l'intensité suit le temps travaillé.">
+    <Section
+      variant="panel"
+      label="Ta régularité"
+      title="À quelle fréquence tu t'y mets"
+      description="Douze semaines, une case par jour."
+    >
       {!hasActivity ? (
         <Insufficient
           what="Aucune journée de travail enregistrée."
           how="La régularité se construit jour après jour — une première séance suffit à démarrer."
         />
       ) : (
-        <>
-          <Heatmap workByDay={workByDay} />
+        <div className="grid gap-8 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-12">
+          <div className="reveal">
+            <Heatmap workByDay={workByDay} />
+          </div>
 
-          {/* LES CHIFFRES QUE LA HEATMAP NE DONNE PAS. Elle montre les
-              habitudes d'un coup d'œil ; elle ne dit ni combien on y passe
-              quand on s'y met, ni quelle a été la meilleure semaine. */}
-          <StatRow className="mt-5">
-            <Stat label="Jours travaillés" value={`${regularity.activeDays} / ${regularity.days}`} size="sm" />
-            <Stat
-              label="Moyenne par jour travaillé"
-              value={regularity.averagePerActiveDay > 0 ? formatSpan(regularity.averagePerActiveDay * 60) : "—"}
-              size="sm"
-            />
-            {/* « — » tant qu'il n'y a pas DEUX semaines complètes à comparer :
-                sur une seule, la meilleure et la pire seraient la même. */}
-            <Stat
-              label="Meilleure semaine"
-              value={regularity.best ? formatSpan(regularity.best.minutes * 60) : "—"}
-              detail={regularity.best ? weekLabel.format(regularity.best.start) : "pas encore comparable"}
-              size="sm"
-            />
-            <Stat
-              label="Semaine la plus creuse"
-              value={regularity.worst ? formatSpan(regularity.worst.minutes * 60) : "—"}
-              detail={regularity.worst ? weekLabel.format(regularity.worst.start) : "pas encore comparable"}
-              size="sm"
-            />
-          </StatRow>
-
-          <p className="t-body mt-5">
-            <span className="font-medium">{consistency.currentActiveDays}</span> jour
-            {consistency.currentActiveDays > 1 ? "s" : ""} actif{consistency.currentActiveDays > 1 ? "s" : ""} cette semaine
-            {consistency.averageActiveDays !== null && (
-              <>
-                , contre {String(consistency.averageActiveDays).replace(".", ",")} en moyenne sur les semaines écoulées
-              </>
-            )}
-            .
-          </p>
-
-          {consistency.trend.direction !== "insuffisant" ? (
-            <p className="t-meta mt-1">
-              Ta régularité est {TREND_WORDS[consistency.trend.direction]}.
-              {describeConfidence(consistency.trend) && <> {describeConfidence(consistency.trend)}</>}
+          <div className="min-w-0">
+            {/* LA PHRASE D'ABORD : c'est elle qui répond à la question du titre. */}
+            <p className="t-subhead text-ink sm:text-xl">
+              <span className="tabular text-accent">{consistency.currentActiveDays}</span> jour
+              {consistency.currentActiveDays > 1 ? "s" : ""} actif{consistency.currentActiveDays > 1 ? "s" : ""} cette semaine
+              {consistency.averageActiveDays !== null && (
+                <span className="text-muted">
+                  , contre {String(consistency.averageActiveDays).replace(".", ",")} en moyenne sur les semaines écoulées
+                </span>
+              )}
+              .
             </p>
-          ) : (
-            <p className="t-meta mt-1">Pas encore assez de semaines écoulées pour dire si ta régularité évolue.</p>
-          )}
+            {consistency.trend.direction !== "insuffisant" ? (
+              <p className="t-meta mt-1.5">
+                Ta régularité est {TREND_WORDS[consistency.trend.direction]}.
+                {describeConfidence(consistency.trend) && <> {describeConfidence(consistency.trend)}</>}
+                {streak > 1 && <> {streak} jours consécutifs à ce jour.</>}
+              </p>
+            ) : (
+              <p className="t-meta mt-1.5">
+                Pas encore assez de semaines écoulées pour dire si ta régularité évolue.
+                {streak > 1 && <> {streak} jours consécutifs à ce jour.</>}
+              </p>
+            )}
 
-          {streak > 1 && <p className="t-meta mt-1 text-2xs">{streak} jours consécutifs à ce jour.</p>}
-        </>
+            {/* LES CHIFFRES QUE LE CALENDRIER NE DONNE PAS. Il montre les
+                habitudes d'un coup d'œil ; il ne dit ni combien on y passe
+                quand on s'y met, ni quelle a été la meilleure semaine. Sur
+                30 jours. */}
+            <dl className="mt-6 grid grid-cols-2 gap-3">
+              <Figure label="Jours travaillés" value={`${regularity.activeDays} / ${regularity.days}`} detail="sur 30 jours" />
+              <Figure
+                label="Par jour travaillé"
+                value={regularity.averagePerActiveDay > 0 ? formatSpan(regularity.averagePerActiveDay * 60) : "—"}
+                detail="en moyenne"
+              />
+              {/* « — » tant qu'il n'y a pas DEUX semaines complètes à comparer :
+                  sur une seule, la meilleure et la pire seraient la même. */}
+              <Figure
+                label="Meilleure semaine"
+                value={regularity.best ? formatSpan(regularity.best.minutes * 60) : "—"}
+                detail={regularity.best ? `du ${weekLabel.format(regularity.best.start)}` : "pas encore comparable"}
+              />
+              <Figure
+                label="La plus creuse"
+                value={regularity.worst ? formatSpan(regularity.worst.minutes * 60) : "—"}
+                detail={regularity.worst ? `du ${weekLabel.format(regularity.worst.start)}` : "pas encore comparable"}
+              />
+            </dl>
+          </div>
+        </div>
       )}
     </Section>
+  );
+}
+
+/** Un chiffre dans un creux gris — la tuile dans la tuile. */
+function Figure({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="well min-w-0 p-4">
+      <dt className="t-label text-[0.8125rem]">{label}</dt>
+      <dd className="t-figure-sm mt-2 whitespace-nowrap">{value}</dd>
+      <dd className="t-meta mt-1 text-2xs">{detail}</dd>
+    </div>
   );
 }
 

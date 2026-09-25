@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 /**
- * État persisté d'une séance chronométrée (Timer plein écran ou FocusView).
+ * État persisté d'une séance chronométrée (le Chrono, components/timer.tsx).
  * Stocké en sessionStorage pour survivre à un rechargement de page sans
  * survivre à la fermeture de l'onglet — cohérent avec une séance "en cours".
  *
@@ -19,7 +19,7 @@ interface WorkTimerSnapshot<TContext> {
   accumulatedSeconds: number;
   /** ISO — instant de début de l'intervalle "running" en cours, ou null si en pause. */
   runningSince: string | null;
-  /** Données propres à l'appelant (ex. matière choisie, exercice en focus…), restaurées avec le timer. */
+  /** Données propres à l'appelant (ex. matière choisie, travail rattaché…), restaurées avec le timer. */
   context: TContext;
 }
 
@@ -62,28 +62,10 @@ function computeElapsedSeconds(snapshot: WorkTimerSnapshot<unknown> | null): num
 }
 
 /**
- * Cherche, sans s'abonner, une clé sessionStorage commençant par `prefix` et
- * renvoie la partie qui suit (ex. l'identifiant encodé dans la clé). Utile
- * pour détecter — avant même de monter le composant concerné — qu'une séance
- * a été interrompue par un rechargement et doit être reprise automatiquement
- * (ex. rouvrir le FocusView de l'exercice dont la clé `prepahub:timer:focus:<id>`
- * est encore présente).
- */
-export function findPersistedSessionSuffix(prefix: string): string | null {
-  if (typeof window === "undefined") return null;
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const key = sessionStorage.key(i);
-    if (key?.startsWith(prefix)) return key.slice(prefix.length);
-  }
-  return null;
-}
-
-/**
  * Timer chronométré avec persistance automatique en sessionStorage :
  * un rechargement de page restaure le temps écoulé et reprend la séance si
- * elle était en cours. Partagé par components/timer.tsx et
- * components/exercises/focus-view.tsx pour éviter deux implémentations du
- * même mécanisme.
+ * elle était en cours. Utilisé par components/timer.tsx ; générique pour que
+ * tout futur chronomètre partage le même mécanisme.
  *
  * `storageKey` doit être stable et unique pour le contexte d'usage (deux
  * timers avec la même clé partageraient leur état).
@@ -153,7 +135,7 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
       }
       // Nettoyage immédiat et synchrone : on ne peut pas compter sur l'effet
       // de persistance pour réagir à `snapshot === null`, car l'appelant
-      // (ex. FocusView) démonte souvent le composant dans la même mise à
+      // peut démonter le composant dans la même mise à
       // jour (onClose juste après stop()), avant que cet effet ne rejoue.
       if (typeof window !== "undefined") sessionStorage.removeItem(storageKey);
       setSnapshot(null);

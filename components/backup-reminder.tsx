@@ -13,13 +13,11 @@ import { BACKUP_REMINDER_DAYS, daysSinceBackup, exportBackup } from "@/lib/stora
  * Réutilise `exportBackup()` (lib/storage.ts), le même mécanisme que
  * Réglages > Données locales : aucun second système de sauvegarde.
  *
- * Masqué : tant que l'élève n'a produit AUCUN travail personnel. La banque
- * est amorcée avec 402 exercices dès la première seconde (lib/seed.ts) : se
- * fier à `exercises.length` accueillait donc tout nouvel arrivant par un
- * bandeau d'avertissement orange — « tu n'as jamais sauvegardé tes données » —
- * avant même qu'il ait quoi que ce soit à perdre. Première impression du
- * produit : une corvée. Seul l'historique de séances prouve un travail réel,
- * c'est donc lui qui déclenche le rappel.
+ * Masqué : tant que l'élève n'a produit AUCUN travail personnel — sinon tout
+ * nouvel arrivant serait accueilli par un bandeau d'avertissement orange
+ * (« tu n'as jamais sauvegardé tes données ») avant même d'avoir quoi que ce
+ * soit à perdre. Seul l'historique de séances prouve un travail réel, c'est
+ * donc lui qui déclenche le rappel.
  *
  * Masqué aussi :
  * une fois la sauvegarde faite (le clic ici appelle le même export que
