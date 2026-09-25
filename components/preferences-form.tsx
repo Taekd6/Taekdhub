@@ -9,7 +9,9 @@ import { SegmentedControl } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/state";
 import { SubjectAvatar } from "@/components/subject-avatar";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { localData, MAX_WEEKLY_SUBJECT_TARGET_MINUTES, type Preferences } from "@/lib/storage";
+import { localData, MAX_EVENING_MINIMUM_MINUTES, MAX_WEEKLY_SUBJECT_TARGET_MINUTES, type Preferences } from "@/lib/storage";
+import { WEEKDAY_LABELS } from "@/lib/capacity";
+import type { Subject } from "@/lib/supabase/types";
 import { subjects } from "@/lib/study";
 import { formatMinutesSpan } from "@/lib/utils";
 
@@ -29,6 +31,9 @@ const WEEKLY_GOAL_PRESETS = [180, 300, 420];
  * Un seul formulaire, une seule sauvegarde — réparti en TROIS listes
  * groupées : toi, tes objectifs, ton budget par matière.
  */
+/** Les matières réglables dans « Minimum du soir ». */
+const EVENING_SUBJECTS: Subject[] = ["Mathématiques", "Physique"];
+
 export function PreferencesForm() {
   const { preferences, savePreferences, ready } = usePrepahubData();
   const [prefs, setPrefs] = useState<Preferences>(preferences);
@@ -60,6 +65,7 @@ export function PreferencesForm() {
       weeklyGoalMinutes: prefs.weeklyGoalMinutes,
       contestDate: prefs.contestDate,
       weeklySubjectTargets: prefs.weeklySubjectTargets,
+      eveningMinimums: prefs.eveningMinimums,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -203,6 +209,49 @@ export function PreferencesForm() {
               </Row>
             );
           })
+        )}
+      </Group>
+
+      {/* MINIMUM DU SOIR — voir lib/evening-minimums.ts. Une ligne par jour,
+          deux matières : la règle de l'élève (maths et physique). */}
+      <Group id="soirs" title="Minimum du soir" footer="Minutes à faire au moins ce jour-là. 0 partout = soir libre.">
+        {!ready ? (
+          <div className="py-3 pr-4">
+            <Skeleton className="h-48 w-full" />
+          </div>
+        ) : (
+          WEEKDAY_LABELS.map((label, dayIndex) => (
+            <Row key={label} label={label} hint={EVENING_SUBJECTS.every((subject) => !prefs.eveningMinimums[dayIndex]?.[subject]) ? "soir libre" : undefined}>
+              {EVENING_SUBJECTS.map((subject) => {
+                const id = `soir-${dayIndex}-${subject}`;
+                return (
+                  <label key={subject} htmlFor={id} className="flex items-center gap-1.5 text-2xs font-semibold text-muted">
+                    {subject === "Mathématiques" ? "Maths" : subject}
+                    <Input
+                      id={id}
+                      type="number"
+                      min={0}
+                      step={15}
+                      max={MAX_EVENING_MINIMUM_MINUTES}
+                      value={prefs.eveningMinimums[dayIndex]?.[subject] ?? 0}
+                      onChange={(event) => {
+                        const next = Math.max(0, Math.min(MAX_EVENING_MINIMUM_MINUTES, Math.round(Number(event.target.value) || 0)));
+                        const days = prefs.eveningMinimums.map((day, index) => {
+                          if (index !== dayIndex) return day;
+                          const updated = { ...day };
+                          if (next > 0) updated[subject] = next;
+                          else delete updated[subject];
+                          return updated;
+                        });
+                        setPrefs({ ...prefs, eveningMinimums: days });
+                      }}
+                      className="w-[4.5rem] px-1 text-center tabular"
+                    />
+                  </label>
+                );
+              })}
+            </Row>
+          ))
         )}
       </Group>
 

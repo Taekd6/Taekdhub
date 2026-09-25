@@ -95,6 +95,13 @@ export type Preferences = {
    * face à `capacityByWeekday`. Ce budget ne réserve rien dans le planning.
    */
   weeklySubjectTargets: Record<Subject, number>;
+  /**
+   * MINIMUM DU SOIR, jour par jour (index 0 = lundi … 6 = dimanche, comme
+   * `capacityByWeekday`) : les minutes à faire AU MOINS dans chaque matière
+   * ce soir-là. Voir lib/evening-minimums.ts. Un jour sans entrée = soir
+   * libre (le mardi, par défaut).
+   */
+  eveningMinimums: Partial<Record<Subject, number>>[];
   /* ── Premier lancement (lib/onboarding.ts) ── */
   /**
    * Horodatage ISO du moment où l'élève a TERMINÉ l'accueil guidé
@@ -130,6 +137,17 @@ export type Preferences = {
  * lib/capacity.ts, qui distingue explicitement la capacité DÉCLARÉE de la
  * capacité SUGGÉRÉE depuis l'historique.
  */
+/**
+ * Minimum du soir par défaut — la règle de l'élève : chaque soir de semaine
+ * SAUF le mardi, au moins 2 h de maths et 1 h 30 de physique. Le mardi et le
+ * week-end n'imposent rien (le week-end a son propre rythme : les exercices).
+ */
+const WEEKDAY_EVENING: Partial<Record<Subject, number>> = { Mathématiques: 120, Physique: 90 };
+export const DEFAULT_EVENING_MINIMUMS: Partial<Record<Subject, number>>[] = [
+  WEEKDAY_EVENING, {}, WEEKDAY_EVENING, WEEKDAY_EVENING, WEEKDAY_EVENING, {}, {},
+];
+export const MAX_EVENING_MINIMUM_MINUTES = 480;
+
 export const DEFAULT_CAPACITY_BY_WEEKDAY: number[] = [120, 120, 120, 120, 120, 240, 180];
 /** 20 % : un cinquième de la journée laissé libre. Réglable entre 0 et 50 % (voir `planningMarginPercent`). */
 export const DEFAULT_PLANNING_MARGIN_PERCENT = 20;
@@ -178,6 +196,7 @@ const defaults: Preferences = {
   capacityByWeekday: DEFAULT_CAPACITY_BY_WEEKDAY,
   planningMarginPercent: DEFAULT_PLANNING_MARGIN_PERCENT,
   weeklySubjectTargets: DEFAULT_WEEKLY_SUBJECT_TARGETS,
+  eveningMinimums: DEFAULT_EVENING_MINIMUMS,
   onboardingCompletedAt: null,
 };
 
@@ -1226,6 +1245,7 @@ export function normalizePreferences(raw: unknown): Preferences {
     capacityByWeekday: normalizeCapacityByWeekday(item.capacityByWeekday),
     planningMarginPercent: normalizeMarginPercent(item.planningMarginPercent),
     weeklySubjectTargets: normalizeWeeklySubjectTargets(item.weeklySubjectTargets),
+    eveningMinimums: normalizeEveningMinimums(item.eveningMinimums),
     // Premier lancement : un instant ISO lisible, sinon « jamais fait ». Même
     // analyseur que les horodatages des séances (`isoDate`).
     onboardingCompletedAt: isoDate(item.onboardingCompletedAt),
@@ -1254,6 +1274,20 @@ function normalizeWeeklySubjectTargets(raw: unknown): Record<Subject, number> {
     if (value !== null) out[subject] = Math.min(MAX_WEEKLY_SUBJECT_TARGET_MINUTES, value);
   }
   return out;
+}
+
+/** Absent (préférences d'avant ce champ) ⇒ la règle par défaut ; sinon 7 jours, 0 retiré, plafonné. */
+function normalizeEveningMinimums(raw: unknown): Partial<Record<Subject, number>>[] {
+  if (!Array.isArray(raw)) return DEFAULT_EVENING_MINIMUMS.map((day) => ({ ...day }));
+  return Array.from({ length: 7 }, (_, index) => {
+    const day = isRecord(raw[index]) ? raw[index] : {};
+    const out: Partial<Record<Subject, number>> = {};
+    for (const subject of subjects) {
+      const value = nonNegativeInteger(day[subject]);
+      if (value) out[subject] = Math.min(MAX_EVENING_MINIMUM_MINUTES, value);
+    }
+    return out;
+  });
 }
 
 function normalizeCapacityByWeekday(raw: unknown): number[] {
