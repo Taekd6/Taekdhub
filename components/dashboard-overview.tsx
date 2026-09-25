@@ -8,6 +8,8 @@ import { ReviewCapture } from "@/components/review/review-capture";
 import { DailyCheckinCard } from "@/components/checkin/daily-checkin"; // check-in du soir
 import { HomeTopBar, TodayHero, WeekCurve } from "@/components/home/hero";
 import { IntentionsCard } from "@/components/home/intentions-card";
+import { EveningCard } from "@/components/home/evening-card";
+import { effectiveDailyGoal } from "@/lib/evening-minimums";
 import { MemoryCard } from "@/components/memory/memory-card"; // mémoire des chapitres (FSRS)
 import { DeadlinesCard, ReviewBanner, StatTiles, SubjectCards } from "@/components/home/cards";
 import { ActionButtons, type ActionItem } from "@/components/ui/action-buttons";
@@ -74,7 +76,7 @@ export function DashboardOverview() {
     yesterday.setDate(now.getDate() - 1);
     const yesterdayKey = dayKey(yesterday);
     return {
-      objective: computeDailyObjective(sessions, preferences.dailyGoalMinutes, now),
+      objective: computeDailyObjective(sessions, effectiveDailyGoal(preferences, now), now),
       yesterdayMinutes: Math.round(totalSeconds(sessions.filter((session) => dayKey(session.started_at) === yesterdayKey)) / 60),
       weeklySummary: computeWeeklySummary(sessions, preferences.weeklyGoalMinutes, now),
       streak: computeStreak(sessions),
@@ -138,6 +140,8 @@ export function DashboardOverview() {
           <div className="reveal order-3 lg:order-none" style={{ "--i": 2 } as CSSProperties}>
             <ActionButtons items={ACTIONS} className="lg:mx-auto lg:max-w-md" />
           </div>
+          {/* Minimum du soir — voir lib/evening-minimums.ts. */}
+          <EveningCard preferences={preferences} sessions={sessions} className="order-3 lg:order-none" />
           <SubjectCards cards={subjectCards} className="order-4 lg:order-none" />
 
           {/* NOTER DU TEMPS — la cible du bouton « Noter ». */}

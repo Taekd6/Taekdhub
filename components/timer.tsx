@@ -5,6 +5,7 @@ import { Maximize2, Minimize2, Pause, Play, Square } from "lucide-react";
 import { Select } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { effectiveDailyGoal } from "@/lib/evening-minimums";
 import { useWorkTimer } from "@/hooks/use-work-timer";
 import { cn } from "@/lib/cn";
 import { subjects, todaySeconds } from "@/lib/study";
@@ -165,7 +166,7 @@ export function Timer() {
   // historique encore vide en mémoire.
   if (!ready) return <Skeleton className="mx-auto h-[32rem] w-full max-w-3xl rounded-2xl" />;
 
-  const goalSeconds = Math.max(1, preferences.dailyGoalMinutes * 60);
+  const goalSeconds = Math.max(1, effectiveDailyGoal(preferences) * 60);
   const daySeconds = todaySeconds(sessions) + seconds;
   const dayPercent = Math.min(100, (daySeconds / goalSeconds) * 100);
   const subjectLocked = running || selectedItem?.subject != null;
