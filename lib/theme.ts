@@ -1,62 +1,183 @@
 /**
- * Personnalisation de l'accent (Sprint identité visuelle) — une seule teinte
- * réglable, propagée par variable CSS (`--accent-rgb`) que `tailwind.config.ts`
- * réutilise pour TOUTES les classes `accent` déjà existantes (`bg-accent`,
- * `text-accent/60`, etc.) : aucun composant n'a besoin d'être modifié pour en
- * bénéficier.
+ * PALETTES EN DÉGRADÉ (refonte « Revolut clair ») — plus un accent, mais
+ * QUATRE familles de dégradés, dont l'élève choisit une dans Réglages.
  *
- * Le texte posé sur l'accent (`text-accent-foreground`) est calculé — jamais
- * fixé à `black` — pour rester lisible quelle que soit la teinte choisie, y
- * compris une couleur personnalisée sombre.
+ * ─── L'HISTOIRE, POUR NE PAS LA REFAIRE ─────────────────────────────
+ *
+ * « Papier » crème et laiton : laid. « Nuit » (une couleur vive par
+ * matière) : « bizarre ». « Apple » gris monochrome : « pas fou, pas
+ * envie ». Revolut sombre : « le noir, ça rend pas envie ». La maquette
+ * retenue (« D2 · Style Revolut clair ») est un fond BLANC lumineux, des
+ * halos pastel qui dérivent, des cartes blanches flottantes, et des cartes
+ * en DÉGRADÉ vif pour ce qui compte : les matières, les révisions, le
+ * bouton principal.
+ *
+ * ─── CE QU'UNE PALETTE CONTIENT ─────────────────────────────────────
+ *
+ *   `c1` → `c2`   le dégradé de marque : halos, courbe, avatar, bouton rond
+ *                 du chrono (icône seule — le blanc n'a pas à s'y lire) ;
+ *   `ink`         l'ENCRE en thème clair : liens, pastilles, onglet actif —
+ *                 assez sombre pour tenir 4,5:1 sur le fond et le blanc ;
+ *   `solid`       le dégradé des BOUTONS À TEXTE : deux teintes profondes,
+ *                 chacune ≥ 4,5:1 avec le blanc. `c1 → c2` n'y suffirait pas
+ *                 (du blanc sur #22d3ee tombe à 1,8:1) ;
+ *   `cards`       quatre paires pour les cartes en dégradé, utilisées en
+ *                 LISTE CYCLÉE (carte 1, 2, 3, 4, 1…) — pas une couleur
+ *                 attitrée par matière : l'élève a rejeté l'identité
+ *                 colorée des matières (« Nuit »), la couleur ne dit ici que
+ *                 « carte n° k » ;
+ *   `review`      la bannière des révisions du jour ;
+ *   `dl`          les trois pastilles datées des échéances.
+ *
+ * Valeurs RECOPIÉES de la maquette validée (`renderVals`), pas réinventées —
+ * à trois exceptions près : l'encre de Sunset (#d0364f → #cc344d), d'Océan
+ * (#0a7aa8 → #09729d) et de Néon (#3f8a0c → #367a0a), assombries d'un
+ * cheveu pour tenir 4,5:1 sur le fond #f5f6fa (lib/theme.test.ts). La
+ * maquette ne les posait que sur des liens « Tout voir » ; l'application
+ * les pose sur du texte courant. `solid` (boutons à texte) est un ajout :
+ * la maquette n'avait pas de bouton à texte.
+ *
+ * Tout est publié en variables CSS sur `<html>` (`applyPalette`) — voir
+ * app/globals.css pour leur usage, et app/layout.tsx pour le script
+ * anti-flash qui les pose avant le premier rendu.
  */
 
-export interface AccentPreset {
-  id: string;
+export type PaletteId = "aurora" | "sunset" | "ocean" | "neon";
+
+export interface Palette {
+  id: PaletteId;
   label: string;
-  hex: string;
+  c1: string;
+  c2: string;
+  ink: string;
+  solid: [string, string];
+  cards: [string, string][];
+  review: [string, string];
+  dl: [string, string, string];
+}
+
+export const PALETTES: Palette[] = [
+  {
+    id: "aurora",
+    label: "Aurora",
+    c1: "#7c5cff",
+    c2: "#22d3ee",
+    ink: "#5b3fd6",
+    solid: ["#6d28d9", "#2563eb"],
+    cards: [
+      ["#6d28d9", "#2563eb"],
+      ["#db2777", "#7c3aed"],
+      ["#0891b2", "#4f46e5"],
+      ["#9333ea", "#ec4899"],
+    ],
+    review: ["#f97316", "#ec4899"],
+    dl: ["#7c3aed", "#2563eb", "#0891b2"],
+  },
+  {
+    id: "sunset",
+    label: "Sunset",
+    c1: "#fb7185",
+    c2: "#fbbf24",
+    ink: "#cc344d",
+    solid: ["#be185d", "#e11d48"],
+    cards: [
+      ["#e11d48", "#f97316"],
+      ["#c026d3", "#fb7185"],
+      ["#ea580c", "#facc15"],
+      ["#be185d", "#8b5cf6"],
+    ],
+    review: ["#7c3aed", "#db2777"],
+    dl: ["#e11d48", "#ea580c", "#c026d3"],
+  },
+  {
+    id: "ocean",
+    label: "Océan",
+    c1: "#38bdf8",
+    c2: "#34d399",
+    ink: "#09729d",
+    solid: ["#0369a1", "#0e7490"],
+    cards: [
+      ["#0369a1", "#0891b2"],
+      ["#0d9488", "#22c55e"],
+      ["#1d4ed8", "#06b6d4"],
+      ["#0f766e", "#3b82f6"],
+    ],
+    review: ["#2563eb", "#14b8a6"],
+    dl: ["#0369a1", "#0d9488", "#1d4ed8"],
+  },
+  {
+    id: "neon",
+    label: "Néon",
+    c1: "#a3e635",
+    c2: "#22d3ee",
+    ink: "#367a0a",
+    solid: ["#15803d", "#0f766e"],
+    cards: [
+      ["#16a34a", "#0ea5e9"],
+      ["#9333ea", "#22d3ee"],
+      ["#65a30d", "#14b8a6"],
+      ["#db2777", "#f59e0b"],
+    ],
+    review: ["#84cc16", "#06b6d4"],
+    dl: ["#16a34a", "#9333ea", "#0ea5e9"],
+  },
+];
+
+export const PALETTE_IDS: PaletteId[] = PALETTES.map((palette) => palette.id);
+export const DEFAULT_PALETTE: PaletteId = "aurora";
+
+export function paletteById(id: PaletteId | string | undefined): Palette {
+  return PALETTES.find((palette) => palette.id === id) ?? PALETTES[0];
 }
 
 /**
- * SIX TEINTES FRANCHES, UNE SEULE À LA FOIS — refonte « Apple ».
+ * MIGRATION DES ANCIENNES PRÉFÉRENCES — quelle palette pour un élève qui
+ * n'en a jamais choisi ?
  *
- * L'élève a écarté la refonte « Nuit » (« c'est bizarre, ça fait pas
- * premium ») et tranché : noir et blanc, plus UN accent, avec Apple pour
- * référence. Les préréglages sont donc les couleurs système d'Apple en
- * thème sombre — des teintes pleines, saturées mais jamais fluo, qui
- * existent seules sur un fond gris : jamais deux à l'écran.
+ *   1. `palette` valide : c'est un choix, on le garde.
+ *   2. `accent` (refonte « Apple », un hex) : on garde la FAMILLE de teinte
+ *      choisie — un rose ou un orange devient Sunset, un vert Néon, un
+ *      turquoise Océan, un bleu-violet Aurora. Les anciens accents PAR
+ *      DÉFAUT (bleu Apple, « Miel », « Menthe ») n'ont jamais été choisis :
+ *      ils donnent Aurora, comme un gris (« Graphite »).
+ *   3. `subjectPalette` (refonte « Nuit ») : Sunset et Océan portent le même
+ *      nom qu'aujourd'hui ; « neon » était le DÉFAUT d'alors (pas un
+ *      choix), « pastel » n'a plus d'équivalent — les deux donnent Aurora.
+ *   4. Rien : Aurora.
  *
- * « Bleu » ouvre la liste, donc devient l'accent par défaut : c'est le bleu
- * des liens et des boutons d'Apple (#0a84ff en sombre). En thème clair,
- * l'encre (`accentInk`) le ramène vers #0066cc et l'aplat du bouton
- * (`accentSolid`) vers #0071e3 — exactement les deux bleus d'apple.com, par
- * calcul et non par une seconde table.
- *
- * « Graphite » est l'option « zéro couleur » : un gris, pour qui veut un
- * écran strictement noir et blanc.
+ * AUTONOME — aucune référence extérieure, aucune syntaxe récente : sa source
+ * est recopiée TELLE QUELLE dans le script anti-flash (app/layout.tsx, via
+ * `Function#toString`), pour que le premier rendu et `normalizePreferences`
+ * ne puissent jamais trancher différemment. D'où l'absence de toute
+ * syntaxe récente (`?.`, `??`, étalement).
  */
-export const ACCENT_PRESETS: AccentPreset[] = [
-  { id: "bleu", label: "Bleu", hex: "#0a84ff" },
-  { id: "indigo", label: "Indigo", hex: "#5e5ce6" },
-  { id: "vert", label: "Vert", hex: "#30d158" },
-  { id: "orange", label: "Orange", hex: "#ff9f0a" },
-  { id: "rose", label: "Rose", hex: "#ff375f" },
-  { id: "graphite", label: "Graphite", hex: "#8e8e93" },
-];
-
-export const DEFAULT_ACCENT = ACCENT_PRESETS[0].hex;
-
-/**
- * Anciens accents PAR DÉFAUT, remplacés par `DEFAULT_ACCENT` à la lecture des
- * préférences (lib/storage.ts#normalizePreferences).
- *
- * `savePreferences` écrit l'objet entier : quiconque a touché à un réglage
- * sous une refonte précédente a donc sur le disque l'accent PAR DÉFAUT de
- * l'époque, sans l'avoir jamais choisi — « Miel » (#e0a758, papier & encre)
- * puis « Menthe » (#5eead4, Nuit). Aucun des deux ne figurant plus dans les
- * préréglages, ils ne peuvent venir que de l'ancien défaut : les migrer vers
- * le bleu ne défait aucun choix.
- */
-export const LEGACY_DEFAULT_ACCENTS = ["#e0a758", "#5eead4"];
+export function resolvePaletteId(raw: unknown): PaletteId {
+  const ids = ["aurora", "sunset", "ocean", "neon"];
+  const prefs = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  if (typeof prefs.palette === "string" && ids.indexOf(prefs.palette) >= 0) return prefs.palette as PaletteId;
+  const accent = typeof prefs.accent === "string" ? prefs.accent.trim().toLowerCase() : "";
+  const match = /^#?([0-9a-f]{6})$/.exec(accent);
+  const legacyDefaults = ["#0a84ff", "#e0a758", "#5eead4"];
+  if (match && legacyDefaults.indexOf("#" + match[1]) < 0) {
+    const r = parseInt(match[1].slice(0, 2), 16) / 255;
+    const g = parseInt(match[1].slice(2, 4), 16) / 255;
+    const b = parseInt(match[1].slice(4, 6), 16) / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    // Un gris (ou presque) n'a pas de famille : défaut.
+    if (max === 0 || delta / max < 0.2) return "aurora";
+    let hue = max === r ? ((g - b) / delta) % 6 : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4;
+    hue = hue * 60;
+    if (hue < 0) hue += 360;
+    if (hue >= 330 || hue < 50) return "sunset";
+    if (hue < 160) return "neon";
+    if (hue < 205) return "ocean";
+    return "aurora";
+  }
+  if (prefs.subjectPalette === "sunset" || prefs.subjectPalette === "ocean") return prefs.subjectPalette;
+  return "aurora";
+}
 
 export function hexToRgb(hex: string): [number, number, number] | null {
   const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -70,148 +191,100 @@ function srgbToLinear(channel: number): number {
   return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
 }
 
-/** Luminance relative WCAG — sert uniquement à choisir noir ou blanc pour le texte posé sur l'accent, pas à valider un ratio de contraste précis. */
+/** Luminance relative WCAG. */
 export function relativeLuminance([r, g, b]: [number, number, number]): number {
   return 0.2126 * srgbToLinear(r) + 0.7152 * srgbToLinear(g) + 0.0722 * srgbToLinear(b);
 }
 
-/**
- * L'ACCENT EN TANT QU'ENCRE — même teinte, assombrie juste ce qu'il faut pour
- * rester lisible sur un fond clair.
- *
- * L'accent avait une seule valeur pour deux usages opposés : le REMPLISSAGE
- * (bouton principal, lueur de fond), qui doit rester la couleur de marque
- * telle quelle, et l'ENCRE (texte, icônes, liens, teintes fines), qui se pose
- * sur le fond de la page. En thème clair, cette seconde famille tombait à
- * **1,20:1** de contraste avec l'accent par défaut — mesuré sur /progress :
- * les icônes de section, les liens « Travailler ce chapitre » et les pastilles
- * de pourcentage étaient à la limite de l'invisible. (15,95:1 en thème sombre,
- * d'où le fait que ça n'ait jamais sauté aux yeux.)
- *
- * L'accent restant personnalisable (n'importe quel hex), la valeur n'est pas
- * codée en dur : on assombrit la teinte choisie, par simple mise à l'échelle
- * des canaux — la couleur reste reconnaissable — jusqu'à passer sous le seuil
- * de luminance qui garantit 4,5:1 sur le fond clair de l'application.
- *
- * Écrite en `--accent-ink-base-rgb` : c'est app/globals.css qui décide, selon
- * le thème, si `--accent-ink-rgb` vaut cette version assombrie (clair) ou
- * l'accent tel quel (sombre). Un seul endroit tranche, jamais deux.
- */
-/*
- * Calibré pour 4,5:1 sur LA SURFACE LA PLUS SOMBRE où l'encre se pose en
- * thème clair : le gris du bouton secondaire et des pistes, #e8e8ed
- * (luminance ≈ 0,80). (0,80 + 0,05) / 4,5 − 0,05 = 0,139 ; 0,13 garde une
- * marge pour l'arrondi des canaux. Pour le bleu par défaut, cela donne
- * rgb(0 104 214) — à un cheveu du #0066cc des liens d'apple.com.
- *
- * Les valeurs précédentes (0,163 puis 0,145) visaient les fonds crème et
- * gris-bleu des systèmes « papier » et « Nuit », plus clairs que ce gris.
- */
-export const INK_MAX_LUMINANCE = 0.13;
-/** Teinte profonde — réservée à un aplat qui doit porter du blanc à ≈ 11:1 (rare ; le bouton principal utilise `accentSolid`). */
-export const DEEP_MAX_LUMINANCE = 0.045;
-/**
- * APLAT DU BOUTON PRINCIPAL — texte BLANC, toujours, comme chez Apple.
- *
- * Le système « Nuit » posait du texte NOIR sur l'accent brut ; avec un bleu
- * franc (#0a84ff), le noir contraste mieux que le blanc (5,8 contre 3,6:1)
- * — mais un bouton bleu à texte noir ne ressemble à rien de ce que l'élève
- * a pris pour référence. On garde donc le blanc et on déplace la couleur :
- * l'aplat est assombri, par la même mise à l'échelle des canaux que
- * l'encre, juste assez pour que le blanc tienne 4,5:1.
- *
- * 1,05 / 4,5 − 0,05 = 0,183 ; 0,175 garde la marge d'arrondi (4,67:1). Le
- * bleu par défaut devient rgb(9 120 232), quasiment le #0071e3 d'Apple.
- */
-export const SOLID_MAX_LUMINANCE = 0.175;
-
-/** Assombrit `rgb` par mise à l'échelle des canaux jusqu'à passer sous `target` — la teinte reste reconnaissable. */
-export function darkenTo(rgb: [number, number, number], target: number): [number, number, number] {
-  if (relativeLuminance(rgb) <= target) return rgb;
-  let low = 0;
-  let high = 1;
-  for (let step = 0; step < 24; step++) {
-    const mid = (low + high) / 2;
-    if (relativeLuminance(rgb.map((c) => c * mid) as [number, number, number]) > target) high = mid;
-    else low = mid;
-  }
-  return rgb.map((c) => Math.round(c * low)) as [number, number, number];
-}
-
-/** Teinte profonde de l'accent — remplissage du bouton principal en thème clair. */
-export function accentDeep(hex: string): [number, number, number] {
-  return darkenTo(hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]), DEEP_MAX_LUMINANCE);
-}
-
-/** Aplat du bouton principal — toujours assez sombre pour porter du texte blanc (voir `SOLID_MAX_LUMINANCE`). */
-export function accentSolid(hex: string): [number, number, number] {
-  return darkenTo(hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]), SOLID_MAX_LUMINANCE);
-}
-
-export function accentInk(hex: string): [number, number, number] {
-  return darkenTo(hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]), INK_MAX_LUMINANCE);
+/** Rapport de contraste WCAG entre deux couleurs. */
+export function contrastRatio(a: [number, number, number], b: [number, number, number]): number {
+  const [high, low] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+  return (high + 0.05) / (low + 0.05);
 }
 
 /**
- * Luminance à laquelle le noir et le blanc contrastent EXACTEMENT autant avec
- * une couleur donnée : √(1,05 × 0,05) − 0,05. Au-dessus, le noir gagne ;
- * en dessous, le blanc.
- *
- * Le seuil valait 0,45, choisi à vue. Il donnait le bon résultat pour les
- * pastels très clairs (les seuls préréglages existants), et un résultat
- * franchement mauvais dès qu'on descendait au milieu de l'échelle : une
- * teinte à 0,44 recevait du texte BLANC, soit 2,13:1 — illisible — là où le
- * noir donnait 9,84:1. Le défaut ne s'était jamais vu parce qu'aucune
- * couleur du produit n'était dans cette zone ; « Miel » y est.
+ * Noir ou blanc — le plus lisible des deux sur `hex`. Sert au texte posé
+ * sur l'aplat brut `c1` (`text-accent-foreground`), rare : les cartes en
+ * dégradé portent toujours du blanc sur des teintes choisies pour.
  */
 const FOREGROUND_CROSSOVER = Math.sqrt(1.05 * 0.05) - 0.05;
-
-/** Noir ou blanc — jamais une autre teinte — selon ce qui contraste le mieux avec `hex`. Retombe sur l'accent par défaut si `hex` n'est pas un hex valide. */
 export function accentForeground(hex: string): [number, number, number] {
-  const rgb = hexToRgb(hex) ?? (hexToRgb(DEFAULT_ACCENT) as [number, number, number]);
+  const rgb = hexToRgb(hex) ?? [0, 0, 0];
   return relativeLuminance(rgb) > FOREGROUND_CROSSOVER ? [0, 0, 0] : [255, 255, 255];
 }
 
-export function accentForegroundCss(hex: string): string {
-  const [r] = accentForeground(hex);
-  return r === 0 ? "#000000" : "#ffffff";
+/**
+ * TOUTES LES VARIABLES D'UNE PALETTE — une table nom → valeur, calculée ici
+ * une fois, utilisée à la fois par `applyPalette` (React) et par le script
+ * anti-flash (app/layout.tsx, qui reçoit la table de CHAQUE palette sérialisée
+ * au rendu serveur). Aucune formule n'est donc dupliquée dans le script.
+ *
+ *   `--g1` / `--g2`             le dégradé de marque (hex) ;
+ *   `--g1-rgb` / `--g2-rgb`     les mêmes en canaux, pour les halos et les
+ *                               ombres colorées (`rgb(var(--g1-rgb) / .3)`) ;
+ *   `--accent-*`                les anciens noms, remappés : `accent` (encre)
+ *                               = `ink` en clair, `c2` en sombre (voir
+ *                               app/globals.css) ; `accent-solid` = la
+ *                               première teinte du dégradé des boutons ;
+ *   `--btn-g1` / `--btn-g2`     le dégradé des boutons à texte blanc ;
+ *   `--card-Na` / `--card-Nb`   les quatre paires de cartes, et
+ *   `--card-grad-N`             les mêmes en `linear-gradient` prêt à poser ;
+ *   `--review-a/b`, `--review-grad`, `--dl-1..3`.
+ */
+export function paletteVariables(palette: Palette): Record<string, string> {
+  const rgb = (hex: string) => (hexToRgb(hex) ?? [0, 0, 0]).join(" ");
+  const grad = (a: string, b: string) => `linear-gradient(135deg, ${a}, ${b})`;
+  const vars: Record<string, string> = {
+    "--g1": palette.c1,
+    "--g2": palette.c2,
+    "--g1-rgb": rgb(palette.c1),
+    "--g2-rgb": rgb(palette.c2),
+    "--accent-rgb": rgb(palette.c1),
+    "--accent-fg-rgb": accentForeground(palette.c1).join(" "),
+    "--accent-ink-base-rgb": rgb(palette.ink),
+    "--accent-ink-dark-rgb": rgb(palette.c2),
+    "--accent-solid-base-rgb": rgb(palette.solid[0]),
+    "--btn-g1": palette.solid[0],
+    "--btn-g2": palette.solid[1],
+    "--review-a": palette.review[0],
+    "--review-b": palette.review[1],
+    "--review-grad": grad(palette.review[0], palette.review[1]),
+  };
+  palette.cards.forEach(([a, b], index) => {
+    vars[`--card-${index + 1}a`] = a;
+    vars[`--card-${index + 1}b`] = b;
+    vars[`--card-grad-${index + 1}`] = grad(a, b);
+  });
+  palette.dl.forEach((color, index) => {
+    vars[`--dl-${index + 1}`] = color;
+  });
+  return vars;
 }
 
-/** Écrit les variables CSS sur `root` — seul point d'entrée utilisé à la fois par `ThemeSync` (React) et par le script anti-flash inline (voir app/layout.tsx). */
-export function applyAccent(hex: string, root: HTMLElement = document.documentElement): void {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return;
-  const fg = accentForeground(hex);
-  root.style.setProperty("--accent-rgb", rgb.join(" "));
-  root.style.setProperty("--accent-fg-rgb", fg.join(" "));
-  root.style.setProperty("--accent-ink-base-rgb", accentInk(hex).join(" "));
-  root.style.setProperty("--accent-deep-base-rgb", accentDeep(hex).join(" "));
-  root.style.setProperty("--accent-solid-base-rgb", accentSolid(hex).join(" "));
+/** Nombre de paires de cartes par palette — les cartes en dégradé se succèdent modulo ce nombre. */
+export const CARD_TONES = 4;
+
+/** Écrit les variables de la palette sur `root` — appelé par `ThemeSync` et par le sélecteur des Réglages. */
+export function applyPalette(id: PaletteId, root: HTMLElement = document.documentElement): void {
+  const vars = paletteVariables(paletteById(id));
+  for (const [name, value] of Object.entries(vars)) root.style.setProperty(name, value);
+  root.setAttribute("data-palette", id);
 }
 
 /**
- * Mode d'apparence (Sprint personnalisation) — indépendant de la couleur
- * d'accent ci-dessus.
+ * Mode d'apparence — indépendant de la palette.
  *
- * SOMBRE PAR DÉFAUT depuis la refonte « Nuit » : app/globals.css pose les
- * neutres sombres sur `:root` nu, et le clair n'existe que sous
- * `data-theme="light"` (ou `data-theme="system"` quand le système est clair).
- * Conséquence : "system" doit désormais être ÉCRIT dans l'attribut — son
- * absence ne veut plus dire « laisse le système décider » mais « défaut »,
- * c'est-à-dire sombre. Une page sans JavaScript, ou lue avant le script
- * anti-flash, s'affiche donc dans le thème du produit, pas dans celui du
- * système.
+ * CLAIR PAR DÉFAUT depuis la refonte « Revolut clair » : app/globals.css
+ * pose les neutres CLAIRS sur `:root` nu, et le sombre n'existe que sous
+ * `data-theme="dark"` (ou `data-theme="system"` quand le système est
+ * sombre). "system" est donc toujours ÉCRIT dans l'attribut : son absence
+ * veut dire « défaut du produit », c'est-à-dire clair.
  */
 export type ThemeMode = "light" | "dark" | "system";
 export const THEME_MODES: ThemeMode[] = ["light", "dark", "system"];
-export const DEFAULT_THEME_MODE: ThemeMode = "dark";
+export const DEFAULT_THEME_MODE: ThemeMode = "light";
 
-/**
- * Pose `data-theme` sur `root` — toujours, y compris "system" (voir la doc
- * de `ThemeMode`). Seul point d'entrée, utilisé par `ThemeSync` (React) et
- * le script anti-flash inline (app/layout.tsx), même principe que
- * `applyAccent`.
- */
+/** Pose `data-theme` sur `root` — toujours, y compris "system". */
 export function applyThemeMode(mode: ThemeMode, root: HTMLElement = document.documentElement): void {
   root.setAttribute("data-theme", mode);
 }

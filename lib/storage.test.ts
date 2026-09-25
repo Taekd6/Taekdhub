@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildBackupPayload, lastStorageWriteFailure, localData, normalizeCheckin, normalizeErrorEntry, normalizeGrade, normalizePreferences, normalizeSession, normalizeWorkItem, purgeRetiredBankData, restoreBackup, validateBackupPayload } from "@/lib/storage";
-import { DEFAULT_ACCENT, hexToRgb } from "@/lib/theme";
+import { DEFAULT_PALETTE, PALETTE_IDS } from "@/lib/theme";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -143,11 +143,11 @@ describe("export → JSON → import — round-trip complet (Phase 7)", () => {
  * valeur incohérente à `applyThemeMode` (lib/theme.ts).
  */
 describe("normalizePreferences — thème et rétrocompatibilité", () => {
-  it("une préférence vide retombe entièrement sur les défauts (dont themeMode: \"dark\", défaut « Nuit »)", () => {
+  it("une préférence vide retombe entièrement sur les défauts (dont themeMode: \"light\", défaut « Revolut clair »)", () => {
     const prefs = normalizePreferences({});
-    expect(prefs.themeMode).toBe("dark");
+    expect(prefs.themeMode).toBe("light");
     expect(prefs.weeklyGoalMinutes).toBe(300);
-    expect(prefs.accent).toMatch(/^#/);
+    expect(prefs.palette).toBe("aurora");
   });
 
   it("conserve un themeMode valide", () => {
@@ -155,10 +155,10 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     expect(normalizePreferences({ themeMode: "dark" }).themeMode).toBe("dark");
   });
 
-  it("retombe sur le défaut (sombre) pour un themeMode invalide ou corrompu", () => {
-    expect(normalizePreferences({ themeMode: "bleu" }).themeMode).toBe("dark");
-    expect(normalizePreferences({ themeMode: 42 }).themeMode).toBe("dark");
-    expect(normalizePreferences({ themeMode: null }).themeMode).toBe("dark");
+  it("retombe sur le défaut (clair) pour un themeMode invalide ou corrompu", () => {
+    expect(normalizePreferences({ themeMode: "bleu" }).themeMode).toBe("light");
+    expect(normalizePreferences({ themeMode: 42 }).themeMode).toBe("light");
+    expect(normalizePreferences({ themeMode: null }).themeMode).toBe("light");
   });
 
   it("conserve un choix explicite \"system\"", () => {
@@ -170,8 +170,10 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     const prefs = normalizePreferences(legacy);
     expect(prefs.displayName).toBe("Ancien utilisateur");
     expect(prefs.dailyGoalMinutes).toBe(120);
-    expect(prefs.accent).toBe("#6366f1");
-    expect(prefs.themeMode).toBe("dark");
+    // Un indigo choisi à l'époque « Apple » devient Aurora (famille bleu-violet).
+    expect(prefs.palette).toBe("aurora");
+    expect(prefs).not.toHaveProperty("accent");
+    expect(prefs.themeMode).toBe("light");
     expect(prefs.weeklyGoalMinutes).toBe(300);
   });
 });
@@ -575,7 +577,7 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
       expect(outcome.ok).toBe(true);
       return localData.preferences();
     });
-    expect(hexToRgb(prefs.accent)).not.toBeNull();
+    expect(PALETTE_IDS).toContain(prefs.palette);
     expect(prefs.contestDate).toBe("");
     expect(prefs.dailyGoalMinutes).toBeGreaterThan(0);
   });
@@ -619,31 +621,68 @@ describe("normalizePreferences — couleurs de matière retirées (refonte « Ap
     ]) {
       const prefs = normalizePreferences({ displayName: "Ancien", accent: "#6366f1", ...legacy }) as Record<string, unknown>;
       expect(prefs.displayName).toBe("Ancien");
-      expect(prefs.accent).toBe("#6366f1");
+      expect(prefs.palette).toBe("aurora");
+      expect(prefs).not.toHaveProperty("accent");
       expect(prefs).not.toHaveProperty("subjectPalette");
       expect(prefs).not.toHaveProperty("subjectColors");
     }
   });
 
-  it("les anciens accents par défaut (« Miel », « Menthe ») migrent vers le bleu, un vrai choix est conservé", () => {
-    expect(normalizePreferences({ accent: "#e0a758" }).accent).toBe(DEFAULT_ACCENT);
-    expect(normalizePreferences({ accent: "#E0A758" }).accent).toBe(DEFAULT_ACCENT);
-    expect(normalizePreferences({ accent: "#5eead4" }).accent).toBe(DEFAULT_ACCENT);
-    expect(DEFAULT_ACCENT).toBe("#0a84ff");
-    expect(normalizePreferences({ accent: "#d4f36b" }).accent).toBe("#d4f36b");
+  it("les anciens accents PAR DÉFAUT (bleu Apple, « Miel », « Menthe ») donnent Aurora : ils n'ont jamais été choisis", () => {
+    for (const accent of ["#0a84ff", "#e0a758", "#E0A758", "#5eead4"]) {
+      expect(normalizePreferences({ accent }).palette, accent).toBe(DEFAULT_PALETTE);
+    }
+    expect(DEFAULT_PALETTE).toBe("aurora");
+  });
+});
+
+describe("normalizePreferences — migration de l'accent vers une palette (refonte « Revolut clair »)", () => {
+  it("un accent choisi garde sa famille de teinte", () => {
+    // Les six préréglages de la refonte « Apple ».
+    expect(normalizePreferences({ accent: "#5e5ce6" }).palette).toBe("aurora"); // Indigo
+    expect(normalizePreferences({ accent: "#30d158" }).palette).toBe("neon"); // Vert
+    expect(normalizePreferences({ accent: "#ff9f0a" }).palette).toBe("sunset"); // Orange
+    expect(normalizePreferences({ accent: "#ff375f" }).palette).toBe("sunset"); // Rose
+    expect(normalizePreferences({ accent: "#8e8e93" }).palette).toBe("aurora"); // Graphite (gris)
+    expect(normalizePreferences({ accent: "#38bdf8" }).palette).toBe("ocean"); // un bleu ciel personnalisé
+    expect(normalizePreferences({ accent: "#d4f36b" }).palette).toBe("neon");
+  });
+
+  it("une palette explicite l'emporte sur tout ancien champ", () => {
+    expect(normalizePreferences({ palette: "ocean", accent: "#ff375f", subjectPalette: "sunset" }).palette).toBe("ocean");
+  });
+
+  it("à défaut d'accent choisi, l'ancienne palette « Nuit » est reprise quand elle existe encore", () => {
+    expect(normalizePreferences({ subjectPalette: "sunset" }).palette).toBe("sunset");
+    expect(normalizePreferences({ subjectPalette: "ocean", accent: "#0a84ff" }).palette).toBe("ocean");
+    // « neon » était le défaut « Nuit », « pastel » n'existe plus.
+    expect(normalizePreferences({ subjectPalette: "neon" }).palette).toBe("aurora");
+    expect(normalizePreferences({ subjectPalette: "pastel" }).palette).toBe("aurora");
+  });
+
+  it("une palette inconnue ou corrompue retombe sur Aurora", () => {
+    for (const palette of ["arc-en-ciel", 42, null, { id: "ocean" }]) {
+      expect(normalizePreferences({ palette }).palette).toBe("aurora");
+    }
+  });
+
+  it("la palette fait l'aller-retour export → fichier → restauration", () => {
+    const exported = normalizePreferences({ palette: "neon", themeMode: "dark" });
+    const file = JSON.parse(JSON.stringify(backup({ preferences: exported })));
+    const prefs = withQuotaStorage({}, 1_000_000, () => {
+      expect(restoreBackup(file).ok).toBe(true);
+      return localData.preferences();
+    });
+    expect(prefs.palette).toBe("neon");
+    expect(prefs.themeMode).toBe("dark");
   });
 });
 
 describe("normalizePreferences — frontière de trust réelle, pas trois champs sur huit", () => {
-  it("un accent non textuel retombe sur le défaut au lieu de faire planter applyAccent", () => {
-    const prefs = normalizePreferences({ accent: 42 });
-    expect(typeof prefs.accent).toBe("string");
-    // Le vrai critère : la valeur produite doit être ACCEPTÉE par l'analyseur qui l'utilisera.
-    expect(hexToRgb(prefs.accent)).not.toBeNull();
-  });
-
-  it("un accent textuel mais invalide est refusé lui aussi", () => {
-    expect(hexToRgb(normalizePreferences({ accent: "rouge vif" }).accent)).not.toBeNull();
+  it("un ancien accent non textuel ou invalide ne fait rien planter et donne la palette par défaut", () => {
+    for (const accent of [42, "rouge vif", null, { hex: "#fff" }]) {
+      expect(normalizePreferences({ accent }).palette).toBe("aurora");
+    }
   });
 
   it("une date de concours illisible ne peut plus atteindre Intl.DateTimeFormat", () => {
@@ -674,12 +713,12 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
     const prefs = normalizePreferences({ __proto__: null, intrus: "oui", autre: 1 }) as Record<string, unknown>;
     expect(Object.keys(prefs).sort()).toEqual(
       [
-        "accent",
         "capacityByWeekday",
         "contestDate",
         "dailyGoalMinutes",
         "displayName",
         "onboardingCompletedAt",
+        "palette",
         "planningMarginPercent",
         "themeMode",
         "weeklyGoalMinutes",

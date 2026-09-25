@@ -12,7 +12,8 @@ import { cn } from "@/lib/cn";
  *   `RevealObserver`  monté UNE fois, dans app/layout.tsx. Une seule
  *                     IntersectionObserver pour toute la page : elle
  *                     surveille chaque élément animé (`.reveal`, `.grow-x`,
- *                     `.grow-y`, `.ring-draw`, `.ring-grow` — voir
+ *                     `.grow-y`, `.ring-draw`, `.ring-grow`, `.line-draw`,
+ *                     `.area-fade`, `.pop` — voir
  *                     app/globals.css) et lui pose `data-revealed` quand il
  *                     devient visible. Les éléments ajoutés plus tard (liste
  *                     chargée, onglet ouvert) sont rattrapés par une
@@ -39,7 +40,7 @@ import { cn } from "@/lib/cn";
  * 4 s (`window.__revealLive`), le script désarme tout.
  */
 
-const ANIMATED = ".reveal, .grow-x, .grow-y, .ring-draw, .ring-grow";
+const ANIMATED = ".reveal, .grow-x, .grow-y, .ring-draw, .ring-grow, .line-draw, .area-fade, .pop";
 
 declare global {
   interface Window {

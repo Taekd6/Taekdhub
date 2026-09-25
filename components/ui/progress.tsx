@@ -31,7 +31,8 @@ export function Meter({
 }) {
   const clamped = Math.min(100, Math.max(0, Number.isFinite(value) ? value : 0));
   const tones = {
-    accent: "bg-accent",
+    // Le dégradé de marque (refonte « Revolut clair ») : une jauge « vivante ».
+    accent: "grad-brand",
     success: "bg-emerald-400",
     warning: "bg-amber-400",
     danger: "bg-rose-400",

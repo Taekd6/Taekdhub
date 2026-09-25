@@ -4,159 +4,184 @@
 
 /**
  * =====================================================================
- * TAEKDHUB — SYSTÈME VISUEL « APPLE »
+ * TAEKDHUB — SYSTÈME VISUEL « REVOLUT CLAIR »
  * =====================================================================
  *
  * UNE SEULE feuille de style, et aucune règle posée sur une balise nue de
  * contrôle ou de mise en page (voir lib/design-system.test.ts) : ce qu'un
  * composant affiche se lit dans ses classes, jamais ailleurs.
  *
- * ─── LE PARTI PRIS ───────────────────────────────────────────────────
+ * ─── L'HISTOIRE, POUR NE PAS LA REFAIRE ─────────────────────────────
  *
- * La refonte « Nuit » (fond bleu-noir, une teinte vive par matière, lueur
- * d'accent en haut de page) a été écartée par l'élève : « j'aime pas trop
- * les couleurs, c'est bizarre, ça fait pas premium ». Ses réponses tiennent
- * en deux mots — noir et blanc + UN accent, et Apple pour référence. Ce qui
- * en découle :
+ * Papier crème et laiton : « moche ». « Nuit », sombre avec une couleur
+ * par matière : « bizarre ». « Apple », gris monochrome : « pas fou, pas
+ * envie ». Revolut sombre : « le noir, ça rend pas envie ». La maquette
+ * VALIDÉE est « D2 · Style Revolut clair » :
  *
- *   FOND      noir pur en sombre, #f5f5f7 en clair : les deux fonds
- *             d'apple.com. Pas de lueur, pas de dégradé, pas de texture —
- *             le premium vient du vide et de la typographie, pas du décor.
+ *   FOND      BLANC lumineux (#f5f6fa), traversé par deux HALOS pastel
+ *             teintés par la palette, qui dérivent très lentement
+ *             (`.halo`, posés par components/app-shell.tsx).
  *
- *   CARTES    des tuiles grises (#1c1c1e) sur le noir, blanches sur le
- *             gris clair ; grand rayon (24 px), large marge intérieure, AUCUN
- *             cadre visible en sombre, une ombre à peine perceptible en clair.
- *             La tuile se détache par sa VALEUR.
+ *   CARTES    des tuiles BLANCHES qui flottent : 26 px de rayon, aucune
+ *             bordure visible, une ombre douce et bleutée
+ *             (0 10px 30px -10px rgba(20,20,60,.12)).
  *
- *   GRIS      une seule famille, neutre (les gris système d'Apple : #f5f5f7,
- *             #a1a1a6, #86868b, #6e6e73, #2c2c2e, #1c1c1e…). Aucun gris
- *             bleuté ou chaud ne s'y mêle.
+ *   COULEUR   des DÉGRADÉS VIFS, réservés à ce qui compte : les cartes de
+ *             matière (quatre paires, en liste cyclée), la bannière des
+ *             révisions, le bouton rond du chrono, le bouton principal.
+ *             Chacune porte une ombre DE SA COULEUR et un reflet qui passe
+ *             (`.sheen`). Quatre palettes au choix — lib/theme.ts.
  *
- *   COULEUR   UNE : l'accent (bleu Apple par défaut, réglable — voir
- *             lib/theme.ts). Il marque l'action et la valeur qu'on doit
- *             regarder, rien d'autre. Les MATIÈRES n'ont plus de couleur :
- *             elles se reconnaissent à leur nom, et les graphiques les
- *             empilent en paliers de gris. Seuls les trois statuts (acquis /
- *             à surveiller / raté) gardent leur vert-orange-rouge système,
- *             parce que là, la couleur EST l'information.
+ *   TYPO      SF Pro Rounded sur appareil Apple (`ui-rounded`), Nunito
+ *             ailleurs. Franchement GRASSE : 800–900 pour les chiffres et
+ *             les titres, 600–700 pour le reste. Peu de texte : « moins de
+ *             blabla ».
  *
- *   TYPO      SF Pro Rounded sur les appareils Apple (`ui-rounded`), Nunito
- *             ailleurs — ronde et franchement grasse, comme demandé. Grands
- *             titres d'affichage très serrés, corps à 16–17 px, secondaire en
- *             gris, chiffres tabulaires. Plus aucune étiquette en capitales.
+ *   MOUVEMENT beaucoup, et doux : les blocs montent en fondu en entrant
+ *             dans l'écran, les chiffres comptent, la courbe se dessine, les
+ *             cartes flottent et s'inclinent au survol, les boutons ronds
+ *             rebondissent à l'appui, les pastilles « poppent ». Tout est
+ *             coupé sous `prefers-reduced-motion`.
  *
- *   MOUVEMENT celui d'apple.com : les blocs montent de 24 px en fondu quand
- *             ils ENTRENT DANS L'ÉCRAN (IntersectionObserver — voir
- *             components/ui/reveal.tsx), les barres poussent et les anneaux
- *             se tracent au même moment, une carte grossit de 1 % au survol,
- *             un contrôle s'enfonce à 97 % à l'appui. Rien ne boucle ; tout
- *             est coupé sous `prefers-reduced-motion`.
+ * ─── CLAIR PAR DÉFAUT ────────────────────────────────────────────────
  *
- * ─── SOMBRE PAR DÉFAUT ───────────────────────────────────────────────
+ * `:root` nu porte les neutres CLAIRS. Le sombre (maquette « D ») n'existe
+ * que sous `data-theme="dark"`, ou sous `data-theme="system"` quand le
+ * système est sombre (lib/theme.ts#applyThemeMode).
  *
- * `:root` nu porte les neutres SOMBRES. Le clair n'existe que sous
- * `data-theme="light"`, ou sous `data-theme="system"` quand le système est
- * clair (lib/theme.ts#applyThemeMode). Une page lue sans JavaScript est donc
- * dans le thème du produit, pas dans celui du système.
+ * ─── LES VARIABLES DE PALETTE ────────────────────────────────────────
+ *
+ * `--g1`/`--g2` (dégradé de marque), `--btn-g1/2` (boutons à texte),
+ * `--card-Na/b` + `--card-grad-N` (cartes cyclées), `--review-*`, `--dl-N`,
+ * et les anciens `--accent-*` remappés : posés au démarrage par le script
+ * anti-flash (app/layout.tsx), puis par `ThemeSync`, depuis
+ * lib/theme.ts#paletteVariables. Les valeurs ci-dessous ne sont que le
+ * repli « Aurora » d'une page lue sans JavaScript.
  */
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
 
     /* ── POLICE ────────────────────────────────────────────────────
-       SF Pro Rounded d'abord : `ui-rounded` est le nom GÉNÉRIQUE qui la
-       désigne sur macOS/iOS (Safari), « SF Pro Rounded » le nom de famille
-       quand elle est installée. Partout ailleurs, ces deux noms sont ignorés
-       et Nunito (chargée par next/font, app/layout.tsx) prend le relais. */
+       SF Pro Rounded d'abord (`ui-rounded` = son nom générique sur
+       macOS/iOS). Partout ailleurs, Nunito (next/font, app/layout.tsx). */
     --font-sans: ui-rounded, "SF Pro Rounded", var(--font-nunito), system-ui, sans-serif;
 
-    /* ── ACCENT ────────────────────────────────────────────────────
-       Piloté par l'élève (lib/theme.ts). Valeurs de repli pour l'accent par
-       défaut « Bleu » (#0a84ff), calculées avec les formules de
-       lib/theme.ts — pas estimées à l'œil — et réécrites par le script
-       anti-flash dès qu'un autre accent est choisi.
-         `--accent-rgb`            la couleur brute (encre du thème sombre) ;
-         `--accent-ink-base-rgb`   encre du thème clair (≥ 4,5:1 sur #e8e8ed) ;
-         `--accent-solid-base-rgb` aplat du bouton principal, assez sombre
-                                   pour porter du BLANC à ≥ 4,5:1 ;
-         `--accent-fg-rgb`         noir ou blanc, le plus lisible sur l'accent
-                                   BRUT (pastilles `bg-accent`). */
-    --accent-rgb: 10 132 255;
-    --accent-ink-base-rgb: 8 100 193;
-    --accent-fg-rgb: 0 0 0;
-    --accent-deep-base-rgb: 5 66 128;
-    --accent-solid-base-rgb: 9 115 222;
-    /* Le bouton principal : aplat d'accent, texte BLANC, dans les deux
-       thèmes — la convention Apple. */
+    /* ── PALETTE (repli Aurora — voir lib/theme.ts) ─────────────── */
+    --g1: #7c5cff;
+    --g2: #22d3ee;
+    --g1-rgb: 124 92 255;
+    --g2-rgb: 34 211 238;
+    --btn-g1: #6d28d9;
+    --btn-g2: #2563eb;
+    --card-1a: #6d28d9;
+    --card-1b: #2563eb;
+    --card-2a: #db2777;
+    --card-2b: #7c3aed;
+    --card-3a: #0891b2;
+    --card-3b: #4f46e5;
+    --card-4a: #9333ea;
+    --card-4b: #ec4899;
+    --card-grad-1: linear-gradient(135deg, var(--card-1a), var(--card-1b));
+    --card-grad-2: linear-gradient(135deg, var(--card-2a), var(--card-2b));
+    --card-grad-3: linear-gradient(135deg, var(--card-3a), var(--card-3b));
+    --card-grad-4: linear-gradient(135deg, var(--card-4a), var(--card-4b));
+    --review-a: #f97316;
+    --review-b: #ec4899;
+    --review-grad: linear-gradient(135deg, var(--review-a), var(--review-b));
+    --dl-1: #7c3aed;
+    --dl-2: #2563eb;
+    --dl-3: #0891b2;
+
+    /* ── ACCENT (anciens noms, remappés sur la palette) ─────────────
+         `--accent-rgb`            c1, la couleur de marque brute ;
+         `--accent-ink-base-rgb`   l'encre de la palette en CLAIR (≥ 4,5:1) ;
+         `--accent-ink-dark-rgb`   c2, l'encre en SOMBRE (la maquette « D ») ;
+         `--accent-solid-base-rgb` première teinte du dégradé des boutons ;
+         `--accent-fg-rgb`         noir ou blanc, lisible sur c1 brut. */
+    --accent-rgb: 124 92 255;
+    --accent-ink-base-rgb: 91 63 214;
+    --accent-ink-dark-rgb: 34 211 238;
+    --accent-fg-rgb: 255 255 255;
+    --accent-solid-base-rgb: 109 40 217;
     --accent-solid-rgb: var(--accent-solid-base-rgb);
     --accent-solid-fg-rgb: 255 255 255;
+    --accent-ink-rgb: var(--accent-ink-base-rgb);
+    /* `--ink` : l'encre de palette, prête à poser (`color: var(--ink)`). */
+    --ink: rgb(var(--accent-ink-rgb));
 
-    /* ── NEUTRES — THÈME SOMBRE (défaut) ───────────────────────────
-       Les gris système d'Apple. `panel`/`elevated` sont les équivalents
-       OPAQUES des tuiles, pour ce qui doit masquer ce qu'il recouvre (barre
-       collante, feuille modale, menu). */
-    --canvas-rgb: 0 0 0;
-    --panel-rgb: 28 28 30;
-    --elevated-rgb: 44 44 46;
-    --line-rgb: 56 56 58;
-    --ink-rgb: 245 245 247;
-    --muted-rgb: 161 161 166;
-    /* #86868b : 4,74:1 sur une tuile #1c1c1e, 5,8:1 sur le noir — AA pour
-       du texte courant. Le #6e6e73 d'apple.com tomberait à 3,3:1 ici. */
-    --subtle-rgb: 134 134 139;
-    --hairline-rgb: 255 255 255;
-    /* Remplissage système (« fill ») : un gris moyen translucide, qui
-       prend la valeur de ce qu'il recouvre — champ, piste de sélecteur,
-       rangée survolée. */
-    --inset-rgb: 118 118 128;
-    --inset-alpha: 0.2;
-    --surface-bg: rgb(28 28 30);
-    /* Un filet presque invisible : il ne dessine pas la tuile, il empêche
-       seulement deux tuiles voisines de se fondre sur un écran mal réglé. */
-    --surface-border: rgb(255 255 255 / 0.05);
-    --surface-border-hover: rgb(255 255 255 / 0.1);
-    --surface-shadow: none;
-    --shadow-surface: 0 1px 2px rgb(0 0 0 / 0.5), 0 24px 60px rgb(0 0 0 / 0.6);
-    --chip-on-bg: rgb(99 99 102);
-    --chip-on-ring: transparent;
-    --chip-on-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    /* ── NEUTRES — THÈME CLAIR (défaut) ────────────────────────────
+       Un gris très légèrement bleuté, comme la maquette : le blanc des
+       cartes s'en détache sans qu'aucun filet soit nécessaire. */
+    --canvas-rgb: 245 246 250;
+    --panel-rgb: 255 255 255;
+    --elevated-rgb: 255 255 255;
+    --line-rgb: 232 233 241;
+    --ink-rgb: 11 11 20;
+    /* #6b6b7b (maquette) : 5,2:1 sur blanc. */
+    --muted-rgb: 107 107 123;
+    /* #6e6e7e : 4,9:1 sur blanc, 4,6:1 sur le fond — AA. Le #a0a0b0 des
+       jours de la maquette ne sert qu'aux étiquettes décoratives. */
+    --subtle-rgb: 110 110 126;
+    --hairline-rgb: 11 11 20;
+    /* Remplissage (« fill ») : un voile bleu-nuit très léger — champ,
+       piste de sélecteur, pastille éteinte. */
+    --inset-rgb: 20 20 60;
+    --inset-alpha: 0.06;
+    --surface-bg: rgb(255 255 255);
+    --surface-border: rgb(20 20 60 / 0.035);
+    --surface-border-hover: rgb(20 20 60 / 0.07);
+    /* L'ombre de la maquette, et sa version « soulevée » au survol. */
+    --surface-lift-rest: 0 10px 30px -10px rgb(20 20 60 / 0.12);
+    --surface-lift-up: 0 22px 44px -14px rgb(20 20 60 / 0.2);
+    --surface-shadow: var(--surface-lift-rest);
+    --shadow-surface: 0 2px 6px rgb(20 20 60 / 0.06), 0 28px 60px -12px rgb(20 20 60 / 0.25);
+    /* Bouton rond blanc (`ActionButtons`). */
+    --action-bg: rgb(255 255 255);
+    --action-lift: 0 6px 18px -6px rgb(20 20 60 / 0.18);
+    /* Verre dépoli : barre haute, pastille de date. */
+    --glass-bg: rgb(255 255 255 / 0.75);
+    --glass-edge: 0 4px 16px rgb(20 20 60 / 0.06);
+    /* Intensité des halos du fond. */
+    --halo-a: 0.2;
+    --halo-b: 0.18;
+    --chip-on-bg: rgb(255 255 255);
+    --chip-on-ring: rgb(20 20 60 / 0.05);
+    --chip-on-shadow: 0 2px 8px rgb(20 20 60 / 0.12);
 
     /* Échelle « zinc » — mêmes noms de classes qu'avant (text-zinc-400,
-       bg-zinc-800…), valeurs = gris système d'Apple, inversées avec le
-       thème. 800 = #2c2c2e, le gris du bouton secondaire. */
-    --zinc-50-rgb: 250 250 252;
-    --zinc-100-rgb: 245 245 247;
-    --zinc-200-rgb: 229 229 234;
-    --zinc-300-rgb: 199 199 204;
-    --zinc-400-rgb: 161 161 166;
-    --zinc-500-rgb: 134 134 139;
-    --zinc-600-rgb: 99 99 102;
-    --zinc-700-rgb: 72 72 74;
-    --zinc-800-rgb: 44 44 46;
-    --zinc-900-rgb: 28 28 30;
-    --zinc-950-rgb: 18 18 19;
+       bg-zinc-800…), valeurs INVERSÉES en clair : 50 est l'encre, 950 le
+       blanc. 800 = le gris des boutons secondaires. */
+    --zinc-50-rgb: 11 11 20;
+    --zinc-100-rgb: 11 11 20;
+    --zinc-200-rgb: 38 38 52;
+    --zinc-300-rgb: 64 64 80;
+    --zinc-400-rgb: 98 98 114;
+    --zinc-500-rgb: 110 110 126;
+    --zinc-600-rgb: 138 138 154;
+    --zinc-700-rgb: 220 221 232;
+    --zinc-800-rgb: 236 237 245;
+    --zinc-900-rgb: 242 243 249;
+    --zinc-950-rgb: 250 250 253;
 
     /* ── STATUT ────────────────────────────────────────────────────
-       Vert, orange et rouge SYSTÈME d'Apple — les seules couleurs de
-       l'écran avec l'accent, et uniquement quand elles portent un verdict.
-       200-300 = TEXTE, 400-500 = fond ou trait. */
-    --emerald-200-rgb: 48 209 88;
-    --emerald-300-rgb: 48 209 88;
-    --emerald-400-rgb: 48 209 88;
-    --emerald-500-rgb: 36 176 72;
-    --amber-200-rgb: 255 159 10;
-    --amber-300-rgb: 255 159 10;
-    --amber-400-rgb: 255 159 10;
-    --amber-500-rgb: 230 140 0;
-    --rose-200-rgb: 255 105 97;
-    --rose-300-rgb: 255 105 97;
-    --rose-400-rgb: 255 69 58;
-    --rose-500-rgb: 235 55 45;
+       Vert, orange, rouge : les seules couleurs qui portent un VERDICT.
+       200-300 = TEXTE (assombri pour le fond clair), 400-500 = fond/trait. */
+    --emerald-200-rgb: 22 128 61;
+    --emerald-300-rgb: 22 128 61;
+    --emerald-400-rgb: 34 197 94;
+    --emerald-500-rgb: 22 163 74;
+    --amber-200-rgb: 180 83 9;
+    --amber-300-rgb: 180 83 9;
+    --amber-400-rgb: 249 115 22;
+    --amber-500-rgb: 234 88 12;
+    --rose-200-rgb: 225 29 72;
+    --rose-300-rgb: 225 29 72;
+    --rose-400-rgb: 244 63 94;
+    --rose-500-rgb: 225 29 72;
 
-    /* Anciennes teintes d'identité (violet, ciel, sarcelle, orange) : plus
-       aucune couleur décorative. Le « ciel » d'un statut « en cours » devient
-       l'accent, le reste se replie sur les gris et l'orange de statut. */
+    /* Anciennes teintes d'identité : alias neutres ou d'accent. */
     --violet-200-rgb: var(--zinc-300-rgb);
     --violet-400-rgb: var(--zinc-500-rgb);
     --sky-200-rgb: var(--accent-ink-rgb);
@@ -166,22 +191,18 @@
     --orange-200-rgb: var(--amber-200-rgb);
     --orange-400-rgb: var(--amber-400-rgb);
 
-    /* En sombre, l'accent brut se lit tel quel comme encre. */
-    --accent-ink-rgb: var(--accent-rgb);
-
-    /* ── MATIÈRES — des PALIERS DE GRIS, plus des couleurs ─────────
-       Sept marches régulières, de la plus claire (maths, en bas des
-       colonnes empilées) à la plus sombre. Assez écartées pour que deux
-       segments voisins se distinguent, sans jamais qu'une matière « crie ».
-       Le nom de la matière, toujours affiché à côté, fait l'identification.
-       `-ink` (texte d'une matière) = l'encre ordinaire. */
-    --subj-math: 242 242 244;
-    --subj-phys: 212 212 216;
-    --subj-chim: 184 184 188;
-    --subj-itc: 158 158 162;
-    --subj-isp: 134 134 138;
-    --subj-fr: 112 112 116;
-    --subj-en: 92 92 96;
+    /* ── MATIÈRES — des paliers, pas des identités ─────────────────
+       L'élève a rejeté la couleur PAR matière (« Nuit ») : les graphiques
+       empilés découpent en paliers d'un gris bleuté, le nom fait
+       l'identification. Les cartes en dégradé de l'accueil, elles, suivent
+       la liste cyclée de la palette (`--card-grad-N`), sans attribution. */
+    --subj-math: 40 40 80;
+    --subj-phys: 70 70 108;
+    --subj-chim: 98 98 134;
+    --subj-itc: 124 124 158;
+    --subj-isp: 150 150 180;
+    --subj-fr: 176 176 202;
+    --subj-en: 200 200 222;
     --subj-math-ink: var(--ink-rgb);
     --subj-phys-ink: var(--ink-rgb);
     --subj-chim-ink: var(--ink-rgb);
@@ -195,137 +216,143 @@
     --measure-wide: 46rem;
     --shell-max: 1180px;
     --nav-h: 3.5rem;
+    /* Hauteur de la barre d'onglets mobile (hors marge de sécurité) — réutilisée
+       par ce qui doit se poser juste au-dessus (barres d'actions collantes). Le
+       disque du chrono déborde vers le haut sans changer cette hauteur. */
+    --tabbar-h: 3.5rem;
 
     /* ── MOUVEMENT ─────────────────────────────────────────────────
-       Une seule courbe pour tout ce qui entre ou pousse : départ vif,
-       arrivée très longue et très douce — celle d'apple.com. C'est elle qui
-       fait « premium », pas l'amplitude. */
+       Deux courbes. `--ease-out` pour ce qui entre ou pousse (départ vif,
+       arrivée très douce) ; `--ease-spring` pour ce qu'on touche : elle
+       dépasse sa cible et revient, c'est le « rebond » de la maquette. */
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-    --stagger: 70ms;
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --stagger: 80ms;
   }
 
-  /* ── THÈME CLAIR ──────────────────────────────────────────────────
-     Le gris clair d'apple.com (#f5f5f7), tuiles blanches, texte #1d1d1f.
-     Les deux blocs ci-dessous (choix explicite / système clair) sont
-     identiques par construction — seule leur condition d'application
-     diffère. */
-  :root[data-theme="light"] {
-    color-scheme: light;
-    --canvas-rgb: 245 245 247;
-    --panel-rgb: 255 255 255;
-    --elevated-rgb: 255 255 255;
-    --line-rgb: 222 222 227;
-    --ink-rgb: 29 29 31;
-    --muted-rgb: 99 99 104;
-    /* #6e6e73 : 4,7:1 sur le fond, 5,1:1 sur une tuile blanche. */
-    --subtle-rgb: 110 110 115;
-    --hairline-rgb: 0 0 0;
-    --inset-rgb: 118 118 128;
-    --inset-alpha: 0.12;
-    --surface-bg: rgb(255 255 255);
-    --surface-border: rgb(0 0 0 / 0.04);
-    --surface-border-hover: rgb(0 0 0 / 0.08);
-    /* La seule ombre d'une tuile en place : à peine là, elle dit « posé
-       au-dessus du fond » sans dessiner de contour. */
-    --surface-shadow: 0 1px 2px rgb(0 0 0 / 0.03), 0 6px 24px rgb(0 0 0 / 0.04);
-    --shadow-surface: 0 1px 2px rgb(0 0 0 / 0.06), 0 16px 48px rgb(0 0 0 / 0.14);
-    --chip-on-bg: rgb(255 255 255);
-    --chip-on-ring: rgb(0 0 0 / 0.04);
-    --chip-on-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
-
-    --zinc-50-rgb: 0 0 0;
-    --zinc-100-rgb: 29 29 31;
-    --zinc-200-rgb: 44 44 46;
-    --zinc-300-rgb: 66 66 69;
-    --zinc-400-rgb: 99 99 104;
-    --zinc-500-rgb: 110 110 115;
-    --zinc-600-rgb: 134 134 139;
-    --zinc-700-rgb: 210 210 215;
-    --zinc-800-rgb: 232 232 237;
-    --zinc-900-rgb: 240 240 245;
-    --zinc-950-rgb: 250 250 252;
-
-    --emerald-200-rgb: 36 138 61;
-    --emerald-300-rgb: 36 138 61;
-    --emerald-400-rgb: 52 199 89;
-    --emerald-500-rgb: 40 170 72;
-    --amber-200-rgb: 178 80 0;
-    --amber-300-rgb: 178 80 0;
-    --amber-400-rgb: 255 149 0;
-    --amber-500-rgb: 230 130 0;
-    --rose-200-rgb: 215 0 21;
-    --rose-300-rgb: 215 0 21;
-    --rose-400-rgb: 255 59 48;
-    --rose-500-rgb: 230 40 35;
-
-    --accent-ink-rgb: var(--accent-ink-base-rgb);
-
-    /* Sur une tuile blanche, les paliers partent du noir. */
-    --subj-math: 29 29 31;
-    --subj-phys: 62 62 66;
-    --subj-chim: 92 92 96;
-    --subj-itc: 118 118 122;
-    --subj-isp: 144 144 148;
-    --subj-fr: 168 168 172;
-    --subj-en: 192 192 196;
+  /* ── THÈME SOMBRE — la maquette « D » ────────────────────────────
+     Presque noir (#07070b), tuiles en verre blanc à 6 %, halos plus
+     intenses, encre de palette = c2. Les deux blocs ci-dessous (choix
+     explicite / système sombre) sont identiques par construction. */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --accent-ink-rgb: var(--accent-ink-dark-rgb);
+    --canvas-rgb: 7 7 11;
+    --panel-rgb: 22 22 28;
+    --elevated-rgb: 30 30 38;
+    --line-rgb: 40 40 50;
+    --ink-rgb: 246 246 250;
+    --muted-rgb: 150 150 164;
+    --subtle-rgb: 132 132 146;
+    --hairline-rgb: 255 255 255;
+    --inset-rgb: 255 255 255;
+    --inset-alpha: 0.08;
+    --surface-bg: rgb(255 255 255 / 0.06);
+    --surface-border: rgb(255 255 255 / 0.06);
+    --surface-border-hover: rgb(255 255 255 / 0.12);
+    --surface-lift-rest: none;
+    --surface-lift-up: 0 20px 44px -16px rgb(0 0 0 / 0.7);
+    --shadow-surface: 0 1px 2px rgb(0 0 0 / 0.5), 0 24px 60px rgb(0 0 0 / 0.6);
+    --action-bg: rgb(255 255 255 / 0.1);
+    --action-lift: none;
+    --glass-bg: rgb(255 255 255 / 0.08);
+    --glass-edge: none;
+    --halo-a: 0.33;
+    --halo-b: 0.25;
+    --chip-on-bg: rgb(255 255 255 / 0.18);
+    --chip-on-ring: transparent;
+    --chip-on-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    --zinc-50-rgb: 250 250 252;
+    --zinc-100-rgb: 245 245 248;
+    --zinc-200-rgb: 229 229 236;
+    --zinc-300-rgb: 199 199 208;
+    --zinc-400-rgb: 161 161 172;
+    --zinc-500-rgb: 134 134 146;
+    --zinc-600-rgb: 99 99 110;
+    --zinc-700-rgb: 64 64 76;
+    --zinc-800-rgb: 38 38 48;
+    --zinc-900-rgb: 24 24 32;
+    --zinc-950-rgb: 14 14 20;
+    --emerald-200-rgb: 74 222 128;
+    --emerald-300-rgb: 74 222 128;
+    --emerald-400-rgb: 34 197 94;
+    --emerald-500-rgb: 22 163 74;
+    --amber-200-rgb: 251 191 36;
+    --amber-300-rgb: 251 191 36;
+    --amber-400-rgb: 249 115 22;
+    --amber-500-rgb: 234 88 12;
+    --rose-200-rgb: 251 113 133;
+    --rose-300-rgb: 251 113 133;
+    --rose-400-rgb: 244 63 94;
+    --rose-500-rgb: 225 29 72;
+    --subj-math: 236 236 246;
+    --subj-phys: 206 206 224;
+    --subj-chim: 178 178 202;
+    --subj-itc: 150 150 178;
+    --subj-isp: 124 124 154;
+    --subj-fr: 100 100 130;
+    --subj-en: 80 80 108;
   }
 
-  @media (prefers-color-scheme: light) {
+  @media (prefers-color-scheme: dark) {
     :root[data-theme="system"] {
-      color-scheme: light;
-      --canvas-rgb: 245 245 247;
-      --panel-rgb: 255 255 255;
-      --elevated-rgb: 255 255 255;
-      --line-rgb: 222 222 227;
-      --ink-rgb: 29 29 31;
-      --muted-rgb: 99 99 104;
-      --subtle-rgb: 110 110 115;
-      --hairline-rgb: 0 0 0;
-      --inset-rgb: 118 118 128;
-      --inset-alpha: 0.12;
-      --surface-bg: rgb(255 255 255);
-      --surface-border: rgb(0 0 0 / 0.04);
-      --surface-border-hover: rgb(0 0 0 / 0.08);
-      --surface-shadow: 0 1px 2px rgb(0 0 0 / 0.03), 0 6px 24px rgb(0 0 0 / 0.04);
-      --shadow-surface: 0 1px 2px rgb(0 0 0 / 0.06), 0 16px 48px rgb(0 0 0 / 0.14);
-      --chip-on-bg: rgb(255 255 255);
-      --chip-on-ring: rgb(0 0 0 / 0.04);
-      --chip-on-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
-
-      --zinc-50-rgb: 0 0 0;
-      --zinc-100-rgb: 29 29 31;
-      --zinc-200-rgb: 44 44 46;
-      --zinc-300-rgb: 66 66 69;
-      --zinc-400-rgb: 99 99 104;
-      --zinc-500-rgb: 110 110 115;
-      --zinc-600-rgb: 134 134 139;
-      --zinc-700-rgb: 210 210 215;
-      --zinc-800-rgb: 232 232 237;
-      --zinc-900-rgb: 240 240 245;
-      --zinc-950-rgb: 250 250 252;
-
-      --emerald-200-rgb: 36 138 61;
-      --emerald-300-rgb: 36 138 61;
-      --emerald-400-rgb: 52 199 89;
-      --emerald-500-rgb: 40 170 72;
-      --amber-200-rgb: 178 80 0;
-      --amber-300-rgb: 178 80 0;
-      --amber-400-rgb: 255 149 0;
-      --amber-500-rgb: 230 130 0;
-      --rose-200-rgb: 215 0 21;
-      --rose-300-rgb: 215 0 21;
-      --rose-400-rgb: 255 59 48;
-      --rose-500-rgb: 230 40 35;
-
-      --accent-ink-rgb: var(--accent-ink-base-rgb);
-
-      --subj-math: 29 29 31;
-      --subj-phys: 62 62 66;
-      --subj-chim: 92 92 96;
-      --subj-itc: 118 118 122;
-      --subj-isp: 144 144 148;
-      --subj-fr: 168 168 172;
-      --subj-en: 192 192 196;
+      color-scheme: dark;
+      --accent-ink-rgb: var(--accent-ink-dark-rgb);
+      --canvas-rgb: 7 7 11;
+      --panel-rgb: 22 22 28;
+      --elevated-rgb: 30 30 38;
+      --line-rgb: 40 40 50;
+      --ink-rgb: 246 246 250;
+      --muted-rgb: 150 150 164;
+      --subtle-rgb: 132 132 146;
+      --hairline-rgb: 255 255 255;
+      --inset-rgb: 255 255 255;
+      --inset-alpha: 0.08;
+      --surface-bg: rgb(255 255 255 / 0.06);
+      --surface-border: rgb(255 255 255 / 0.06);
+      --surface-border-hover: rgb(255 255 255 / 0.12);
+      --surface-lift-rest: none;
+      --surface-lift-up: 0 20px 44px -16px rgb(0 0 0 / 0.7);
+      --shadow-surface: 0 1px 2px rgb(0 0 0 / 0.5), 0 24px 60px rgb(0 0 0 / 0.6);
+      --action-bg: rgb(255 255 255 / 0.1);
+      --action-lift: none;
+      --glass-bg: rgb(255 255 255 / 0.08);
+      --glass-edge: none;
+      --halo-a: 0.33;
+      --halo-b: 0.25;
+      --chip-on-bg: rgb(255 255 255 / 0.18);
+      --chip-on-ring: transparent;
+      --chip-on-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+      --zinc-50-rgb: 250 250 252;
+      --zinc-100-rgb: 245 245 248;
+      --zinc-200-rgb: 229 229 236;
+      --zinc-300-rgb: 199 199 208;
+      --zinc-400-rgb: 161 161 172;
+      --zinc-500-rgb: 134 134 146;
+      --zinc-600-rgb: 99 99 110;
+      --zinc-700-rgb: 64 64 76;
+      --zinc-800-rgb: 38 38 48;
+      --zinc-900-rgb: 24 24 32;
+      --zinc-950-rgb: 14 14 20;
+      --emerald-200-rgb: 74 222 128;
+      --emerald-300-rgb: 74 222 128;
+      --emerald-400-rgb: 34 197 94;
+      --emerald-500-rgb: 22 163 74;
+      --amber-200-rgb: 251 191 36;
+      --amber-300-rgb: 251 191 36;
+      --amber-400-rgb: 249 115 22;
+      --amber-500-rgb: 234 88 12;
+      --rose-200-rgb: 251 113 133;
+      --rose-300-rgb: 251 113 133;
+      --rose-400-rgb: 244 63 94;
+      --rose-500-rgb: 225 29 72;
+      --subj-math: 236 236 246;
+      --subj-phys: 206 206 224;
+      --subj-chim: 178 178 202;
+      --subj-itc: 150 150 178;
+      --subj-isp: 124 124 154;
+      --subj-fr: 100 100 130;
+      --subj-en: 80 80 108;
     }
   }
 
@@ -341,20 +368,22 @@
   body {
     margin: 0;
     min-height: 100vh;
-    /* Les galeries pleine largeur (components/ui/carousel.tsx) sortent de
-       leur colonne en `100vw`, barre de défilement comprise : `clip` coupe
-       ce débordement SANS créer de conteneur de défilement — la barre
-       haute reste collante. */
+    /* Les galeries pleine largeur sortent de leur colonne : `clip` coupe ce
+       débordement SANS créer de conteneur de défilement — la barre haute
+       reste collante. */
     overflow-x: clip;
-    /* Un aplat, rien d'autre : ni lueur ni dégradé. */
-    background: rgb(var(--canvas-rgb));
+    /* PAS de fond ici : l'aplat est porté par `html` (qui le donne au
+       canevas). Un fond sur `body` serait peint PAR-DESSUS le calque des
+       halos (components/app-shell.tsx, en `z-index` négatif) et les
+       masquerait entièrement. */
+    background: transparent;
     color: rgb(var(--ink-rgb));
     font-family: var(--font-sans);
     font-size: 1rem;
+    /* Nunito à 400 paraît maigre à côté des chiffres en 900 : le corps de
+       texte passe à 500, comme la maquette. */
+    font-weight: 500;
     line-height: 1.5;
-    /* `tnum` est posé LOCALEMENT (`.tabular`, `.t-figure`), jamais
-       globalement : des chiffres tabulaires dans du texte courant
-       s'écartent mal. */
     font-kerning: normal;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -374,8 +403,7 @@
     color: rgb(var(--ink-rgb));
   }
 
-  /* Une seule règle de focus pour toute l'application, posée sur la
-     pseudo-classe : aucun contrôle ne peut être oublié. */
+  /* Une seule règle de focus pour toute l'application. */
   :focus-visible {
     outline: 2px solid rgb(var(--accent-ink-rgb));
     outline-offset: 2px;
@@ -422,7 +450,7 @@
   */
   .t-display {
     font-size: clamp(2.25rem, 1.2rem + 3.4vw, 3.75rem);
-    font-weight: 800;
+    font-weight: 900;
     line-height: 1.05;
     letter-spacing: -0.028em;
     text-wrap: balance;
@@ -432,7 +460,7 @@
      entre le titre d'écran et le titre de section. */
   .t-title {
     font-size: clamp(1.5rem, 1.2rem + 1.1vw, 2rem);
-    font-weight: 700;
+    font-weight: 900;
     line-height: 1.12;
     letter-spacing: -0.022em;
     text-wrap: balance;
@@ -440,7 +468,7 @@
 
   .t-heading {
     font-size: clamp(1.25rem, 1.12rem + 0.45vw, 1.5rem);
-    font-weight: 700;
+    font-weight: 900;
     line-height: 1.2;
     letter-spacing: -0.018em;
     text-wrap: balance;
@@ -448,7 +476,7 @@
 
   .t-subhead {
     font-size: 1.0625rem;
-    font-weight: 600;
+    font-weight: 800;
     line-height: 1.35;
     letter-spacing: -0.01em;
   }
@@ -461,6 +489,7 @@
   .t-meta {
     font-size: 0.875rem;
     line-height: 1.45;
+    font-weight: 600;
     color: rgb(var(--muted-rgb));
   }
 
@@ -473,7 +502,7 @@
    */
   .t-label {
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.35;
     letter-spacing: -0.005em;
     text-transform: none;
@@ -538,9 +567,9 @@
      comme une forme avant de se lire comme une valeur. Trois tailles
      nommées pour que deux indicateurs voisins ne divergent jamais. */
   .t-figure {
-    font-weight: 700;
+    font-weight: 900;
     font-variant-numeric: tabular-nums lining-nums;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.035em;
     line-height: 1;
   }
 
@@ -559,10 +588,45 @@
     font-size: clamp(2.75rem, 2rem + 2.4vw, 3.75rem);
   }
 
+  /* ÉNORME CHIFFRE du héros de l'accueil (« 2 h 15 ») — 64 px sur
+     téléphone, comme la maquette, un peu plus sur grand écran. */
+  .t-hero {
+    font-size: clamp(4rem, 3.2rem + 2.4vw, 5.25rem);
+    font-weight: 900;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.045em;
+    line-height: 1;
+  }
+
+  /* Chiffre d'une petite tuile (« 8 jours », « 14 h 20 ») — 32 px. */
+  .t-stat {
+    font-size: 2rem;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+
+  /* Signe d'une carte de matière (« ∫ », « Aa ») — 26 px. */
+  .t-glyph {
+    font-size: 1.625rem;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  /* Titre d'une carte en dégradé (« Révisions du jour ») — 17 px. */
+  .t-card-title {
+    font-size: 1.0625rem;
+    font-weight: 900;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
   /* Signature « TaekdHub » dans la barre haute. */
   .t-wordmark {
     font-size: 1.1875rem;
-    font-weight: 800;
+    font-weight: 900;
     letter-spacing: -0.025em;
     line-height: 1;
   }
@@ -571,11 +635,15 @@
      SURFACES
      ═══════════════════════════════════════════════════════════════ */
 
-  /** Tuile posée sur le fond : un aplat, 24 px de rayon, un filet presque invisible, une ombre à peine là en clair. */
+  /**
+   * Tuile BLANCHE qui flotte sur le fond : 26 px de rayon, un filet
+   * quasi invisible, l'ombre douce et bleutée de la maquette. En sombre,
+   * un verre blanc à 6 %, sans ombre.
+   */
   .surface {
     background: var(--surface-bg);
     border: 1px solid var(--surface-border);
-    border-radius: 1.5rem;
+    border-radius: 1.625rem;
     box-shadow: var(--surface-shadow);
   }
 
@@ -639,7 +707,8 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════
-     KIT DE MOUVEMENT — cinq gestes, tous uniques (jamais en boucle).
+     KIT DE MOUVEMENT — les gestes d'ENTRÉE (uniques, jamais en boucle).
+     Les gestes de CONTACT (reflet, flottement, rebond…) suivent plus bas.
      ═══════════════════════════════════════════════════════════════
 
      `.reveal`     entrée : fondu + 24 px de montée, 0,8 s, en cascade via
@@ -672,7 +741,7 @@
   @keyframes reveal {
     from {
       opacity: 0;
-      transform: translateY(24px);
+      transform: translateY(22px) scale(0.98);
     }
     to {
       opacity: 1;
@@ -732,7 +801,7 @@
   }
 
   /* En attente d'entrer dans l'écran : figé sur la première image. */
-  :root[data-reveal="armed"] :is(.reveal, .grow-x, .grow-y, .ring-draw, .ring-grow):not([data-revealed]) {
+  :root[data-reveal="armed"] :is(.reveal, .grow-x, .grow-y, .ring-draw, .ring-grow, .line-draw, .area-fade, .pop):not([data-revealed]) {
     animation-play-state: paused;
   }
 
@@ -766,12 +835,16 @@
     transition:
       transform 0.5s var(--ease-out),
       border-color 0.3s ease,
+      box-shadow 0.5s var(--ease-out),
       background-color 0.3s ease;
   }
 
+  /* Une tuile cliquable se SOULÈVE : elle monte de 4 px et son ombre
+     s'allonge — la carte flotte, elle ne grossit pas. */
   .lift:hover {
-    transform: scale(1.01);
+    transform: translateY(-4px);
     border-color: var(--surface-border-hover);
+    box-shadow: var(--surface-lift-up);
   }
 
   .press {
@@ -810,6 +883,260 @@
     }
     to {
       background-position: -150% 0;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     DÉGRADÉS — la signature de la maquette « Revolut clair »
+     ═══════════════════════════════════════════════════════════════
+
+     `.grad-brand`   le dégradé de marque c1 → c2 (avatar, bouton rond du
+                     chrono, pastille active). Porte des ICÔNES, pas du texte
+                     courant : du blanc sur c2 ne tient pas 4,5:1.
+     `.grad-btn`     le dégradé des BOUTONS À TEXTE (`--btn-g1/2`, deux
+                     teintes profondes choisies pour porter du blanc).
+     `.grad-card`    une carte en dégradé : texte blanc, 26 px de rayon,
+                     ombre DE SA COULEUR. Sa paire vient d'un ton :
+                       `.tone-1` … `.tone-4`  les cartes cyclées de la palette
+                       `.tone-review`         la bannière des révisions
+                       `.tone-brand`          le dégradé de marque
+     Toutes les teintes sont des variables posées depuis lib/theme.ts :
+     changer de palette recolore tout sans toucher un composant. */
+  .grad-brand {
+    background: linear-gradient(135deg, var(--g1), var(--g2));
+    color: #fff;
+  }
+
+  .grad-btn {
+    background: linear-gradient(135deg, var(--btn-g1), var(--btn-g2));
+    color: #fff;
+  }
+
+  .grad-card {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    color: #fff;
+    border-radius: 1.625rem;
+    background: linear-gradient(135deg, var(--gc1, var(--g1)), var(--gc2, var(--g2)));
+    /* L'ombre prend la couleur de la carte : la carte « éclaire » le fond
+       sous elle, au lieu d'y poser une tache grise. */
+    box-shadow: 0 14px 30px -12px color-mix(in srgb, var(--gc1, var(--g1)) 65%, transparent);
+  }
+
+  /* Encre de palette en dégradé, pour un chiffre ou un mot qu'on veut
+     « allumer » sans en faire un bouton. */
+  .text-grad {
+    background: linear-gradient(100deg, rgb(var(--accent-ink-rgb)), var(--g1));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Verre dépoli : pastille de date, boutons de la barre de l'accueil. */
+  .glass {
+    background: var(--glass-bg);
+    box-shadow: var(--glass-edge);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(20px) saturate(1.4);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     HALOS DU FOND — deux grands disques flous, teintés par la palette,
+     posés dans un calque `fixed` derrière tout le contenu
+     (components/app-shell.tsx).
+     Ils dérivent en 18 s : on ne les voit pas bouger, on voit le fond
+     « vivre ». Jamais cliquables.
+     ═══════════════════════════════════════════════════════════════ */
+  .halo {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 9999px;
+    animation: haloDrift 18s ease-in-out infinite;
+  }
+
+  .halo-a {
+    width: 34rem;
+    height: 34rem;
+    left: -12rem;
+    top: -13rem;
+    background: radial-gradient(circle, rgb(var(--g1-rgb) / var(--halo-a)), transparent 65%);
+  }
+
+  .halo-b {
+    width: 30rem;
+    height: 30rem;
+    right: -13rem;
+    top: 9rem;
+    background: radial-gradient(circle, rgb(var(--g2-rgb) / var(--halo-b)), transparent 65%);
+    animation-delay: -9s;
+  }
+
+  @keyframes haloDrift {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(30px, 40px) scale(1.2);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     KIT DE MOUVEMENT « REVOLUT » — ce qu'on TOUCHE bouge
+     ═══════════════════════════════════════════════════════════════
+
+     `.sheen`        un reflet blanc qui traverse la carte toutes les 5 s
+                     (pseudo-élément : aucun balisage à ajouter).
+     `.floaty`       la carte flotte de 4 px, en boucle lente — décalée
+                     par `--i` pour que deux voisines ne bougent pas ensemble.
+     `.pop`          une pastille apparaît en rebondissant (`--pop-delay`).
+     `.tilt-hover`   une carte se soulève et s'incline au survol.
+     `.bounce-press` un bouton rond monte au survol, s'écrase à l'appui, et
+                     revient en rebondissant (`--ease-spring`).
+     `.row-slide`    une rangée de liste glisse de 4 px au survol.
+
+     Tous coupés sous `prefers-reduced-motion` (fin de ce bloc). */
+  .sheen {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sheen::after {
+    content: "";
+    position: absolute;
+    top: -40%;
+    left: 0;
+    width: 40%;
+    height: 180%;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.28), transparent);
+    transform: translateX(-150%) rotate(20deg);
+    animation: sheen 5s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * 0.7s);
+  }
+
+  @keyframes sheen {
+    0% {
+      transform: translateX(-150%) rotate(20deg);
+    }
+    60%,
+    100% {
+      transform: translateX(250%) rotate(20deg);
+    }
+  }
+
+  .floaty {
+    animation: floaty 4s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * -0.6s);
+  }
+
+  @keyframes floaty {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+
+  .pop {
+    animation: pop 0.6s var(--ease-spring) backwards;
+    animation-delay: var(--pop-delay, 0s);
+  }
+
+  @keyframes pop {
+    0% {
+      transform: scale(0.4);
+      opacity: 0;
+    }
+    70% {
+      transform: scale(1.12);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .tilt-hover {
+    transition:
+      transform 0.5s var(--ease-out),
+      box-shadow 0.5s var(--ease-out);
+  }
+
+  .tilt-hover:hover {
+    transform: translateY(-6px) rotate(-1deg);
+  }
+
+  .bounce-press {
+    transition:
+      transform 0.25s var(--ease-spring),
+      box-shadow 0.25s ease,
+      filter 0.25s ease;
+  }
+
+  .bounce-press:hover {
+    transform: translateY(-3px) scale(1.06);
+  }
+
+  .bounce-press:active {
+    transform: scale(0.92);
+  }
+
+  .row-slide {
+    transition:
+      background-color 0.25s ease,
+      transform 0.35s var(--ease-out);
+  }
+
+  .row-slide:hover {
+    background: rgb(var(--inset-rgb) / calc(var(--inset-alpha) * 0.7));
+    transform: translateX(4px);
+  }
+
+  /* La COURBE qui se dessine (`AreaChart`) : un tracé de longueur
+     normalisée à 1 dont le tiret glisse de 1 à 0 ; le voile arrive en fondu
+     juste derrière. */
+  .line-draw {
+    stroke-dasharray: 1;
+    animation: lineDraw 1.8s var(--ease-out) 0.3s backwards;
+  }
+
+  @keyframes lineDraw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .area-fade {
+    animation: areaFade 1.2s ease 0.9s backwards;
+  }
+
+  @keyframes areaFade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .halo,
+    .floaty,
+    .sheen::after {
+      animation: none;
+    }
+    .sheen::after {
+      display: none;
+    }
+    .tilt-hover:hover,
+    .bounce-press:hover,
+    .bounce-press:active,
+    .row-slide:hover {
+      transform: none;
     }
   }
 
@@ -880,3 +1207,38 @@
     scroll-snap-align: start;
   }
 }
+
+/*
+ * TONS DES CARTES EN DÉGRADÉ — HORS de toute `@layer`, volontairement.
+ *
+ * Tailwind élague les classes d'une `@layer components` qu'il ne trouve
+ * écrites nulle part dans les sources. Or ces noms sont COMPOSÉS au rendu
+ * (`tone-${k}`, components/ui/gradient-card.tsx#toneClass) : ils étaient
+ * retirés du CSS de production, et toutes les cartes retombaient sur le
+ * dégradé de marque. Une règle hors couche n'est jamais élaguée.
+ */
+.tone-1 {
+  --gc1: var(--card-1a);
+  --gc2: var(--card-1b);
+}
+.tone-2 {
+  --gc1: var(--card-2a);
+  --gc2: var(--card-2b);
+}
+.tone-3 {
+  --gc1: var(--card-3a);
+  --gc2: var(--card-3b);
+}
+.tone-4 {
+  --gc1: var(--card-4a);
+  --gc2: var(--card-4b);
+}
+.tone-review {
+  --gc1: var(--review-a);
+  --gc2: var(--review-b);
+}
+.tone-brand {
+  --gc1: var(--g1);
+  --gc2: var(--g2);
+}
+

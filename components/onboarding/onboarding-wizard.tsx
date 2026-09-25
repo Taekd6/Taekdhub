@@ -136,7 +136,7 @@ export function OnboardingWizard({
       {/* Barre d'actions : collée en bas de l'écran sur téléphone (au-dessus
           de la barre d'onglets), pour que « Continuer » reste sous le pouce
           même sur l'écran des matières, le plus long. */}
-      <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-10 -mx-4 mt-10 flex items-center gap-3 bg-canvas/95 px-4 py-3 backdrop-blur-xl lg:bottom-0 lg:py-5">
+      <div className="sticky bottom-[calc(var(--tabbar-h,3.5rem)+env(safe-area-inset-bottom))] z-10 -mx-4 mt-10 flex items-center gap-3 bg-canvas/95 px-4 py-3 backdrop-blur-xl lg:bottom-0 lg:py-5">
         {step > 0 && (
           <Button type="button" variant="secondary" size="icon" className="h-12 w-12 max-lg:h-12 max-lg:w-12" onClick={() => go(step - 1)} aria-label="Écran précédent">
             <ChevronLeft size={20} strokeWidth={2.5} aria-hidden />

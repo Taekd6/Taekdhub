@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
-import { BarChart3, Clock3, History, Home, Layers, Settings } from "lucide-react";
+import { BarChart3, Clock3, History, Home, Layers, Settings, Timer } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -20,9 +20,15 @@ import { cn } from "@/lib/cn";
  * droite.
  *
  * PAS DE BANQUE, PAS DE CONCOURS : l'élève travaille sur ses propres
- * feuilles et ne fait qu'y consigner son temps et ses notes. La banque
- * d'exercices intégrée — et l'écran Concours, qui en dépendait — ont été
- * retirés.
+ * feuilles et ne fait qu'y consigner son temps et ses notes.
+ *
+ * REFONTE « REVOLUT CLAIR ». Barre haute en verre blanc translucide
+ * (floutée) ; l'onglet actif prend l'ENCRE de la palette sur une pastille
+ * teintée. Sur téléphone, l'accueil a sa propre barre (avatar, date,
+ * réglages — components/home/hero.tsx) : la barre haute globale s'y efface
+ * pour laisser la maquette respirer. La barre d'onglets du bas porte en son
+ * CENTRE le bouton rond du chrono, en dégradé — le geste principal, à
+ * portée de pouce sur toutes les pages.
  */
 const DESTINATIONS = [
   { href: "/dashboard", label: "Aujourd'hui", short: "Aujourd'hui", icon: Home },
@@ -75,6 +81,7 @@ function useIndicator(activeIndex: number) {
 
 export function AppNav() {
   const isActive = useActive();
+  const onHome = usePathname() === "/dashboard";
   const activeIndex = DESTINATIONS.findIndex(({ href }) => isActive(href));
   const { listRef, box } = useIndicator(activeIndex);
 
@@ -86,7 +93,12 @@ export function AppNav() {
           peine visible la sépare de la page. `sticky` et non `fixed` : la
           page garde son flux normal, et la barre ne recouvre jamais une
           ancre atteinte au clavier. */}
-      <header className="sticky top-0 z-40 border-b border-hairline/[0.07] bg-canvas/70 backdrop-blur-xl backdrop-saturate-150">
+      <header
+        className={cn(
+          "sticky top-0 z-40 border-b border-hairline/[0.07] bg-[var(--glass-bg)] backdrop-blur-xl backdrop-saturate-150",
+          onHome && "max-lg:hidden"
+        )}
+      >
         <div className="mx-auto flex h-14 max-w-[var(--shell-max)] items-center gap-2 px-4 sm:px-6">
           <Link
             href="/dashboard"
@@ -105,7 +117,7 @@ export function AppNav() {
               <span
                 aria-hidden
                 className={cn(
-                  "pointer-events-none absolute bottom-0 left-0 top-0 rounded-full bg-hairline/[0.10] transition-[transform,width,opacity] duration-500 ease-[cubic-bezier(.16,1,.3,1)]",
+                  "pointer-events-none absolute bottom-0 left-0 top-0 rounded-full bg-accent/10 transition-[transform,width,opacity] duration-500 ease-[cubic-bezier(.16,1,.3,1)]",
                   box ? "opacity-100" : "opacity-0"
                 )}
                 style={box ? { width: box.width, transform: `translateX(${box.left}px)` } : undefined}
@@ -118,8 +130,8 @@ export function AppNav() {
                     href={href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "press relative z-10 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors duration-200",
-                      active ? "text-ink" : "text-muted hover:text-ink"
+                      "press relative z-10 rounded-full px-3.5 py-1.5 text-sm font-bold transition-colors duration-200",
+                      active ? "text-accent" : "text-muted hover:text-ink"
                     )}
                   >
                     {label}
@@ -141,7 +153,7 @@ export function AppNav() {
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "press grid h-10 w-10 place-items-center rounded-full transition-colors duration-200 max-lg:h-11 max-lg:w-11",
-                    active ? "bg-hairline/[0.10] text-ink" : "text-muted hover:text-ink"
+                    active ? "bg-accent/10 text-accent" : "text-muted hover:text-ink"
                   )}
                 >
                   <Icon size={18} strokeWidth={2} />
@@ -153,15 +165,33 @@ export function AppNav() {
       </header>
 
       {/* ── BARRE D'ONGLETS MOBILE ─────────────────────────────────
-          La barre d'onglets d'iOS : translucide, floutée, cinq cibles de
-          56 px avec la marge de sécurité des téléphones à encoche. L'onglet
-          actif prend l'accent (icône ET libellé), les autres restent gris —
-          pas de pastille, pas de fond. */}
+          Verre blanc flouté, cinq cases avec la marge de sécurité des
+          téléphones à encoche : deux destinations, le CHRONO au centre
+          (disque en dégradé qui déborde de la barre, comme le bouton
+          principal de Revolut), deux destinations. L'onglet actif prend
+          l'encre de la palette et un petit point en dégradé sous l'icône. */}
       <nav
         aria-label="Sections"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-hairline/[0.07] bg-canvas/75 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-150 lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-hairline/[0.07] bg-[var(--glass-bg)] px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-150 lg:hidden"
       >
-        {DESTINATIONS.map(({ href, short, icon: Icon }) => {
+        {[...DESTINATIONS.slice(0, 2), null, ...DESTINATIONS.slice(2)].map((destination) => {
+          if (!destination) {
+            const active = isActive("/timer");
+            return (
+              <Link
+                key="chrono"
+                href="/timer"
+                aria-label="Chronomètre"
+                aria-current={active ? "page" : undefined}
+                className="group flex min-h-[var(--tabbar-h)] items-start justify-center"
+              >
+                <span className="grad-brand -mt-5 grid h-14 w-14 place-items-center rounded-full ring-4 ring-canvas transition-transform duration-[250ms] ease-[cubic-bezier(.34,1.56,.64,1)] [box-shadow:0_10px_24px_-8px_var(--g1)] group-active:scale-[.92] motion-reduce:transform-none">
+                  <Timer size={24} strokeWidth={2.3} aria-hidden />
+                </span>
+              </Link>
+            );
+          }
+          const { href, short, icon: Icon } = destination;
           const active = isActive(href);
           return (
             <Link
@@ -169,12 +199,13 @@ export function AppNav() {
               href={href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "press flex min-h-14 flex-col items-center justify-center gap-1 px-0.5 pb-1.5 pt-2 text-[0.6875rem] font-semibold transition-colors duration-200",
+                "press flex min-h-[var(--tabbar-h)] flex-col items-center justify-center gap-1 px-0.5 pb-1.5 pt-2 text-[0.6875rem] font-bold transition-colors duration-200",
                 active ? "text-accent" : "text-subtle"
               )}
             >
-              <Icon size={22} strokeWidth={active ? 2.2 : 1.8} />
+              <Icon size={22} strokeWidth={active ? 2.4 : 1.9} />
               <span className="leading-none">{short}</span>
+              <span aria-hidden className={cn("grad-brand h-1 w-1 rounded-full transition-opacity", active ? "opacity-100" : "opacity-0")} />
             </Link>
           );
         })}
@@ -184,10 +215,16 @@ export function AppNav() {
 }
 
 /**
- * SIGNATURE — le nom, en noir franc (800), d'une seule couleur : l'encre.
- * Plus de « Hub » à l'accent ni de point de couleur — l'accent est réservé
- * à l'action, et la marque d'Apple n'est jamais en bleu.
+ * SIGNATURE — une pastille ronde en dégradé de marque (l'avatar de
+ * l'accueil, en petit), puis le nom en 900, à l'encre.
  */
 export function Wordmark({ className }: { className?: string }) {
-  return <span className={cn("t-wordmark inline-flex items-baseline text-ink", className)}>TaekdHub</span>;
+  return (
+    <span className={cn("t-wordmark inline-flex items-center gap-2 text-ink", className)}>
+      <span aria-hidden className="grad-brand grid h-7 w-7 place-items-center rounded-full text-[0.8125rem] [box-shadow:0_6px_14px_-6px_var(--g1)]">
+        T
+      </span>
+      TaekdHub
+    </span>
+  );
 }
