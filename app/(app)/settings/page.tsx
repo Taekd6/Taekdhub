@@ -3,6 +3,9 @@ import { DataBackup } from "@/components/data-backup";
 import { PageHero } from "@/components/ui/page-hero";
 import { PreferencesForm } from "@/components/preferences-form";
 import { ThemePicker } from "@/components/theme-picker";
+/* ── Premier lancement ── */
+import { OnboardingRestartEntry } from "@/components/onboarding/restart-entry";
+/* ── fin premier lancement ── */
 
 /**
  * RÉGLAGES — l'app Réglages d'iOS : un grand titre, puis des LISTES
@@ -21,6 +24,9 @@ export default function SettingsPage() {
       <ThemePicker />
       <PreferencesForm />
       <CapacityForm />
+      {/* ── Premier lancement : rouvrir l'accueil guidé ── */}
+      <OnboardingRestartEntry />
+      {/* ── fin premier lancement ── */}
       <DataBackup />
     </div>
   );

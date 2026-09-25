@@ -93,6 +93,22 @@ export type Preferences = {
    * face à `capacityByWeekday`. Ce budget ne réserve rien dans le planning.
    */
   weeklySubjectTargets: Record<Subject, number>;
+  /* ── Premier lancement (lib/onboarding.ts) ── */
+  /**
+   * Horodatage ISO du moment où l'élève a TERMINÉ l'accueil guidé
+   * (app/(app)/bienvenue/page.tsx), ou `null` s'il ne l'a jamais fait.
+   *
+   * `null` ne veut PAS dire « à envoyer sur /bienvenue » : une préférence
+   * enregistrée avant ce champ le reçoit aussi, alors que son propriétaire
+   * travaille avec TaekdHub depuis des semaines. La décision appartient à
+   * lib/onboarding.ts#shouldOnboard, qui regarde aussi les données déjà
+   * saisies et les réglages déjà personnalisés.
+   *
+   * Voyage dans la sauvegarde avec le reste des préférences : restaurer sur
+   * un nouvel appareil ne redemande pas une configuration déjà faite.
+   */
+  onboardingCompletedAt: string | null;
+  /* ── fin premier lancement ── */
   /*
    * `subjectPalette` / `subjectColors` (palette et surcharges de couleur par
    * matière, refonte « Nuit ») n'existent plus : les matières n'ont plus de
@@ -160,6 +176,7 @@ const defaults: Preferences = {
   capacityByWeekday: DEFAULT_CAPACITY_BY_WEEKDAY,
   planningMarginPercent: DEFAULT_PLANNING_MARGIN_PERCENT,
   weeklySubjectTargets: DEFAULT_WEEKLY_SUBJECT_TARGETS,
+  onboardingCompletedAt: null,
 };
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
@@ -1186,6 +1203,9 @@ export function normalizePreferences(raw: unknown): Preferences {
     capacityByWeekday: normalizeCapacityByWeekday(item.capacityByWeekday),
     planningMarginPercent: normalizeMarginPercent(item.planningMarginPercent),
     weeklySubjectTargets: normalizeWeeklySubjectTargets(item.weeklySubjectTargets),
+    // Premier lancement : un instant ISO lisible, sinon « jamais fait ». Même
+    // analyseur que les horodatages des séances (`isoDate`).
+    onboardingCompletedAt: isoDate(item.onboardingCompletedAt),
     // `subjectPalette` et `subjectColors` (refonte « Nuit ») ne sont pas
     // recopiés : lus sans erreur, puis abandonnés.
   };
