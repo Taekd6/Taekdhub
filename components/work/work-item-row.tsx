@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight, Check, Trash2 } from "lucide-react";
+import { IntentionEditor } from "@/components/work/intention-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Meter } from "@/components/ui/progress";
@@ -10,6 +11,7 @@ import { explainPriority, type WorkItemPriority } from "@/lib/deadlines";
 import { progressPercent, WORK_ITEM_KIND_META } from "@/lib/work-items";
 import { formatSpan } from "@/lib/utils";
 import type { WorkSession } from "@/lib/supabase/types";
+import type { WorkItemPlan } from "@/lib/storage";
 
 /**
  * UNE ÉCHÉANCE — une entrée de la frise, trois niveaux de lecture.
@@ -37,12 +39,15 @@ export function WorkItemRow({
   onComplete,
   onAbandon,
   onPostpone,
+  onPlan,
 }: {
   priority: WorkItemPriority;
   sessions: WorkSession[];
   onComplete: (id: string) => void;
   onAbandon: (id: string) => void;
   onPostpone: (id: string) => void;
+  /** Plan « si… alors… » — voir lib/intentions.ts. */
+  onPlan?: (id: string, plan: WorkItemPlan | null) => void;
 }) {
   const { item, feasibility, remainingMinutes, overdue } = priority;
   const done = progressPercent(item, sessions);
@@ -104,6 +109,8 @@ export function WorkItemRow({
             inviterait à agir sur un travail que le planning ne place déjà
             plus nulle part. Le lien est STYLÉ en bouton — jamais un bouton
             dans un lien (deux arrêts de tabulation pour une action). */}
+        {onPlan && remainingMinutes > 0 && <IntentionEditor item={item} onPlan={onPlan} />}
+
         <div className="mt-4 flex flex-wrap items-center gap-1.5">
           {remainingMinutes > 0 ? (
             <>

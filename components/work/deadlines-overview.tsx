@@ -10,6 +10,8 @@ import { Notice, Skeleton } from "@/components/ui/state";
 import { DayPlan } from "@/components/work/day-plan";
 import { WorkItemForm } from "@/components/work/work-item-form";
 import { WorkItemRow } from "@/components/work/work-item-row";
+import { setWorkItemPlan } from "@/lib/intentions";
+import type { WorkItemPlan } from "@/lib/storage";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import type { WorkItemPriority } from "@/lib/deadlines";
 import { buildWeeklyPlan, postponeWorkItem } from "@/lib/planning";
@@ -72,6 +74,14 @@ export function DeadlinesOverview() {
    * lieu (c'est la décision de l'élève) mais l'avertissement s'affiche, avec
    * ses chiffres. L'échéance, elle, n'est jamais modifiée.
    */
+  /** Plan « si… alors… » — voir lib/intentions.ts. */
+  const savePlan = useCallback(
+    (id: string, next: WorkItemPlan | null) => {
+      saveWorkItems(setWorkItemPlan(workItems, id, next));
+    },
+    [saveWorkItems, workItems]
+  );
+
   const postpone = useCallback(
     (id: string) => {
       const outcome = postponeWorkItem(workItems, sessions, preferences, id, "prochain-jour-disponible");
@@ -197,6 +207,7 @@ export function DeadlinesOverview() {
                       onComplete={complete}
                       onAbandon={abandon}
                       onPostpone={postpone}
+                      onPlan={savePlan}
                     />
                   ))}
                 </ul>

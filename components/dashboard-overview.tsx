@@ -7,6 +7,7 @@ import { QuickLog } from "@/components/work/quick-log";
 import { ReviewCapture } from "@/components/review/review-capture";
 import { DailyCheckinCard } from "@/components/checkin/daily-checkin"; // check-in du soir
 import { HomeTopBar, TodayHero, WeekCurve } from "@/components/home/hero";
+import { IntentionsCard } from "@/components/home/intentions-card";
 import { MemoryCard } from "@/components/memory/memory-card"; // mémoire des chapitres (FSRS)
 import { DeadlinesCard, ReviewBanner, StatTiles, SubjectCards } from "@/components/home/cards";
 import { ActionButtons, type ActionItem } from "@/components/ui/action-buttons";
@@ -170,6 +171,8 @@ export function DashboardOverview() {
           <div className="order-5 empty:hidden lg:order-none">
             <MemoryCard chapters={chapterMemory} saveChapters={saveChapterMemory} ready={ready} />
           </div>
+          {/* Plans « si… alors… » du jour — voir lib/intentions.ts. */}
+          <IntentionsCard workItems={workItems} className="order-5 lg:order-none" />
           <DeadlinesCard deadlines={upcomingDeadlines} className="order-6 lg:order-none" />
           <StatTiles
             streak={streak}

@@ -486,6 +486,17 @@ export const WORK_ITEM_KINDS: readonly WorkItemKind[] = ["dm", "ds", "exercices"
 export type WorkItemStatus = "à faire" | "en cours" | "terminé" | "abandonné";
 export const WORK_ITEM_STATUSES: readonly WorkItemStatus[] = ["à faire", "en cours", "terminé", "abandonné"];
 
+/**
+ * PLAN « SI… ALORS… » — l'intention d'implémentation d'un travail : QUAND
+ * (jour, heure facultative) et OÙ (facultatif) l'élève s'est engagé à s'y
+ * mettre. Voir lib/intentions.ts pour la science et le modèle.
+ */
+export interface WorkItemPlan {
+  day: string;
+  time: string | null;
+  place: string | null;
+}
+
 /** Un report subi par un travail — conservé pour le bilan hebdomadaire (« 2 reports cette semaine »), jamais pour recalculer quoi que ce soit. */
 export interface WorkItemPostponement {
   /** ISO — quand le report a été décidé. */
@@ -559,6 +570,8 @@ export interface WorkItem {
   createdAt: string;
   completedAt: string | null;
   postponements: WorkItemPostponement[];
+  /** Plan « si… alors… », ou `null` — absent de tout travail antérieur à ce champ. */
+  plan?: WorkItemPlan | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -698,6 +711,15 @@ function calendarDay(value: unknown): string | null {
   return Number.isNaN(new Date(`${value}T00:00:00`).getTime()) ? null : value;
 }
 
+/** Plan « si… alors… » lisible, ou `null` : sans jour valide, il n'y a pas de plan. */
+function normalizeWorkItemPlan(raw: unknown): WorkItemPlan | null {
+  if (!isRecord(raw)) return null;
+  const day = calendarDay(raw.day);
+  if (!day) return null;
+  const place = typeof raw.place === "string" && raw.place.trim() ? raw.place.trim().slice(0, 60) : null;
+  return { day, time: clockTime(raw.time), place };
+}
+
 /** "HH:MM" sur 24 h, ou `null`. Purement informatif — voir `WorkItem.dueTime`. */
 function clockTime(value: unknown): string | null {
   if (typeof value !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) return null;
@@ -731,6 +753,7 @@ export function normalizeWorkItem(raw: unknown): WorkItem {
     estimatedMinutes: Math.max(1, nonNegativeInteger(item.estimatedMinutes) ?? 30),
     dueDate: calendarDay(item.dueDate),
     dueTime: clockTime(item.dueTime),
+    plan: normalizeWorkItemPlan(item.plan),
     status,
     important: item.important === true,
     notBeforeDate: calendarDay(item.notBeforeDate),
