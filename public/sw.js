@@ -70,6 +70,8 @@ const PRECACHE = [
   "/history",
   "/timer",
   "/settings",
+  // Premier lancement — l'accueil guidé (app/(app)/bienvenue/page.tsx).
+  "/bienvenue",
 ];
 
 self.addEventListener("install", (event) => {

@@ -679,6 +679,7 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
         "contestDate",
         "dailyGoalMinutes",
         "displayName",
+        "onboardingCompletedAt",
         "planningMarginPercent",
         "themeMode",
         "weeklyGoalMinutes",
