@@ -1,3 +1,4 @@
+import { AccountProvider } from "@/components/account/account-provider";
 import { AppNav } from "@/components/app-nav";
 import { StorageAlert } from "@/components/storage-alert";
 
@@ -20,16 +21,20 @@ import { StorageAlert } from "@/components/storage-alert";
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen">
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="halo halo-a" />
-        <div className="halo halo-b" />
+    // Compte et synchronisation (components/account/account-provider.tsx) : actif
+    // sur toutes les pages, inerte quand Supabase n'est pas configuré.
+    <AccountProvider>
+      <div className="min-h-screen">
+        <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+          <div className="halo halo-a" />
+          <div className="halo halo-b" />
+        </div>
+        <AppNav />
+        <main className="mx-auto w-full max-w-[var(--shell-max)] px-4 pb-32 pt-5 sm:px-6 sm:pt-10 lg:pb-24 lg:pt-12">
+          <StorageAlert />
+          {children}
+        </main>
       </div>
-      <AppNav />
-      <main className="mx-auto w-full max-w-[var(--shell-max)] px-4 pb-32 pt-5 sm:px-6 sm:pt-10 lg:pb-24 lg:pt-12">
-        <StorageAlert />
-        {children}
-      </main>
-    </div>
+    </AccountProvider>
   );
 }

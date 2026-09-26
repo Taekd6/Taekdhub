@@ -1,3 +1,4 @@
+import { AccountSection } from "@/components/account/account-section";
 import { CapacityForm } from "@/components/work/capacity-form";
 import { DataBackup } from "@/components/data-backup";
 import { PageHero } from "@/components/ui/page-hero";
@@ -20,13 +21,15 @@ import { OnboardingRestartEntry } from "@/components/onboarding/restart-entry";
 export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-[44rem] space-y-10">
-      <PageHero title="Réglages" lede="Apparence, objectifs, temps et sauvegardes." />
+      <PageHero title="Réglages" lede="Apparence, objectifs, temps, compte et sauvegardes." />
       <ThemePicker />
       <PreferencesForm />
       <CapacityForm />
       {/* ── Premier lancement : rouvrir l'accueil guidé ── */}
       <OnboardingRestartEntry />
       {/* ── fin premier lancement ── */}
+      {/* Compte et synchronisation — juste avant les sauvegardes, dont il est le prolongement. */}
+      <AccountSection />
       <DataBackup />
     </div>
   );

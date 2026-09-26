@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { type ChapterMemory } from "@/lib/storage"; // mémoire des chapitres (FSRS)
-import { lastStorageWriteFailure, localData, purgeRetiredBankData, type DayPlanRecord, type ErrorEntry, type Grade, type Preferences, type ReviewItem, type WeekSnapshot, type WorkItem, type DailyCheckin } from "@/lib/storage";
+import { lastStorageWriteFailure, localData, purgeRetiredBankData, type NextMoveRecord, type DayPlanRecord, type ErrorEntry, type Grade, type Preferences, type ReviewItem, type WeekSnapshot, type WorkItem, type DailyCheckin } from "@/lib/storage";
 import { buildWeeklyPlan } from "@/lib/planning";
 import { dayKey } from "@/lib/study";
 import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
+import { DATA_CHANGED_EVENT } from "@/lib/sync/events";
 import type { WorkSession } from "@/lib/supabase/types";
 
 type DataState = {
@@ -24,6 +25,8 @@ type DataState = {
   checkins: DailyCheckin[];
   /** Mémoire des chapitres (FSRS) — voir `ChapterMemory` (lib/storage.ts). */
   chapterMemory: ChapterMemory[];
+  /** Historique Next Move — voir `NextMoveRecord` (lib/storage.ts). */
+  nextMoves: NextMoveRecord[];
   weekSnapshots: WeekSnapshot[];
   lastBackupAt: string | null;
   preferences: Preferences;
@@ -106,6 +109,7 @@ function readAll(): Omit<DataState, "ready" | "writeFailedAt"> {
     errors: localData.errors(),
     checkins: localData.checkins(),
     chapterMemory: localData.chapterMemory(),
+    nextMoves: localData.nextMoves(),
     weekSnapshots,
     lastBackupAt: localData.lastBackupAt(),
     preferences,
@@ -122,6 +126,7 @@ export function usePrepahubData() {
     errors: [],
     checkins: [],
     chapterMemory: [],
+    nextMoves: [],
     weekSnapshots: [],
     lastBackupAt: null,
     preferences: localData.preferences(),
@@ -145,8 +150,11 @@ export function usePrepahubData() {
       if (event.key?.startsWith("prepahub:")) refresh();
     }
     window.addEventListener("storage", onStorage);
+    // La synchronisation du compte a réécrit le disque (lib/sync/events.ts) : relire.
+    window.addEventListener(DATA_CHANGED_EVENT, refresh);
     return () => {
       window.removeEventListener("storage", onStorage);
+      window.removeEventListener(DATA_CHANGED_EVENT, refresh);
     };
   }, [refresh]);
 
@@ -241,10 +249,19 @@ export function usePrepahubData() {
   }, []);
   /* ── fin mémoire des chapitres ── */
 
+  /* ── Historique Next Move ──
+   * REMPLACEMENT, même règle que `saveReviewItems`. La liste passée est
+   * déjà mise à jour et élaguée par lib/next-move/history.ts. */
+  const saveNextMoves = useCallback((nextMoves: NextMoveRecord[]) => {
+    const written = localData.saveNextMoves(nextMoves);
+    const stored = written ? nextMoves : localData.nextMoves();
+    setData((prev) => ({ ...prev, nextMoves: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
+  }, []);
+
   const savePreferences = useCallback((preferences: Preferences) => {
     localData.savePreferences(preferences);
     setData((prev) => ({ ...prev, preferences, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
-  return { ...data, refresh, saveSessions, removeSession, saveWorkItems, saveGrades, saveReviewItems, saveErrors, saveCheckins, saveChapterMemory, savePreferences };
+  return { ...data, refresh, saveSessions, removeSession, saveWorkItems, saveGrades, saveReviewItems, saveErrors, saveCheckins, saveChapterMemory, saveNextMoves, savePreferences };
 }

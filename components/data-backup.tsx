@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { Group, Row } from "@/components/ui/grouped";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
+import { useAccount } from "@/components/account/account-provider";
 import { exportBackup, restoreBackup, validateBackupPayload, type BackupPayload } from "@/lib/storage";
 
 export function DataBackup() {
   const { refresh } = usePrepahubData();
+  // Connecté, le fichier n'est plus la seule copie — et un import part aussi vers le compte.
+  const connected = useAccount().user !== null;
   const input = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
   /*
@@ -110,7 +113,11 @@ export function DataBackup() {
           <>
             {/* Une ligne, mais la vraie : sans compte, la sauvegarde est la
                 seule copie, et vider le navigateur efface tout. */}
-            <p>Tout reste dans ce navigateur, sans compte : la sauvegarde est ta seule copie. L&apos;import remplace les données de cet appareil.</p>
+            {connected ? (
+              <p>Ton compte garde déjà une copie ; ce fichier en est une de plus, hors ligne. L&apos;import remplace les données de cet appareil et de ton compte.</p>
+            ) : (
+              <p>Tout reste dans ce navigateur, sans compte : la sauvegarde est ta seule copie. L&apos;import remplace les données de cet appareil.</p>
+            )}
           </>
         }
       >

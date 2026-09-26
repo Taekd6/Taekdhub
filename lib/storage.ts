@@ -20,6 +20,8 @@ const errorsKey = "prepahub:errors";
 const checkinsKey = "prepahub:checkins";
 /* ── Mémoire des chapitres (FSRS) — voir `ChapterMemory` ── */
 const chapterMemoryKey = "prepahub:chapterMemory";
+/* ── Next Move : historique des recommandations — voir `NextMoveRecord` ── */
+const nextMovesKey = "prepahub:next-moves";
 
 /**
  * `palette` (refonte « Revolut clair ») : identifiant de la palette en dégradé — voir lib/theme.ts#PALETTES.
@@ -1189,6 +1191,74 @@ function dedupeCheckins(items: DailyCheckin[]): DailyCheckin[] {
 }
 /* ── fin du bloc check-in du soir ── */
 
+/* ══════════════════════════════════════════════════════════════════
+   NEXT MOVE — ce que TaekdHub a proposé, et ce qu'il en est advenu
+   ══════════════════════════════════════════════════════════════════
+
+   Le moteur (lib/next-move/engine.ts) est recalculé à chaque affichage,
+   comme le planning : il n'est jamais stocké. Ce qui l'est, c'est la TRACE
+   de ses propositions — une ligne par recommandation principale montrée —
+   et ce que l'élève en a fait. C'est la seule façon de répondre plus tard à
+   « quelles recommandations sont suivies, lesquelles sont repoussées ».
+
+   Volontairement modeste : rien n'y est figé au-delà de ce qui a été
+   MONTRÉ (durée, raisons). Voir lib/next-move/history.ts.
+*/
+
+/** « proposé » : montré, rien de plus. « commencé » : l'élève a cliqué Commencer. « fait » : constaté (séance, révision) ou déclaré. « écarté » : « Pas maintenant ». */
+export type NextMoveStatus = "proposé" | "commencé" | "fait" | "écarté";
+export const NEXT_MOVE_STATUSES: readonly NextMoveStatus[] = ["proposé", "commencé", "fait", "écarté"];
+
+/** Genre d'action — voir lib/next-move/engine.ts. Déclaré ici pour que la normalisation n'importe pas le moteur. */
+export type NextMoveKind = "échéance" | "rappel" | "cartes" | "erreurs" | "bloc";
+export const NEXT_MOVE_KINDS: readonly NextMoveKind[] = ["échéance", "rappel", "cartes", "erreurs", "bloc"];
+
+export interface NextMoveRecord {
+  id: string;
+  /** Clé STABLE de la recommandation (genre + matière + ancre) — c'est elle qui dit « la même proposition ». */
+  key: string;
+  kind: NextMoveKind;
+  subject: Subject | null;
+  /** Ce qui était affiché : « Électrostatique », « DM 4 »… */
+  title: string;
+  /** Durée proposée, en minutes. */
+  minutes: number;
+  /** Les raisons MONTRÉES, telles qu'affichées (au plus quelques-unes). */
+  reasons: string[];
+  proposedAt: string;
+  status: NextMoveStatus;
+  startedAt: string | null;
+  /** Moment où l'issue a été constatée (fait) ou décidée (écarté). */
+  resolvedAt: string | null;
+  /** Minutes réellement constatées dans la matière après le démarrage — `null` tant que rien n'est mesuré. */
+  outcomeMinutes: number | null;
+}
+
+/** Une recommandation lisible, ou `null` — même contrat que les autres `normalize*`. */
+export function normalizeNextMoveRecord(raw: unknown): NextMoveRecord | null {
+  const item = isRecord(raw) ? raw : {};
+  if (typeof item.id !== "string" || !item.id || typeof item.key !== "string" || !item.key) return null;
+  const proposedAt = isoDate(item.proposedAt);
+  if (!proposedAt) return null;
+  if (!(NEXT_MOVE_KINDS as readonly unknown[]).includes(item.kind)) return null;
+  const status = (NEXT_MOVE_STATUSES as readonly unknown[]).includes(item.status) ? (item.status as NextMoveStatus) : "proposé";
+  return {
+    id: item.id,
+    key: item.key,
+    kind: item.kind as NextMoveKind,
+    subject: migrateSubjectOrNull(item.subject),
+    title: typeof item.title === "string" ? item.title.slice(0, 160) : "",
+    minutes: positiveInteger(item.minutes) ?? 0,
+    reasons: Array.isArray(item.reasons) ? item.reasons.filter((reason): reason is string => typeof reason === "string").slice(0, 6) : [],
+    proposedAt,
+    status,
+    startedAt: isoDate(item.startedAt),
+    resolvedAt: isoDate(item.resolvedAt),
+    outcomeMinutes: nonNegativeInteger(item.outcomeMinutes),
+  };
+}
+/* ── fin Next Move ── */
+
 /**
  * Fusionne une préférence potentiellement partielle/corrompue (import, ancienne
  * sauvegarde, édition manuelle du localStorage) avec `defaults` — même principe
@@ -1408,10 +1478,65 @@ function writeKey(key: string, value: string): boolean {
   try {
     localStorage.setItem(key, value);
     if (lastWriteFailure?.key === key) lastWriteFailure = null;
+    if (silentWrites === 0) for (const listener of writeListeners) listener(key);
     return true;
   } catch {
     lastWriteFailure = { key, at: new Date().toISOString() };
     return false;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SYNCHRONISATION — le seul point d'accroche de lib/sync dans ce fichier
+   ══════════════════════════════════════════════════════════════════
+
+   Le localStorage reste la mémoire de TRAVAIL de l'application, connectée
+   ou non : toutes les lectures et écritures ci-dessus sont inchangées. La
+   synchronisation (lib/sync/engine.ts) a seulement besoin de deux choses :
+
+     SAVOIR qu'une collection a changé — `onLocalWrite`, appelé après
+     chaque écriture RÉUSSIE (un refus de quota n'a rien à synchroniser) ;
+
+     ÉCRIRE ce qui vient du cloud SANS que cela compte comme une
+     modification locale à renvoyer — `writeRawSilently`. Sans ce silence,
+     chaque téléchargement se marquerait lui-même « à envoyer ».
+*/
+
+/** Clés des collections de l'élève — exposées pour lib/sync, qui ne doit pas les réécrire à la main. */
+export const STORAGE_KEYS = {
+  sessions: sessionsKey,
+  preferences: preferencesKey,
+  weekSnapshots: weekSnapshotsKey,
+  workItems: workItemsKey,
+  grades: gradesKey,
+  dayPlans: dayPlansKey,
+  reviewItems: reviewItemsKey,
+  errors: errorsKey,
+  checkins: checkinsKey,
+  chapterMemory: chapterMemoryKey,
+  nextMoves: nextMovesKey,
+} as const;
+
+type WriteListener = (key: string) => void;
+const writeListeners = new Set<WriteListener>();
+let silentWrites = 0;
+
+/** S'abonne aux écritures locales réussies. Renvoie de quoi se désabonner. */
+export function onLocalWrite(listener: WriteListener): () => void {
+  writeListeners.add(listener);
+  return () => {
+    writeListeners.delete(listener);
+  };
+}
+
+/** Écrit une valeur brute (déjà sérialisée) sans prévenir les abonnés — voir le bloc ci-dessus. Même blindage que `writeKey`. */
+export function writeRawSilently(key: string, value: string): boolean {
+  if (typeof window === "undefined") return false;
+  silentWrites += 1;
+  try {
+    return writeKey(key, value);
+  } finally {
+    silentWrites -= 1;
   }
 }
 
@@ -1591,6 +1716,13 @@ export const localData = {
   /** REMPLACE — même profil que `saveReviewItems` (un chapitre se corrige, et la liste entrante est la vérité). */
   saveChapterMemory: (items: ChapterMemory[]): boolean => writeKey(chapterMemoryKey, JSON.stringify(items)),
   /* ── fin mémoire des chapitres ── */
+  /* ── Next Move : historique des recommandations ── */
+  nextMoves: (): NextMoveRecord[] =>
+    typeof window === "undefined"
+      ? []
+      : readList(nextMovesKey).map(normalizeNextMoveRecord).filter((item): item is NextMoveRecord => item !== null),
+  /** REMPLACE — la liste entière, déjà mise à jour et élaguée par lib/next-move/history.ts. */
+  saveNextMoves: (items: NextMoveRecord[]): boolean => writeKey(nextMovesKey, JSON.stringify(items)),
 };
 
 /* ══════════════════════════════════════════════════════════════════
@@ -1685,7 +1817,7 @@ export function daysSinceBackup(lastBackupAt: string | null, now: Date = new Dat
  * l'ancien « réussi » inconditionnel.
  */
 export interface RestoreOutcome {
-  /** Vrai seulement si TOUTES les collections ont été écrites (dix depuis la mémoire des chapitres). */
+  /** Vrai seulement si TOUTES les collections ont été écrites (onze depuis l'historique Next Move). */
   ok: boolean;
   /** Collections réellement écrites, dans l'ordre de tentative. */
   restored: string[];
@@ -1739,6 +1871,8 @@ export function restoreBackup(payload: BackupPayload): RestoreOutcome {
     ["les check-ins du soir", () => localData.saveCheckins(payload.checkins ?? [])],
     // Mémoire des chapitres : absente d'une sauvegarde antérieure ⇒ `[]`.
     ["la mémoire des chapitres", () => localData.saveChapterMemory(payload.chapterMemory ?? [])],
+    // Historique Next Move : absent d'une sauvegarde antérieure ⇒ `[]`.
+    ["l'historique des recommandations", () => localData.saveNextMoves(payload.nextMoves ?? [])],
     ["le planning", () => localData.saveDayPlans(payload.dayPlans ?? [])],
     ["les bilans de semaine", () => localData.saveWeekSnapshots(payload.weekSnapshots ?? [])],
     ["les réglages", () => localData.savePreferences(normalizePreferences(payload.preferences))],
@@ -1786,6 +1920,8 @@ export function buildBackupPayload(now: Date = new Date()): BackupPayload {
     checkins: localData.checkins(),
     // Mémoire des chapitres : saisie manuelle et historique de révisions — irrécupérable.
     chapterMemory: localData.chapterMemory(),
+    // Historique Next Move : ce qui a été proposé et suivi — non reconstituable.
+    nextMoves: localData.nextMoves(),
   };
 }
 
@@ -1843,6 +1979,8 @@ export interface BackupPayload {
   checkins?: DailyCheckin[];
   /** Optionnel, même raison — voir `ChapterMemory`. */
   chapterMemory?: ChapterMemory[];
+  /** Optionnel, même raison — voir `NextMoveRecord`. */
+  nextMoves?: NextMoveRecord[];
 }
 
 /**
@@ -1904,5 +2042,7 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   if (data.checkins !== undefined && !Array.isArray(data.checkins)) return false;
   // Mémoire des chapitres : même règle, dès sa naissance.
   if (data.chapterMemory !== undefined && !Array.isArray(data.chapterMemory)) return false;
+  // Historique Next Move : même règle, dès sa naissance.
+  if (data.nextMoves !== undefined && !Array.isArray(data.nextMoves)) return false;
   return true;
 }
