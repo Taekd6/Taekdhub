@@ -11,6 +11,8 @@ import { cn } from "@/lib/cn";
 import { subjects, todaySeconds } from "@/lib/study";
 import { activeWorkItems, remainingMinutes, WORK_ITEM_KIND_META } from "@/lib/work-items";
 import { formatSpan } from "@/lib/utils";
+import { MOVE_KIND_LABEL } from "@/lib/next-move/engine";
+import { activeMove } from "@/lib/next-move/history";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 const TIMER_STORAGE_KEY = "prepahub:timer:free";
@@ -75,7 +77,7 @@ export function Timer() {
   // `ready` est indispensable ici comme partout ailleurs : le chrono restaure
   // une séance persistée dès son premier effet, donc « Terminer » est
   // cliquable avant même que les données locales aient fini d'être lues.
-  const { sessions, workItems, preferences, saveSessions, saveWorkItems, ready } = usePrepahubData();
+  const { sessions, workItems, preferences, saveSessions, saveWorkItems, ready, nextMoves } = usePrepahubData();
   const { seconds, running, context, setContext, start, toggle, stop } = useWorkTimer<TimerContext>(TIMER_STORAGE_KEY, {
     subject: "Mathématiques",
     workItemId: null,
@@ -88,8 +90,13 @@ export function Timer() {
    * paramètre optionnel dont rien, dans le premier rendu, ne dépend.
    */
   const [requestedItemId, setRequestedItemId] = useState<string | null>(null);
+  // `?matiere=` — venir d'une recommandation Next Move (components/next-move/next-move-card.tsx).
+  const [requestedSubject, setRequestedSubject] = useState<Subject | null>(null);
   useEffect(() => {
-    setRequestedItemId(new URLSearchParams(window.location.search).get("travail"));
+    const params = new URLSearchParams(window.location.search);
+    setRequestedItemId(params.get("travail"));
+    const wanted = params.get("matiere");
+    if (wanted && (subjects as string[]).includes(wanted)) setRequestedSubject(wanted as Subject);
   }, []);
   const openItems = activeWorkItems(workItems);
   const selectedItem = openItems.find((item) => item.id === context.workItemId) ?? null;
@@ -111,6 +118,14 @@ export function Timer() {
     // décider, et c'est bien ce qu'on surveille.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, running, requestedItemId, context.workItemId]);
+
+  /* Même règle que `?travail=` : jamais pendant qu'un chrono tourne, et un travail demandé l'emporte. */
+  useEffect(() => {
+    if (!ready || running || requestedItemId || !requestedSubject) return;
+    if (context.subject === requestedSubject && !context.workItemId) return;
+    setContext({ subject: requestedSubject, workItemId: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, running, requestedItemId, requestedSubject]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -170,9 +185,17 @@ export function Timer() {
   const daySeconds = todaySeconds(sessions) + seconds;
   const dayPercent = Math.min(100, (daySeconds / goalSeconds) * 100);
   const subjectLocked = running || selectedItem?.subject != null;
+  // La recommandation commencée depuis l'accueil, si elle porte sur la matière du chrono : un rappel de ce qu'on s'est dit.
+  const move = activeMove(nextMoves, new Date());
+  const moveHere = move && (move.subject === null || move.subject === context.subject) ? move : null;
 
   const controls = (
     <div className="space-y-5">
+      {moveHere && (
+        <p className="mx-auto w-fit max-w-full rounded-full bg-accent/10 px-4 py-2 text-center text-sm font-bold text-accent">
+          Prochain mouvement · {formatSpan(moveHere.minutes * 60)} · {MOVE_KIND_LABEL[moveHere.kind]} — {moveHere.title}
+        </p>
+      )}
       {/* DEUX choix, jamais deux systèmes : le travail planifié d'abord
           (c'est lui qui donne son sens à la séance), la matière ensuite.
           Choisir un travail impose sa matière — on ne chronomètre pas un DM

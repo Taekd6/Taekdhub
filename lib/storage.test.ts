@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBackupPayload, lastStorageWriteFailure, localData, normalizeCheckin, normalizeErrorEntry, normalizeGrade, normalizePreferences, normalizeSession, normalizeWorkItem, purgeRetiredBankData, restoreBackup, validateBackupPayload } from "@/lib/storage";
+import { STORAGE_KEYS, buildBackupPayload, lastStorageWriteFailure, localData, onLocalWrite, writeRawSilently, normalizeCheckin, normalizeErrorEntry, normalizeGrade, normalizePreferences, normalizeSession, normalizeWorkItem, purgeRetiredBankData, restoreBackup, validateBackupPayload } from "@/lib/storage";
 import { DEFAULT_PALETTE, PALETTE_IDS } from "@/lib/theme";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
@@ -539,7 +539,7 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     const outcome = withQuotaStorage({}, 1_000_000, () => restoreBackup(backup()));
     expect(outcome.ok).toBe(true);
     expect(outcome.failedAt).toBeNull();
-    expect(outcome.restored).toHaveLength(10);
+    expect(outcome.restored).toHaveLength(11);
   });
 
   it("les séances ne passent pas → RIEN n'est touché, et c'est dit", () => {
@@ -1138,5 +1138,71 @@ describe("mémoire des chapitres (FSRS) — dans la sauvegarde", () => {
 
   it("refuse un fichier dont la mémoire des chapitres n'est pas une liste", () => {
     expect(validateBackupPayload({ sessions: [], preferences: {}, chapterMemory: "oups" })).toBe(false);
+  });
+});
+
+/* ── Compte et synchronisation : le point d'accroche de lib/sync ── */
+describe("synchronisation — écritures observées et silencieuses", () => {
+  it("chaque écriture RÉUSSIE est signalée, avec sa clé", () => {
+    const seen: string[] = [];
+    const stop = onLocalWrite((key) => seen.push(key));
+    withWritableStorage({}, () => {
+      localData.saveGrades([]);
+      localData.saveNextMoves([]);
+    });
+    stop();
+    expect(seen).toEqual([STORAGE_KEYS.grades, STORAGE_KEYS.nextMoves]);
+  });
+
+  it("une écriture refusée (quota) n'est pas signalée : il n'y a rien à synchroniser", () => {
+    const seen: string[] = [];
+    const stop = onLocalWrite((key) => seen.push(key));
+    withWritableStorage({}, () => localData.saveGrades([]), true);
+    stop();
+    expect(seen).toEqual([]);
+  });
+
+  it("une écriture venue du cloud est silencieuse — sinon chaque téléchargement se marquerait « à envoyer »", () => {
+    const seen: string[] = [];
+    const stop = onLocalWrite((key) => seen.push(key));
+    const stored = withWritableStorage({}, () => {
+      expect(writeRawSilently(STORAGE_KEYS.errors, "[]")).toBe(true);
+      localData.saveErrors([]);
+      return localData.errors();
+    });
+    stop();
+    expect(stored).toEqual([]);
+    expect(seen).toEqual([STORAGE_KEYS.errors]);
+  });
+
+  it("l'historique Next Move voyage dans la sauvegarde, et une sauvegarde plus ancienne s'importe sans lui", () => {
+    const record = {
+      id: "nm-1",
+      key: "rappel:ch-1",
+      kind: "rappel",
+      subject: "Physique",
+      title: "Électrostatique",
+      minutes: 25,
+      reasons: ["Chance estimée de t'en souvenir : 62 %"],
+      proposedAt: "2026-09-24T17:00:00.000Z",
+      status: "commencé",
+      startedAt: "2026-09-24T17:01:00.000Z",
+      resolvedAt: null,
+      outcomeMinutes: null,
+    };
+    const payload = withWritableStorage({ [STORAGE_KEYS.nextMoves]: JSON.stringify([record]) }, () => buildBackupPayload(new Date("2026-09-25T00:00:00.000Z")));
+    expect(payload.nextMoves).toEqual([record]);
+    const roundTripped = JSON.parse(JSON.stringify(payload));
+    expect(validateBackupPayload(roundTripped)).toBe(true);
+    const restored = withWritableStorage({}, () => {
+      restoreBackup(roundTripped);
+      return localData.nextMoves();
+    });
+    expect(restored).toEqual([record]);
+
+    const { nextMoves: _omitted, ...older } = roundTripped;
+    void _omitted;
+    expect(validateBackupPayload(older)).toBe(true);
+    expect(validateBackupPayload({ ...roundTripped, nextMoves: "cassé" })).toBe(false);
   });
 });

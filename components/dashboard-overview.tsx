@@ -11,6 +11,7 @@ import { IntentionsCard } from "@/components/home/intentions-card";
 import { EveningCard } from "@/components/home/evening-card";
 import { effectiveDailyGoal } from "@/lib/evening-minimums";
 import { MemoryCard } from "@/components/memory/memory-card"; // mémoire des chapitres (FSRS)
+import { NextMoveCard } from "@/components/next-move/next-move-card"; // Next Move
 import { DeadlinesCard, ReviewBanner, StatTiles, SubjectCards } from "@/components/home/cards";
 import { ActionButtons, type ActionItem } from "@/components/ui/action-buttons";
 import { BlockHeader } from "@/components/ui/list-card";
@@ -45,6 +46,8 @@ const ACTIONS: ActionItem[] = [
  *   1. LA BARRE     avatar en dégradé, date (et J−n du concours), réglages.
  *   2. LE HÉROS     « Aujourd'hui », le temps du jour en énorme (il compte
  *                   jusqu'à sa valeur), et la pastille « vs hier ».
+ *   ★  NEXT MOVE    « qu'est-ce que je fais maintenant ? » — une action,
+ *                   sa durée, et pourquoi (components/next-move/next-move-card.tsx).
  *   3. LA COURBE    la semaine, minutes par jour, qui se dessine.
  *   4. LES GESTES   Chrono · Noter · Réviser · Erreur, en boutons ronds.
  *   5. MATIÈRES     la galerie de cartes en dégradé (anneau = budget).
@@ -68,7 +71,13 @@ const ACTIONS: ActionItem[] = [
  * l'état, et une seconde copie resterait figée après une saisie.
  */
 export function DashboardOverview() {
-  const { sessions, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems, checkins, saveCheckins, chapterMemory, saveChapterMemory } = usePrepahubData();
+  const { sessions, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems, checkins, saveCheckins, chapterMemory, saveChapterMemory, grades, errors, nextMoves, saveNextMoves } = usePrepahubData();
+
+  /* Tout ce que lit le moteur Next Move (lib/next-move/engine.ts) — mémoïsé pour ne recalculer qu'à un vrai changement. */
+  const nextMoveData = useMemo(
+    () => ({ sessions, workItems, grades, reviewItems, errors, checkins, chapterMemory, preferences }),
+    [sessions, workItems, grades, reviewItems, errors, checkins, chapterMemory, preferences]
+  );
 
   const model = useMemo(() => {
     const now = new Date();
@@ -137,6 +146,8 @@ export function DashboardOverview() {
             goalMinutes={objective.goalMinutes}
             className="order-1 pt-2 lg:order-none lg:pt-6"
           />
+          {/* ── NEXT MOVE — la réponse à « et maintenant ? », juste sous la journée. ── */}
+          <NextMoveCard data={nextMoveData} history={nextMoves} saveHistory={saveNextMoves} ready={ready} className="order-1 lg:order-none" />
           <div className="reveal order-3 lg:order-none" style={{ "--i": 2 } as CSSProperties}>
             <ActionButtons items={ACTIONS} className="lg:mx-auto lg:max-w-md" />
           </div>

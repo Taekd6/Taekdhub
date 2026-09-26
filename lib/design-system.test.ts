@@ -34,7 +34,7 @@ function sourceFiles(dir: string, extensions = /\.(tsx?|css)$/): string[] {
 function allSources(): { file: string; content: string }[] {
   return ROOTS.flatMap((root) =>
     sourceFiles(path.resolve(process.cwd(), root)).map((file) => ({
-      file: path.relative(process.cwd(), file),
+      file: path.relative(process.cwd(), file).split(path.sep).join("/"),
       content: readFileSync(file, "utf8"),
     }))
   );
@@ -60,7 +60,7 @@ describe("une seule feuille de style", () => {
    */
   it("app/ ne contient qu'un seul fichier CSS", () => {
     const stylesheets = sourceFiles(path.resolve(process.cwd(), "app"), /\.css$/).map((file) =>
-      path.relative(process.cwd(), file)
+      path.relative(process.cwd(), file).split(path.sep).join("/")
     );
     expect(stylesheets).toEqual(["app/globals.css"]);
   });
