@@ -302,3 +302,133 @@ describe("fusion des collections", () => {
     expect(mergeList("sessions", [null, 3, { id: "a" }], "pas une liste")).toEqual([{ id: "a" }]);
   });
 });
+
+/* ── Écriture locale refusée (quota) ─────────────────────────────── */
+
+/** Un appareil qui refuse d'écrire certaines clés — quota atteint, stockage bloqué. */
+class RefusingLocal extends MemoryLocal {
+  refuse = new Set<string>();
+  override write(key: string, raw: string) {
+    if (this.refuse.has(key)) return false;
+    return super.write(key, raw);
+  }
+}
+
+function refusingSetup() {
+  const local = new RefusingLocal();
+  const remote = new MemoryRemote();
+  const engine = new SyncEngine(local, remote, () => NOW);
+  return { local, remote, engine };
+}
+
+describe("écriture locale refusée : jamais de cache périmé présenté comme à jour", () => {
+  it("un téléchargement non écrit n'avance pas la révision, et un envoi ultérieur fusionne au lieu d'écraser", async () => {
+    const { local, remote, engine } = refusingSetup();
+    await engine.signIn(USER);
+    local.set("sessions", [session("mine")]);
+    engine.markDirty(STORAGE_KEYS.sessions);
+    await engine.sync(USER);
+    expect(remote.rows.get("sessions")?.revision).toBe(1);
+
+    // Un autre appareil ajoute une séance ; celui-ci ne peut plus écrire.
+    remote.seed("sessions", [session("mine"), session("other", "2026-09-21T08:00:00.000Z")], 2);
+    local.refuse.add(STORAGE_KEYS.sessions);
+    const report = await engine.sync(USER);
+    expect(report.failed).toContain("sessions");
+    expect(engine.readMeta().collections.sessions?.revision).toBe(1);
+
+    // L'écriture refonctionne ; une modification locale part : elle doit fusionner, pas effacer « other ».
+    local.refuse.clear();
+    local.set("sessions", [session("mine"), session("third", "2026-09-22T08:00:00.000Z")]);
+    engine.markDirty(STORAGE_KEYS.sessions);
+    await engine.sync(USER);
+    const ids = (remote.rows.get("sessions")!.items as Array<{ id: string }>).map((item) => item.id).sort();
+    expect(ids).toEqual(["mine", "other", "third"]);
+  });
+
+  it("une fusion de conflit non écrite n'envoie rien", async () => {
+    const { local, remote, engine } = refusingSetup();
+    await engine.signIn(USER);
+    local.set("sessions", [session("mine")]);
+    engine.markDirty(STORAGE_KEYS.sessions);
+    await engine.sync(USER);
+
+    remote.seed("sessions", [session("mine"), session("other", "2026-09-21T08:00:00.000Z")], 2);
+    local.set("sessions", [session("mine"), session("local-only", "2026-09-22T08:00:00.000Z")]);
+    engine.markDirty(STORAGE_KEYS.sessions);
+    local.refuse.add(STORAGE_KEYS.sessions);
+    const pushesBefore = remote.pushes;
+    const report = await engine.sync(USER);
+    expect(report.failed).toContain("sessions");
+    expect(remote.pushes).toBe(pushesBefore);
+    expect((remote.rows.get("sessions")!.items as Array<{ id: string }>).map((item) => item.id)).toContain("other");
+    expect(engine.readMeta().collections.sessions).toMatchObject({ revision: 1, dirty: true });
+  });
+
+  it("refusé pendant la fusion d'un envoi en conflit : on s'arrête sans écraser le serveur", async () => {
+    const { local, remote, engine } = refusingSetup();
+    await engine.signIn(USER);
+    local.set("sessions", [session("mine")]);
+    engine.markDirty(STORAGE_KEYS.sessions);
+    await engine.sync(USER);
+
+    local.set("sessions", [session("mine"), session("local-only", "2026-09-22T08:00:00.000Z")]);
+    engine.markDirty(STORAGE_KEYS.sessions);
+    // Un autre appareil passe juste avant l'envoi, et l'appareil ne peut plus écrire.
+    remote.beforePush = () => {
+      remote.beforePush = null;
+      remote.seed("sessions", [session("mine"), session("other", "2026-09-21T08:00:00.000Z")], 2);
+      local.refuse.add(STORAGE_KEYS.sessions);
+    };
+    const report = await engine.pushDirty();
+    expect(report.failed).toContain("sessions");
+    expect((remote.rows.get("sessions")!.items as Array<{ id: string }>).map((item) => item.id)).toContain("other");
+    expect(engine.readMeta().collections.sessions?.revision).toBe(1);
+  });
+});
+
+/* ── Cycle léger : révisions d'abord ─────────────────────────────── */
+
+/** Serveur qui sait répondre « révisions seules » — et compte ce qu'il envoie réellement. */
+class RevisionRemote extends MemoryRemote {
+  downloaded: CollectionName[] = [];
+  async fetchRevisions() {
+    return [...this.rows.values()].map(({ collection, revision, updatedAt }) => ({ collection, revision, updatedAt }));
+  }
+  async fetchMany(collections: CollectionName[]) {
+    this.downloaded.push(...collections);
+    return [...this.rows.values()].filter((row) => collections.includes(row.collection)).map((row) => ({ ...row }));
+  }
+}
+
+describe("cycle ordinaire : seules les collections qui ont bougé sont téléchargées", () => {
+  it("rien n'a changé : aucun contenu téléchargé ; une collection avancée : elle seule", async () => {
+    const local = new MemoryLocal();
+    const remote = new RevisionRemote();
+    const engine = new SyncEngine(local, remote, () => NOW);
+    remote.seed("sessions", [session("a")], 1);
+    remote.seed("grades", [], 1);
+    await engine.signIn(USER);
+
+    await engine.sync(USER);
+    expect(remote.downloaded).toEqual([]);
+
+    remote.seed("sessions", [session("a"), session("b", "2026-09-21T08:00:00.000Z")], 2);
+    const report = await engine.sync(USER);
+    expect(remote.downloaded).toEqual(["sessions"]);
+    expect(report.pulled).toEqual(["sessions"]);
+    expect((local.get("sessions") as unknown[]).length).toBe(2);
+  });
+
+  it("une collection présente sur le serveur mais inchangée n'est pas prise pour « jamais envoyée »", async () => {
+    const local = new MemoryLocal();
+    const remote = new RevisionRemote();
+    const engine = new SyncEngine(local, remote, () => NOW);
+    remote.seed("sessions", [session("a")], 3);
+    await engine.signIn(USER);
+    const pushesBefore = remote.pushes;
+    await engine.sync(USER);
+    expect(remote.pushes).toBe(pushesBefore);
+    expect(engine.readMeta().collections.sessions).toMatchObject({ revision: 3, dirty: false });
+  });
+});
