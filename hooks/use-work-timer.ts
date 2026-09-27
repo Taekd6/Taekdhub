@@ -1,16 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { isOrphan, parseMirror, type TimerMirror } from "@/lib/timer-recovery";
 
 /**
  * État persisté d'une séance chronométrée (le Chrono, components/timer.tsx).
- * Stocké en sessionStorage pour survivre à un rechargement de page sans
- * survivre à la fermeture de l'onglet — cohérent avec une séance "en cours".
+ * Stocké en sessionStorage pour survivre à un rechargement de page — une
+ * séance en cours appartient à UN onglet. Un MIROIR en localStorage permet
+ * en plus de la reprendre si l'onglet disparaît (fermé par erreur, déchargé
+ * par le téléphone) : voir lib/timer-recovery.ts.
  *
  * Le temps écoulé est dérivé de vrais horodatages (`runningSince`) plutôt
  * que d'un compteur incrémenté en mémoire : ainsi, après un rechargement,
  * le temps réellement passé est restauré fidèlement, y compris le temps
  * écoulé pendant le rechargement lui-même.
+ *
+ * STOCKAGE BLOQUÉ (Safari « bloquer tous les cookies », certains modes
+ * privés) : chaque accès est protégé. Le chrono fonctionne alors en mémoire
+ * seulement, au lieu de faire planter la page.
  */
 interface WorkTimerSnapshot<TContext> {
   /** ISO — instant du tout premier démarrage de cette séance. Devient `WorkSession.started_at`. */
@@ -20,6 +27,13 @@ interface WorkTimerSnapshot<TContext> {
   /** ISO — instant de début de l'intervalle "running" en cours, ou null si en pause. */
   runningSince: string | null;
   /** Données propres à l'appelant (ex. matière choisie, travail rattaché…), restaurées avec le timer. */
+  context: TContext;
+}
+
+export interface OrphanTimer<TContext> {
+  startedAt: string;
+  /** Secondes écoulées selon le chrono abandonné, jusqu'à maintenant s'il tournait. */
+  seconds: number;
   context: TContext;
 }
 
@@ -38,19 +52,56 @@ export interface WorkTimerResult<TContext> {
    * Termine la séance : calcule le temps exact écoulé (indépendamment du
    * dernier tick affiché), efface l'état persisté, puis — s'il y a eu au
    * moins une seconde d'enregistrée — appelle `onComplete` avec le résultat
-   * exact. Aucun effet si aucune séance n'était en cours.
+   * exact. Aucun effet si aucune séance n'était en cours, ni si un autre
+   * onglet a déjà enregistré cette même séance.
    */
   stop: (onComplete?: (result: { startedAt: string; seconds: number }) => void) => void;
+  /** Un chrono laissé en cours par un onglet disparu, à reprendre ou à ignorer — `null` sinon. */
+  orphan: OrphanTimer<TContext> | null;
+  /** Reprend le chrono orphelin dans cet onglet (le temps écoulé depuis compte, comme après un rechargement). */
+  adoptOrphan: () => void;
+  /** Oublie le chrono orphelin. */
+  dismissOrphan: () => void;
 }
+
+function safeGet(storage: () => Storage, key: string): string | null {
+  try {
+    return storage().getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSet(storage: () => Storage, key: string, value: string): void {
+  try {
+    storage().setItem(key, value);
+  } catch {
+    // Stockage refusé : le chrono continue en mémoire.
+  }
+}
+
+function safeRemove(storage: () => Storage, key: string): void {
+  try {
+    storage().removeItem(key);
+  } catch {
+    // idem
+  }
+}
+
+const session = () => window.sessionStorage;
+const local = () => window.localStorage;
+
+/** Battement du miroir tant qu'une séance existe dans l'onglet. */
+const HEARTBEAT_MS = 15_000;
 
 function readSnapshot<TContext>(storageKey: string): WorkTimerSnapshot<TContext> | null {
   if (typeof window === "undefined") return null;
-  const raw = sessionStorage.getItem(storageKey);
+  const raw = safeGet(session, storageKey);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as WorkTimerSnapshot<TContext>;
   } catch {
-    sessionStorage.removeItem(storageKey);
+    safeRemove(session, storageKey);
     return null;
   }
 }
@@ -59,6 +110,16 @@ function computeElapsedSeconds(snapshot: WorkTimerSnapshot<unknown> | null): num
   if (!snapshot) return 0;
   const runningExtra = snapshot.runningSince ? Math.floor((Date.now() - new Date(snapshot.runningSince).getTime()) / 1000) : 0;
   return snapshot.accumulatedSeconds + Math.max(0, runningExtra);
+}
+
+/** Identifiant de CET onglet — en sessionStorage, il survit à un rechargement comme le chrono lui-même. */
+function readTabId(storageKey: string): string {
+  const key = `${storageKey}:tab`;
+  const existing = safeGet(session, key);
+  if (existing) return existing;
+  const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Math.random());
+  safeSet(session, key, id);
+  return id;
 }
 
 /**
@@ -74,29 +135,100 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
   const [snapshot, setSnapshot] = useState<WorkTimerSnapshot<TContext> | null>(null);
   const [context, setContextState] = useState<TContext>(initialContext);
   const [seconds, setSeconds] = useState(0);
+  const [orphan, setOrphan] = useState<WorkTimerSnapshot<TContext> | null>(null);
+  const tabId = useRef<string>("");
+  const mirrorKey = `${storageKey}:mirror`;
+  const tombstoneKey = `${storageKey}:done`;
 
   useEffect(() => {
+    tabId.current = readTabId(storageKey);
     const restored = readSnapshot<TContext>(storageKey);
-    if (!restored) return;
-    setSnapshot(restored);
-    setContextState(restored.context);
-    setSeconds(computeElapsedSeconds(restored));
+    const mirror = parseMirror<WorkTimerSnapshot<TContext>>(safeGet(local, mirrorKey));
+    const tombstone = safeGet(local, tombstoneKey);
+    // Pendant que cet onglet était ailleurs dans l'application (chrono non
+    // monté, donc sans battement), un autre onglet a pu reprendre ce chrono
+    // ou le terminer : alors il n'est plus à nous.
+    const takenElsewhere = restored && ((mirror && mirror.tabId !== tabId.current && mirror.snapshot.startedAt === restored.startedAt) || tombstone === restored.startedAt);
+    if (restored && takenElsewhere) {
+      safeRemove(session, storageKey);
+    } else if (restored) {
+      setSnapshot(restored);
+      setContextState(restored.context);
+      setSeconds(computeElapsedSeconds(restored));
+      return;
+    }
+    if (isOrphan(mirror, tabId.current, tombstone, new Date())) setOrphan(mirror!.snapshot);
     // Restauration au montage uniquement : on ne veut pas ré-écraser une
     // séance en cours si la clé change en cours de vie du composant.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Persistance (onglet + miroir) et tic d'affichage.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!snapshot) {
-      sessionStorage.removeItem(storageKey);
+      safeRemove(session, storageKey);
       return;
     }
-    sessionStorage.setItem(storageKey, JSON.stringify(snapshot));
-    if (!snapshot.runningSince) return;
-    const id = setInterval(() => setSeconds(computeElapsedSeconds(snapshot)), 1000);
-    return () => clearInterval(id);
-  }, [snapshot, storageKey]);
+    safeSet(session, storageKey, JSON.stringify(snapshot));
+    const beat = () => {
+      const mirror: TimerMirror<WorkTimerSnapshot<TContext>> = { tabId: tabId.current, heartbeatAt: new Date().toISOString(), snapshot };
+      safeSet(local, mirrorKey, JSON.stringify(mirror));
+    };
+    beat();
+    const heartbeat = setInterval(beat, HEARTBEAT_MS);
+    // L'onglet se ferme : le battement s'arrête NET (heure zéro), pour qu'un
+    // onglet rouvert aussitôt propose la reprise sans attendre trois minutes.
+    // S'il revient (retour arrière), il retrouve son chrono en sessionStorage
+    // et rebat au montage.
+    const onPageHide = () => {
+      const mirror: TimerMirror<WorkTimerSnapshot<TContext>> = { tabId: tabId.current, heartbeatAt: new Date(0).toISOString(), snapshot };
+      safeSet(local, mirrorKey, JSON.stringify(mirror));
+    };
+    window.addEventListener("pagehide", onPageHide);
+    const tick = snapshot.runningSince ? setInterval(() => setSeconds(computeElapsedSeconds(snapshot)), 1000) : null;
+    return () => {
+      clearInterval(heartbeat);
+      window.removeEventListener("pagehide", onPageHide);
+      if (tick) clearInterval(tick);
+    };
+  }, [snapshot, storageKey, mirrorKey]);
+
+  // Un autre onglet a repris CE chrono (ou l'a terminé) : celui-ci le lâche
+  // aussitôt, pour qu'il ne puisse pas être enregistré deux fois.
+  useEffect(() => {
+    if (typeof window === "undefined" || !snapshot) return;
+    function onStorage(event: StorageEvent) {
+      if (event.key === tombstoneKey && event.newValue === snapshot!.startedAt) {
+        release();
+        return;
+      }
+      if (event.key !== mirrorKey) return;
+      const mirror = parseMirror<WorkTimerSnapshot<TContext>>(event.newValue);
+      if (mirror && mirror.tabId !== tabId.current && mirror.snapshot.startedAt === snapshot!.startedAt) release();
+    }
+    function release() {
+      safeRemove(session, storageKey);
+      setSnapshot(null);
+      setSeconds(0);
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [snapshot, storageKey, mirrorKey, tombstoneKey]);
+
+  // Fermer l'onglet pendant qu'un chrono TOURNE : le navigateur demande
+  // confirmation. (Le miroir permet de toute façon de le reprendre.)
+  const running = Boolean(snapshot?.runningSince);
+  useEffect(() => {
+    if (!running) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // Requis par certains navigateurs pour afficher la confirmation.
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [running]);
 
   const setContext = useCallback((next: TContext) => {
     setContextState(next);
@@ -104,6 +236,7 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
   }, []);
 
   const start = useCallback(() => {
+    setOrphan(null);
     setSnapshot((prev) => {
       const now = new Date().toISOString();
       if (!prev) return { startedAt: now, accumulatedSeconds: 0, runningSince: now, context };
@@ -120,8 +253,6 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
     });
   }, []);
 
-  const running = Boolean(snapshot?.runningSince);
-
   const toggle = useCallback(() => {
     if (running) pause();
     else start();
@@ -131,18 +262,38 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
     (onComplete?: (result: { startedAt: string; seconds: number }) => void) => {
       if (snapshot) {
         const finalSeconds = computeElapsedSeconds(snapshot);
-        if (finalSeconds > 0 && onComplete) onComplete({ startedAt: snapshot.startedAt, seconds: finalSeconds });
+        // Déjà enregistrée par un autre onglet (pierre tombale) : ne rien doubler.
+        const alreadySaved = safeGet(local, tombstoneKey) === snapshot.startedAt;
+        if (finalSeconds > 0 && onComplete && !alreadySaved) onComplete({ startedAt: snapshot.startedAt, seconds: finalSeconds });
+        safeSet(local, tombstoneKey, snapshot.startedAt);
       }
       // Nettoyage immédiat et synchrone : on ne peut pas compter sur l'effet
       // de persistance pour réagir à `snapshot === null`, car l'appelant
       // peut démonter le composant dans la même mise à
       // jour (onClose juste après stop()), avant que cet effet ne rejoue.
-      if (typeof window !== "undefined") sessionStorage.removeItem(storageKey);
+      if (typeof window !== "undefined") {
+        safeRemove(session, storageKey);
+        safeRemove(local, mirrorKey);
+      }
       setSnapshot(null);
       setSeconds(0);
     },
-    [snapshot, storageKey]
+    [snapshot, storageKey, mirrorKey, tombstoneKey]
   );
+
+  const adoptOrphan = useCallback(() => {
+    if (!orphan) return;
+    setSnapshot(orphan);
+    setContextState(orphan.context);
+    setSeconds(computeElapsedSeconds(orphan));
+    setOrphan(null);
+  }, [orphan]);
+
+  const dismissOrphan = useCallback(() => {
+    if (orphan) safeSet(local, tombstoneKey, orphan.startedAt);
+    safeRemove(local, mirrorKey);
+    setOrphan(null);
+  }, [orphan, mirrorKey, tombstoneKey]);
 
   return {
     seconds,
@@ -154,5 +305,8 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
     pause,
     toggle,
     stop,
+    orphan: orphan ? { startedAt: orphan.startedAt, seconds: computeElapsedSeconds(orphan), context: orphan.context } : null,
+    adoptOrphan,
+    dismissOrphan,
   };
 }

@@ -518,3 +518,34 @@ describe("explicabilité", () => {
     expect(reasons[0]).toMatch(/2 erreurs notées en physique/);
   });
 });
+
+describe("« Pas maintenant » est respecté pendant un jour", () => {
+  function skippedRecord(key: string, at: Date): NextMoveRecord {
+    return { id: `h-${key}`, key, kind: "échéance", subject: "Mathématiques", title: "DM 4", minutes: 45, reasons: [], proposedAt: at.toISOString(), status: "écarté", startedAt: null, resolvedAt: at.toISOString(), outcomeMinutes: null };
+  }
+  const urgent = workItem({ id: "urgent", title: "DM urgent", dueDate: "2026-09-24", important: true });
+  const other = workItem({ id: "other", title: "DM 5", subject: "Physique", dueDate: "2026-09-27" });
+
+  it("une échéance écartée ne revient pas en tête, même très urgente", () => {
+    const before = computeNextMove(input({ workItems: [urgent, other] }));
+    expect(before.primary?.key).toBe("échéance:urgent");
+    const history = [skippedRecord("échéance:urgent", new Date(2026, 8, 24, 18, 0))];
+    const after = computeNextMove(input({ workItems: [urgent, other], history }));
+    expect(after.primary?.key).toBe("échéance:other");
+    expect(after.alternative?.key).not.toBe("échéance:urgent");
+    // Toujours visible dans le détail.
+    expect(after.ranked.some((candidate) => candidate.key === "échéance:urgent")).toBe(true);
+  });
+
+  it("au-delà de 24 h, elle revient", () => {
+    const history = [skippedRecord("échéance:urgent", new Date(2026, 8, 23, 18, 0))];
+    expect(computeNextMove(input({ workItems: [urgent, other], history })).primary?.key).toBe("échéance:urgent");
+  });
+
+  it("tout écarté : on retombe sur le classement complet plutôt que de ne rien dire", () => {
+    const at = new Date(2026, 8, 24, 18, 0);
+    const history = [skippedRecord("échéance:urgent", at), skippedRecord("échéance:other", at)];
+    const plan = computeNextMove(input({ workItems: [urgent, other], history }));
+    expect(plan.primary).not.toBeNull();
+  });
+});

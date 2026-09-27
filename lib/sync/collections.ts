@@ -74,7 +74,7 @@ function maxStamp(...values: unknown[]): string {
  * seulement à départager deux versions d'un MÊME identifiant.
  */
 const STAMPS: Partial<Record<CollectionName, (item: Item) => string>> = {
-  sessions: (item) => maxStamp(item.created_at, item.ended_at),
+  sessions: (item) => maxStamp(item.created_at, item.ended_at, item.updated_at),
   workItems: (item) => {
     const postponements = Array.isArray(item.postponements) ? item.postponements.filter(isItem).map((entry) => entry.at) : [];
     const scope = isItem(item.scope) ? item.scope.updatedAt : "";

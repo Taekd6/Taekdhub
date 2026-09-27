@@ -754,6 +754,8 @@ export function normalizeSession(raw: unknown): WorkSession {
     // Facultatif : n'apparaît que sur une séance qui visait un chapitre, pour
     // qu'une séance ancienne se relise exactement comme avant.
     ...(typeof item.chapter_id === "string" && item.chapter_id ? { chapter_id: item.chapter_id } : {}),
+    // Facultatif : seulement sur une séance corrigée après coup (lib/session-edit.ts).
+    ...(isoDate(item.updated_at) ? { updated_at: isoDate(item.updated_at)! } : {}),
   };
 }
 

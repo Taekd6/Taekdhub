@@ -846,14 +846,24 @@ export function computeNextMove(input: NextMoveInput): NextMovePlan {
     return { ...base, status: "vide", primary: null, alternative: null, steps: [], totalMinutes: 0 };
   }
 
-  const steps = composeSession(ranked, available);
+  // « Pas maintenant » est RESPECTÉ pendant un jour : ce qui a été écarté ne
+  // compose plus la session ni l'« autre idée » — une pénalité de score n'y
+  // suffisait pas, une échéance proche revenait aussitôt en tête. Le
+  // candidat reste dans `ranked` (« Détails » montre toujours tout). Si
+  // TOUT a été écarté, on retombe sur le classement complet plutôt que de
+  // prétendre n'avoir rien à proposer.
+  const skipped = skippedKeys(input.history, input.now);
+  const eligible = ranked.filter((candidate) => !skipped.has(candidate.key));
+  const pool = eligible.length > 0 ? eligible : ranked;
+
+  const steps = composeSession(pool, available);
   const primary = steps.find((step) => step.type === "move")?.candidate ?? null;
   if (!primary) {
     return { ...base, status: "trop-court", primary: null, alternative: null, steps: [], totalMinutes: 0 };
   }
 
   // « Autre idée » REMPLACE le premier pas : on la prend d'une autre matière quand il y en a une.
-  const others = ranked.filter((candidate) => candidate.key !== primary.key && candidate.score > 0);
+  const others = pool.filter((candidate) => candidate.key !== primary.key && candidate.score > 0);
   const alternative = others.find((candidate) => candidate.subject !== primary.subject) ?? others[0] ?? null;
 
   return {
@@ -864,6 +874,18 @@ export function computeNextMove(input: NextMoveInput): NextMovePlan {
     steps,
     totalMinutes: steps.reduce((total, step) => total + step.minutes, 0),
   };
+}
+
+/** Clés écartées (« Pas maintenant ») depuis moins de `SKIPPED_RECENTLY_HOURS`. */
+export function skippedKeys(history: NextMoveRecord[], now: Date): Set<string> {
+  const t = now.getTime();
+  const keys = new Set<string>();
+  for (const record of history) {
+    if (record.status !== "écarté") continue;
+    const at = new Date(record.resolvedAt ?? record.proposedAt).getTime();
+    if (Number.isFinite(at) && t - at >= 0 && t - at <= SKIPPED_RECENTLY_HOURS * HOUR) keys.add(record.key);
+  }
+  return keys;
 }
 
 /** Les raisons à montrer sur la carte : les termes POSITIFS les plus lourds, puis les informations — au plus `limit`. */
