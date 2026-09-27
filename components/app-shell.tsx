@@ -1,6 +1,7 @@
 import { AccountProvider } from "@/components/account/account-provider";
 import { AppNav } from "@/components/app-nav";
 import { StorageAlert } from "@/components/storage-alert";
+import { ActivityTracker } from "@/components/activity-tracker";
 
 /**
  * CADRE DE L'APPLICATION.
@@ -29,6 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="halo halo-a" />
           <div className="halo halo-b" />
         </div>
+        <ActivityTracker />
         <AppNav />
         <main className="mx-auto w-full max-w-[var(--shell-max)] px-4 pb-32 pt-5 sm:px-6 sm:pt-10 lg:pb-24 lg:pt-12">
           <StorageAlert />

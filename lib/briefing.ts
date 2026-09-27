@@ -279,16 +279,27 @@ export function buildBriefing(input: BriefingInput): Briefing {
 /** Clé LOCALE (propre à l'appareil, jamais synchronisée) : dernière fois que le point a été affiché. */
 export const BRIEFING_SEEN_KEY = "prepahub:briefing:seen";
 
+/** Clé LOCALE : dernier signe d'activité dans l'application (components/activity-tracker.tsx). */
+export const LAST_ACTIVITY_KEY = "prepahub:activity:last";
+
 /**
  * Faut-il ouvrir sur le point ? À la première ouverture de la journée, et
- * de nouveau après `BRIEFING_AGAIN_HOURS` d'absence — jamais à chaque
+ * de nouveau après `BRIEFING_AGAIN_HOURS` d'ABSENCE — jamais à chaque
  * retour sur l'accueil dans la même séance de travail.
+ *
+ * L'absence se mesure depuis le dernier signe d'activité dans l'application
+ * (`lastActivityIso`), pas depuis le dernier affichage du point : sinon un
+ * élève au travail depuis 8 h était renvoyé sur le point à 12 h, puis à
+ * 16 h. Sans trace d'activité (première version, stockage vidé), on retombe
+ * sur le dernier affichage.
  */
-export function shouldShowBriefing(preferences: Preferences, lastSeenIso: string | null, now: Date): boolean {
+export function shouldShowBriefing(preferences: Preferences, lastSeenIso: string | null, now: Date, lastActivityIso: string | null = null): boolean {
   if (!preferences.briefingOnOpen) return false;
   if (!lastSeenIso) return true;
   const lastSeen = new Date(lastSeenIso);
   if (Number.isNaN(lastSeen.getTime())) return true;
   if (dayKey(lastSeen) !== dayKey(now)) return true;
-  return now.getTime() - lastSeen.getTime() >= BRIEFING_AGAIN_HOURS * HOUR;
+  const activity = lastActivityIso ? new Date(lastActivityIso) : null;
+  const since = activity && !Number.isNaN(activity.getTime()) && activity > lastSeen ? activity : lastSeen;
+  return now.getTime() - since.getTime() >= BRIEFING_AGAIN_HOURS * HOUR;
 }

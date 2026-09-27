@@ -1963,12 +1963,17 @@ export function buildBackupPayload(now: Date = new Date()): BackupPayload {
   };
 }
 
-export function exportBackup(): void {
+/**
+ * Télécharge la sauvegarde complète. `label` s'ajoute au nom du fichier
+ * (« avant-restauration »). Le jour du nom est le jour LOCAL :
+ * `toISOString()` donnait la veille entre minuit et 2 h à Paris.
+ */
+export function exportBackup(label?: string): void {
   const data = JSON.stringify(buildBackupPayload(), null, 2);
   const url = URL.createObjectURL(new Blob([data], { type: "application/json" }));
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `taekdhub-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
+  anchor.download = `taekdhub-sauvegarde-${label ? `${label}-` : ""}${new Date().toLocaleDateString("en-CA")}.json`;
   // L'ancre DOIT être dans le document, et l'URL objet ne doit PAS être
   // révoquée dans la foulée de `click()`. Révoquer immédiatement est une
   // course : le téléchargement n'a pas forcément commencé de lire le Blob

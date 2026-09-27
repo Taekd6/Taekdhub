@@ -11,7 +11,7 @@ import type { MetadataRoute } from "next";
  */
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/dashboard", "/preparation", "/progress", "/history", "/echeances", "/revoir", "/erreurs", "/settings", "/timer"] },
+    rules: { userAgent: "*", allow: "/", disallow: ["/dashboard", "/preparation", "/progress", "/history", "/echeances", "/revoir", "/erreurs", "/settings", "/timer", "/memoire", "/point", "/bienvenue"] },
     sitemap: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://taekdhub.vercel.app"}/sitemap.xml`,
   };
 }

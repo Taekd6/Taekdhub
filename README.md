@@ -100,8 +100,10 @@ Copier `.env.example` vers `.env.local` pour activer la synchronisation Supabase
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
+
+(`NEXT_PUBLIC_SUPABASE_ANON_KEY`, l'ancien nom de la même clé, est aussi accepté.)
 
 Sans ces variables, `lib/supabase/client.ts` désactive proprement le client Supabase et l'app continue de fonctionner en local uniquement (Réglages → Compte l'indique). Voir « Compte et synchronisation » pour la migration SQL à appliquer.
 

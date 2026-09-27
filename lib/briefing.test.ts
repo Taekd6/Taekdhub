@@ -69,6 +69,16 @@ describe("quand afficher le point", () => {
     expect(shouldShowBriefing(prefs(), new Date(2026, 8, 24, 13, 0).toISOString(), NOW)).toBe(true);
   });
 
+  it("l'absence se compte depuis la dernière activité, pas depuis le dernier point", () => {
+    const seenAt8 = new Date(2026, 8, 24, 8, 0).toISOString();
+    // Au travail toute la journée : dernière activité il y a 20 min.
+    expect(shouldShowBriefing(prefs(), seenAt8, NOW, new Date(2026, 8, 24, 17, 40).toISOString())).toBe(false);
+    // Parti à 13 h, revenu à 18 h : cinq heures d'absence.
+    expect(shouldShowBriefing(prefs(), seenAt8, NOW, new Date(2026, 8, 24, 13, 0).toISOString())).toBe(true);
+    // Activité illisible : on retombe sur le dernier affichage.
+    expect(shouldShowBriefing(prefs(), seenAt8, NOW, "n'importe quoi")).toBe(true);
+  });
+
   it("jamais quand l'élève l'a désactivé", () => {
     expect(shouldShowBriefing(prefs({ briefingOnOpen: false }), null, NOW)).toBe(false);
   });
