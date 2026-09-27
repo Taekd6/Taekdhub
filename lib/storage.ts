@@ -120,6 +120,13 @@ export type Preferences = {
    */
   onboardingCompletedAt: string | null;
   /* ── fin premier lancement ── */
+  /**
+   * « LE POINT » à l'ouverture (app/(app)/point, lib/briefing.ts) : `true`
+   * pour l'afficher à la première ouverture de la journée (et après une
+   * longue absence), `false` pour aller droit à l'accueil. Absent d'une
+   * préférence plus ancienne ⇒ `true`.
+   */
+  briefingOnOpen: boolean;
   /*
    * `subjectPalette` / `subjectColors` (palette et surcharges de couleur par
    * matière, refonte « Nuit ») n'existent plus : les matières n'ont plus de
@@ -200,6 +207,7 @@ const defaults: Preferences = {
   weeklySubjectTargets: DEFAULT_WEEKLY_SUBJECT_TARGETS,
   eveningMinimums: DEFAULT_EVENING_MINIMUMS,
   onboardingCompletedAt: null,
+  briefingOnOpen: true,
 };
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
@@ -723,6 +731,9 @@ export function normalizeSession(raw: unknown): WorkSession {
     // après coup à un travail planifié qui n'existait pas encore. Voir la doc
     // du champ dans lib/supabase/types.ts.
     work_item_id: typeof item.work_item_id === "string" ? item.work_item_id : null,
+    // Facultatif : n'apparaît que sur une séance qui visait un chapitre, pour
+    // qu'une séance ancienne se relise exactement comme avant.
+    ...(typeof item.chapter_id === "string" && item.chapter_id ? { chapter_id: item.chapter_id } : {}),
   };
 }
 
@@ -1319,6 +1330,7 @@ export function normalizePreferences(raw: unknown): Preferences {
     // Premier lancement : un instant ISO lisible, sinon « jamais fait ». Même
     // analyseur que les horodatages des séances (`isoDate`).
     onboardingCompletedAt: isoDate(item.onboardingCompletedAt),
+    briefingOnOpen: typeof item.briefingOnOpen === "boolean" ? item.briefingOnOpen : defaults.briefingOnOpen,
     // `accent`, `subjectPalette` et `subjectColors` ne sont pas recopiés :
     // lus (pour la migration ci-dessus), puis abandonnés.
   };

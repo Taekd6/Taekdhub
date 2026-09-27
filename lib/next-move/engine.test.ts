@@ -183,6 +183,14 @@ describe("risque d'oubli", () => {
     expect(first.terms.map((term) => term.reason)).toContain("Dernier rappel il y a 23\u00a0j");
   });
 
+  it("un chapitre travaillé cette semaine sans rappel depuis : on vérifie ce qui en reste, et le chrono s'ouvre sur lui", () => {
+    const elec = chapter("Physique", "Électrostatique", "2026-08-25", "elec");
+    const worked = { ...session("Physique", 45, new Date(2026, 8, 22, 18)), chapter_id: "elec" };
+    const [first] = rankCandidates(input({ chapterMemory: [elec], sessions: [worked] }));
+    expect(first.terms.find((term) => term.id === "travaillé-sans-rappel")).toMatchObject({ points: 5, reason: "Travaillé 45 min dessus cette semaine, sans rappel depuis" });
+    expect(first.href).toBe("/timer?matiere=Physique&chapitre=elec");
+  });
+
   it("un chapitre révisé ce matin n'est pas menacé : aucun rappel proposé", () => {
     const fresh = rateChapter(chapter("Physique", "Électrostatique", "2026-09-10"), "good", TODAY);
     expect(rankCandidates(input({ chapterMemory: [fresh] }))).toEqual([]);

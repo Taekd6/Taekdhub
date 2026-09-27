@@ -709,10 +709,17 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
     expect(typeof normalizePreferences({ displayName: { evil: true } }).displayName).toBe("string");
   });
 
+  it("« Le point » à l'ouverture : activé par défaut, et un « non » explicite survit", () => {
+    expect(normalizePreferences({}).briefingOnOpen).toBe(true);
+    expect(normalizePreferences({ briefingOnOpen: false }).briefingOnOpen).toBe(false);
+    expect(normalizePreferences({ briefingOnOpen: "non" }).briefingOnOpen).toBe(true);
+  });
+
   it("aucune clé étrangère ne ressort des préférences", () => {
     const prefs = normalizePreferences({ __proto__: null, intrus: "oui", autre: 1 }) as Record<string, unknown>;
     expect(Object.keys(prefs).sort()).toEqual(
       [
+        "briefingOnOpen",
         "capacityByWeekday",
         "contestDate",
         "dailyGoalMinutes",
@@ -1138,6 +1145,15 @@ describe("mémoire des chapitres (FSRS) — dans la sauvegarde", () => {
 
   it("refuse un fichier dont la mémoire des chapitres n'est pas une liste", () => {
     expect(validateBackupPayload({ sessions: [], preferences: {}, chapterMemory: "oups" })).toBe(false);
+  });
+});
+
+/* ── Temps par chapitre ── */
+describe("séance rattachée à un chapitre", () => {
+  it("le chapitre survit à la normalisation, et une séance ancienne se relit à l'identique", () => {
+    expect(normalizeSession(makeRawSession({ chapter_id: "elec" })).chapter_id).toBe("elec");
+    expect("chapter_id" in normalizeSession(makeRawSession())).toBe(false);
+    expect("chapter_id" in normalizeSession(makeRawSession({ chapter_id: 42 }))).toBe(false);
   });
 });
 

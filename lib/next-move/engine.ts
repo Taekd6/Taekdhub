@@ -1,4 +1,4 @@
-import { atRisk, AT_RISK_THRESHOLD } from "@/lib/chapter-memory";
+import { atRisk, AT_RISK_THRESHOLD, chapterTime } from "@/lib/chapter-memory";
 import { computeCalibration } from "@/lib/calibration";
 import { computeWorkItemPriority } from "@/lib/deadlines";
 import { ERROR_TYPE_META, subjectInSentence } from "@/lib/error-log";
@@ -154,6 +154,8 @@ const DEADLINE_HORIZON_DAYS = 14;
 /** Rappel actif : jusqu'à 60 points pour un chapitre très menacé — (seuil − R) × 200. */
 const RECALL_POINTS_PER_UNIT = 200;
 const RECALL_MAX_POINTS = 60;
+/** Chapitre chronométré cette semaine sans rappel depuis : on vérifie ce qui en reste. */
+const RECALL_AFTER_WORK = 5;
 /** Chapitres par matière retenus comme candidats : au-delà, on se répète. */
 const RECALL_PER_SUBJECT = 2;
 
@@ -460,6 +462,18 @@ function recallCandidates(input: NextMoveInput): MoveCandidate[] {
     // Information, pas des points : l'ancienneté est déjà dans la probabilité.
     terms.push({ id: "dernier-rappel", points: 0, reason: chapter.reviews.length > 0 ? `Dernier rappel ${daysAgoLabel(since)}` : `Appris ${daysAgoLabel(since)}, jamais révisé depuis` });
 
+    // Temps chronométré SUR ce chapitre (séances où il a été choisi au chrono).
+    // Travaillé récemment mais pas rappelé depuis : c'est précisément le
+    // moment où un rappel actif dit ce qui est resté.
+    const time = chapterTime(chapter.id, input.sessions, today);
+    if (time.recentMinutes > 0 && time.lastWorkedDay && time.lastWorkedDay >= lastDay) {
+      terms.push({
+        id: "travaillé-sans-rappel",
+        points: RECALL_AFTER_WORK,
+        reason: `Travaillé ${formatMinutesSpan(time.recentMinutes)} dessus cette semaine, sans rappel depuis`,
+      });
+    }
+
     out.push({
       key: `rappel:${chapter.id}`,
       kind: "rappel",
@@ -470,7 +484,7 @@ function recallCandidates(input: NextMoveInput): MoveCandidate[] {
       minMinutes: 10,
       idealMinutes: 25,
       maxMinutes: 30,
-      href: timerHref(chapter.subject),
+      href: `${timerHref(chapter.subject)}&chapitre=${encodeURIComponent(chapter.id)}`,
       resource: { label: "Noter le rappel", href: "/memoire" },
       terms,
       score: 0,

@@ -52,6 +52,10 @@ export interface AccountContextValue {
   lastSyncedAt: string | null;
   error: string | null;
   decision: PendingDecision | null;
+  /** Arrivé par un lien « mot de passe oublié » : il faut en choisir un nouveau. */
+  recovery: boolean;
+  sendPasswordReset(email: string): Promise<string | null>;
+  updatePassword(password: string): Promise<string | null>;
   signInWithPassword(email: string, password: string): Promise<string | null>;
   signUp(email: string, password: string): Promise<{ error: string | null; needsConfirmation: boolean }>;
   sendMagicLink(email: string): Promise<string | null>;
@@ -76,6 +80,9 @@ const DISABLED: AccountContextValue = {
   lastSyncedAt: null,
   error: null,
   decision: null,
+  recovery: false,
+  sendPasswordReset: noop,
+  updatePassword: noop,
   signInWithPassword: noop,
   signUp: async () => ({ error: null, needsConfirmation: false }),
   sendMagicLink: noop,
@@ -120,6 +127,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   const [decision, setDecision] = useState<PendingDecision | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [recovery, setRecovery] = useState(false);
 
   // Références pour les rappels hors rendu (écritures locales, minuteries).
   const userRef = useRef<AccountUser | null>(null);
@@ -209,7 +217,9 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!supabase) return;
     const client = supabase;
-    const { data } = client.auth.onAuthStateChange((_event, session) => {
+    const { data } = client.auth.onAuthStateChange((event, session) => {
+      // Lien « mot de passe oublié » : la session est ouverte, il reste à choisir le nouveau mot de passe.
+      if (event === "PASSWORD_RECOVERY") setRecovery(true);
       const next: AccountUser | null = session?.user ? { id: session.user.id, email: session.user.email ?? null } : null;
       // Hors du rappel : Supabase déconseille d'appeler le client depuis `onAuthStateChange`.
       setTimeout(() => {
@@ -285,6 +295,20 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     return authError ? explainAuthError(authError.message) : null;
   }, []);
 
+  const sendPasswordReset = useCallback(async (email: string) => {
+    if (!supabase) return "Le compte n'est pas disponible sur cette version.";
+    const { error: authError } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: redirectUrl() });
+    return authError ? explainAuthError(authError.message) : null;
+  }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    if (!supabase) return "Le compte n'est pas disponible sur cette version.";
+    const { error: authError } = await supabase.auth.updateUser({ password });
+    if (authError) return explainAuthError(authError.message);
+    setRecovery(false);
+    return null;
+  }, []);
+
   const signOut = useCallback(
     async ({ wipe }: { wipe: boolean }) => {
       if (!supabase || !engine) return null;
@@ -328,9 +352,9 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AccountContextValue>(
     () =>
       engine
-        ? { enabled: true, status, user, lastSyncedAt, error, decision, signInWithPassword, signUp, sendMagicLink, signOut, resolveDecision, syncNow, hasPendingChanges }
+        ? { enabled: true, status, user, lastSyncedAt, error, decision, recovery, sendPasswordReset, updatePassword, signInWithPassword, signUp, sendMagicLink, signOut, resolveDecision, syncNow, hasPendingChanges }
         : DISABLED,
-    [engine, status, user, lastSyncedAt, error, decision, signInWithPassword, signUp, sendMagicLink, signOut, resolveDecision, syncNow, hasPendingChanges]
+    [engine, status, user, lastSyncedAt, error, decision, recovery, sendPasswordReset, updatePassword, signInWithPassword, signUp, sendMagicLink, signOut, resolveDecision, syncNow, hasPendingChanges]
   );
 
   return (

@@ -1,4 +1,5 @@
 import { AccountSection } from "@/components/account/account-section";
+import { BriefingSetting } from "@/components/briefing/briefing-setting";
 import { CapacityForm } from "@/components/work/capacity-form";
 import { DataBackup } from "@/components/data-backup";
 import { PageHero } from "@/components/ui/page-hero";
@@ -24,6 +25,7 @@ export default function SettingsPage() {
       <PageHero title="Réglages" lede="Apparence, objectifs, temps, compte et sauvegardes." />
       <ThemePicker />
       <PreferencesForm />
+      <BriefingSetting />
       <CapacityForm />
       {/* ── Premier lancement : rouvrir l'accueil guidé ── */}
       <OnboardingRestartEntry />

@@ -10,7 +10,7 @@ import {
   type FsrsRating,
 } from "@/lib/fsrs";
 import type { ChapterMemory } from "@/lib/storage";
-import type { Subject } from "@/lib/supabase/types";
+import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
  * MÉMOIRE DES CHAPITRES — « tu risques d'oublier ce chapitre ».
@@ -200,3 +200,34 @@ export function formatChance(retrievability: number): string {
 }
 
 export { DESIRED_RETENTION };
+
+/* ── Temps passé par chapitre ─────────────────────────────────────── */
+
+export interface ChapterTime {
+  /** Minutes au total, toutes séances rattachées au chapitre (`WorkSession.chapter_id`). */
+  totalMinutes: number;
+  /** Minutes sur les `recentDays` derniers jours. */
+  recentMinutes: number;
+  /** Dernier jour calendaire local où le chapitre a été travaillé, ou `null`. */
+  lastWorkedDay: string | null;
+}
+
+/**
+ * Le temps RÉELLEMENT chronométré sur un chapitre — seulement les séances où
+ * l'élève l'a choisi au chrono. Une séance « physique » sans chapitre n'est
+ * jamais répartie après coup : on ne sait pas sur quoi elle a porté.
+ */
+export function chapterTime(chapterId: string, sessions: ReadonlyArray<WorkSession>, today: string, recentDays = 7): ChapterTime {
+  const since = shiftDay(today, -(recentDays - 1));
+  let total = 0;
+  let recent = 0;
+  let last: string | null = null;
+  for (const session of sessions) {
+    if (session.chapter_id !== chapterId) continue;
+    const day = new Date(session.started_at).toLocaleDateString("en-CA");
+    total += session.duration_seconds;
+    if (day >= since && day <= today) recent += session.duration_seconds;
+    if (!last || day > last) last = day;
+  }
+  return { totalMinutes: Math.round(total / 60), recentMinutes: Math.round(recent / 60), lastWorkedDay: last };
+}

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { SubjectAvatar } from "@/components/subject-avatar";
 import {
+  chapterTime,
   ANKI_DECK_MAX,
   CHAPTER_TITLE_MAX,
   createChapter,
@@ -21,7 +22,8 @@ import {
 import type { FsrsRating } from "@/lib/fsrs";
 import type { ChapterMemory } from "@/lib/storage";
 import { dayKey, subjects } from "@/lib/study";
-import type { Subject } from "@/lib/supabase/types";
+import type { Subject, WorkSession } from "@/lib/supabase/types";
+import { formatMinutesSpan } from "@/lib/utils";
 import { cn } from "@/lib/cn";
 
 /**
@@ -42,7 +44,10 @@ export function ChapterList({
   subject = null,
   selectedId,
   onSelect,
+  sessions = [],
 }: {
+  /** Séances — pour afficher le temps chronométré sur chaque chapitre (`WorkSession.chapter_id`). */
+  sessions?: WorkSession[];
   chapters: ChapterMemory[];
   saveChapters: (items: ChapterMemory[]) => void;
   /** Fixe la matière (hub) ; `null` = toutes, avec un sélecteur dans la saisie. */
@@ -127,6 +132,10 @@ export function ChapterList({
                           <span className="sr-only">{chanceSentence(retrievability)}. </span>
                           {reminder <= today ? "À revoir maintenant" : `Prochain rappel ${formatDay(reminder, today)}`} · appris {formatDay(chapter.learnedAt, today)}
                           {chapter.reviews.length > 0 && ` · ${chapter.reviews.length} révision${chapter.reviews.length > 1 ? "s" : ""}`}
+                          {(() => {
+                            const minutes = chapterTime(chapter.id, sessions, today).totalMinutes;
+                            return minutes > 0 ? ` · ${formatMinutesSpan(minutes)} de travail` : null;
+                          })()}
                         </p>
                       </div>
                     </div>

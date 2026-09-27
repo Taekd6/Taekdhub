@@ -35,7 +35,7 @@ const PRINCIPES = [
   {
     titre: "Tes données restent chez toi",
     texte:
-      "Pas de compte, pas de serveur : tout vit dans ton navigateur, et une sauvegarde en un clic te suit d'un appareil à l'autre.",
+      "Sans compte, tout vit dans ton navigateur. Avec un compte, tes données te suivent d'un appareil à l'autre — et restent visibles de toi seul.",
   },
 ];
 

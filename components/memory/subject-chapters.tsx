@@ -7,7 +7,7 @@ import { WhyMemoryWorks } from "@/components/memory/memory-bits";
 import { buttonVariants } from "@/components/ui/button";
 import { Section } from "@/components/ui/section";
 import type { ChapterMemory } from "@/lib/storage";
-import type { Subject } from "@/lib/supabase/types";
+import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
  * « CHAPITRES » dans le hub d'une matière — la mémoire des chapitres
@@ -22,7 +22,9 @@ export function SubjectChapters({
   subject,
   chapters,
   saveChapters,
+  sessions,
 }: {
+  sessions?: WorkSession[];
   subject: Subject;
   chapters: ChapterMemory[];
   saveChapters: (items: ChapterMemory[]) => void;
@@ -39,7 +41,7 @@ export function SubjectChapters({
           </Link>
         }
       >
-        <ChapterList chapters={chapters} saveChapters={saveChapters} subject={subject} />
+        <ChapterList chapters={chapters} saveChapters={saveChapters} subject={subject} sessions={sessions} />
       </Section>
       <WhyMemoryWorks />
     </div>

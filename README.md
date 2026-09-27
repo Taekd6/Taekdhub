@@ -24,11 +24,19 @@ Puis des modulateurs, chacun avec sa phrase : DS/concours blanc dans les 7 jours
 
 L'historique (`prepahub:next-moves`, `lib/next-move/history.ts`) garde ce qui a été proposé, commencé, fait (constaté d'après les séances et révisions, ou déclaré) et écarté. Les statistiques se taisent sous 8 propositions et ne prétendent à aucune causalité. Il voyage dans la sauvegarde et la synchronisation.
 
+## Le point — l'écran d'ouverture
+
+À la première ouverture de la journée (et après 4 h d'absence), l'accueil s'ouvre sur **Le point** (, ) : une salutation, une phrase de résumé, le prochain mouvement de Next Move avec « Commencer », puis trois sections d'au plus trois lignes chacune — **Ce qui presse** (retard, échéance du jour ou du lendemain, travail qui ne tient plus, DS dans ≤ 3 j), **Tu repousses** (travail reporté ≥ 2 fois, plan « si… alors… » manqué, matière proposée ≥ 3 fois sans suite, cartes en retard, objectif de la semaine qui décroche ; puis, à surveiller : chapitre qui s'efface, erreurs sans « bonne idée », note en attente) et **Aujourd'hui** (minimum du soir, plans du jour, cartes du jour). On y revient en touchant la date de l'accueil ; Réglages → À l'ouverture le désactive.
+
+## Temps par chapitre
+
+Au chrono, un chapitre de la mémoire peut être choisi (facultatif) : la séance porte alors . Mémoire affiche le temps passé par chapitre, et Next Move propose un rappel actif sur un chapitre travaillé cette semaine sans rappel depuis. Les anciennes séances se relisent sans changement.
+
 ## Compte et synchronisation (Supabase)
 
 Facultatif. **Non connecté**, rien ne change : les données vivent dans le navigateur. **Connecté**, le compte fait foi et le navigateur en garde une copie de travail : l'application reste instantanée et utilisable hors ligne, et chaque modification part au serveur dès que possible (après une courte accalmie, au retour du réseau, au retour sur l'onglet, et toutes les 2 min pour recevoir les autres appareils).
 
-- **Connexion** : Réglages → Compte. E-mail + mot de passe, ou lien de connexion par e-mail.
+- **Connexion** : Réglages → Compte. E-mail + mot de passe, ou lien de connexion par e-mail. « Mot de passe oublié ? » envoie un lien pour en choisir un nouveau.
 - **Premier login avec des données sur l'appareil** : TaekdHub demande avant tout envoi — *Importer mes données* / *Commencer sans elles* (compte vide), ou *Fusionner les deux* / *Garder seulement le compte* (compte déjà rempli). Toute option qui remplace l'appareil **télécharge d'abord une sauvegarde complète**.
 - **Conflits** : chaque collection porte une `revision` ; un envoi n'écrase jamais une version plus récente d'un autre appareil — il est refusé, puis fusionné (union par identifiant, la version la plus récente d'un même objet). Limite assumée : une entrée supprimée sur un appareil pendant qu'un autre modifiait hors ligne la même collection peut réapparaître.
 - **Déconnexion** : les données restent sur l'appareil (option « Déconnecter et effacer cet appareil », refusée tant que des modifications n'ont pas été envoyées).

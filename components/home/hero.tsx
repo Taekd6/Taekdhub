@@ -34,14 +34,20 @@ export function HomeTopBar({ name, contestDays, className }: { name: string; con
       >
         {initial}
       </Link>
-      <p className="glass flex h-[2.375rem] min-w-0 flex-1 items-center gap-2 rounded-full px-3.5 text-sm font-semibold text-muted">
-        <span className="truncate first-letter:uppercase">{date}</span>
+      {/* La date ouvre « Le point » du jour (app/(app)/point). */}
+      <Link
+        href="/point"
+        aria-label={`${date} — voir le point du jour`}
+        className="glass bounce-press flex h-[2.375rem] min-w-0 flex-1 items-center gap-2 rounded-full px-3.5 text-sm font-semibold text-muted hover:text-ink"
+      >
+        <span className="min-w-0 flex-1 truncate first-letter:uppercase">{date}</span>
         {contestDays !== null && (
-          <span className="ml-auto shrink-0 font-extrabold text-accent" title="Jours avant le concours">
+          <span className="shrink-0 font-extrabold text-accent" title="Jours avant le concours">
             J−{contestDays}
           </span>
         )}
-      </p>
+        <span className="shrink-0 text-[0.8125rem] font-extrabold text-ink">Le point ›</span>
+      </Link>
       <Link
         href="/settings"
         aria-label="Réglages"
