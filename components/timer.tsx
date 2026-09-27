@@ -152,7 +152,9 @@ export function Timer() {
       // déjà à quelque chose : une liste, une pastille ou un bouton qui a
       // le focus s'active lui-même à l'espace.
       const tag = document.activeElement?.tagName;
-      if (event.key === " " && tag !== "SELECT" && tag !== "BUTTON" && tag !== "INPUT" && tag !== "A") {
+      // Barre d'espace ignorée tant qu'un chrono orphelin attend une réponse :
+      // un appui réflexe ne doit pas l'écarter sans qu'on l'ait choisi.
+      if (event.key === " " && !orphan && tag !== "SELECT" && tag !== "BUTTON" && tag !== "INPUT" && tag !== "A") {
         event.preventDefault();
         toggle();
       }
@@ -160,7 +162,7 @@ export function Timer() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [fullscreen, toggle]);
+  }, [fullscreen, toggle, orphan]);
 
   /**
    * « Terminer ». Au-delà de 3 h d'affilée, c'est souvent un chrono oublié :

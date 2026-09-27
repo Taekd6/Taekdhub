@@ -58,7 +58,9 @@ export function editSession(session: WorkSession, patch: SessionPatch, now: Date
   if (!Number.isFinite(minutes) || minutes < 1 || minutes > SESSION_MAX_MINUTES) return { error: "durée" };
   const start = parseLocalDateTime(patch.startLocal);
   if (!start) return { error: "début" };
-  if (start.getTime() > now.getTime()) return { error: "futur" };
+  // Ni début ni FIN dans le futur : une fin future fausserait les totaux, et
+  // son horodatage l'emporterait sur toute correction ultérieure à la synchro.
+  if (start.getTime() + minutes * 60_000 > now.getTime()) return { error: "futur" };
 
   const note = patch.note.trim();
   return {
@@ -77,5 +79,5 @@ export function editSession(session: WorkSession, patch: SessionPatch, now: Date
 export const SESSION_EDIT_ERRORS: Record<SessionEditError, string> = {
   durée: `La durée doit être comprise entre 1 min et ${SESSION_MAX_MINUTES / 60} h.`,
   début: "La date de début est illisible.",
-  futur: "Une séance ne peut pas commencer dans le futur.",
+  futur: "Une séance ne peut pas se terminer dans le futur : vérifie le début et la durée.",
 };

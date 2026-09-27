@@ -20,6 +20,26 @@
 /** Sans battement depuis ce délai, l'onglet porteur est présumé disparu. Large : un onglet en arrière-plan ne bat plus qu'une fois par minute. */
 export const ORPHAN_AFTER_MS = 3 * 60_000;
 
+/** Séances closes dont on garde la trace : un vieil onglet qui se réveille après plusieurs séances doit encore reconnaître la sienne. */
+export const TOMBSTONES_KEPT = 20;
+
+/** Les pierres tombales — liste JSON ; une valeur isolée (première version) reste lue. */
+export function parseTombstones(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const value = JSON.parse(raw) as unknown;
+    return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
+  } catch {
+    return [raw];
+  }
+}
+
+/** Ajoute `startedAt` (sans doublon), en ne gardant que les `TOMBSTONES_KEPT` plus récentes. */
+export function addTombstone(raw: string | null, startedAt: string): string {
+  const list = parseTombstones(raw).filter((entry) => entry !== startedAt);
+  return JSON.stringify([...list, startedAt].slice(-TOMBSTONES_KEPT));
+}
+
 /** Un chrono abandonné depuis plus longtemps n'est plus proposé : ce n'est plus une séance, c'est un oubli. */
 export const ORPHAN_MAX_AGE_MS = 36 * 3_600_000;
 
@@ -47,9 +67,9 @@ export function parseMirror<TSnapshot extends { startedAt: string }>(raw: string
  * `ORPHAN_AFTER_MS`, que la séance n'est pas trop ancienne, et qu'elle n'a
  * pas déjà été enregistrée (pierre tombale).
  */
-export function isOrphan(mirror: TimerMirror<{ startedAt: string }> | null, tabId: string, tombstone: string | null, now: Date): boolean {
+export function isOrphan(mirror: TimerMirror<{ startedAt: string }> | null, tabId: string, tombstones: readonly string[], now: Date): boolean {
   if (!mirror || mirror.tabId === tabId) return false;
-  if (tombstone && tombstone === mirror.snapshot.startedAt) return false;
+  if (tombstones.includes(mirror.snapshot.startedAt)) return false;
   const t = now.getTime();
   if (t - new Date(mirror.heartbeatAt).getTime() < ORPHAN_AFTER_MS) return false;
   return t - new Date(mirror.snapshot.startedAt).getTime() <= ORPHAN_MAX_AGE_MS;

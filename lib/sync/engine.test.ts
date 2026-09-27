@@ -432,3 +432,27 @@ describe("cycle ordinaire : seules les collections qui ont bougé sont télécha
     expect(engine.readMeta().collections.sessions).toMatchObject({ revision: 3, dirty: false });
   });
 });
+
+describe("adoption du compte refusée par l'appareil", () => {
+  it("le cache est vidé plutôt que de garder, sous le nom du compte, des données écartées", async () => {
+    const { local, remote, engine } = refusingSetup();
+    local.set("sessions", [session("ancienne-donnée-écartée")]);
+    remote.seed("sessions", [session("du-compte")], 4);
+    const outcome = await engine.signIn(USER);
+    expect(outcome.type).toBe("decision");
+    // L'élève choisit « garder seulement le compte », mais l'écriture du compte échoue.
+    local.refuse.add(STORAGE_KEYS.sessions);
+    const originalWrite = local.write.bind(local);
+    // Seule l'écriture du contenu du compte échoue ; vider reste possible.
+    local.write = (key: string, raw: string) => (key === STORAGE_KEYS.sessions && raw !== "[]" ? false : MemoryLocal.prototype.write.call(local, key, raw));
+    const report = await engine.resolveDecision(USER, "compte");
+    local.write = originalWrite;
+    expect(report.failed).toContain("sessions");
+    expect(local.get("sessions")).toEqual([]);
+    expect(engine.readMeta().collections.sessions).toMatchObject({ revision: 0, dirty: false });
+    // Le cycle suivant retélécharge le compte.
+    local.refuse.clear();
+    await engine.sync(USER);
+    expect((local.get("sessions") as Array<{ id: string }>).map((item) => item.id)).toEqual(["du-compte"]);
+  });
+});

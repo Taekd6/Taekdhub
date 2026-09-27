@@ -260,10 +260,16 @@ export class SyncEngine {
     for (const collection of COLLECTIONS) {
       const row = byName.get(collection);
       if (row) {
-        // Écriture refusée : révision 0, pour que le prochain cycle retente le téléchargement.
+        // Écriture refusée : révision 0, pour que le prochain cycle retente le
+        // téléchargement — et le cache VIDÉ : les anciennes données de
+        // l'appareil (écartées par ce choix) ne doivent ni s'afficher comme
+        // celles du compte, ni repartir vers lui à la fusion suivante.
         const written = this.writeLocal(collection, row.items);
         if (written) pulled.push(collection);
-        else failed.push(collection);
+        else {
+          this.writeLocal(collection, collection === "preferences" ? {} : []);
+          failed.push(collection);
+        }
         meta.collections[collection] = { revision: written ? row.revision : 0, dirty: false, localUpdatedAt: null };
         continue;
       }

@@ -61,13 +61,24 @@ function error(overrides: Partial<ErrorEntry> = {}): ErrorEntry {
 }
 
 describe("withScope / scopeIds — le programme d'une épreuve", () => {
-  it("dédoublonne, horodate, et disparaît quand il est vide", () => {
+  it("dédoublonne, horodate ; vidé, il laisse une trace datée", () => {
     const scoped = withScope(exam(), ["a", "b", "a", ""], NOW);
     expect(scopeIds(scoped)).toEqual(["a", "b"]);
     expect(scoped.scope?.updatedAt).toBe(NOW.toISOString());
-    const cleared = withScope(scoped, [], NOW);
-    expect("scope" in cleared).toBe(false);
+    const later = new Date(NOW.getTime() + 60_000);
+    const cleared = withScope(scoped, [], later);
+    expect(cleared.scope).toEqual({ chapterIds: [], updatedAt: later.toISOString() });
     expect(scopeIds(cleared)).toEqual([]);
+    // Jamais de programme : aucun champ ajouté.
+    expect("scope" in withScope(exam(), [], NOW)).toBe(false);
+  });
+
+  it("un programme vidé sur un appareil ne revient pas à la synchronisation", () => {
+    const before = withScope(exam(), ["a"], new Date("2026-09-24T08:00:00.000Z"));
+    const cleared = normalizeWorkItem(JSON.parse(JSON.stringify(withScope(before, [], new Date("2026-09-24T09:00:00.000Z")))));
+    expect(cleared.scope?.chapterIds).toEqual([]);
+    const merged = mergeList("workItems", [before], [cleared]) as WorkItem[];
+    expect(scopeIds(merged[0])).toEqual([]);
   });
 
   it("est borné", () => {

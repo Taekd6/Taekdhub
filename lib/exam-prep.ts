@@ -110,12 +110,15 @@ export function scopeIds(item: Pick<WorkItem, "scope">): string[] {
 /**
  * Nouveau programme — dédoublonné, borné, horodaté (l'horodatage départage
  * deux appareils qui l'ont modifié chacun de leur côté, voir
- * lib/sync/collections.ts). Un programme vide redevient `undefined`.
+ * lib/sync/collections.ts). Un programme VIDÉ reste présent, liste vide et
+ * horodaté : sans cette trace, la version d'un autre appareil qui l'avait
+ * encore l'emporterait à la synchronisation et le ferait revenir. Un travail
+ * qui n'a jamais eu de programme n'en reçoit pas.
  */
 export function withScope(item: WorkItem, chapterIds: string[], now: Date = new Date()): WorkItem {
   const ids = [...new Set(chapterIds.filter((id) => typeof id === "string" && id))].slice(0, EXAM_SCOPE_MAX);
   const next: WorkItem = { ...item };
-  if (ids.length === 0) delete next.scope;
+  if (ids.length === 0 && !item.scope) delete next.scope;
   else next.scope = { chapterIds: ids, updatedAt: now.toISOString() } satisfies WorkItemScope;
   return next;
 }

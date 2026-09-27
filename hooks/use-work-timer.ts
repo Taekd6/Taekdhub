@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isOrphan, parseMirror, type TimerMirror } from "@/lib/timer-recovery";
+import { addTombstone, isOrphan, parseMirror, parseTombstones, type TimerMirror } from "@/lib/timer-recovery";
 
 /**
  * État persisté d'une séance chronométrée (le Chrono, components/timer.tsx).
@@ -144,11 +144,11 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
     tabId.current = readTabId(storageKey);
     const restored = readSnapshot<TContext>(storageKey);
     const mirror = parseMirror<WorkTimerSnapshot<TContext>>(safeGet(local, mirrorKey));
-    const tombstone = safeGet(local, tombstoneKey);
+    const tombstones = parseTombstones(safeGet(local, tombstoneKey));
     // Pendant que cet onglet était ailleurs dans l'application (chrono non
     // monté, donc sans battement), un autre onglet a pu reprendre ce chrono
     // ou le terminer : alors il n'est plus à nous.
-    const takenElsewhere = restored && ((mirror && mirror.tabId !== tabId.current && mirror.snapshot.startedAt === restored.startedAt) || tombstone === restored.startedAt);
+    const takenElsewhere = restored && ((mirror && mirror.tabId !== tabId.current && mirror.snapshot.startedAt === restored.startedAt) || tombstones.includes(restored.startedAt));
     if (restored && takenElsewhere) {
       safeRemove(session, storageKey);
     } else if (restored) {
@@ -157,7 +157,7 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
       setSeconds(computeElapsedSeconds(restored));
       return;
     }
-    if (isOrphan(mirror, tabId.current, tombstone, new Date())) setOrphan(mirror!.snapshot);
+    if (isOrphan(mirror, tabId.current, tombstones, new Date())) setOrphan(mirror!.snapshot);
     // Restauration au montage uniquement : on ne veut pas ré-écraser une
     // séance en cours si la clé change en cours de vie du composant.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -177,6 +177,24 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
     };
     beat();
     const heartbeat = setInterval(beat, HEARTBEAT_MS);
+    // Retour arrière (page restaurée depuis le cache du navigateur) : les
+    // effets ne rejouent pas. Avant de rebattre, vérifier qu'un autre onglet
+    // n'a pas repris ou terminé CE chrono entre-temps — sinon le lâcher.
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      const mirror = parseMirror<WorkTimerSnapshot<TContext>>(safeGet(local, mirrorKey));
+      const takenElsewhere =
+        (mirror && mirror.tabId !== tabId.current && mirror.snapshot.startedAt === snapshot.startedAt) ||
+        parseTombstones(safeGet(local, tombstoneKey)).includes(snapshot.startedAt);
+      if (takenElsewhere) {
+        safeRemove(session, storageKey);
+        setSnapshot(null);
+        setSeconds(0);
+        return;
+      }
+      beat();
+    };
+    window.addEventListener("pageshow", onPageShow);
     // L'onglet se ferme : le battement s'arrête NET (heure zéro), pour qu'un
     // onglet rouvert aussitôt propose la reprise sans attendre trois minutes.
     // S'il revient (retour arrière), il retrouve son chrono en sessionStorage
@@ -190,16 +208,17 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
     return () => {
       clearInterval(heartbeat);
       window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
       if (tick) clearInterval(tick);
     };
-  }, [snapshot, storageKey, mirrorKey]);
+  }, [snapshot, storageKey, mirrorKey, tombstoneKey]);
 
   // Un autre onglet a repris CE chrono (ou l'a terminé) : celui-ci le lâche
   // aussitôt, pour qu'il ne puisse pas être enregistré deux fois.
   useEffect(() => {
     if (typeof window === "undefined" || !snapshot) return;
     function onStorage(event: StorageEvent) {
-      if (event.key === tombstoneKey && event.newValue === snapshot!.startedAt) {
+      if (event.key === tombstoneKey && parseTombstones(event.newValue).includes(snapshot!.startedAt)) {
         release();
         return;
       }
@@ -236,6 +255,10 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
   }, []);
 
   const start = useCallback(() => {
+    // Démarrer une NOUVELLE séance alors qu'un chrono orphelin attend : c'est
+    // un choix (le bandeau est affiché au-dessus) — on le consigne comme
+    // « Ignorer », pour que l'orphelin ne revienne pas sous un autre onglet.
+    if (orphan) safeSet(local, tombstoneKey, addTombstone(safeGet(local, tombstoneKey), orphan.startedAt));
     setOrphan(null);
     setSnapshot((prev) => {
       const now = new Date().toISOString();
@@ -243,7 +266,7 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
       if (prev.runningSince) return prev;
       return { ...prev, runningSince: now };
     });
-  }, [context]);
+  }, [context, orphan, tombstoneKey]);
 
   const pause = useCallback(() => {
     setSnapshot((prev) => {
@@ -263,9 +286,9 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
       if (snapshot) {
         const finalSeconds = computeElapsedSeconds(snapshot);
         // Déjà enregistrée par un autre onglet (pierre tombale) : ne rien doubler.
-        const alreadySaved = safeGet(local, tombstoneKey) === snapshot.startedAt;
+        const alreadySaved = parseTombstones(safeGet(local, tombstoneKey)).includes(snapshot.startedAt);
         if (finalSeconds > 0 && onComplete && !alreadySaved) onComplete({ startedAt: snapshot.startedAt, seconds: finalSeconds });
-        safeSet(local, tombstoneKey, snapshot.startedAt);
+        safeSet(local, tombstoneKey, addTombstone(safeGet(local, tombstoneKey), snapshot.startedAt));
       }
       // Nettoyage immédiat et synchrone : on ne peut pas compter sur l'effet
       // de persistance pour réagir à `snapshot === null`, car l'appelant
@@ -290,7 +313,7 @@ export function useWorkTimer<TContext>(storageKey: string, initialContext: TCont
   }, [orphan]);
 
   const dismissOrphan = useCallback(() => {
-    if (orphan) safeSet(local, tombstoneKey, orphan.startedAt);
+    if (orphan) safeSet(local, tombstoneKey, addTombstone(safeGet(local, tombstoneKey), orphan.startedAt));
     safeRemove(local, mirrorKey);
     setOrphan(null);
   }, [orphan, mirrorKey, tombstoneKey]);

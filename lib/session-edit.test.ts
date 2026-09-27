@@ -55,6 +55,9 @@ describe("editSession — corriger un chrono oublié", () => {
     expect(editSession(session(), { ...base, minutes: SESSION_MAX_MINUTES + 1 }, NOW)).toEqual({ error: "durée" });
     expect(editSession(session(), { ...base, minutes: 30, startLocal: "n'importe quoi" }, NOW)).toEqual({ error: "début" });
     expect(editSession(session(), { ...base, minutes: 30, startLocal: "2026-09-25T08:00" }, NOW)).toEqual({ error: "futur" });
+    // Commencée il y a 10 min, mais 3 h : la fin serait dans le futur.
+    expect(editSession(session(), { ...base, minutes: 180, startLocal: "2026-09-24T19:50" }, NOW)).toEqual({ error: "futur" });
+    expect("session" in editSession(session(), { ...base, minutes: 10, startLocal: "2026-09-24T19:50" }, NOW)).toBe(true);
   });
 
   it("une note vide redevient null", () => {

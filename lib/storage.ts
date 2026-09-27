@@ -619,8 +619,11 @@ export interface WorkItemScope {
 function normalizeWorkItemScope(raw: unknown): WorkItemScope | null {
   if (!isRecord(raw) || !Array.isArray(raw.chapterIds)) return null;
   const chapterIds = [...new Set(raw.chapterIds.filter((id): id is string => typeof id === "string" && id.length > 0))];
-  if (chapterIds.length === 0) return null;
-  return { chapterIds, updatedAt: isoDate(raw.updatedAt) ?? new Date(0).toISOString() };
+  const updatedAt = isoDate(raw.updatedAt);
+  // Un programme VIDÉ (liste vide, horodatée) est une trace voulue — voir
+  // lib/exam-prep.ts#withScope. Vide et sans date : rien à garder.
+  if (chapterIds.length === 0 && !updatedAt) return null;
+  return { chapterIds, updatedAt: updatedAt ?? new Date(0).toISOString() };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
