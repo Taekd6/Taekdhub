@@ -1,5 +1,6 @@
 import { atRisk } from "@/lib/chapter-memory";
 import { computeWorkItemPriority } from "@/lib/deadlines";
+import { buildExamPrep, isExamItem } from "@/lib/exam-prep";
 import { subjectInSentence } from "@/lib/error-log";
 import { eveningPlan } from "@/lib/evening-minimums";
 import { isPending } from "@/lib/grades";
@@ -113,6 +114,23 @@ function itemTitle(item: WorkItem): string {
   return item.title.toLowerCase().includes(kind.toLowerCase()) ? item.title : `${kind} · ${item.title}`;
 }
 
+/**
+ * Une épreuve dont le programme est renseigné (lib/exam-prep.ts) : ce que
+ * la mémoire en gardera le jour J, et un lien vers « Prêt pour le DS ? »
+ * (l'aperçu de la matière). `null` sans programme ni matière.
+ */
+function examLine(item: WorkItem, input: BriefingInput): { detail: string; href: string } | null {
+  if (!isExamItem(item) || !item.subject) return null;
+  const prep = buildExamPrep(item, { chapterMemory: input.chapterMemory, errors: input.errors, reviewItems: input.reviewItems, sessions: input.sessions }, input.now);
+  if (!prep || prep.chapters.length === 0) return null;
+  const count = prep.chapters.length;
+  const detail =
+    prep.toConsolidate === 0
+      ? `Programme tenu jusqu'au jour J (${count} chapitre${count > 1 ? "s" : ""})`
+      : `${prep.toConsolidate} chapitre${prep.toConsolidate > 1 ? "s" : ""} sur ${count} sous 90 % le jour J`;
+  return { detail, href: `/preparation?subject=${encodeURIComponent(item.subject)}` };
+}
+
 /* ── 2. Ce qui presse ─────────────────────────────────────────────── */
 
 function urgentItems(input: BriefingInput): BriefingItem[] {
@@ -127,6 +145,7 @@ function urgentItems(input: BriefingInput): BriefingItem[] {
     const priority = computeWorkItemPriority(item, sessions, preferences, now);
     const href = `/timer?travail=${encodeURIComponent(item.id)}`;
     const left = `${formatMinutesSpan(remaining)} restantes`;
+    const exam = days >= 0 && days <= 3 ? examLine(item, input) : null;
 
     if (days < 0) {
       scored.push({ rank: 0, item: { id: `retard:${item.id}`, tone: "urgent", subject: item.subject, title: `En retard : ${itemTitle(item)}`, detail: `Prévu pour ${dayName(item.dueDate, today)} · ${left}`, href } });
@@ -136,9 +155,9 @@ function urgentItems(input: BriefingInput): BriefingItem[] {
         item: { id: `infaisable:${item.id}`, tone: "urgent", subject: item.subject, title: `Ne tient plus : ${itemTitle(item)}`, detail: `Il manque ${formatMinutesSpan(priority.feasibility.shortfallMinutes)} d'ici ${dayName(item.dueDate, today)}`, href: "/echeances" },
       });
     } else if (days <= 1) {
-      scored.push({ rank: 2 + days, item: { id: `bientôt:${item.id}`, tone: "urgent", subject: item.subject, title: `Pour ${days === 0 ? "aujourd'hui" : "demain"} : ${itemTitle(item)}`, detail: left, href } });
+      scored.push({ rank: 2 + days, item: { id: `bientôt:${item.id}`, tone: "urgent", subject: item.subject, title: `Pour ${days === 0 ? "aujourd'hui" : "demain"} : ${itemTitle(item)}`, detail: exam ? `${exam.detail} · ${left}` : left, href: exam?.href ?? href } });
     } else if ((item.kind === "ds" || item.kind === "concours") && days <= 3) {
-      scored.push({ rank: 4 + days, item: { id: `évaluation:${item.id}`, tone: "urgent", subject: item.subject, title: `${itemTitle(item)} dans ${days} j`, detail: left, href } });
+      scored.push({ rank: 4 + days, item: { id: `évaluation:${item.id}`, tone: "urgent", subject: item.subject, title: `${itemTitle(item)} dans ${days} j`, detail: exam ? `${exam.detail} · ${left}` : left, href: exam?.href ?? href } });
     }
   }
   return scored

@@ -129,6 +129,14 @@ describe("ce qui presse", () => {
     expect(briefing.urgent[0].title).toBe("DS 2 dans 3 j");
   });
 
+  it("un DS avec son programme dit ce que la mémoire en gardera, et mène à « Prêt pour le DS ? »", () => {
+    const chapter = createChapter({ subject: "Physique", title: "Électrostatique", learnedAt: "2026-09-01" }, NOW, "elec");
+    const ds = workItem({ id: "ds", title: "DS 2", kind: "ds", subject: "Physique", dueDate: "2026-09-27", scope: { chapterIds: ["elec"], updatedAt: NOW.toISOString() } });
+    const [line] = buildBriefing(input({ workItems: [ds], chapterMemory: [chapter] })).urgent;
+    expect(line.detail).toMatch(/^1 chapitre sur 1 sous 90 % le jour J · /);
+    expect(line.href).toBe("/preparation?subject=Physique");
+  });
+
   it("un travail déjà fait en temps n'est pas urgent", () => {
     const briefing = buildBriefing(input({ workItems: [workItem({ dueDate: "2026-09-25", status: "terminé" })] }));
     expect(briefing.urgent).toEqual([]);
