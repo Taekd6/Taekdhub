@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Check, Trash2 } from "lucide-react";
+import { ArrowRight, Check, GraduationCap, Trash2 } from "lucide-react";
 import { IntentionEditor } from "@/components/work/intention-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Meter } from "@/components/ui/progress";
 import { DateBadge } from "@/components/ui/list-card";
 import { cn } from "@/lib/cn";
 import { explainPriority, type WorkItemPriority } from "@/lib/deadlines";
+import { isExamItem, scopeIds } from "@/lib/exam-prep";
 import { progressPercent, WORK_ITEM_KIND_META } from "@/lib/work-items";
 import { formatSpan } from "@/lib/utils";
 import type { WorkSession } from "@/lib/supabase/types";
@@ -42,6 +43,7 @@ export function WorkItemRow({
   onAbandon,
   onPostpone,
   onPlan,
+  onPrepare,
 }: {
   priority: WorkItemPriority;
   /** Rang dans sa liste : décale le dégradé de la pastille datée (`--dl-1..3`). */
@@ -52,6 +54,8 @@ export function WorkItemRow({
   onPostpone: (id: string) => void;
   /** Plan « si… alors… » — voir lib/intentions.ts. */
   onPlan?: (id: string, plan: WorkItemPlan | null) => void;
+  /** DS, concours blanc : ouvre « Prêt pour le DS ? » (components/exam/exam-prep-panel.tsx). */
+  onPrepare?: (id: string) => void;
 }) {
   const { item, feasibility, remainingMinutes, overdue } = priority;
   const done = progressPercent(item, sessions);
@@ -61,6 +65,7 @@ export function WorkItemRow({
   // propres feuilles.
   const workHref = `/timer?travail=${item.id}`;
   const due = item.dueDate ? new Date(`${item.dueDate}T00:00:00`) : null;
+  const scoped = scopeIds(item).length;
 
   return (
     <li className="flex gap-3 py-4 sm:gap-4">
@@ -133,6 +138,11 @@ export function WorkItemRow({
               >
                 Travailler <ArrowRight size={14} strokeWidth={2.6} aria-hidden />
               </Link>
+              {onPrepare && isExamItem(item) && item.dueDate && (
+                <Button size="sm" variant="ghost" onClick={() => onPrepare(item.id)} aria-label={`Préparer « ${item.title} » : programme et état de la mémoire`}>
+                  <GraduationCap size={14} aria-hidden /> {scoped > 0 ? `Programme · ${scoped}` : "Programme"}
+                </Button>
+              )}
               <Button size="sm" variant="ghost" onClick={() => onPostpone(item.id)} aria-label={`Reporter « ${item.title} »`}>
                 Reporter
               </Button>

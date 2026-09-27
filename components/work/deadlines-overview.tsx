@@ -13,6 +13,8 @@ import { Notice, Skeleton } from "@/components/ui/state";
 import { DayPlan } from "@/components/work/day-plan";
 import { WorkItemForm } from "@/components/work/work-item-form";
 import { WorkItemRow } from "@/components/work/work-item-row";
+import { ExamPrepPanel } from "@/components/exam/exam-prep-panel";
+import { Dialog } from "@/components/ui/dialog";
 import { setWorkItemPlan } from "@/lib/intentions";
 import type { WorkItemPlan } from "@/lib/storage";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -39,7 +41,11 @@ import type { WorkItem } from "@/lib/storage";
  * le planning n'est jamais stocké, donc jamais périmé.
  */
 export function DeadlinesOverview() {
-  const { workItems, sessions, preferences, saveWorkItems, ready } = usePrepahubData();
+  const { workItems, sessions, preferences, saveWorkItems, ready, chapterMemory, saveChapterMemory, errors, reviewItems } = usePrepahubData();
+  // Épreuve dont « Prêt pour le DS ? » est ouvert — relue dans `workItems`
+  // à chaque rendu, pour refléter le programme tout juste enregistré.
+  const [preparingId, setPreparingId] = useState<string | null>(null);
+  const preparing = preparingId ? (workItems.find((item) => item.id === preparingId) ?? null) : null;
   const [notice, setNotice] = useState<{ tone: "info" | "warning"; text: string } | null>(null);
 
   const plan = useMemo(() => buildWeeklyPlan(workItems, sessions, preferences, new Date()), [workItems, sessions, preferences]);
@@ -242,6 +248,7 @@ export function DeadlinesOverview() {
                       onAbandon={abandon}
                       onPostpone={postpone}
                       onPlan={savePlan}
+                      onPrepare={setPreparingId}
                     />
                   ))}
                 </ul>
@@ -257,6 +264,29 @@ export function DeadlinesOverview() {
         )}
       </div>
 
+      <Dialog
+        open={preparing !== null}
+        title={preparing ? preparing.title : ""}
+        onClose={() => setPreparingId(null)}
+        footer={
+          <Button variant="secondary" className="w-full" onClick={() => setPreparingId(null)}>
+            Fermer
+          </Button>
+        }
+      >
+        {preparing && (
+          <ExamPrepPanel
+            item={preparing}
+            chapterMemory={chapterMemory}
+            errors={errors}
+            reviewItems={reviewItems}
+            sessions={sessions}
+            onSaveItem={(updated) => saveWorkItems(workItems.map((item) => (item.id === updated.id ? updated : item)))}
+            onSaveChapters={saveChapterMemory}
+            showTitle={false}
+          />
+        )}
+      </Dialog>
     </Split>
   );
 }

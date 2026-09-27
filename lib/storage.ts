@@ -601,6 +601,26 @@ export interface WorkItem {
   postponements: WorkItemPostponement[];
   /** Plan « si… alors… », ou `null` — absent de tout travail antérieur à ce champ. */
   plan?: WorkItemPlan | null;
+  /**
+   * Programme d'une épreuve (DS, concours blanc) : les chapitres de la
+   * MÉMOIRE (`ChapterMemory.id`) sur lesquels elle porte — voir
+   * lib/exam-prep.ts. Absent quand aucun chapitre n'est rattaché. Distinct
+   * de `chapterIds`, qui renvoie à l'ancienne banque et n'est plus lu.
+   */
+  scope?: WorkItemScope;
+}
+
+export interface WorkItemScope {
+  chapterIds: string[];
+  /** Dernière modification du programme — départage deux appareils à la synchronisation. */
+  updatedAt: string;
+}
+
+function normalizeWorkItemScope(raw: unknown): WorkItemScope | null {
+  if (!isRecord(raw) || !Array.isArray(raw.chapterIds)) return null;
+  const chapterIds = [...new Set(raw.chapterIds.filter((id): id is string => typeof id === "string" && id.length > 0))];
+  if (chapterIds.length === 0) return null;
+  return { chapterIds, updatedAt: isoDate(raw.updatedAt) ?? new Date(0).toISOString() };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -773,6 +793,7 @@ export function normalizeWorkItem(raw: unknown): WorkItem {
   const status = (WORK_ITEM_STATUSES as string[]).includes(item.status as string)
     ? (item.status as WorkItemStatus)
     : "à faire";
+  const scope = normalizeWorkItemScope(item.scope);
   return {
     id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
     title: typeof item.title === "string" && item.title.trim() ? item.title.trim() : "Travail sans titre",
@@ -790,6 +811,9 @@ export function normalizeWorkItem(raw: unknown): WorkItem {
     important: item.important === true,
     notBeforeDate: calendarDay(item.notBeforeDate),
     chapterIds: Array.isArray(item.chapterIds) ? item.chapterIds.filter((id): id is string => typeof id === "string") : [],
+    // Absent plutôt que `null` : un travail sans programme garde exactement
+    // la forme qu'il avait avant ce champ.
+    ...(scope ? { scope } : {}),
     createdAt,
     // Une date d'achèvement n'a de sens que sur un travail terminé — un
     // `completedAt` traînant sur un travail rouvert fausserait le bilan

@@ -25,6 +25,7 @@ import { ReviewCapture, ReviewList } from "@/components/review/review-capture";
 import { DueToday } from "@/components/review/due-today";
 /* ── Mémoire des chapitres (FSRS) ── */
 import { SubjectChapters } from "@/components/memory/subject-chapters";
+import { SubjectExamPrep } from "@/components/exam/subject-exam-prep";
 /* ── fin ── */
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { buildSubjectHub, hubSubjects, HUB_RECENT_DAYS, HUB_WINDOW_DAYS, type HubSubjectModel } from "@/lib/hub";
@@ -80,7 +81,7 @@ import type { Subject, WorkSession } from "@/lib/supabase/types";
  * aucune statistique n'est née ici.
  */
 export function SubjectHub() {
-  const { sessions, workItems, grades, reviewItems, errors, preferences, ready, saveReviewItems, chapterMemory, saveChapterMemory } = usePrepahubData();
+  const { sessions, workItems, grades, reviewItems, errors, preferences, ready, saveReviewItems, chapterMemory, saveChapterMemory, saveWorkItems } = usePrepahubData();
   const searchParams = useSearchParams();
   const wanted = searchParams.get("subject");
   const active = wanted && (allSubjects as string[]).includes(wanted) ? (wanted as Subject) : null;
@@ -139,7 +140,21 @@ export function SubjectHub() {
           {
             id: "apercu",
             label: "Aperçu",
-            content: <Overview subject={active} model={activeModel} sessions={sessions} />,
+            content: (
+              <div className="space-y-5">
+                <SubjectExamPrep
+                  subject={active}
+                  workItems={workItems}
+                  chapterMemory={chapterMemory}
+                  errors={errors}
+                  reviewItems={reviewItems}
+                  sessions={sessions}
+                  saveWorkItems={saveWorkItems}
+                  saveChapterMemory={saveChapterMemory}
+                />
+                <Overview subject={active} model={activeModel} sessions={sessions} />
+              </div>
+            ),
           },
           {
             id: "revoir",

@@ -207,6 +207,39 @@ describe("risque d'oubli", () => {
   });
 });
 
+describe("programme d'une épreuve proche (lib/exam-prep.ts)", () => {
+  // Appris le 21 : R ≈ 88 % aujourd'hui (pas encore « menacé »), mais sous
+  // 90 % — et bien plus bas — le jour du DS.
+  const series = () => chapter("Mathématiques", "Séries", "2026-09-21", "series");
+  const ds = (scope: string[], dueDate = "2026-09-28") =>
+    workItem({ id: "ds", kind: "ds", title: "DS 4", dueDate, estimatedMinutes: 30, ...(scope.length ? { scope: { chapterIds: scope, updatedAt: "2026-09-24T08:00:00.000Z" } } : {}) });
+
+  it("un chapitre au programme devient un rappel même s'il n'est pas encore menacé, avec sa raison chiffrée", () => {
+    const withoutScope = rankCandidates(input({ chapterMemory: [series()], workItems: [ds([])] }));
+    expect(withoutScope.some((candidate) => candidate.kind === "rappel")).toBe(false);
+
+    const ranked = rankCandidates(input({ chapterMemory: [series()], workItems: [ds(["series"])] }));
+    const recall = ranked.find((candidate) => candidate.key === "rappel:series")!;
+    const term = recall.terms.find((entry) => entry.id === "au-programme")!;
+    expect(term.points).toBeGreaterThan(0);
+    expect(term.reason).toMatch(/^Au programme du DS « DS 4 » dans 4 j : \d+ % le jour J sans rappel, \d+ % avec un rappel aujourd'hui$/);
+    expect(recall.terms.some((entry) => entry.id === "oubli")).toBe(false);
+    // Le score reste la somme exacte des termes affichés.
+    expect(recall.score).toBe(recall.terms.reduce((sum, entry) => sum + entry.points, 0));
+  });
+
+  it("un chapitre au programme déjà révisé aujourd'hui n'est pas reproposé", () => {
+    const reviewed = rateChapter(series(), "good", TODAY);
+    const ranked = rankCandidates(input({ chapterMemory: [reviewed], workItems: [ds(["series"])] }));
+    expect(ranked.some((candidate) => candidate.key === "rappel:series")).toBe(false);
+  });
+
+  it("une épreuve au-delà d'une semaine ne pèse pas encore", () => {
+    const ranked = rankCandidates(input({ chapterMemory: [series()], workItems: [ds(["series"], "2026-10-15")] }));
+    expect(ranked.some((candidate) => candidate.key === "rappel:series")).toBe(false);
+  });
+});
+
 describe("erreurs", () => {
   it("une seule erreur ne déclenche pas de reprise", () => {
     expect(rankCandidates(input({ errors: [error("Physique", "méthode", "2026-09-22")] }))).toEqual([]);
