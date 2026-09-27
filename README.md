@@ -26,11 +26,11 @@ L'historique (`prepahub:next-moves`, `lib/next-move/history.ts`) garde ce qui a 
 
 ## Le point — l'écran d'ouverture
 
-À la première ouverture de la journée (et après 4 h d'absence), l'accueil s'ouvre sur **Le point** (, ) : une salutation, une phrase de résumé, le prochain mouvement de Next Move avec « Commencer », puis trois sections d'au plus trois lignes chacune — **Ce qui presse** (retard, échéance du jour ou du lendemain, travail qui ne tient plus, DS dans ≤ 3 j), **Tu repousses** (travail reporté ≥ 2 fois, plan « si… alors… » manqué, matière proposée ≥ 3 fois sans suite, cartes en retard, objectif de la semaine qui décroche ; puis, à surveiller : chapitre qui s'efface, erreurs sans « bonne idée », note en attente) et **Aujourd'hui** (minimum du soir, plans du jour, cartes du jour). On y revient en touchant la date de l'accueil ; Réglages → À l'ouverture le désactive.
+À la première ouverture de la journée (et après 4 h d'absence), l'accueil s'ouvre sur **Le point** (`/point`, `lib/briefing.ts`) : une salutation, une phrase de résumé, le prochain mouvement de Next Move avec « Commencer », puis trois sections d'au plus trois lignes chacune — **Ce qui presse** (retard, échéance du jour ou du lendemain, travail qui ne tient plus, DS dans ≤ 3 j), **Tu repousses** (travail reporté ≥ 2 fois, plan « si… alors… » manqué, matière proposée ≥ 3 fois sans suite, cartes en retard, objectif de la semaine qui décroche ; puis, à surveiller : chapitre qui s'efface, erreurs sans « bonne idée », note en attente) et **Aujourd'hui** (minimum du soir, plans du jour, cartes du jour). On y revient en touchant la date de l'accueil ; Réglages → À l'ouverture le désactive.
 
 ## Temps par chapitre
 
-Au chrono, un chapitre de la mémoire peut être choisi (facultatif) : la séance porte alors . Mémoire affiche le temps passé par chapitre, et Next Move propose un rappel actif sur un chapitre travaillé cette semaine sans rappel depuis. Les anciennes séances se relisent sans changement.
+Au chrono, un chapitre de la mémoire peut être choisi (facultatif) : la séance porte alors `chapter_id`. Mémoire affiche le temps passé par chapitre, et Next Move propose un rappel actif sur un chapitre travaillé cette semaine sans rappel depuis. Les anciennes séances se relisent sans changement.
 
 ## Compte et synchronisation (Supabase)
 
