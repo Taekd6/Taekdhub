@@ -150,7 +150,7 @@ export function SubjectHub() {
           {
             id: "chapitres",
             label: "Chapitres",
-            content: <SubjectChapters subject={active} chapters={chapterMemory} saveChapters={saveChapterMemory} />,
+            content: <SubjectChapters subject={active} chapters={chapterMemory} saveChapters={saveChapterMemory} sessions={sessions} />,
           },
           /* ── fin ── */
           {

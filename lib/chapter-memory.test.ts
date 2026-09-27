@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  chapterTime,
   AT_RISK_THRESHOLD,
   atRisk,
   createChapter,
@@ -183,5 +184,33 @@ describe("normalizeChapterMemory — frontière de confiance", () => {
     const normalized = normalizeChapterMemory(JSON.parse(JSON.stringify(damaged)))!;
     expect(normalized.reviews).toEqual(reference.reviews);
     expect(normalized.card).toEqual(reference.card);
+  });
+});
+
+describe("temps passé par chapitre", () => {
+  const session = (chapterId: string | null, minutes: number, startedAt: string) => ({
+    id: `s-${startedAt}`,
+    subject: "Physique" as const,
+    exercise_id: null,
+    started_at: startedAt,
+    ended_at: null,
+    duration_seconds: minutes * 60,
+    note: null,
+    created_at: startedAt,
+    result: null,
+    hints_used: null,
+    work_item_id: null,
+    ...(chapterId ? { chapter_id: chapterId } : {}),
+  });
+
+  it("ne compte que les séances rattachées au chapitre, et distingue la semaine", () => {
+    const sessions = [
+      session("elec", 40, "2026-09-23T17:00:00"),
+      session("elec", 30, "2026-09-10T17:00:00"),
+      session("optique", 50, "2026-09-23T19:00:00"),
+      session(null, 90, "2026-09-24T17:00:00"),
+    ];
+    expect(chapterTime("elec", sessions, "2026-09-24")).toEqual({ totalMinutes: 70, recentMinutes: 40, lastWorkedDay: "2026-09-23" });
+    expect(chapterTime("inconnu", sessions, "2026-09-24")).toEqual({ totalMinutes: 0, recentMinutes: 0, lastWorkedDay: null });
   });
 });

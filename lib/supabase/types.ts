@@ -78,6 +78,14 @@ export interface WorkSession {
    * en base. Il est ignoré côté serveur, exactement comme `Preferences`.
    */
   work_item_id: string | null;
+  /**
+   * Chapitre de la mémoire (`ChapterMemory.id`, lib/storage.ts) sur lequel la
+   * séance a porté — FACULTATIF, choisi au chrono. Absent de toute séance
+   * antérieure à ce champ et de toute séance qui ne visait pas un chapitre :
+   * jamais deviné après coup. C'est ce qui permet de dire « 1 h 20 sur
+   * l'électrostatique cette semaine » au lieu de seulement « en physique ».
+   */
+  chapter_id?: string | null;
 }
 
 /** Résultat d'une tentative sur un exercice de l'ancienne banque — héritage, voir `WorkSession.result`. */

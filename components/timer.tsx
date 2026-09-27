@@ -39,6 +39,13 @@ interface TimerContext {
    * `WorkSession.work_item_id` à l'arrêt, et donc ce qui fait avancer un DM.
    */
   workItemId?: string | null;
+  /**
+   * Chapitre de la mémoire (`ChapterMemory.id`) sur lequel porte la séance,
+   * FACULTATIF — devient `WorkSession.chapter_id` à l'arrêt. Remis à zéro
+   * quand la matière change : un chapitre de maths n'a rien à faire sur une
+   * séance de physique.
+   */
+  chapterId?: string | null;
 }
 
 /**
@@ -77,7 +84,7 @@ export function Timer() {
   // `ready` est indispensable ici comme partout ailleurs : le chrono restaure
   // une séance persistée dès son premier effet, donc « Terminer » est
   // cliquable avant même que les données locales aient fini d'être lues.
-  const { sessions, workItems, preferences, saveSessions, saveWorkItems, ready, nextMoves } = usePrepahubData();
+  const { sessions, workItems, preferences, saveSessions, saveWorkItems, ready, nextMoves, chapterMemory } = usePrepahubData();
   const { seconds, running, context, setContext, start, toggle, stop } = useWorkTimer<TimerContext>(TIMER_STORAGE_KEY, {
     subject: "Mathématiques",
     workItemId: null,
@@ -92,9 +99,12 @@ export function Timer() {
   const [requestedItemId, setRequestedItemId] = useState<string | null>(null);
   // `?matiere=` — venir d'une recommandation Next Move (components/next-move/next-move-card.tsx).
   const [requestedSubject, setRequestedSubject] = useState<Subject | null>(null);
+  // `?chapitre=` — un rappel actif proposé par Next Move porte sur un chapitre précis.
+  const [requestedChapterId, setRequestedChapterId] = useState<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setRequestedItemId(params.get("travail"));
+    setRequestedChapterId(params.get("chapitre"));
     const wanted = params.get("matiere");
     if (wanted && (subjects as string[]).includes(wanted)) setRequestedSubject(wanted as Subject);
   }, []);
@@ -122,10 +132,14 @@ export function Timer() {
   /* Même règle que `?travail=` : jamais pendant qu'un chrono tourne, et un travail demandé l'emporte. */
   useEffect(() => {
     if (!ready || running || requestedItemId || !requestedSubject) return;
-    if (context.subject === requestedSubject && !context.workItemId) return;
-    setContext({ subject: requestedSubject, workItemId: null });
+    // Seul un chapitre de CETTE matière, encore suivi, est retenu.
+    const chapterId = chapterMemory.some((chapter) => chapter.id === requestedChapterId && chapter.subject === requestedSubject && !chapter.archived)
+      ? requestedChapterId
+      : null;
+    if (context.subject === requestedSubject && !context.workItemId && (context.chapterId ?? null) === chapterId) return;
+    setContext({ subject: requestedSubject, workItemId: null, chapterId });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, running, requestedItemId, requestedSubject]);
+  }, [ready, running, requestedItemId, requestedSubject, requestedChapterId]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -159,6 +173,7 @@ export function Timer() {
         result: null,
         hints_used: null,
         work_item_id: context.workItemId ?? null,
+        ...(context.chapterId ? { chapter_id: context.chapterId } : {}),
       };
       saveSessions([session, ...sessions]);
       /*
@@ -185,6 +200,7 @@ export function Timer() {
   const daySeconds = todaySeconds(sessions) + seconds;
   const dayPercent = Math.min(100, (daySeconds / goalSeconds) * 100);
   const subjectLocked = running || selectedItem?.subject != null;
+  const subjectChapters = chapterMemory.filter((chapter) => chapter.subject === context.subject && !chapter.archived);
   // La recommandation commencée depuis l'accueil, si elle porte sur la matière du chrono : un rappel de ce qu'on s'est dit.
   const move = activeMove(nextMoves, new Date());
   const moveHere = move && (move.subject === null || move.subject === context.subject) ? move : null;
@@ -208,7 +224,8 @@ export function Timer() {
             onChange={(event) => {
               const id = event.target.value;
               const target = openItems.find((item) => item.id === id);
-              setContext({ subject: target?.subject ?? context.subject, workItemId: id || null });
+              const subject = target?.subject ?? context.subject;
+              setContext({ subject, workItemId: id || null, chapterId: subject === context.subject ? (context.chapterId ?? null) : null });
             }}
             disabled={running}
             className="rounded-full text-center font-semibold"
@@ -242,7 +259,7 @@ export function Timer() {
               aria-checked={active}
               aria-label={subject}
               disabled={subjectLocked && !active}
-              onClick={() => setContext({ subject, workItemId: context.workItemId ?? null })}
+              onClick={() => setContext({ subject, workItemId: context.workItemId ?? null, chapterId: subject === context.subject ? (context.chapterId ?? null) : null })}
               className={cn(
                 "press min-h-11 shrink-0 rounded-full px-4 text-sm font-semibold lg:min-h-10",
                 // La matière choisie en pastille à DÉGRADÉ de marque, les
@@ -256,6 +273,27 @@ export function Timer() {
           );
         })}
       </div>
+
+      {/* CHAPITRE — facultatif, seulement si la matière a des chapitres suivis
+          (Mémoire). Le temps devient alors mesurable chapitre par chapitre. */}
+      {subjectChapters.length > 0 && (
+        <label className="mx-auto block w-full max-w-[24rem]">
+          <span className="sr-only">Chapitre</span>
+          <Select
+            value={context.chapterId ?? ""}
+            onChange={(event) => setContext({ ...context, chapterId: event.target.value || null })}
+            disabled={running}
+            className="rounded-full text-center font-semibold"
+          >
+            <option value="">Chapitre — aucun en particulier</option>
+            {subjectChapters.map((chapter) => (
+              <option key={chapter.id} value={chapter.id}>
+                {chapter.title}
+              </option>
+            ))}
+          </Select>
+        </label>
+      )}
     </div>
   );
 

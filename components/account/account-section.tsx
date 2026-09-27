@@ -112,6 +112,26 @@ export function AccountSection() {
     setBusy(false);
   }
 
+  async function forgotPassword() {
+    if (!email.trim()) {
+      setMessage({ tone: "danger", text: "Indique d'abord ton e-mail." });
+      return;
+    }
+    setBusy(true);
+    const error = await account.sendPasswordReset(email);
+    setMessage(error ? { tone: "danger", text: error } : { tone: "info", text: `Si un compte existe pour ${email.trim()}, un lien pour choisir un nouveau mot de passe vient d'y être envoyé.` });
+    setBusy(false);
+  }
+
+  async function choosePassword(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    const error = await account.updatePassword(password);
+    setPassword("");
+    setMessage(error ? { tone: "danger", text: error } : { tone: "info", text: "Nouveau mot de passe enregistré." });
+    setBusy(false);
+  }
+
   async function signOut(wipe: boolean) {
     setBusy(true);
     const error = await account.signOut({ wipe });
@@ -173,6 +193,11 @@ export function AccountSection() {
               >
                 {mode === "connexion" ? "Pas encore de compte ?" : "J'ai déjà un compte"}
               </Button>
+              {mode === "connexion" && (
+                <Button type="button" variant="link" size="sm" disabled={busy} onClick={() => void forgotPassword()}>
+                  Mot de passe oublié ?
+                </Button>
+              )}
             </div>
           </form>
         )}
@@ -188,6 +213,17 @@ export function AccountSection() {
       footer="Tes données sont enregistrées sur cet appareil ET dans ton compte. Hors ligne, TaekdHub continue de marcher et envoie tes modifications au retour du réseau."
     >
       <Row label={<span className="inline-flex items-center gap-2"><Dot status="à-jour" /> Connecté</span>} hint={user.email ?? undefined} />
+      {account.recovery && (
+        <form onSubmit={choosePassword} className="space-y-3 py-4 pr-4 sm:pr-5" aria-label="Choisir un nouveau mot de passe">
+          <label className="block">
+            <span className="t-label mb-1 block">Nouveau mot de passe</span>
+            <Input type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} />
+          </label>
+          <Button type="submit" size="sm" disabled={busy}>
+            Enregistrer ce mot de passe
+          </Button>
+        </form>
+      )}
       <Row label={<span className="inline-flex items-center gap-2"><Dot status={status} /> {STATUS_LABEL[status]}</span>} hint={`Dernière synchronisation : ${formatSyncedAt(account.lastSyncedAt)}`}>
         <Button variant="secondary" size="sm" disabled={busy || status === "synchronisation"} onClick={() => void account.syncNow()}>
           Synchroniser

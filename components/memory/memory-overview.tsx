@@ -33,7 +33,7 @@ const shortDate = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "sho
  * UN SEUL `usePrepahubData()` pour l'écran, passé en props.
  */
 export function MemoryOverview() {
-  const { chapterMemory, saveChapterMemory, ready } = usePrepahubData();
+  const { chapterMemory, saveChapterMemory, ready, sessions } = usePrepahubData();
   const today = dayKey(new Date());
   const active = useMemo(() => chapterMemory.filter((chapter) => !chapter.archived), [chapterMemory]);
   const [picked, setPicked] = useState<string | null>(null);
@@ -98,7 +98,7 @@ export function MemoryOverview() {
       )}
 
       <Section variant="panel" title="Tous les chapitres" description="Le plus menacé d'abord · touche un titre pour sa courbe.">
-        <ChapterList chapters={chapterMemory} saveChapters={saveChapterMemory} selectedId={selected?.id ?? null} onSelect={setPicked} />
+        <ChapterList chapters={chapterMemory} saveChapters={saveChapterMemory} selectedId={selected?.id ?? null} onSelect={setPicked} sessions={sessions} />
       </Section>
 
       <WhyMemoryWorks />
