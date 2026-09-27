@@ -139,7 +139,6 @@ describe("variables CSS d'une palette", () => {
 
 describe("resolvePaletteId — autonome, recopiée dans le script anti-flash", () => {
   it("fonctionne une fois sérialisée puis réévaluée hors module (comme dans app/layout.tsx)", () => {
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval
     const revived = new Function(`return (${resolvePaletteId.toString()})`)() as typeof resolvePaletteId;
     expect(revived({ palette: "neon" })).toBe("neon");
     expect(revived({ accent: "#ff375f" })).toBe("sunset");

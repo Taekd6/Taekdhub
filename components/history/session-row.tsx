@@ -1,5 +1,6 @@
 "use client";
 
+import { Pencil } from "lucide-react";
 import { SubjectAvatar } from "@/components/subject-avatar";
 import { cn } from "@/lib/cn";
 import { formatSpan } from "@/lib/utils";
@@ -34,12 +35,15 @@ export function SessionRow({
   dateInHeader = false,
   /** Dernière séance du jour : le fil s'arrête à sa pastille. */
   last = false,
+  onEdit,
 }: {
   session: WorkSession;
   /** Titre du travail planifié lié (`session.work_item_id`), s'il existe encore. */
   workItemTitle?: string | null;
   dateInHeader?: boolean;
   last?: boolean;
+  /** Ouvre la correction de la séance (components/history/session-editor.tsx). */
+  onEdit?: (id: string) => void;
 }) {
   const when = (dateInHeader ? timeFormatter : dateFormatter).format(new Date(session.started_at));
   const note = session.note?.trim() || null;
@@ -64,6 +68,17 @@ export function SessionRow({
         </p>
       </div>
       <p className="tabular shrink-0 whitespace-nowrap text-right text-[0.9375rem] font-black text-ink">{formatSpan(session.duration_seconds)}</p>
+      {onEdit && (
+        <button
+          type="button"
+          onClick={() => onEdit(session.id)}
+          aria-label={`Corriger la séance « ${title} » de ${formatSpan(session.duration_seconds)}`}
+          title="Corriger ou supprimer"
+          className="press -mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-subtle hover:bg-inset hover:text-ink max-lg:h-11 max-lg:w-11"
+        >
+          <Pencil size={15} aria-hidden />
+        </button>
+      )}
     </li>
   );
 }

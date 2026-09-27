@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 import { Group, Row } from "@/components/ui/grouped";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { useAccount } from "@/components/account/account-provider";
-import { exportBackup, restoreBackup, validateBackupPayload, type BackupPayload } from "@/lib/storage";
+import { exportBackup, localData, restoreBackup, validateBackupPayload, type BackupPayload } from "@/lib/storage";
 
 export function DataBackup() {
   const { refresh } = usePrepahubData();
@@ -69,6 +69,11 @@ export function DataBackup() {
      * (`exercises`, `chapters`) s'importe normalement : ces deux champs sont
      * ignorés, la banque ayant été retirée de l'application.
      */
+    // FILET : l'état actuel de l'appareil part d'abord dans un fichier. Un
+    // mauvais fichier choisi ne coûte plus l'année — il suffit de
+    // restaurer « avant-restauration ».
+    const hadData = localData.sessions().length + localData.workItems().length + localData.grades().length + localData.chapterMemory().length + localData.reviewItems().length + localData.errors().length > 0;
+    if (hadData) exportBackup("avant-restauration");
     const outcome = restoreBackup(pendingImport);
     setPendingImport(null);
     // Dans tous les cas : l'état React doit refléter le disque, pas
@@ -78,7 +83,7 @@ export function DataBackup() {
 
     setFailed(!outcome.ok);
     if (outcome.ok) {
-      setMessage("Sauvegarde restaurée. Recharge la page.");
+      setMessage(hadData ? "Sauvegarde restaurée. Tes données d'avant ont été téléchargées (« avant-restauration »). Recharge la page." : "Sauvegarde restaurée. Recharge la page.");
       return;
     }
     if (outcome.intact) {
@@ -114,7 +119,7 @@ export function DataBackup() {
             {/* Une ligne, mais la vraie : sans compte, la sauvegarde est la
                 seule copie, et vider le navigateur efface tout. */}
             {connected ? (
-              <p>Ton compte garde déjà une copie ; ce fichier en est une de plus, hors ligne. L&apos;import remplace les données de cet appareil et de ton compte.</p>
+              <p>Ton compte garde déjà une copie ; ce fichier en est une de plus, hors ligne. L&apos;import remplace les données de cet appareil, puis part vers ton compte — fusionné avec ce qu&apos;un autre appareil y aurait envoyé entre-temps.</p>
             ) : (
               <p>Tout reste dans ce navigateur, sans compte : la sauvegarde est ta seule copie. L&apos;import remplace les données de cet appareil.</p>
             )}
@@ -163,7 +168,7 @@ export function DataBackup() {
                   </>
                 ) : null}
                 {pendingImport.exportedAt && ` (exporté le ${new Date(pendingImport.exportedAt).toLocaleDateString("fr-FR")})`}. Cette
-                action remplacera définitivement tes séances, échéances, notes, carnet « À revoir », carnet d&apos;erreurs, préférences et historique de progression actuels sur cet appareil.
+                action remplacera définitivement tes séances, échéances, notes, carnet « À revoir », carnet d&apos;erreurs, préférences et historique de progression actuels sur cet appareil. Une copie de tes données actuelles sera d&apos;abord téléchargée, par sécurité.
               </p>
             </div>
           </div>

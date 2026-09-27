@@ -207,6 +207,39 @@ describe("risque d'oubli", () => {
   });
 });
 
+describe("programme d'une épreuve proche (lib/exam-prep.ts)", () => {
+  // Appris le 21 : R ≈ 88 % aujourd'hui (pas encore « menacé »), mais sous
+  // 90 % — et bien plus bas — le jour du DS.
+  const series = () => chapter("Mathématiques", "Séries", "2026-09-21", "series");
+  const ds = (scope: string[], dueDate = "2026-09-28") =>
+    workItem({ id: "ds", kind: "ds", title: "DS 4", dueDate, estimatedMinutes: 30, ...(scope.length ? { scope: { chapterIds: scope, updatedAt: "2026-09-24T08:00:00.000Z" } } : {}) });
+
+  it("un chapitre au programme devient un rappel même s'il n'est pas encore menacé, avec sa raison chiffrée", () => {
+    const withoutScope = rankCandidates(input({ chapterMemory: [series()], workItems: [ds([])] }));
+    expect(withoutScope.some((candidate) => candidate.kind === "rappel")).toBe(false);
+
+    const ranked = rankCandidates(input({ chapterMemory: [series()], workItems: [ds(["series"])] }));
+    const recall = ranked.find((candidate) => candidate.key === "rappel:series")!;
+    const term = recall.terms.find((entry) => entry.id === "au-programme")!;
+    expect(term.points).toBeGreaterThan(0);
+    expect(term.reason).toMatch(/^Au programme du DS « DS 4 » dans 4 j : \d+ % le jour J sans rappel, \d+ % avec un rappel aujourd'hui$/);
+    expect(recall.terms.some((entry) => entry.id === "oubli")).toBe(false);
+    // Le score reste la somme exacte des termes affichés.
+    expect(recall.score).toBe(recall.terms.reduce((sum, entry) => sum + entry.points, 0));
+  });
+
+  it("un chapitre au programme déjà révisé aujourd'hui n'est pas reproposé", () => {
+    const reviewed = rateChapter(series(), "good", TODAY);
+    const ranked = rankCandidates(input({ chapterMemory: [reviewed], workItems: [ds(["series"])] }));
+    expect(ranked.some((candidate) => candidate.key === "rappel:series")).toBe(false);
+  });
+
+  it("une épreuve au-delà d'une semaine ne pèse pas encore", () => {
+    const ranked = rankCandidates(input({ chapterMemory: [series()], workItems: [ds(["series"], "2026-10-15")] }));
+    expect(ranked.some((candidate) => candidate.key === "rappel:series")).toBe(false);
+  });
+});
+
 describe("erreurs", () => {
   it("une seule erreur ne déclenche pas de reprise", () => {
     expect(rankCandidates(input({ errors: [error("Physique", "méthode", "2026-09-22")] }))).toEqual([]);
@@ -483,5 +516,36 @@ describe("explicabilité", () => {
     const reasons = topReasons(first, 2);
     expect(reasons).toHaveLength(2);
     expect(reasons[0]).toMatch(/2 erreurs notées en physique/);
+  });
+});
+
+describe("« Pas maintenant » est respecté pendant un jour", () => {
+  function skippedRecord(key: string, at: Date): NextMoveRecord {
+    return { id: `h-${key}`, key, kind: "échéance", subject: "Mathématiques", title: "DM 4", minutes: 45, reasons: [], proposedAt: at.toISOString(), status: "écarté", startedAt: null, resolvedAt: at.toISOString(), outcomeMinutes: null };
+  }
+  const urgent = workItem({ id: "urgent", title: "DM urgent", dueDate: "2026-09-24", important: true });
+  const other = workItem({ id: "other", title: "DM 5", subject: "Physique", dueDate: "2026-09-27" });
+
+  it("une échéance écartée ne revient pas en tête, même très urgente", () => {
+    const before = computeNextMove(input({ workItems: [urgent, other] }));
+    expect(before.primary?.key).toBe("échéance:urgent");
+    const history = [skippedRecord("échéance:urgent", new Date(2026, 8, 24, 18, 0))];
+    const after = computeNextMove(input({ workItems: [urgent, other], history }));
+    expect(after.primary?.key).toBe("échéance:other");
+    expect(after.alternative?.key).not.toBe("échéance:urgent");
+    // Toujours visible dans le détail.
+    expect(after.ranked.some((candidate) => candidate.key === "échéance:urgent")).toBe(true);
+  });
+
+  it("au-delà de 24 h, elle revient", () => {
+    const history = [skippedRecord("échéance:urgent", new Date(2026, 8, 23, 18, 0))];
+    expect(computeNextMove(input({ workItems: [urgent, other], history })).primary?.key).toBe("échéance:urgent");
+  });
+
+  it("tout écarté : on retombe sur le classement complet plutôt que de ne rien dire", () => {
+    const at = new Date(2026, 8, 24, 18, 0);
+    const history = [skippedRecord("échéance:urgent", at), skippedRecord("échéance:other", at)];
+    const plan = computeNextMove(input({ workItems: [urgent, other], history }));
+    expect(plan.primary).not.toBeNull();
   });
 });

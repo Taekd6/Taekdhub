@@ -11,6 +11,7 @@ import { EmptyState, Skeleton } from "@/components/ui/state";
 import { HistoryFilters } from "@/components/history/history-filters";
 import { HistorySummary } from "@/components/history/history-summary";
 import { SessionRow } from "@/components/history/session-row";
+import { SessionEditor } from "@/components/history/session-editor";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { buildWeeklyPlan } from "@/lib/planning";
 import { defaultHistoryFilters, filterSessions, summarizeSessions, type HistoryFilters as HistoryFiltersState } from "@/lib/history";
@@ -33,7 +34,10 @@ const HISTORY_PAGE_SIZE = 100;
  * à droite sur grand écran, et passe sous les filtres sur téléphone.
  */
 export function SessionHistory() {
-  const { sessions, workItems, preferences, ready } = usePrepahubData();
+  const { sessions, workItems, preferences, ready, saveSessions, removeSession } = usePrepahubData();
+  // Séance en cours de correction (lib/session-edit.ts) — relue dans `sessions`.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editing = editingId ? (sessions.find((session) => session.id === editingId) ?? null) : null;
   const [filters, setFilters] = useState<HistoryFiltersState>(defaultHistoryFilters);
   // Combien de lignes sont réellement montées dans le DOM.
   //
@@ -146,6 +150,13 @@ export function SessionHistory() {
 
   return (
     <div className="mx-auto max-w-[68rem] space-y-8">
+      <SessionEditor
+        session={editing}
+        onClose={() => setEditingId(null)}
+        // La liste COMPLÈTE, séance corrigée à sa place : l'ordre stocké ne bouge pas.
+        onSave={(edited) => saveSessions(sessions.map((session) => (session.id === edited.id ? edited : session)))}
+        onDelete={removeSession}
+      />
       <PageHero
         title="Séances"
         lede="Tout ce que tu as travaillé, jour par jour."
@@ -195,6 +206,7 @@ export function SessionHistory() {
                         workItemTitle={session.work_item_id ? workItemTitleById.get(session.work_item_id) : undefined}
                         dateInHeader
                         last={position === day.sessions.length - 1}
+                        onEdit={setEditingId}
                       />
                     ))}
                   </ul>

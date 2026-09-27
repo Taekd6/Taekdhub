@@ -69,6 +69,16 @@ describe("quand afficher le point", () => {
     expect(shouldShowBriefing(prefs(), new Date(2026, 8, 24, 13, 0).toISOString(), NOW)).toBe(true);
   });
 
+  it("l'absence se compte depuis la dernière activité, pas depuis le dernier point", () => {
+    const seenAt8 = new Date(2026, 8, 24, 8, 0).toISOString();
+    // Au travail toute la journée : dernière activité il y a 20 min.
+    expect(shouldShowBriefing(prefs(), seenAt8, NOW, new Date(2026, 8, 24, 17, 40).toISOString())).toBe(false);
+    // Parti à 13 h, revenu à 18 h : cinq heures d'absence.
+    expect(shouldShowBriefing(prefs(), seenAt8, NOW, new Date(2026, 8, 24, 13, 0).toISOString())).toBe(true);
+    // Activité illisible : on retombe sur le dernier affichage.
+    expect(shouldShowBriefing(prefs(), seenAt8, NOW, "n'importe quoi")).toBe(true);
+  });
+
   it("jamais quand l'élève l'a désactivé", () => {
     expect(shouldShowBriefing(prefs({ briefingOnOpen: false }), null, NOW)).toBe(false);
   });
@@ -117,6 +127,14 @@ describe("ce qui presse", () => {
     );
     expect(briefing.urgent.map((item) => item.id)).toEqual(["évaluation:ds"]);
     expect(briefing.urgent[0].title).toBe("DS 2 dans 3 j");
+  });
+
+  it("un DS avec son programme dit ce que la mémoire en gardera, et mène à « Prêt pour le DS ? »", () => {
+    const chapter = createChapter({ subject: "Physique", title: "Électrostatique", learnedAt: "2026-09-01" }, NOW, "elec");
+    const ds = workItem({ id: "ds", title: "DS 2", kind: "ds", subject: "Physique", dueDate: "2026-09-27", scope: { chapterIds: ["elec"], updatedAt: NOW.toISOString() } });
+    const [line] = buildBriefing(input({ workItems: [ds], chapterMemory: [chapter] })).urgent;
+    expect(line.detail).toMatch(/^1 chapitre sur 1 sous 90 % le jour J · /);
+    expect(line.href).toBe("/preparation?subject=Physique");
   });
 
   it("un travail déjà fait en temps n'est pas urgent", () => {

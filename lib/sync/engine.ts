@@ -51,8 +51,18 @@ export type PushResult =
   | { ok: false; conflict: true }
   | { ok: false; conflict: false; error: string };
 
+/** Une ligne du serveur SANS son contenu — de quoi savoir ce qui a changé. */
+export type RemoteRevision = Omit<RemoteRow, "items">;
+
 export interface RemoteStore {
   fetchAll(): Promise<RemoteRow[]>;
+  /**
+   * FACULTATIF — les révisions seules (quelques octets), puis le contenu des
+   * seules collections qui ont avancé. Sans ces deux méthodes, `sync`
+   * retélécharge tout, comme avant.
+   */
+  fetchRevisions?(): Promise<RemoteRevision[]>;
+  fetchMany?(collections: CollectionName[]): Promise<RemoteRow[]>;
   fetchOne(collection: CollectionName): Promise<RemoteRow | null>;
   /** Remplace la ligne si et seulement si le serveur est encore à `baseRevision` (0 = la ligne n'existe pas encore). */
   push(collection: CollectionName, items: unknown, baseRevision: number): Promise<PushResult>;
@@ -229,11 +239,12 @@ export class SyncEngine {
       const row = byName.get(collection);
       const localValue = this.readLocal(collection);
       const value = row ? mergeCollection(collection, localValue, row.items, true) : localValue;
-      if (row) {
-        this.writeLocal(collection, value);
-        merged.push(collection);
-      }
-      meta.collections[collection] = { revision: row?.revision ?? 0, dirty: countItems(collection, value) > 0 || Boolean(row), localUpdatedAt: now };
+      // Écriture refusée (quota) : la révision serveur n'est PAS adoptée —
+      // l'envoi suivant partira de 0, sera refusé, et repassera par la
+      // fusion au lieu d'écraser le compte avec le seul contenu de l'appareil.
+      const written = row ? this.writeLocal(collection, value) : true;
+      if (row && written) merged.push(collection);
+      meta.collections[collection] = { revision: written ? (row?.revision ?? 0) : 0, dirty: countItems(collection, value) > 0 || Boolean(row), localUpdatedAt: now };
     }
     this.writeMeta(meta);
     const report = await this.pushDirty();
@@ -245,12 +256,21 @@ export class SyncEngine {
     const byName = new Map(rows.map((row) => [row.collection, row]));
     const meta: SyncMeta = { ownerId: userId, collections: {}, lastSyncedAt: this.clock().toISOString() };
     const pulled: CollectionName[] = [];
+    const failed: CollectionName[] = [];
     for (const collection of COLLECTIONS) {
       const row = byName.get(collection);
       if (row) {
-        this.writeLocal(collection, row.items);
-        pulled.push(collection);
-        meta.collections[collection] = { revision: row.revision, dirty: false, localUpdatedAt: null };
+        // Écriture refusée : révision 0, pour que le prochain cycle retente le
+        // téléchargement — et le cache VIDÉ : les anciennes données de
+        // l'appareil (écartées par ce choix) ne doivent ni s'afficher comme
+        // celles du compte, ni repartir vers lui à la fusion suivante.
+        const written = this.writeLocal(collection, row.items);
+        if (written) pulled.push(collection);
+        else {
+          this.writeLocal(collection, collection === "preferences" ? {} : []);
+          failed.push(collection);
+        }
+        meta.collections[collection] = { revision: written ? row.revision : 0, dirty: false, localUpdatedAt: null };
         continue;
       }
       if (collection === "preferences" && options.keepLocalPreferences) {
@@ -262,7 +282,7 @@ export class SyncEngine {
       meta.collections[collection] = { revision: 0, dirty: false, localUpdatedAt: null };
     }
     this.writeMeta(meta);
-    return { pulled, pushed: [], merged: [], failed: [], at: meta.lastSyncedAt! };
+    return { pulled, pushed: [], merged: [], failed, at: meta.lastSyncedAt! };
   }
 
   /* ── Synchronisation ordinaire ── */
@@ -271,18 +291,34 @@ export class SyncEngine {
   async sync(userId: string): Promise<SyncReport> {
     const meta = this.readMeta();
     if (meta.ownerId !== userId) throw new Error("Le cache local n'appartient pas à ce compte : passer par signIn.");
+    // Cycle ordinaire (toutes les 2 min, au retour sur l'onglet…) : on ne
+    // retélécharge plus TOUT — ≈ 1 Mo de séances par an et par cycle — mais
+    // seulement les collections dont la révision serveur a bougé.
+    if (this.remote.fetchRevisions && this.remote.fetchMany) {
+      const revisions = await this.remote.fetchRevisions();
+      const stale = revisions.filter((row) => row.revision !== this.collectionMeta(meta, row.collection).revision).map((row) => row.collection);
+      const rows = stale.length > 0 ? await this.remote.fetchMany(stale) : [];
+      return this.syncWith(rows, new Set(revisions.map((row) => row.collection)));
+    }
     return this.syncWith(await this.remote.fetchAll());
   }
 
-  private async syncWith(rows: RemoteRow[]): Promise<SyncReport> {
+  /**
+   * `present` : collections que le serveur possède mais dont le contenu n'a
+   * pas été téléchargé parce qu'il n'a pas changé. Absent, toute collection
+   * sans ligne est considérée comme inconnue du serveur.
+   */
+  private async syncWith(rows: RemoteRow[], present: ReadonlySet<CollectionName> = new Set()): Promise<SyncReport> {
     const meta = this.readMeta();
     const byName = new Map(rows.map((row) => [row.collection, row]));
     const pulled: CollectionName[] = [];
     const merged: CollectionName[] = [];
+    const failed: CollectionName[] = [];
 
     for (const collection of COLLECTIONS) {
       const row = byName.get(collection);
       const state = this.collectionMeta(meta, collection);
+      if (!row && present.has(collection)) continue;
       if (!row) {
         // Une collection que le serveur n'a jamais reçue (apparue avec une version récente de l'app) : à envoyer si elle a du contenu.
         if (state.revision === 0 && !state.dirty && countItems(collection, this.readLocal(collection)) > 0) {
@@ -293,30 +329,43 @@ export class SyncEngine {
       if (row.revision === state.revision) continue;
       if (!state.dirty) {
         // Le serveur a avancé, rien ne change ici : on prend sa version.
-        this.writeLocal(collection, row.items);
+        // Si l'appareil REFUSE l'écriture (quota), on ne prétend pas l'avoir
+        // prise : la révision reste l'ancienne, et le prochain cycle
+        // retentera. L'avancer ici ferait envoyer plus tard un cache périmé
+        // comme s'il était à jour — et effacer ce que les autres appareils
+        // avaient envoyé.
+        if (!this.writeLocal(collection, row.items)) {
+          failed.push(collection);
+          continue;
+        }
         meta.collections[collection] = { revision: row.revision, dirty: false, localUpdatedAt: state.localUpdatedAt };
         pulled.push(collection);
         continue;
       }
       // Les deux ont changé : fusion, puis envoi fondé sur la révision serveur.
       const localNewer = (state.localUpdatedAt ?? "") >= row.updatedAt;
-      this.writeLocal(collection, mergeCollection(collection, this.readLocal(collection), row.items, localNewer));
+      if (!this.writeLocal(collection, mergeCollection(collection, this.readLocal(collection), row.items, localNewer))) {
+        // Fusion non écrite : ni révision avancée, ni envoi — l'envoi du seul
+        // contenu local sur la révision serveur écraserait l'autre appareil.
+        failed.push(collection);
+        continue;
+      }
       meta.collections[collection] = { ...state, revision: row.revision, dirty: true };
       merged.push(collection);
     }
     this.writeMeta(meta);
 
-    const report = await this.pushDirty();
-    return { ...report, pulled: [...pulled, ...report.pulled], merged: [...merged, ...report.merged] };
+    const report = await this.pushDirty(new Set(failed));
+    return { ...report, pulled: [...pulled, ...report.pulled], merged: [...merged, ...report.merged], failed: [...new Set([...failed, ...report.failed])] };
   }
 
   /** Envoie toutes les collections « à envoyer ». Un échec n'en interrompt pas d'autres. */
-  async pushDirty(): Promise<SyncReport> {
+  async pushDirty(skip: ReadonlySet<CollectionName> = new Set()): Promise<SyncReport> {
     const pushed: CollectionName[] = [];
     const merged: CollectionName[] = [];
     const failed: CollectionName[] = [];
     for (const collection of COLLECTIONS) {
-      if (!this.collectionMeta(this.readMeta(), collection).dirty) continue;
+      if (skip.has(collection) || !this.collectionMeta(this.readMeta(), collection).dirty) continue;
       const outcome = await this.pushOne(collection);
       if (outcome === "pushed") pushed.push(collection);
       else if (outcome === "merged") {
@@ -358,7 +407,10 @@ export class SyncEngine {
       const freshState = this.collectionMeta(fresh, collection);
       if (row) {
         const localNewer = (freshState.localUpdatedAt ?? "") >= row.updatedAt;
-        this.writeLocal(collection, mergeCollection(collection, this.readLocal(collection), row.items, localNewer));
+        // Fusion refusée par l'appareil : on s'arrête là. Avancer la révision
+        // ferait partir, au tour suivant, le seul contenu local — et
+        // écraserait la version du serveur qu'on vient de refuser d'écraser.
+        if (!this.writeLocal(collection, mergeCollection(collection, this.readLocal(collection), row.items, localNewer))) return "failed";
       }
       fresh.collections[collection] = { ...freshState, revision: row?.revision ?? 0, dirty: true };
       this.writeMeta(fresh);
@@ -378,10 +430,14 @@ export class SyncEngine {
   signOut(options: { wipe: boolean }): boolean {
     if (!options.wipe) return true;
     if (this.hasPendingChanges()) return false;
+    let wiped = true;
     for (const collection of COLLECTIONS) {
       if (collection === "preferences") continue;
-      this.writeLocal(collection, []);
+      if (!this.writeLocal(collection, [])) wiped = false;
     }
+    // Effacement incomplet : l'appareil reste rattaché au compte, pour que
+    // ce qui reste ne soit pas pris pour des données « sans compte ».
+    if (!wiped) return false;
     this.writeMeta(emptyMeta());
     return true;
   }

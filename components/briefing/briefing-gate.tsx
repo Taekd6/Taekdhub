@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BRIEFING_SEEN_KEY, buildBriefing, shouldShowBriefing } from "@/lib/briefing";
+import { BRIEFING_SEEN_KEY, LAST_ACTIVITY_KEY, buildBriefing, shouldShowBriefing } from "@/lib/briefing";
 import { localData, readFlag } from "@/lib/storage";
 
 /**
@@ -22,7 +22,7 @@ export function BriefingGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const now = new Date();
     const preferences = localData.preferences();
-    if (shouldShowBriefing(preferences, readFlag(BRIEFING_SEEN_KEY), now)) {
+    if (shouldShowBriefing(preferences, readFlag(BRIEFING_SEEN_KEY), now, readFlag(LAST_ACTIVITY_KEY))) {
       const briefing = buildBriefing({
         sessions: localData.sessions(),
         workItems: localData.workItems(),

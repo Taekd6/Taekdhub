@@ -8,7 +8,7 @@ Système de suivi personnel pour prépa scientifique. L'élève travaille sur se
 
 ## Next Move — « qu'est-ce que je fais maintenant ? »
 
-En tête de l'accueil, une carte propose **une** action : la matière, l'objet (un chapitre, une échéance, un type d'erreur), la durée, et **pourquoi**. On peut dire « J'ai 30 min / 1 h / 2 h » : le moteur compose alors une courte session (avec une pause au-delà de ≈ 50 min). « Commencer » ouvre le chrono sur la bonne matière (ou la séance de révision) ; « Pas maintenant » est respecté pendant un jour ; « Détails » montre le calcul point par point.
+En tête de l'accueil, une carte propose **une** action : la matière, l'objet (un chapitre, une échéance, un type d'erreur), la durée, et **pourquoi**. On peut dire « J'ai 30 min / 1 h / 2 h » : le moteur compose alors une courte session (avec une pause au-delà de ≈ 50 min). « Commencer » ouvre le chrono sur la bonne matière (ou la séance de révision) ; « Pas maintenant » est respecté pendant 24 h (la proposition sort de la session et de « Autre idée », mais reste dans « Détails ») ; « Détails » montre le calcul point par point.
 
 Le moteur (`lib/next-move/engine.ts`) est **déterministe et explicable** — aucun apprentissage automatique. Il génère des candidats à partir des données réellement saisies :
 
@@ -24,9 +24,23 @@ Puis des modulateurs, chacun avec sa phrase : DS/concours blanc dans les 7 jours
 
 L'historique (`prepahub:next-moves`, `lib/next-move/history.ts`) garde ce qui a été proposé, commencé, fait (constaté d'après les séances et révisions, ou déclaré) et écarté. Les statistiques se taisent sous 8 propositions et ne prétendent à aucune causalité. Il voyage dans la sauvegarde et la synchronisation.
 
+## Prêt pour le DS ? — le programme d'une épreuve
+
+Un DS ou un concours blanc peut porter la liste de ses chapitres (`WorkItem.scope`, choisis parmi ceux de Mémoire — un chapitre manquant s'ajoute sur place). Pour chacun, `lib/exam-prep.ts` lit dans FSRS la chance de le retrouver sans ses notes **aujourd'hui**, **le jour J sans révision**, et **le jour J avec un rappel aujourd'hui** ; puis propose un plan : les chapitres sous 90 % le jour J, du plus menacé au moins menacé, répartis jusqu'à la veille, et la veille la relecture des erreurs récentes de la matière. Ce n'est jamais présenté comme une note prédite.
+
+- **Où** : en tête de l'Aperçu de la matière (prochaine épreuve à ≤ 3 semaines), et bouton « Programme » sur chaque DS / concours blanc dans Échéances. « C'est révisé » note le rappel sur place.
+- **Next Move** : un chapitre au programme d'une épreuve à ≤ 7 jours devient un rappel actif même s'il n'est pas encore menacé, avec la raison « Au programme du DS … : 61 % le jour J sans rappel, 93 % avec un rappel aujourd'hui ».
+- **Le point** : la ligne « DS dans 3 j » dit combien de chapitres passeront sous 90 % et mène à la préparation.
+
 ## Le point — l'écran d'ouverture
 
-À la première ouverture de la journée (et après 4 h d'absence), l'accueil s'ouvre sur **Le point** (`/point`, `lib/briefing.ts`) : une salutation, une phrase de résumé, le prochain mouvement de Next Move avec « Commencer », puis trois sections d'au plus trois lignes chacune — **Ce qui presse** (retard, échéance du jour ou du lendemain, travail qui ne tient plus, DS dans ≤ 3 j), **Tu repousses** (travail reporté ≥ 2 fois, plan « si… alors… » manqué, matière proposée ≥ 3 fois sans suite, cartes en retard, objectif de la semaine qui décroche ; puis, à surveiller : chapitre qui s'efface, erreurs sans « bonne idée », note en attente) et **Aujourd'hui** (minimum du soir, plans du jour, cartes du jour). On y revient en touchant la date de l'accueil ; Réglages → À l'ouverture le désactive.
+À la première ouverture de la journée (et après 4 h d'absence, mesurée depuis la dernière activité dans l'application — `components/activity-tracker.tsx`), l'accueil s'ouvre sur **Le point** (`/point`, `lib/briefing.ts`) : une salutation, une phrase de résumé, le prochain mouvement de Next Move avec « Commencer », puis trois sections d'au plus trois lignes chacune — **Ce qui presse** (retard, échéance du jour ou du lendemain, travail qui ne tient plus, DS dans ≤ 3 j), **Tu repousses** (travail reporté ≥ 2 fois, plan « si… alors… » manqué, matière proposée ≥ 3 fois sans suite, cartes en retard, objectif de la semaine qui décroche ; puis, à surveiller : chapitre qui s'efface, erreurs sans « bonne idée », note en attente) et **Aujourd'hui** (minimum du soir, plans du jour, cartes du jour). On y revient en touchant la date de l'accueil ; Réglages → À l'ouverture le désactive.
+
+## Séances et chrono
+
+- **Corriger une séance** : Séances → crayon sur la ligne — matière, début, durée, note, ou suppression (`lib/session-edit.ts`). Une séance corrigée porte `updated_at`, qui l'emporte à la synchronisation.
+- **Chrono oublié** : au-delà de 3 h, « Terminer » demande la durée réelle avant d'enregistrer.
+- **Onglet perdu** : le chrono en cours (`sessionStorage`) est doublé d'un miroir en `localStorage` ; un onglet fermé ou déchargé par le téléphone laisse un chrono à « reprendre » au prochain passage sur le Chrono (`lib/timer-recovery.ts`). Stockage bloqué : le chrono fonctionne en mémoire, sans planter.
 
 ## Temps par chapitre
 
@@ -38,6 +52,8 @@ Facultatif. **Non connecté**, rien ne change : les données vivent dans le navi
 
 - **Connexion** : Réglages → Compte. E-mail + mot de passe, ou lien de connexion par e-mail. « Mot de passe oublié ? » envoie un lien pour en choisir un nouveau.
 - **Premier login avec des données sur l'appareil** : TaekdHub demande avant tout envoi — *Importer mes données* / *Commencer sans elles* (compte vide), ou *Fusionner les deux* / *Garder seulement le compte* (compte déjà rempli). Toute option qui remplace l'appareil **télécharge d'abord une sauvegarde complète**.
+- **Cycle léger** : chaque cycle lit d'abord les seules révisions, puis ne télécharge que les collections qui ont bougé.
+- **Écriture locale refusée** (quota) : la révision serveur n'est pas adoptée et rien n'est envoyé — jamais un cache périmé présenté comme à jour.
 - **Conflits** : chaque collection porte une `revision` ; un envoi n'écrase jamais une version plus récente d'un autre appareil — il est refusé, puis fusionné (union par identifiant, la version la plus récente d'un même objet). Limite assumée : une entrée supprimée sur un appareil pendant qu'un autre modifiait hors ligne la même collection peut réapparaître.
 - **Déconnexion** : les données restent sur l'appareil (option « Déconnecter et effacer cet appareil », refusée tant que des modifications n'ont pas été envoyées).
 - **Reste local** : le chrono en cours (`sessionStorage`), la date du dernier export, les mémoires de saisie.
@@ -60,7 +76,7 @@ Sans compte, tes données (séances, échéances, notes, carnets, préférences)
 
 **Sur le nouvel ordinateur — importer :**
 1. Ouvrir [https://taekdhub.vercel.app](https://taekdhub.vercel.app) (aucune installation nécessaire — c'est un site web ; optionnellement « Installer l'application » depuis le navigateur pour l'avoir comme une app).
-2. **Réglages** → **Restaurer** → choisir le fichier `.json`.
+2. **Réglages** → **Restaurer** → choisir le fichier `.json`. Par sécurité, l'état actuel de l'appareil est d'abord téléchargé (`taekdhub-sauvegarde-avant-restauration-….json`).
 3. Confirmer le remplacement, puis recharger la page. Toutes tes données sont là, à l'identique.
 
 > Le format de sauvegarde est rétrocompatible : un fichier exporté par une ancienne version reste importable (les champs absents sont restaurés à vide sans erreur). Une sauvegarde de l'époque de la banque d'exercices contient encore `exercises` et `chapters` : elle s'importe normalement, ces deux champs sont simplement ignorés.
@@ -100,8 +116,10 @@ Copier `.env.example` vers `.env.local` pour activer la synchronisation Supabase
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
+
+(`NEXT_PUBLIC_SUPABASE_ANON_KEY`, l'ancien nom de la même clé, est aussi accepté.)
 
 Sans ces variables, `lib/supabase/client.ts` désactive proprement le client Supabase et l'app continue de fonctionner en local uniquement (Réglages → Compte l'indique). Voir « Compte et synchronisation » pour la migration SQL à appliquer.
 
@@ -135,6 +153,8 @@ app/(app)/settings        Réglages, sauvegarde et restauration
 components/               Composants UI et par domaine (work, review, errors, progress, history, hub, ui)
 lib/                      Logique métier : storage (localStorage), planning, échéances, suivi du temps, notes, carnets, supabase/
 lib/next-move/            Moteur Next Move (recommandation explicable) et son historique
+lib/exam-prep.ts          « Prêt pour le DS ? » : programme d'une épreuve lu à travers la mémoire (FSRS)
+components/exam/          Panneau « Prêt pour le DS ? » (Aperçu de la matière, Échéances)
 lib/sync/                 Synchronisation compte ↔ appareil (moteur pur + adaptateur Supabase)
 components/account/       Compte (Réglages), fournisseur de session, décision du premier login
 supabase/migrations/      0006 : table `user_collections` + RLS (synchronisation). 0001–0005 : schéma historique de l'ancienne banque, non utilisé

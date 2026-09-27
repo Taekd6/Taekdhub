@@ -35,6 +35,20 @@ export function supabaseRemote(client: SupabaseClient): RemoteStore {
       return ((data ?? []) as Row[]).map(toRemote).filter((row): row is RemoteRow => row !== null);
     },
 
+    async fetchRevisions() {
+      const { data, error } = await client.from(TABLE).select("collection, revision, updated_at");
+      if (error) throw new Error(error.message);
+      return ((data ?? []) as Omit<Row, "items">[])
+        .filter((row) => (COLLECTIONS as string[]).includes(row.collection))
+        .map((row) => ({ collection: row.collection as CollectionName, revision: row.revision, updatedAt: row.updated_at }));
+    },
+
+    async fetchMany(collections) {
+      const { data, error } = await client.from(TABLE).select("collection, items, revision, updated_at").in("collection", collections);
+      if (error) throw new Error(error.message);
+      return ((data ?? []) as Row[]).map(toRemote).filter((row): row is RemoteRow => row !== null);
+    },
+
     async fetchOne(collection) {
       const { data, error } = await client.from(TABLE).select("collection, items, revision, updated_at").eq("collection", collection).maybeSingle();
       if (error) throw new Error(error.message);

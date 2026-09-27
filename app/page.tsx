@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Wordmark } from "@/components/app-nav";
 
 /**
@@ -57,15 +57,12 @@ export default function Home() {
             ce qu&apos;il te reste à revoir.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
-            <Link href="/dashboard">
-              <Button size="lg">
-                Ouvrir TaekdHub <ArrowRight size={17} />
-              </Button>
+            {/* Des liens STYLÉS en boutons — jamais un <button> dans un <a> (deux arrêts de tabulation, lecture confuse). */}
+            <Link href="/dashboard" className={buttonVariants({ size: "lg" })}>
+              Ouvrir TaekdHub <ArrowRight size={17} aria-hidden />
             </Link>
-            <Link href="/timer">
-              <Button size="lg" variant="secondary">
-                Lancer le chrono
-              </Button>
+            <Link href="/timer" className={buttonVariants({ size: "lg", variant: "secondary" })}>
+              Lancer le chrono
             </Link>
           </div>
         </section>

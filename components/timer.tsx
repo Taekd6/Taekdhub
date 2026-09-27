@@ -2,7 +2,10 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { Maximize2, Minimize2, Pause, Play, Square } from "lucide-react";
-import { Select } from "@/components/ui/input";
+import { Input, Select } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
+import { LONG_SESSION_MINUTES, SESSION_MAX_MINUTES } from "@/lib/session-edit";
 import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { effectiveDailyGoal } from "@/lib/evening-minimums";
@@ -85,11 +88,13 @@ export function Timer() {
   // une séance persistée dès son premier effet, donc « Terminer » est
   // cliquable avant même que les données locales aient fini d'être lues.
   const { sessions, workItems, preferences, saveSessions, saveWorkItems, ready, nextMoves, chapterMemory } = usePrepahubData();
-  const { seconds, running, context, setContext, start, toggle, stop } = useWorkTimer<TimerContext>(TIMER_STORAGE_KEY, {
+  const { seconds, running, context, setContext, start, toggle, stop, orphan, adoptOrphan, dismissOrphan } = useWorkTimer<TimerContext>(TIMER_STORAGE_KEY, {
     subject: "Mathématiques",
     workItemId: null,
   });
   const [fullscreen, setFullscreen] = useState(false);
+  // Chrono de plus de 3 h : durée à confirmer avant d'enregistrer (voir `handleStop`).
+  const [longStop, setLongStop] = useState<string | null>(null);
   /*
    * Le paramètre est lu depuis `window.location.search` dans un effet — et NON via
    * `useSearchParams`, qui forcerait cette page à sortir du rendu statique
@@ -147,7 +152,9 @@ export function Timer() {
       // déjà à quelque chose : une liste, une pastille ou un bouton qui a
       // le focus s'active lui-même à l'espace.
       const tag = document.activeElement?.tagName;
-      if (event.key === " " && tag !== "SELECT" && tag !== "BUTTON" && tag !== "INPUT" && tag !== "A") {
+      // Barre d'espace ignorée tant qu'un chrono orphelin attend une réponse :
+      // un appui réflexe ne doit pas l'écarter sans qu'on l'ait choisi.
+      if (event.key === " " && !orphan && tag !== "SELECT" && tag !== "BUTTON" && tag !== "INPUT" && tag !== "A") {
         event.preventDefault();
         toggle();
       }
@@ -155,10 +162,30 @@ export function Timer() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [fullscreen, toggle]);
+  }, [fullscreen, toggle, orphan]);
 
+  /**
+   * « Terminer ». Au-delà de 3 h d'affilée, c'est souvent un chrono oublié :
+   * on demande la durée réelle AVANT d'enregistrer, pré-remplie avec le
+   * temps compté — un geste de plus pour une vraie longue séance, contre un
+   * budget faussé pour toute la semaine sinon.
+   */
   function handleStop() {
-    stop(({ startedAt, seconds: finalSeconds }) => {
+    if (seconds >= LONG_SESSION_MINUTES * 60) {
+      setLongStop(String(Math.round(seconds / 60)));
+      // Le dialogue vit dans la vue normale : on quitte le plein écran pour le montrer.
+      setFullscreen(false);
+      return;
+    }
+    saveStop(null);
+  }
+
+  /** Termine et enregistre ; `cappedMinutes` borne la durée (correction d'un chrono oublié). */
+  function saveStop(cappedMinutes: number | null) {
+    setLongStop(null);
+    stop(({ startedAt, seconds: countedSeconds }) => {
+      const finalSeconds = cappedMinutes === null ? countedSeconds : Math.min(countedSeconds, cappedMinutes * 60);
+      const corrected = finalSeconds !== countedSeconds;
       const session: WorkSession = {
         id: crypto.randomUUID(),
         subject: context.subject,
@@ -166,7 +193,8 @@ export function Timer() {
         // lib/supabase/types.ts) : toujours `null` désormais.
         exercise_id: null,
         started_at: startedAt,
-        ended_at: new Date().toISOString(),
+        // Durée corrigée : la séance s'arrête à début + durée, pas maintenant.
+        ended_at: corrected ? new Date(new Date(startedAt).getTime() + finalSeconds * 1000).toISOString() : new Date().toISOString(),
         duration_seconds: finalSeconds,
         note: null,
         created_at: new Date().toISOString(),
@@ -371,6 +399,30 @@ export function Timer() {
         <p className="mx-auto mt-1.5 max-w-[40ch] text-[0.9375rem] font-semibold text-muted sm:text-base">Lance-le quand tu t&apos;y mets.</p>
       </header>
 
+      <LongStopDialog
+        value={longStop}
+        counted={seconds}
+        onChange={setLongStop}
+        onCancel={() => setLongStop(null)}
+        onSave={saveStop}
+      />
+
+      {orphan && seconds === 0 && (
+        <div role="status" className="reveal mt-7 flex flex-col items-center gap-3 rounded-3xl bg-accent/10 px-5 py-4 text-sm sm:mt-10 sm:flex-row sm:justify-between sm:text-left">
+          <p className="font-semibold text-ink">
+            Un chrono de {orphan.context.subject} commencé {startedLabel(orphan.startedAt)} n&apos;a pas été terminé ({formatSpan(orphan.seconds)}).
+          </p>
+          <span className="flex shrink-0 gap-2">
+            <Button size="sm" onClick={adoptOrphan}>
+              Le reprendre
+            </Button>
+            <Button size="sm" variant="ghost" onClick={dismissOrphan}>
+              Ignorer
+            </Button>
+          </span>
+        </div>
+      )}
+
       <section aria-label="Séance" className="surface reveal mt-7 space-y-8 px-5 py-7 sm:mt-10 sm:space-y-10 sm:p-12" style={{ "--i": 1 } as CSSProperties}>
         {controls}
         <div className="flex justify-center">{dial}</div>
@@ -384,6 +436,66 @@ export function Timer() {
         <p className="t-meta hidden text-2xs lg:block">Barre d&apos;espace pour démarrer / pause</p>
       </section>
     </div>
+  );
+}
+
+/** « à 14 h 05 », « hier à 21 h 30 », « le 22/09 à 8 h 00 ». */
+function startedLabel(iso: string): string {
+  const date = new Date(iso);
+  const time = date.toLocaleTimeString("fr-FR", { hour: "numeric", minute: "2-digit" }).replace(":", " h ");
+  const day = date.toLocaleDateString("en-CA");
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (day === today.toLocaleDateString("en-CA")) return `à ${time}`;
+  if (day === yesterday.toLocaleDateString("en-CA")) return `hier à ${time}`;
+  return `le ${date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} à ${time}`;
+}
+
+/** Confirmation d'un chrono de plus de 3 h — voir `handleStop`. */
+function LongStopDialog({
+  value,
+  counted,
+  onChange,
+  onCancel,
+  onSave,
+}: {
+  value: string | null;
+  counted: number;
+  onChange: (value: string) => void;
+  onCancel: () => void;
+  onSave: (minutes: number | null) => void;
+}) {
+  const minutes = Math.round(Number(value));
+  const valid = Number.isFinite(minutes) && minutes >= 1 && minutes <= SESSION_MAX_MINUTES;
+  return (
+    <Dialog open={value !== null} title="Une longue séance" onClose={onCancel}>
+      <form
+        className="space-y-4 text-left"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!valid) return;
+          onSave(minutes >= Math.round(counted / 60) ? null : minutes);
+        }}
+      >
+        <p className="text-sm text-ink">
+          Le chrono compte <span className="font-black">{formatSpan(counted)}</span>. As-tu vraiment travaillé tout ce temps ? Sinon, indique la durée réelle : elle compte dans ton budget de la semaine.
+        </p>
+        <label className="block w-40">
+          <span className="t-label mb-1 block">Durée réelle (min)</span>
+          <Input type="number" inputMode="numeric" min={1} max={SESSION_MAX_MINUTES} value={value ?? ""} onChange={(event) => onChange(event.target.value)} autoFocus />
+        </label>
+        {!valid && <p className="text-sm font-semibold text-rose-500">Entre 1 min et {SESSION_MAX_MINUTES / 60} h.</p>}
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" disabled={!valid}>
+            Enregistrer {valid ? formatSpan(Math.min(minutes * 60, counted)) : ""}
+          </Button>
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            Continuer le chrono
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 }
 

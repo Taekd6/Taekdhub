@@ -60,7 +60,9 @@ function Tip({ index, count, children }: { index: number; count: number; childre
     <span
       aria-hidden
       className={cn(
-        "floating pointer-events-none absolute bottom-full z-10 mb-2 whitespace-nowrap rounded-xl px-2.5 py-1.5 text-2xs leading-tight text-ink opacity-0 transition-opacity duration-200 group-hover:opacity-100",
+        // Hors du flux tant qu'elle n'est pas survolée (`hidden`), et bornée : même
+        // transparente, une bulle longue dépassait l'écran à 390 px et faisait défiler la page de côté.
+        "floating pointer-events-none absolute bottom-full z-10 mb-2 hidden w-max max-w-[min(15rem,calc(100vw-3rem))] rounded-xl px-2.5 py-1.5 text-2xs leading-tight text-ink group-hover:block",
         side
       )}
     >

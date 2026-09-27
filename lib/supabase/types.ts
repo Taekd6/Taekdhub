@@ -86,6 +86,13 @@ export interface WorkSession {
    * l'électrostatique cette semaine » au lieu de seulement « en physique ».
    */
   chapter_id?: string | null;
+  /**
+   * Dernière correction faite par l'élève (durée, matière, date, note) —
+   * absent d'une séance jamais corrigée. Départage deux appareils à la
+   * synchronisation (lib/sync/collections.ts) : raccourcir une séance fait
+   * RECULER `ended_at`, qui ne suffit donc pas à dater la modification.
+   */
+  updated_at?: string;
 }
 
 /** Résultat d'une tentative sur un exercice de l'ancienne banque — héritage, voir `WorkSession.result`. */

@@ -1,4 +1,6 @@
-import { atRisk, AT_RISK_THRESHOLD, chapterTime } from "@/lib/chapter-memory";
+import { atRisk, AT_RISK_THRESHOLD, chapterTime, retrievabilityToday } from "@/lib/chapter-memory";
+import { chapterReadiness, examScopeIndex } from "@/lib/exam-prep";
+import { DESIRED_RETENTION } from "@/lib/fsrs";
 import { computeCalibration } from "@/lib/calibration";
 import { computeWorkItemPriority } from "@/lib/deadlines";
 import { ERROR_TYPE_META, subjectInSentence } from "@/lib/error-log";
@@ -443,22 +445,44 @@ function deadlineCandidates(input: NextMoveInput): MoveCandidate[] {
 
 function recallCandidates(input: NextMoveInput): MoveCandidate[] {
   const today = dayKey(input.now);
-  const perSubject = new Map<Subject, number>();
-  const out: MoveCandidate[] = [];
-  for (const { chapter, retrievability } of atRisk(input.chapterMemory, today)) {
-    const count = perSubject.get(chapter.subject) ?? 0;
-    if (count >= RECALL_PER_SUBJECT) continue;
-    perSubject.set(chapter.subject, count + 1);
+  // Chapitres au programme d'une épreuve proche (lib/exam-prep.ts) : ils
+  // deviennent candidats même s'ils ne sont pas encore « menacés »
+  // aujourd'hui, dès qu'ils n'atteindraient pas 90 % le jour J.
+  const scope = examScopeIndex(input.workItems, today, EXAM_WINDOW_DAYS);
+  const pool = new Map<string, { chapter: ChapterMemory; retrievability: number }>();
+  for (const entry of atRisk(input.chapterMemory, today)) pool.set(entry.chapter.id, entry);
+  for (const chapter of input.chapterMemory) {
+    if (chapter.archived || pool.has(chapter.id) || !scope.has(chapter.id)) continue;
+    pool.set(chapter.id, { chapter, retrievability: retrievabilityToday(chapter, today) });
+  }
 
+  const scored: MoveCandidate[] = [];
+  for (const { chapter, retrievability } of pool.values()) {
     const lastDay = chapter.reviews.length > 0 ? chapter.reviews[chapter.reviews.length - 1].day : chapter.learnedAt;
     const since = dayDistance(lastDay, today);
-    const terms: ScoreTerm[] = [
-      {
+    const terms: ScoreTerm[] = [];
+    if (retrievability < AT_RISK_THRESHOLD) {
+      terms.push({
         id: "oubli",
         points: Math.min(RECALL_MAX_POINTS, Math.round((AT_RISK_THRESHOLD - retrievability) * RECALL_POINTS_PER_UNIT)),
         reason: `Chance estimée de t'en souvenir : ${Math.round(retrievability * 100)} %`,
-      },
-    ];
+      });
+    }
+    const exam = scope.get(chapter.id);
+    if (exam) {
+      const readiness = chapterReadiness(chapter, today, exam.item.dueDate!, input.sessions);
+      if (readiness.reviewedToday || readiness.onExam >= DESIRED_RETENTION) {
+        // Au programme, mais déjà tenu jusqu'au jour J : rien à ajouter —
+        // et hors du vivier s'il n'était là que pour l'épreuve.
+        if (terms.length === 0) continue;
+      } else {
+        terms.push({
+          id: "au-programme",
+          points: Math.min(RECALL_MAX_POINTS, Math.round((DESIRED_RETENTION - readiness.onExam) * RECALL_POINTS_PER_UNIT)) + (exam.days <= 1 ? 20 : exam.days <= 3 ? 12 : 6),
+          reason: `Au programme ${exam.item.kind === "ds" ? "du DS" : "du concours blanc"} « ${exam.item.title} » ${inDaysLabel(exam.days)} : ${Math.round(readiness.onExam * 100)} % le jour J sans rappel, ${Math.round(readiness.ifReviewedToday * 100)} % avec un rappel aujourd'hui`,
+        });
+      }
+    }
     // Information, pas des points : l'ancienneté est déjà dans la probabilité.
     terms.push({ id: "dernier-rappel", points: 0, reason: chapter.reviews.length > 0 ? `Dernier rappel ${daysAgoLabel(since)}` : `Appris ${daysAgoLabel(since)}, jamais révisé depuis` });
 
@@ -474,7 +498,7 @@ function recallCandidates(input: NextMoveInput): MoveCandidate[] {
       });
     }
 
-    out.push({
+    scored.push({
       key: `rappel:${chapter.id}`,
       kind: "rappel",
       subject: chapter.subject,
@@ -490,7 +514,18 @@ function recallCandidates(input: NextMoveInput): MoveCandidate[] {
       score: 0,
     });
   }
-  return out;
+  // Au plus `RECALL_PER_SUBJECT` rappels par matière : les plus pressants
+  // (somme des termes déjà posés), à égalité le plus menacé d'abord.
+  const retrievabilityOf = (candidate: MoveCandidate) => pool.get(candidate.key.slice("rappel:".length))?.retrievability ?? 1;
+  scored.sort((a, b) => sumScore(b.terms) - sumScore(a.terms) || retrievabilityOf(a) - retrievabilityOf(b));
+  const perSubject = new Map<Subject, number>();
+  return scored.filter((candidate) => {
+    const subject = candidate.subject!;
+    const count = perSubject.get(subject) ?? 0;
+    if (count >= RECALL_PER_SUBJECT) return false;
+    perSubject.set(subject, count + 1);
+    return true;
+  });
 }
 
 function cardCandidates(input: NextMoveInput): MoveCandidate[] {
@@ -811,14 +846,24 @@ export function computeNextMove(input: NextMoveInput): NextMovePlan {
     return { ...base, status: "vide", primary: null, alternative: null, steps: [], totalMinutes: 0 };
   }
 
-  const steps = composeSession(ranked, available);
+  // « Pas maintenant » est RESPECTÉ pendant un jour : ce qui a été écarté ne
+  // compose plus la session ni l'« autre idée » — une pénalité de score n'y
+  // suffisait pas, une échéance proche revenait aussitôt en tête. Le
+  // candidat reste dans `ranked` (« Détails » montre toujours tout). Si
+  // TOUT a été écarté, on retombe sur le classement complet plutôt que de
+  // prétendre n'avoir rien à proposer.
+  const skipped = skippedKeys(input.history, input.now);
+  const eligible = ranked.filter((candidate) => !skipped.has(candidate.key));
+  const pool = eligible.length > 0 ? eligible : ranked;
+
+  const steps = composeSession(pool, available);
   const primary = steps.find((step) => step.type === "move")?.candidate ?? null;
   if (!primary) {
     return { ...base, status: "trop-court", primary: null, alternative: null, steps: [], totalMinutes: 0 };
   }
 
   // « Autre idée » REMPLACE le premier pas : on la prend d'une autre matière quand il y en a une.
-  const others = ranked.filter((candidate) => candidate.key !== primary.key && candidate.score > 0);
+  const others = pool.filter((candidate) => candidate.key !== primary.key && candidate.score > 0);
   const alternative = others.find((candidate) => candidate.subject !== primary.subject) ?? others[0] ?? null;
 
   return {
@@ -829,6 +874,18 @@ export function computeNextMove(input: NextMoveInput): NextMovePlan {
     steps,
     totalMinutes: steps.reduce((total, step) => total + step.minutes, 0),
   };
+}
+
+/** Clés écartées (« Pas maintenant ») depuis moins de `SKIPPED_RECENTLY_HOURS`. */
+export function skippedKeys(history: NextMoveRecord[], now: Date): Set<string> {
+  const t = now.getTime();
+  const keys = new Set<string>();
+  for (const record of history) {
+    if (record.status !== "écarté") continue;
+    const at = new Date(record.resolvedAt ?? record.proposedAt).getTime();
+    if (Number.isFinite(at) && t - at >= 0 && t - at <= SKIPPED_RECENTLY_HOURS * HOUR) keys.add(record.key);
+  }
+  return keys;
 }
 
 /** Les raisons à montrer sur la carte : les termes POSITIFS les plus lourds, puis les informations — au plus `limit`. */
