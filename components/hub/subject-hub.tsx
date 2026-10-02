@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, type CSSProperties } from "react";
-import { ArrowRight, BookOpen, ChevronLeft, Copy, FileCheck2, LayoutGrid, Map as MapIcon, MessageCircleQuestion, PenLine, Timer, Trophy } from "lucide-react";
+import { ArrowRight, BookOpen, ChevronLeft, Copy, FileCheck2, LayoutGrid, Map as MapIcon, MessageCircleQuestion, PenLine, Sigma, Timer, Trophy } from "lucide-react";
 import { SubjectAnnales } from "@/components/annales/subject-annales";
 import { Section } from "@/components/ui/section";
 import { Tabs } from "@/components/ui/tabs";
@@ -302,6 +302,7 @@ const PREP_TOOLS: ActionItem[] = [
   { label: "Khôlle", icon: MessageCircleQuestion, href: "/kholle" },
   { label: "Épreuve", icon: Trophy, href: "/epreuve" },
   { label: "Annales", icon: FileCheck2, href: "/annales" },
+  { label: "Formules", icon: Sigma, href: "/formulaire" },
 ];
 
 /* ══════════════════════════════════════════════════════════════════

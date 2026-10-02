@@ -95,7 +95,7 @@ export function AppNav() {
           ancre atteinte au clavier. */}
       <header
         className={cn(
-          "sticky top-0 z-40 border-b border-hairline/[0.07] bg-[var(--glass-bg)] backdrop-blur-xl backdrop-saturate-150",
+          "sticky top-0 z-40 border-b border-hairline/[0.07] bg-[var(--glass-bg)] backdrop-blur-xl backdrop-saturate-150 print:hidden",
           onHome && "max-lg:hidden"
         )}
       >
@@ -172,7 +172,7 @@ export function AppNav() {
           l'encre de la palette et un petit point en dégradé sous l'icône. */}
       <nav
         aria-label="Sections"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-hairline/[0.07] bg-[var(--glass-bg)] px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-150 lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-hairline/[0.07] bg-[var(--glass-bg)] px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-150 lg:hidden print:hidden"
       >
         {[...DESTINATIONS.slice(0, 2), null, ...DESTINATIONS.slice(2)].map((destination) => {
           if (!destination) {

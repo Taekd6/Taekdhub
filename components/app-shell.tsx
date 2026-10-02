@@ -26,7 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     // sur toutes les pages, inerte quand Supabase n'est pas configuré.
     <AccountProvider>
       <div className="min-h-screen">
-        <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden print:hidden">
           <div className="halo halo-a" />
           <div className="halo halo-b" />
         </div>

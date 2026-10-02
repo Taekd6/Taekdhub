@@ -64,6 +64,16 @@ Le programme de colle de la semaine (`Preferences.colleChapters`, ou `?chapitre=
 
 Un sujet en conditions réelles (`lib/epreuve.ts`) : compte à rebours (1 à 4 h), questions avec barème, et **temps par question** (toucher une question y bascule le chrono). L'épreuve en cours survit à un rechargement (localStorage). À la correction : faite / partielle (½) / fausse / pas abordée, note **brute** ramenée sur 20 (pas une note harmonisée), et les questions où l'on s'est enlisé (> 1,5 × le temps justifié par le barème). Enregistrement : une note « concours » dans Progression — ou une note en attente avec la note estimée en pronostic, quand un professeur corrige (calibration) —, une séance pour le temps passé, et le lien vers le carnet d'erreurs.
 
+## Formulaire flash et bilan imprimable
+
+### Formulaire (`/formulaire`)
+
+Ce qui se sait par cœur (`lib/formulaire-data.ts`, ≈ 90 cartes) : DL usuels, primitives, trigonométrie, sommes et séries, algèbre linéaire, probabilités ; mécanique, électricité, thermodynamique, électromagnétisme, ondes et optique, quantique ; cinétique, solutions aqueuses, cristallographie. **S'entraîner** : une série de 10 cartes tirées avec le même tirage pondéré que la khôlle (`lib/formulaire.ts`) — on écrit la formule de tête, on retourne, on s'évalue. **Fiche** : tout le formulaire de la matière d'un coup d'œil, avec la pastille du dernier résultat de chaque carte. Historique sur l'appareil.
+
+### Bilan (`/bilan`)
+
+Une page par période (7 jours, 30 jours, trimestre, année scolaire depuis le 1er septembre) : temps total, jours travaillés, temps et moyenne par matière, écart avec la période précédente, notes et calibration, erreurs par type, annales, et l'état actuel de la carte du programme (`lib/bilan.ts`). « Imprimer ou PDF » : à l'impression, la navigation et les contrôles disparaissent et toutes les sections sont rendues d'emblée (`@media print` dans `app/globals.css`). Atteint depuis Progression → Bilan.
+
 ## Le point — l'écran d'ouverture
 
 À la première ouverture de la journée (et après 4 h d'absence, mesurée depuis la dernière activité dans l'application — `components/activity-tracker.tsx`), l'accueil s'ouvre sur **Le point** (`/point`, `lib/briefing.ts`) : une salutation, une phrase de résumé, le prochain mouvement de Next Move avec « Commencer », puis trois sections d'au plus trois lignes chacune — **Ce qui presse** (retard, échéance du jour ou du lendemain, travail qui ne tient plus, DS dans ≤ 3 j), **Tu repousses** (travail reporté ≥ 2 fois, plan « si… alors… » manqué, matière proposée ≥ 3 fois sans suite, cartes en retard, objectif de la semaine qui décroche ; puis, à surveiller : chapitre qui s'efface, erreurs sans « bonne idée », note en attente) et **Aujourd'hui** (minimum du soir, plans du jour, cartes du jour). On y revient en touchant la date de l'accueil ; Réglages → À l'ouverture le désactive.
@@ -186,6 +196,8 @@ app/(app)/annales         Annales corrigées avec Claude (lues dans Supabase)
 app/(app)/programme       Carte du programme MP et rétroplanning
 app/(app)/kholle          Mode khôlle : questions de cours tirées au sort
 app/(app)/epreuve         Épreuve blanche chronométrée
+app/(app)/formulaire      Formulaire en cartes flash
+app/(app)/bilan           Bilan imprimable d'une période
 app/api/mcp/[key]         Connecteur MCP : log_exercise, get_progress, get_today
 components/               Composants UI et par domaine (work, review, errors, progress, history, hub, ui)
 lib/                      Logique métier : storage (localStorage), planning, échéances, suivi du temps, notes, carnets, supabase/

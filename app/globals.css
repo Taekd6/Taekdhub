@@ -1328,3 +1328,25 @@
   --gc2: var(--g2);
 }
 
+
+/* IMPRESSION (le bilan, /bilan) — papier blanc, et tout ce qui entre en
+   scène au défilement est montré d'emblée : une impression ne défile pas,
+   les sections encore « en attente » sortiraient blanches. */
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+  .reveal,
+  .grow-x,
+  .grow-y,
+  .ring-draw,
+  .ring-grow,
+  .line-draw,
+  .area-fade,
+  .pop {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

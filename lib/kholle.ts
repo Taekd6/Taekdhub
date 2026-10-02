@@ -60,7 +60,7 @@ const RECENT_HOURS = 24;
 const RECENT_FACTOR = 0.1;
 
 /** Poids de tirage d'une question — exposé pour les tests et pour l'écran (« revient souvent »). */
-export function questionWeight(question: KholleQuestion, history: KholleHistory, now: Date): number {
+export function questionWeight(question: { id: string }, history: KholleHistory, now: Date): number {
   const last = history[question.id];
   if (!last) return NEVER_ASKED_WEIGHT;
   const base = GRADE_WEIGHT[last.grade];
@@ -68,14 +68,14 @@ export function questionWeight(question: KholleQuestion, history: KholleHistory,
   return hours >= 0 && hours < RECENT_HOURS ? base * RECENT_FACTOR : base;
 }
 
-/** Tire une question, pondérée ; `exclude` écarte celles déjà posées dans la séance. `null` s'il n'y a rien à tirer. */
-export function drawQuestion(
-  questions: KholleQuestion[],
+/** Tire une question (de khôlle, ou toute carte qui a un identifiant — le formulaire s'en sert aussi), pondérée ; `exclude` écarte celles déjà posées dans la séance. `null` s'il n'y a rien à tirer. */
+export function drawQuestion<T extends { id: string }>(
+  questions: T[],
   history: KholleHistory,
   now: Date,
   exclude: ReadonlySet<string> = new Set(),
   random: () => number = Math.random
-): KholleQuestion | null {
+): T | null {
   const pool = questions.filter((question) => !exclude.has(question.id));
   if (pool.length === 0) return null;
   const weights = pool.map((question) => questionWeight(question, history, now));

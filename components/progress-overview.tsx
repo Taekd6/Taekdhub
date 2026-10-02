@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, type CSSProperties } from "react";
+import Link from "next/link";
+import { Printer } from "lucide-react";
 import { Section } from "@/components/ui/section";
 import { Stat, StatRow } from "@/components/ui/stat";
 import { Skeleton } from "@/components/ui/state";
@@ -226,6 +228,14 @@ export function ProgressOverview() {
               label: "Bilan",
               content: (
                 <div className="space-y-5">
+                  {/* Le bilan imprimable d'une période (lib/bilan.ts) : à montrer, ou à relire avant un conseil de classe. */}
+                  <Link href="/bilan" className="surface flex items-center justify-between gap-3 p-5 text-[0.9375rem] font-bold text-ink hover:text-accent">
+                    <span>
+                      Bilan imprimable
+                      <span className="t-meta block font-semibold">Temps, notes, erreurs et programme sur une page, en PDF.</span>
+                    </span>
+                    <Printer size={18} aria-hidden className="shrink-0" />
+                  </Link>
                   {/* La conclusion d'abord, les mesures qui la fondent ensuite. */}
                   <WeeklyReviewSection workItems={workItems} sessions={sessions} preferences={preferences} />
                   <Section variant="panel" title="Vue d'ensemble" description="Où tu en es, et dans quel sens ça va.">
