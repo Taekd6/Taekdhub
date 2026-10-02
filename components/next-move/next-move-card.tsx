@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Check, ChevronDown, Moon, Shuffle, Target } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { CopyRequest } from "@/components/exercises/copy-request";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { cn } from "@/lib/cn";
 import { MOVE_KIND_LABEL, computeNextMove, topReasons, type MoveCandidate, type NextMoveInput, type SessionStep } from "@/lib/next-move/engine";
@@ -269,6 +270,7 @@ export function NextMoveCard({
               ))}
             </ul>
             <p className="t-meta mt-2 text-[0.8125rem]">{shown.instruction}</p>
+            {shown.request && <CopyRequest text={shown.request} className="mt-2" />}
             <dl className="mt-3 grid gap-1.5 text-[0.8125rem]">
               <div className="flex gap-2">
                 <dt className="shrink-0 font-bold text-subtle">Corrige :</dt>

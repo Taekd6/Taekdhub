@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRightLeft, CheckCircle2, EyeOff, Lightbulb, Plus, RotateCcw } from "lucide-react";
 import { ChapterSelect } from "@/components/exercises/chapter-select";
+import { CopyRequest } from "@/components/exercises/copy-request";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import {
   type ExerciseLevel,
 } from "@/lib/attempts";
 import { cn } from "@/lib/cn";
+import { fixableIssues, QUALITY_ISSUE_LABEL, qualityIssues, transferRequest } from "@/lib/exercise-quality";
 import { buildExercises, createRetryAttempt, dueRetries, progressLine, upcomingRetries, type Exercise } from "@/lib/exercises";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 import { localData } from "@/lib/storage";
@@ -77,6 +79,8 @@ export function RetryQueue() {
   const verified = useMemo(() => exercises.filter((exercise) => exercise.status === "vérifié").sort((a, b) => (b.verifiedOn ?? "").localeCompare(a.verifiedOn ?? "")).slice(0, 5), [exercises]);
   const transfers = useMemo(() => transferChecks(exercises, attempts, preferences.retryDelaysDays, today), [exercises, attempts, preferences.retryDelaysDays, today]);
   const transfersOpen = useMemo(() => transfers.filter((check) => check.status !== "acquis").slice(0, 6), [transfers]);
+  // Contrôle qualité : les exercices saisis ici dont le chapitre ou le niveau manque (lib/exercise-quality.ts).
+  const incomplete = useMemo(() => exercises.filter((exercise) => fixableIssues(exercise).length > 0).slice(0, 5), [exercises]);
   const [openKey, setOpenKey] = useState<string | null>(() => params.get("refaire"));
   const [transferKey, setTransferKey] = useState<string | null>(() => params.get("transfert"));
   const [adding, setAdding] = useState(false);
@@ -112,6 +116,22 @@ export function RetryQueue() {
         ? `« ${exercise.label} » : réussi sans aide. La correction est vérifiée. Dans ${TRANSFER_DELAY_LABEL}, un exercice de transfert vérifiera la méthode sur un autre énoncé.`
         : `« ${exercise.label} » : noté. L'exercice reviendra plus tard — c'est la règle tant qu'il n'est pas réussi sans aide.${carded ? " Fiche de méthode ajoutée à « À revoir »." : ""}`
     );
+  }
+
+  /** Complète chapitre et niveau sur toutes les tentatives saisies de l'exercice — la tentative elle-même ne change pas. */
+  function completeExercise(exercise: Exercise, patch: { chapterId: string | null; level: ExerciseLevel | null }) {
+    const at = new Date().toISOString();
+    const updated = attempts
+      .filter((attempt) => attempt.exerciseKey === exercise.key)
+      .map((attempt) => ({
+        ...attempt,
+        ...(patch.chapterId && !attempt.chapterId ? { chapterId: patch.chapterId } : {}),
+        ...(patch.level && !attempt.level ? { level: patch.level } : {}),
+        updatedAt: at,
+      }));
+    if (updated.length === 0) return;
+    saveAttempts(upsertAttempts(attempts, updated));
+    setFlash(`« ${exercise.label} » complété : il compte maintenant dans le diagnostic.`);
   }
 
   function recordTransfer(check: TransferCheck, input: TransferInput) {
@@ -202,6 +222,17 @@ export function RetryQueue() {
                       )
                     }
                   />
+                ))}
+              </ul>
+            </>
+          )}
+          {incomplete.length > 0 && (
+            <>
+              <p className="t-label mb-1 mt-5">Données à compléter</p>
+              <p className="t-meta mb-1 text-2xs">Sans chapitre ni niveau, un exercice ne peut pas guider les recommandations.</p>
+              <ul className="divide-y divide-line">
+                {incomplete.map((exercise) => (
+                  <QualityRow key={exercise.key} exercise={exercise} onSave={(patch) => completeExercise(exercise, patch)} />
                 ))}
               </ul>
             </>
@@ -368,6 +399,40 @@ function RetrySession({
   );
 }
 
+/** Un exercice incomplet : ce qui manque, et de quoi le compléter sur place. */
+function QualityRow({ exercise, onSave }: { exercise: Exercise; onSave: (patch: { chapterId: string | null; level: ExerciseLevel | null }) => void }) {
+  const fixable = fixableIssues(exercise);
+  const [chapterId, setChapterId] = useState<string | null>(exercise.chapterId);
+  const [level, setLevel] = useState<ExerciseLevel | null>(null);
+  const issues = qualityIssues(exercise);
+  return (
+    <li className="py-3">
+      <p className="truncate text-[0.9375rem] font-bold text-ink">{exercise.label}</p>
+      <ul className="t-meta text-2xs">
+        {issues.map((issue) => (
+          <li key={issue}>{QUALITY_ISSUE_LABEL[issue]}</li>
+        ))}
+      </ul>
+      <div className="mt-2 grid gap-2 sm:grid-cols-3">
+        {fixable.includes("chapitre") && exercise.subject && <ChapterSelect subject={exercise.subject} value={chapterId} onChange={setChapterId} />}
+        {fixable.includes("niveau") && (
+          <Select aria-label="Difficulté" value={level ?? ""} onChange={(event) => setLevel((event.target.value || null) as ExerciseLevel | null)}>
+            <option value="">Difficulté…</option>
+            {EXERCISE_LEVELS.map((value) => (
+              <option key={value} value={value}>
+                {EXERCISE_LEVEL_LABEL[value]}
+              </option>
+            ))}
+          </Select>
+        )}
+        <Button size="sm" variant="ghost" disabled={(chapterId === exercise.chapterId || !chapterId) && !level} onClick={() => onSave({ chapterId: chapterId !== exercise.chapterId ? chapterId : null, level })}>
+          Compléter
+        </Button>
+      </div>
+    </li>
+  );
+}
+
 const EMPTY_ANALYSIS: BlockAnalysis = { missed: "", derailedAt: "", tool: "", cue: "" };
 
 const ANALYSIS_FIELDS: { key: keyof BlockAnalysis; label: string; placeholder: string }[] = [
@@ -424,6 +489,7 @@ function TransferForm({ check, onCancel, onSave }: { check: TransferCheck; onCan
       <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-inset px-3 py-1.5 text-[0.8125rem] font-bold text-ink">
         <EyeOff size={14} aria-hidden /> Sans relire la correction de l&apos;exercice d&apos;origine.
       </p>
+      <CopyRequest text={transferRequest(check.exercise, check.analysis?.tool || null)} className="mt-3" />
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block sm:col-span-2">
           <span className="t-label mb-1.5 block">Le nouvel exercice</span>

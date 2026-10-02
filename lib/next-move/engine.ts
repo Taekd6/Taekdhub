@@ -1,11 +1,12 @@
 import type { AnnaleLog } from "@/lib/annales";
 import { mainDeck } from "@/lib/anki-mapping";
 import { ANKI_DUE_STALE_HOURS, latestDueInfo, snapshotAgeHours, type AnkiSnapshot } from "@/lib/anki-snapshot";
-import type { ExerciseAttempt } from "@/lib/attempts";
+import { EXERCISE_LEVEL_LABEL, type ExerciseAttempt } from "@/lib/attempts";
 import { buildDiagnosticContext, type DiagnosticContext } from "@/lib/diagnostic-context";
 import { FINDING_LABEL, mainFinding, type FindingKind } from "@/lib/diagnostic";
 import { bestProgrammeMatch } from "@/lib/programme";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
+import { exerciseRequest, levelToRequest, transferRequest, varietyWarning } from "@/lib/exercise-quality";
 import { transferChecks } from "@/lib/transfer";
 import { dueRetries } from "@/lib/exercises";
 import type { KholleHistory } from "@/lib/kholle";
@@ -107,6 +108,8 @@ export interface MoveCandidate {
   resource: { label: string; href: string } | null;
   terms: ScoreTerm[];
   score: number;
+  /** Demande d'exercice à copier pour Claude (lib/exercise-quality.ts), quand l'action consiste à en trouver un. */
+  request?: string;
 }
 
 export type StepKind = "move" | "pause";
@@ -774,6 +777,7 @@ function transferCandidates(input: NextMoveInput, context: DiagnosticContext): M
         resource: { label: "À refaire", href: "/annales" },
         terms,
         score: 0,
+        request: transferRequest(check.exercise, check.analysis?.tool || null),
       };
     });
 }
@@ -808,13 +812,18 @@ function diagnosticCandidates(input: NextMoveInput, context: DiagnosticContext):
     terms.push({ id: "hypothèse", points: 0, reason: `Hypothèse : ${finding.hypothesis}` });
     const diagnosticFocus = weeklyFocusTerm(input, chapter.id);
     if (diagnosticFocus) terms.push(diagnosticFocus);
+    // Trouver un exercice : niveau visé d'après les réussites, variété contrôlée, demande prête pour Claude.
+    const seeksExercise = shape.key.startsWith("exercice:") && !shape.key.endsWith(":temps");
+    const target = seeksExercise ? (finding.kind === "difficile" ? { level: "difficile" as const, reason: "Les problèmes difficiles sont en cause" } : levelToRequest(context.exercises, chapter.id)) : null;
+    const variety = seeksExercise ? varietyWarning(context.exercises, chapter.id) : null;
+    if (variety) terms.push({ id: "variété", points: 0, reason: variety });
     out.push({
       key: shape.key,
       kind: shape.kind,
       subject: chapter.subject,
       title: `${shape.title} : ${chapter.title}`,
       action: shape.action,
-      instruction: `${finding.action}${shape.suffix}`,
+      instruction: `${finding.action}${shape.suffix}${target ? ` Niveau visé : ${EXERCISE_LEVEL_LABEL[target.level]} (${target.reason}).` : ""}`,
       problem: `${FINDING_LABEL[finding.kind]} sur « ${chapter.title} ».`,
       doneWhen: finding.doneWhen,
       minMinutes: shape.minutes[0],
@@ -824,6 +833,7 @@ function diagnosticCandidates(input: NextMoveInput, context: DiagnosticContext):
       resource: { label: "Diagnostic", href: "/programme" },
       terms,
       score: 0,
+      ...(target ? { request: exerciseRequest({ subject: chapter.subject, chapter: chapter.title, level: target.level }) } : {}),
     });
   }
   return out;

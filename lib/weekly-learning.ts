@@ -1,5 +1,6 @@
-import { ATTEMPT_CAUSE_LABEL, isCleanSuccess, type AttemptCause, type ExerciseAttempt } from "@/lib/attempts";
+import { ATTEMPT_CAUSE_LABEL, EXERCISE_LEVEL_LABEL, isCleanSuccess, type AttemptCause, type ExerciseAttempt } from "@/lib/attempts";
 import { FINDING_LABEL, mainFinding, type FindingKind } from "@/lib/diagnostic";
+import { levelToRequest, varietyWarning } from "@/lib/exercise-quality";
 import type { DiagnosticContext } from "@/lib/diagnostic-context";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 import type { WeeklyFocus } from "@/lib/storage";
@@ -190,6 +191,15 @@ export function computeWeeklyLearning(context: DiagnosticContext, attempts: Exer
 
   // ── Décisions pour la semaine suivante ──
   const decisions: WeeklyDecision[] = toWork.map((entry) => ({ chapterId: entry.chapterId, text: `${entry.chapter} en priorité — ${entry.action}` }));
+  // Variété : des réussites toutes faciles dans un chapitre travaillé cette semaine ⇒ monter d'un niveau.
+  const workedChapters = new Set(context.exercises.filter((exercise) => exercise.chapterId && exercise.steps.some((step) => inWeek(step.day))).map((exercise) => exercise.chapterId!));
+  for (const chapterId of workedChapters) {
+    const warning = varietyWarning(context.exercises, chapterId);
+    const chapter = chapterOf(chapterId);
+    if (!warning || !chapter) continue;
+    const target = levelToRequest(context.exercises, chapterId);
+    decisions.push({ chapterId: null, text: `${chapter.title} : ${warning} Prochain exercice : ${EXERCISE_LEVEL_LABEL[target.level]}.` });
+  }
   const backlog = context.exercises.filter((exercise) => exercise.status === "à-refaire" && !isTransferKey(exercise.key)).length;
   if (backlog >= RETRY_BACKLOG) decisions.push({ chapterId: null, text: `${backlog} exercices attendent d'être refaits sans aide : les refaire avant d'en ouvrir de nouveaux.` });
   const transfersDue = transferChecks(context.exercises, attempts, retryDelaysDays, today).filter((check) => check.status === "à-faire").length;

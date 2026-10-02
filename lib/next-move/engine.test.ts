@@ -624,6 +624,21 @@ describe("refaire sans aide, diagnostic, Anki, repos", () => {
     expect(expired.find((entry) => entry.key === "exercice:m2-series-entieres")!.terms.some((term) => term.id === "bilan-semaine")).toBe(false);
   });
 
+  it("exercice ciblé : niveau visé, alerte de variété, demande pour Claude ; le transfert porte aussi sa demande", () => {
+    const attempts = ["a", "b", "c"].flatMap((key, index) => [
+      attempt("m2-series-entieres", `2026-09-0${index + 1}`, "échec", "sans", { exerciseKey: key, level: "direct" }),
+      attempt("m2-series-entieres", `2026-09-0${index + 4}`, "échec", "sans", { exerciseKey: key, level: "direct" }),
+      attempt("m2-series-entieres", `2026-09-1${index + 1}`, "réussi", "sans", { exerciseKey: key, level: "direct" }),
+    ]);
+    const ranked = rankCandidates(input({ attempts }));
+    const targeted = ranked.find((entry) => entry.key === "exercice:m2-series-entieres")!;
+    expect(targeted.instruction).toContain("Niveau visé : Classique (TD, CCINP)");
+    expect(targeted.terms.find((term) => term.id === "variété")).toMatchObject({ points: 0 });
+    expect(targeted.request).toContain("Séries entières");
+    expect(targeted.score).toBe(targeted.terms.reduce((sum, term) => sum + term.points, 0));
+    expect(ranked.find((entry) => entry.key.startsWith("transfert:"))?.request).toContain("DIFFÉRENT");
+  });
+
   it("application fragile sans exercice en attente : un exercice ciblé, pas une relecture du cours", () => {
     // Trois exercices finalement réussis, mais chacun après deux échecs : 3 réussites sans aide sur 9 tentatives.
     const attempts = ["a", "b", "c"].flatMap((key, index) => [
