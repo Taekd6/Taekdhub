@@ -159,6 +159,14 @@ export type Preferences = {
    * vaut pour toutes les suivantes.
    */
   retryDelaysDays: number[];
+  /**
+   * BILAN HEBDOMADAIRE (lib/weekly-learning.ts) : les chapitres que l'élève
+   * a ADOPTÉS comme priorités pour les jours qui suivent le bilan. Next Move
+   * les fait passer devant tant que `until` (exclu) n'est pas atteint et que
+   * le diagnostic y voit encore quelque chose. `null` : aucune décision.
+   * Champ du document `preferences`, déjà synchronisé : aucune migration.
+   */
+  weeklyFocus: WeeklyFocus | null;
   /*
    * `subjectPalette` / `subjectColors` (palette et surcharges de couleur par
    * matière, refonte « Nuit ») n'existent plus : les matières n'ont plus de
@@ -168,6 +176,29 @@ export type Preferences = {
    * champ par champ.
    */
 };
+
+export interface WeeklyFocus {
+  /** Jour du bilan qui l'a décidé (AAAA-MM-JJ). */
+  decidedOn: string;
+  /** Premier jour où elle ne vaut plus (exclu). */
+  until: string;
+  chapterIds: string[];
+}
+
+/** La décision du bilan, en vigueur ce jour-là ? */
+export function activeWeeklyFocus(preferences: Pick<Preferences, "weeklyFocus">, today: string): WeeklyFocus | null {
+  const focus = preferences.weeklyFocus;
+  return focus && focus.decidedOn <= today && today < focus.until && focus.chapterIds.length > 0 ? focus : null;
+}
+
+function normalizeWeeklyFocus(raw: unknown): WeeklyFocus | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const item = raw as Record<string, unknown>;
+  const isDay = (value: unknown): value is string => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+  if (!isDay(item.decidedOn) || !isDay(item.until) || item.until <= item.decidedOn) return null;
+  const chapterIds = normalizeProgrammeIds(item.chapterIds).slice(0, 5);
+  return chapterIds.length > 0 ? { decidedOn: item.decidedOn, until: item.until, chapterIds } : null;
+}
 
 /**
  * Capacité par défaut, du lundi au dimanche. Ce sont des VALEURS DE DÉPART
@@ -244,6 +275,7 @@ const defaults: Preferences = {
   colleChapters: [],
   ankiDeckChapters: {},
   retryDelaysDays: [2, 5, 12],
+  weeklyFocus: null,
 };
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
@@ -1413,6 +1445,7 @@ export function normalizePreferences(raw: unknown): Preferences {
     colleChapters: normalizeProgrammeIds(item.colleChapters),
     ankiDeckChapters: normalizeDeckChapters(item.ankiDeckChapters),
     retryDelaysDays: normalizeRetryDelays(item.retryDelaysDays),
+    weeklyFocus: normalizeWeeklyFocus(item.weeklyFocus),
     // `accent`, `subjectPalette` et `subjectColors` ne sont pas recopiés :
     // lus (pour la migration ci-dessus), puis abandonnés.
   };

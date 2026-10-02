@@ -189,6 +189,7 @@ function classify(candidate: MoveCandidate, input: NextMoveInput): { tier: Agend
   }
   if (candidate.kind === "cartes") return { tier: "indispensable", reason: "Révisions dues", workItemId: null, dueDate: null };
   if (candidate.kind === "anki" && candidate.key === "anki:dues") return { tier: "indispensable", reason: "Cartes Anki dues", workItemId: null, dueDate: null };
+  if (ids.has("bilan-semaine")) return { tier: "important", reason: "Priorité adoptée au bilan de la semaine", workItemId: null, dueDate: null };
   if (candidate.kind === "refaire") {
     const reason = candidate.key.startsWith("transfert:") ? "Vérifier la méthode sur un autre énoncé" : candidate.key.startsWith("exercice:") ? "Exercice ciblé du diagnostic" : "Nouvelle tentative prévue";
     return { tier: "important", reason, workItemId: null, dueDate: null };

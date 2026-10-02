@@ -23,7 +23,7 @@ import { computeSubjectTargets } from "@/lib/subject-targets";
 import { dayKey, subjects as SUBJECT_ORDER } from "@/lib/study";
 import { formatMinutesSpan } from "@/lib/utils";
 import { activeWorkItems, daysUntilDue, remainingMinutes, WORK_ITEM_KIND_META } from "@/lib/work-items";
-import type { ChapterMemory, DailyCheckin, ErrorEntry, ErrorType, Grade, NextMoveKind, NextMoveRecord, Preferences, ReviewItem, WorkItem } from "@/lib/storage";
+import { activeWeeklyFocus, type ChapterMemory, type DailyCheckin, type ErrorEntry, type ErrorType, type Grade, type NextMoveKind, type NextMoveRecord, type Preferences, type ReviewItem, type WorkItem } from "@/lib/storage";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
@@ -219,6 +219,8 @@ const RETRY_LATE_MAX = 10;
 const RETRY_DIAGNOSTIC = 8;
 const RETRY_PER_SUBJECT = 2;
 /** Diagnostic (lib/diagnostic.ts) : un constat établi pèse plus qu'un signal. */
+/** Chapitre adopté comme priorité au bilan de la semaine (lib/weekly-learning.ts). */
+const WEEKLY_FOCUS_POINTS = 12;
 const DIAGNOSTIC_ESTABLISHED = 18;
 const DIAGNOSTIC_SIGNAL = 10;
 /** Anki : seulement d'après un relevé assez récent (lib/anki-snapshot.ts). */
@@ -708,6 +710,8 @@ function retryCandidates(input: NextMoveInput, context: DiagnosticContext): Move
     const diagnosis = exercise.chapterId ? diagnosisByChapter.get(exercise.chapterId) : undefined;
     const finding = diagnosis?.findings.find((entry) => entry.level === "établi" && (entry.kind === "méthode" || entry.kind === "application" || entry.kind === "démarrage"));
     if (finding) terms.push({ id: "diagnostic", points: RETRY_DIAGNOSTIC, reason: `${FINDING_LABEL[finding.kind]} établi sur « ${diagnosis!.chapter.title} »` });
+    const retryFocus = weeklyFocusTerm(input, exercise.chapterId);
+    if (retryFocus) terms.push(retryFocus);
     const lastMinutes = [...exercise.steps].reverse().find((step) => step.minutes !== null)?.minutes ?? null;
     const ideal = clamp(lastMinutes ?? 30, 15, 45);
     out.push({
@@ -752,6 +756,8 @@ function transferCandidates(input: NextMoveInput, context: DiagnosticContext): M
         { id: "transfert", points: TRANSFER_POINTS + (failedBefore > 0 ? RETRY_PER_FAIL * Math.min(3, failedBefore) : 0), reason: failedBefore > 0 ? `${failedBefore} transfert${failedBefore > 1 ? "s" : ""} sans réussite sans aide : la méthode n'est pas encore à toi` : `« ${check.exercise.label} » réussi sans aide le ${check.exercise.verifiedOn} : reste à vérifier la méthode sur un autre énoncé` },
       ];
       if (check.analysis?.tool) terms.push({ id: "transfert-méthode", points: 0, reason: `Méthode à vérifier : ${check.analysis.tool}` });
+      const transferFocus = weeklyFocusTerm(input, check.exercise.chapterId);
+      if (transferFocus) terms.push(transferFocus);
       return {
         key: `transfert:${check.exercise.key}`,
         kind: "refaire" as const,
@@ -782,7 +788,10 @@ function diagnosticCandidates(input: NextMoveInput, context: DiagnosticContext):
   const memoryRecall = new Set(
     input.chapterMemory.filter((chapter) => !chapter.archived).map((chapter) => bestProgrammeMatch(chapter.subject, chapter.title)?.id).filter(Boolean) as string[]
   );
-  for (const diagnosis of context.ranked.slice(0, 6)) {
+  // Les six premiers du diagnostic, plus les chapitres adoptés au bilan qui seraient plus loin.
+  const focus = activeWeeklyFocus(input.preferences, dayKey(input.now));
+  const considered = context.ranked.filter((diagnosis, index) => index < 6 || (focus?.chapterIds.includes(diagnosis.chapter.id) ?? false));
+  for (const diagnosis of considered) {
     const finding = mainFinding(diagnosis);
     if (!finding) continue;
     const chapter = diagnosis.chapter;
@@ -797,6 +806,8 @@ function diagnosticCandidates(input: NextMoveInput, context: DiagnosticContext):
     ];
     if (finding.evidence.length > 1) terms.push({ id: "diagnostic-détail", points: 0, reason: finding.evidence[finding.evidence.length - 1] });
     terms.push({ id: "hypothèse", points: 0, reason: `Hypothèse : ${finding.hypothesis}` });
+    const diagnosticFocus = weeklyFocusTerm(input, chapter.id);
+    if (diagnosticFocus) terms.push(diagnosticFocus);
     out.push({
       key: shape.key,
       kind: shape.kind,
@@ -1059,6 +1070,20 @@ export function diagnosticContextOf(input: NextMoveInput): DiagnosticContext {
   });
   diagnosticCache.set(input, context);
   return context;
+}
+
+/**
+ * DÉCISION DU BILAN : un chapitre que l'élève a adopté comme priorité au
+ * bilan hebdomadaire passe devant pendant sept jours. Le terme est ajouté
+ * seulement à une action qui existe déjà (exercice à refaire, transfert,
+ * action du diagnostic) : la décision donne un ordre, jamais du travail sans
+ * constat derrière.
+ */
+function weeklyFocusTerm(input: NextMoveInput, chapterId: string | null): ScoreTerm | null {
+  if (!chapterId) return null;
+  const focus = activeWeeklyFocus(input.preferences, dayKey(input.now));
+  if (!focus || !focus.chapterIds.includes(chapterId)) return null;
+  return { id: "bilan-semaine", points: WEEKLY_FOCUS_POINTS, reason: `Priorité adoptée au bilan du ${focus.decidedOn}` };
 }
 
 /* ── Classement ───────────────────────────────────────────────────── */

@@ -605,6 +605,25 @@ describe("refaire sans aide, diagnostic, Anki, repos", () => {
     expect(rankCandidates(input({ attempts: done })).some((entry) => entry.key.startsWith("transfert:"))).toBe(false);
   });
 
+  it("priorité adoptée au bilan : un terme visible sur l'action du chapitre, sept jours, jamais une action sans constat", () => {
+    const attempts = ["a", "b", "c"].flatMap((key, index) => [
+      attempt("m2-series-entieres", `2026-09-0${index + 1}`, "échec", "sans", { exerciseKey: key }),
+      attempt("m2-series-entieres", `2026-09-0${index + 4}`, "échec", "sans", { exerciseKey: key }),
+      attempt("m2-series-entieres", `2026-09-1${index + 1}`, "réussi", "sans", { exerciseKey: key }),
+    ]);
+    const plain = rankCandidates(input({ attempts })).find((entry) => entry.key === "exercice:m2-series-entieres")!;
+    const weeklyFocus = { decidedOn: "2026-09-21", until: "2026-09-28", chapterIds: ["m2-series-entieres", "m1-groupes"] };
+    const ranked = rankCandidates(input({ attempts, preferences: prefs({ weeklyFocus }) }));
+    const focused = ranked.find((entry) => entry.key === "exercice:m2-series-entieres")!;
+    expect(focused.terms.find((term) => term.id === "bilan-semaine")).toMatchObject({ points: 12, reason: "Priorité adoptée au bilan du 2026-09-21" });
+    expect(focused.score).toBe(plain.score + 12);
+    // Un chapitre adopté sans constat ne crée aucune action.
+    expect(ranked.some((entry) => entry.key.includes("m1-groupes"))).toBe(false);
+    // Décision expirée : plus d'effet.
+    const expired = rankCandidates(input({ attempts, preferences: prefs({ weeklyFocus: { ...weeklyFocus, until: "2026-09-24" } }) }));
+    expect(expired.find((entry) => entry.key === "exercice:m2-series-entieres")!.terms.some((term) => term.id === "bilan-semaine")).toBe(false);
+  });
+
   it("application fragile sans exercice en attente : un exercice ciblé, pas une relecture du cours", () => {
     // Trois exercices finalement réussis, mais chacun après deux échecs : 3 réussites sans aide sur 9 tentatives.
     const attempts = ["a", "b", "c"].flatMap((key, index) => [

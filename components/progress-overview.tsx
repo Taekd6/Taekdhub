@@ -20,6 +20,7 @@ import { SubjectEvolution } from "@/components/progress/subject-evolution";
 import { GradesSection } from "@/components/progress/grades-section";
 import { SleepSection } from "@/components/progress/sleep-section"; // check-in du soir
 import { WorkAndResults } from "@/components/progress/work-and-results";
+import { WeeklyLearningSection } from "@/components/progress/weekly-learning";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak } from "@/lib/gamification";
 import { computeWeeklyReview } from "@/lib/weekly-review";
@@ -68,7 +69,7 @@ const TAB_IDS = ["temps", "notes", "regularite", "sommeil", "bilan"];
  * lib/gamification.ts.
  */
 export function ProgressOverview() {
-  const { sessions, weekSnapshots, workItems, grades, dayPlans, preferences, saveGrades, ready, checkins } = usePrepahubData();
+  const { sessions, weekSnapshots, workItems, grades, dayPlans, preferences, saveGrades, ready, checkins, attempts, chapterMemory, errors, ankiSnapshots, savePreferences } = usePrepahubData();
   const tabsRef = useRef<HTMLDivElement>(null);
 
   const hero = useMemo(() => {
@@ -238,6 +239,8 @@ export function ProgressOverview() {
                   </Link>
                   {/* La conclusion d'abord, les mesures qui la fondent ensuite. */}
                   <WeeklyReviewSection workItems={workItems} sessions={sessions} preferences={preferences} />
+                  {/* Les compétences, à côté du temps : des preuves, et des décisions à adopter (lib/weekly-learning.ts). */}
+                  <WeeklyLearningSection attempts={attempts} chapterMemory={chapterMemory} errors={errors} ankiSnapshots={ankiSnapshots} workItems={workItems} preferences={preferences} savePreferences={savePreferences} />
                   <Section variant="panel" title="Vue d'ensemble" description="Où tu en es, et dans quel sens ça va.">
                     <EvolutionOverview sessions={sessions} />
                   </Section>

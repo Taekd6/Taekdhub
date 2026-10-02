@@ -739,6 +739,7 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
         "programmeSeen",
         "retryDelaysDays",
         "themeMode",
+        "weeklyFocus",
         "weeklyGoalMinutes",
         "weeklySubjectTargets",
       ]
