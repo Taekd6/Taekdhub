@@ -11,6 +11,10 @@ import { Stat, StatRow } from "@/components/ui/stat";
 import { Skeleton } from "@/components/ui/state";
 import { buttonVariants } from "@/components/ui/button";
 import { useAnnales } from "@/hooks/use-annales";
+import { useKholleHistory } from "@/hooks/use-kholle-history";
+import { DiagnosticPanel } from "@/components/programme/diagnostic-panel";
+import { buildDiagnosticContext } from "@/lib/diagnostic-context";
+import { FINDING_LABEL, mainFinding, type Finding } from "@/lib/diagnostic";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { cn } from "@/lib/cn";
 import { PROGRAMME_SUBJECTS } from "@/lib/programme-data";
@@ -52,14 +56,21 @@ const contestFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: 
  * trace. UN SEUL `usePrepahubData()` pour l'écran.
  */
 export function ProgrammeOverview() {
-  const { chapterMemory, preferences, savePreferences, ready } = usePrepahubData();
+  const { chapterMemory, preferences, savePreferences, ready, attempts, errors, ankiSnapshots, workItems } = usePrepahubData();
   const { logs: annales } = useAnnales();
+  const kholle = useKholleHistory();
+  // Le diagnostic des lacunes (lib/diagnostic.ts) : le point faible principal, et le constat de chaque tuile.
+  const diagnostic = useMemo(
+    () => buildDiagnosticContext({ chapterMemory, attempts, errors, ankiSnapshots, workItems, preferences, annales, kholle, now: new Date() }),
+    [chapterMemory, attempts, errors, ankiSnapshots, workItems, preferences, annales, kholle]
+  );
+  const findingByChapter = useMemo(() => new Map(diagnostic.diagnoses.map((diagnosis) => [diagnosis.chapter.id, mainFinding(diagnosis)])), [diagnostic]);
   const [subject, setSubject] = useState<Subject>("Mathématiques");
   const today = dayKey(new Date());
 
   const mastery = useMemo(
-    () => computeMastery({ chapterMemory, annales, seen: preferences.programmeSeen, today }),
-    [chapterMemory, annales, preferences.programmeSeen, today]
+    () => computeMastery({ chapterMemory, annales, attempts, seen: preferences.programmeSeen, today }),
+    [chapterMemory, annales, attempts, preferences.programmeSeen, today]
   );
   const summary = useMemo(() => summarizeMastery(mastery), [mastery]);
   const plan = useMemo(() => buildRetroplanning(mastery, preferences.contestDate, today), [mastery, preferences.contestDate, today]);
@@ -82,9 +93,20 @@ export function ProgrammeOverview() {
 
   return (
     <div className="mx-auto max-w-[68rem] space-y-8 sm:space-y-10">
-      <PageHero title="Le programme" lede="Tout le programme MP, coloré par ce que tu sais vraiment." illustration={<Illustration name="revisions" size={56} />} />
+      <PageHero
+        title="Le programme"
+        lede="Tout le programme MP, coloré par ce que tu sais vraiment."
+        illustration={<Illustration name="revisions" size={56} />}
+        actions={
+          <Link href="/anki" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+            Anki
+          </Link>
+        }
+      />
 
-      <Section variant="feature" title="Où tu en es">
+      <DiagnosticPanel context={diagnostic} />
+
+      <Section variant="panel" title="Où tu en es">
         <StatRow>
           <Stat
             label="Solide"
@@ -117,7 +139,7 @@ export function ProgrammeOverview() {
             <Section key={year} variant="panel" title={year === 1 ? "Première année (sup)" : "Deuxième année (spé)"} description={yearLine(chapters)}>
               <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {chapters.map((entry) => (
-                  <ChapterTile key={entry.chapter.id} entry={entry} onToggleSeen={() => toggleSeen(entry.chapter.id)} />
+                  <ChapterTile key={entry.chapter.id} entry={entry} finding={findingByChapter.get(entry.chapter.id) ?? null} onToggleSeen={() => toggleSeen(entry.chapter.id)} />
                 ))}
               </ul>
             </Section>
@@ -177,7 +199,7 @@ function yearLine(chapters: ChapterMastery[]): string {
   return `${seen} vu${seen > 1 ? "s" : ""} sur ${chapters.length} · ${solid} solide${solid > 1 ? "s" : ""}`;
 }
 
-function ChapterTile({ entry, onToggleSeen }: { entry: ChapterMastery; onToggleSeen: () => void }) {
+function ChapterTile({ entry, finding, onToggleSeen }: { entry: ChapterMastery; finding: Finding | null; onToggleSeen: () => void }) {
   const tone = STATUS_TONE[entry.status];
   // « Vu en cours » n'a de sens que tant qu'aucune trace ne le dit déjà.
   const canToggle = entry.status === "pas-vu" || (entry.status === "jamais" && entry.declaredSeen);
@@ -188,6 +210,11 @@ function ChapterTile({ entry, onToggleSeen }: { entry: ChapterMastery; onToggleS
         {PROGRAMME_STATUS_META[entry.status].label}
         <span className="font-semibold text-subtle"> · {entry.reason}</span>
       </p>
+      {finding && (
+        <p className="mt-1 text-2xs font-bold text-rose-300">
+          {FINDING_LABEL[finding.kind]} ({finding.level})
+        </p>
+      )}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
         {canToggle && (
           <button

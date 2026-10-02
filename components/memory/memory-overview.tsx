@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ChapterList } from "@/components/memory/chapter-list";
 import { MemoryCard } from "@/components/memory/memory-card";
@@ -59,6 +60,11 @@ export function MemoryOverview() {
         title="Ma mémoire"
         lede="Ta chance de te souvenir de chaque chapitre, aujourd'hui."
         illustration={<Illustration name="revisions" size={56} />}
+        actions={
+          <Link href="/anki" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+            Relier Anki
+          </Link>
+        }
       />
 
       <MemoryCard chapters={chapterMemory} saveChapters={saveChapterMemory} ready={ready} onMemoryPage />

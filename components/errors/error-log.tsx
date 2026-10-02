@@ -12,6 +12,8 @@ import { Illustration } from "@/components/ui/illustrations";
 import { FilterPills } from "@/components/ui/pills";
 import { Section } from "@/components/ui/section";
 import { EmptyState, Skeleton } from "@/components/ui/state";
+import { useAnnales } from "@/hooks/use-annales";
+import { buildExercises, verifyError, type ErrorVerification } from "@/lib/exercises";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { cn } from "@/lib/cn";
 import {
@@ -27,7 +29,7 @@ import {
 } from "@/lib/error-log";
 import { createReviewItem } from "@/lib/review-items";
 import { ERROR_TYPES, type ErrorEntry, type ErrorType, type ReviewItem } from "@/lib/storage";
-import { subjects } from "@/lib/study";
+import { dayKey, subjects } from "@/lib/study";
 import type { Subject } from "@/lib/supabase/types";
 
 /**
@@ -42,7 +44,13 @@ import type { Subject } from "@/lib/supabase/types";
  * s'effaceraient mutuellement leurs ajouts.
  */
 export function ErrorLog() {
-  const { errors, saveErrors, reviewItems, saveReviewItems, ready } = usePrepahubData();
+  const { errors, saveErrors, reviewItems, saveReviewItems, ready, attempts, preferences } = usePrepahubData();
+  const { logs: annales } = useAnnales();
+  // Une erreur reliée à un exercice n'est « corrigée » qu'après une réussite sans aide (lib/exercises.ts#verifyError).
+  const exercisesByKey = useMemo(
+    () => new Map(buildExercises({ annales, attempts, retryDelaysDays: preferences.retryDelaysDays, today: dayKey(new Date()) }).map((exercise) => [exercise.key, exercise])),
+    [annales, attempts, preferences.retryDelaysDays]
+  );
   const [subject, setSubject] = useState<Subject | "all">("all");
   const [type, setType] = useState<ErrorType | "all">("all");
   const [period, setPeriod] = useState<StatsPeriod>("recent");
@@ -161,6 +169,7 @@ export function ErrorLog() {
                           entry={entry}
                           showSubject={subject === "all"}
                           reviewItems={reviewItems}
+                          verification={verifyError(entry, exercisesByKey)}
                           fresh={entry.id === lastSaved?.id}
                           onSendToReview={() => sendToReview(entry)}
                           onRemove={() => saveErrors(removeErrorEntry(errors, entry.id))}
@@ -199,6 +208,7 @@ function ErrorRow({
   entry,
   showSubject,
   reviewItems,
+  verification,
   fresh,
   onSendToReview,
   onRemove,
@@ -206,6 +216,7 @@ function ErrorRow({
   entry: ErrorEntry;
   showSubject: boolean;
   reviewItems: ReviewItem[];
+  verification: ErrorVerification;
   fresh: boolean;
   onSendToReview: () => void;
   onRemove: () => void;
@@ -224,6 +235,12 @@ function ErrorRow({
           {ERROR_SOURCE_META[entry.source].label}
           {" · "}
           {dateFormat.format(new Date(`${entry.date}T00:00:00`))}
+          {verification.state === "vérifiée" && <span className="rounded-full bg-emerald-400/[0.14] px-2 py-0.5 text-emerald-300">Corrigée, vérifiée le {dateFormat.format(new Date(`${verification.on}T12:00:00`))}</span>}
+          {verification.state === "à-vérifier" && (
+            <Link href="/annales" className="rounded-full bg-amber-400/[0.14] px-2 py-0.5 text-amber-300 hover:underline">
+              À vérifier{verification.on ? ` le ${dateFormat.format(new Date(`${verification.on}T12:00:00`))}` : ""}
+            </Link>
+          )}
         </p>
         {sendable && (
           <button

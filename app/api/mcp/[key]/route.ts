@@ -45,7 +45,8 @@ const mcp = createMcpHandler((server) => {
     "log_exercise",
     {
       title: "Enregistrer un exercice",
-      description: "Enregistre le résultat d'un exercice d'annale corrigé (appelé après chaque correction). Il apparaît dans TaekdHub (page Annales) et nourrit ses recommandations.",
+      description:
+        "Enregistre le résultat d'un exercice d'annale corrigé (appelé après chaque correction). Il apparaît dans TaekdHub (page Annales) et nourrit ses recommandations. Pour une NOUVELLE tentative d'un exercice déjà fait, réutilise exactement la même `source` et le même `chapitre` : les tentatives sont regroupées sur cette clé.",
       inputSchema: z.object({
         matiere: z.string().describe("maths / physique / chimie"),
         chapitre: z.string().describe("ex : réduction, séries entières"),
@@ -53,6 +54,10 @@ const mcp = createMcpHandler((server) => {
         niveau: z.string().optional().describe("CCINP / Mines / Centrale / X-ENS"),
         resultat: z.enum(["réussi", "partiel", "échec"]),
         indices: z.number().int().min(0).max(3).optional(),
+        aide: z
+          .enum(["sans", "indices", "correction"])
+          .optional()
+          .describe("aide réellement utilisée pendant l'essai : sans, indices, ou correction (la correction a été montrée avant la fin). Seule une réussite « sans » prouve la maîtrise."),
         temps_min: z.number().int().optional().describe("temps réellement passé, en minutes"),
         temps_prevu: z.number().int().optional().describe("temps que l'élève pensait mettre, annoncé AVANT de commencer"),
         erreurs: z.array(z.string()).optional().describe("types d'erreurs relevés à la correction"),
@@ -63,6 +68,13 @@ const mcp = createMcpHandler((server) => {
       const user_id = await ownerId();
       if (!user_id) return text(NO_OWNER);
       const { error } = await db().from("exercise_logs").insert({ ...args, user_id });
+      // 42703 : la colonne `aide` n'existe pas encore (migration 0008 non appliquée) — on enregistre sans elle plutôt que de perdre l'exercice.
+      if (error?.code === "42703" && args.aide !== undefined) {
+        const { aide: _aide, ...rest } = args;
+        void _aide;
+        const retry = await db().from("exercise_logs").insert({ ...rest, user_id });
+        return text(retry.error ? `Erreur : ${retry.error.message}` : "Enregistré (sans le niveau d'aide : migration 0008 à appliquer).");
+      }
       return text(error ? `Erreur : ${error.message}` : "Enregistré.");
     }
   );
@@ -94,7 +106,7 @@ const mcp = createMcpHandler((server) => {
     {
       title: "Où j'en suis aujourd'hui",
       description:
-        "L'état du jour dans TaekdHub : la recommandation Next Move et ses raisons, ce qui presse, les échéances et DS à venir, les chapitres qui s'effacent de la mémoire (FSRS), les erreurs récentes et les chapitres où les annales bloquent. À appeler AVANT de proposer un exercice, pour viser le vrai point faible.",
+        "L'état du jour dans TaekdHub : la recommandation Next Move (raison, problème corrigé, critère de fin), le point faible principal établi par le diagnostic (cours, méthode, application, calcul, temps… avec ses preuves), les exercices à refaire sans aide, les échéances et DS, la mémoire des chapitres, les erreurs récentes, les cartes Anki dues au dernier relevé. À appeler AVANT de proposer un exercice, pour viser le vrai point faible.",
       inputSchema: z.object({}),
     },
     async () => {

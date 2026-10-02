@@ -8,6 +8,8 @@ import { dayKey } from "@/lib/study";
 import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
 import { DATA_CHANGED_EVENT } from "@/lib/sync/events";
 import type { WorkSession } from "@/lib/supabase/types";
+import type { ExerciseAttempt } from "@/lib/attempts";
+import type { AnkiSnapshot } from "@/lib/anki-snapshot";
 
 type DataState = {
   sessions: WorkSession[];
@@ -28,6 +30,10 @@ type DataState = {
   /** Historique Next Move — voir `NextMoveRecord` (lib/storage.ts). */
   nextMoves: NextMoveRecord[];
   weekSnapshots: WeekSnapshot[];
+  /** Tentatives d'exercice — voir lib/attempts.ts. */
+  attempts: ExerciseAttempt[];
+  /** Relevés Anki — voir lib/anki-snapshot.ts. */
+  ankiSnapshots: AnkiSnapshot[];
   lastBackupAt: string | null;
   preferences: Preferences;
   ready: boolean;
@@ -110,6 +116,8 @@ function readAll(): Omit<DataState, "ready" | "writeFailedAt"> {
     checkins: localData.checkins(),
     chapterMemory: localData.chapterMemory(),
     nextMoves: localData.nextMoves(),
+    attempts: localData.attempts(),
+    ankiSnapshots: localData.ankiSnapshots(),
     weekSnapshots,
     lastBackupAt: localData.lastBackupAt(),
     preferences,
@@ -127,6 +135,8 @@ export function usePrepahubData() {
     checkins: [],
     chapterMemory: [],
     nextMoves: [],
+    attempts: [],
+    ankiSnapshots: [],
     weekSnapshots: [],
     lastBackupAt: null,
     preferences: localData.preferences(),
@@ -258,10 +268,27 @@ export function usePrepahubData() {
     setData((prev) => ({ ...prev, nextMoves: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
+  /* ── Tentatives d'exercice et relevés Anki ──
+   * REMPLACEMENT, même règle que `saveReviewItems` : écriture refusée ⇒
+   * l'état reçoit ce qui est RÉELLEMENT sur le disque. */
+  const saveAttempts = useCallback((attempts: ExerciseAttempt[]) => {
+    const written = localData.saveAttempts(attempts);
+    const stored = written ? attempts : localData.attempts();
+    setData((prev) => ({ ...prev, attempts: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
+    return written;
+  }, []);
+
+  const saveAnkiSnapshots = useCallback((ankiSnapshots: AnkiSnapshot[]) => {
+    const written = localData.saveAnkiSnapshots(ankiSnapshots);
+    const stored = written ? ankiSnapshots : localData.ankiSnapshots();
+    setData((prev) => ({ ...prev, ankiSnapshots: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
+    return written;
+  }, []);
+
   const savePreferences = useCallback((preferences: Preferences) => {
     localData.savePreferences(preferences);
     setData((prev) => ({ ...prev, preferences, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
   }, []);
 
-  return { ...data, refresh, saveSessions, removeSession, saveWorkItems, saveGrades, saveReviewItems, saveErrors, saveCheckins, saveChapterMemory, saveNextMoves, savePreferences };
+  return { ...data, refresh, saveSessions, removeSession, saveWorkItems, saveGrades, saveReviewItems, saveErrors, saveCheckins, saveChapterMemory, saveNextMoves, saveAttempts, saveAnkiSnapshots, savePreferences };
 }

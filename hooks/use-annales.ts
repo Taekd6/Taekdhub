@@ -22,6 +22,8 @@ import { supabase } from "@/lib/supabase/client";
 const CACHE_KEY = "prepahub:annales-cache";
 const STALE_MS = 5 * 60_000;
 const COLUMNS = "id, created_at, matiere, chapitre, source, niveau, resultat, indices, temps_min, temps_prevu, erreurs, commentaire";
+/** Avec la colonne `aide` (migration 0008) — essayée d'abord, puis sans elle tant que la migration n'est pas appliquée. */
+const COLUMNS_WITH_HELP = `${COLUMNS}, aide`;
 
 export type AnnalesStatus =
   /** Pas de Supabase sur ce déploiement. */
@@ -84,7 +86,10 @@ async function load(userId: string, force: boolean): Promise<void> {
   }
   setStore({ loading: true });
   inFlight = (async () => {
-    const { data, error } = await supabase!.from("exercise_logs").select(COLUMNS).order("created_at", { ascending: false }).limit(1000);
+    const query = (columns: string) => supabase!.from("exercise_logs").select(columns).order("created_at", { ascending: false }).limit(1000);
+    let { data, error }: { data: unknown[] | null; error: { code?: string; message: string } | null } = await query(COLUMNS_WITH_HELP);
+    // 42703 : colonne inconnue — la base n'a pas encore la migration 0008.
+    if (error?.code === "42703") ({ data, error } = await query(COLUMNS));
     if (store.userId !== userId) return; // déconnecté entre-temps
     if (error) {
       setStore({ loading: false, error: error.message });
@@ -173,5 +178,6 @@ function toRow(log: AnnaleLog) {
     temps_prevu: log.plannedMinutes,
     erreurs: log.errors,
     commentaire: log.comment,
+    aide: log.helpDeclared ? log.help : null,
   };
 }

@@ -1,4 +1,11 @@
-import { matchChapter, weakChapters, WEAK_WINDOW_DAYS, type AnnaleLog } from "@/lib/annales";
+import type { AnnaleLog } from "@/lib/annales";
+import { mainDeck } from "@/lib/anki-mapping";
+import { ANKI_DUE_STALE_HOURS, latestDueInfo, snapshotAgeHours, type AnkiSnapshot } from "@/lib/anki-snapshot";
+import type { ExerciseAttempt } from "@/lib/attempts";
+import { buildDiagnosticContext, type DiagnosticContext } from "@/lib/diagnostic-context";
+import { FINDING_LABEL, mainFinding } from "@/lib/diagnostic";
+import { dueRetries } from "@/lib/exercises";
+import type { KholleHistory } from "@/lib/kholle";
 import { atRisk, AT_RISK_THRESHOLD, chapterTime, retrievabilityToday } from "@/lib/chapter-memory";
 import { chapterReadiness, examScopeIndex } from "@/lib/exam-prep";
 import { DESIRED_RETENTION } from "@/lib/fsrs";
@@ -60,6 +67,8 @@ export const MOVE_KIND_LABEL: Record<MoveKind, string> = {
   cartes: "révisions espacées",
   erreurs: "reprise ciblée",
   bloc: "bloc de travail",
+  refaire: "refaire sans aide",
+  anki: "révisions Anki",
 };
 
 export interface ScoreTerm {
@@ -82,6 +91,10 @@ export interface MoveCandidate {
   action: string;
   /** Comment s'y prendre, en une phrase. */
   instruction: string;
+  /** Le problème que l'action corrige, en une phrase. */
+  problem: string;
+  /** Comment savoir que c'est terminé. */
+  doneWhen: string;
   minMinutes: number;
   idealMinutes: number;
   maxMinutes: number;
@@ -109,6 +122,12 @@ export type NextMoveStatus =
   | "calme"
   /** Aucune donnée exploitable (nouvel inscrit) : on propose de commencer, sans prétendre recommander. */
   | "vide"
+  /**
+   * Assez pour aujourd'hui : la capacité déclarée du jour est atteinte (ou la
+   * fatigue est forte et la moitié est faite), et rien d'urgent n'attend.
+   * La carte le dit d'abord ; la proposition reste accessible.
+   */
+  | "repos"
   /** Des candidats existent, mais aucun ne tient dans le temps demandé. */
   | "trop-court";
 
@@ -143,6 +162,12 @@ export interface NextMoveInput {
   history: NextMoveRecord[];
   /** Annales corrigées avec Claude (lib/annales.ts) — absentes hors connexion au compte. */
   annales?: AnnaleLog[];
+  /** Tentatives d'exercice (lib/attempts.ts) : débriefs, nouvelles tentatives. */
+  attempts?: ExerciseAttempt[];
+  /** Relevés Anki (lib/anki-snapshot.ts). */
+  ankiSnapshots?: AnkiSnapshot[];
+  /** Historique des questions de khôlle de l'appareil (lib/kholle.ts). */
+  kholle?: KholleHistory;
   now: Date;
   /** Minutes choisies (« J'ai 30 min »), ou `null`/absent pour laisser le moteur décider. */
   availableMinutes?: number | null;
@@ -181,14 +206,27 @@ const ERROR_DEEP_TYPE = 10;
 const ERROR_NO_FIX = 8;
 const ERROR_FRESH = 10;
 
-/** Annales : un chapitre où les derniers exercices de concours ne passent pas. */
-const ANNALE_BASE = 10;
-const ANNALE_PER_FAIL = 10;
-const ANNALE_PER_PARTIAL = 5;
-const ANNALE_MAX = 40;
-const ANNALE_HINTS = 5;
-const ANNALE_HINTS_THRESHOLD = 2;
-const ANNALE_FRESH = 8;
+/** Refaire sans aide (lib/exercises.ts) : un exercice raté arrivé à sa date. */
+const RETRY_BASE = 18;
+const RETRY_PER_FAIL = 5;
+const RETRY_LATE_PER_DAY = 2;
+const RETRY_LATE_MAX = 10;
+const RETRY_DIAGNOSTIC = 8;
+const RETRY_PER_SUBJECT = 2;
+/** Diagnostic (lib/diagnostic.ts) : un constat établi pèse plus qu'un signal. */
+const DIAGNOSTIC_ESTABLISHED = 18;
+const DIAGNOSTIC_SIGNAL = 10;
+/** Anki : seulement d'après un relevé assez récent (lib/anki-snapshot.ts). */
+const ANKI_CHAPTER_FAIL = 15;
+const ANKI_DUE_BASE = 8;
+const ANKI_DUE_PER_5 = 1;
+const ANKI_DUE_MAX = 30;
+/** Minutes par carte Anki — estimation grossière, affichée comme telle. */
+const MINUTES_PER_ANKI_CARD = 0.25;
+/** Une échéance qui pèse au moins autant est « urgente » : le mode repos ne la masque pas. */
+const URGENT_DEADLINE_POINTS = 80;
+/** Fatigue forte : énergie ≤ 2 ET moins de 6 h de sommeil. */
+const TIRED_AUTO_MINUTES = 25;
 
 /** Minimum du soir / objectif hebdo. */
 const EVENING_BASE = 20;
@@ -243,7 +281,7 @@ const PAUSE_MINUTES = 5;
 const SAME_SUBJECT_STEP_PENALTY = 5;
 
 /** Ordre de départage à score égal : le plus contraint d'abord. */
-const KIND_ORDER: MoveKind[] = ["échéance", "rappel", "erreurs", "cartes", "bloc"];
+const KIND_ORDER: MoveKind[] = ["échéance", "refaire", "rappel", "erreurs", "anki", "cartes", "bloc"];
 
 /* ── Petits outils ────────────────────────────────────────────────── */
 
@@ -443,6 +481,8 @@ function deadlineCandidates(input: NextMoveInput): MoveCandidate[] {
       title: item.title,
       action,
       instruction: `Il reste environ ${formatMinutesSpan(remaining)} sur « ${item.title} ». Le chrono rattache ce temps au travail.`,
+      problem: days !== null ? `« ${item.title} » est ${inDaysLabel(days) === "aujourd'hui" ? "pour aujourd'hui" : `à rendre ${inDaysLabel(days)}`} et il reste du travail.` : `« ${item.title} » n'est pas terminé.`,
+      doneWhen: "Le temps prévu de la séance est fait sur ce travail (le chrono le compte), ou le travail est marqué terminé.",
       minMinutes: Math.min(15, remaining),
       idealMinutes: Math.min(50, remaining),
       maxMinutes: remaining,
@@ -517,6 +557,8 @@ function recallCandidates(input: NextMoveInput): MoveCandidate[] {
       title: chapter.title,
       action: "rappel actif",
       instruction: "Sans tes notes : écris définitions, théorèmes et une démonstration clé, puis vérifie et corrige. Note ensuite le rappel dans Mémoire.",
+      problem: retrievability < AT_RISK_THRESHOLD ? `« ${chapter.title} » s'efface de ta mémoire.` : `« ${chapter.title} » ne tiendra pas jusqu'à l'épreuve.`,
+      doneWhen: "Le rappel est noté dans Mémoire.",
       minMinutes: 10,
       idealMinutes: 25,
       maxMinutes: 30,
@@ -556,6 +598,8 @@ function cardCandidates(input: NextMoveInput): MoveCandidate[] {
       title: `${count} carte${count > 1 ? "s" : ""} à réviser`,
       action: "révisions espacées",
       instruction: "Cherche chaque réponse de tête avant de la retourner, puis note honnêtement : c'est ce qui règle le prochain rappel.",
+      problem: "Des cartes « À revoir » sont arrivées à échéance.",
+      doneWhen: "Plus aucune carte due dans « À revoir » pour cette matière.",
       minMinutes: Math.min(5, full),
       idealMinutes: clamp(full, 5, 30),
       maxMinutes: full,
@@ -615,6 +659,8 @@ function errorCandidates(input: NextMoveInput): MoveCandidate[] {
       title: label,
       action: "reprise ciblée",
       instruction: "Refais les questions ratées sans regarder la correction, puis écris la bonne idée de chacune dans le carnet.",
+      problem: "Des erreurs récentes n'ont pas été reprises.",
+      doneWhen: "Chaque question reprise est refaite sans la correction, et sa bonne idée est écrite au carnet.",
       minMinutes: 10,
       idealMinutes: 20,
       maxMinutes: 35,
@@ -628,57 +674,163 @@ function errorCandidates(input: NextMoveInput): MoveCandidate[] {
 }
 
 /**
- * Annales qui ne passent pas (lib/annales.ts#weakChapters) : une REPRISE
- * CIBLÉE, du même genre que les erreurs du carnet — refaire sans indice ce
- * qui a bloqué. Une seule par matière, la plus lourde : les annales d'une
- * matière se reprennent l'une après l'autre, pas en parallèle.
+ * REFAIRE SANS AIDE (lib/exercises.ts) : les exercices ratés arrivés à leur
+ * date de nouvelle tentative. Le poids monte avec les échecs d'affilée et le
+ * retard, et quand le diagnostic du chapitre établit un problème de méthode
+ * ou d'application. Après trois échecs, la proposition CHANGE : refaire le
+ * même exercice ne suffit plus (`changeApproach`).
  */
-function annaleCandidates(input: NextMoveInput): MoveCandidate[] {
+function retryCandidates(input: NextMoveInput, context: DiagnosticContext): MoveCandidate[] {
   const today = dayKey(input.now);
-  const best = new Map<Subject, MoveCandidate>();
-  for (const weak of weakChapters(input.annales ?? [], input.now)) {
-    const age = dayDistance(weak.lastDay, today);
-    const notDone = [weak.échecs > 0 ? `${weak.échecs} échec${weak.échecs > 1 ? "s" : ""}` : null, weak.partiels > 0 ? `${weak.partiels} partiel${weak.partiels > 1 ? "s" : ""}` : null]
-      .filter(Boolean)
-      .join(", ");
+  const diagnosisByChapter = new Map(context.diagnoses.map((diagnosis) => [diagnosis.chapter.id, diagnosis]));
+  const perSubject = new Map<string, number>();
+  const out: MoveCandidate[] = [];
+  for (const exercise of dueRetries(context.exercises)) {
+    if (!exercise.subject) continue;
+    const count = perSubject.get(exercise.subject) ?? 0;
+    if (count >= RETRY_PER_SUBJECT) continue;
+    perSubject.set(exercise.subject, count + 1);
+    const last = exercise.steps[exercise.steps.length - 1];
+    const late = exercise.nextRetryDay ? Math.max(0, dayDistance(exercise.nextRetryDay, today)) : 0;
     const terms: ScoreTerm[] = [
       {
-        id: "annales-ratées",
-        points: Math.min(ANNALE_MAX, ANNALE_BASE + ANNALE_PER_FAIL * weak.échecs + ANNALE_PER_PARTIAL * weak.partiels),
-        reason: `Annales sur « ${weak.chapter} » ces ${WEAK_WINDOW_DAYS} derniers jours : ${notDone} sur ${weak.attempts} essai${weak.attempts > 1 ? "s" : ""}`,
+        id: "à-refaire",
+        points: RETRY_BASE + RETRY_PER_FAIL * Math.min(3, exercise.failedStreak),
+        reason: `Raté ${daysAgoLabel(dayDistance(last.day, today))} (${last.result}, ${last.help === "sans" ? "sans aide" : last.help === "indices" ? "avec indices" : "correction ouverte"}) : pas encore réussi sans aide`,
       },
     ];
-    if (weak.meanHints >= ANNALE_HINTS_THRESHOLD) {
-      terms.push({ id: "annales-indices", points: ANNALE_HINTS, reason: `${formatAverage(round1(weak.meanHints))} indices en moyenne : la méthode n'est pas encore à toi` });
-    }
-    if (age <= 1) {
-      terms.push({ id: "annale-fraîche", points: ANNALE_FRESH, reason: `Dernier essai ${daysAgoLabel(age)} : à refaire tant que la correction est fraîche` });
-    }
-    const chapter = matchChapter(weak.subject, foldKey(weak.key), input.chapterMemory);
-    const candidate: MoveCandidate = {
-      key: `annale:${weak.key}`,
-      kind: "erreurs",
-      subject: weak.subject,
-      title: weak.chapter,
-      action: "reprise ciblée",
-      instruction: `Refais sans indice la question qui a bloqué${weak.lastSource ? ` (${weak.lastSource})` : ""}, puis écris la bonne idée dans le carnet d'erreurs.`,
+    if (late > 0) terms.push({ id: "à-refaire-retard", points: Math.min(RETRY_LATE_MAX, RETRY_LATE_PER_DAY * late), reason: `Nouvelle tentative prévue il y a ${late}\u00a0j` });
+    const diagnosis = exercise.chapterId ? diagnosisByChapter.get(exercise.chapterId) : undefined;
+    const finding = diagnosis?.findings.find((entry) => entry.level === "établi" && (entry.kind === "méthode" || entry.kind === "application" || entry.kind === "démarrage"));
+    if (finding) terms.push({ id: "diagnostic", points: RETRY_DIAGNOSTIC, reason: `${FINDING_LABEL[finding.kind]} établi sur « ${diagnosis!.chapter.title} »` });
+    const lastMinutes = [...exercise.steps].reverse().find((step) => step.minutes !== null)?.minutes ?? null;
+    const ideal = clamp(lastMinutes ?? 30, 15, 45);
+    out.push({
+      key: `refaire:${exercise.key}`,
+      kind: "refaire",
+      subject: exercise.subject,
+      title: exercise.label,
+      action: exercise.changeApproach ? "changer d'approche" : "refaire sans aide",
+      instruction: exercise.changeApproach ?? "Correction cachée, chrono lancé, sans indice. Note ensuite le résultat et l'aide réellement utilisée.",
+      problem: exercise.changeApproach
+        ? `${exercise.failedStreak} tentatives sans réussite sans aide : refaire le même exercice ne suffit plus.`
+        : "Un exercice raté n'est pas encore réussi sans aide.",
+      doneWhen: exercise.changeApproach
+        ? "L'action de rechange est faite, puis l'exercice est retenté à sa prochaine date."
+        : "La tentative est notée dans « À refaire » — et l'exercice n'en sort que réussi sans aide.",
       minMinutes: 15,
-      idealMinutes: 30,
-      maxMinutes: 45,
-      href: chapter ? `${timerHref(weak.subject)}&chapitre=${encodeURIComponent(chapter.id)}` : timerHref(weak.subject),
-      resource: { label: "Mes annales", href: "/annales" },
+      idealMinutes: ideal,
+      maxMinutes: Math.max(ideal, 45),
+      href: `/annales?refaire=${encodeURIComponent(exercise.key)}`,
+      resource: { label: "À refaire", href: "/annales" },
       terms,
       score: 0,
-    };
-    const current = best.get(weak.subject);
-    if (!current || sumScore(candidate.terms) > sumScore(current.terms)) best.set(weak.subject, candidate);
+    });
   }
-  return [...best.values()];
+  return out;
 }
 
-/** La partie « chapitre » d'une clé `matière|chapitre` de lib/annales.ts. */
-function foldKey(key: string): string {
-  return key.slice(key.indexOf("|") + 1);
+/**
+ * DIAGNOSTIC (lib/diagnostic.ts) : un problème d'APPLICATION établi sur un
+ * chapitre, sans exercice déjà à refaire, devient un exercice ciblé — pas
+ * une relecture de cours quand le cours tient.
+ */
+function diagnosticCandidates(input: NextMoveInput, context: DiagnosticContext): MoveCandidate[] {
+  const out: MoveCandidate[] = [];
+  for (const diagnosis of context.ranked.slice(0, 6)) {
+    if (diagnosis.retryKeys.length > 0) continue;
+    const finding = mainFinding(diagnosis);
+    if (!finding || (finding.kind !== "application" && finding.kind !== "méthode" && finding.kind !== "démarrage")) continue;
+    const terms: ScoreTerm[] = [
+      { id: "diagnostic", points: finding.level === "établi" ? DIAGNOSTIC_ESTABLISHED : DIAGNOSTIC_SIGNAL, reason: `${FINDING_LABEL[finding.kind]} (${finding.level}) : ${finding.evidence[0]}` },
+    ];
+    if (finding.evidence.length > 1) terms.push({ id: "diagnostic-détail", points: 0, reason: finding.evidence[finding.evidence.length - 1] });
+    out.push({
+      key: `exercice:${diagnosis.chapter.id}`,
+      kind: "refaire",
+      subject: diagnosis.chapter.subject,
+      title: `Exercice ciblé : ${diagnosis.chapter.title}`,
+      action: "exercice ciblé",
+      instruction: `${finding.action} Demande à Claude une annale de ce chapitre, ou prends un exercice de TD non corrigé, puis note-le dans « À refaire ».`,
+      problem: `${FINDING_LABEL[finding.kind]} sur « ${diagnosis.chapter.title} ».`,
+      doneWhen: finding.doneWhen,
+      minMinutes: 20,
+      idealMinutes: 40,
+      maxMinutes: 60,
+      href: "/annales",
+      resource: { label: "Diagnostic", href: "/programme" },
+      terms,
+      score: 0,
+    });
+  }
+  return out;
+}
+
+/**
+ * ANKI : seulement d'après un relevé assez récent (sinon rien — on ne
+ * présente jamais un vieux chiffre comme actuel).
+ *   — un chapitre dont le COURS est en cause d'après Anki : réviser son
+ *     paquet (cartes dues au relevé, échecs récents) ;
+ *   — sinon, des cartes dues au dernier relevé de moins de 24 h : les faire.
+ */
+function ankiCandidates(input: NextMoveInput, context: DiagnosticContext): MoveCandidate[] {
+  const out: MoveCandidate[] = [];
+  const snapshots = input.ankiSnapshots ?? [];
+  const due = latestDueInfo(snapshots);
+  const dueFresh = due !== null && snapshotAgeHours(due.takenAt, input.now) <= ANKI_DUE_STALE_HOURS;
+  const fullFresh = context.ankiSnapshot !== null && snapshotAgeHours(context.ankiSnapshot.takenAt, input.now) <= ANKI_DUE_STALE_HOURS;
+  const takenAt = (iso: string) => formatClock(new Date(iso).toTimeString().slice(0, 5));
+
+  for (const diagnosis of context.ranked.slice(0, 6)) {
+    const finding = diagnosis.findings.find((entry) => entry.kind === "cours" && entry.sources.includes("anki"));
+    const chapterAnki = context.anki?.get(diagnosis.chapter.id);
+    if (!finding || !chapterAnki) continue;
+    const deck = mainDeck(chapterAnki, context.ankiSnapshot) ?? chapterAnki.decks[0];
+    const terms: ScoreTerm[] = [{ id: "anki-échecs", points: ANKI_CHAPTER_FAIL, reason: finding.evidence.find((line) => line.startsWith("Anki")) ?? finding.evidence[0] }];
+    if (fullFresh && chapterAnki.due > 0) {
+      terms.push({ id: "anki-dues", points: Math.min(ANKI_DUE_MAX, ANKI_DUE_BASE + Math.round(chapterAnki.due / 5) * ANKI_DUE_PER_5), reason: `${chapterAnki.due} cartes dues dans ces paquets au relevé de ${takenAt(context.ankiSnapshot!.takenAt)}` });
+    }
+    const minutes = clamp(Math.round(Math.max(chapterAnki.due, 20) * MINUTES_PER_ANKI_CARD) + 10, 10, 40);
+    out.push({
+      key: `anki:${diagnosis.chapter.id}`,
+      kind: "anki",
+      subject: diagnosis.chapter.subject,
+      title: deck,
+      action: "révisions Anki ciblées",
+      instruction: `Dans Anki, paquet « ${deck} » : les cartes dues, puis les cartes ratées récemment (recherche « rated:7:1 »). Termine par un rappel actif de « ${diagnosis.chapter.title} » sans tes notes.`,
+      problem: `Le cours de « ${diagnosis.chapter.title} » résiste dans Anki.`,
+      doneWhen: "Les cartes dues du paquet sont faites (visible au prochain relevé), puis le rappel du chapitre est noté dans Mémoire.",
+      minMinutes: 10,
+      idealMinutes: minutes,
+      maxMinutes: 45,
+      href: "/anki",
+      resource: { label: "Anki", href: "/anki" },
+      terms,
+      score: 0,
+    });
+  }
+
+  if (out.length === 0 && dueFresh && due!.due > 0) {
+    const minutes = clamp(Math.round(due!.due * MINUTES_PER_ANKI_CARD), 5, 45);
+    out.push({
+      key: "anki:dues",
+      kind: "anki",
+      subject: null,
+      title: `${due!.due} cartes Anki dues`,
+      action: "révisions Anki",
+      instruction: "Fais tes cartes dues dans Anki. Le chiffre vient du dernier relevé : il n'est pas en temps réel.",
+      problem: "Des cartes Anki sont dues : les repousser alourdit les jours suivants.",
+      doneWhen: "Plus de carte due dans Anki (un nouveau relevé le confirme).",
+      minMinutes: Math.min(5, minutes),
+      idealMinutes: minutes,
+      maxMinutes: Math.max(minutes, 10),
+      href: "/anki",
+      resource: null,
+      terms: [{ id: "anki-dues", points: Math.min(ANKI_DUE_MAX, ANKI_DUE_BASE + Math.round(due!.due / 5) * ANKI_DUE_PER_5), reason: `${due!.due} cartes dues au relevé de ${takenAt(due!.takenAt)} (${due!.source === "manuel" ? "saisie" : "AnkiConnect"})` }],
+      score: 0,
+    });
+  }
+  return out;
 }
 
 function blockCandidates(input: NextMoveInput, contexts: Map<Subject, SubjectContext>): MoveCandidate[] {
@@ -711,6 +863,8 @@ function blockCandidates(input: NextMoveInput, contexts: Map<Subject, SubjectCon
       title: subject,
       action: "bloc de travail",
       instruction: `Une séance de ${inSentence(subject)} sur ce que tu as en cours (TD, exercices, cours à reprendre). Le chrono compte le temps.`,
+      problem: context.eveningRemaining > 0 ? "Le minimum du soir n'est pas atteint." : "L'objectif de la semaine dans cette matière prend du retard.",
+      doneWhen: "Le temps de la séance est fait (le chrono le compte).",
       minMinutes: Math.min(20, need),
       idealMinutes: clamp(need, 20, 50),
       maxMinutes: Math.max(need, 20),
@@ -731,10 +885,10 @@ function latestCheckin(checkins: DailyCheckin[], now: Date): DailyCheckin | null
   return checkins.find((entry) => entry.date === today) ?? checkins.find((entry) => entry.date === yesterday) ?? null;
 }
 
-const SHORT_KINDS: ReadonlySet<MoveKind> = new Set(["cartes", "rappel"]);
+const SHORT_KINDS: ReadonlySet<MoveKind> = new Set(["cartes", "rappel", "anki"]);
 const LONG_KINDS: ReadonlySet<MoveKind> = new Set(["échéance", "bloc"]);
 /** Préparation d'une évaluation : ce qui consolide (mémoire, erreurs, cartes) — pas l'échéance elle-même, déjà notée. */
-const EXAM_PREP_KINDS: ReadonlySet<MoveKind> = new Set(["rappel", "erreurs", "cartes"]);
+const EXAM_PREP_KINDS: ReadonlySet<MoveKind> = new Set(["rappel", "erreurs", "cartes", "refaire", "anki"]);
 
 function applyModifiers(candidate: MoveCandidate, input: NextMoveInput, contexts: Map<Subject, SubjectContext>): void {
   const { now, history } = input;
@@ -795,21 +949,73 @@ function applyHistory(candidate: MoveCandidate, history: NextMoveRecord[], now: 
   }
 }
 
+/* ── Diagnostic ───────────────────────────────────────────────────── */
+
+const diagnosticCache = new WeakMap<NextMoveInput, DiagnosticContext>();
+
+/** Exercices, Anki récent et diagnostic des lacunes (lib/diagnostic-context.ts), calculés une fois par entrée. */
+export function diagnosticContextOf(input: NextMoveInput): DiagnosticContext {
+  const cached = diagnosticCache.get(input);
+  if (cached) return cached;
+  const context = buildDiagnosticContext({
+    chapterMemory: input.chapterMemory,
+    attempts: input.attempts ?? [],
+    errors: input.errors,
+    ankiSnapshots: input.ankiSnapshots ?? [],
+    workItems: input.workItems,
+    preferences: input.preferences,
+    annales: input.annales ?? [],
+    kholle: input.kholle ?? {},
+    now: input.now,
+  });
+  diagnosticCache.set(input, context);
+  return context;
+}
+
 /* ── Classement ───────────────────────────────────────────────────── */
 
 /** Tous les candidats, notés et classés. Exposé pour les tests et pour le détail « pourquoi ». */
 export function rankCandidates(input: NextMoveInput): MoveCandidate[] {
   const contexts = buildSubjectContexts(input);
+  const diagnostic = diagnosticContextOf(input);
   const candidates = [
     ...deadlineCandidates(input),
     ...recallCandidates(input),
     ...errorCandidates(input),
-    ...annaleCandidates(input),
+    ...retryCandidates(input, diagnostic),
+    ...diagnosticCandidates(input, diagnostic),
+    ...ankiCandidates(input, diagnostic),
     ...cardCandidates(input),
     ...blockCandidates(input, contexts),
   ];
   for (const candidate of candidates) applyModifiers(candidate, input, contexts);
-  return candidates.sort(compareCandidates);
+  return absorbBlocks(candidates).sort(compareCandidates);
+}
+
+/**
+ * UNE ACTION CONCRÈTE PLUTÔT QU'UN BLOC. Un « bloc de travail » ne porte que
+ * des objectifs de TEMPS (minimum du soir, budget de la semaine). Quand la
+ * même matière a un exercice à refaire, c'est lui qui doit remplir ce
+ * temps : il reprend les termes du bloc (même points, même phrase, préfixée)
+ * — le score reste la somme des termes affichés — et le bloc générique
+ * disparaît. Sans exercice à refaire, le bloc reste tel quel.
+ */
+function absorbBlocks(candidates: MoveCandidate[]): MoveCandidate[] {
+  const removed = new Set<MoveCandidate>();
+  for (const block of candidates.filter((candidate) => candidate.kind === "bloc")) {
+    const concrete = candidates
+      .filter((candidate) => candidate.kind === "refaire" && candidate.subject === block.subject)
+      .sort(compareCandidates)[0];
+    if (!concrete) continue;
+    // « Compte pour le soir » ferait doublon avec le minimum du soir repris du bloc.
+    concrete.terms = concrete.terms.filter((term) => term.id !== "compte-pour-le-soir");
+    for (const term of block.terms.filter((entry) => entry.points > 0)) {
+      concrete.terms.push({ id: `bloc:${term.id}`, points: term.points, reason: `Remplit aussi : ${term.reason.charAt(0).toLowerCase()}${term.reason.slice(1)}` });
+    }
+    concrete.score = sumScore(concrete.terms);
+    removed.add(block);
+  }
+  return candidates.filter((candidate) => !removed.has(candidate));
 }
 
 /* ── Composition ──────────────────────────────────────────────────── */
@@ -904,9 +1110,12 @@ function describeContext(input: NextMoveInput, contexts: Map<Subject, SubjectCon
  */
 export function computeNextMove(input: NextMoveInput): NextMovePlan {
   const auto = input.availableMinutes === null || input.availableMinutes === undefined;
-  const available = auto ? autoMinutes(input.now) : Math.max(0, Math.round(input.availableMinutes!));
+  const load = dayLoad(input);
+  // Fatigue forte au dernier check-in : la séance proposée par défaut est courte.
+  const available = auto ? (load.tired ? Math.min(TIRED_AUTO_MINUTES, autoMinutes(input.now)) : autoMinutes(input.now)) : Math.max(0, Math.round(input.availableMinutes!));
   const ranked = rankCandidates(input);
   const context = describeContext(input, buildSubjectContexts(input));
+  if (load.reason) context.push(load.reason);
   const base = { availableMinutes: available, auto, ranked, context };
 
   if (ranked.length === 0) {
@@ -933,14 +1142,43 @@ export function computeNextMove(input: NextMoveInput): NextMovePlan {
   const others = pool.filter((candidate) => candidate.key !== primary.key && candidate.score > 0);
   const alternative = others.find((candidate) => candidate.subject !== primary.subject) ?? others[0] ?? null;
 
+  // Assez pour aujourd'hui, sauf urgence : on le DIT, au lieu de proposer toujours plus.
+  const urgent = pool.some((candidate) => candidate.kind === "échéance" && candidate.terms.some((term) => term.id === "échéance" && term.points >= URGENT_DEADLINE_POINTS));
+  const status: NextMoveStatus = load.enough && !urgent ? "repos" : primary.score >= CALM_THRESHOLD ? "ok" : "calme";
+
   return {
     ...base,
-    status: primary.score >= CALM_THRESHOLD ? "ok" : "calme",
+    status,
     primary,
     alternative,
     steps,
     totalMinutes: steps.reduce((total, step) => total + step.minutes, 0),
   };
+}
+
+/**
+ * LA CHARGE DU JOUR — de quoi ne pas toujours proposer davantage.
+ *
+ *   enough  minutes travaillées aujourd'hui ≥ capacité déclarée du jour
+ *           (Réglages), ou fatigue forte et au moins la moitié faite ;
+ *   tired   énergie ≤ 2 ET moins de 6 h de sommeil au dernier check-in.
+ *
+ * Sans capacité déclarée pour ce jour (0), pas de mode repos : on ne
+ * devine pas l'emploi du temps.
+ */
+export function dayLoad(input: Pick<NextMoveInput, "sessions" | "preferences" | "checkins" | "now">): { minutes: number; capacity: number; tired: boolean; enough: boolean; reason: string | null } {
+  const today = dayKey(input.now);
+  const minutes = Math.round(input.sessions.filter((session) => dayKey(session.started_at) === today).reduce((sum, session) => sum + session.duration_seconds, 0) / 60);
+  const capacity = input.preferences.capacityByWeekday[(input.now.getDay() + 6) % 7] ?? 0;
+  const checkin = latestCheckin(input.checkins, input.now);
+  const tired = Boolean(checkin && checkin.energy <= 2 && checkin.sleepHours < 6);
+  const enough = capacity > 0 && (minutes >= capacity || (tired && minutes >= capacity / 2));
+  const reason = enough
+    ? `${formatMinutesSpan(minutes)} de travail aujourd'hui pour ${formatMinutesSpan(capacity)} de capacité déclarée${tired ? ", et fatigue forte au dernier check-in" : ""}`
+    : tired
+      ? "Fatigue forte au dernier check-in : séance courte"
+      : null;
+  return { minutes, capacity, tired, enough, reason };
 }
 
 /** Clés écartées (« Pas maintenant ») depuis moins de `SKIPPED_RECENTLY_HOURS`. */

@@ -9,7 +9,9 @@ import { Stat, StatRow } from "@/components/ui/stat";
 import { Skeleton } from "@/components/ui/state";
 import { useAnnales } from "@/hooks/use-annales";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { BILAN_PERIODS, computeBilan, describeTrend, formatDuration, periodRange, type BilanPeriod } from "@/lib/bilan";
+import { useKholleHistory } from "@/hooks/use-kholle-history";
+import { buildDiagnosticContext } from "@/lib/diagnostic-context";
+import { BILAN_PERIODS, bilanProgress, computeBilan, describeTrend, formatDuration, periodRange, type BilanPeriod } from "@/lib/bilan";
 import { formatAverage } from "@/lib/grades";
 import { PROGRAMME_STATUS_META, PROGRAMME_STATUSES, type ProgrammeStatus } from "@/lib/programme";
 import { STATUS_TONE } from "@/components/programme/programme-overview";
@@ -39,17 +41,24 @@ function fr(day: string): string {
  * contrôles disparaissent (`print:hidden`) : il ne reste que le rapport.
  */
 export function BilanReport() {
-  const { sessions, grades, errors, chapterMemory, preferences, ready } = usePrepahubData();
+  const { sessions, grades, errors, chapterMemory, preferences, ready, attempts, ankiSnapshots, workItems } = usePrepahubData();
+  const kholle = useKholleHistory();
   const { logs: annales } = useAnnales();
   const [period, setPeriod] = useState<BilanPeriod>("mois");
   const today = dayKey(new Date());
   const range = periodRange(period, today);
 
   const bilan = useMemo(
-    () => computeBilan({ sessions, grades, errors, chapterMemory, annales, programmeSeen: preferences.programmeSeen, ...range, today }),
+    () => computeBilan({ sessions, grades, errors, chapterMemory, annales, attempts, programmeSeen: preferences.programmeSeen, ...range, today }),
     // `range` découle de `period` et `today`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sessions, grades, errors, chapterMemory, annales, preferences.programmeSeen, period, today]
+    [sessions, grades, errors, chapterMemory, annales, attempts, preferences.programmeSeen, period, today]
+  );
+  const progress = useMemo(
+    () => bilanProgress(buildDiagnosticContext({ chapterMemory, attempts, errors, ankiSnapshots, workItems, preferences, annales, kholle, now: new Date() }), range.from, range.to),
+    // `range` découle de `period` et `today`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [chapterMemory, attempts, errors, ankiSnapshots, workItems, preferences, annales, kholle, period, today]
   );
 
   if (!ready) {
@@ -144,6 +153,46 @@ export function BilanReport() {
           )}
         </Section>
       </div>
+
+      <Section variant="panel" title="Progression réelle" description="Ce qui est corrigé et vérifié par une nouvelle tentative sans aide — pas seulement relu." className={PRINT_TILE}>
+        <div className="grid gap-5 sm:grid-cols-2 print:grid-cols-2">
+          <div>
+            <p className="t-label">Corrections vérifiées · {progress.verified.length}</p>
+            {progress.verified.length === 0 ? (
+              <p className="t-meta mt-1">Aucun exercice raté puis réussi sans aide sur la période.</p>
+            ) : (
+              <ul className="mt-1.5 space-y-1 text-[0.875rem] font-semibold text-ink">
+                {progress.verified.slice(0, 6).map((entry) => (
+                  <li key={`${entry.label}-${entry.on}`}>
+                    {entry.label}
+                    {entry.minutes && <span className="font-medium text-muted"> · {entry.minutes}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="t-meta mt-2 text-2xs">{progress.pendingRetries} exercice{progress.pendingRetries > 1 ? "s" : ""} encore à refaire.</p>
+          </div>
+          <div>
+            <p className="t-label">Difficultés persistantes</p>
+            {progress.persistent.length === 0 ? (
+              <p className="t-meta mt-1">Aucune établie par les données.</p>
+            ) : (
+              <ul className="mt-1.5 space-y-1 text-[0.875rem] font-semibold text-ink">
+                {progress.persistent.map((entry) => (
+                  <li key={entry.chapter}>
+                    {entry.chapter} <span className="font-medium text-muted">· {entry.finding}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {progress.courseOkApplicationWeak.length > 0 && (
+              <p className="mt-3 text-[0.8125rem] font-semibold text-ink">
+                Cours su mais application fragile : {progress.courseOkApplicationWeak.join(", ")}.
+              </p>
+            )}
+          </div>
+        </div>
+      </Section>
 
       {bilan.annales.count > 0 && (
         <Section variant="panel" title="Annales de concours" className={PRINT_TILE}>

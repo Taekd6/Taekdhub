@@ -38,7 +38,7 @@ export type CollectionName = keyof typeof STORAGE_KEYS;
 export const COLLECTIONS = Object.keys(STORAGE_KEYS) as CollectionName[];
 
 /** Collections qui portent le TRAVAIL de l'élève — ce qui fait dire « des données existent ». Les préférences et les dérivés (bilans figés, intentions de planning, historique Next Move) n'en font pas partie. */
-export const MEANINGFUL_COLLECTIONS: readonly CollectionName[] = ["sessions", "workItems", "grades", "reviewItems", "errors", "checkins", "chapterMemory"];
+export const MEANINGFUL_COLLECTIONS: readonly CollectionName[] = ["sessions", "workItems", "grades", "reviewItems", "errors", "checkins", "chapterMemory", "attempts"];
 
 export const COLLECTION_LABELS: Record<CollectionName, string> = {
   sessions: "séances",
@@ -52,6 +52,8 @@ export const COLLECTION_LABELS: Record<CollectionName, string> = {
   checkins: "check-ins",
   chapterMemory: "chapitres",
   nextMoves: "recommandations",
+  attempts: "tentatives d'exercice",
+  ankiSnapshots: "relevés Anki",
 };
 
 type Item = Record<string, unknown>;
@@ -89,6 +91,9 @@ const STAMPS: Partial<Record<CollectionName, (item: Item) => string>> = {
     return `${maxStamp(item.learnedAt, ...reviews)}|${String(reviews.length).padStart(4, "0")}|${item.archived ? 1 : 0}`;
   },
   nextMoves: (item) => maxStamp(item.proposedAt, item.startedAt, item.resolvedAt),
+  attempts: (item) => maxStamp(item.createdAt, item.updatedAt),
+  // Un relevé Anki plus récent du même jour remplace l'autre (lib/anki-snapshot.ts#upsertSnapshot).
+  ankiSnapshots: (item) => str(item.takenAt),
 };
 
 /** Collections dont la clé n'est pas `id`. */

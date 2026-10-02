@@ -1,4 +1,7 @@
 import { countResults, type AnnaleLog, type ResultCounts } from "@/lib/annales";
+import type { ExerciseAttempt } from "@/lib/attempts";
+import type { DiagnosticContext } from "@/lib/diagnostic-context";
+import { FINDING_LABEL, mainFinding } from "@/lib/diagnostic";
 import { computeCalibration, describeCalibration } from "@/lib/calibration";
 import { countByType, ERROR_TYPE_META } from "@/lib/error-log";
 import { isScored, normalizedScore } from "@/lib/grades";
@@ -55,12 +58,47 @@ export function periodRange(period: BilanPeriod, today: string): { from: string;
   return { from: `${start}-09-01`, to: today };
 }
 
+/**
+ * LA PROGRESSION RÉELLE sur la période — d'après le diagnostic
+ * (lib/diagnostic-context.ts), sans nouvel indicateur :
+ *   corrigées       exercices ratés puis réussis SANS AIDE pendant la période ;
+ *   en attente      exercices encore à refaire (aujourd'hui ou plus tard) ;
+ *   persistantes    les chapitres que le diagnostic classe en tête ;
+ *   temps           premier → dernier temps des exercices corrigés ;
+ *   cours/appli     chapitres où le cours tient mais l'application rate.
+ */
+export interface BilanProgress {
+  verified: { label: string; on: string; minutes: string | null }[];
+  pendingRetries: number;
+  persistent: { chapter: string; subject: Subject; finding: string }[];
+  courseOkApplicationWeak: string[];
+}
+
+export function bilanProgress(context: DiagnosticContext, from: string, to: string): BilanProgress {
+  const verified = context.exercises
+    .filter((exercise) => exercise.status === "vérifié" && exercise.verifiedOn !== null && exercise.verifiedOn >= from && exercise.verifiedOn <= to)
+    .sort((a, b) => (a.verifiedOn ?? "").localeCompare(b.verifiedOn ?? ""))
+    .map((exercise) => {
+      const first = exercise.steps[0].minutes;
+      const last = exercise.steps[exercise.steps.length - 1].minutes;
+      return { label: exercise.label, on: exercise.verifiedOn!, minutes: first !== null && last !== null ? `${first} → ${last} min` : null };
+    });
+  return {
+    verified,
+    pendingRetries: context.exercises.filter((exercise) => exercise.status === "à-refaire" || exercise.status === "programmé").length,
+    persistent: context.ranked.slice(0, 3).map((diagnosis) => ({ chapter: diagnosis.chapter.title, subject: diagnosis.chapter.subject, finding: FINDING_LABEL[mainFinding(diagnosis)!.kind] })),
+    courseOkApplicationWeak: context.diagnoses.filter((diagnosis) => diagnosis.course.state === "tient" && diagnosis.application.state === "fragile").map((diagnosis) => diagnosis.chapter.title),
+  };
+}
+
 export interface BilanInput {
   sessions: WorkSession[];
   grades: Grade[];
   errors: ErrorEntry[];
   chapterMemory: ChapterMemory[];
   annales: AnnaleLog[];
+  /** Tentatives saisies dans l'app — comptées dans la carte du programme. */
+  attempts?: ExerciseAttempt[];
   programmeSeen: string[];
   from: string;
   to: string;
@@ -131,7 +169,7 @@ export function computeBilan(input: BilanInput): Bilan {
 
   const errors = input.errors.filter((entry) => entry.date >= from && entry.date <= to);
   const annales = input.annales.filter((log) => log.day >= from && log.day <= to);
-  const mastery = computeMastery({ chapterMemory: input.chapterMemory, annales: input.annales, seen: input.programmeSeen, today: input.today });
+  const mastery = computeMastery({ chapterMemory: input.chapterMemory, annales: input.annales, attempts: input.attempts, seen: input.programmeSeen, today: input.today });
 
   return {
     from,

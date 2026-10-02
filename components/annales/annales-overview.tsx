@@ -11,6 +11,7 @@ import { Section } from "@/components/ui/section";
 import { Stat, StatRow } from "@/components/ui/stat";
 import { EmptyState, Skeleton } from "@/components/ui/state";
 import { SubjectAvatar } from "@/components/subject-avatar";
+import { RetryQueue } from "@/components/exercises/retry-queue";
 import { useAnnales } from "@/hooks/use-annales";
 import {
   computeTimeCalibration,
@@ -68,7 +69,7 @@ export function AnnalesOverview() {
     [logs]
   );
 
-  const hero = (
+  const pageHero = (
     <PageHero
       title="Mes annales"
       lede="Les exercices de concours corrigés avec Claude, chapitre par chapitre."
@@ -81,6 +82,14 @@ export function AnnalesOverview() {
         ) : null
       }
     />
+  );
+  // « À refaire sans aide » vient juste sous le titre, dans TOUS les états de
+  // l'écran : les tentatives saisies dans l'app vivent sans compte et hors ligne.
+  const hero = (
+    <>
+      {pageHero}
+      <RetryQueue />
+    </>
   );
 
   if (status === "chargement") {
@@ -132,7 +141,7 @@ export function AnnalesOverview() {
         <div className="surface">
           <EmptyState
             illustration={<Illustration name="notes" size={56} />}
-            title="Aucune annale pour l'instant"
+            title="Aucune annale corrigée par Claude pour l'instant"
             description="Demande à Claude un exercice de concours ; à la fin de la correction, il l'enregistre ici avec ton résultat, les indices utilisés et ton temps."
           />
         </div>

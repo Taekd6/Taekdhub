@@ -24,6 +24,8 @@ function candidate(key = "rappel:ch-1", subject: Subject = "Physique", kind: Mov
     subject,
     title: "Électrostatique",
     action: "rappel actif",
+    problem: "",
+    doneWhen: "",
     instruction: "",
     minMinutes: 10,
     idealMinutes: 25,
@@ -157,5 +159,27 @@ describe("statistiques", () => {
   it("une proposition toute fraîche n'est pas encore comptée comme ignorée", () => {
     const history = recordProposal([], candidate(), 25, [], hoursLater(-1), id());
     expect(summarizeHistory(history, NOW).proposed).toBe(0);
+  });
+});
+
+describe("refaire et Anki : constatés sur preuve, pas au temps passé", () => {
+  const key = "annale:mines 2023|reduction";
+  const started = markStarted([], candidate(`refaire:${key}`, "Mathématiques", "refaire"), 30, [], NOW);
+
+  it("du temps dans la matière ne suffit pas : il faut une tentative sur l'exercice", () => {
+    const sessions = [session("Mathématiques", 45, hoursLater(0.1))];
+    const withoutAttempt = resolveOutcomes(started, { sessions, reviewItems: [], chapterMemory: [], attempts: [] }, hoursLater(1));
+    expect(withoutAttempt[0].status).toBe("commencé");
+    const attempt = { id: "t", exerciseKey: key, createdAt: hoursLater(0.8).toISOString(), chapterId: null } as never;
+    const withAttempt = resolveOutcomes(started, { sessions, reviewItems: [], chapterMemory: [], attempts: [attempt] }, hoursLater(1));
+    expect(withAttempt[0].status).toBe("fait");
+  });
+
+  it("révisions Anki : faites quand un relevé postérieur ne montre plus de carte due", () => {
+    const anki = markStarted([], candidate("anki:dues", null as never, "anki"), 15, [], NOW);
+    const before = { id: "m1", day: "2026-09-24", takenAt: hoursLater(-2).toISOString(), source: "manuel", decks: [], reviewsByDay: [], manual: { due: 0, reviewedToday: 0 } } as never;
+    expect(resolveOutcomes(anki, { sessions: [], reviewItems: [], chapterMemory: [], ankiSnapshots: [before] }, hoursLater(1))[0].status).toBe("commencé");
+    const after = { id: "m2", day: "2026-09-24", takenAt: hoursLater(0.5).toISOString(), source: "manuel", decks: [], reviewsByDay: [], manual: { due: 0, reviewedToday: 80 } } as never;
+    expect(resolveOutcomes(anki, { sessions: [], reviewItems: [], chapterMemory: [], ankiSnapshots: [after] }, hoursLater(1))[0].status).toBe("fait");
   });
 });

@@ -1,5 +1,7 @@
 import { subjects } from "@/lib/study";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
+import { normalizeAttempts, type ExerciseAttempt } from "@/lib/attempts";
+import { normalizeAnkiSnapshots, type AnkiSnapshot } from "@/lib/anki-snapshot";
 import { SRS_LADDER } from "@/lib/spaced-repetition";
 import { FSRS_RATINGS, normalizeFsrsMemory, replayMemory, type FsrsMemory, type FsrsRating, type FsrsState } from "@/lib/fsrs";
 import { DEFAULT_PALETTE, DEFAULT_THEME_MODE, THEME_MODES, resolvePaletteId, type PaletteId, type ThemeMode } from "@/lib/theme";
@@ -21,6 +23,9 @@ const errorsKey = "prepahub:errors";
 const checkinsKey = "prepahub:checkins";
 /* ── Mémoire des chapitres (FSRS) — voir `ChapterMemory` ── */
 const chapterMemoryKey = "prepahub:chapterMemory";
+/* ── Tentatives d'exercice (lib/attempts.ts) et relevés Anki (lib/anki-snapshot.ts) ── */
+const attemptsKey = "prepahub:attempts";
+const ankiSnapshotsKey = "prepahub:anki-snapshots";
 /* ── Next Move : historique des recommandations — voir `NextMoveRecord` ── */
 const nextMovesKey = "prepahub:next-moves";
 
@@ -141,6 +146,19 @@ export type Preferences = {
    * semaine, dans lesquels le tirage choisit les questions de cours.
    */
   colleChapters: string[];
+  /**
+   * PONT ANKI (lib/anki-mapping.ts) : les associations paquet → chapitre
+   * CHOISIES par l'élève. Clé : nom complet du paquet ; valeur : identifiant
+   * de chapitre, ou `null` pour « ce paquet ne correspond à aucun chapitre ».
+   * Prime sur toute association déduite automatiquement.
+   */
+  ankiDeckChapters: Record<string, string | null>;
+  /**
+   * « REFAIRE SANS AIDE » (lib/exercises.ts) : délais, en jours, avant la
+   * 1re, 2e, 3e… nouvelle tentative d'un exercice raté. Le dernier délai
+   * vaut pour toutes les suivantes.
+   */
+  retryDelaysDays: number[];
   /*
    * `subjectPalette` / `subjectColors` (palette et surcharges de couleur par
    * matière, refonte « Nuit ») n'existent plus : les matières n'ont plus de
@@ -224,6 +242,8 @@ const defaults: Preferences = {
   briefingOnOpen: true,
   programmeSeen: [],
   colleChapters: [],
+  ankiDeckChapters: {},
+  retryDelaysDays: [2, 5, 12],
 };
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
@@ -449,6 +469,17 @@ export interface ErrorEntry {
   chapterId: string | null;
   /** HÉRITAGE — renvoi vers un exercice de l'ancienne banque. Conservé, jamais affiché ; `null` pour toute nouvelle entrée. */
   exerciseId: string | null;
+  /**
+   * Chapitre de la carte du programme (lib/programme-data.ts) — posé par le
+   * débrief d'un DS (lib/debrief.ts). Absent des erreurs notées à la main.
+   */
+  programmeChapterId?: string;
+  /**
+   * L'exercice (lib/attempts.ts#ExerciseAttempt.exerciseKey) dont vient
+   * l'erreur : c'est lui qui dit si elle est CORRIGÉE — une nouvelle
+   * tentative réussie sans aide, pas une case cochée (lib/exercises.ts).
+   */
+  exerciseKey?: string;
   /**
    * Identifiant de l'entrée « À revoir » créée à partir de cette erreur, ou
    * `null`. Sert uniquement à ne pas proposer deux fois « ajouter au
@@ -1141,6 +1172,8 @@ export function normalizeErrorEntry(raw: unknown): ErrorEntry | null {
     chapterId: optionalText(item.chapterId),
     exerciseId: optionalText(item.exerciseId),
     reviewItemId: optionalText(item.reviewItemId),
+    ...(optionalText(item.programmeChapterId) && PROGRAMME_BY_ID.has(optionalText(item.programmeChapterId)!) ? { programmeChapterId: optionalText(item.programmeChapterId)! } : {}),
+    ...(optionalText(item.exerciseKey) ? { exerciseKey: optionalText(item.exerciseKey)! } : {}),
     createdAt,
   };
 }
@@ -1266,8 +1299,8 @@ export type NextMoveStatus = "proposé" | "commencé" | "fait" | "écarté";
 export const NEXT_MOVE_STATUSES: readonly NextMoveStatus[] = ["proposé", "commencé", "fait", "écarté"];
 
 /** Genre d'action — voir lib/next-move/engine.ts. Déclaré ici pour que la normalisation n'importe pas le moteur. */
-export type NextMoveKind = "échéance" | "rappel" | "cartes" | "erreurs" | "bloc";
-export const NEXT_MOVE_KINDS: readonly NextMoveKind[] = ["échéance", "rappel", "cartes", "erreurs", "bloc"];
+export type NextMoveKind = "échéance" | "rappel" | "cartes" | "erreurs" | "bloc" | "refaire" | "anki";
+export const NEXT_MOVE_KINDS: readonly NextMoveKind[] = ["échéance", "rappel", "cartes", "erreurs", "bloc", "refaire", "anki"];
 
 export interface NextMoveRecord {
   id: string;
@@ -1378,6 +1411,8 @@ export function normalizePreferences(raw: unknown): Preferences {
     briefingOnOpen: typeof item.briefingOnOpen === "boolean" ? item.briefingOnOpen : defaults.briefingOnOpen,
     programmeSeen: normalizeProgrammeIds(item.programmeSeen),
     colleChapters: normalizeProgrammeIds(item.colleChapters),
+    ankiDeckChapters: normalizeDeckChapters(item.ankiDeckChapters),
+    retryDelaysDays: normalizeRetryDelays(item.retryDelaysDays),
     // `accent`, `subjectPalette` et `subjectColors` ne sont pas recopiés :
     // lus (pour la migration ci-dessus), puis abandonnés.
   };
@@ -1411,6 +1446,27 @@ function normalizeProgrammeIds(raw: unknown): string[] {
   const out: string[] = [];
   for (const id of raw) if (typeof id === "string" && PROGRAMME_BY_ID.has(id) && !out.includes(id)) out.push(id);
   return out;
+}
+
+/** Associations paquet Anki → chapitre : chapitres connus (ou `null`, « aucun ») seulement ; au plus 2 000 paquets. */
+function normalizeDeckChapters(raw: unknown): Record<string, string | null> {
+  if (!isRecord(raw)) return {};
+  const out: Record<string, string | null> = {};
+  for (const [deck, chapter] of Object.entries(raw).slice(0, 2000)) {
+    const name = deck.trim();
+    if (!name || name.length > 300) continue;
+    if (chapter === null) out[name] = null;
+    else if (typeof chapter === "string" && PROGRAMME_BY_ID.has(chapter)) out[name] = chapter;
+  }
+  return out;
+}
+
+/** Délais de nouvelle tentative : 1 à 6 entiers entre 1 et 60 jours, croissants ; sinon le défaut. */
+function normalizeRetryDelays(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return [...defaults.retryDelaysDays];
+  const values = raw.filter((value): value is number => typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 60).slice(0, 6);
+  if (values.length === 0 || values.some((value, index) => index > 0 && value < values[index - 1])) return [...defaults.retryDelaysDays];
+  return values;
 }
 
 /** Absent (préférences d'avant ce champ) ⇒ la règle par défaut ; sinon 7 jours, 0 retiré, plafonné. */
@@ -1582,6 +1638,8 @@ export const STORAGE_KEYS = {
   checkins: checkinsKey,
   chapterMemory: chapterMemoryKey,
   nextMoves: nextMovesKey,
+  attempts: attemptsKey,
+  ankiSnapshots: ankiSnapshotsKey,
 } as const;
 
 type WriteListener = (key: string) => void;
@@ -1790,6 +1848,14 @@ export const localData = {
       : readList(nextMovesKey).map(normalizeNextMoveRecord).filter((item): item is NextMoveRecord => item !== null),
   /** REMPLACE — la liste entière, déjà mise à jour et élaguée par lib/next-move/history.ts. */
   saveNextMoves: (items: NextMoveRecord[]): boolean => writeKey(nextMovesKey, JSON.stringify(items)),
+  /* ── Tentatives d'exercice ── */
+  attempts: (): ExerciseAttempt[] => (typeof window === "undefined" ? [] : normalizeAttempts(readList(attemptsKey))),
+  /** REMPLACE — une tentative se corrige et se supprime (même profil que `saveErrors`). */
+  saveAttempts: (items: ExerciseAttempt[]): boolean => writeKey(attemptsKey, JSON.stringify(items)),
+  /* ── Relevés Anki ── */
+  ankiSnapshots: (): AnkiSnapshot[] => (typeof window === "undefined" ? [] : normalizeAnkiSnapshots(readList(ankiSnapshotsKey))),
+  /** REMPLACE — la liste déjà rangée par lib/anki-snapshot.ts#upsertSnapshot. */
+  saveAnkiSnapshots: (items: AnkiSnapshot[]): boolean => writeKey(ankiSnapshotsKey, JSON.stringify(items)),
 };
 
 /* ══════════════════════════════════════════════════════════════════
@@ -1940,6 +2006,9 @@ export function restoreBackup(payload: BackupPayload): RestoreOutcome {
     ["la mémoire des chapitres", () => localData.saveChapterMemory(payload.chapterMemory ?? [])],
     // Historique Next Move : absent d'une sauvegarde antérieure ⇒ `[]`.
     ["l'historique des recommandations", () => localData.saveNextMoves(payload.nextMoves ?? [])],
+    // Tentatives d'exercice et relevés Anki : absents d'une sauvegarde antérieure ⇒ `[]`.
+    ["les tentatives d'exercice", () => localData.saveAttempts(payload.attempts ?? [])],
+    ["les relevés Anki", () => localData.saveAnkiSnapshots(payload.ankiSnapshots ?? [])],
     ["le planning", () => localData.saveDayPlans(payload.dayPlans ?? [])],
     ["les bilans de semaine", () => localData.saveWeekSnapshots(payload.weekSnapshots ?? [])],
     ["les réglages", () => localData.savePreferences(normalizePreferences(payload.preferences))],
@@ -1989,6 +2058,10 @@ export function buildBackupPayload(now: Date = new Date()): BackupPayload {
     chapterMemory: localData.chapterMemory(),
     // Historique Next Move : ce qui a été proposé et suivi — non reconstituable.
     nextMoves: localData.nextMoves(),
+    // Tentatives d'exercice : saisie de l'élève (débriefs, nouvelles tentatives) — irrécupérable.
+    attempts: localData.attempts(),
+    // Relevés Anki : reconstituables en partie depuis Anki, mais pas l'historique des jours passés.
+    ankiSnapshots: localData.ankiSnapshots(),
   };
 }
 
@@ -2053,6 +2126,10 @@ export interface BackupPayload {
   chapterMemory?: ChapterMemory[];
   /** Optionnel, même raison — voir `NextMoveRecord`. */
   nextMoves?: NextMoveRecord[];
+  /** Optionnel, même raison — voir lib/attempts.ts. */
+  attempts?: ExerciseAttempt[];
+  /** Optionnel, même raison — voir lib/anki-snapshot.ts. */
+  ankiSnapshots?: AnkiSnapshot[];
 }
 
 /**
@@ -2116,5 +2193,8 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   if (data.chapterMemory !== undefined && !Array.isArray(data.chapterMemory)) return false;
   // Historique Next Move : même règle, dès sa naissance.
   if (data.nextMoves !== undefined && !Array.isArray(data.nextMoves)) return false;
+  // Tentatives et relevés Anki : même règle, dès leur naissance.
+  if (data.attempts !== undefined && !Array.isArray(data.attempts)) return false;
+  if (data.ankiSnapshots !== undefined && !Array.isArray(data.ankiSnapshots)) return false;
   return true;
 }

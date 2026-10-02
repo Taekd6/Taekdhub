@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { ClipboardCheck, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Section } from "@/components/ui/section";
@@ -85,6 +86,12 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
         />
         {/* Carnet d'erreurs : la copie est encore sous les yeux, c'est le moment. */}
         {justAdded && grades.some((grade) => grade.id === justAdded.id) && <GradeErrorsLink grade={justAdded} className="mt-3" />}
+        {/* Le débrief question par question (lib/debrief.ts) : chapitres, causes, plan et nouvelles tentatives. */}
+        {justAdded && grades.some((grade) => grade.id === justAdded.id) && justAdded.kind !== "dm" && (
+          <Link href={`/debrief?note=${encodeURIComponent(justAdded.id)}`} className="mt-2 inline-flex min-h-10 items-center gap-1.5 text-[0.875rem] font-bold text-accent hover:underline max-lg:min-h-11">
+            <ClipboardCheck size={15} aria-hidden /> Débriefer cette copie question par question
+          </Link>
+        )}
 
         {/* ── Calibration : épreuves en attente de la copie ── */}
         <PendingGrades grades={grades} onSave={onSave} className="mt-7" />
@@ -234,6 +241,11 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
                       </span>
                     </span>
                     <span className="tabular shrink-0 whitespace-nowrap text-[0.9375rem] font-black text-ink">{formatGrade(grade)}</span>
+                    {grade.kind !== "dm" && (
+                      <Link href={`/debrief?note=${encodeURIComponent(grade.id)}`} title="Débriefer" aria-label={`Débriefer ${grade.title || GRADE_KIND_META[grade.kind].label}`} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-subtle hover:bg-inset hover:text-ink max-lg:h-11 max-lg:w-11">
+                        <ClipboardCheck size={15} aria-hidden />
+                      </Link>
+                    )}
                     <Button
                       size="icon"
                       variant="ghost"

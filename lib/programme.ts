@@ -1,4 +1,4 @@
-import { countResults, foldText, type AnnaleLog } from "@/lib/annales";
+import { foldText, type AnnaleLog } from "@/lib/annales";
 import { AT_RISK_THRESHOLD, retrievabilityToday } from "@/lib/chapter-memory";
 import { DESIRED_RETENTION } from "@/lib/fsrs";
 import { PROGRAMME, type ProgrammeChapter } from "@/lib/programme-data";
@@ -119,7 +119,7 @@ function classify(retrievability: number | null, rate: number | null, annalesCou
   }
   const parts: string[] = [];
   if (hasMemory) parts.push(`mémoire ${percent(retrievability)}`);
-  if (hasAnnales) parts.push(`annales ${percent(rate)} sur ${annalesCount}`);
+  if (hasAnnales) parts.push(`exercices ${percent(rate)} sur ${annalesCount}`);
   const detail = parts.join(" · ");
 
   if ((hasMemory && retrievability < AT_RISK_THRESHOLD) || (hasAnnales && rate < ANNALES_FRAGILE)) {
@@ -134,6 +134,8 @@ function classify(retrievability: number | null, rate: number | null, annalesCou
 export interface ProgrammeInput {
   chapterMemory: ChapterMemory[];
   annales: AnnaleLog[];
+  /** Tentatives saisies dans l'app (débriefs, nouvelles tentatives) — comptées avec les annales, par chapitre déclaré. */
+  attempts?: { chapterId: string | null; result: "réussi" | "partiel" | "échec" }[];
   seen: string[];
   today: string;
 }
@@ -155,9 +157,12 @@ export function computeMastery(input: ProgrammeInput, programme: readonly Progra
     const memory = memoryById.get(chapter.id) ?? [];
     const annales = annalesById.get(chapter.id) ?? [];
     const retrievability = memory.length > 0 ? Math.min(...memory.map((entry) => retrievabilityToday(entry, input.today))) : null;
-    const annalesRate = countResults(annales).successRate;
+    // Annales et tentatives de l'app : même barème (réussi 1, partiel ½, échec 0).
+    const own = (input.attempts ?? []).filter((attempt) => attempt.chapterId === chapter.id);
+    const results = [...annales.map((log) => log.result), ...own.map((attempt) => attempt.result)];
+    const annalesRate = results.length > 0 ? results.reduce((sum, result) => sum + (result === "réussi" ? 1 : result === "partiel" ? 0.5 : 0), 0) / results.length : null;
     const declaredSeen = seen.has(chapter.id);
-    const { status, reason } = classify(retrievability, annalesRate, annales.length, declaredSeen);
+    const { status, reason } = classify(retrievability, annalesRate, results.length, declaredSeen);
     return { chapter, status, memory, retrievability, annales, annalesRate, declaredSeen, reason };
   });
 }

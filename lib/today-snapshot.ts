@@ -1,5 +1,10 @@
 import { computeTimeCalibration, countResults, describeTimeCalibration, normalizeAnnaleLogs, weakChapters } from "@/lib/annales";
 import { buildBriefing, type BriefingItem } from "@/lib/briefing";
+import { latestDueInfo, normalizeAnkiSnapshots } from "@/lib/anki-snapshot";
+import { normalizeAttempts } from "@/lib/attempts";
+import { buildDiagnosticContext } from "@/lib/diagnostic-context";
+import { chapterTitle, FINDING_LABEL, mainFinding } from "@/lib/diagnostic";
+import { dueRetries } from "@/lib/exercises";
 import { atRisk } from "@/lib/chapter-memory";
 import { ERROR_TYPE_META } from "@/lib/error-log";
 import { topReasons } from "@/lib/next-move/engine";
@@ -60,9 +65,14 @@ export function buildTodaySnapshot(collections: Record<string, unknown>, annaleR
   const history = list(collections.nextMoves, normalizeNextMoveRecord);
   const preferences = normalizePreferences(collections.preferences ?? {});
   const annales = normalizeAnnaleLogs(annaleRows);
+  const attempts = normalizeAttempts(collections.attempts);
+  const ankiSnapshots = normalizeAnkiSnapshots(collections.ankiSnapshots);
   const today = dayKey(now);
 
-  const briefing = buildBriefing({ sessions, workItems, grades, reviewItems, errors, checkins, chapterMemory, preferences, history, annales, now });
+  const briefing = buildBriefing({ sessions, workItems, grades, reviewItems, errors, checkins, chapterMemory, preferences, history, annales, attempts, ankiSnapshots, now });
+  // Le même diagnostic que l'écran Programme (l'historique de khôlle, propre à un appareil, n'est pas disponible ici).
+  const diagnostic = buildDiagnosticContext({ chapterMemory, attempts, errors, ankiSnapshots, workItems, preferences, annales, kholle: {}, now });
+  const ankiDue = latestDueInfo(ankiSnapshots);
   const move = briefing.move;
 
   const deadlines = activeWorkItems(workItems)
@@ -87,7 +97,7 @@ export function buildTodaySnapshot(collections: Record<string, unknown>, annaleR
     .map((entry) => ({ matiere: entry.subject, type: ERROR_TYPE_META[entry.type].label, erreur: entry.description, bonne_idee: entry.fix, jour: entry.date }));
 
   const time = computeTimeCalibration(annales);
-  const mastery = computeMastery({ chapterMemory, annales, seen: preferences.programmeSeen, today });
+  const mastery = computeMastery({ chapterMemory, annales, attempts, seen: preferences.programmeSeen, today });
   const programmeSummary = summarizeMastery(mastery);
   const plan = buildRetroplanning(mastery, preferences.contestDate, today);
   const annaleTotals = countResults(annales);
@@ -103,8 +113,37 @@ export function buildTodaySnapshot(collections: Record<string, unknown>, annaleR
           minutes: move.steps.find((step) => step.candidate?.key === move.primary!.key)?.minutes ?? move.primary.idealMinutes,
           pourquoi: topReasons(move.primary, 4),
           consigne: move.primary.instruction,
+          corrige: move.primary.problem,
+          termine_quand: move.primary.doneWhen,
         }
       : null,
+    statut_du_jour: move.status === "repos" ? "assez pour aujourd'hui (capacité déclarée atteinte)" : move.status,
+    point_faible_principal: diagnostic.ranked.slice(0, 3).map((diagnosis) => {
+      const finding = mainFinding(diagnosis)!;
+      return {
+        matiere: diagnosis.chapter.subject,
+        chapitre: diagnosis.chapter.title,
+        constat: FINDING_LABEL[finding.kind],
+        niveau: finding.level,
+        preuves: finding.evidence,
+        cours: `${diagnosis.course.state} — ${diagnosis.course.detail}`,
+        application: `${diagnosis.application.state} — ${diagnosis.application.detail}`,
+        action: finding.action,
+        termine_quand: finding.doneWhen,
+      };
+    }),
+    a_refaire_sans_aide: dueRetries(diagnostic.exercises).slice(0, LIST_MAX).map((exercise) => ({
+      exercice: exercise.label,
+      matiere: exercise.subject,
+      chapitre: chapterTitle(exercise.chapterId),
+      prevu_le: exercise.nextRetryDay,
+      echecs_d_affilee: exercise.failedStreak,
+      autre_approche: exercise.changeApproach,
+    })),
+    anki: {
+      cartes_dues: ankiDue ? { nombre: ankiDue.due, releve_le: ankiDue.takenAt, source: ankiDue.source, attention: "chiffre du relevé, pas en temps réel" } : null,
+      releve_complet: diagnostic.ankiSnapshot ? { le: diagnostic.ankiSnapshot.takenAt, trop_ancien: diagnostic.ankiStale } : null,
+    },
     ensuite: move.steps.slice(1).map((step) => (step.type === "pause" ? `${step.minutes} min de pause` : `${step.minutes} min · ${step.candidate!.action} — ${step.candidate!.title}`)),
     ce_qui_presse: briefingLines(briefing.urgent),
     tu_repousses: briefingLines(briefing.postponed),

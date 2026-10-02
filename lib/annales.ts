@@ -49,6 +49,13 @@ export interface AnnaleLog {
   plannedMinutes: number | null;
   errors: string[];
   comment: string | null;
+  /**
+   * Aide utilisée pendant l'essai (colonne `aide`, migration 0008) quand le
+   * connecteur l'a transmise ; sinon déduite des indices : aucun indice ⇒
+   * « sans », au moins un ⇒ « indices ». `helpDeclared` dit lequel des deux.
+   */
+  help: "sans" | "indices" | "correction";
+  helpDeclared: boolean;
 }
 
 /* ── Normalisation ────────────────────────────────────────────────── */
@@ -123,6 +130,7 @@ export function normalizeAnnaleLog(raw: unknown): AnnaleLog | null {
   if (!id || !created || Number.isNaN(created.getTime()) || !chapter || !result) return null;
 
   const subjectLabel = optionalText(row.matiere) ?? "Matière inconnue";
+  const declared = row.aide === "sans" || row.aide === "indices" || row.aide === "correction" ? row.aide : null;
   const hints = typeof row.indices === "number" && Number.isFinite(row.indices) ? Math.max(0, Math.round(row.indices)) : 0;
   return {
     id,
@@ -140,6 +148,8 @@ export function normalizeAnnaleLog(raw: unknown): AnnaleLog | null {
     plannedMinutes: positiveInt(row.temps_prevu),
     errors: Array.isArray(row.erreurs) ? row.erreurs.map(optionalText).filter((entry): entry is string => entry !== null) : [],
     comment: optionalText(row.commentaire),
+    help: declared ?? (hints > 0 ? "indices" : "sans"),
+    helpDeclared: declared !== null,
   };
 }
 

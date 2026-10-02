@@ -37,6 +37,7 @@ import { errorLogHref } from "@/lib/error-log";
 import { createGrade, formatAverage } from "@/lib/grades";
 import { createPracticeSession } from "@/lib/practice-session";
 import { readFlag, writeFlag } from "@/lib/storage";
+import { DEBRIEF_DRAFT_KEY } from "@/lib/debrief";
 import { dayKey, subjects } from "@/lib/study";
 import type { Subject } from "@/lib/supabase/types";
 
@@ -88,7 +89,7 @@ export function ExamSimulator() {
   const [sim, setSim] = useState<ExamSim | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [now, setNow] = useState(() => Date.now());
-  const [saved, setSaved] = useState<{ subject: Subject; outOf20: number | null; pending: boolean } | null>(null);
+  const [saved, setSaved] = useState<{ subject: Subject; outOf20: number | null; pending: boolean; gradeId: string | null } | null>(null);
 
   // Setup.
   const [subject, setSubject] = useState<Subject>("Mathématiques");
@@ -137,6 +138,11 @@ export function ExamSimulator() {
                 : `${saved.outOf20 === null ? "—" : formatAverage(saved.outOf20)}/20 enregistré dans tes notes, et le temps passé dans tes séances.`}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
+              {saved.gradeId && (
+                <Link href={`/debrief?note=${encodeURIComponent(saved.gradeId)}`} className="grad-btn inline-flex min-h-10 items-center rounded-full px-4 text-sm font-bold max-lg:min-h-11">
+                  Débriefer cette épreuve
+                </Link>
+              )}
               <Link href={errorLogHref({ subject: saved.subject, source: "concours blanc", date: dayKey(new Date()) })} className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
                 Noter mes erreurs
               </Link>
@@ -249,16 +255,29 @@ export function ExamSimulator() {
     if (!sim) return;
     const end = new Date(sim.endedAt!);
     const note = score.outOf20;
+    let gradeId: string | null = null;
     if (note !== null) {
       const grade = createGrade(
         { subject: sim.subject, title: sim.title, kind: "concours", date: dayKey(sim.startedAt), maxScore: 20, score: pending ? null : note, predictedScore: pending ? note : null },
         new Date()
       );
-      if (grade) saveGrades([...grades, grade]);
+      if (grade) {
+        saveGrades([...grades, grade]);
+        gradeId = grade.id;
+        // Le débrief (/debrief) reprend les questions, leur barème et leur temps : on n'a plus qu'à dire le chapitre et la cause.
+        const outcome = { faite: "réussie", partielle: "partielle", fausse: "fausse", "pas abordée": "non abordée" } as const;
+        writeFlag(
+          DEBRIEF_DRAFT_KEY,
+          JSON.stringify({
+            gradeId,
+            questions: sim.questions.map((question) => ({ label: question.label, points: question.points, outcome: outcome[question.status], minutes: question.seconds >= 60 ? Math.round(question.seconds / 60) : null })),
+          })
+        );
+      }
     }
     const session = createPracticeSession({ subject: sim.subject, startedAt: new Date(sim.startedAt), endedAt: end, note: `Épreuve : ${sim.title}` });
     if (session) saveSessions([session]);
-    setSaved({ subject: sim.subject, outOf20: note, pending });
+    setSaved({ subject: sim.subject, outOf20: note, pending, gradeId });
     update(null);
   }
 

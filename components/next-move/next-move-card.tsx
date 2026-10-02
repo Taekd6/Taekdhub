@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Check, ChevronDown, Shuffle, Target } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Moon, Shuffle, Target } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { cn } from "@/lib/cn";
@@ -67,6 +67,7 @@ export function NextMoveCard({
   const [budget, setBudget] = useState<Budget>("auto");
   const [showAlternative, setShowAlternative] = useState(false);
   const [details, setDetails] = useState(false);
+  const [forceShow, setForceShow] = useState(false);
   // La recommandation dépend de l'heure (soir, travail récent) : on la recalcule chaque minute.
   const [tick, setTick] = useState(() => Date.now());
   useEffect(() => {
@@ -94,9 +95,13 @@ export function NextMoveCard({
   // Issue constatée d'après les séances et révisions : « commencé » → « fait » quand la trace existe.
   useEffect(() => {
     if (!ready) return;
-    const resolved = resolveOutcomes(history, { sessions: data.sessions, reviewItems: data.reviewItems, chapterMemory: data.chapterMemory }, new Date());
+    const resolved = resolveOutcomes(
+      history,
+      { sessions: data.sessions, reviewItems: data.reviewItems, chapterMemory: data.chapterMemory, attempts: data.attempts, ankiSnapshots: data.ankiSnapshots, ankiDeckChapters: data.preferences.ankiDeckChapters },
+      new Date()
+    );
     if (resolved !== history) saveHistory(resolved);
-  }, [ready, history, data.sessions, data.reviewItems, data.chapterMemory, saveHistory]);
+  }, [ready, history, data.sessions, data.reviewItems, data.chapterMemory, data.attempts, data.ankiSnapshots, data.preferences.ankiDeckChapters, saveHistory]);
 
   // Une ligne d'historique par proposition MONTRÉE (dédoublonnée sur quelques heures).
   useEffect(() => {
@@ -152,6 +157,24 @@ export function NextMoveCard({
   }
 
   const calm = plan.status === "calme" && !showAlternative;
+
+  /* ── Assez pour aujourd'hui : on le dit d'abord, la proposition reste à un geste ── */
+  if (plan.status === "repos" && !forceShow && !inProgress) {
+    return (
+      <section aria-labelledby="next-move-titre" className={cn("surface reveal p-5 sm:p-6", className)} data-next-move>
+        <p className="t-label inline-flex items-center gap-1.5">
+          <Moon size={14} aria-hidden /> Ton prochain mouvement
+        </p>
+        <h2 id="next-move-titre" className="t-subhead mt-2">
+          Assez pour aujourd&apos;hui.
+        </h2>
+        <p className="t-meta mt-1 max-w-[56ch]">{plan.context[plan.context.length - 1]}. Rien d&apos;urgent n&apos;attend : t&apos;arrêter maintenant fait partie du travail.</p>
+        <button type="button" onClick={() => setForceShow(true)} className="mt-4 inline-flex min-h-10 items-center gap-1.5 text-sm font-bold text-accent hover:underline max-lg:min-h-11">
+          Voir quand même la proposition <ArrowRight size={14} aria-hidden />
+        </button>
+      </section>
+    );
+  }
 
   return (
     <section aria-labelledby="next-move-titre" className={cn("surface reveal p-4 sm:p-5", className)} style={{ "--i": 1 } as CSSProperties} data-next-move>
@@ -246,6 +269,16 @@ export function NextMoveCard({
               ))}
             </ul>
             <p className="t-meta mt-2 text-[0.8125rem]">{shown.instruction}</p>
+            <dl className="mt-3 grid gap-1.5 text-[0.8125rem]">
+              <div className="flex gap-2">
+                <dt className="shrink-0 font-bold text-subtle">Corrige :</dt>
+                <dd className="min-w-0 font-semibold text-ink">{shown.problem}</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="shrink-0 font-bold text-subtle">Terminé quand :</dt>
+                <dd className="min-w-0 font-semibold text-ink">{shown.doneWhen}</dd>
+              </div>
+            </dl>
           </div>
         )}
 

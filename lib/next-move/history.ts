@@ -1,3 +1,6 @@
+import type { ExerciseAttempt } from "@/lib/attempts";
+import type { AnkiSnapshot } from "@/lib/anki-snapshot";
+import { ankiByChapter } from "@/lib/anki-mapping";
 import { effectiveSchedule } from "@/lib/spaced-repetition";
 import { dayKey } from "@/lib/study";
 import type { MoveCandidate } from "@/lib/next-move/engine";
@@ -116,6 +119,11 @@ interface OutcomeSources {
   sessions: WorkSession[];
   reviewItems: ReviewItem[];
   chapterMemory: ChapterMemory[];
+  /** Tentatives d'exercice : seule preuve qu'un « refaire » a été fait. */
+  attempts?: ExerciseAttempt[];
+  /** Relevés Anki et associations paquets → chapitres : seule preuve que des révisions Anki ont été faites. */
+  ankiSnapshots?: AnkiSnapshot[];
+  ankiDeckChapters?: Record<string, string | null>;
 }
 
 /** Minutes faites dans la matière entre le démarrage et la fin de la fenêtre. */
@@ -138,7 +146,12 @@ function minutesAfter(sessions: WorkSession[], subject: Subject | null, from: nu
  *
  *   échéance / bloc / erreurs / rappel : du temps dans la matière (et pour
  *     un rappel, le rappel noté dans Mémoire suffit aussi) ;
- *   cartes : au moins une carte de la matière notée depuis le démarrage.
+ *   cartes : au moins une carte de la matière notée depuis le démarrage ;
+ *   refaire : une TENTATIVE notée sur l'exercice (ou, pour un exercice
+ *     ciblé, sur le chapitre) depuis le démarrage — le temps passé ne
+ *     suffit pas : c'est la tentative qui compte ;
+ *   anki : un relevé postérieur au démarrage où il ne reste plus de carte
+ *     due (dans les paquets du chapitre, ou en tout) — le temps ne suffit pas.
  */
 export function resolveOutcomes(history: NextMoveRecord[], sources: OutcomeSources, now: Date): NextMoveRecord[] {
   let changed = false;
@@ -149,7 +162,25 @@ export function resolveOutcomes(history: NextMoveRecord[], sources: OutcomeSourc
     const minutes = minutesAfter(sources.sessions, record.subject, from, to);
     const startDay = dayKey(record.startedAt);
 
-    let done = record.minutes > 0 && minutes >= record.minutes * OUTCOME_DONE_RATIO;
+    // Refaire et Anki ne se constatent PAS au temps passé : il faut la trace de l'action elle-même.
+    const proofOnly = record.kind === "refaire" || record.kind === "anki";
+    let done = !proofOnly && record.minutes > 0 && minutes >= record.minutes * OUTCOME_DONE_RATIO;
+    if (!done && record.kind === "refaire") {
+      const target = record.key.slice("refaire:".length);
+      const chapterTarget = record.key.startsWith("exercice:") ? record.key.slice("exercice:".length) : null;
+      done = (sources.attempts ?? []).some(
+        (attempt) => new Date(attempt.createdAt).getTime() >= from && (chapterTarget ? attempt.chapterId === chapterTarget : attempt.exerciseKey === target)
+      );
+    }
+    if (!done && record.kind === "anki") {
+      const chapterId = record.key === "anki:dues" ? null : record.key.slice("anki:".length);
+      done = (sources.ankiSnapshots ?? []).some((snapshot) => {
+        if (new Date(snapshot.takenAt).getTime() < from) return false;
+        if (!chapterId) return snapshot.source === "manuel" ? snapshot.manual?.due === 0 : snapshot.decks.every((deck) => deck.due === 0);
+        const entry = ankiByChapter(snapshot.source === "manuel" ? null : snapshot, sources.ankiDeckChapters ?? {}).get(chapterId);
+        return entry !== undefined && entry.due === 0;
+      });
+    }
     if (!done && record.kind === "cartes") {
       done = sources.reviewItems.some((item) => {
         if (record.subject && item.subject !== record.subject) return false;

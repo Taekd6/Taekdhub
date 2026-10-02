@@ -64,6 +64,49 @@ Le programme de colle de la semaine (`Preferences.colleChapters`, ou `?chapitre=
 
 Un sujet en conditions réelles (`lib/epreuve.ts`) : compte à rebours (1 à 4 h), questions avec barème, et **temps par question** (toucher une question y bascule le chrono). L'épreuve en cours survit à un rechargement (localStorage). À la correction : faite / partielle (½) / fausse / pas abordée, note **brute** ramenée sur 20 (pas une note harmonisée), et les questions où l'on s'est enlisé (> 1,5 × le temps justifié par le barème). Enregistrement : une note « concours » dans Progression — ou une note en attente avec la note estimée en pronostic, quand un professeur corrige (calibration) —, une séance pour le temps passé, et le lien vers le carnet d'erreurs.
 
+## Système de progression : Anki, diagnostic, débrief, refaire sans aide
+
+La boucle : **identifier le point faible → choisir l'action → la faire → vérifier quelques jours plus tard, par une nouvelle tentative sans aide.** Anki reste l'outil de mémorisation : TaekdHub n'y crée, ne modifie ni ne planifie aucune carte.
+
+### Pont Anki (`/anki`, `lib/anki-connect.ts`, `lib/anki-snapshot.ts`, `lib/anki-mapping.ts`)
+
+- **Relevé** des chiffres par paquet (sous-paquets exclus) : cartes, dues (hors nouvelles), révisées sur 30 j, ratées au moins une fois sur 30 j, mûres, oubliées ≥ 4 fois ; et le volume de révisions par jour. Trois sources : **AnkiConnect** (ordinateur, Anki ouvert ; lecture seule : `requestPermission`, `deckNames`, `findCards` via `multi`, `getNumCardsReviewedByDay`), **fichier** d'échange JSON (export/import entre navigateurs), **saisie rapide** depuis AnkiMobile (cartes dues, révisées aujourd'hui).
+- Collection synchronisée `ankiSnapshots` : un relevé fait sur l'ordinateur se lit sur l'iPhone. Un relevé par jour et par source (`anki:<jour>`, `anki-manuel:<jour>`) : réimporter **remplace**, jamais de doublon ; 14 jours gardés. Chaque chiffre est daté ; « dues » n'est utilisé que si le relevé a moins de 24 h, le reste moins de 7 jours.
+- **Paquets → chapitres** : *certaine* (le nom du paquet est exactement un titre ou un alias de chapitre, dans la matière lue dans le chemin, sans ambiguïté), *héritée* (sous-paquet d'un paquet associé), *proposée* (rapprochement partiel : **à confirmer**, jamais utilisée seule), *non classé*, et le **choix de l'élève** (`Preferences.ankiDeckChapters`, y compris « aucun chapitre », qui écarte toute la branche). On associe des paquets, jamais des cartes d'après leur texte.
+- Limites : voir « Limites de l'intégration Anki » plus bas.
+
+### Tentatives et « refaire sans aide » (`lib/attempts.ts`, `lib/exercises.ts`, « À refaire » sur `/annales`)
+
+- Collection synchronisée `attempts` (fonctionne sans compte et hors ligne) : résultat, **aide** (sans / indices / correction ouverte), temps, cause (cours, méthode, calcul, compréhension, démarrage, temps, rédaction), manque de temps.
+- Un exercice = toutes les tentatives d'une même clé, annales (Supabase) et tentatives de l'app **réunies à la lecture**, sans copie.
+- Règles : seul « réussi **sans aide** » prouve la maîtrise ; sinon nouvelle tentative à J+2, J+5 puis J+12 (`Preferences.retryDelaysDays`) ; après 3 échecs d'affilée, une **autre action** est proposée selon la cause (rappel de cours, méthode expliquée puis exercice plus accessible…). L'écran de tentative cache la correction et chronomètre.
+- Une erreur du carnet reliée à un exercice n'est « corrigée » qu'après une réussite sans aide postérieure (badge dans le carnet).
+
+### Diagnostic des lacunes (`lib/diagnostic.ts`, en tête de `/programme`)
+
+Par chapitre, des constats **seulement au-delà d'un seuil d'observations** (fenêtre 60 j) : cours (mémoire < 85 %, ou Anki ≥ 20 % d'échecs sur ≥ 20 cartes, ou ≥ 2 causes/erreurs « cours »), démonstrations (≥ 2 questions de khôlle ratées), méthode, application (≥ 3 tentatives, < 50 % sans aide), calcul, temps, démarrage. « Établi » = ≥ 2 sources ou ≥ 4 observations, « signal » sinon. **Le cours tient mais l'application rate** est dit explicitement (priorité à l'exercice). Pas de score composite : ordre = établi d'abord, puis épreuve dans 14 j, puis nombre de constats, puis récence. Chaque constat donne son action et son critère de fin.
+
+### Débrief de copie (`/debrief`, `lib/debrief.ts`)
+
+Depuis une note (Progression → icône débrief), une épreuve blanche (questions, barème et temps pré-remplis) ou une note saisie sur place : par question, chapitre, résultat, cause, manque de temps, barème, exercice/annale relié. Chaque question devient une tentative (elle revient dans « À refaire ») et chaque échec causé une erreur du **carnet existant**. Identifiants dérivés de la note et du libellé : réenregistrer remplace. Plan en 6 étapes : priorités, cours, exercices, cartes Anki, nouvelle tentative, vérification.
+
+### Next Move v2 (`lib/next-move/engine.ts`)
+
+Nouveaux candidats : **refaire** (exercices à leur date ; exercice ciblé quand le diagnostic établit un problème d'application sans exercice en attente) et **anki** (paquet d'un chapitre dont le cours résiste ; cartes dues d'un relevé < 24 h). Chaque proposition dit **ce qu'elle corrige** et **quand elle est terminée** ; « refaire » et « anki » ne sont constatés faits que sur preuve (tentative notée, relevé sans carte due), jamais au temps passé. Un exercice à refaire **remplace** le bloc générique de sa matière et en reprend les objectifs de temps. **Mode repos** : capacité déclarée du jour atteinte (ou fatigue forte et moitié faite) et rien d'urgent ⇒ la carte dit « Assez pour aujourd'hui » (la proposition reste à un geste). Fatigue forte ⇒ séance par défaut de 25 min.
+
+### Limites de l'intégration Anki
+
+- **iPhone / iPad** : AnkiMobile n'expose aucune donnée (pas d'API, pas d'AnkiConnect). Depuis le téléphone : saisie rapide (deux chiffres) ou lecture d'un relevé fait sur l'ordinateur et synchronisé par le compte. Pour que ce relevé inclue les révisions faites sur iPhone : synchroniser AnkiMobile puis Anki (ordinateur) avec AnkiWeb, comme d'habitude. TaekdHub ne parle jamais à AnkiWeb et ne demande aucun identifiant.
+- **AnkiConnect** : Anki ouvert sur le même ordinateur ; l'adresse de TaekdHub dans `webCorsOriginList` (configuration affichée et copiable sur `/anki`) ; Chrome, Edge ou Firefox (Safari peut bloquer l'accès d'une page https à `127.0.0.1` ; Chrome peut demander l'autorisation « réseau local »).
+- Les fichiers `.apkg` / `.colpkg` ne sont pas lus. Les chiffres sont ceux de l'instant du relevé, jamais du temps réel ; la planification d'Anki n'est jamais recalculée.
+
+### Mise en production (ordre impératif)
+
+1. Supabase → SQL Editor : `0007_exercise_logs_owner.sql`, puis `0008_attempts_anki_sync.sql` (additives ; retour arrière de 0008 en commentaire dans le fichier).
+2. Vérifier : `select pg_get_constraintdef(oid) from pg_constraint where conname = 'user_collections_known';` liste `attempts` et `ankiSnapshots`.
+3. Seulement ensuite, fusionner la branche dans `main` (Vercel déploie). Déployer avant 0008 : la synchronisation des deux nouvelles collections serait refusée (« en attente »), les autres continuent.
+4. Aucune nouvelle variable d'environnement. Facultatif : `MCP_USER_ID`, `MCP_TIMEZONE`.
+
 ## Formulaire flash et bilan imprimable
 
 ### Formulaire (`/formulaire`)
@@ -198,6 +241,8 @@ app/(app)/kholle          Mode khôlle : questions de cours tirées au sort
 app/(app)/epreuve         Épreuve blanche chronométrée
 app/(app)/formulaire      Formulaire en cartes flash
 app/(app)/bilan           Bilan imprimable d'une période
+app/(app)/anki            Pont Anki : relevés, paquets → chapitres
+app/(app)/debrief         Débrief d'une copie, plan d'action
 app/api/mcp/[key]         Connecteur MCP : log_exercise, get_progress, get_today
 components/               Composants UI et par domaine (work, review, errors, progress, history, hub, ui)
 lib/                      Logique métier : storage (localStorage), planning, échéances, suivi du temps, notes, carnets, supabase/
@@ -206,7 +251,7 @@ lib/exam-prep.ts          « Prêt pour le DS ? » : programme d'une épreuve lu
 components/exam/          Panneau « Prêt pour le DS ? » (Aperçu de la matière, Échéances)
 lib/sync/                 Synchronisation compte ↔ appareil (moteur pur + adaptateur Supabase)
 components/account/       Compte (Réglages), fournisseur de session, décision du premier login
-supabase/migrations/      0007 : `exercise_logs` rattachée à son élève + RLS. 0006 : table `user_collections` + RLS (synchronisation). 0001–0005 : schéma historique de l'ancienne banque, non utilisé
+supabase/migrations/      0008 : collections `attempts` et `ankiSnapshots`, colonne `exercise_logs.aide`. 0007 : `exercise_logs` rattachée à son élève + RLS. 0006 : table `user_collections` + RLS (synchronisation). 0001–0005 : schéma historique de l'ancienne banque, non utilisé
 ```
 
 ## Reprendre le développement avec Claude Code

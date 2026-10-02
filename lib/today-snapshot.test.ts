@@ -41,3 +41,30 @@ describe("get_today — l'état du jour pour Claude", () => {
     expect(snapshot.prochain_mouvement!.pourquoi.length).toBeGreaterThan(0);
   });
 });
+
+describe("get_today — diagnostic, à refaire, Anki", () => {
+  it("donne le point faible établi, les exercices à refaire et l'âge du relevé Anki", () => {
+    const attempts = ["2026-09-20", "2026-09-24", "2026-09-28"].map((day, index) => ({
+      id: `t${index}`,
+      exerciseKey: `ds:g:q${index}`,
+      label: `DS 1 — Q${index}`,
+      subject: "Mathématiques",
+      chapterId: "m2-reduction",
+      origin: "ds",
+      day,
+      createdAt: `${day}T12:00:00.000Z`,
+      updatedAt: `${day}T12:00:00.000Z`,
+      result: "échec",
+      help: "sans",
+      cause: "méthode",
+      lackOfTime: false,
+    }));
+    const snapshot = { day: "2026-10-02", takenAt: new Date(2026, 9, 2, 8).toISOString(), source: "manuel", manual: { due: 37, reviewedToday: 10 } };
+    const today = buildTodaySnapshot({ attempts, ankiSnapshots: [snapshot] }, null, NOW);
+    // Trois échecs « méthode » d'une seule source : un signal (il en faut 4, ou 2 sources, pour « établi »).
+    expect(today.point_faible_principal[0]).toMatchObject({ chapitre: "Réduction des endomorphismes", constat: "Méthode mal assimilée", niveau: "signal" });
+    expect(today.a_refaire_sans_aide.length).toBe(3);
+    expect(today.anki.cartes_dues).toMatchObject({ nombre: 37, source: "manuel", attention: "chiffre du relevé, pas en temps réel" });
+    expect(today.prochain_mouvement?.termine_quand).toBeTruthy();
+  });
+});

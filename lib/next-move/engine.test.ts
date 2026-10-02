@@ -4,6 +4,8 @@ import { createErrorEntry } from "@/lib/error-log";
 import { createGrade } from "@/lib/grades";
 import { createReviewItem } from "@/lib/review-items";
 import { normalizeAnnaleLog } from "@/lib/annales";
+import { normalizeAnkiSnapshot } from "@/lib/anki-snapshot";
+import type { ExerciseAttempt } from "@/lib/attempts";
 import {
   CALM_THRESHOLD,
   autoMinutes,
@@ -551,38 +553,114 @@ describe("« Pas maintenant » est respecté pendant un jour", () => {
   });
 });
 
-describe("annales — reprise ciblée", () => {
+describe("refaire sans aide, diagnostic, Anki, repos", () => {
   function annale(chapitre: string, resultat: string, day: string, extra: Record<string, unknown> = {}) {
     seq += 1;
     return normalizeAnnaleLog({ id: `a-${seq}`, created_at: new Date(`${day}T15:00:00`).toISOString(), matiere: "maths", chapitre, resultat, indices: 0, ...extra })!;
   }
+  function attempt(chapterId: string, day: string, result: ExerciseAttempt["result"], help: ExerciseAttempt["help"] = "sans", extra: Partial<ExerciseAttempt> = {}): ExerciseAttempt {
+    seq += 1;
+    return { id: `t-${seq}`, exerciseKey: `ex:${seq}`, label: `Exercice ${seq}`, subject: "Mathématiques", chapterId, origin: "exercice", day, createdAt: `${day}T18:00:00.000Z`, updatedAt: `${day}T18:00:00.000Z`, result, help, minutes: null, plannedMinutes: null, cause: null, lackOfTime: false, gradeId: null, note: null, ...extra };
+  }
 
-  it("propose de reprendre un chapitre dont la dernière annale est un échec", () => {
-    const annales = [annale("Réduction", "échec", "2026-09-23", { indices: 2, source: "Mines 2023" })];
-    const candidate = rankCandidates(input({ annales })).find((entry) => entry.key.startsWith("annale:"));
-    expect(candidate).toBeDefined();
-    expect(candidate!.kind).toBe("erreurs");
-    expect(candidate!.subject).toBe("Mathématiques");
-    expect(candidate!.terms.map((term) => term.id)).toEqual(expect.arrayContaining(["annales-ratées", "annales-indices", "annale-fraîche"]));
-    expect(candidate!.instruction).toContain("Mines 2023");
-    expect(candidate!.resource?.href).toBe("/annales");
-  });
-
-  it("se tait quand le dernier essai est réussi", () => {
-    const annales = [annale("Réduction", "échec", "2026-09-20"), annale("Réduction", "réussi", "2026-09-22")];
-    expect(rankCandidates(input({ annales })).some((entry) => entry.key.startsWith("annale:"))).toBe(false);
-  });
-
-  it("ouvre le chrono sur le chapitre de Mémoire correspondant", () => {
-    const memory = chapter("Mathématiques", "Réduction des endomorphismes", "2026-09-01", "ch-red");
-    const annales = [annale("réduction", "échec", "2026-09-23")];
-    const candidate = rankCandidates(input({ annales, chapterMemory: [memory] })).find((entry) => entry.key.startsWith("annale:"));
-    expect(candidate!.href).toContain("chapitre=ch-red");
-  });
-
-  it("le score est la somme des termes affichés", () => {
-    const annales = [annale("Séries entières", "partiel", "2026-09-10"), annale("Séries entières", "partiel", "2026-09-15")];
-    const candidate = rankCandidates(input({ annales })).find((entry) => entry.key.startsWith("annale:"))!;
+  it("une annale ratée revient à sa date de nouvelle tentative, avec le problème et le critère de fin", () => {
+    const annales = [annale("Réduction", "échec", "2026-09-21", { indices: 2, source: "Mines 2023" })];
+    const candidate = rankCandidates(input({ annales })).find((entry) => entry.kind === "refaire")!;
+    expect(candidate.title).toBe("Réduction — Mines 2023");
+    expect(candidate.href).toBe(`/annales?refaire=${encodeURIComponent("annale:mines 2023|reduction")}`);
+    expect(candidate.terms.map((term) => term.id)).toEqual(expect.arrayContaining(["à-refaire", "à-refaire-retard"]));
+    expect(candidate.problem).toContain("pas encore réussi sans aide");
+    expect(candidate.doneWhen).toContain("réussi sans aide");
     expect(candidate.score).toBe(candidate.terms.reduce((total, term) => total + term.points, 0));
+  });
+
+  it("pas avant la date ; plus du tout une fois réussi sans aide", () => {
+    expect(rankCandidates(input({ annales: [annale("Réduction", "échec", "2026-09-24", { source: "X" })] })).some((entry) => entry.kind === "refaire")).toBe(false);
+    const solved = [annale("Réduction", "échec", "2026-09-10", { source: "X" }), annale("Réduction", "réussi", "2026-09-15", { source: "X" })];
+    expect(rankCandidates(input({ annales: solved })).some((entry) => entry.kind === "refaire")).toBe(false);
+  });
+
+  it("après trois échecs, la proposition change d'approche", () => {
+    const key = "exercice:td4-12";
+    const attempts = ["2026-09-01", "2026-09-04", "2026-09-10"].map((day) => attempt("m2-reduction", day, "échec", "sans", { exerciseKey: key, cause: "méthode" }));
+    const candidate = rankCandidates(input({ attempts })).find((entry) => entry.key === `refaire:${key}`)!;
+    expect(candidate.action).toBe("changer d'approche");
+    expect(candidate.instruction).toContain("explique");
+  });
+
+  it("application fragile sans exercice en attente : un exercice ciblé, pas une relecture du cours", () => {
+    // Trois exercices finalement réussis, mais chacun après deux échecs : 3 réussites sans aide sur 9 tentatives.
+    const attempts = ["a", "b", "c"].flatMap((key, index) => [
+      attempt("m2-series-entieres", `2026-09-0${index + 1}`, "échec", "sans", { exerciseKey: key }),
+      attempt("m2-series-entieres", `2026-09-0${index + 4}`, "échec", "sans", { exerciseKey: key }),
+      attempt("m2-series-entieres", `2026-09-1${index + 1}`, "réussi", "sans", { exerciseKey: key }),
+    ]);
+    const candidates = rankCandidates(input({ attempts }));
+    expect(candidates.some((entry) => entry.key.startsWith("refaire:"))).toBe(false);
+    const targeted = candidates.find((entry) => entry.key === "exercice:m2-series-entieres")!;
+    expect(targeted).toMatchObject({ kind: "refaire", action: "exercice ciblé" });
+    expect(targeted.terms[0].reason).toContain("33 % des 9 tentatives réussies sans aide");
+    expect(targeted.doneWhen).toBe("Deux exercices du chapitre réussis sans aide.");
+  });
+
+  it("Anki : des cartes dues d'un relevé de moins de 24 h deviennent une proposition, jamais un relevé plus vieux", () => {
+    const fresh = normalizeAnkiSnapshot({ day: "2026-09-24", takenAt: new Date(2026, 8, 24, 8, 0).toISOString(), source: "manuel", manual: { due: 60, reviewedToday: 0 } })!;
+    const candidate = rankCandidates(input({ ankiSnapshots: [fresh] })).find((entry) => entry.kind === "anki")!;
+    expect(candidate.title).toBe("60 cartes Anki dues");
+    expect(candidate.terms[0].reason).toContain("au relevé de");
+    const old = { ...fresh, takenAt: new Date(2026, 8, 22, 8, 0).toISOString() };
+    expect(rankCandidates(input({ ankiSnapshots: [old] })).some((entry) => entry.kind === "anki")).toBe(false);
+  });
+
+  it("Anki : un chapitre où les cartes résistent devient une révision ciblée du paquet", () => {
+    const snapshot = normalizeAnkiSnapshot({
+      day: "2026-09-24",
+      takenAt: new Date(2026, 8, 24, 8, 0).toISOString(),
+      source: "ankiconnect",
+      decks: [{ name: "MP::Maths::Réduction", total: 150, due: 25, reviewed30: 60, failed30: 18, mature: 40, lapsing: 5 }],
+    })!;
+    const candidate = rankCandidates(input({ ankiSnapshots: [snapshot] })).find((entry) => entry.key === "anki:m2-reduction")!;
+    expect(candidate.title).toBe("MP::Maths::Réduction");
+    expect(candidate.terms.map((term) => term.id)).toEqual(expect.arrayContaining(["anki-échecs", "anki-dues"]));
+  });
+
+  it("capacité du jour atteinte et rien d'urgent : « repos » ; une échéance urgente l'emporte", () => {
+    const today = new Date(2026, 8, 24, 9, 0);
+    const sessions = [session("Mathématiques", 130, today)];
+    const prefs120 = prefs({ capacityByWeekday: [120, 120, 120, 120, 120, 240, 180] });
+    const cards = [createReviewItem({ subject: "Physique", text: "Gauss", kind: "à revoir" }, new Date(2026, 8, 1))!];
+    const relaxed = computeNextMove(input({ sessions, preferences: prefs120, reviewItems: cards.map((item) => ({ ...item, srs: undefined })) as never, errors: [error("Physique", "calcul", "2026-09-23"), error("Physique", "calcul", "2026-09-22")] }));
+    expect(relaxed.status).toBe("repos");
+    expect(relaxed.context.join(" ")).toContain("capacité déclarée");
+    const urgent = computeNextMove(input({ sessions, preferences: prefs120, workItems: [workItem({ dueDate: "2026-09-25", important: true })] }));
+    expect(urgent.status).not.toBe("repos");
+  });
+
+  it("sans capacité déclarée pour le jour, jamais de mode repos", () => {
+    const sessions = [session("Mathématiques", 300, new Date(2026, 8, 24, 9, 0))];
+    const plan = computeNextMove(input({ sessions, preferences: prefs({ capacityByWeekday: [0, 0, 0, 0, 0, 0, 0] }), errors: [error("Physique", "calcul", "2026-09-23"), error("Physique", "calcul", "2026-09-22")] }));
+    expect(plan.status).not.toBe("repos");
+  });
+
+  it("chaque proposition dit ce qu'elle corrige et quand elle est terminée", () => {
+    const plan = computeNextMove(input({ errors: [error("Physique", "calcul", "2026-09-23"), error("Physique", "méthode", "2026-09-22")], workItems: [workItem()] }));
+    for (const candidate of plan.ranked) {
+      expect(candidate.problem.length).toBeGreaterThan(0);
+      expect(candidate.doneWhen.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("un exercice à refaire remplace le bloc générique de la même matière et en reprend les objectifs de temps", () => {
+    const evening = [{}, {}, { Mathématiques: 60 }, { Mathématiques: 60 }, { Mathématiques: 60 }, {}, {}];
+    const attempts = [attempt("m2-reduction", "2026-09-18", "échec", "sans", { exerciseKey: "ds:g:q2" })];
+    const ranked = rankCandidates(input({ attempts, preferences: prefs({ eveningMinimums: evening }) }));
+    expect(ranked.some((entry) => entry.kind === "bloc" && entry.subject === "Mathématiques")).toBe(false);
+    const retry = ranked.find((entry) => entry.key === "refaire:ds:g:q2")!;
+    expect(retry.terms.some((term) => term.reason.startsWith("Remplit aussi : minimum du soir"))).toBe(true);
+    expect(retry.terms.some((term) => term.id === "compte-pour-le-soir")).toBe(false);
+    expect(retry.score).toBe(retry.terms.reduce((total, term) => total + term.points, 0));
+    expect(ranked[0].key).toBe("refaire:ds:g:q2");
+    // Sans exercice à refaire, le bloc reste.
+    expect(rankCandidates(input({ preferences: prefs({ eveningMinimums: evening }) })).some((entry) => entry.kind === "bloc")).toBe(true);
   });
 });

@@ -539,7 +539,7 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     const outcome = withQuotaStorage({}, 1_000_000, () => restoreBackup(backup()));
     expect(outcome.ok).toBe(true);
     expect(outcome.failedAt).toBeNull();
-    expect(outcome.restored).toHaveLength(11);
+    expect(outcome.restored).toHaveLength(13);
   });
 
   it("les séances ne passent pas → RIEN n'est touché, et c'est dit", () => {
@@ -725,6 +725,7 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
     const prefs = normalizePreferences({ __proto__: null, intrus: "oui", autre: 1 }) as Record<string, unknown>;
     expect(Object.keys(prefs).sort()).toEqual(
       [
+        "ankiDeckChapters",
         "briefingOnOpen",
         "capacityByWeekday",
         "colleChapters",
@@ -736,6 +737,7 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
         "palette",
         "planningMarginPercent",
         "programmeSeen",
+        "retryDelaysDays",
         "themeMode",
         "weeklyGoalMinutes",
         "weeklySubjectTargets",
@@ -1228,5 +1230,71 @@ describe("synchronisation — écritures observées et silencieuses", () => {
     void _omitted;
     expect(validateBackupPayload(older)).toBe(true);
     expect(validateBackupPayload({ ...roundTripped, nextMoves: "cassé" })).toBe(false);
+  });
+});
+
+describe("tentatives d'exercice et relevés Anki — sauvegarde", () => {
+  it("font l'aller-retour export → fichier → restauration, et une ancienne sauvegarde reste valide", () => {
+    const attempt = {
+      id: "t-1",
+      exerciseKey: "ds:g1:Q3",
+      label: "DS 2 — Q3",
+      subject: "Mathématiques",
+      chapterId: "m2-reduction",
+      origin: "ds",
+      day: "2026-09-30",
+      createdAt: "2026-09-30T18:00:00.000Z",
+      updatedAt: "2026-09-30T18:00:00.000Z",
+      result: "échec",
+      help: "sans",
+      minutes: 25,
+      plannedMinutes: null,
+      cause: "méthode",
+      lackOfTime: true,
+      gradeId: "g1",
+      note: null,
+    };
+    const snapshot = {
+      id: "anki:2026-10-01",
+      day: "2026-10-01",
+      takenAt: "2026-10-01T17:00:00.000Z",
+      source: "ankiconnect",
+      decks: [{ name: "MP::Maths::Réduction", total: 120, due: 14, reviewed30: 80, failed30: 9, mature: 60, lapsing: 2 }],
+      reviewsByDay: [{ day: "2026-10-01", count: 140 }],
+      manual: null,
+    };
+    const payload = withWritableStorage(
+      { [STORAGE_KEYS.attempts]: JSON.stringify([attempt]), [STORAGE_KEYS.ankiSnapshots]: JSON.stringify([snapshot]) },
+      () => buildBackupPayload(new Date("2026-10-02T00:00:00.000Z"))
+    );
+    expect(payload.attempts).toEqual([attempt]);
+    expect(payload.ankiSnapshots).toEqual([snapshot]);
+    const roundTripped = JSON.parse(JSON.stringify(payload));
+    expect(validateBackupPayload(roundTripped)).toBe(true);
+    const restored = withWritableStorage({}, () => {
+      restoreBackup(roundTripped);
+      return { attempts: localData.attempts(), anki: localData.ankiSnapshots() };
+    });
+    expect(restored).toEqual({ attempts: [attempt], anki: [snapshot] });
+
+    const { attempts: _a, ankiSnapshots: _b, ...older } = roundTripped;
+    void _a;
+    void _b;
+    expect(validateBackupPayload(older)).toBe(true);
+    expect(validateBackupPayload({ ...roundTripped, attempts: "cassé" })).toBe(false);
+  });
+
+  it("une erreur garde son chapitre du programme et son exercice ; un chapitre inconnu est retiré", () => {
+    const base = { id: "e", subject: "Physique", type: "calcul", date: "2026-09-30", source: "DS", description: "signe", createdAt: "2026-09-30T10:00:00.000Z" };
+    expect(normalizeErrorEntry({ ...base, programmeChapterId: "p2-electrostatique", exerciseKey: "ds:g:Q1" })).toMatchObject({ programmeChapterId: "p2-electrostatique", exerciseKey: "ds:g:Q1" });
+    expect(normalizeErrorEntry({ ...base, programmeChapterId: "inconnu" })).not.toHaveProperty("programmeChapterId");
+  });
+
+  it("associations Anki et délais de nouvelle tentative sont validés", () => {
+    const prefs = normalizePreferences({ ankiDeckChapters: { "MP::Maths::Réduction": "m2-reduction", "Divers": null, "X": "inconnu", "Y": 3 }, retryDelaysDays: [3, 7] });
+    expect(prefs.ankiDeckChapters).toEqual({ "MP::Maths::Réduction": "m2-reduction", Divers: null });
+    expect(prefs.retryDelaysDays).toEqual([3, 7]);
+    expect(normalizePreferences({ retryDelaysDays: [7, 3] }).retryDelaysDays).toEqual([2, 5, 12]);
+    expect(normalizePreferences({ retryDelaysDays: [0] }).retryDelaysDays).toEqual([2, 5, 12]);
   });
 });

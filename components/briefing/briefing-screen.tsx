@@ -10,6 +10,7 @@ import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { BRIEFING_SEEN_KEY, buildBriefing, type BriefingItem, type BriefingTone } from "@/lib/briefing";
 import { cn } from "@/lib/cn";
 import { useAnnales } from "@/hooks/use-annales";
+import { useKholleHistory } from "@/hooks/use-kholle-history";
 import { topReasons } from "@/lib/next-move/engine";
 import { markStarted } from "@/lib/next-move/history";
 import { localData, writeFlag } from "@/lib/storage";
@@ -73,6 +74,7 @@ export function BriefingScreen() {
   const data = usePrepahubData();
   const { ready, nextMoves, saveNextMoves, savePreferences } = data;
   const { logs: annales } = useAnnales();
+  const kholle = useKholleHistory();
 
   // Vu : l'accueil ne ramènera pas ici avant demain (ou une longue absence).
   useEffect(() => {
@@ -92,9 +94,12 @@ export function BriefingScreen() {
         preferences: data.preferences,
         history: nextMoves,
         annales,
+        attempts: data.attempts,
+        ankiSnapshots: data.ankiSnapshots,
+        kholle,
         now: new Date(),
       }),
-    [data.sessions, data.workItems, data.grades, data.reviewItems, data.errors, data.checkins, data.chapterMemory, data.preferences, nextMoves, annales]
+    [data.sessions, data.workItems, data.grades, data.reviewItems, data.errors, data.checkins, data.chapterMemory, data.preferences, nextMoves, annales, data.attempts, data.ankiSnapshots, kholle]
   );
 
   if (!ready) {
