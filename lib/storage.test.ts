@@ -715,12 +715,19 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
     expect(normalizePreferences({ briefingOnOpen: "non" }).briefingOnOpen).toBe(true);
   });
 
+  it("chapitres du programme : identifiants connus seulement, sans doublon", () => {
+    expect(normalizePreferences({}).programmeSeen).toEqual([]);
+    expect(normalizePreferences({ programmeSeen: ["m2-reduction", "inconnu", 4, "m2-reduction", "p2-maxwell"] }).programmeSeen).toEqual(["m2-reduction", "p2-maxwell"]);
+    expect(normalizePreferences({ colleChapters: "m2-reduction" }).colleChapters).toEqual([]);
+  });
+
   it("aucune clé étrangère ne ressort des préférences", () => {
     const prefs = normalizePreferences({ __proto__: null, intrus: "oui", autre: 1 }) as Record<string, unknown>;
     expect(Object.keys(prefs).sort()).toEqual(
       [
         "briefingOnOpen",
         "capacityByWeekday",
+        "colleChapters",
         "contestDate",
         "dailyGoalMinutes",
         "displayName",
@@ -728,6 +735,7 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
         "onboardingCompletedAt",
         "palette",
         "planningMarginPercent",
+        "programmeSeen",
         "themeMode",
         "weeklyGoalMinutes",
         "weeklySubjectTargets",

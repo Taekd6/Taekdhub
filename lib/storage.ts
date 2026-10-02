@@ -1,4 +1,5 @@
 import { subjects } from "@/lib/study";
+import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 import { SRS_LADDER } from "@/lib/spaced-repetition";
 import { FSRS_RATINGS, normalizeFsrsMemory, replayMemory, type FsrsMemory, type FsrsRating, type FsrsState } from "@/lib/fsrs";
 import { DEFAULT_PALETTE, DEFAULT_THEME_MODE, THEME_MODES, resolvePaletteId, type PaletteId, type ThemeMode } from "@/lib/theme";
@@ -127,6 +128,19 @@ export type Preferences = {
    * préférence plus ancienne ⇒ `true`.
    */
   briefingOnOpen: boolean;
+  /**
+   * CARTE DU PROGRAMME (lib/programme.ts) : les identifiants des chapitres
+   * du programme (lib/programme-data.ts) que l'élève a déclarés « vus en
+   * cours ». Un chapitre peut aussi être reconnu comme vu sans y figurer
+   * (Mémoire, annales) ; cette liste ne sert qu'à ce qui n'a encore AUCUNE
+   * trace. Identifiants inconnus et doublons retirés à la lecture.
+   */
+  programmeSeen: string[];
+  /**
+   * MODE KHÔLLE (lib/kholle.ts) : les chapitres du programme de colle de la
+   * semaine, dans lesquels le tirage choisit les questions de cours.
+   */
+  colleChapters: string[];
   /*
    * `subjectPalette` / `subjectColors` (palette et surcharges de couleur par
    * matière, refonte « Nuit ») n'existent plus : les matières n'ont plus de
@@ -208,6 +222,8 @@ const defaults: Preferences = {
   eveningMinimums: DEFAULT_EVENING_MINIMUMS,
   onboardingCompletedAt: null,
   briefingOnOpen: true,
+  programmeSeen: [],
+  colleChapters: [],
 };
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
@@ -1360,6 +1376,8 @@ export function normalizePreferences(raw: unknown): Preferences {
     // analyseur que les horodatages des séances (`isoDate`).
     onboardingCompletedAt: isoDate(item.onboardingCompletedAt),
     briefingOnOpen: typeof item.briefingOnOpen === "boolean" ? item.briefingOnOpen : defaults.briefingOnOpen,
+    programmeSeen: normalizeProgrammeIds(item.programmeSeen),
+    colleChapters: normalizeProgrammeIds(item.colleChapters),
     // `accent`, `subjectPalette` et `subjectColors` ne sont pas recopiés :
     // lus (pour la migration ci-dessus), puis abandonnés.
   };
@@ -1384,6 +1402,14 @@ function normalizeWeeklySubjectTargets(raw: unknown): Record<Subject, number> {
     const value = nonNegativeInteger(item[subject]);
     if (value !== null) out[subject] = Math.min(MAX_WEEKLY_SUBJECT_TARGET_MINUTES, value);
   }
+  return out;
+}
+
+/** Identifiants de chapitres du programme : seulement ceux qui existent, sans doublon, dans l'ordre reçu. */
+function normalizeProgrammeIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const id of raw) if (typeof id === "string" && PROGRAMME_BY_ID.has(id) && !out.includes(id)) out.push(id);
   return out;
 }
 

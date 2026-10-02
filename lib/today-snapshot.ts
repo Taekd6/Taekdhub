@@ -3,6 +3,7 @@ import { buildBriefing, type BriefingItem } from "@/lib/briefing";
 import { atRisk } from "@/lib/chapter-memory";
 import { ERROR_TYPE_META } from "@/lib/error-log";
 import { topReasons } from "@/lib/next-move/engine";
+import { buildRetroplanning, computeMastery, summarizeMastery } from "@/lib/programme";
 import {
   normalizeChapterMemory,
   normalizeCheckin,
@@ -86,6 +87,9 @@ export function buildTodaySnapshot(collections: Record<string, unknown>, annaleR
     .map((entry) => ({ matiere: entry.subject, type: ERROR_TYPE_META[entry.type].label, erreur: entry.description, bonne_idee: entry.fix, jour: entry.date }));
 
   const time = computeTimeCalibration(annales);
+  const mastery = computeMastery({ chapterMemory, annales, seen: preferences.programmeSeen, today });
+  const programmeSummary = summarizeMastery(mastery);
+  const plan = buildRetroplanning(mastery, preferences.contestDate, today);
   const annaleTotals = countResults(annales);
 
   return {
@@ -110,6 +114,14 @@ export function buildTodaySnapshot(collections: Record<string, unknown>, annaleR
       .slice(0, LIST_MAX)
       .map(({ chapter, retrievability }) => ({ matiere: chapter.subject, chapitre: chapter.title, souvenir_pct: percent(retrievability) })),
     erreurs_recentes: recentErrors,
+    programme: {
+      chapitres_vus: programmeSummary.seen,
+      solides_pct: programmeSummary.solidShare === null ? null : percent(programmeSummary.solidShare),
+      fragiles: mastery.filter((entry) => entry.status === "fragile").map((entry) => ({ matiere: entry.chapter.subject, chapitre: entry.chapter.title, pourquoi: entry.reason })),
+      jamais_revus: mastery.filter((entry) => entry.status === "jamais").map((entry) => ({ matiere: entry.chapter.subject, chapitre: entry.chapter.title })),
+      concours_dans_jours: plan?.daysLeft ?? null,
+      a_reprendre_cette_semaine: plan?.weeks[0]?.chapters.map((entry) => `${entry.chapter.subject} — ${entry.chapter.title}`) ?? [],
+    },
     annales: {
       total: annaleTotals.count,
       reussite_pct: annaleTotals.successRate === null ? null : percent(annaleTotals.successRate),

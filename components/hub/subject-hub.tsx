@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, type CSSProperties } from "react";
-import { ArrowRight, BookOpen, ChevronLeft, Copy, LayoutGrid, PenLine, Timer } from "lucide-react";
+import { ArrowRight, BookOpen, ChevronLeft, Copy, FileCheck2, LayoutGrid, Map as MapIcon, MessageCircleQuestion, PenLine, Timer, Trophy } from "lucide-react";
 import { SubjectAnnales } from "@/components/annales/subject-annales";
 import { Section } from "@/components/ui/section";
 import { Tabs } from "@/components/ui/tabs";
@@ -297,6 +297,13 @@ function HubSkeleton() {
   );
 }
 
+const PREP_TOOLS: ActionItem[] = [
+  { label: "Programme", icon: MapIcon, href: "/programme", primary: true },
+  { label: "Khôlle", icon: MessageCircleQuestion, href: "/kholle" },
+  { label: "Épreuve", icon: Trophy, href: "/epreuve" },
+  { label: "Annales", icon: FileCheck2, href: "/annales" },
+];
+
 /* ══════════════════════════════════════════════════════════════════
    LA GALERIE
    ══════════════════════════════════════════════════════════════════ */
@@ -320,6 +327,9 @@ function HubLanding({
   return (
     <div className="mx-auto max-w-[68rem] space-y-8 sm:space-y-10">
       <PageHero title="Tes matières" lede="Ta semaine, matière par matière." illustration={<Illustration name="notes" size={48} />} />
+
+      {/* Les outils transversaux : la carte du programme, les colles, les épreuves, les annales. */}
+      <ActionButtons items={PREP_TOOLS} className="reveal mx-auto max-w-md" />
 
       {available.length === 0 ? (
         <EmptyState

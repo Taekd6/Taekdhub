@@ -48,6 +48,22 @@ Mise en service (une fois) :
 1. Exécuter `supabase/migrations/0007_exercise_logs_owner.sql` (SQL Editor). Elle ajoute `user_id` à `exercise_logs`, rattache les lignes existantes au compte s'il n'y en a qu'un, et pose la RLS : l'élève **lit et supprime** ses seules lignes ; seul le connecteur (clé secrète) écrit.
 2. Vercel → variables **serveur** (jamais `NEXT_PUBLIC_*`) : `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `MCP_SECRET` ; facultatif : `MCP_USER_ID` (identifiant du compte — indispensable seulement s'il y a plusieurs comptes) et `MCP_TIMEZONE` (`Europe/Paris` par défaut).
 
+## Carte du programme, khôlle, épreuve blanche
+
+Trois outils atteints depuis l'écran **Matières** (rangée de boutons ronds).
+
+### Carte du programme (`/programme`)
+
+Le programme MPSI → MP de maths, physique et chimie (`lib/programme-data.ts` : ≈ 70 chapitres, avec alias et questions de cours) confronté aux traces réelles (`lib/programme.ts`) : la mémoire FSRS du chapitre de Mémoire correspondant, la réussite des annales, et la déclaration « Vu en cours » (`Preferences.programmeSeen`). Chaque trace est rattachée à **un seul** chapitre, le rapprochement le plus fort (« Séries entières » ne compte pas pour « Séries numériques »). Statuts : **fragile** (mémoire < 85 % ou annales < 50 %), **jamais revu** (vu en cours, aucune trace), **en cours**, **solide** (mémoire ≥ 90 % ou ≥ 2 annales, et annales ≥ 70 %), **pas encore vu**. Le **rétroplanning** répartit ce qui n'est pas solide jusqu'à la date de concours (Réglages), le plus fragile d'abord, la dernière semaine gardée pour une relecture générale. `get_today` (MCP) en donne le résumé à Claude.
+
+### Mode khôlle (`/kholle`)
+
+Le programme de colle de la semaine (`Preferences.colleChapters`, ou `?chapitre=` depuis la carte) ; une question de cours tirée au sort — **pondérée** : une question ratée revient plus souvent, une question sue moins, une question posée dans les 24 h presque jamais (`lib/kholle.ts`, historique des tirages sur l'appareil) — un chrono (objectif 15 min) et l'auto-évaluation **su / hésitant / pas su**. Ce qui n'est pas su devient une carte « à apprendre » dans À revoir ; le rappel est noté dans Mémoire (une fois par chapitre et par khôlle) ; le temps devient une séance.
+
+### Épreuve blanche (`/epreuve`)
+
+Un sujet en conditions réelles (`lib/epreuve.ts`) : compte à rebours (1 à 4 h), questions avec barème, et **temps par question** (toucher une question y bascule le chrono). L'épreuve en cours survit à un rechargement (localStorage). À la correction : faite / partielle (½) / fausse / pas abordée, note **brute** ramenée sur 20 (pas une note harmonisée), et les questions où l'on s'est enlisé (> 1,5 × le temps justifié par le barème). Enregistrement : une note « concours » dans Progression — ou une note en attente avec la note estimée en pronostic, quand un professeur corrige (calibration) —, une séance pour le temps passé, et le lien vers le carnet d'erreurs.
+
 ## Le point — l'écran d'ouverture
 
 À la première ouverture de la journée (et après 4 h d'absence, mesurée depuis la dernière activité dans l'application — `components/activity-tracker.tsx`), l'accueil s'ouvre sur **Le point** (`/point`, `lib/briefing.ts`) : une salutation, une phrase de résumé, le prochain mouvement de Next Move avec « Commencer », puis trois sections d'au plus trois lignes chacune — **Ce qui presse** (retard, échéance du jour ou du lendemain, travail qui ne tient plus, DS dans ≤ 3 j), **Tu repousses** (travail reporté ≥ 2 fois, plan « si… alors… » manqué, matière proposée ≥ 3 fois sans suite, cartes en retard, objectif de la semaine qui décroche ; puis, à surveiller : chapitre qui s'efface, erreurs sans « bonne idée », note en attente) et **Aujourd'hui** (minimum du soir, plans du jour, cartes du jour). On y revient en touchant la date de l'accueil ; Réglages → À l'ouverture le désactive.
@@ -167,6 +183,9 @@ app/(app)/erreurs         Carnet d'erreurs
 app/(app)/timer           Chronomètre
 app/(app)/settings        Réglages, sauvegarde et restauration
 app/(app)/annales         Annales corrigées avec Claude (lues dans Supabase)
+app/(app)/programme       Carte du programme MP et rétroplanning
+app/(app)/kholle          Mode khôlle : questions de cours tirées au sort
+app/(app)/epreuve         Épreuve blanche chronométrée
 app/api/mcp/[key]         Connecteur MCP : log_exercise, get_progress, get_today
 components/               Composants UI et par domaine (work, review, errors, progress, history, hub, ui)
 lib/                      Logique métier : storage (localStorage), planning, échéances, suivi du temps, notes, carnets, supabase/
