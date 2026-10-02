@@ -12,6 +12,7 @@ import { EveningCard } from "@/components/home/evening-card";
 import { effectiveDailyGoal } from "@/lib/evening-minimums";
 import { MemoryCard } from "@/components/memory/memory-card"; // mémoire des chapitres (FSRS)
 import { NextMoveCard } from "@/components/next-move/next-move-card"; // Next Move
+import { DayAgendaCard } from "@/components/home/day-agenda-card";
 import { useAnnales } from "@/hooks/use-annales";
 import { useKholleHistory } from "@/hooks/use-kholle-history";
 import { DeadlinesCard, ReviewBanner, StatTiles, SubjectCards } from "@/components/home/cards";
@@ -73,7 +74,7 @@ const ACTIONS: ActionItem[] = [
  * l'état, et une seconde copie resterait figée après une saisie.
  */
 export function DashboardOverview() {
-  const { sessions, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems, checkins, saveCheckins, chapterMemory, saveChapterMemory, grades, errors, nextMoves, saveNextMoves, attempts, ankiSnapshots } = usePrepahubData();
+  const { sessions, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems, checkins, saveCheckins, chapterMemory, saveChapterMemory, grades, errors, nextMoves, saveNextMoves, attempts, ankiSnapshots, saveWorkItems } = usePrepahubData();
   const kholle = useKholleHistory();
 
   // Annales corrigées avec Claude (compte connecté seulement) — voir hooks/use-annales.ts.
@@ -154,6 +155,8 @@ export function DashboardOverview() {
           />
           {/* ── NEXT MOVE — la réponse à « et maintenant ? », juste sous la journée. ── */}
           <NextMoveCard data={nextMoveData} history={nextMoves} saveHistory={saveNextMoves} ready={ready} className="order-1 lg:order-none" />
+          {/* LE RESTE DE LA JOURNÉE — le plan adaptatif (lib/day-agenda.ts) : temps restant, arbitrage, ce qui a changé. */}
+          <DayAgendaCard data={nextMoveData} history={nextMoves} saveWorkItems={saveWorkItems} ready={ready} className="order-1 lg:order-none" />
           <div className="reveal order-3 lg:order-none" style={{ "--i": 2 } as CSSProperties}>
             <ActionButtons items={ACTIONS} className="lg:mx-auto lg:max-w-md" />
           </div>
