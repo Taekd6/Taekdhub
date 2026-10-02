@@ -120,3 +120,16 @@ describe("nouvelle tentative et vérification des erreurs", () => {
     expect(progressLine(after.get(key)!)).toBe("2 tentatives · échec sans aide → réussi sans aide");
   });
 });
+
+describe("niveau des exercices", () => {
+  it("le niveau d'une annale vient de son concours ; une nouvelle tentative hérite du niveau connu", async () => {
+    const { annaleLevel } = await import("@/lib/exercises");
+    expect(annaleLevel("CCINP")).toBe("classique");
+    expect(annaleLevel("Mines")).toBe("difficile");
+    expect(annaleLevel("Autre")).toBeNull();
+    const [exercise] = build([annale("2026-10-01", "échec", { niveau: "Centrale" })], []);
+    expect(exercise.steps[0].level).toBe("difficile");
+    const retry = createRetryAttempt(exercise, { result: "réussi", help: "sans", minutes: 30, cause: null }, new Date(2026, 9, 5, 18))!;
+    expect(retry.level).toBe("difficile");
+  });
+});

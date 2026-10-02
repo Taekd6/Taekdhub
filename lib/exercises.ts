@@ -1,5 +1,5 @@
 import { foldText, type AnnaleLog } from "@/lib/annales";
-import { isCleanSuccess, type AttemptCause, type AttemptHelp, type AttemptOrigin, type AttemptResult, type ExerciseAttempt } from "@/lib/attempts";
+import { isCleanSuccess, type AttemptCause, type ExerciseLevel, type AttemptHelp, type AttemptOrigin, type AttemptResult, type ExerciseAttempt } from "@/lib/attempts";
 import { bestProgrammeMatch } from "@/lib/programme";
 import type { ErrorEntry } from "@/lib/storage";
 import type { Subject } from "@/lib/supabase/types";
@@ -52,6 +52,15 @@ export interface ExerciseStep {
   cause: AttemptCause | null;
   lackOfTime: boolean;
   source: "annale" | "app";
+  /** Niveau, quand il est connu (tentative saisie, ou concours de l'annale). */
+  level: ExerciseLevel | null;
+}
+
+/** Le niveau d'une annale d'après son concours : CCINP = classique ; Mines, Centrale, X-ENS = difficile. Inconnu sinon. */
+export function annaleLevel(level: AnnaleLog["level"]): ExerciseLevel | null {
+  if (level === "CCINP") return "classique";
+  if (level === "Mines" || level === "Centrale" || level === "X-ENS") return "difficile";
+  return null;
 }
 
 export type ExerciseStatus =
@@ -126,6 +135,7 @@ function stepFromAttempt(attempt: ExerciseAttempt): ExerciseStep {
     cause: attempt.cause,
     lackOfTime: attempt.lackOfTime,
     source: "app",
+    level: attempt.level ?? null,
   };
 }
 
@@ -143,6 +153,7 @@ function stepFromAnnale(log: AnnaleLog): ExerciseStep {
     cause: null,
     lackOfTime: false,
     source: "annale",
+    level: annaleLevel(log.level),
   };
 }
 
@@ -225,12 +236,14 @@ function newId(): string {
 
 /** La nouvelle tentative d'un exercice, saisie dans l'application. `null` sans matière connue (une annale « SII »). */
 export function createRetryAttempt(
-  exercise: Pick<Exercise, "key" | "label" | "subject" | "chapterId" | "origin">,
-  input: { result: AttemptResult; help: AttemptHelp; minutes: number | null; cause: AttemptCause | null; lackOfTime?: boolean; note?: string | null },
+  exercise: Pick<Exercise, "key" | "label" | "subject" | "chapterId" | "origin"> & { steps?: ExerciseStep[] },
+  input: { result: AttemptResult; help: AttemptHelp; minutes: number | null; cause: AttemptCause | null; lackOfTime?: boolean; note?: string | null; level?: ExerciseLevel | null },
   now: Date
 ): ExerciseAttempt | null {
   if (!exercise.subject) return null;
   const at = now.toISOString();
+  // Le niveau : celui donné, sinon celui du dernier essai connu de l'exercice.
+  const level = input.level ?? [...(exercise.steps ?? [])].reverse().find((step) => step.level !== null)?.level ?? null;
   return {
     id: newId(),
     exerciseKey: exercise.key,
@@ -249,6 +262,7 @@ export function createRetryAttempt(
     lackOfTime: input.lackOfTime ?? false,
     gradeId: null,
     note: input.note?.trim() ? input.note.trim().slice(0, 400) : null,
+    ...(level ? { level } : {}),
   };
 }
 

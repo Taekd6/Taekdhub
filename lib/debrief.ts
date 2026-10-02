@@ -1,4 +1,4 @@
-import { ATTEMPT_CAUSE_LABEL, type AttemptCause, type ExerciseAttempt } from "@/lib/attempts";
+import { ATTEMPT_CAUSE_LABEL, type AttemptCause, type ExerciseAttempt, type ExerciseLevel } from "@/lib/attempts";
 import { buildExercises, type Exercise } from "@/lib/exercises";
 import type { AnnaleLog } from "@/lib/annales";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
@@ -43,6 +43,8 @@ export interface DebriefQuestion {
   /** Exercice ou annale existant que la question rappelle (sa clé). */
   linkedExerciseKey: string | null;
   note: string;
+  /** Niveau de la question (direct, classique, difficile), s'il est indiqué. */
+  level?: ExerciseLevel | null;
 }
 
 /** Le passage d'une cause d'échec au type d'erreur du carnet (qui n'a ni « démarrage » ni « compréhension »). */
@@ -113,6 +115,7 @@ export function buildDebrief(grade: Grade, questions: DebriefQuestion[], now: Da
       lackOfTime: question.lackOfTime,
       gradeId: grade.id,
       note: question.note.trim() || null,
+      ...(question.level ? { level: question.level } : {}),
     });
     if (result !== "réussi" && (cause || question.lackOfTime)) {
       const type = cause ? ERROR_TYPE_FOR_CAUSE[cause] : "temps";
@@ -174,6 +177,7 @@ export function questionsFromAttempts(gradeId: string, attempts: ExerciseAttempt
         minutes: attempt.minutes,
         linkedExerciseKey: error && error.exerciseKey !== attempt.exerciseKey ? error.exerciseKey ?? null : null,
         note: attempt.note ?? "",
+        level: attempt.level ?? null,
       };
     });
 }

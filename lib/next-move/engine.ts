@@ -3,7 +3,8 @@ import { mainDeck } from "@/lib/anki-mapping";
 import { ANKI_DUE_STALE_HOURS, latestDueInfo, snapshotAgeHours, type AnkiSnapshot } from "@/lib/anki-snapshot";
 import type { ExerciseAttempt } from "@/lib/attempts";
 import { buildDiagnosticContext, type DiagnosticContext } from "@/lib/diagnostic-context";
-import { FINDING_LABEL, mainFinding } from "@/lib/diagnostic";
+import { FINDING_LABEL, mainFinding, type FindingKind } from "@/lib/diagnostic";
+import { bestProgrammeMatch } from "@/lib/programme";
 import { dueRetries } from "@/lib/exercises";
 import type { KholleHistory } from "@/lib/kholle";
 import { atRisk, AT_RISK_THRESHOLD, chapterTime, retrievabilityToday } from "@/lib/chapter-memory";
@@ -737,33 +738,80 @@ function retryCandidates(input: NextMoveInput, context: DiagnosticContext): Move
  */
 function diagnosticCandidates(input: NextMoveInput, context: DiagnosticContext): MoveCandidate[] {
   const out: MoveCandidate[] = [];
+  const memoryRecall = new Set(
+    input.chapterMemory.filter((chapter) => !chapter.archived).map((chapter) => bestProgrammeMatch(chapter.subject, chapter.title)?.id).filter(Boolean) as string[]
+  );
   for (const diagnosis of context.ranked.slice(0, 6)) {
-    if (diagnosis.retryKeys.length > 0) continue;
     const finding = mainFinding(diagnosis);
-    if (!finding || (finding.kind !== "application" && finding.kind !== "méthode" && finding.kind !== "démarrage")) continue;
+    if (!finding) continue;
+    const chapter = diagnosis.chapter;
+    const shape = adaptedAction(finding.kind, chapter.id, chapter.title);
+    if (!shape) continue;
+    // Un exercice déjà à refaire porte l'action d'application : pas de doublon.
+    if (shape.needsNoRetry && diagnosis.retryKeys.length > 0) continue;
+    // Le cours : Anki ou Mémoire s'en chargent déjà quand ils ont des données.
+    if (finding.kind === "cours" && (finding.sources.includes("anki") || memoryRecall.has(chapter.id))) continue;
     const terms: ScoreTerm[] = [
       { id: "diagnostic", points: finding.level === "établi" ? DIAGNOSTIC_ESTABLISHED : DIAGNOSTIC_SIGNAL, reason: `${FINDING_LABEL[finding.kind]} (${finding.level}) : ${finding.evidence[0]}` },
     ];
     if (finding.evidence.length > 1) terms.push({ id: "diagnostic-détail", points: 0, reason: finding.evidence[finding.evidence.length - 1] });
+    terms.push({ id: "hypothèse", points: 0, reason: `Hypothèse : ${finding.hypothesis}` });
     out.push({
-      key: `exercice:${diagnosis.chapter.id}`,
-      kind: "refaire",
-      subject: diagnosis.chapter.subject,
-      title: `Exercice ciblé : ${diagnosis.chapter.title}`,
-      action: "exercice ciblé",
-      instruction: `${finding.action} Demande à Claude une annale de ce chapitre, ou prends un exercice de TD non corrigé, puis note-le dans « À refaire ».`,
-      problem: `${FINDING_LABEL[finding.kind]} sur « ${diagnosis.chapter.title} ».`,
+      key: shape.key,
+      kind: shape.kind,
+      subject: chapter.subject,
+      title: `${shape.title} : ${chapter.title}`,
+      action: shape.action,
+      instruction: `${finding.action}${shape.suffix}`,
+      problem: `${FINDING_LABEL[finding.kind]} sur « ${chapter.title} ».`,
       doneWhen: finding.doneWhen,
-      minMinutes: 20,
-      idealMinutes: 40,
-      maxMinutes: 60,
-      href: "/annales",
+      minMinutes: shape.minutes[0],
+      idealMinutes: shape.minutes[1],
+      maxMinutes: shape.minutes[2],
+      href: shape.href,
       resource: { label: "Diagnostic", href: "/programme" },
       terms,
       score: 0,
     });
   }
   return out;
+}
+
+/**
+ * L'ACTION ADAPTÉE À LA CAUSE — une table, pas un algorithme :
+ *   application, méthode, démarrage  un exercice ciblé (noté dans « À refaire ») ;
+ *   difficile                        un problème difficile, découpé ;
+ *   temps                            un exercice chronométré par question ;
+ *   calcul                           refaire les calculs ratés, posément ;
+ *   démonstration                    une khôlle sur le chapitre ;
+ *   cours (sans Anki ni Mémoire)     un rappel de cours, puis l'ajouter à Mémoire.
+ * La clé `exercice:<chapitre>:…` fait reconnaître l'action comme faite par
+ * une TENTATIVE notée sur le chapitre (lib/next-move/history.ts).
+ */
+function adaptedAction(
+  kind: FindingKind,
+  chapterId: string,
+  chapterTitle: string
+): { key: string; kind: MoveKind; title: string; action: string; suffix: string; href: string; minutes: [number, number, number]; needsNoRetry: boolean } | null {
+  const note = " Note ensuite la tentative dans « À refaire ».";
+  switch (kind) {
+    case "application":
+    case "méthode":
+    case "démarrage":
+      return { key: `exercice:${chapterId}`, kind: "refaire", title: "Exercice ciblé", action: "exercice ciblé", suffix: ` Demande à Claude une annale de ce chapitre, ou prends un exercice de TD non corrigé.${note}`, href: "/annales", minutes: [20, 40, 60], needsNoRetry: true };
+    case "difficile":
+      return { key: `exercice:${chapterId}:difficile`, kind: "refaire", title: "Problème difficile", action: "problème découpé", suffix: ` Demande à Claude une partie d'annale Mines ou Centrale.${note}`, href: "/annales", minutes: [30, 50, 75], needsNoRetry: false };
+    case "temps":
+      return { key: `exercice:${chapterId}:temps`, kind: "refaire", title: "Exercice chronométré", action: "exercice en temps limité", suffix: note, href: "/epreuve", minutes: [20, 35, 50], needsNoRetry: false };
+    case "calcul":
+      return { key: `calcul:${chapterId}`, kind: "erreurs", title: "Calculs à refaire", action: "reprise des calculs", suffix: " Commence par les questions ratées pour calcul dans « À refaire ».", href: "/annales", minutes: [15, 25, 35], needsNoRetry: false };
+    case "démonstration":
+      return { key: `kholle:${chapterId}`, kind: "rappel", title: "Khôlle", action: "questions de cours", suffix: "", href: `/kholle?chapitre=${encodeURIComponent(chapterId)}`, minutes: [15, 25, 35], needsNoRetry: false };
+    case "cours":
+      return { key: `cours:${chapterId}`, kind: "rappel", title: "Rappel de cours", action: "rappel actif", suffix: ` Ajoute ensuite « ${chapterTitle} » à Mémoire pour suivre son oubli.`, href: "/memoire", minutes: [15, 25, 35], needsNoRetry: false };
+    default:
+      return null;
+  }
 }
 
 /**

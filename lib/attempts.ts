@@ -51,6 +51,22 @@ export const ATTEMPT_CAUSE_LABEL: Record<AttemptCause, string> = {
   rédaction: "Rédaction",
 };
 
+/**
+ * NIVEAU d'un exercice — pour distinguer « je réussis les classiques » de
+ * « je bloque dès que c'est difficile ».
+ *
+ *   direct      application immédiate du cours ;
+ *   classique   exercice type de TD, niveau CCINP ;
+ *   difficile   problème long ou peu guidé, niveau Mines, Centrale, X-ENS.
+ */
+export type ExerciseLevel = "direct" | "classique" | "difficile";
+export const EXERCISE_LEVELS: readonly ExerciseLevel[] = ["direct", "classique", "difficile"];
+export const EXERCISE_LEVEL_LABEL: Record<ExerciseLevel, string> = {
+  direct: "Application directe",
+  classique: "Classique (TD, CCINP)",
+  difficile: "Difficile (Mines, Centrale, X-ENS)",
+};
+
 export interface ExerciseAttempt {
   id: string;
   /** Identifie l'EXERCICE : toutes ses tentatives partagent cette clé (lib/exercises.ts#annaleKey, `ds:<note>:<question>`…). */
@@ -76,6 +92,8 @@ export interface ExerciseAttempt {
   /** La note (lib/grades.ts) dont vient la question, pour un DS ou une épreuve. */
   gradeId: string | null;
   note: string | null;
+  /** Niveau de l'exercice, s'il est connu. Absent des tentatives antérieures à ce champ. */
+  level?: ExerciseLevel;
 }
 
 /** Une tentative qui PROUVE la maîtrise : réussie, sans aucune aide. */
@@ -139,6 +157,7 @@ export function normalizeAttempt(raw: unknown): ExerciseAttempt | null {
     lackOfTime: raw.lackOfTime === true,
     gradeId: text(raw.gradeId, 120),
     note: text(raw.note, 400),
+    ...(oneOf(EXERCISE_LEVELS, raw.level) ? { level: oneOf(EXERCISE_LEVELS, raw.level)! } : {}),
   };
 }
 

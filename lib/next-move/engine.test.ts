@@ -663,4 +663,21 @@ describe("refaire sans aide, diagnostic, Anki, repos", () => {
     // Sans exercice à refaire, le bloc reste.
     expect(rankCandidates(input({ preferences: prefs({ eveningMinimums: evening }) })).some((entry) => entry.kind === "bloc")).toBe(true);
   });
+
+  it("l'action suit la cause : khôlle pour les démonstrations, calculs pour le calcul, rappel de cours sans Anki ni Mémoire", () => {
+    const kholle = { "p2-electrostatique#0": { grade: "pas su" as const, at: "2026-09-22T10:00:00Z" }, "p2-electrostatique#1": { grade: "hésitant" as const, at: "2026-09-23T10:00:00Z" } };
+    const demo = rankCandidates(input({ kholle })).find((entry) => entry.key === "kholle:p2-electrostatique")!;
+    expect(demo).toMatchObject({ kind: "rappel", href: "/kholle?chapitre=p2-electrostatique" });
+    expect(demo.terms.some((term) => term.reason.startsWith("Hypothèse :"))).toBe(true);
+
+    const calc = [attempt("m2-reduction", "2026-09-20", "échec", "sans", { cause: "calcul", exerciseKey: "c1" }), attempt("m2-reduction", "2026-09-21", "échec", "sans", { cause: "calcul", exerciseKey: "c2" })];
+    expect(rankCandidates(input({ attempts: calc })).some((entry) => entry.key === "calcul:m2-reduction")).toBe(true);
+
+    const courseErrors = [error("Mathématiques", "cours", "2026-09-22"), error("Mathématiques", "cours", "2026-09-23")].map((entry) => ({ ...entry, programmeChapterId: "m2-reduction" }));
+    const course = rankCandidates(input({ errors: courseErrors })).find((entry) => entry.key === "cours:m2-reduction")!;
+    expect(course.href).toBe("/memoire");
+    // Avec le chapitre dans Mémoire, c'est le rappel de Mémoire qui s'en charge.
+    const memory = chapter("Mathématiques", "Réduction des endomorphismes", "2026-09-01");
+    expect(rankCandidates(input({ errors: courseErrors, chapterMemory: [memory] })).some((entry) => entry.key === "cours:m2-reduction")).toBe(false);
+  });
 });

@@ -16,10 +16,13 @@ import {
   ATTEMPT_HELP_LABEL,
   ATTEMPT_HELPS,
   ATTEMPT_RESULTS,
+  EXERCISE_LEVEL_LABEL,
+  EXERCISE_LEVELS,
   upsertAttempts,
   type AttemptCause,
   type AttemptHelp,
   type AttemptResult,
+  type ExerciseLevel,
 } from "@/lib/attempts";
 import { cn } from "@/lib/cn";
 import { buildExercises, createRetryAttempt, dueRetries, progressLine, upcomingRetries, type Exercise } from "@/lib/exercises";
@@ -272,12 +275,13 @@ function NewExerciseForm({ onCancel, onSave }: { onCancel: () => void; onSave: (
   const [help, setHelp] = useState<AttemptHelp>("sans");
   const [cause, setCause] = useState<AttemptCause | null>(null);
   const [minutes, setMinutes] = useState("");
+  const [level, setLevel] = useState<ExerciseLevel | null>(null);
 
   function save() {
     const name = label.trim();
     if (!name) return;
     const key = `exercice:${name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-")}`;
-    const attempt = createRetryAttempt({ key, label: name, subject, chapterId, origin: "exercice" }, { result, help, minutes: minutes ? Number(minutes) : null, cause }, new Date());
+    const attempt = createRetryAttempt({ key, label: name, subject, chapterId, origin: "exercice" }, { result, help, minutes: minutes ? Number(minutes) : null, cause, level }, new Date());
     if (attempt) onSave(attempt);
   }
 
@@ -337,6 +341,17 @@ function NewExerciseForm({ onCancel, onSave }: { onCancel: () => void; onSave: (
       <label className="block">
         <span className="t-label mb-1.5 block">Temps (min)</span>
         <Input inputMode="numeric" value={minutes} onChange={(event) => setMinutes(event.target.value)} />
+      </label>
+      <label className="block">
+        <span className="t-label mb-1.5 block">Difficulté</span>
+        <Select value={level ?? ""} onChange={(event) => setLevel((event.target.value || null) as ExerciseLevel | null)}>
+          <option value="">Non précisée</option>
+          {EXERCISE_LEVELS.map((value) => (
+            <option key={value} value={value}>
+              {EXERCISE_LEVEL_LABEL[value]}
+            </option>
+          ))}
+        </Select>
       </label>
       <div className="flex flex-wrap gap-2 sm:col-span-2">
         <Button size="sm" onClick={save} disabled={!label.trim()}>

@@ -167,7 +167,8 @@ export function resolveOutcomes(history: NextMoveRecord[], sources: OutcomeSourc
     let done = !proofOnly && record.minutes > 0 && minutes >= record.minutes * OUTCOME_DONE_RATIO;
     if (!done && record.kind === "refaire") {
       const target = record.key.slice("refaire:".length);
-      const chapterTarget = record.key.startsWith("exercice:") ? record.key.slice("exercice:".length) : null;
+      // `exercice:<chapitre>` ou `exercice:<chapitre>:<variante>` (problème difficile, chronométré).
+      const chapterTarget = record.key.startsWith("exercice:") ? record.key.slice("exercice:".length).split(":")[0] : null;
       done = (sources.attempts ?? []).some(
         (attempt) => new Date(attempt.createdAt).getTime() >= from && (chapterTarget ? attempt.chapterId === chapterTarget : attempt.exerciseKey === target)
       );

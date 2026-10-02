@@ -44,6 +44,16 @@ import { activeWorkItems, daysUntilDue } from "@/lib/work-items";
  *   temps        ≥ 2 tentatives à plus de 1,5 × le temps prévu, ou marquées
  *                « manque de temps », ou erreurs de temps.
  *   démarrage    ≥ 2 échecs cause « démarrage ».
+ *   difficile    exercices directs/classiques réussis sans aide (≥ 2/3, sur
+ *                ≥ 2) mais difficiles ratés (< 1/2, sur ≥ 2) : l'application
+ *                de base tient, l'enchaînement dans un problème long non.
+ *                Remplace alors le constat « application ».
+ *
+ * FAITS ET HYPOTHÈSES : `evidence` ne contient que des faits chiffrés ;
+ * `hypothesis` est leur interprétation, présentée comme telle.
+ *
+ * FRAÎCHEUR : un constat dont la dernière observation a plus de
+ * `STALE_DAYS` jours redevient un « signal », à confirmer.
  *
  * Un constat est « établi » quand il repose sur ≥ 2 sources différentes ou
  * ≥ 4 observations, « signal » sinon. Sous les seuils : rien n'est dit, et
@@ -58,13 +68,14 @@ import { activeWorkItems, daysUntilDue } from "@/lib/work-items";
  * Fonctions pures.
  */
 
-export type FindingKind = "cours" | "démonstration" | "méthode" | "application" | "calcul" | "temps" | "démarrage";
+export type FindingKind = "cours" | "démonstration" | "méthode" | "application" | "difficile" | "calcul" | "temps" | "démarrage";
 
 export const FINDING_LABEL: Record<FindingKind, string> = {
   cours: "Cours à mémoriser",
   démonstration: "Démonstrations et énoncés",
   méthode: "Méthode mal assimilée",
   application: "Difficulté d'application",
+  difficile: "Bloque sur les problèmes difficiles",
   calcul: "Erreurs de calcul",
   temps: "Gestion du temps",
   démarrage: "Difficulté à démarrer",
@@ -83,6 +94,15 @@ export interface Finding {
   action: string;
   /** Comment savoir que c'est réglé. */
   doneWhen: string;
+  /**
+   * L'INTERPRÉTATION des faits — une hypothèse, présentée comme telle. Les
+   * faits sont dans `evidence` ; ceci est ce qu'ils suggèrent.
+   */
+  hypothesis: string;
+  /** Jour de la dernière observation (aujourd'hui pour une mesure Mémoire/Anki). */
+  lastSeen: string | null;
+  /** Dernière observation de plus de `STALE_DAYS` jours : le constat est ramené à « signal », à confirmer. */
+  stale: boolean;
 }
 
 export interface ChapterDiagnosis {
@@ -163,6 +183,10 @@ const ACTIONS: Record<FindingKind, { action: (chapter: ProgrammeChapter, decks: 
     action: () => "Refais un exercice raté en te fixant un temps par question, et passe à la suite quand il tombe.",
     doneWhen: "Un exercice terminé dans le temps prévu.",
   },
+  difficile: {
+    action: (chapter) => `Un problème de niveau Mines/Centrale sur « ${chapter.title} », découpé : avant de calculer, écris le plan (questions, outils, résultat visé), puis résous sans aide.`,
+    doneWhen: "Un problème difficile du chapitre réussi sans aide (ou partiel sans aide, puis réussi à la nouvelle tentative).",
+  },
   démarrage: {
     action: (chapter) => `Sur trois énoncés de « ${chapter.title} », écris en 5 minutes les pistes de départ possibles, sans résoudre, puis compare au corrigé.`,
     doneWhen: "À la prochaine tentative, tu démarres seul (aide « sans » ou au plus un indice).",
@@ -174,7 +198,28 @@ interface Evidence {
   source: Source;
   count: number;
   fact: string;
+  /** Jour de la plus récente observation qui fonde ce fait. */
   day: string | null;
+}
+
+/** Au-delà, un constat ne repose plus que sur du passé : il redevient un signal, à confirmer. */
+export const STALE_DAYS = 21;
+/** Réussite « sans aide » attendue sur les exercices directs ou classiques pour parler de blocage SUR LE DIFFICILE. */
+const EASY_HOLDS = 2 / 3;
+
+const HYPOTHESES: Record<FindingKind, string> = {
+  cours: "Le cours n'est pas assez solide pour être mobilisé sans notes.",
+  démonstration: "Les énoncés sont connus de nom, mais leurs démonstrations ne sont pas maîtrisées.",
+  méthode: "L'outil existe dans ton cours, mais tu ne reconnais pas quand l'utiliser.",
+  application: "Le passage du cours à l'exercice coince : savoir n'est pas encore savoir-faire.",
+  difficile: "Les méthodes sont acquises isolément, mais leur enchaînement dans un problème long ne l'est pas.",
+  calcul: "Le raisonnement est juste, l'exécution n'est pas fiable.",
+  temps: "Le rythme, pas la compréhension, coûte des points.",
+  démarrage: "Il manque un réflexe d'entrée : reconnaître la structure de l'énoncé.",
+};
+
+function latest(days: (string | null | undefined)[]): string | null {
+  return days.filter((day): day is string => Boolean(day)).sort().pop() ?? null;
 }
 
 function cleanRate(steps: ExerciseStep[]): number {
@@ -223,13 +268,13 @@ export function diagnoseChapters(input: DiagnosticInput): ChapterDiagnosis[] {
     const retrievability = memory.length > 0 ? Math.min(...memory.map((entry) => retrievabilityToday(entry, input.today))) : null;
     if (retrievability !== null) {
       traces += 1;
-      if (retrievability < AT_RISK_THRESHOLD) evidence.push({ kind: "cours", source: "mémoire", count: 1, fact: `Mémoire : ${pct(retrievability)} de chance de t'en souvenir aujourd'hui`, day: null });
+      if (retrievability < AT_RISK_THRESHOLD) evidence.push({ kind: "cours", source: "mémoire", count: 1, fact: `Mémoire : ${pct(retrievability)} de chance de t'en souvenir aujourd'hui`, day: input.today });
     }
     const anki = input.anki?.get(chapter.id);
     const ankiRate = anki && anki.reviewed30 >= ANKI_MIN_REVIEWED ? anki.failRate : null;
     if (anki) traces += 1;
     if (ankiRate !== null && ankiRate >= ANKI_FAIL_HIGH) {
-      evidence.push({ kind: "cours", source: "anki", count: 1, fact: `Anki : ${pct(ankiRate)} des ${anki!.reviewed30} cartes révisées sur 30 jours ratées au moins une fois`, day: null });
+      evidence.push({ kind: "cours", source: "anki", count: 1, fact: `Anki : ${pct(ankiRate)} des ${anki!.reviewed30} cartes révisées sur 30 jours ratées au moins une fois`, day: input.today });
     }
 
     /* ── Exercices du chapitre (fenêtre) ── */
@@ -238,35 +283,38 @@ export function diagnoseChapters(input: DiagnosticInput): ChapterDiagnosis[] {
     traces += steps.length;
     for (const step of steps) seen(step.day);
     const failed = steps.filter((step) => step.result !== "réussi");
-    const causes = new Map<FindingKind, number>();
+    const causes = new Map<FindingKind, { count: number; day: string | null }>();
     for (const step of failed) {
       const kind = step.cause ? CAUSE_TO_FINDING[step.cause] : undefined;
-      if (kind) causes.set(kind, (causes.get(kind) ?? 0) + 1);
+      if (kind) causes.set(kind, { count: (causes.get(kind)?.count ?? 0) + 1, day: latest([causes.get(kind)?.day, step.day]) });
     }
-    for (const [kind, count] of causes) {
-      evidence.push({ kind, source: "exercices", count, fact: `${count} tentative${count > 1 ? "s" : ""} ratée${count > 1 ? "s" : ""} pour cause de ${kind}`, day: null });
+    for (const [kind, { count, day }] of causes) {
+      evidence.push({ kind, source: "exercices", count, fact: `${count} tentative${count > 1 ? "s" : ""} ratée${count > 1 ? "s" : ""} pour cause de ${kind}`, day });
     }
-    const overruns = steps.filter((step) => step.lackOfTime || (step.minutes !== null && step.plannedMinutes !== null && step.minutes > step.plannedMinutes * TIME_OVERRUN)).length;
-    if (overruns > 0) evidence.push({ kind: "temps", source: "exercices", count: overruns, fact: `${overruns} tentative${overruns > 1 ? "s" : ""} hors du temps prévu ou en manque de temps`, day: null });
-    const hinted = steps.filter((step) => step.result === "réussi" && step.hints !== null && step.hints >= 2).length;
-    if (hinted > 0) evidence.push({ kind: "méthode", source: "exercices", count: hinted, fact: `${hinted} annale${hinted > 1 ? "s" : ""} réussie${hinted > 1 ? "s" : ""} seulement avec au moins 2 indices`, day: null });
+    const overrunSteps = steps.filter((step) => step.lackOfTime || (step.minutes !== null && step.plannedMinutes !== null && step.minutes > step.plannedMinutes * TIME_OVERRUN));
+    const overruns = overrunSteps.length;
+    if (overruns > 0) evidence.push({ kind: "temps", source: "exercices", count: overruns, fact: `${overruns} tentative${overruns > 1 ? "s" : ""} hors du temps prévu ou en manque de temps`, day: latest(overrunSteps.map((step) => step.day)) });
+    const hintedSteps = steps.filter((step) => step.result === "réussi" && step.hints !== null && step.hints >= 2);
+    const hinted = hintedSteps.length;
+    if (hinted > 0) evidence.push({ kind: "méthode", source: "exercices", count: hinted, fact: `${hinted} annale${hinted > 1 ? "s" : ""} réussie${hinted > 1 ? "s" : ""} seulement avec au moins 2 indices`, day: latest(hintedSteps.map((step) => step.day)) });
 
     /* ── Carnet d'erreurs relié au chapitre ── */
     const errors = input.errors.filter((entry) => entry.programmeChapterId === chapter.id && entry.date >= from && entry.date <= input.today);
     traces += errors.length;
-    const errorTypes = new Map<FindingKind, number>();
+    const errorTypes = new Map<FindingKind, { count: number; day: string | null }>();
     for (const entry of errors) {
       seen(entry.date);
       const kind = ERROR_TO_FINDING[entry.type];
-      if (kind) errorTypes.set(kind, (errorTypes.get(kind) ?? 0) + 1);
+      if (kind) errorTypes.set(kind, { count: (errorTypes.get(kind)?.count ?? 0) + 1, day: latest([errorTypes.get(kind)?.day, entry.date]) });
     }
-    for (const [kind, count] of errorTypes) evidence.push({ kind, source: "carnet", count, fact: `${count} erreur${count > 1 ? "s" : ""} « ${kind} » au carnet`, day: null });
+    for (const [kind, { count, day }] of errorTypes) evidence.push({ kind, source: "carnet", count, fact: `${count} erreur${count > 1 ? "s" : ""} « ${kind} » au carnet`, day });
 
     /* ── Khôlle (questions de cours, sur cet appareil) ── */
     const kholle = Object.entries(input.kholle).filter(([id, entry]) => id.startsWith(`${chapter.id}#`) && entry.at.slice(0, 10) >= from);
     traces += kholle.length;
-    const missed = kholle.filter(([, entry]) => entry.grade !== "su").length;
-    if (missed > 0) evidence.push({ kind: "démonstration", source: "khôlle", count: missed, fact: `${missed} question${missed > 1 ? "s" : ""} de cours de khôlle « pas su » ou « hésitant »`, day: null });
+    const missedEntries = kholle.filter(([, entry]) => entry.grade !== "su");
+    const missed = missedEntries.length;
+    if (missed > 0) evidence.push({ kind: "démonstration", source: "khôlle", count: missed, fact: `${missed} question${missed > 1 ? "s" : ""} de cours de khôlle « pas su » ou « hésitant »`, day: latest(missedEntries.map(([, entry]) => entry.at.slice(0, 10))) });
 
     /* ── Constats ── */
     const findings: Finding[] = [];
@@ -275,14 +323,21 @@ export function diagnoseChapters(input: DiagnosticInput): ChapterDiagnosis[] {
     const addFinding = (kind: FindingKind, items: Evidence[], extra: string[] = []) => {
       const observations = items.reduce((sum, item) => sum + item.count, 0);
       const sources = [...new Set(items.map((item) => item.source))];
+      const lastSeen = latest(items.map((item) => item.day));
+      const age = lastSeen ? Math.round((new Date(`${input.today}T12:00:00`).getTime() - new Date(`${lastSeen}T12:00:00`).getTime()) / 86_400_000) : null;
+      const stale = age !== null && age > STALE_DAYS;
       findings.push({
         kind,
-        level: sources.length >= 2 || observations >= ESTABLISHED_OBSERVATIONS ? "établi" : "signal",
+        // Un constat ancien redevient un signal : on ne bâtit pas la semaine sur des observations d'il y a un mois.
+        level: !stale && (sources.length >= 2 || observations >= ESTABLISHED_OBSERVATIONS) ? "établi" : "signal",
         sources,
         observations,
-        evidence: [...items.map((item) => item.fact), ...extra],
+        evidence: [...items.map((item) => item.fact), ...extra, ...(stale ? [`Dernière observation il y a ${age} jours : à confirmer par un nouvel exercice.`] : [])],
         action: ACTIONS[kind].action(chapter, decks),
         doneWhen: ACTIONS[kind].doneWhen,
+        hypothesis: HYPOTHESES[kind],
+        lastSeen,
+        stale,
       });
     };
 
@@ -295,9 +350,20 @@ export function diagnoseChapters(input: DiagnosticInput): ChapterDiagnosis[] {
       if (measured || counted) addFinding(kind, items);
     }
 
+    // Classiques réussis, difficiles ratés : l'application de base tient, l'enchaînement dans un problème long non.
+    const easy = steps.filter((step) => step.level === "direct" || step.level === "classique");
+    const hard = steps.filter((step) => step.level === "difficile");
+    const blockedOnHard = easy.length >= MIN_PAIR && hard.length >= MIN_PAIR && cleanRate(easy) >= EASY_HOLDS && cleanRate(hard) < APPLICATION_WEAK;
+    if (blockedOnHard) {
+      addFinding("difficile", [
+        { kind: "difficile", source: "exercices", count: easy.length, fact: `Directs et classiques : ${pct(cleanRate(easy))} réussis sans aide sur ${easy.length}`, day: latest(easy.map((step) => step.day)) },
+        { kind: "difficile", source: "exercices", count: hard.length, fact: `Difficiles : ${pct(cleanRate(hard))} réussis sans aide sur ${hard.length}`, day: latest(hard.map((step) => step.day)) },
+      ]);
+    }
+
     const rate = steps.length > 0 ? cleanRate(steps) : null;
-    if (steps.length >= MIN_APPLICATION_ATTEMPTS && rate !== null && rate < APPLICATION_WEAK) {
-      const fact: Evidence = { kind: "application", source: "exercices", count: steps.length, fact: `${pct(rate)} des ${steps.length} tentatives réussies sans aide`, day: null };
+    if (!blockedOnHard && steps.length >= MIN_APPLICATION_ATTEMPTS && rate !== null && rate < APPLICATION_WEAK) {
+      const fact: Evidence = { kind: "application", source: "exercices", count: steps.length, fact: `${pct(rate)} des ${steps.length} tentatives réussies sans aide`, day: latest(steps.map((step) => step.day)) };
       const extra = courseHolds
         ? [`Le cours, lui, tient (${retrievability !== null && retrievability >= DESIRED_RETENTION ? `mémoire ${pct(retrievability)}` : `Anki : ${pct(ankiRate!)} d'échecs`}) : la priorité est l'exercice, pas une heure de cours de plus.`]
         : retrievability === null && ankiRate === null
@@ -351,7 +417,7 @@ export function rankDiagnoses(diagnoses: ChapterDiagnosis[]): ChapterDiagnosis[]
 
 /** Le constat à traiter d'abord dans un chapitre : établi d'abord, puis l'ordre de `FINDING_PRIORITY`. */
 // Le cours d'abord quand il est en cause (on n'applique pas ce qu'on ne sait pas), puis la méthode, puis l'application.
-const FINDING_PRIORITY: FindingKind[] = ["cours", "méthode", "application", "démonstration", "démarrage", "calcul", "temps"];
+const FINDING_PRIORITY: FindingKind[] = ["cours", "méthode", "application", "difficile", "démonstration", "démarrage", "calcul", "temps"];
 
 export function mainFinding(diagnosis: ChapterDiagnosis): Finding | null {
   // Règle explicite : quand le cours ET l'application sont en cause, le cours d'abord — quel que soit le niveau de preuve.

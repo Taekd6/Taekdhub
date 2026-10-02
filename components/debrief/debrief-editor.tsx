@@ -15,7 +15,7 @@ import { useAnnales } from "@/hooks/use-annales";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { ankiByChapter } from "@/lib/anki-mapping";
 import { latestFullSnapshot } from "@/lib/anki-snapshot";
-import { ATTEMPT_CAUSE_LABEL, ATTEMPT_CAUSES, type AttemptCause } from "@/lib/attempts";
+import { ATTEMPT_CAUSE_LABEL, ATTEMPT_CAUSES, EXERCISE_LEVEL_LABEL, EXERCISE_LEVELS, type AttemptCause, type ExerciseLevel } from "@/lib/attempts";
 import { cn } from "@/lib/cn";
 import { applyDebrief, buildDebrief, DEBRIEF_DRAFT_KEY, debriefPlan, QUESTION_OUTCOMES, questionsFromAttempts, validateQuestions, type DebriefQuestion, type QuestionOutcome } from "@/lib/debrief";
 import { buildExercises } from "@/lib/exercises";
@@ -324,6 +324,17 @@ function QuestionsEditor({
                       {exercises.map((exercise) => (
                         <option key={exercise.key} value={exercise.key}>
                           {exercise.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </label>
+                  <label className="block">
+                    <span className="t-label mb-1.5 block">Difficulté</span>
+                    <Select value={question.level ?? ""} onChange={(event) => update(index, { level: (event.target.value || null) as ExerciseLevel | null })}>
+                      <option value="">Non précisée</option>
+                      {EXERCISE_LEVELS.map((level) => (
+                        <option key={level} value={level}>
+                          {EXERCISE_LEVEL_LABEL[level]}
                         </option>
                       ))}
                     </Select>

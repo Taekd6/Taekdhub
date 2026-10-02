@@ -190,3 +190,43 @@ describe("priorité", () => {
     expect(rankDiagnoses([reduction])).toEqual([]);
   });
 });
+
+describe("boucle d'apprentissage : difficulté, fraîcheur, faits et hypothèses", () => {
+  it("classiques réussis, difficiles ratés : « bloque sur les problèmes difficiles », pas « application »", () => {
+    const attempts = [
+      attempt("p2-electrostatique", "2026-10-01", "réussi", "sans", { level: "classique" }),
+      attempt("p2-electrostatique", "2026-10-02", "réussi", "sans", { level: "direct" }),
+      attempt("p2-electrostatique", "2026-10-04", "échec", "sans", { level: "difficile" }),
+      attempt("p2-electrostatique", "2026-10-06", "partiel", "indices", { level: "difficile" }),
+    ];
+    const electro = of(diagnoseChapters(input({ attempts })), "p2-electrostatique");
+    expect(electro.findings.map((finding) => finding.kind)).toEqual(["difficile"]);
+    expect(electro.findings[0].evidence).toEqual(["Directs et classiques : 100 % réussis sans aide sur 2", "Difficiles : 0 % réussis sans aide sur 2"]);
+  });
+
+  it("un seul problème difficile raté ne suffit pas à conclure", () => {
+    const attempts = [
+      attempt("p2-electrostatique", "2026-10-01", "réussi", "sans", { level: "classique" }),
+      attempt("p2-electrostatique", "2026-10-02", "réussi", "sans", { level: "classique" }),
+      attempt("p2-electrostatique", "2026-10-04", "échec", "sans", { level: "difficile" }),
+    ];
+    expect(of(diagnoseChapters(input({ attempts })), "p2-electrostatique").findings).toEqual([]);
+  });
+
+  it("chaque constat sépare les faits de l'hypothèse", () => {
+    const errors = [error("m2-reduction", "calcul", "2026-10-01"), error("m2-reduction", "calcul", "2026-10-02")];
+    const [finding] = of(diagnoseChapters(input({ errors })), "m2-reduction").findings;
+    expect(finding.evidence).toEqual(["2 erreurs « calcul » au carnet"]);
+    expect(finding.hypothesis).toBe("Le raisonnement est juste, l'exécution n'est pas fiable.");
+    expect(finding.lastSeen).toBe("2026-10-02");
+  });
+
+  it("un constat dont la dernière observation a plus de 3 semaines redevient un signal, à confirmer", () => {
+    const errors = ["2026-08-20", "2026-08-21", "2026-08-22", "2026-08-25"].map((day) => error("m2-reduction", "méthode", day));
+    const [finding] = of(diagnoseChapters(input({ errors })), "m2-reduction").findings;
+    expect(finding).toMatchObject({ kind: "méthode", level: "signal", stale: true });
+    expect(finding.evidence.at(-1)).toBe("Dernière observation il y a 46 jours : à confirmer par un nouvel exercice.");
+    const fresh = ["2026-10-01", "2026-10-02", "2026-10-03", "2026-10-05"].map((day) => error("m2-reduction", "méthode", day));
+    expect(of(diagnoseChapters(input({ errors: fresh })), "m2-reduction").findings[0].level).toBe("établi");
+  });
+});

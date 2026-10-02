@@ -101,11 +101,17 @@ function DiagnosisDetail({ diagnosis, primary = false }: { diagnosis: ChapterDia
           </dd>
         </div>
       </dl>
-      <ul className="mt-3 list-disc space-y-0.5 pl-5 text-[0.8125rem] text-muted">
+      <p className="t-label mt-3">Faits</p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-5 text-[0.8125rem] text-muted">
         {finding.evidence.map((line) => (
           <li key={line}>{line}</li>
         ))}
       </ul>
+      <p className="mt-2 text-[0.8125rem] text-muted">
+        <span className="font-bold text-subtle">Hypothèse : </span>
+        {finding.hypothesis}
+        {finding.stale && <span className="font-bold text-amber-300"> (observations anciennes)</span>}
+      </p>
       <p className="mt-3 text-[0.9375rem] font-bold text-ink">→ {finding.action}</p>
       <p className="t-meta mt-1 text-[0.8125rem]">Terminé quand : {finding.doneWhen}</p>
       {diagnosis.retryKeys.length > 0 && (
