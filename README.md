@@ -66,13 +66,14 @@ Un sujet en conditions réelles (`lib/epreuve.ts`) : compte à rebours (1 à 4 h
 
 ## Système de progression : Anki, diagnostic, débrief, refaire sans aide
 
-La boucle : **identifier le point faible → choisir l'action → la faire → vérifier quelques jours plus tard, par une nouvelle tentative sans aide.** Anki reste l'outil de mémorisation : TaekdHub n'y crée, ne modifie ni ne planifie aucune carte.
+La boucle : **identifier le point faible → choisir l'action → la faire → vérifier quelques jours plus tard, par une nouvelle tentative sans aide.** Anki reste l'outil de mémorisation : TaekdHub n'y modifie ni ne planifie aucune carte, et n'en crée que sur un clic explicite (« Envoyer vers Anki », ci-dessous).
 
 ### Pont Anki (`/anki`, `lib/anki-connect.ts`, `lib/anki-snapshot.ts`, `lib/anki-mapping.ts`)
 
 - **Relevé** des chiffres par paquet (sous-paquets exclus) : cartes, dues (hors nouvelles), révisées sur 30 j, ratées au moins une fois sur 30 j, mûres, oubliées ≥ 4 fois ; et le volume de révisions par jour. Trois sources : **AnkiConnect** (ordinateur, Anki ouvert ; lecture seule : `requestPermission`, `deckNames`, `findCards` via `multi`, `getNumCardsReviewedByDay`), **fichier** d'échange JSON (export/import entre navigateurs), **saisie rapide** depuis AnkiMobile (cartes dues, révisées aujourd'hui).
 - Collection synchronisée `ankiSnapshots` : un relevé fait sur l'ordinateur se lit sur l'iPhone. Un relevé par jour et par source (`anki:<jour>`, `anki-manuel:<jour>`) : réimporter **remplace**, jamais de doublon ; 14 jours gardés. Chaque chiffre est daté ; « dues » n'est utilisé que si le relevé a moins de 24 h, le reste moins de 7 jours.
 - **Paquets → chapitres** : *certaine* (le nom du paquet est exactement un titre ou un alias de chapitre, dans la matière lue dans le chemin, sans ambiguïté), *héritée* (sous-paquet d'un paquet associé), *proposée* (rapprochement partiel : **à confirmer**, jamais utilisée seule), *non classé*, et le **choix de l'élève** (`Preferences.ankiDeckChapters`, y compris « aucun chapitre », qui écarte toute la branche). On associe des paquets, jamais des cartes d'après leur texte.
+- **Envoyer vers Anki** (`lib/anki-export.ts`) : les fiches nées dans TaekdHub qui ont un verso (méthodes tirées d'un blocage, notes « À revoir ») deviennent des cartes, sur un clic : AnkiConnect `createDeck`, `canAddNotes`, `addNotes` avec le modèle « Basique » / « Basic » de la collection, paquets `TaekdHub::<matière>`, étiquette `taekdhub`. Une carte déjà présente (même recto dans le paquet) n'est pas recréée. Sans AnkiConnect : fichier texte à importer (Fichier › Importer). Option : marquer faites dans TaekdHub les notes arrivées dans Anki, pour ne pas réviser deux fois.
 - Limites : voir « Limites de l'intégration Anki » plus bas.
 
 ### Tentatives et « refaire sans aide » (`lib/attempts.ts`, `lib/exercises.ts`, « À refaire » sur `/annales`)

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Clipboard, Download, RefreshCw, Upload } from "lucide-react";
 import { ChapterSelect } from "@/components/exercises/chapter-select";
+import { AnkiCardExport } from "@/components/anki/anki-card-export";
 import { AnkiLink } from "@/components/memory/anki-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,7 +67,7 @@ const KIND_LABEL: Record<DeckMapping["kind"], string> = {
  *   saisie       depuis AnkiMobile : deux chiffres, sans détail par paquet.
  */
 export function AnkiOverview() {
-  const { ankiSnapshots, saveAnkiSnapshots, preferences, savePreferences, ready } = usePrepahubData();
+  const { ankiSnapshots, saveAnkiSnapshots, preferences, savePreferences, ready, reviewItems, saveReviewItems } = usePrepahubData();
   const [platform, setPlatform] = useState<AnkiPlatform | null>(null);
   const [origin, setOrigin] = useState("https://taekdhub.vercel.app");
   const [busy, setBusy] = useState<SnapshotProgress | null>(null);
@@ -216,7 +217,7 @@ export function AnkiOverview() {
         )}
       </Section>
 
-      <Section variant="panel" title="Relever" description="Rien n'est jamais écrit dans Anki : TaekdHub lit des compteurs, c'est tout.">
+      <Section variant="panel" title="Relever" description="Un relevé ne fait que LIRE des compteurs dans Anki. Seul « Envoyer vers Anki », plus bas, y écrit, et seulement sur ton clic.">
         <div className="space-y-5">
           <div>
             <p className="text-[0.9375rem] font-bold text-ink">Depuis Anki sur ordinateur (AnkiConnect)</p>
@@ -262,6 +263,8 @@ export function AnkiOverview() {
           <ManualEntry onSave={(due, reviewedToday) => store(normalizeAnkiSnapshot({ day: new Date().toLocaleDateString("en-CA"), takenAt: new Date().toISOString(), source: "manuel", manual: { due, reviewedToday } }), "Saisie enregistrée.")} />
         </div>
       </Section>
+
+      <AnkiCardExport reviewItems={reviewItems} saveReviewItems={saveReviewItems} platform={platform} />
 
       {full ? (
         <>
@@ -316,6 +319,7 @@ export function AnkiOverview() {
           <li>Pour que le relevé de l&apos;ordinateur reflète tes révisions faites sur iPhone, synchronise d&apos;abord AnkiMobile puis Anki (ordinateur) avec AnkiWeb, comme d&apos;habitude. TaekdHub ne se connecte jamais à AnkiWeb et ne demande aucun identifiant.</li>
           <li>Les fichiers .apkg et .colpkg d&apos;Anki ne sont pas lus : leur format interne change selon les versions et contient tout le contenu de tes cartes, dont TaekdHub n&apos;a pas besoin.</li>
           <li>Les cartes dues sont celles du moment du relevé. TaekdHub ne recalcule jamais la planification d&apos;Anki.</li>
+          <li>TaekdHub n&apos;écrit dans Anki que lorsque tu cliques sur « Envoyer vers Anki » : il ajoute des cartes, n&apos;en modifie ni n&apos;en supprime aucune.</li>
         </ul>
         <p className="t-meta mt-3">
           Les chiffres par chapitre servent au{" "}
