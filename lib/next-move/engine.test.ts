@@ -3,6 +3,7 @@ import { createChapter, rateChapter } from "@/lib/chapter-memory";
 import { createErrorEntry } from "@/lib/error-log";
 import { createGrade } from "@/lib/grades";
 import { createReviewItem } from "@/lib/review-items";
+import { normalizeAnnaleLog } from "@/lib/annales";
 import {
   CALM_THRESHOLD,
   autoMinutes,
@@ -547,5 +548,41 @@ describe("« Pas maintenant » est respecté pendant un jour", () => {
     const history = [skippedRecord("échéance:urgent", at), skippedRecord("échéance:other", at)];
     const plan = computeNextMove(input({ workItems: [urgent, other], history }));
     expect(plan.primary).not.toBeNull();
+  });
+});
+
+describe("annales — reprise ciblée", () => {
+  function annale(chapitre: string, resultat: string, day: string, extra: Record<string, unknown> = {}) {
+    seq += 1;
+    return normalizeAnnaleLog({ id: `a-${seq}`, created_at: new Date(`${day}T15:00:00`).toISOString(), matiere: "maths", chapitre, resultat, indices: 0, ...extra })!;
+  }
+
+  it("propose de reprendre un chapitre dont la dernière annale est un échec", () => {
+    const annales = [annale("Réduction", "échec", "2026-09-23", { indices: 2, source: "Mines 2023" })];
+    const candidate = rankCandidates(input({ annales })).find((entry) => entry.key.startsWith("annale:"));
+    expect(candidate).toBeDefined();
+    expect(candidate!.kind).toBe("erreurs");
+    expect(candidate!.subject).toBe("Mathématiques");
+    expect(candidate!.terms.map((term) => term.id)).toEqual(expect.arrayContaining(["annales-ratées", "annales-indices", "annale-fraîche"]));
+    expect(candidate!.instruction).toContain("Mines 2023");
+    expect(candidate!.resource?.href).toBe("/annales");
+  });
+
+  it("se tait quand le dernier essai est réussi", () => {
+    const annales = [annale("Réduction", "échec", "2026-09-20"), annale("Réduction", "réussi", "2026-09-22")];
+    expect(rankCandidates(input({ annales })).some((entry) => entry.key.startsWith("annale:"))).toBe(false);
+  });
+
+  it("ouvre le chrono sur le chapitre de Mémoire correspondant", () => {
+    const memory = chapter("Mathématiques", "Réduction des endomorphismes", "2026-09-01", "ch-red");
+    const annales = [annale("réduction", "échec", "2026-09-23")];
+    const candidate = rankCandidates(input({ annales, chapterMemory: [memory] })).find((entry) => entry.key.startsWith("annale:"));
+    expect(candidate!.href).toContain("chapitre=ch-red");
+  });
+
+  it("le score est la somme des termes affichés", () => {
+    const annales = [annale("Séries entières", "partiel", "2026-09-10"), annale("Séries entières", "partiel", "2026-09-15")];
+    const candidate = rankCandidates(input({ annales })).find((entry) => entry.key.startsWith("annale:"))!;
+    expect(candidate.score).toBe(candidate.terms.reduce((total, term) => total + term.points, 0));
   });
 });

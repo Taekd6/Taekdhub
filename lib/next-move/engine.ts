@@ -1,3 +1,4 @@
+import { matchChapter, weakChapters, WEAK_WINDOW_DAYS, type AnnaleLog } from "@/lib/annales";
 import { atRisk, AT_RISK_THRESHOLD, chapterTime, retrievabilityToday } from "@/lib/chapter-memory";
 import { chapterReadiness, examScopeIndex } from "@/lib/exam-prep";
 import { DESIRED_RETENTION } from "@/lib/fsrs";
@@ -40,9 +41,9 @@ import type { Subject, WorkSession } from "@/lib/supabase/types";
  *
  * Données RÉELLEMENT disponibles — et pas plus :
  *   le temps est suivi PAR MATIÈRE (et par travail planifié), pas par
- *   chapitre ; un chapitre n'apparaît donc que via la mémoire FSRS ou le
- *   titre d'une échéance. Les erreurs ont une matière et un type, pas de
- *   chapitre.
+ *   chapitre ; un chapitre n'apparaît donc que via la mémoire FSRS, le
+ *   titre d'une échéance, ou une annale corrigée (lib/annales.ts). Les
+ *   erreurs ont une matière et un type, pas de chapitre.
  *
  * Fonctions pures : aucune dépendance à localStorage, React ou au DOM.
  */
@@ -140,6 +141,8 @@ export interface NextMoveInput {
   chapterMemory: ChapterMemory[];
   preferences: Preferences;
   history: NextMoveRecord[];
+  /** Annales corrigées avec Claude (lib/annales.ts) — absentes hors connexion au compte. */
+  annales?: AnnaleLog[];
   now: Date;
   /** Minutes choisies (« J'ai 30 min »), ou `null`/absent pour laisser le moteur décider. */
   availableMinutes?: number | null;
@@ -177,6 +180,15 @@ const ERROR_MAX = 40;
 const ERROR_DEEP_TYPE = 10;
 const ERROR_NO_FIX = 8;
 const ERROR_FRESH = 10;
+
+/** Annales : un chapitre où les derniers exercices de concours ne passent pas. */
+const ANNALE_BASE = 10;
+const ANNALE_PER_FAIL = 10;
+const ANNALE_PER_PARTIAL = 5;
+const ANNALE_MAX = 40;
+const ANNALE_HINTS = 5;
+const ANNALE_HINTS_THRESHOLD = 2;
+const ANNALE_FRESH = 8;
 
 /** Minimum du soir / objectif hebdo. */
 const EVENING_BASE = 20;
@@ -615,6 +627,60 @@ function errorCandidates(input: NextMoveInput): MoveCandidate[] {
   return out;
 }
 
+/**
+ * Annales qui ne passent pas (lib/annales.ts#weakChapters) : une REPRISE
+ * CIBLÉE, du même genre que les erreurs du carnet — refaire sans indice ce
+ * qui a bloqué. Une seule par matière, la plus lourde : les annales d'une
+ * matière se reprennent l'une après l'autre, pas en parallèle.
+ */
+function annaleCandidates(input: NextMoveInput): MoveCandidate[] {
+  const today = dayKey(input.now);
+  const best = new Map<Subject, MoveCandidate>();
+  for (const weak of weakChapters(input.annales ?? [], input.now)) {
+    const age = dayDistance(weak.lastDay, today);
+    const notDone = [weak.échecs > 0 ? `${weak.échecs} échec${weak.échecs > 1 ? "s" : ""}` : null, weak.partiels > 0 ? `${weak.partiels} partiel${weak.partiels > 1 ? "s" : ""}` : null]
+      .filter(Boolean)
+      .join(", ");
+    const terms: ScoreTerm[] = [
+      {
+        id: "annales-ratées",
+        points: Math.min(ANNALE_MAX, ANNALE_BASE + ANNALE_PER_FAIL * weak.échecs + ANNALE_PER_PARTIAL * weak.partiels),
+        reason: `Annales sur « ${weak.chapter} » ces ${WEAK_WINDOW_DAYS} derniers jours : ${notDone} sur ${weak.attempts} essai${weak.attempts > 1 ? "s" : ""}`,
+      },
+    ];
+    if (weak.meanHints >= ANNALE_HINTS_THRESHOLD) {
+      terms.push({ id: "annales-indices", points: ANNALE_HINTS, reason: `${formatAverage(round1(weak.meanHints))} indices en moyenne : la méthode n'est pas encore à toi` });
+    }
+    if (age <= 1) {
+      terms.push({ id: "annale-fraîche", points: ANNALE_FRESH, reason: `Dernier essai ${daysAgoLabel(age)} : à refaire tant que la correction est fraîche` });
+    }
+    const chapter = matchChapter(weak.subject, foldKey(weak.key), input.chapterMemory);
+    const candidate: MoveCandidate = {
+      key: `annale:${weak.key}`,
+      kind: "erreurs",
+      subject: weak.subject,
+      title: weak.chapter,
+      action: "reprise ciblée",
+      instruction: `Refais sans indice la question qui a bloqué${weak.lastSource ? ` (${weak.lastSource})` : ""}, puis écris la bonne idée dans le carnet d'erreurs.`,
+      minMinutes: 15,
+      idealMinutes: 30,
+      maxMinutes: 45,
+      href: chapter ? `${timerHref(weak.subject)}&chapitre=${encodeURIComponent(chapter.id)}` : timerHref(weak.subject),
+      resource: { label: "Mes annales", href: "/annales" },
+      terms,
+      score: 0,
+    };
+    const current = best.get(weak.subject);
+    if (!current || sumScore(candidate.terms) > sumScore(current.terms)) best.set(weak.subject, candidate);
+  }
+  return [...best.values()];
+}
+
+/** La partie « chapitre » d'une clé `matière|chapitre` de lib/annales.ts. */
+function foldKey(key: string): string {
+  return key.slice(key.indexOf("|") + 1);
+}
+
 function blockCandidates(input: NextMoveInput, contexts: Map<Subject, SubjectContext>): MoveCandidate[] {
   const hour = input.now.getHours();
   const out: MoveCandidate[] = [];
@@ -738,6 +804,7 @@ export function rankCandidates(input: NextMoveInput): MoveCandidate[] {
     ...deadlineCandidates(input),
     ...recallCandidates(input),
     ...errorCandidates(input),
+    ...annaleCandidates(input),
     ...cardCandidates(input),
     ...blockCandidates(input, contexts),
   ];

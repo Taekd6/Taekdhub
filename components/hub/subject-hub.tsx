@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, type CSSProperties } from "react";
 import { ArrowRight, BookOpen, ChevronLeft, Copy, LayoutGrid, PenLine, Timer } from "lucide-react";
+import { SubjectAnnales } from "@/components/annales/subject-annales";
 import { Section } from "@/components/ui/section";
 import { Tabs } from "@/components/ui/tabs";
 import { ChapterNav } from "@/components/ui/chapter-nav";
@@ -591,6 +592,16 @@ function ReviewTab({
  * d'une colle, pas en consultant le suivi.
  */
 function ErrorsTab({ subject, errors }: { subject: Subject; errors: ErrorEntry[] }) {
+  // Les annales corrigées avec Claude se lisent à côté du carnet : même geste, reprendre ce qui a bloqué.
+  return (
+    <div className="space-y-5">
+      <ErrorsSummary subject={subject} errors={errors} />
+      <SubjectAnnales subject={subject} />
+    </div>
+  );
+}
+
+function ErrorsSummary({ subject, errors }: { subject: Subject; errors: ErrorEntry[] }) {
   const own = useMemo(() => errors.filter((entry) => entry.subject === subject), [errors, subject]);
   const byType = useMemo(() => countByType(own).filter((row) => row.count > 0), [own]);
   const latest = useMemo(() => sortErrors(own).slice(0, 4), [own]);

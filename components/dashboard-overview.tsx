@@ -12,6 +12,7 @@ import { EveningCard } from "@/components/home/evening-card";
 import { effectiveDailyGoal } from "@/lib/evening-minimums";
 import { MemoryCard } from "@/components/memory/memory-card"; // mémoire des chapitres (FSRS)
 import { NextMoveCard } from "@/components/next-move/next-move-card"; // Next Move
+import { useAnnales } from "@/hooks/use-annales";
 import { DeadlinesCard, ReviewBanner, StatTiles, SubjectCards } from "@/components/home/cards";
 import { ActionButtons, type ActionItem } from "@/components/ui/action-buttons";
 import { BlockHeader } from "@/components/ui/list-card";
@@ -73,10 +74,13 @@ const ACTIONS: ActionItem[] = [
 export function DashboardOverview() {
   const { sessions, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems, checkins, saveCheckins, chapterMemory, saveChapterMemory, grades, errors, nextMoves, saveNextMoves } = usePrepahubData();
 
+  // Annales corrigées avec Claude (compte connecté seulement) — voir hooks/use-annales.ts.
+  const { logs: annales } = useAnnales();
+
   /* Tout ce que lit le moteur Next Move (lib/next-move/engine.ts) — mémoïsé pour ne recalculer qu'à un vrai changement. */
   const nextMoveData = useMemo(
-    () => ({ sessions, workItems, grades, reviewItems, errors, checkins, chapterMemory, preferences }),
-    [sessions, workItems, grades, reviewItems, errors, checkins, chapterMemory, preferences]
+    () => ({ sessions, workItems, grades, reviewItems, errors, checkins, chapterMemory, preferences, annales }),
+    [sessions, workItems, grades, reviewItems, errors, checkins, chapterMemory, preferences, annales]
   );
 
   const model = useMemo(() => {

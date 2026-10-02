@@ -32,6 +32,22 @@ Un DS ou un concours blanc peut porter la liste de ses chapitres (`WorkItem.scop
 - **Next Move** : un chapitre au programme d'une épreuve à ≤ 7 jours devient un rappel actif même s'il n'est pas encore menacé, avec la raison « Au programme du DS … : 61 % le jour J sans rappel, 93 % avec un rappel aujourd'hui ».
 - **Le point** : la ligne « DS dans 3 j » dit combien de chapitres passeront sous 90 % et mène à la préparation.
 
+## Annales — les exercices corrigés avec Claude
+
+Quand Claude corrige un exercice de concours, le connecteur MCP (`app/api/mcp/[key]/route.ts`, outil `log_exercise`) l'enregistre dans la table Supabase `exercise_logs` : matière, chapitre, source, niveau, résultat (réussi / partiel / échec), indices, temps prévu et réel, erreurs relevées. L'application les **lit** quand l'élève est connecté (`hooks/use-annales.ts`, `lib/annales.ts`) :
+
+- **`/annales`** : bilan (taux de réussite, un partiel comptant pour moitié ; indices moyens), chapitres du plus fragile au plus solide avec la frise des essais, réussite par niveau (CCINP → X-ENS), **calibration du temps** (médiane de temps réel / temps prévu, à partir de 3 exercices), erreurs qui reviennent, journal (supprimable). On y arrive depuis l'onglet « Erreurs » de chaque matière et depuis Next Move.
+- **Next Move** : un chapitre dont la dernière annale (30 derniers jours) est un échec, ou qui compte au moins deux essais non réussis, devient une **reprise ciblée** (« Annales sur « Réduction » : 1 échec, 1 partiel sur 2 essais »), qui ouvre le chrono sur le chapitre de Mémoire correspondant s'il existe. Un dernier essai réussi l'efface.
+
+### Connecteur MCP : `get_today`
+
+Outre `log_exercise` et `get_progress`, le connecteur expose **`get_today`** : la recommandation Next Move et ses raisons, Le point (ce qui presse, ce qui est repoussé), les échéances à 14 jours, les chapitres qui s'effacent (FSRS), les erreurs récentes et les chapitres où les annales bloquent (`lib/today-snapshot.ts`). Claude l'appelle avant de proposer un exercice, pour viser le vrai point faible. Il lit les collections synchronisées (`user_collections`) : il faut donc être connecté au compte dans l'application.
+
+Mise en service (une fois) :
+
+1. Exécuter `supabase/migrations/0007_exercise_logs_owner.sql` (SQL Editor). Elle ajoute `user_id` à `exercise_logs`, rattache les lignes existantes au compte s'il n'y en a qu'un, et pose la RLS : l'élève **lit et supprime** ses seules lignes ; seul le connecteur (clé secrète) écrit.
+2. Vercel → variables **serveur** (jamais `NEXT_PUBLIC_*`) : `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `MCP_SECRET` ; facultatif : `MCP_USER_ID` (identifiant du compte — indispensable seulement s'il y a plusieurs comptes) et `MCP_TIMEZONE` (`Europe/Paris` par défaut).
+
 ## Le point — l'écran d'ouverture
 
 À la première ouverture de la journée (et après 4 h d'absence, mesurée depuis la dernière activité dans l'application — `components/activity-tracker.tsx`), l'accueil s'ouvre sur **Le point** (`/point`, `lib/briefing.ts`) : une salutation, une phrase de résumé, le prochain mouvement de Next Move avec « Commencer », puis trois sections d'au plus trois lignes chacune — **Ce qui presse** (retard, échéance du jour ou du lendemain, travail qui ne tient plus, DS dans ≤ 3 j), **Tu repousses** (travail reporté ≥ 2 fois, plan « si… alors… » manqué, matière proposée ≥ 3 fois sans suite, cartes en retard, objectif de la semaine qui décroche ; puis, à surveiller : chapitre qui s'efface, erreurs sans « bonne idée », note en attente) et **Aujourd'hui** (minimum du soir, plans du jour, cartes du jour). On y revient en touchant la date de l'accueil ; Réglages → À l'ouverture le désactive.
@@ -129,7 +145,7 @@ Sans ces variables, `lib/supabase/client.ts` désactive proprement le client Sup
 pnpm build
 ```
 
-Génère un build de production statique (toutes les routes sont prérendues, aucune route serveur). Vérifié avec `tsc --noEmit`, `pnpm test`, `pnpm lint` et `next build` sans erreur.
+Génère un build de production : toutes les pages sont prérendues ; seule la route du connecteur MCP (`/api/mcp/[key]`) s'exécute côté serveur. Vérifié avec `tsc --noEmit`, `pnpm test`, `pnpm lint` et `next build` sans erreur.
 
 ## Déploiement (Vercel)
 
@@ -150,6 +166,8 @@ app/(app)/revoir          Carnet « À revoir » (+ /revoir/session : révisions
 app/(app)/erreurs         Carnet d'erreurs
 app/(app)/timer           Chronomètre
 app/(app)/settings        Réglages, sauvegarde et restauration
+app/(app)/annales         Annales corrigées avec Claude (lues dans Supabase)
+app/api/mcp/[key]         Connecteur MCP : log_exercise, get_progress, get_today
 components/               Composants UI et par domaine (work, review, errors, progress, history, hub, ui)
 lib/                      Logique métier : storage (localStorage), planning, échéances, suivi du temps, notes, carnets, supabase/
 lib/next-move/            Moteur Next Move (recommandation explicable) et son historique
@@ -157,7 +175,7 @@ lib/exam-prep.ts          « Prêt pour le DS ? » : programme d'une épreuve lu
 components/exam/          Panneau « Prêt pour le DS ? » (Aperçu de la matière, Échéances)
 lib/sync/                 Synchronisation compte ↔ appareil (moteur pur + adaptateur Supabase)
 components/account/       Compte (Réglages), fournisseur de session, décision du premier login
-supabase/migrations/      0006 : table `user_collections` + RLS (synchronisation). 0001–0005 : schéma historique de l'ancienne banque, non utilisé
+supabase/migrations/      0007 : `exercise_logs` rattachée à son élève + RLS. 0006 : table `user_collections` + RLS (synchronisation). 0001–0005 : schéma historique de l'ancienne banque, non utilisé
 ```
 
 ## Reprendre le développement avec Claude Code

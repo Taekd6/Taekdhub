@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { BRIEFING_SEEN_KEY, buildBriefing, type BriefingItem, type BriefingTone } from "@/lib/briefing";
 import { cn } from "@/lib/cn";
+import { useAnnales } from "@/hooks/use-annales";
 import { topReasons } from "@/lib/next-move/engine";
 import { markStarted } from "@/lib/next-move/history";
 import { localData, writeFlag } from "@/lib/storage";
@@ -71,6 +72,7 @@ export function BriefingScreen() {
   const router = useRouter();
   const data = usePrepahubData();
   const { ready, nextMoves, saveNextMoves, savePreferences } = data;
+  const { logs: annales } = useAnnales();
 
   // Vu : l'accueil ne ramènera pas ici avant demain (ou une longue absence).
   useEffect(() => {
@@ -89,9 +91,10 @@ export function BriefingScreen() {
         chapterMemory: data.chapterMemory,
         preferences: data.preferences,
         history: nextMoves,
+        annales,
         now: new Date(),
       }),
-    [data.sessions, data.workItems, data.grades, data.reviewItems, data.errors, data.checkins, data.chapterMemory, data.preferences, nextMoves]
+    [data.sessions, data.workItems, data.grades, data.reviewItems, data.errors, data.checkins, data.chapterMemory, data.preferences, nextMoves, annales]
   );
 
   if (!ready) {
