@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, EyeOff, Plus, RotateCcw } from "lucide-react";
+import { ArrowRightLeft, CheckCircle2, EyeOff, Lightbulb, Plus, RotateCcw } from "lucide-react";
 import { ChapterSelect } from "@/components/exercises/chapter-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,11 @@ import {
   ATTEMPT_RESULTS,
   EXERCISE_LEVEL_LABEL,
   EXERCISE_LEVELS,
+  normalizeAnalysis,
   upsertAttempts,
   type AttemptCause,
+  type BlockAnalysis,
+  type ExerciseAttempt,
   type AttemptHelp,
   type AttemptResult,
   type ExerciseLevel,
@@ -27,8 +30,10 @@ import {
 import { cn } from "@/lib/cn";
 import { buildExercises, createRetryAttempt, dueRetries, progressLine, upcomingRetries, type Exercise } from "@/lib/exercises";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
+import { localData } from "@/lib/storage";
 import { dayKey, subjects } from "@/lib/study";
 import type { Subject } from "@/lib/supabase/types";
+import { createTransferAttempt, methodCardFrom, transferChecks, type TransferCheck } from "@/lib/transfer";
 
 const dayFormat = new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "numeric", month: "short" });
 
@@ -54,32 +59,70 @@ const RESULT_STYLE: Record<AttemptResult, string> = {
  * ajoutent quand elles sont disponibles.
  *
  * `?refaire=<clé>` ouvre directement un exercice (lien de Next Move).
+ *
+ * « COMPRENDRE POURQUOI JE BLOQUE » : après un échec, quatre réponses
+ * courtes (attempt.analysis) deviennent une fiche de méthode dans « À revoir ».
+ * TRANSFERT (lib/transfer.ts) : une fois l'exercice réussi sans aide, on
+ * vérifie la méthode sur un AUTRE énoncé — `?transfert=<clé d'origine>`
+ * ouvre directement ce formulaire.
  */
 export function RetryQueue() {
   const params = useSearchParams();
-  const { attempts, saveAttempts, preferences, ready } = usePrepahubData();
+  const { attempts, saveAttempts, preferences, ready, saveReviewItems } = usePrepahubData();
   const { logs } = useAnnales();
   const today = dayKey(new Date());
   const exercises = useMemo(() => buildExercises({ annales: logs, attempts, retryDelaysDays: preferences.retryDelaysDays, today }), [logs, attempts, preferences.retryDelaysDays, today]);
   const due = useMemo(() => dueRetries(exercises), [exercises]);
   const upcoming = useMemo(() => upcomingRetries(exercises).slice(0, 5), [exercises]);
   const verified = useMemo(() => exercises.filter((exercise) => exercise.status === "vérifié").sort((a, b) => (b.verifiedOn ?? "").localeCompare(a.verifiedOn ?? "")).slice(0, 5), [exercises]);
+  const transfers = useMemo(() => transferChecks(exercises, attempts, preferences.retryDelaysDays, today), [exercises, attempts, preferences.retryDelaysDays, today]);
+  const transfersOpen = useMemo(() => transfers.filter((check) => check.status !== "acquis").slice(0, 6), [transfers]);
   const [openKey, setOpenKey] = useState<string | null>(() => params.get("refaire"));
+  const [transferKey, setTransferKey] = useState<string | null>(() => params.get("transfert"));
   const [adding, setAdding] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
 
   if (!ready) return null;
   const open = openKey ? exercises.find((exercise) => exercise.key === openKey) ?? null : null;
+  const openTransfer = transferKey ? transfers.find((check) => check.exercise.key === transferKey && check.status !== "acquis") ?? null : null;
 
-  function record(exercise: Exercise, input: { result: AttemptResult; help: AttemptHelp; minutes: number | null; cause: AttemptCause | null; lackOfTime: boolean; note: string }) {
-    const attempt = createRetryAttempt(exercise, input, new Date());
-    if (!attempt) return;
+  /**
+   * La fiche de méthode, ajoutée au carnet « À revoir ». Relu sur le disque
+   * au moment d'écrire : le carnet s'écrit en REMPLACEMENT, et la copie du
+   * hook de cet écran pourrait être plus ancienne que celle d'un autre onglet.
+   */
+  function addMethodCard(analysis: BlockAnalysis | undefined, subject: Subject): boolean {
+    if (!analysis) return false;
+    const current = localData.reviewItems();
+    const card = methodCardFrom(analysis, subject, current, new Date());
+    if (!card) return false;
+    saveReviewItems([...current, card]);
+    return true;
+  }
+
+  function record(exercise: Exercise, input: SessionInput) {
+    const created = createRetryAttempt(exercise, input, new Date());
+    if (!created) return;
+    const attempt = input.analysis ? { ...created, analysis: input.analysis } : created;
     saveAttempts(upsertAttempts(attempts, [attempt]));
+    const carded = addMethodCard(input.analysis, created.subject);
     setOpenKey(null);
     setFlash(
       input.result === "réussi" && input.help === "sans"
-        ? `« ${exercise.label} » : réussi sans aide. La correction est vérifiée.`
-        : `« ${exercise.label} » : noté. L'exercice reviendra plus tard — c'est la règle tant qu'il n'est pas réussi sans aide.`
+        ? `« ${exercise.label} » : réussi sans aide. La correction est vérifiée. Dans ${TRANSFER_DELAY_LABEL}, un exercice de transfert vérifiera la méthode sur un autre énoncé.`
+        : `« ${exercise.label} » : noté. L'exercice reviendra plus tard — c'est la règle tant qu'il n'est pas réussi sans aide.${carded ? " Fiche de méthode ajoutée à « À revoir »." : ""}`
+    );
+  }
+
+  function recordTransfer(check: TransferCheck, input: TransferInput) {
+    const attempt = createTransferAttempt(check.exercise, input, new Date());
+    if (!attempt) return;
+    saveAttempts(upsertAttempts(attempts, [attempt]));
+    setTransferKey(null);
+    setFlash(
+      input.result === "réussi" && input.help === "sans"
+        ? `Transfert réussi sans aide : la méthode de « ${check.exercise.label} » est acquise — sur deux énoncés différents.`
+        : `Transfert noté. La méthode n'est pas encore transférée : un autre exercice de transfert reviendra plus tard.`
     );
   }
 
@@ -104,10 +147,22 @@ export function RetryQueue() {
         </p>
       )}
 
-      {adding && <NewExerciseForm onCancel={() => setAdding(false)} onSave={(attempt) => { saveAttempts(upsertAttempts(attempts, [attempt])); setAdding(false); setFlash(`« ${attempt.label} » noté.`); }} />}
+      {adding && (
+        <NewExerciseForm
+          onCancel={() => setAdding(false)}
+          onSave={(attempt) => {
+            saveAttempts(upsertAttempts(attempts, [attempt]));
+            const carded = addMethodCard(attempt.analysis, attempt.subject);
+            setAdding(false);
+            setFlash(`« ${attempt.label} » noté.${carded ? " Fiche de méthode ajoutée à « À revoir »." : ""}`);
+          }}
+        />
+      )}
 
       {open ? (
         <RetrySession key={open.key} exercise={open} onCancel={() => setOpenKey(null)} onSave={(input) => record(open, input)} />
+      ) : openTransfer ? (
+        <TransferForm key={openTransfer.exercise.key} check={openTransfer} onCancel={() => setTransferKey(null)} onSave={(input) => recordTransfer(openTransfer, input)} />
       ) : (
         <>
           {due.length > 0 && (
@@ -123,6 +178,30 @@ export function RetryQueue() {
               <ul className="divide-y divide-line">
                 {upcoming.map((exercise) => (
                   <ExerciseRow key={exercise.key} exercise={exercise} action={<span className="t-meta text-2xs">le {fmtDay(exercise.nextRetryDay!)}</span>} />
+                ))}
+              </ul>
+            </>
+          )}
+          {transfersOpen.length > 0 && (
+            <>
+              <p className="t-label mb-1 mt-5">Transferts à vérifier</p>
+              <p className="t-meta mb-1 text-2xs">Réussir à nouveau le même énoncé prouve qu&apos;on sait le refaire, pas qu&apos;on a compris la méthode. Un énoncé différent, sans aide, le prouve.</p>
+              <ul className="divide-y divide-line">
+                {transfersOpen.map((check) => (
+                  <ExerciseRow
+                    key={check.exercise.key}
+                    exercise={check.exercise}
+                    detail={transferDetail(check)}
+                    action={
+                      check.status === "à-faire" ? (
+                        <Button size="sm" variant="ghost" onClick={() => { setFlash(null); setTransferKey(check.exercise.key); }}>
+                          <ArrowRightLeft size={14} aria-hidden /> Transfert
+                        </Button>
+                      ) : (
+                        <span className="t-meta text-2xs">le {fmtDay(check.dueDay!)}</span>
+                      )
+                    }
+                  />
                 ))}
               </ul>
             </>
@@ -143,7 +222,18 @@ export function RetryQueue() {
   );
 }
 
-function ExerciseRow({ exercise, action }: { exercise: Exercise; action: React.ReactNode }) {
+const TRANSFER_DELAY_LABEL = "une semaine";
+
+function transferDetail(check: TransferCheck): string {
+  const failed = check.attempts.length;
+  const method = check.analysis?.tool ? `Méthode : ${check.analysis.tool}` : "Même méthode, autre énoncé";
+  return failed > 0 ? `${method} · ${failed} transfert${failed > 1 ? "s" : ""} pas encore réussi${failed > 1 ? "s" : ""} sans aide` : method;
+}
+
+type SessionInput = { result: AttemptResult; help: AttemptHelp; minutes: number | null; cause: AttemptCause | null; lackOfTime: boolean; note: string; analysis?: BlockAnalysis };
+type TransferInput = { label: string; result: AttemptResult; help: AttemptHelp; minutes: number | null; cause: AttemptCause | null; level: ExerciseLevel | null };
+
+function ExerciseRow({ exercise, action, detail }: { exercise: Exercise; action: React.ReactNode; detail?: string }) {
   const chapter = exercise.chapterId ? PROGRAMME_BY_ID.get(exercise.chapterId) : null;
   const last = exercise.steps[exercise.steps.length - 1];
   return (
@@ -155,6 +245,7 @@ function ExerciseRow({ exercise, action }: { exercise: Exercise; action: React.R
           {chapter ? ` · ${chapter.title}` : ""} · dernier essai {last.result}, {ATTEMPT_HELP_LABEL[last.help].toLowerCase()}
           {!last.helpDeclared ? " (déduit des indices)" : ""}
         </p>
+        {detail && <p className="mt-1 text-2xs font-bold text-accent">{detail}</p>}
         {exercise.changeApproach && <p className="mt-1 text-2xs font-bold text-amber-300">{exercise.changeApproach}</p>}
       </div>
       <div className="shrink-0">{action}</div>
@@ -169,9 +260,10 @@ function RetrySession({
 }: {
   exercise: Exercise;
   onCancel: () => void;
-  onSave: (input: { result: AttemptResult; help: AttemptHelp; minutes: number | null; cause: AttemptCause | null; lackOfTime: boolean; note: string }) => void;
+  onSave: (input: SessionInput) => void;
 }) {
   const started = useRef(Date.now());
+  const [analysis, setAnalysis] = useState<BlockAnalysis>(EMPTY_ANALYSIS);
   const [now, setNow] = useState(Date.now());
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [help, setHelp] = useState<AttemptHelp>("sans");
@@ -255,8 +347,17 @@ function RetrySession({
         </label>
       </div>
 
+      {result && (result !== "réussi" || help !== "sans") && <BlockAnalysisFields value={analysis} onChange={setAnalysis} />}
+
       <div className="mt-5 flex flex-wrap gap-2">
-        <Button disabled={!result} onClick={() => result && onSave({ result, help, minutes: Number.isFinite(minutesValue) ? minutesValue : null, cause, lackOfTime, note })}>
+        <Button
+          disabled={!result}
+          onClick={() => {
+            if (!result) return;
+            const kept = result !== "réussi" || help !== "sans" ? normalizeAnalysis(analysis) ?? undefined : undefined;
+            onSave({ result, help, minutes: Number.isFinite(minutesValue) ? minutesValue : null, cause, lackOfTime, note, ...(kept ? { analysis: kept } : {}) });
+          }}
+        >
           Enregistrer la tentative
         </Button>
         <Button variant="ghost" onClick={onCancel}>
@@ -267,7 +368,131 @@ function RetrySession({
   );
 }
 
-function NewExerciseForm({ onCancel, onSave }: { onCancel: () => void; onSave: (attempt: NonNullable<ReturnType<typeof createRetryAttempt>>) => void }) {
+const EMPTY_ANALYSIS: BlockAnalysis = { missed: "", derailedAt: "", tool: "", cue: "" };
+
+const ANALYSIS_FIELDS: { key: keyof BlockAnalysis; label: string; placeholder: string }[] = [
+  { key: "missed", label: "Ce que je n'ai pas compris", placeholder: "Pourquoi on passe par la série entière" },
+  { key: "derailedAt", label: "La première étape où j'ai déraillé", placeholder: "J'ai voulu calculer directement au lieu de majorer" },
+  { key: "tool", label: "Le réflexe ou le théorème à mobiliser", placeholder: "Convergence dominée" },
+  { key: "cue", label: "Ce que je dois reconnaître la prochaine fois", placeholder: "Une limite d'intégrales avec un paramètre n" },
+];
+
+/**
+ * « COMPRENDRE POURQUOI JE BLOQUE » — quatre réponses courtes, à remplir
+ * correction en main. Le réflexe ou l'indice à reconnaître suffisent à faire
+ * une fiche de méthode ; le reste la complète.
+ */
+function BlockAnalysisFields({ value, onChange }: { value: BlockAnalysis; onChange: (value: BlockAnalysis) => void }) {
+  return (
+    <details className="mt-4 rounded-xl bg-inset p-3">
+      <summary className="inline-flex cursor-pointer items-center gap-2 text-[0.875rem] font-extrabold text-ink">
+        <Lightbulb size={14} aria-hidden /> Comprendre pourquoi je bloque
+      </summary>
+      <p className="t-meta mt-2 text-2xs">Correction en main, après l&apos;essai. Le réflexe et ce qu&apos;il faut reconnaître deviennent une fiche de méthode dans « À revoir ».</p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        {ANALYSIS_FIELDS.map((field) => (
+          <label key={field.key} className="block">
+            <span className="t-label mb-1.5 block">{field.label}</span>
+            <Input value={value[field.key]} onChange={(event) => onChange({ ...value, [field.key]: event.target.value })} maxLength={300} placeholder={field.placeholder} />
+          </label>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+/** L'essai de TRANSFERT : un autre énoncé, la même méthode. */
+function TransferForm({ check, onCancel, onSave }: { check: TransferCheck; onCancel: () => void; onSave: (input: TransferInput) => void }) {
+  const [label, setLabel] = useState("");
+  const [result, setResult] = useState<AttemptResult | null>(null);
+  const [help, setHelp] = useState<AttemptHelp>("sans");
+  const [cause, setCause] = useState<AttemptCause | null>(null);
+  const [minutes, setMinutes] = useState("");
+  const [level, setLevel] = useState<ExerciseLevel | null>(null);
+  const sameStatement = label.trim().toLowerCase() === check.exercise.label.trim().toLowerCase();
+
+  return (
+    <div className="well rounded-2xl p-4 sm:p-5">
+      <p className="t-label">Exercice de transfert</p>
+      <p className="t-subhead mt-1">Même méthode que « {check.exercise.label} », autre énoncé</p>
+      {check.analysis && (
+        <ul className="t-meta mt-2 space-y-0.5 text-2xs">
+          {check.analysis.cue && <li>À reconnaître : {check.analysis.cue}</li>}
+          {check.analysis.tool && <li>Réflexe : {check.analysis.tool}</li>}
+        </ul>
+      )}
+      <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-inset px-3 py-1.5 text-[0.8125rem] font-bold text-ink">
+        <EyeOff size={14} aria-hidden /> Sans relire la correction de l&apos;exercice d&apos;origine.
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <label className="block sm:col-span-2">
+          <span className="t-label mb-1.5 block">Le nouvel exercice</span>
+          <Input value={label} onChange={(event) => setLabel(event.target.value)} maxLength={160} placeholder="TD 6 — exercice 3, ou l'énoncé donné par Claude" />
+          {sameStatement && <span className="mt-1 block text-2xs font-bold text-amber-300">C&apos;est le même énoncé : un transfert se vérifie sur un exercice différent.</span>}
+        </label>
+        <label className="block">
+          <span className="t-label mb-1.5 block">Résultat</span>
+          <Select value={result ?? ""} onChange={(event) => setResult((event.target.value || null) as AttemptResult | null)}>
+            <option value="">—</option>
+            {ATTEMPT_RESULTS.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </Select>
+        </label>
+        <label className="block">
+          <span className="t-label mb-1.5 block">Aide</span>
+          <Select value={help} onChange={(event) => setHelp(event.target.value as AttemptHelp)}>
+            {ATTEMPT_HELPS.map((value) => (
+              <option key={value} value={value}>
+                {ATTEMPT_HELP_LABEL[value]}
+              </option>
+            ))}
+          </Select>
+        </label>
+        {result && result !== "réussi" && (
+          <label className="block">
+            <span className="t-label mb-1.5 block">Ce qui a bloqué</span>
+            <Select value={cause ?? ""} onChange={(event) => setCause((event.target.value || null) as AttemptCause | null)}>
+              <option value="">Non précisé</option>
+              {ATTEMPT_CAUSES.map((value) => (
+                <option key={value} value={value}>
+                  {ATTEMPT_CAUSE_LABEL[value]}
+                </option>
+              ))}
+            </Select>
+          </label>
+        )}
+        <label className="block">
+          <span className="t-label mb-1.5 block">Temps (min)</span>
+          <Input inputMode="numeric" value={minutes} onChange={(event) => setMinutes(event.target.value)} />
+        </label>
+        <label className="block">
+          <span className="t-label mb-1.5 block">Difficulté</span>
+          <Select value={level ?? ""} onChange={(event) => setLevel((event.target.value || null) as ExerciseLevel | null)}>
+            <option value="">Non précisée</option>
+            {EXERCISE_LEVELS.map((value) => (
+              <option key={value} value={value}>
+                {EXERCISE_LEVEL_LABEL[value]}
+              </option>
+            ))}
+          </Select>
+        </label>
+      </div>
+      <div className="mt-5 flex flex-wrap gap-2">
+        <Button disabled={!result || !label.trim() || sameStatement} onClick={() => result && onSave({ label, result, help, minutes: minutes ? Number(minutes) : null, cause, level })}>
+          Enregistrer le transfert
+        </Button>
+        <Button variant="ghost" onClick={onCancel}>
+          Annuler
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function NewExerciseForm({ onCancel, onSave }: { onCancel: () => void; onSave: (attempt: ExerciseAttempt) => void }) {
   const [label, setLabel] = useState("");
   const [subject, setSubject] = useState<Subject>("Mathématiques");
   const [chapterId, setChapterId] = useState<string | null>(null);
@@ -276,13 +501,16 @@ function NewExerciseForm({ onCancel, onSave }: { onCancel: () => void; onSave: (
   const [cause, setCause] = useState<AttemptCause | null>(null);
   const [minutes, setMinutes] = useState("");
   const [level, setLevel] = useState<ExerciseLevel | null>(null);
+  const [analysis, setAnalysis] = useState<BlockAnalysis>(EMPTY_ANALYSIS);
 
   function save() {
     const name = label.trim();
     if (!name) return;
     const key = `exercice:${name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-")}`;
     const attempt = createRetryAttempt({ key, label: name, subject, chapterId, origin: "exercice" }, { result, help, minutes: minutes ? Number(minutes) : null, cause, level }, new Date());
-    if (attempt) onSave(attempt);
+    if (!attempt) return;
+    const kept = result !== "réussi" || help !== "sans" ? normalizeAnalysis(analysis) : null;
+    onSave(kept ? { ...attempt, analysis: kept } : attempt);
   }
 
   return (
@@ -353,6 +581,11 @@ function NewExerciseForm({ onCancel, onSave }: { onCancel: () => void; onSave: (
           ))}
         </Select>
       </label>
+      {(result !== "réussi" || help !== "sans") && (
+        <div className="sm:col-span-2">
+          <BlockAnalysisFields value={analysis} onChange={setAnalysis} />
+        </div>
+      )}
       <div className="flex flex-wrap gap-2 sm:col-span-2">
         <Button size="sm" onClick={save} disabled={!label.trim()}>
           Enregistrer

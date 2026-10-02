@@ -5,6 +5,8 @@ import type { ExerciseAttempt } from "@/lib/attempts";
 import { buildDiagnosticContext, type DiagnosticContext } from "@/lib/diagnostic-context";
 import { FINDING_LABEL, mainFinding, type FindingKind } from "@/lib/diagnostic";
 import { bestProgrammeMatch } from "@/lib/programme";
+import { PROGRAMME_BY_ID } from "@/lib/programme-data";
+import { transferChecks } from "@/lib/transfer";
 import { dueRetries } from "@/lib/exercises";
 import type { KholleHistory } from "@/lib/kholle";
 import { atRisk, AT_RISK_THRESHOLD, chapterTime, retrievabilityToday } from "@/lib/chapter-memory";
@@ -207,6 +209,8 @@ const ERROR_DEEP_TYPE = 10;
 const ERROR_NO_FIX = 8;
 const ERROR_FRESH = 10;
 
+/** Transfert (lib/transfer.ts) : vérifier la méthode sur un autre énoncé. */
+const TRANSFER_POINTS = 16;
 /** Refaire sans aide (lib/exercises.ts) : un exercice raté arrivé à sa date. */
 const RETRY_BASE = 18;
 const RETRY_PER_FAIL = 5;
@@ -732,6 +736,43 @@ function retryCandidates(input: NextMoveInput, context: DiagnosticContext): Move
 }
 
 /**
+ * TRANSFERT (lib/transfer.ts) : un exercice raté puis réussi sans aide
+ * appelle, une semaine plus tard, un exercice DIFFÉRENT qui demande la même
+ * méthode — pour vérifier qu'on l'a comprise, pas apprise par cœur.
+ */
+function transferCandidates(input: NextMoveInput, context: DiagnosticContext): MoveCandidate[] {
+  const today = dayKey(input.now);
+  return transferChecks(context.exercises, input.attempts ?? [], input.preferences.retryDelaysDays, today)
+    .filter((check) => check.status === "à-faire" && check.exercise.subject)
+    .slice(0, 3)
+    .map((check) => {
+      const chapter = check.exercise.chapterId ? PROGRAMME_BY_ID.get(check.exercise.chapterId)?.title ?? null : null;
+      const failedBefore = check.attempts.length;
+      const terms: ScoreTerm[] = [
+        { id: "transfert", points: TRANSFER_POINTS + (failedBefore > 0 ? RETRY_PER_FAIL * Math.min(3, failedBefore) : 0), reason: failedBefore > 0 ? `${failedBefore} transfert${failedBefore > 1 ? "s" : ""} sans réussite sans aide : la méthode n'est pas encore à toi` : `« ${check.exercise.label} » réussi sans aide le ${check.exercise.verifiedOn} : reste à vérifier la méthode sur un autre énoncé` },
+      ];
+      if (check.analysis?.tool) terms.push({ id: "transfert-méthode", points: 0, reason: `Méthode à vérifier : ${check.analysis.tool}` });
+      return {
+        key: `transfert:${check.exercise.key}`,
+        kind: "refaire" as const,
+        subject: check.exercise.subject,
+        title: `Transfert : ${chapter ?? check.exercise.label}`,
+        action: "exercice de transfert",
+        instruction: `Un exercice DIFFÉRENT qui demande la même méthode${check.analysis?.tool ? ` (${check.analysis.tool})` : ""} — pas le même énoncé. Demande-le à Claude, fais-le sans aide, puis note-le comme transfert dans « À refaire ».`,
+        problem: "Une correction réussie peut avoir été retenue par cœur : la méthode n'est pas encore vérifiée.",
+        doneWhen: "Un exercice différent, mobilisant la même méthode, réussi sans aide.",
+        minMinutes: 20,
+        idealMinutes: 35,
+        maxMinutes: 50,
+        href: `/annales?transfert=${encodeURIComponent(check.exercise.key)}`,
+        resource: { label: "À refaire", href: "/annales" },
+        terms,
+        score: 0,
+      };
+    });
+}
+
+/**
  * DIAGNOSTIC (lib/diagnostic.ts) : un problème d'APPLICATION établi sur un
  * chapitre, sans exercice déjà à refaire, devient un exercice ciblé — pas
  * une relecture de cours quand le cours tient.
@@ -1031,6 +1072,7 @@ export function rankCandidates(input: NextMoveInput): MoveCandidate[] {
     ...recallCandidates(input),
     ...errorCandidates(input),
     ...retryCandidates(input, diagnostic),
+    ...transferCandidates(input, diagnostic),
     ...diagnosticCandidates(input, diagnostic),
     ...ankiCandidates(input, diagnostic),
     ...cardCandidates(input),

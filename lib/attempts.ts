@@ -67,6 +67,22 @@ export const EXERCISE_LEVEL_LABEL: Record<ExerciseLevel, string> = {
   difficile: "Difficile (Mines, Centrale, X-ENS)",
 };
 
+/**
+ * « COMPRENDRE POURQUOI JE BLOQUE » — l'analyse d'un échec, en quatre
+ * réponses courtes. Elle devient une fiche de méthode dans « À revoir »
+ * (lib/transfer.ts) : ce qu'il faudra RECONNAÎTRE, et le RÉFLEXE à avoir.
+ */
+export interface BlockAnalysis {
+  /** Ce que je n'ai pas compris. */
+  missed: string;
+  /** La première étape où mon raisonnement a déraillé. */
+  derailedAt: string;
+  /** Le réflexe ou le théorème à mobiliser. */
+  tool: string;
+  /** Ce que je dois reconnaître la prochaine fois (l'indice dans l'énoncé). */
+  cue: string;
+}
+
 export interface ExerciseAttempt {
   id: string;
   /** Identifie l'EXERCICE : toutes ses tentatives partagent cette clé (lib/exercises.ts#annaleKey, `ds:<note>:<question>`…). */
@@ -94,6 +110,13 @@ export interface ExerciseAttempt {
   note: string | null;
   /** Niveau de l'exercice, s'il est connu. Absent des tentatives antérieures à ce champ. */
   level?: ExerciseLevel;
+  /** Analyse du blocage, après un échec. */
+  analysis?: BlockAnalysis;
+  /**
+   * EXERCICE DE TRANSFERT : la clé de l'exercice d'origine dont cet essai,
+   * sur un énoncé DIFFÉRENT, vérifie la méthode (lib/transfer.ts).
+   */
+  transferOf?: string;
 }
 
 /** Une tentative qui PROUVE la maîtrise : réussie, sans aucune aide. */
@@ -158,7 +181,16 @@ export function normalizeAttempt(raw: unknown): ExerciseAttempt | null {
     gradeId: text(raw.gradeId, 120),
     note: text(raw.note, 400),
     ...(oneOf(EXERCISE_LEVELS, raw.level) ? { level: oneOf(EXERCISE_LEVELS, raw.level)! } : {}),
+    ...(normalizeAnalysis(raw.analysis) ? { analysis: normalizeAnalysis(raw.analysis)! } : {}),
+    ...(text(raw.transferOf, 300) ? { transferOf: text(raw.transferOf, 300)! } : {}),
   };
+}
+
+/** Une analyse lisible : au moins le réflexe ou ce qu'il faut reconnaître. */
+export function normalizeAnalysis(raw: unknown): BlockAnalysis | null {
+  if (!isRecord(raw)) return null;
+  const analysis = { missed: text(raw.missed, 300) ?? "", derailedAt: text(raw.derailedAt, 300) ?? "", tool: text(raw.tool, 300) ?? "", cue: text(raw.cue, 300) ?? "" };
+  return analysis.tool || analysis.cue ? analysis : null;
 }
 
 export function normalizeAttempts(raw: unknown): ExerciseAttempt[] {

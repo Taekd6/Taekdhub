@@ -219,13 +219,14 @@ export function buildExercises(input: { annales: AnnaleLog[]; attempts: Exercise
 /** Les exercices à refaire aujourd'hui, le plus en retard d'abord, puis le plus raté. */
 export function dueRetries(exercises: Exercise[]): Exercise[] {
   return exercises
-    .filter((exercise) => exercise.status === "à-refaire")
+    // Un exercice de TRANSFERT raté ne revient pas tel quel : c'est la méthode qu'on revérifie, sur un autre énoncé (lib/transfer.ts).
+    .filter((exercise) => exercise.status === "à-refaire" && !exercise.key.startsWith("transfert:"))
     .sort((a, b) => (a.nextRetryDay ?? "").localeCompare(b.nextRetryDay ?? "") || b.failedStreak - a.failedStreak || a.key.localeCompare(b.key));
 }
 
 /** Les exercices programmés plus tard, le plus proche d'abord. */
 export function upcomingRetries(exercises: Exercise[]): Exercise[] {
-  return exercises.filter((exercise) => exercise.status === "programmé").sort((a, b) => (a.nextRetryDay ?? "").localeCompare(b.nextRetryDay ?? ""));
+  return exercises.filter((exercise) => exercise.status === "programmé" && !exercise.key.startsWith("transfert:")).sort((a, b) => (a.nextRetryDay ?? "").localeCompare(b.nextRetryDay ?? ""));
 }
 
 let counter = 0;

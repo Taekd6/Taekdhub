@@ -175,6 +175,15 @@ describe("refaire et Anki : constatés sur preuve, pas au temps passé", () => {
     expect(withAttempt[0].status).toBe("fait");
   });
 
+  it("transfert : fait seulement quand un essai rattaché à l'exercice d'origine est noté", () => {
+    const transfer = markStarted([], candidate(`transfert:${key}`, "Mathématiques", "refaire"), 30, [], NOW);
+    const sources = { sessions: [session("Mathématiques", 45, hoursLater(0.1))], reviewItems: [], chapterMemory: [] };
+    const sameExercise = { id: "t1", exerciseKey: key, createdAt: hoursLater(0.5).toISOString(), chapterId: null } as never;
+    expect(resolveOutcomes(transfer, { ...sources, attempts: [sameExercise] }, hoursLater(1))[0].status).toBe("commencé");
+    const other = { id: "t2", exerciseKey: `transfert:${key}:td6`, transferOf: key, createdAt: hoursLater(0.6).toISOString(), chapterId: null } as never;
+    expect(resolveOutcomes(transfer, { ...sources, attempts: [other] }, hoursLater(1))[0].status).toBe("fait");
+  });
+
   it("révisions Anki : faites quand un relevé postérieur ne montre plus de carte due", () => {
     const anki = markStarted([], candidate("anki:dues", null as never, "anki"), 15, [], NOW);
     const before = { id: "m1", day: "2026-09-24", takenAt: hoursLater(-2).toISOString(), source: "manuel", decks: [], reviewsByDay: [], manual: { due: 0, reviewedToday: 0 } } as never;

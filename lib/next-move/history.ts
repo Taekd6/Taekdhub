@@ -167,10 +167,14 @@ export function resolveOutcomes(history: NextMoveRecord[], sources: OutcomeSourc
     let done = !proofOnly && record.minutes > 0 && minutes >= record.minutes * OUTCOME_DONE_RATIO;
     if (!done && record.kind === "refaire") {
       const target = record.key.slice("refaire:".length);
+      // Transfert : un essai marqué `transferOf` sur l'exercice d'origine.
+      const transferTarget = record.key.startsWith("transfert:") ? record.key.slice("transfert:".length) : null;
       // `exercice:<chapitre>` ou `exercice:<chapitre>:<variante>` (problème difficile, chronométré).
       const chapterTarget = record.key.startsWith("exercice:") ? record.key.slice("exercice:".length).split(":")[0] : null;
       done = (sources.attempts ?? []).some(
-        (attempt) => new Date(attempt.createdAt).getTime() >= from && (chapterTarget ? attempt.chapterId === chapterTarget : attempt.exerciseKey === target)
+        (attempt) =>
+          new Date(attempt.createdAt).getTime() >= from &&
+          (transferTarget ? attempt.transferOf === transferTarget : chapterTarget ? attempt.chapterId === chapterTarget : attempt.exerciseKey === target)
       );
     }
     if (!done && record.kind === "anki") {

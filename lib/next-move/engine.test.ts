@@ -577,7 +577,10 @@ describe("refaire sans aide, diagnostic, Anki, repos", () => {
   it("pas avant la date ; plus du tout une fois réussi sans aide", () => {
     expect(rankCandidates(input({ annales: [annale("Réduction", "échec", "2026-09-24", { source: "X" })] })).some((entry) => entry.kind === "refaire")).toBe(false);
     const solved = [annale("Réduction", "échec", "2026-09-10", { source: "X" }), annale("Réduction", "réussi", "2026-09-15", { source: "X" })];
-    expect(rankCandidates(input({ annales: solved })).some((entry) => entry.kind === "refaire")).toBe(false);
+    const ranked = rankCandidates(input({ annales: solved }));
+    // Plus le même énoncé : seulement, une semaine après la réussite, un transfert sur un autre énoncé.
+    expect(ranked.some((entry) => entry.key.startsWith("refaire:"))).toBe(false);
+    expect(ranked.filter((entry) => entry.kind === "refaire").map((entry) => entry.key)).toEqual([`transfert:${"annale:x|reduction"}`]);
   });
 
   it("après trois échecs, la proposition change d'approche", () => {
@@ -586,6 +589,20 @@ describe("refaire sans aide, diagnostic, Anki, repos", () => {
     const candidate = rankCandidates(input({ attempts })).find((entry) => entry.key === `refaire:${key}`)!;
     expect(candidate.action).toBe("changer d'approche");
     expect(candidate.instruction).toContain("explique");
+  });
+
+  it("raté puis réussi sans aide : une semaine après, un exercice de TRANSFERT, sur un autre énoncé", () => {
+    const key = "exercice:td4-12";
+    const analysis = { missed: "", derailedAt: "", tool: "Diagonaliser", cue: "Puissance de matrice" };
+    const attempts = [attempt("m2-reduction", "2026-09-10", "échec", "sans", { exerciseKey: key, analysis }), attempt("m2-reduction", "2026-09-15", "réussi", "sans", { exerciseKey: key })];
+    const candidate = rankCandidates(input({ attempts })).find((entry) => entry.key === `transfert:${key}`)!;
+    expect(candidate).toMatchObject({ kind: "refaire", action: "exercice de transfert", href: `/annales?transfert=${encodeURIComponent(key)}` });
+    expect(candidate.instruction).toContain("DIFFÉRENT");
+    expect(candidate.terms.map((term) => term.reason)).toContain("Méthode à vérifier : Diagonaliser");
+    expect(candidate.score).toBe(candidate.terms.reduce((sum, term) => sum + term.points, 0));
+    // Transfert réussi sans aide : plus rien à proposer.
+    const done = [...attempts, attempt("m2-reduction", "2026-09-23", "réussi", "sans", { exerciseKey: "transfert:x:td6", transferOf: key })];
+    expect(rankCandidates(input({ attempts: done })).some((entry) => entry.key.startsWith("transfert:"))).toBe(false);
   });
 
   it("application fragile sans exercice en attente : un exercice ciblé, pas une relecture du cours", () => {

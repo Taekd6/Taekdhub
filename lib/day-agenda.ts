@@ -189,7 +189,10 @@ function classify(candidate: MoveCandidate, input: NextMoveInput): { tier: Agend
   }
   if (candidate.kind === "cartes") return { tier: "indispensable", reason: "Révisions dues", workItemId: null, dueDate: null };
   if (candidate.kind === "anki" && candidate.key === "anki:dues") return { tier: "indispensable", reason: "Cartes Anki dues", workItemId: null, dueDate: null };
-  if (candidate.kind === "refaire") return { tier: "important", reason: candidate.key.startsWith("exercice:") ? "Exercice ciblé du diagnostic" : "Nouvelle tentative prévue", workItemId: null, dueDate: null };
+  if (candidate.kind === "refaire") {
+    const reason = candidate.key.startsWith("transfert:") ? "Vérifier la méthode sur un autre énoncé" : candidate.key.startsWith("exercice:") ? "Exercice ciblé du diagnostic" : "Nouvelle tentative prévue";
+    return { tier: "important", reason, workItemId: null, dueDate: null };
+  }
   if (ids.has("diagnostic")) return { tier: "important", reason: "Action adaptée au diagnostic", workItemId: null, dueDate: null };
   if (candidate.kind === "rappel") return { tier: "important", reason: ids.has("au-programme") ? "Au programme d'une épreuve" : "Chapitre qui s'efface", workItemId: null, dueDate: null };
   if (candidate.kind === "anki") return { tier: "important", reason: "Cours qui résiste dans Anki", workItemId: null, dueDate: null };
