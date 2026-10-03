@@ -11,11 +11,16 @@ import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { effectiveDailyGoal } from "@/lib/evening-minimums";
 import { useWorkTimer } from "@/hooks/use-work-timer";
 import { cn } from "@/lib/cn";
-import { subjects, todaySeconds } from "@/lib/study";
+import { dayKey, subjects, todaySeconds } from "@/lib/study";
 import { activeWorkItems, remainingMinutes, WORK_ITEM_KIND_META } from "@/lib/work-items";
 import { formatSpan } from "@/lib/utils";
 import { MOVE_KIND_LABEL } from "@/lib/next-move/engine";
 import { activeMove } from "@/lib/next-move/history";
+import { SessionDebrief } from "@/components/exercises/session-debrief";
+import { useAnnales } from "@/hooks/use-annales";
+import { upsertAttempts } from "@/lib/attempts";
+import { buildExercises } from "@/lib/exercises";
+import type { NextMoveRecord } from "@/lib/storage";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 const TIMER_STORAGE_KEY = "prepahub:timer:free";
@@ -87,7 +92,11 @@ export function Timer() {
   // `ready` est indispensable ici comme partout ailleurs : le chrono restaure
   // une séance persistée dès son premier effet, donc « Terminer » est
   // cliquable avant même que les données locales aient fini d'être lues.
-  const { sessions, workItems, preferences, saveSessions, saveWorkItems, ready, nextMoves, chapterMemory } = usePrepahubData();
+  const { sessions, workItems, preferences, saveSessions, saveWorkItems, ready, nextMoves, chapterMemory, attempts, saveAttempts } = usePrepahubData();
+  const { logs: annales } = useAnnales();
+  // Bilan de séance (components/exercises/session-debrief.tsx) : la séance qui vient de se terminer, et la recommandation qu'elle servait.
+  const [debrief, setDebrief] = useState<{ session: WorkSession; move: NextMoveRecord | null } | null>(null);
+  const [debriefFlash, setDebriefFlash] = useState<string | null>(null);
   const { seconds, running, context, setContext, start, toggle, stop, orphan, adoptOrphan, dismissOrphan } = useWorkTimer<TimerContext>(TIMER_STORAGE_KEY, {
     subject: "Mathématiques",
     workItemId: null,
@@ -204,6 +213,8 @@ export function Timer() {
         ...(context.chapterId ? { chapter_id: context.chapterId } : {}),
       };
       saveSessions([session, ...sessions]);
+      setDebriefFlash(null);
+      setDebrief({ session, move: activeMove(nextMoves, new Date()) });
       /*
        * Un travail « à faire » sur lequel on vient de passer du temps est
        * « en cours ». Le statut suit le fait, il ne se déclare pas à la
@@ -421,6 +432,26 @@ export function Timer() {
             </Button>
           </span>
         </div>
+      )}
+
+      {debrief && seconds === 0 && (
+        <SessionDebrief
+          key={debrief.session.id}
+          session={debrief.session}
+          move={debrief.move}
+          exercises={buildExercises({ annales, attempts, retryDelaysDays: preferences.retryDelaysDays, today: dayKey(new Date()) })}
+          onSkip={() => setDebrief(null)}
+          onSave={(created) => {
+            saveAttempts(upsertAttempts(attempts, created));
+            setDebrief(null);
+            setDebriefFlash(`${created.length} exercice${created.length > 1 ? "s" : ""} noté${created.length > 1 ? "s" : ""}. Les ratés reviendront dans « À refaire », et le diagnostic en tient compte.`);
+          }}
+        />
+      )}
+      {debriefFlash && !debrief && (
+        <p role="status" className="reveal mt-7 rounded-2xl bg-accent/[0.08] px-4 py-3 text-sm font-semibold text-ink sm:mt-10">
+          {debriefFlash}
+        </p>
       )}
 
       <section aria-label="Séance" className="surface reveal mt-7 space-y-8 px-5 py-7 sm:mt-10 sm:space-y-10 sm:p-12" style={{ "--i": 1 } as CSSProperties}>

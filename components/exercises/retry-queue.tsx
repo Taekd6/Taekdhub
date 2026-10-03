@@ -32,6 +32,7 @@ import { cn } from "@/lib/cn";
 import { fixableIssues, QUALITY_ISSUE_LABEL, qualityIssues, transferRequest } from "@/lib/exercise-quality";
 import { buildExercises, createRetryAttempt, dueRetries, progressLine, upcomingRetries, type Exercise } from "@/lib/exercises";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
+import { manualExerciseKey } from "@/lib/session-debrief";
 import { localData } from "@/lib/storage";
 import { dayKey, subjects } from "@/lib/study";
 import type { Subject } from "@/lib/supabase/types";
@@ -572,7 +573,7 @@ function NewExerciseForm({ onCancel, onSave }: { onCancel: () => void; onSave: (
   function save() {
     const name = label.trim();
     if (!name) return;
-    const key = `exercice:${name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-")}`;
+    const key = manualExerciseKey(name);
     const attempt = createRetryAttempt({ key, label: name, subject, chapterId, origin: "exercice" }, { result, help, minutes: minutes ? Number(minutes) : null, cause, level }, new Date());
     if (!attempt) return;
     const kept = result !== "réussi" || help !== "sans" ? normalizeAnalysis(analysis) : null;

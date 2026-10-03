@@ -51,8 +51,26 @@ export interface AnkiExportResult {
   inAnki: string[];
 }
 
+/** Une carte à verser dans Anki — fiche de TaekdHub ou carte de cours (lib/course-cards.ts). */
+export interface AnkiCard {
+  id: string;
+  front: string;
+  back: string;
+  deck: string;
+  tags: string[];
+}
+
+export function cardFromItem(item: ReviewItem): AnkiCard {
+  return { id: item.id, front: item.text, back: item.answer!.trim(), deck: deckFor(item), tags: [ANKI_TAG, item.kind === "méthode" ? "méthode" : "à-revoir"] };
+}
+
+/** Les fiches de TaekdHub qui ont un verso. */
 export async function sendToAnki(transport: AnkiTransport, items: ReviewItem[]): Promise<AnkiExportResult> {
-  const cards = exportableItems(items);
+  return sendCards(transport, exportableItems(items).map(cardFromItem));
+}
+
+/** Verse des cartes dans Anki : paquets créés s'il manquent, doublons (même recto dans le paquet) refusés par Anki. */
+export async function sendCards(transport: AnkiTransport, cards: AnkiCard[]): Promise<AnkiExportResult> {
   if (cards.length === 0) return { added: 0, duplicates: 0, failed: 0, inAnki: [] };
 
   const names = (await transport("modelNames")) as string[];
@@ -66,13 +84,13 @@ export async function sendToAnki(transport: AnkiTransport, items: ReviewItem[]):
   const model = pickBasicModel(fieldsByModel);
   if (!model) throw new Error("Aucun modèle de carte simple (recto / verso) dans ta collection Anki : ajoute le modèle « Basique » (Outils › Gérer les types de notes).");
 
-  for (const deck of new Set(cards.map(deckFor))) await transport("createDeck", { deck });
+  for (const deck of new Set(cards.map((card) => card.deck))) await transport("createDeck", { deck });
 
-  const notes = cards.map((item) => ({
-    deckName: deckFor(item),
+  const notes = cards.map((card) => ({
+    deckName: card.deck,
     modelName: model.name,
-    fields: { [model.front]: html(item.text), [model.back]: html(item.answer!.trim()) },
-    tags: [ANKI_TAG, item.kind === "méthode" ? "méthode" : "à-revoir"],
+    fields: { [model.front]: html(card.front), [model.back]: html(card.back) },
+    tags: card.tags,
     options: { allowDuplicate: false, duplicateScope: "deck" },
   }));
   const addable = (await transport("canAddNotes", { notes })) as boolean[];
@@ -83,15 +101,15 @@ export async function sendToAnki(transport: AnkiTransport, items: ReviewItem[]):
   let added = 0;
   let failed = 0;
   let cursor = 0;
-  cards.forEach((item, index) => {
+  cards.forEach((card, index) => {
     if (!addable[index]) {
-      inAnki.push(item.id);
+      inAnki.push(card.id);
       return;
     }
     const id = ids[cursor++];
     if (typeof id === "number") {
       added += 1;
-      inAnki.push(item.id);
+      inAnki.push(card.id);
     } else failed += 1;
   });
   return { added, duplicates: cards.length - added - failed, failed, inAnki };
@@ -99,7 +117,11 @@ export async function sendToAnki(transport: AnkiTransport, items: ReviewItem[]):
 
 /** Fichier texte importable dans Anki (Fichier › Importer) : recto, verso, paquet, étiquettes. */
 export function ankiTextExport(items: ReviewItem[]): string {
+  return cardsTextExport(exportableItems(items).map(cardFromItem));
+}
+
+export function cardsTextExport(cards: AnkiCard[]): string {
   const cell = (value: string) => html(value).replace(/\t/g, " ");
-  const lines = exportableItems(items).map((item) => [cell(item.text), cell(item.answer!.trim()), deckFor(item), `${ANKI_TAG} ${item.kind === "méthode" ? "méthode" : "à-revoir"}`].join("\t"));
+  const lines = cards.map((card) => [cell(card.front), cell(card.back), card.deck, card.tags.join(" ")].join("\t"));
   return ["#separator:tab", "#html:true", "#deck column:3", "#tags column:4", ...lines].join("\n") + "\n";
 }

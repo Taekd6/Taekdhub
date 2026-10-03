@@ -1,0 +1,656 @@
+{
+ "version": 1,
+ "subject": "Mathématiques",
+ "chapters": [
+  {
+   "chapterId": "m2-groupes-anneaux",
+   "cards": [
+    {
+     "kind": "définition",
+     "front": "Ordre d'un élément x d'un groupe (G, ·)",
+     "back": "Le plus petit n ≥ 1 tel que xⁿ = e, s'il existe. C'est aussi le cardinal de ⟨x⟩.\nEt : xᵏ = e ⇔ ordre(x) divise k."
+    },
+    {
+     "kind": "théorème",
+     "front": "Lagrange (forme du programme) : dans un groupe fini G, que dire de l'ordre d'un élément ?",
+     "back": "Il divise |G|. En particulier x^|G| = e pour tout x ∈ G."
+    },
+    {
+     "kind": "théorème",
+     "front": "Sous-groupes de (ℤ, +)",
+     "back": "Ce sont exactement les nℤ, n ∈ ℕ."
+    },
+    {
+     "kind": "définition",
+     "front": "Groupe monogène, groupe cyclique",
+     "back": "Monogène : engendré par un élément. Monogène infini ≅ ℤ ; cyclique (monogène fini) d'ordre n ≅ ℤ/nℤ."
+    },
+    {
+     "kind": "théorème",
+     "front": "Générateurs de ℤ/nℤ",
+     "back": "Les classes k̄ avec k ∧ n = 1. Il y en a φ(n) (indicatrice d'Euler)."
+    },
+    {
+     "kind": "théorème",
+     "front": "Quand ℤ/nℤ est-il un corps ?",
+     "back": "Si et seulement si n est premier (n ≥ 2)."
+    },
+    {
+     "kind": "théorème",
+     "front": "Théorème chinois",
+     "back": "Si m ∧ n = 1 : ℤ/mnℤ ≅ ℤ/mℤ × ℤ/nℤ (isomorphisme d'anneaux). Conséquence : φ(mn) = φ(m)φ(n)."
+    },
+    {
+     "kind": "théorème",
+     "front": "Théorème d'Euler (et petit Fermat)",
+     "back": "a ∧ n = 1 ⇒ a^φ(n) ≡ 1 [n]. Pour p premier ne divisant pas a : a^(p−1) ≡ 1 [p]."
+    },
+    {
+     "kind": "théorème",
+     "front": "Idéaux de 𝕂[X]",
+     "back": "Tous principaux : I = P·𝕂[X]. Un idéal non nul est engendré par un unique polynôme unitaire."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : « montrer que H est un sous-groupe de G »",
+     "back": "→ H ⊂ G, e ∈ H, et ∀x, y ∈ H : xy⁻¹ ∈ H.\nPlus rapide : reconnaître H comme noyau ou image d'un morphisme de groupes."
+    }
+   ]
+  },
+  {
+   "chapterId": "m2-algebre-lineaire",
+   "cards": [
+    {
+     "kind": "définition",
+     "front": "Somme directe F₁ ⊕ … ⊕ F_p",
+     "back": "Tout x de F₁ + … + F_p s'écrit de façon unique x₁ + … + x_p (xᵢ ∈ Fᵢ) ⇔ (x₁ + … + x_p = 0 ⇒ tous les xᵢ nuls).\nEn dimension finie : ⇔ dim(∑Fᵢ) = ∑ dim Fᵢ."
+    },
+    {
+     "kind": "définition",
+     "front": "Matrices semblables",
+     "back": "B = P⁻¹AP avec P inversible. Elles ont même rang, même trace, même déterminant, même polynôme caractéristique (invariants, pas une caractérisation)."
+    },
+    {
+     "kind": "théorème",
+     "front": "Trace d'un produit, trace d'un projecteur",
+     "back": "tr(AB) = tr(BA). La trace d'un projecteur est égale à son rang."
+    },
+    {
+     "kind": "théorème",
+     "front": "Déterminant d'une matrice triangulaire par blocs",
+     "back": "Le produit des déterminants des blocs diagonaux."
+    },
+    {
+     "kind": "théorème",
+     "front": "Interpolation de Lagrange",
+     "back": "a₁, …, a_n distincts, b₁, …, b_n donnés : il existe un unique P de degré ≤ n − 1 avec P(aᵢ) = bᵢ.\nP = ∑ bᵢ Lᵢ, Lᵢ = ∏_{j≠i} (X − aⱼ)/(aᵢ − aⱼ)."
+    },
+    {
+     "kind": "théorème",
+     "front": "Déterminant de Vandermonde V(a₁, …, a_n)",
+     "back": "∏_{i<j} (aⱼ − aᵢ). Non nul ⇔ les aᵢ sont distincts."
+    },
+    {
+     "kind": "définition",
+     "front": "Hyperplan d'un espace de dimension n",
+     "back": "Le noyau d'une forme linéaire non nulle ; c'est un sous-espace de dimension n − 1."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : u et v commutent, et je cherche des sous-espaces stables",
+     "back": "→ ker v et Im v sont stables par u (en particulier les sous-espaces propres de v)."
+    }
+   ]
+  },
+  {
+   "chapterId": "m2-reduction",
+   "cards": [
+    {
+     "kind": "définition",
+     "front": "Valeur propre λ d'un endomorphisme u",
+     "back": "∃x ≠ 0, u(x) = λx ⇔ u − λ·Id non injectif. En dimension finie ⇔ χ_u(λ) = 0."
+    },
+    {
+     "kind": "définition",
+     "front": "Polynôme caractéristique χ_A",
+     "back": "χ_A = det(X·I_n − A) : unitaire de degré n, coefficient de X^(n−1) = −tr A, coefficient constant = (−1)ⁿ det A."
+    },
+    {
+     "kind": "théorème",
+     "front": "Cayley-Hamilton",
+     "back": "χ_u(u) = 0. Donc le polynôme minimal π_u divise χ_u."
+    },
+    {
+     "kind": "théorème",
+     "front": "Lemme des noyaux",
+     "back": "P = P₁ ⋯ P_k avec les Pᵢ premiers entre eux deux à deux : ker P(u) = ker P₁(u) ⊕ … ⊕ ker P_k(u)."
+    },
+    {
+     "kind": "théorème",
+     "front": "CNS de diagonalisabilité par un polynôme",
+     "back": "u diagonalisable ⇔ u annulé par un polynôme scindé à racines simples ⇔ π_u scindé à racines simples."
+    },
+    {
+     "kind": "théorème",
+     "front": "CNS de diagonalisabilité par les dimensions",
+     "back": "χ_u scindé ET pour toute valeur propre λ : dim E_λ(u) = multiplicité de λ dans χ_u."
+    },
+    {
+     "kind": "théorème",
+     "front": "Condition suffisante simple de diagonalisabilité",
+     "back": "χ_u scindé à racines simples (n valeurs propres distinctes en dimension n). Ce n'est pas nécessaire : Id est diagonalisable."
+    },
+    {
+     "kind": "théorème",
+     "front": "Trigonalisabilité",
+     "back": "u trigonalisable ⇔ χ_u scindé. Toujours vrai sur ℂ."
+    },
+    {
+     "kind": "théorème",
+     "front": "Polynôme annulateur et valeurs propres",
+     "back": "Si P(u) = 0, toute valeur propre λ vérifie P(λ) = 0. Le spectre est INCLUS dans les racines de P, pas forcément égal."
+    },
+    {
+     "kind": "théorème",
+     "front": "Endomorphisme nilpotent",
+     "back": "u nilpotent ⇔ χ_u = Xⁿ ⇔ u trigonalisable avec diagonale nulle. Son indice est ≤ n."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : diagonaliser A et calculer Aⁿ",
+     "back": "→ χ_A, ses racines, bases de chaque E_λ = ker(A − λI), vérifier ∑ dim E_λ = n.\nP = vecteurs propres en colonnes, A = PDP⁻¹, Aⁿ = PDⁿP⁻¹."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : une relation polynomiale du type A² = 3A − 2I",
+     "back": "→ P = X² − 3X + 2 = (X − 1)(X − 2) annule A, scindé à racines simples : A est diagonalisable et Sp(A) ⊂ {1, 2}."
+    }
+   ]
+  },
+  {
+   "chapterId": "m2-euclidiens",
+   "cards": [
+    {
+     "kind": "théorème",
+     "front": "Inégalité de Cauchy-Schwarz",
+     "back": "|⟨x, y⟩| ≤ ‖x‖·‖y‖, avec égalité ⇔ x et y colinéaires."
+    },
+    {
+     "kind": "théorème",
+     "front": "Projection orthogonale sur F, (e₁, …, e_p) base orthonormée de F",
+     "back": "p_F(x) = ∑ ⟨x, eᵢ⟩ eᵢ.\nd(x, F) = ‖x − p_F(x)‖ et d(x, F)² = ‖x‖² − ∑ ⟨x, eᵢ⟩²."
+    },
+    {
+     "kind": "théorème",
+     "front": "Procédé de Gram-Schmidt",
+     "back": "Toute famille libre (x₁, …, x_p) donne une famille orthonormée (e₁, …, e_p) avec Vect(e₁, …, e_k) = Vect(x₁, …, x_k) pour tout k (unique si on impose ⟨e_k, x_k⟩ > 0)."
+    },
+    {
+     "kind": "théorème",
+     "front": "Supplémentaire orthogonal en dimension finie",
+     "back": "E = F ⊕ F⊥, dim F⊥ = n − dim F, et (F⊥)⊥ = F."
+    },
+    {
+     "kind": "définition",
+     "front": "Isométrie vectorielle (automorphisme orthogonal)",
+     "back": "Conserve la norme ⇔ conserve le produit scalaire ⇔ sa matrice M dans une base orthonormée vérifie ᵗM·M = I."
+    },
+    {
+     "kind": "théorème",
+     "front": "Théorème spectral",
+     "back": "Tout endomorphisme autoadjoint se diagonalise dans une base orthonormée.\nMatriciel : S symétrique réelle ⇒ S = P·D·ᵗP avec P ∈ O_n(ℝ), D diagonale réelle."
+    },
+    {
+     "kind": "théorème",
+     "front": "Autoadjoint positif, défini positif",
+     "back": "⟨u(x), x⟩ ≥ 0 pour tout x ⇔ Sp(u) ⊂ ℝ₊.\nDéfini positif (> 0 pour x ≠ 0) ⇔ Sp(u) ⊂ ℝ₊*."
+    },
+    {
+     "kind": "théorème",
+     "front": "Matrices de O₂(ℝ)",
+     "back": "Rotations (det = 1) : (cos θ, −sin θ ; sin θ, cos θ).\nRéflexions (det = −1) : (cos θ, sin θ ; sin θ, −cos θ)."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : une distance à un sous-espace, un « inf de ∫(f − P)² »",
+     "back": "→ c'est d(x, F) : projeter orthogonalement (base orthonormée par Gram-Schmidt, ou résoudre ⟨x − p, fᵢ⟩ = 0), puis d² = ‖x‖² − ‖p‖²."
+    }
+   ]
+  },
+  {
+   "chapterId": "m2-evn",
+   "cards": [
+    {
+     "kind": "théorème",
+     "front": "Normes en dimension finie",
+     "back": "Toutes équivalentes : ∃ α, β > 0, α N₁ ≤ N₂ ≤ β N₁. Les notions de convergence, ouvert, compact ne dépendent pas de la norme."
+    },
+    {
+     "kind": "définition",
+     "front": "Partie compacte (définition séquentielle)",
+     "back": "Toute suite d'éléments de K admet une valeur d'adhérence dans K.\nEn dimension finie : compact ⇔ fermé et borné."
+    },
+    {
+     "kind": "théorème",
+     "front": "Fonction continue sur un compact",
+     "back": "L'image d'un compact par une application continue est compacte. Une fonction continue réelle sur un compact non vide est bornée et atteint ses bornes."
+    },
+    {
+     "kind": "théorème",
+     "front": "Théorème de Heine",
+     "back": "Une fonction continue sur un compact y est uniformément continue."
+    },
+    {
+     "kind": "théorème",
+     "front": "Caractérisation séquentielle d'un fermé",
+     "back": "F fermé ⇔ toute suite d'éléments de F qui converge a sa limite dans F."
+    },
+    {
+     "kind": "théorème",
+     "front": "Continuité d'une application linéaire",
+     "back": "u continue ⇔ ∃ C, ‖u(x)‖ ≤ C‖x‖ pour tout x. Si l'espace de départ est de dimension finie, toute application linéaire est continue.\nNorme subordonnée : |||u||| = sup_{x≠0} ‖u(x)‖/‖x‖."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : « montrer que cette partie est ouverte (ou fermée) »",
+     "back": "→ l'écrire comme image réciproque d'un ouvert (fermé) par une application continue : {x : f(x) < 0} est ouvert, {x : f(x) ≤ 0} est fermé."
+    },
+    {
+     "kind": "définition",
+     "front": "Partie connexe par arcs",
+     "back": "Deux points quelconques sont reliés par un chemin continu inclus dans la partie. L'image continue d'un connexe par arcs l'est ; dans ℝ, ce sont les intervalles."
+    },
+    {
+     "kind": "théorème",
+     "front": "Lipschitz, uniformément continue, continue",
+     "back": "k-lipschitzienne ⇒ uniformément continue ⇒ continue. Les réciproques sont fausses."
+    }
+   ]
+  },
+  {
+   "chapterId": "m2-series-compl",
+   "cards": [
+    {
+     "kind": "théorème",
+     "front": "Règle de d'Alembert (séries à termes > 0)",
+     "back": "u_{n+1}/u_n → ℓ : ℓ < 1 converge ; ℓ > 1 diverge grossièrement ; ℓ = 1 : on ne peut rien conclure."
+    },
+    {
+     "kind": "théorème",
+     "front": "Séries de Riemann",
+     "back": "∑ 1/n^α converge ⇔ α > 1."
+    },
+    {
+     "kind": "théorème",
+     "front": "Comparaison série-intégrale",
+     "back": "f continue, positive, décroissante sur [n₀, +∞[ : ∑ f(n) et ∫ f sont de même nature, et ∫_n^{n+1} f ≤ f(n) ≤ ∫_{n−1}^n f."
+    },
+    {
+     "kind": "théorème",
+     "front": "Critère spécial des séries alternées",
+     "back": "∑ (−1)ⁿ a_n avec (a_n) décroissante de limite 0 : converge, |R_n| ≤ a_{n+1}, et R_n a le signe de son premier terme."
+    },
+    {
+     "kind": "théorème",
+     "front": "Comparaison par équivalents",
+     "back": "u_n ~ v_n et v_n ≥ 0 (à partir d'un rang) ⇒ ∑ u_n et ∑ v_n de même nature. Faux sans signe constant !"
+    },
+    {
+     "kind": "théorème",
+     "front": "Domination",
+     "back": "u_n = O(v_n), v_n ≥ 0, ∑ v_n converge ⇒ ∑ u_n converge absolument."
+    },
+    {
+     "kind": "définition",
+     "front": "Famille sommable (aᵢ)_{i∈I}",
+     "back": "Les sommes finies des |aᵢ| sont majorées. Alors sommation par paquets et réordonnement sont permis."
+    },
+    {
+     "kind": "théorème",
+     "front": "Produit de Cauchy",
+     "back": "∑ a_n, ∑ b_n absolument convergentes, c_n = ∑_{k=0}^n a_k b_{n−k} : ∑ c_n converge absolument et ∑ c_n = (∑ a_n)(∑ b_n)."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : déterminer la nature de ∑ u_n",
+     "back": "→ 1) u_n → 0 ? sinon divergence grossière. 2) Signe constant : équivalent ou DL, comparaison à Riemann. 3) Signe alterné : CSSA, ou DL à l'ordre 2 = terme alterné + terme de signe constant."
+    }
+   ]
+  },
+  {
+   "chapterId": "m2-suites-fonctions",
+   "cards": [
+    {
+     "kind": "définition",
+     "front": "Convergence uniforme de (f_n) vers f sur I",
+     "back": "‖f_n − f‖_∞ = sup_I |f_n − f| → 0."
+    },
+    {
+     "kind": "théorème",
+     "front": "Convergence uniforme et continuité",
+     "back": "Une limite uniforme de fonctions continues est continue. Il suffit d'avoir la convergence uniforme sur tout segment (ou au voisinage de chaque point)."
+    },
+    {
+     "kind": "théorème",
+     "front": "Convergence uniforme et intégrale sur un segment",
+     "back": "f_n continues, f_n → f uniformément sur [a, b] ⇒ ∫_a^b f_n → ∫_a^b f."
+    },
+    {
+     "kind": "théorème",
+     "front": "Dérivation d'une limite",
+     "back": "f_n de classe C¹, (f_n) converge simplement vers f, (f_n′) converge uniformément (sur tout segment) vers g ⇒ f est C¹ et f′ = g."
+    },
+    {
+     "kind": "définition",
+     "front": "Convergence normale de ∑ u_n",
+     "back": "∑ ‖u_n‖_∞ converge. Normale ⇒ uniforme ⇒ simple."
+    },
+    {
+     "kind": "théorème",
+     "front": "Théorème de la double limite",
+     "back": "f_n → f uniformément au voisinage de a, et f_n(x) → ℓ_n quand x → a : (ℓ_n) converge vers un ℓ et f(x) → ℓ quand x → a."
+    },
+    {
+     "kind": "théorème",
+     "front": "Théorème de Weierstrass",
+     "back": "Toute fonction continue sur un segment est limite uniforme d'une suite de polynômes."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : « montrer qu'il n'y a pas convergence uniforme »",
+     "back": "→ trouver une suite (x_n) telle que |f_n(x_n) − f(x_n)| ne tend pas vers 0 (souvent x_n = 1/n, ou le point où f_n est maximale)."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : convergence uniforme d'une série alternée de fonctions",
+     "back": "→ CSSA à x fixé : |R_n(x)| ≤ |u_{n+1}(x)|, puis majorer uniformément en x."
+    }
+   ]
+  },
+  {
+   "chapterId": "m2-series-entieres",
+   "cards": [
+    {
+     "kind": "définition",
+     "front": "Rayon de convergence R de ∑ a_n zⁿ",
+     "back": "R = sup{r ≥ 0 : (a_n rⁿ) bornée}. Convergence absolue pour |z| < R, divergence grossière pour |z| > R."
+    },
+    {
+     "kind": "théorème",
+     "front": "Lemme d'Abel",
+     "back": "Si (a_n z₀ⁿ) est bornée, ∑ a_n zⁿ converge absolument pour tout |z| < |z₀|."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : calculer un rayon avec d'Alembert",
+     "back": "→ si |a_{n+1}/a_n| → ℓ, alors R = 1/ℓ. Coefficients nuls (série lacunaire, ∑ a_n z^{2n}) : appliquer d'Alembert à la série NUMÉRIQUE ∑ |a_n z^{2n}|."
+    },
+    {
+     "kind": "théorème",
+     "front": "Comparaison des rayons",
+     "back": "|a_n| ≤ |b_n| ⇒ R_a ≥ R_b. a_n ~ b_n ⇒ même rayon."
+    },
+    {
+     "kind": "théorème",
+     "front": "Régularité de la somme",
+     "back": "C^∞ sur ]−R, R[, dérivable terme à terme, ∑ n a_n z^{n−1} a le même rayon, et a_n = f⁽ⁿ⁾(0)/n!."
+    },
+    {
+     "kind": "théorème",
+     "front": "Convergence normale d'une série entière",
+     "back": "Normale sur tout disque fermé de rayon r < R — pas forcément sur le disque ouvert entier."
+    },
+    {
+     "kind": "théorème",
+     "front": "DSE de eˣ, ch, sh, cos, sin (R = +∞)",
+     "back": "eˣ = ∑ xⁿ/n! ; ch x = ∑ x^{2n}/(2n)! ; sh x = ∑ x^{2n+1}/(2n+1)! ; cos x = ∑ (−1)ⁿ x^{2n}/(2n)! ; sin x = ∑ (−1)ⁿ x^{2n+1}/(2n+1)!."
+    },
+    {
+     "kind": "théorème",
+     "front": "DSE de 1/(1 − x), ln(1 + x), arctan x (R = 1)",
+     "back": "1/(1 − x) = ∑ xⁿ ; ln(1 + x) = ∑_{n≥1} (−1)^{n+1} xⁿ/n ; arctan x = ∑ (−1)ⁿ x^{2n+1}/(2n+1)."
+    },
+    {
+     "kind": "théorème",
+     "front": "DSE de (1 + x)^α, α ∉ ℕ",
+     "back": "1 + ∑_{n≥1} α(α − 1)⋯(α − n + 1)/n! · xⁿ, rayon 1."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : « montrer que f est développable en série entière »",
+     "back": "→ combiner des DSE usuels ; sinon trouver une équation différentielle vérifiée par f, chercher ∑ a_n xⁿ solution (récurrence sur a_n), vérifier R > 0, conclure par unicité (Cauchy-Lipschitz)."
+    }
+   ]
+  },
+  {
+   "chapterId": "m2-integration",
+   "cards": [
+    {
+     "kind": "définition",
+     "front": "Fonction intégrable sur un intervalle I",
+     "back": "f continue par morceaux avec ∫_I |f| convergente. Intégrable ⇒ intégrale convergente (réciproque fausse : sin t / t sur [1, +∞[)."
+    },
+    {
+     "kind": "théorème",
+     "front": "Intégrales de Riemann",
+     "back": "∫_1^{+∞} dt/t^α converge ⇔ α > 1 ; ∫_0^1 dt/t^α converge ⇔ α < 1."
+    },
+    {
+     "kind": "théorème",
+     "front": "Intégrales de référence",
+     "back": "∫_0^{+∞} e^{−αt} dt converge ⇔ α > 0 ; ∫_0^1 ln t dt = −1 converge."
+    },
+    {
+     "kind": "théorème",
+     "front": "Comparaison",
+     "back": "f, g ≥ 0 au voisinage de la borne, f = O(g) ou f ~ g : g intégrable ⇒ f intégrable."
+    },
+    {
+     "kind": "théorème",
+     "front": "Changement de variable",
+     "back": "φ : ]α, β[ → ]a, b[ bijective, C¹, strictement monotone : ∫_a^b f(t) dt et ∫_α^β f(φ(u)) |φ′(u)| du sont de même nature et égales."
+    },
+    {
+     "kind": "théorème",
+     "front": "Intégration par parties généralisée",
+     "back": "Si fg a des limites finies aux bornes : ∫ fg′ et ∫ f′g sont de même nature et ∫_a^b fg′ = [fg]_a^b − ∫_a^b f′g."
+    },
+    {
+     "kind": "théorème",
+     "front": "Fonction Γ",
+     "back": "Γ(x) = ∫_0^{+∞} t^{x−1} e^{−t} dt, définie pour x > 0. Γ(x + 1) = xΓ(x), Γ(n + 1) = n!."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : étudier l'intégrabilité",
+     "back": "→ repérer chaque borne à problème ; à chacune, un équivalent ou une majoration, puis comparer à Riemann ou à une exponentielle."
+    }
+   ]
+  },
+  {
+   "chapterId": "m2-integrales-parametre",
+   "cards": [
+    {
+     "kind": "théorème",
+     "front": "Convergence dominée",
+     "back": "f_n continues par morceaux, f_n → f simplement (f c.p.m.), |f_n| ≤ φ intégrable indépendante de n ⇒ ∫_I f_n → ∫_I f."
+    },
+    {
+     "kind": "théorème",
+     "front": "Intégration terme à terme",
+     "back": "u_n intégrables, ∑ u_n converge simplement vers une fonction c.p.m., et ∑ ∫_I |u_n| converge ⇒ ∫_I ∑ u_n = ∑ ∫_I u_n."
+    },
+    {
+     "kind": "théorème",
+     "front": "Continuité d'une intégrale à paramètre",
+     "back": "f(·, t) continue, f(x, ·) c.p.m., |f(x, t)| ≤ φ(t) intégrable (domination) ⇒ F(x) = ∫_I f(x, t) dt est continue."
+    },
+    {
+     "kind": "théorème",
+     "front": "Dérivation sous l'intégrale (Leibniz)",
+     "back": "∂f/∂x existe et continue en x, f(x, ·) intégrable, |∂f/∂x(x, t)| ≤ φ(t) intégrable ⇒ F est C¹ et F′(x) = ∫_I ∂f/∂x(x, t) dt."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : pas de domination sur tout l'intervalle du paramètre",
+     "back": "→ dominer localement : sur tout segment [a, b] ⊂ ]0, +∞[ (ou sur [a, +∞[) ; la continuité et la dérivabilité sont locales."
+    },
+    {
+     "kind": "théorème",
+     "front": "Intégrale de Gauss",
+     "back": "∫_ℝ e^{−t²} dt = √π."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : une limite de ∫ f_n",
+     "back": "→ convergence dominée : limite simple, puis une domination indépendante de n (souvent |f_n(t)| ≤ e^{−t}, ou 1/(1 + t²))."
+    }
+   ]
+  },
+  {
+   "chapterId": "m2-probas",
+   "cards": [
+    {
+     "kind": "théorème",
+     "front": "Espérance d'une variable à valeurs dans ℕ",
+     "back": "E(X) = ∑_{n≥1} P(X ≥ n)."
+    },
+    {
+     "kind": "théorème",
+     "front": "Loi géométrique G(p)",
+     "back": "P(X = k) = p(1 − p)^{k−1} pour k ≥ 1. E = 1/p, V = (1 − p)/p². Loi sans mémoire."
+    },
+    {
+     "kind": "théorème",
+     "front": "Loi de Poisson P(λ)",
+     "back": "P(X = k) = e^{−λ} λᵏ/k!. E = V = λ. Somme de Poisson indépendantes : P(λ) + P(μ) = P(λ + μ)."
+    },
+    {
+     "kind": "théorème",
+     "front": "Formule des probabilités totales",
+     "back": "(A_n) système complet d'événements : P(B) = ∑ P(B | A_n) P(A_n)."
+    },
+    {
+     "kind": "théorème",
+     "front": "Inégalité de Markov",
+     "back": "X ≥ 0 d'espérance finie, a > 0 : P(X ≥ a) ≤ E(X)/a."
+    },
+    {
+     "kind": "théorème",
+     "front": "Inégalité de Bienaymé-Tchebychev",
+     "back": "X de variance finie, ε > 0 : P(|X − E(X)| ≥ ε) ≤ V(X)/ε²."
+    },
+    {
+     "kind": "théorème",
+     "front": "Loi faible des grands nombres",
+     "back": "(X_n) i.i.d. de variance finie, m = E(X₁), S_n = X₁ + … + X_n : P(|S_n/n − m| ≥ ε) → 0 pour tout ε > 0."
+    },
+    {
+     "kind": "théorème",
+     "front": "Fonction génératrice G_X(t) = E(t^X)",
+     "back": "Rayon ≥ 1. X d'espérance finie ⇔ G_X dérivable en 1, et E(X) = G_X′(1). X, Y indépendantes ⇒ G_{X+Y} = G_X·G_Y."
+    },
+    {
+     "kind": "théorème",
+     "front": "Variance",
+     "back": "V(X) = E(X²) − E(X)², V(aX + b) = a²V(X). X, Y indépendantes ⇒ V(X + Y) = V(X) + V(Y)."
+    }
+   ]
+  },
+  {
+   "chapterId": "m2-calcul-diff",
+   "cards": [
+    {
+     "kind": "définition",
+     "front": "f différentiable en a",
+     "back": "f(a + h) = f(a) + df(a)·h + o(‖h‖), avec df(a) linéaire."
+    },
+    {
+     "kind": "théorème",
+     "front": "Fonction de classe C¹",
+     "back": "f est C¹ ⇔ ses dérivées partielles existent et sont continues. Alors df(a)·h = ∑ ∂ᵢf(a) hᵢ."
+    },
+    {
+     "kind": "théorème",
+     "front": "Règle de la chaîne",
+     "back": "d(g ∘ f)(a) = dg(f(a)) ∘ df(a).\nd/dt f(x(t), y(t)) = x′(t) ∂_x f + y′(t) ∂_y f."
+    },
+    {
+     "kind": "théorème",
+     "front": "Gradient",
+     "back": "df(a)·h = ⟨∇f(a), h⟩. ∇f(a) donne la direction de plus forte pente et est orthogonal aux lignes de niveau."
+    },
+    {
+     "kind": "théorème",
+     "front": "Condition nécessaire d'extremum local",
+     "back": "Extremum local en un point a intérieur (ouvert) ⇒ ∇f(a) = 0. Point critique ≠ extremum !"
+    },
+    {
+     "kind": "théorème",
+     "front": "Théorème de Schwarz",
+     "back": "f de classe C² ⇒ ∂²f/∂x∂y = ∂²f/∂y∂x."
+    },
+    {
+     "kind": "théorème",
+     "front": "Hessienne en un point critique",
+     "back": "f C² : H(a) définie positive ⇒ minimum local strict ; définie négative ⇒ maximum local strict ; valeurs propres de signes opposés ⇒ point col."
+    },
+    {
+     "kind": "théorème",
+     "front": "Extremum sous la contrainte g = 0",
+     "back": "Si f|_{g=0} a un extremum en a et ∇g(a) ≠ 0, alors ∇f(a) est colinéaire à ∇g(a)."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : extrema d'une fonction continue sur un compact",
+     "back": "→ ils sont atteints (compact) : points critiques à l'intérieur, plus une étude séparée sur le bord, puis comparer les valeurs."
+    }
+   ]
+  },
+  {
+   "chapterId": "m2-equadiff",
+   "cards": [
+    {
+     "kind": "théorème",
+     "front": "Cauchy-Lipschitz linéaire",
+     "back": "X′ = A(t)X + B(t), A et B continues sur I : pour tout (t₀, X₀), une unique solution, définie sur I tout entier."
+    },
+    {
+     "kind": "théorème",
+     "front": "Structure des solutions",
+     "back": "Les solutions de X′ = A(t)X forment un espace vectoriel de dimension n. Solutions de l'équation complète = une solution particulière + solutions homogènes."
+    },
+    {
+     "kind": "théorème",
+     "front": "Coefficients constants X′ = AX",
+     "back": "Les solutions sont t ↦ e^{tA} X₀."
+    },
+    {
+     "kind": "théorème",
+     "front": "Exponentielle de matrice",
+     "back": "e^A = ∑ Aⁿ/n!. AB = BA ⇒ e^{A+B} = e^A e^B. det(e^A) = e^{tr A}."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : X′ = AX avec A diagonalisable",
+     "back": "→ A = PDP⁻¹, poser Y = P⁻¹X : Y′ = DY, donc yᵢ = cᵢ e^{λᵢ t}, puis X = PY."
+    },
+    {
+     "kind": "définition",
+     "front": "Wronskien de y″ + a(t)y′ + b(t)y = 0",
+     "back": "W = y₁y₂′ − y₁′y₂. (y₁, y₂) base de solutions ⇔ W ne s'annule pas (en un point ⇔ partout)."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : y″ + a y′ + b y = c(t), base (y₁, y₂) connue",
+     "back": "→ variation des constantes : y = λ₁y₁ + λ₂y₂ avec λ₁′y₁ + λ₂′y₂ = 0 et λ₁′y₁′ + λ₂′y₂′ = c(t)."
+    },
+    {
+     "kind": "méthode",
+     "front": "Quand je vois : une équation à coefficients polynomiaux",
+     "back": "→ chercher une solution DSE ∑ a_n xⁿ : récurrence sur a_n, rayon, puis une seconde solution (variation de la constante, wronskien)."
+    }
+   ]
+  }
+ ]
+}

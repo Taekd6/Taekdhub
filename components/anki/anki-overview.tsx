@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Clipboard, Download, RefreshCw, Upload } from "lucide-react";
 import { ChapterSelect } from "@/components/exercises/chapter-select";
 import { AnkiCardExport } from "@/components/anki/anki-card-export";
+import { CourseCards } from "@/components/anki/course-cards";
 import { AnkiLink } from "@/components/memory/anki-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -263,6 +264,8 @@ export function AnkiOverview() {
           <ManualEntry onSave={(due, reviewedToday) => store(normalizeAnkiSnapshot({ day: new Date().toLocaleDateString("en-CA"), takenAt: new Date().toISOString(), source: "manuel", manual: { due, reviewedToday } }), "Saisie enregistrée.")} />
         </div>
       </Section>
+
+      <CourseCards platform={platform} />
 
       <AnkiCardExport reviewItems={reviewItems} saveReviewItems={saveReviewItems} platform={platform} />
 
