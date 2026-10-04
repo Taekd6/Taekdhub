@@ -152,6 +152,7 @@ export function schedule(current: ReviewSchedule, rating: ReviewRating, now: Dat
     reviews: current.reviews + 1,
     lapses: next.lapses,
     lastReviewedAt: now.toISOString(),
+    lastRating: rating,
   };
 }
 
@@ -183,12 +184,36 @@ export function rateReviewItem(items: ReviewItem[], id: string, rating: ReviewRa
 export function dueReviewItems(items: ReviewItem[], now: Date = new Date(), subject: Subject | null = null): ReviewItem[] {
   const today = dayKey(now);
   return items
-    .filter((item) => item.doneAt === null && (!subject || item.subject === subject) && effectiveSchedule(item).dueAt <= today)
+    .filter((item) => (!subject || item.subject === subject) && isDueOn(item, today))
     .sort((a, b) => effectiveSchedule(a).dueAt.localeCompare(effectiveSchedule(b).dueAt) || a.createdAt.localeCompare(b.createdAt));
 }
 
 export function isDue(item: ReviewItem, now: Date = new Date()): boolean {
-  return item.doneAt === null && effectiveSchedule(item).dueAt <= dayKey(now);
+  return isDueOn(item, dayKey(now));
+}
+
+/**
+ * Une fiche du VERROU DE COURS (lib/course-lock.ts) est retrouvée quand sa
+ * dernière note est « Bien » ou « Facile », donnée un jour APRÈS sa création.
+ * Défini ici, et non dans lib/course-lock.ts, parce que la file de révision
+ * en dépend (voir `isDueOn`).
+ */
+export function isLockRecalled(item: ReviewItem): boolean {
+  const srs = item.srs;
+  if (!srs?.lastReviewedAt || (srs.lastRating !== "good" && srs.lastRating !== "easy")) return false;
+  return dayKey(srs.lastReviewedAt) > dayKey(item.createdAt);
+}
+
+/**
+ * Due ce jour-là. Une fiche du verrou PAS ENCORE retrouvée est due chaque
+ * jour dès le lendemain de sa création, quelle que soit sa date FSRS : un
+ * « Difficile » la repousserait de plusieurs jours, et le chapitre resterait
+ * verrouillé sans rien à faire pour l'ouvrir. Cochée ou pas, elle reste dans
+ * la file — cocher n'est pas retrouver.
+ */
+function isDueOn(item: ReviewItem, today: string): boolean {
+  if (item.origin === "claude" && item.chapter && !isLockRecalled(item)) return dayKey(item.createdAt) < today;
+  return item.doneAt === null && effectiveSchedule(item).dueAt <= today;
 }
 
 /** La prochaine échéance APRÈS aujourd'hui parmi les entrées ouvertes, et combien tombent ce jour-là — pour dire « prochaine révision demain · 3 » quand il n'y a rien aujourd'hui. */

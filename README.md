@@ -41,12 +41,24 @@ Quand Claude corrige un exercice de concours, le connecteur MCP (`app/api/mcp/[k
 
 ### Connecteur MCP : `get_today`
 
-Outre `log_exercise` et `get_progress`, le connecteur expose **`get_today`** : la recommandation Next Move et ses raisons, Le point (ce qui presse, ce qui est repoussé), les échéances à 14 jours, les chapitres qui s'effacent (FSRS), les erreurs récentes et les chapitres où les annales bloquent (`lib/today-snapshot.ts`). Claude l'appelle avant de proposer un exercice, pour viser le vrai point faible. Il lit les collections synchronisées (`user_collections`) : il faut donc être connecté au compte dans l'application.
+Outre `log_exercise`, `get_progress`, `add_cards` et `review_cards` (voir « Verrou de cours » ci-dessous), le connecteur expose **`get_today`** : la recommandation Next Move et ses raisons, Le point (ce qui presse, ce qui est repoussé), les échéances à 14 jours, les chapitres qui s'effacent (FSRS), les erreurs récentes et les chapitres où les annales bloquent (`lib/today-snapshot.ts`). Claude l'appelle avant de proposer un exercice, pour viser le vrai point faible. Il lit les collections synchronisées (`user_collections`) : il faut donc être connecté au compte dans l'application.
 
 Mise en service (une fois) :
 
 1. Exécuter `supabase/migrations/0007_exercise_logs_owner.sql` (SQL Editor). Elle ajoute `user_id` à `exercise_logs`, rattache les lignes existantes au compte s'il n'y en a qu'un, et pose la RLS : l'élève **lit et supprime** ses seules lignes ; seul le connecteur (clé secrète) écrit.
 2. Vercel → variables **serveur** (jamais `NEXT_PUBLIC_*`) : `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `MCP_SECRET` ; facultatif : `MCP_USER_ID` (identifiant du compte — indispensable seulement s'il y a plusieurs comptes) et `MCP_TIMEZONE` (`Europe/Paris` par défaut).
+
+### Verrou de cours : le cours d'abord, l'exercice ensuite (`lib/course-lock.ts`)
+
+Quand un exercice rate **à cause du cours** (définition, théorème et ses hypothèses, méthode type), Claude crée 1 à 5 fiches recto/verso sur exactement ce qui a manqué (outil MCP **`add_cards`**). Elles arrivent dans le carnet « À revoir » et **verrouillent le chapitre** :
+
+- **le jour même** : Next Move propose « Reprends ton cours : <chapitre> ». Retrouver les fiches tout de suite ne prouverait rien, la réponse sort encore de la mémoire immédiate ;
+- **dès le lendemain** : « Cours d'abord : <chapitre> », c'est-à-dire retrouver les fiches de tête, dans la séance « À revoir » ou interrogé par Claude dans la conversation (outil **`review_cards`**, Claude compare la réponse au verso et note) ;
+- **déverrouillé** quand toutes les fiches du chapitre ont pour dernière note « Bien » ou « Facile », données un jour après leur création. « Difficile » ne suffit pas, cocher « fait » non plus, et oublier plus tard reverrouille ;
+- **tant que c'est verrouillé** : aucun exercice de ce chapitre dans Next Move ; dans « À refaire », le bouton devient « Cours d'abord » ; `get_today` donne les verrous à Claude, qui refuse alors de proposer un exercice dessus ;
+- **Anki** : « Envoyer vers Anki » range ces fiches dans `TaekdHub::<matière>::<chapitre>` (étiquettes `claude`, `verrou-cours`). Anki ne renvoie pas les notes carte par carte : c'est la note dans TaekdHub ou avec Claude qui déverrouille.
+
+Côté données : les fiches sont de simples entrées `reviewItems` avec trois champs facultatifs (`chapter`, `origin: "claude"`, `reason`), et le calendrier garde la dernière note (`srs.lastRating`). Il n'y a **aucune migration**. Le connecteur écrit dans la collection synchronisée avec la même règle de révision que les appareils (`lib/mcp-collections.ts`) : personne n'écrase personne.
 
 ### Changer le secret du connecteur
 

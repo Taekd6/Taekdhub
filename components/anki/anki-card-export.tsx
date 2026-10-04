@@ -16,16 +16,21 @@ import { localData, type ReviewItem } from "@/lib/storage";
 export function AnkiCardExport({ reviewItems, saveReviewItems, platform }: { reviewItems: ReviewItem[]; saveReviewItems: (items: ReviewItem[]) => void; platform: AnkiPlatform | null }) {
   const cards = exportableItems(reviewItems);
   const methods = cards.filter((item) => item.kind === "méthode").length;
+  const fromClaude = cards.filter((item) => item.origin === "claude").length;
   const [busy, setBusy] = useState(false);
   const [closeAfter, setCloseAfter] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const mobile = platform === "ios" || platform === "android";
 
-  /** Les notes « À revoir » arrivées dans Anki sont marquées faites ; les méthodes restent (aide-mémoire). Relu sur le disque : le carnet s'écrit en remplacement. */
+  /**
+   * Les notes « À revoir » arrivées dans Anki sont marquées faites ; les méthodes restent (aide-mémoire).
+   * Les fiches du verrou de cours aussi : seule leur note dans TaekdHub (ou avec Claude) déverrouille le chapitre.
+   * Relu sur le disque : le carnet s'écrit en remplacement.
+   */
   function closeInTaekdhub(ids: string[]) {
     const at = new Date().toISOString();
     const current = localData.reviewItems();
-    saveReviewItems(current.map((item) => (ids.includes(item.id) && item.kind !== "méthode" && item.doneAt === null ? { ...item, doneAt: at } : item)));
+    saveReviewItems(current.map((item) => (ids.includes(item.id) && item.kind !== "méthode" && item.origin !== "claude" && item.doneAt === null ? { ...item, doneAt: at } : item)));
   }
 
   async function send() {
@@ -66,8 +71,14 @@ export function AnkiCardExport({ reviewItems, saveReviewItems, platform }: { rev
       ) : (
         <div className="space-y-3">
           <p className="text-[0.9375rem] font-semibold text-ink">
-            {cards.length} fiche{cards.length > 1 ? "s" : ""} prête{cards.length > 1 ? "s" : ""}, dont {methods} méthode{methods > 1 ? "s" : ""}.
+            {cards.length} fiche{cards.length > 1 ? "s" : ""} prête{cards.length > 1 ? "s" : ""}, dont {methods} méthode{methods > 1 ? "s" : ""}
+            {fromClaude > 0 && `, et ${fromClaude} fiche${fromClaude > 1 ? "s" : ""} de cours de Claude`}.
           </p>
+          {fromClaude > 0 && (
+            <p className="t-meta text-2xs">
+              Les fiches de Claude vont dans le paquet de leur chapitre (« {ANKI_DECK_PREFIX}::Matière::Chapitre »). Anki ne dit pas à TaekdHub ce que tu as retrouvé : pour déverrouiller le chapitre, retrouve-les aussi dans la séance « À revoir », ou fais-toi interroger par Claude.
+            </p>
+          )}
           <label className="flex items-start gap-2 text-[0.8125rem] font-semibold text-muted">
             <input type="checkbox" checked={closeAfter} onChange={(event) => setCloseAfter(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--btn-g1)]" />
             Une fois dans Anki, retirer les notes « À revoir » des révisions de TaekdHub (pour ne pas les réviser deux fois). Les méthodes restent dans leur aide-mémoire.

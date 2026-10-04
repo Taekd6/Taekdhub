@@ -1,6 +1,7 @@
 import type { ExerciseAttempt } from "@/lib/attempts";
 import type { AnkiSnapshot } from "@/lib/anki-snapshot";
 import { ankiByChapter } from "@/lib/anki-mapping";
+import { courseLocks } from "@/lib/course-lock";
 import { effectiveSchedule } from "@/lib/spaced-repetition";
 import { dayKey } from "@/lib/study";
 import type { MoveCandidate } from "@/lib/next-move/engine";
@@ -147,6 +148,7 @@ function minutesAfter(sessions: WorkSession[], subject: Subject | null, from: nu
  *   échéance / bloc / erreurs / rappel : du temps dans la matière (et pour
  *     un rappel, le rappel noté dans Mémoire suffit aussi) ;
  *   cartes : au moins une carte de la matière notée depuis le démarrage ;
+ *     verrou de cours (`verrou:<chapitre>`) : le chapitre déverrouillé ;
  *   refaire : une TENTATIVE notée sur l'exercice (ou, pour un exercice
  *     ciblé, sur le chapitre) depuis le démarrage — le temps passé ne
  *     suffit pas : c'est la tentative qui compte ;
@@ -163,7 +165,9 @@ export function resolveOutcomes(history: NextMoveRecord[], sources: OutcomeSourc
     const startDay = dayKey(record.startedAt);
 
     // Refaire et Anki ne se constatent PAS au temps passé : il faut la trace de l'action elle-même.
-    const proofOnly = record.kind === "refaire" || record.kind === "anki";
+    // Verrou de cours : fait seulement quand le chapitre est DÉVERROUILLÉ (fiches retrouvées), jamais au temps passé.
+    const lockTarget = record.kind === "cartes" && record.key.startsWith("verrou:") ? record.key.slice("verrou:".length) : null;
+    const proofOnly = record.kind === "refaire" || record.kind === "anki" || lockTarget !== null;
     let done = !proofOnly && record.minutes > 0 && minutes >= record.minutes * OUTCOME_DONE_RATIO;
     if (!done && record.kind === "refaire") {
       const target = record.key.slice("refaire:".length);
@@ -186,7 +190,9 @@ export function resolveOutcomes(history: NextMoveRecord[], sources: OutcomeSourc
         return entry !== undefined && entry.due === 0;
       });
     }
-    if (!done && record.kind === "cartes") {
+    if (!done && lockTarget !== null) {
+      done = !courseLocks(sources.reviewItems, now).some((lock) => lock.key === lockTarget);
+    } else if (!done && record.kind === "cartes") {
       done = sources.reviewItems.some((item) => {
         if (record.subject && item.subject !== record.subject) return false;
         const last = effectiveSchedule(item).lastReviewedAt;

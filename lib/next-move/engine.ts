@@ -4,6 +4,7 @@ import { ANKI_DUE_STALE_HOURS, latestDueInfo, snapshotAgeHours, type AnkiSnapsho
 import { EXERCISE_LEVEL_LABEL, type ExerciseAttempt } from "@/lib/attempts";
 import { buildDiagnosticContext, type DiagnosticContext } from "@/lib/diagnostic-context";
 import { FINDING_LABEL, mainFinding, type FindingKind } from "@/lib/diagnostic";
+import { courseLocks, isLockCard, lockSentence, type CourseLock } from "@/lib/course-lock";
 import { bestProgrammeMatch } from "@/lib/programme";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 import { exerciseRequest, levelToRequest, transferRequest, varietyWarning } from "@/lib/exercise-quality";
@@ -110,6 +111,8 @@ export interface MoveCandidate {
   score: number;
   /** Demande d'exercice à copier pour Claude (lib/exercise-quality.ts), quand l'action consiste à en trouver un. */
   request?: string;
+  /** Chapitre du programme visé par un exercice — ce que le verrou de cours (lib/course-lock.ts) compare. */
+  chapterId?: string;
 }
 
 export type StepKind = "move" | "pause";
@@ -233,6 +236,10 @@ const ANKI_DUE_PER_5 = 1;
 const ANKI_DUE_MAX = 30;
 /** Minutes par carte Anki — estimation grossière, affichée comme telle. */
 const MINUTES_PER_ANKI_CARD = 0.25;
+/** Verrou de cours : passe devant presque tout, sauf une échéance urgente. */
+const LOCK_BASE = 45;
+const LOCK_PER_CARD = 5;
+const LOCK_MAX = 70;
 /** Une échéance qui pèse au moins autant est « urgente » : le mode repos ne la masque pas. */
 const URGENT_DEADLINE_POINTS = 80;
 /** Fatigue forte : énergie ≤ 2 ET moins de 6 h de sommeil. */
@@ -593,7 +600,8 @@ function recallCandidates(input: NextMoveInput): MoveCandidate[] {
 }
 
 function cardCandidates(input: NextMoveInput): MoveCandidate[] {
-  const due = dueReviewItems(input.reviewItems, input.now);
+  // Les fiches du verrou de cours ont leur propre proposition (`lockCandidates`).
+  const due = dueReviewItems(input.reviewItems, input.now).filter((item) => !isLockCard(item));
   const bySubject = new Map<Subject, number>();
   for (const item of due) bySubject.set(item.subject, (bySubject.get(item.subject) ?? 0) + 1);
   const out: MoveCandidate[] = [];
@@ -737,6 +745,7 @@ function retryCandidates(input: NextMoveInput, context: DiagnosticContext): Move
       resource: { label: "À refaire", href: "/annales" },
       terms,
       score: 0,
+      ...(exercise.chapterId ? { chapterId: exercise.chapterId } : {}),
     });
   }
   return out;
@@ -778,6 +787,7 @@ function transferCandidates(input: NextMoveInput, context: DiagnosticContext): M
         terms,
         score: 0,
         request: transferRequest(check.exercise, check.analysis?.tool || null),
+        ...(check.exercise.chapterId ? { chapterId: check.exercise.chapterId } : {}),
       };
     });
 }
@@ -834,6 +844,7 @@ function diagnosticCandidates(input: NextMoveInput, context: DiagnosticContext):
       terms,
       score: 0,
       ...(target ? { request: exerciseRequest({ subject: chapter.subject, chapter: chapter.title, level: target.level }) } : {}),
+      chapterId: chapter.id,
     });
   }
   return out;
@@ -1113,8 +1124,76 @@ export function rankCandidates(input: NextMoveInput): MoveCandidate[] {
     ...cardCandidates(input),
     ...blockCandidates(input, contexts),
   ];
-  for (const candidate of candidates) applyModifiers(candidate, input, contexts);
-  return absorbBlocks(candidates).sort(compareCandidates);
+  const locked = applyCourseLocks(candidates, input);
+  for (const candidate of locked) applyModifiers(candidate, input, contexts);
+  return absorbBlocks(locked).sort(compareCandidates);
+}
+
+/**
+ * LE VERROU DE COURS (lib/course-lock.ts). Un chapitre dont des fiches de
+ * Claude ne sont pas encore retrouvées n'a plus droit à un exercice : les
+ * propositions « refaire » de ce chapitre sont RETIRÉES (pas pénalisées —
+ * une pénalité finit toujours par être dépassée), et remplacées par le
+ * cours : relire le chapitre le jour même, retrouver les fiches dès le
+ * lendemain.
+ */
+function applyCourseLocks(candidates: MoveCandidate[], input: NextMoveInput): MoveCandidate[] {
+  const locks = courseLocks(input.reviewItems, input.now);
+  if (locks.length === 0) return candidates;
+  const kept: MoveCandidate[] = [];
+  const blocked = new Map<string, string[]>();
+  for (const candidate of candidates) {
+    const lock = candidate.kind === "refaire" && candidate.chapterId ? locks.find((entry) => entry.key === candidate.chapterId) : undefined;
+    if (lock) blocked.set(lock.key, [...(blocked.get(lock.key) ?? []), candidate.title]);
+    else kept.push(candidate);
+  }
+  return [...kept, ...locks.map((lock) => lockCandidate(lock, blocked.get(lock.key) ?? []))];
+}
+
+function lockCandidate(lock: CourseLock, blocked: string[]): MoveCandidate {
+  const count = lock.remaining.length;
+  const cards = `${count} fiche${count > 1 ? "s" : ""}`;
+  const terms: ScoreTerm[] = [{ id: "verrou", points: Math.min(LOCK_MAX, LOCK_BASE + LOCK_PER_CARD * count), reason: `Chapitre verrouillé : ${lockSentence(lock)}` }];
+  if (lock.reasons[0]) terms.push({ id: "verrou-raison", points: 0, reason: `Raté : ${lock.reasons[0]}` });
+  if (blocked.length > 0) terms.push({ id: "verrou-bloque", points: 0, reason: `En attente : ${blocked.slice(0, 2).join(", ")}${blocked.length > 2 ? "…" : ""}` });
+  // Fiches toutes créées aujourd'hui : les retrouver tout de suite ne prouverait rien. Aujourd'hui, le cours.
+  if (lock.reviewableToday === 0) {
+    return {
+      key: `verrou:${lock.key}:cours`,
+      kind: "rappel",
+      subject: lock.subject,
+      title: `Reprends ton cours : ${lock.chapter}`,
+      action: "reprendre le cours",
+      instruction: `Relis le chapitre « ${lock.chapter} » dans ton cours, puis lis les ${cards} de Claude jusqu'à pouvoir les réexpliquer sans regarder. Demain, tu les retrouveras de tête.`,
+      problem: `L'exercice a raté sur le cours de « ${lock.chapter} », pas sur l'exercice lui-même.`,
+      doneWhen: "Le cours est relu aujourd'hui ; demain, chaque fiche est retrouvée de tête (« Bien » ou « Facile »).",
+      minMinutes: 15,
+      idealMinutes: 25,
+      maxMinutes: 40,
+      href: timerHref(lock.subject),
+      resource: { label: "Les fiches", href: `/revoir?subject=${encodeURIComponent(lock.subject)}` },
+      terms,
+      score: 0,
+    };
+  }
+  return {
+    key: `verrou:${lock.key}`,
+    kind: "cartes",
+    subject: lock.subject,
+    title: `Cours d'abord : ${lock.chapter}`,
+    action: "retrouver les fiches",
+    instruction: `Cherche chaque réponse de tête avant de la retourner. Une fiche ratée : rouvre ton cours sur ce point, puis note « À revoir ». Le chapitre se déverrouille quand toutes sont notées « Bien » ou « Facile ».`,
+    problem: `Le cours de « ${lock.chapter} » n'est pas encore su : un exercice dessus se ferait avec la correction sous les yeux.`,
+    doneWhen: `Les ${cards} de « ${lock.chapter} » retrouvées de tête — le chapitre est déverrouillé.`,
+    minMinutes: Math.min(5, count * MINUTES_PER_CARD),
+    // Les fiches, plus de quoi rouvrir le cours sur une fiche ratée — pas davantage.
+    idealMinutes: clamp(count * MINUTES_PER_CARD + 10, 10, 25),
+    maxMinutes: clamp(count * MINUTES_PER_CARD + 15, 15, 30),
+    href: `/revoir/session?subject=${encodeURIComponent(lock.subject)}`,
+    resource: { label: "Mon cours au chrono", href: timerHref(lock.subject) },
+    terms,
+    score: 0,
+  };
 }
 
 /**

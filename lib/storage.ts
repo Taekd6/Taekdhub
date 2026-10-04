@@ -423,6 +423,17 @@ export interface ReviewItem {
    * révisions rejoignent la file sans migration.
    */
   srs?: ReviewSchedule;
+  /**
+   * LE VERROU DE COURS (lib/course-lock.ts). Une fiche créée par Claude
+   * après un échec (`origin: "claude"`) porte le chapitre qu'elle verrouille
+   * (`chapter`, titre libre) et ce qui a été raté (`reason`). Tant que les
+   * fiches d'un chapitre ne sont pas retrouvées de tête, TaekdHub ne
+   * propose plus d'exercice sur ce chapitre. Champs absents sur les fiches
+   * de l'élève : rien ne change pour elles.
+   */
+  chapter?: string;
+  origin?: "claude";
+  reason?: string;
 }
 
 /**
@@ -455,6 +466,12 @@ export interface ReviewSchedule {
   lapses: number;
   /** ISO de la dernière note, ou `null`. */
   lastReviewedAt: string | null;
+  /**
+   * La dernière note donnée. Absente pour un calendrier écrit avant ce
+   * champ (on ne la devine pas). Sert de PREUVE au verrou de cours
+   * (lib/course-lock.ts) : « Bien » ou « Facile » = retrouvé de tête.
+   */
+  lastRating?: FsrsRating;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -1018,6 +1035,9 @@ export function normalizeReviewItem(raw: unknown): ReviewItem | null {
     // sans verso ni calendrier doit redonner EXACTEMENT la même entrée.
     ...(answer ? { answer } : {}),
     ...(srs ? { srs } : {}),
+    ...(typeof item.chapter === "string" && item.chapter.trim() ? { chapter: item.chapter.trim() } : {}),
+    ...(item.origin === "claude" ? { origin: "claude" as const } : {}),
+    ...(typeof item.reason === "string" && item.reason.trim() ? { reason: item.reason.trim() } : {}),
   };
 }
 
@@ -1074,6 +1094,7 @@ export function normalizeReviewSchedule(raw: unknown): ReviewSchedule | undefine
     reviews: nonNegativeInteger(raw.reviews) ?? 0,
     lapses,
     lastReviewedAt: isoDate(raw.lastReviewedAt),
+    ...((FSRS_RATINGS as readonly unknown[]).includes(raw.lastRating) ? { lastRating: raw.lastRating as FsrsRating } : {}),
   };
 }
 

@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRightLeft, CheckCircle2, EyeOff, Lightbulb, Plus, RotateCcw } from "lucide-react";
+import { ArrowRightLeft, CheckCircle2, EyeOff, Lightbulb, Lock, Plus, RotateCcw } from "lucide-react";
 import { ChapterSelect } from "@/components/exercises/chapter-select";
 import { CopyRequest } from "@/components/exercises/copy-request";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Section } from "@/components/ui/section";
 import { useAnnales } from "@/hooks/use-annales";
@@ -29,6 +30,7 @@ import {
   type ExerciseLevel,
 } from "@/lib/attempts";
 import { cn } from "@/lib/cn";
+import { courseLocks, lockSentence } from "@/lib/course-lock";
 import { fixableIssues, QUALITY_ISSUE_LABEL, qualityIssues, transferRequest } from "@/lib/exercise-quality";
 import { buildExercises, createRetryAttempt, dueRetries, progressLine, upcomingRetries, type Exercise } from "@/lib/exercises";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
@@ -71,11 +73,14 @@ const RESULT_STYLE: Record<AttemptResult, string> = {
  */
 export function RetryQueue() {
   const params = useSearchParams();
-  const { attempts, saveAttempts, preferences, ready, saveReviewItems } = usePrepahubData();
+  const { attempts, saveAttempts, preferences, ready, saveReviewItems, reviewItems } = usePrepahubData();
   const { logs } = useAnnales();
   const today = dayKey(new Date());
   const exercises = useMemo(() => buildExercises({ annales: logs, attempts, retryDelaysDays: preferences.retryDelaysDays, today }), [logs, attempts, preferences.retryDelaysDays, today]);
   const due = useMemo(() => dueRetries(exercises), [exercises]);
+  // Verrou de cours (lib/course-lock.ts) : un exercice d'un chapitre verrouillé attend que les fiches soient retrouvées.
+  const locks = useMemo(() => courseLocks(reviewItems, new Date()), [reviewItems]);
+  const lockOf = (exercise: Exercise) => (exercise.chapterId ? locks.find((lock) => lock.key === exercise.chapterId) ?? null : null);
   const upcoming = useMemo(() => upcomingRetries(exercises).slice(0, 5), [exercises]);
   const verified = useMemo(() => exercises.filter((exercise) => exercise.status === "vérifié").sort((a, b) => (b.verifiedOn ?? "").localeCompare(a.verifiedOn ?? "")).slice(0, 5), [exercises]);
   const transfers = useMemo(() => transferChecks(exercises, attempts, preferences.retryDelaysDays, today), [exercises, attempts, preferences.retryDelaysDays, today]);
@@ -188,9 +193,23 @@ export function RetryQueue() {
         <>
           {due.length > 0 && (
             <ul className="divide-y divide-line">
-              {due.map((exercise) => (
-                <ExerciseRow key={exercise.key} exercise={exercise} action={<Button size="sm" onClick={() => { setFlash(null); setOpenKey(exercise.key); }}><RotateCcw size={14} aria-hidden /> Refaire</Button>} />
-              ))}
+              {due.map((exercise) => {
+                const lock = lockOf(exercise);
+                return lock ? (
+                  <ExerciseRow
+                    key={exercise.key}
+                    exercise={exercise}
+                    detail={`Verrouillé : ${lockSentence(lock)}.`}
+                    action={
+                      <Link href={`/revoir/session?subject=${encodeURIComponent(lock.subject)}`} className={buttonVariants({ size: "sm", variant: "ghost" })}>
+                        <Lock size={14} aria-hidden /> Cours d&apos;abord
+                      </Link>
+                    }
+                  />
+                ) : (
+                  <ExerciseRow key={exercise.key} exercise={exercise} action={<Button size="sm" onClick={() => { setFlash(null); setOpenKey(exercise.key); }}><RotateCcw size={14} aria-hidden /> Refaire</Button>} />
+                );
+              })}
             </ul>
           )}
           {upcoming.length > 0 && (

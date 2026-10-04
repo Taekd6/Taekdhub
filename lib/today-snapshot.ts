@@ -6,6 +6,7 @@ import { buildDiagnosticContext } from "@/lib/diagnostic-context";
 import { chapterTitle, FINDING_LABEL, mainFinding } from "@/lib/diagnostic";
 import { dueRetries } from "@/lib/exercises";
 import { atRisk } from "@/lib/chapter-memory";
+import { locksForClaude } from "@/lib/course-lock";
 import { ERROR_TYPE_META } from "@/lib/error-log";
 import { topReasons } from "@/lib/next-move/engine";
 import { buildRetroplanning, computeMastery, summarizeMastery } from "@/lib/programme";
@@ -117,6 +118,8 @@ export function buildTodaySnapshot(collections: Record<string, unknown>, annaleR
           termine_quand: move.primary.doneWhen,
         }
       : null,
+    // EN PREMIER : un chapitre verrouillé interdit tout exercice dessus (lib/course-lock.ts).
+    verrous: locksForClaude(reviewItems, now),
     statut_du_jour: move.status === "repos" ? "assez pour aujourd'hui (capacité déclarée atteinte)" : move.status,
     point_faible_principal: diagnostic.ranked.slice(0, 3).map((diagnosis) => {
       const finding = mainFinding(diagnosis)!;

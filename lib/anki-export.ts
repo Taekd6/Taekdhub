@@ -28,7 +28,9 @@ export function exportableItems(items: ReviewItem[]): ReviewItem[] {
   return items.filter((item) => item.answer?.trim() && (item.kind === "méthode" || item.doneAt === null));
 }
 
-export function deckFor(item: Pick<ReviewItem, "subject">): string {
+/** Les fiches du verrou de cours (Claude) vont dans le paquet de leur chapitre : `TaekdHub::Mathématiques::Réduction`. */
+export function deckFor(item: Pick<ReviewItem, "subject" | "chapter" | "origin">): string {
+  if (item.origin === "claude" && item.chapter) return `${ANKI_DECK_PREFIX}::${item.subject}::${item.chapter.replace(/::/g, " ")}`;
   return `${ANKI_DECK_PREFIX}::${item.subject}`;
 }
 
@@ -61,7 +63,7 @@ export interface AnkiCard {
 }
 
 export function cardFromItem(item: ReviewItem): AnkiCard {
-  return { id: item.id, front: item.text, back: item.answer!.trim(), deck: deckFor(item), tags: [ANKI_TAG, item.kind === "méthode" ? "méthode" : "à-revoir"] };
+  return { id: item.id, front: item.text, back: item.answer!.trim(), deck: deckFor(item), tags: [ANKI_TAG, item.kind === "méthode" ? "méthode" : "à-revoir", ...(item.origin === "claude" ? ["claude", "verrou-cours"] : [])] };
 }
 
 /** Les fiches de TaekdHub qui ont un verso. */
