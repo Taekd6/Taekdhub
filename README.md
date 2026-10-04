@@ -48,6 +48,16 @@ Mise en service (une fois) :
 1. Exécuter `supabase/migrations/0007_exercise_logs_owner.sql` (SQL Editor). Elle ajoute `user_id` à `exercise_logs`, rattache les lignes existantes au compte s'il n'y en a qu'un, et pose la RLS : l'élève **lit et supprime** ses seules lignes ; seul le connecteur (clé secrète) écrit.
 2. Vercel → variables **serveur** (jamais `NEXT_PUBLIC_*`) : `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `MCP_SECRET` ; facultatif : `MCP_USER_ID` (identifiant du compte — indispensable seulement s'il y a plusieurs comptes) et `MCP_TIMEZONE` (`Europe/Paris` par défaut).
 
+### Changer le secret du connecteur
+
+Le secret fait partie de l'URL du connecteur : il apparaît dans les journaux de Vercel. Change-le s'il a pu être vu (capture d'écran, journal partagé), ou par précaution chaque trimestre :
+
+1. Générer un nouveau secret : `openssl rand -hex 32` (ou un gestionnaire de mots de passe, 40 caractères ou plus).
+2. Vercel → Settings → Environment Variables → `MCP_SECRET` → nouvelle valeur, puis **Redeploy**.
+3. Claude → Réglages → Connecteurs → TaekdHub : remplacer l'URL par `https://taekdhub.vercel.app/api/mcp/<nouveau secret>`.
+
+L'ancien secret cesse de fonctionner dès que le redéploiement est en ligne.
+
 ## Carte du programme, khôlle, épreuve blanche
 
 Trois outils atteints depuis l'écran **Matières** (rangée de boutons ronds).
@@ -202,7 +212,7 @@ Puis lancer `claude` dans le dossier. Le dépôt GitHub est la source complète 
 pnpm install
 ```
 
-Node.js 20+ recommandé (testé avec Node 24, pnpm 11).
+Node.js 20+ recommandé (testé avec Node 22 et 24). La version de pnpm est épinglée dans `package.json` (`packageManager`) : pnpm 10 l'utilise directement, pnpm 11 et suivants basculent tout seuls sur elle. Ainsi le PC, Vercel et Claude Code utilisent la même version.
 
 ## Lancement local
 
@@ -216,7 +226,7 @@ Aucune variable d'environnement n'est requise pour utiliser l'app : les données
 
 ## Variables d'environnement (optionnel)
 
-Copier `.env.example` vers `.env.local` pour activer la synchronisation Supabase :
+Copier `.env.example` vers `.env.local` : chaque variable y est commentée. Les deux premières activent la synchronisation Supabase :
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
