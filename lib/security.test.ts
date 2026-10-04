@@ -59,7 +59,7 @@ describe("connecteur MCP : la clé secrète contourne la RLS, donc chaque requê
     const inserts = route.match(/\.insert\(\{[^}]*\}\)/g) ?? [];
     expect(inserts.length).toBeGreaterThan(0);
     for (const insert of inserts) expect(insert).toContain("user_id");
-    expect(route).toMatch(/if \(!secret \|\| key !== secret\)/);
+    expect(route).toMatch(/if \(!isMcpKeyValid\(key, secret\)\)/);
   });
 
   it("la clé secrète n'est jamais exposée au navigateur", () => {

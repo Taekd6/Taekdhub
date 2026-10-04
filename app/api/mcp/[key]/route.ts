@@ -2,6 +2,7 @@ import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { buildTodaySnapshot } from "@/lib/today-snapshot";
+import { isMcpKeyValid } from "@/lib/mcp-auth";
 
 /**
  * CONNECTEUR MCP — la porte d'entrée de Claude dans TaekdHub.
@@ -15,6 +16,10 @@ import { buildTodaySnapshot } from "@/lib/today-snapshot";
  *
  * Les dates (« aujourd'hui », « hier ») sont celles de l'élève, pas celles
  * du serveur (UTC sur Vercel) : `MCP_TIMEZONE`, Europe/Paris par défaut.
+ *
+ * DÉPENDANCES. `@modelcontextprotocol/server` (package.json) n'est importé
+ * nulle part directement, mais `mcp-handler` l'exige comme dépendance
+ * « peer » : ne pas le retirer.
  */
 process.env.TZ = process.env.MCP_TIMEZONE || "Europe/Paris";
 
@@ -133,7 +138,7 @@ async function guarded(req: Request) {
   const secret = process.env.MCP_SECRET;
   // Clé dans le chemin : /api/mcp/<clé>
   const key = new URL(req.url).pathname.split("/").filter(Boolean).pop();
-  if (!secret || key !== secret) {
+  if (!isMcpKeyValid(key, secret)) {
     return new Response("Unauthorized", { status: 401 });
   }
   return mcp(req);
