@@ -103,7 +103,8 @@ export function ReviewSession() {
   useEffect(() => {
     if (phase !== "run") return;
     if (index >= queue.length) setPhase("end");
-    else if (!current || current.doneAt !== null) setIndex((value) => value + 1);
+    // Les fiches du verrou de cours restent, même cochées : seule la note les retire (lib/course-lock.ts).
+    else if (!current || (current.doneAt !== null && current.origin !== "claude")) setIndex((value) => value + 1);
   }, [phase, index, queue.length, current]);
 
   // Le focus suit la carte : un bouton de note resté focalisé recevrait
