@@ -47,7 +47,7 @@ export function SegmentedControl<T extends string | number>({
             onClick={() => onChange(option.value)}
             aria-pressed={active}
             className={cn(
-              "press min-w-0 flex-1 truncate rounded-full font-bold sm:flex-none",
+              "press min-w-0 flex-1 truncate rounded-full font-semibold sm:flex-none",
               /* La cible tactile est garantie par la hauteur (40 px sous
                  `lg`), pas par la largeur : le rembourrage peut se resserrer
                  sur un téléphone sans rogner « 60 min ». */

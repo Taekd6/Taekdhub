@@ -223,7 +223,7 @@ export function LineChart({
                   style={{ "--i": 4 } as CSSProperties}
                 />
                 <Tip index={index} count={points.length}>
-                  <span className="font-bold tabular">{formatValue(point.value)}</span>
+                  <span className="font-semibold tabular">{formatValue(point.value)}</span>
                   <span className="text-muted"> · {point.label}</span>
                 </Tip>
               </span>
@@ -312,9 +312,9 @@ export function PairedBars({
               />
               <Tip index={index} count={bars.length}>
                 <span className="text-muted">prévu </span>
-                <span className="font-bold tabular">{bar.planned === null ? "—" : formatValue(bar.planned)}</span>
+                <span className="font-semibold tabular">{bar.planned === null ? "—" : formatValue(bar.planned)}</span>
                 <span className="text-muted"> · fait </span>
-                <span className="font-bold tabular">{formatValue(bar.actual)}</span>
+                <span className="font-semibold tabular">{formatValue(bar.actual)}</span>
               </Tip>
             </div>
           ))}
@@ -406,7 +406,7 @@ export function VolumeBars({
         {showGoal && (
           <div aria-hidden className="pointer-events-none absolute inset-x-0 z-[1] flex items-center gap-2" style={{ bottom: `${((goal as number) / max) * 100}%` }}>
             <span className="h-0 flex-1 border-t border-dashed border-[rgb(var(--accent-ink-rgb)/0.7)]" />
-            <span className="tabular w-10 translate-y-1/2 text-2xs font-bold text-accent">{formatValue(goal as number)}</span>
+            <span className="tabular w-10 translate-y-1/2 text-2xs font-semibold text-accent">{formatValue(goal as number)}</span>
           </div>
         )}
         <div aria-hidden className={cn("flex h-48 items-end border-b border-line pr-12", dense ? "gap-[3px]" : "gap-2 sm:gap-4")}>
@@ -426,7 +426,7 @@ export function VolumeBars({
                   style={{ height: bar.minutes > 0 ? `${Math.max(2, (bar.minutes / max) * 100)}%` : "1px", "--i": index } as CSSProperties}
                 />
                 <Tip index={index} count={bars.length}>
-                  <span className="font-bold tabular">{formatValue(bar.minutes)}</span>
+                  <span className="font-semibold tabular">{formatValue(bar.minutes)}</span>
                   <span className="text-muted"> · {bar.title}</span>
                 </Tip>
               </div>
@@ -541,7 +541,7 @@ export function StackedColumns({
       </div>
       <div className="mt-2 flex gap-2 sm:gap-3" aria-hidden>
         {columns.map((column) => (
-          <span key={column.id} className={cn("min-w-0 flex-1 text-center text-2xs font-bold", column.highlight ? "text-ink" : "text-subtle")}>
+          <span key={column.id} className={cn("min-w-0 flex-1 text-center text-2xs font-semibold", column.highlight ? "text-ink" : "text-subtle")}>
             <span className={cn("inline-grid h-6 min-w-6 place-items-center rounded-full px-1", column.highlight && "chip-on")}>{column.label}</span>
           </span>
         ))}
@@ -695,7 +695,7 @@ export function AreaChart({
               <span className="block h-2 w-2 scale-0 rounded-full bg-[var(--g1)] transition-transform duration-200 group-hover:scale-100" />
             )}
             <Tip index={point.index} count={n}>
-              <span className="font-bold tabular">{formatValue(point.value)}</span>
+              <span className="font-semibold tabular">{formatValue(point.value)}</span>
               <span className="text-muted"> · {point.title}</span>
             </Tip>
           </span>
@@ -705,7 +705,7 @@ export function AreaChart({
         {points.map((point, index) => (
           <span
             key={index}
-            className={cn("text-center text-xs font-bold", point.highlight ? "text-ink" : point.value === null ? "text-subtle/50" : "text-subtle/80")}
+            className={cn("text-center text-xs font-semibold", point.highlight ? "text-ink" : point.value === null ? "text-subtle/50" : "text-subtle/80")}
           >
             {point.label}
           </span>

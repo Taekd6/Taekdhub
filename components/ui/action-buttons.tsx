@@ -43,7 +43,7 @@ export function ActionButtons({ items, className }: { items: ActionItem[]; class
             >
               <Icon size={24} strokeWidth={2.2} />
             </span>
-            <span className="text-[0.8125rem] font-bold text-ink">{item.label}</span>
+            <span className="text-[0.8125rem] font-semibold text-ink">{item.label}</span>
           </>
         );
         const classes = "group flex min-w-0 flex-col items-center gap-2 rounded-2xl px-1 outline-offset-4";

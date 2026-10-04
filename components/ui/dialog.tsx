@@ -47,7 +47,7 @@ export function Dialog({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center sm:p-6">
-      <div onClick={dismissible ? onClose : undefined} className="animate-fade-in absolute inset-0 bg-black/55" />
+      <div onClick={dismissible ? onClose : undefined} className="animate-fade-in absolute inset-0 bg-black/30 backdrop-blur-[6px]" />
       <div
         ref={panel}
         tabIndex={-1}

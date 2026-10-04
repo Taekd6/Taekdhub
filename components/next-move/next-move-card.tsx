@@ -143,13 +143,13 @@ export function NextMoveCard({
           TaekdHub te dira quoi faire dès qu&apos;il aura de quoi juger : un chapitre appris, une échéance, quelques erreurs notées ou un objectif par matière.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link href="/memoire" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+          <Link href="/memoire" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
             Noter un chapitre
           </Link>
-          <Link href="/echeances" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+          <Link href="/echeances" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
             Ajouter une échéance
           </Link>
-          <Link href="/settings#budgets" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+          <Link href="/settings#budgets" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
             Fixer mes objectifs
           </Link>
         </div>
@@ -170,7 +170,7 @@ export function NextMoveCard({
           Assez pour aujourd&apos;hui.
         </h2>
         <p className="t-meta mt-1 max-w-[56ch]">{plan.context[plan.context.length - 1]}. Rien d&apos;urgent n&apos;attend : t&apos;arrêter maintenant fait partie du travail.</p>
-        <button type="button" onClick={() => setForceShow(true)} className="mt-4 inline-flex min-h-10 items-center gap-1.5 text-sm font-bold text-accent hover:underline max-lg:min-h-11">
+        <button type="button" onClick={() => setForceShow(true)} className="mt-4 inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-accent hover:underline max-lg:min-h-11">
           Voir quand même la proposition <ArrowRight size={14} aria-hidden />
         </button>
       </section>
@@ -182,16 +182,16 @@ export function NextMoveCard({
       {/* ── LE MOUVEMENT ── */}
       {shown ? (
         <div className="grad-card tone-brand sheen p-5 sm:p-6">
-          <p className="inline-flex items-center gap-1.5 text-[0.75rem] font-black uppercase tracking-[0.08em] opacity-85">
+          <p className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold opacity-90">
             <Target size={14} aria-hidden /> {inProgress ? "En cours" : calm ? "Rien ne presse — si tu veux avancer" : showAlternative ? "Autre idée" : "Ton prochain mouvement"}
           </p>
-          {shown.subject && shown.title !== shown.subject && <p className="mt-3 text-[0.9375rem] font-extrabold opacity-90">{shown.subject}</p>}
+          {shown.subject && shown.title !== shown.subject && <p className="mt-3 text-[0.9375rem] font-semibold opacity-90">{shown.subject}</p>}
           <h2 id="next-move-titre" className={cn("t-heading break-words", shown.subject && shown.title !== shown.subject ? "mt-0.5" : "mt-3")}>
             {shown.title}
           </h2>
           <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
             <span className="t-stat tabular">{formatMinutesSpan(shownMinutes)}</span>
-            <span className="text-[0.9375rem] font-extrabold opacity-85">· {shown.action}</span>
+            <span className="text-[0.9375rem] font-semibold opacity-85">· {shown.action}</span>
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-2">
             {inProgress && running ? (
@@ -199,14 +199,14 @@ export function NextMoveCard({
                 <button
                   type="button"
                   onClick={() => saveHistory(markDone(history, running.key, new Date()))}
-                  className="press inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-6 text-[0.9375rem] font-black text-[#0b0b14] hover:brightness-95"
+                  className="press inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-6 text-[0.9375rem] font-bold text-[#0b0b14] hover:brightness-95"
                 >
                   <Check size={16} aria-hidden /> C&apos;est fait
                 </button>
                 <button
                   type="button"
                   onClick={() => shown && router.push(shown.href)}
-                  className="press inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white/15 px-4 text-sm font-extrabold hover:bg-white/25"
+                  className="press inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white/15 px-4 text-sm font-semibold hover:bg-white/25"
                 >
                   Reprendre <ArrowRight size={14} aria-hidden />
                 </button>
@@ -215,7 +215,7 @@ export function NextMoveCard({
               <button
                 type="button"
                 onClick={start}
-                className="press inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-6 text-[0.9375rem] font-black text-[#0b0b14] hover:brightness-95"
+                className="press inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-6 text-[0.9375rem] font-bold text-[#0b0b14] hover:brightness-95"
               >
                 Commencer <ArrowRight size={16} aria-hidden />
               </button>
@@ -224,7 +224,7 @@ export function NextMoveCard({
               <button
                 type="button"
                 onClick={() => setShowAlternative((value) => !value)}
-                className="press inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white/15 px-4 text-sm font-extrabold hover:bg-white/25"
+                className="press inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white/15 px-4 text-sm font-semibold hover:bg-white/25"
               >
                 <Shuffle size={14} aria-hidden /> {showAlternative ? "Revenir" : "Autre idée"}
               </button>
@@ -247,11 +247,11 @@ export function NextMoveCard({
         {/* ── EN COURS ── */}
         {running && !inProgress && (
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-inset px-4 py-3">
-            <p className="text-[0.875rem] font-bold text-ink">
+            <p className="text-[0.875rem] font-semibold text-ink">
               En cours : {running.title}
               <span className="t-meta"> · {MOVE_KIND_LABEL[running.kind]}</span>
             </p>
-            <button type="button" onClick={() => saveHistory(markDone(history, running.key, new Date()))} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-bold text-accent hover:underline">
+            <button type="button" onClick={() => saveHistory(markDone(history, running.key, new Date()))} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-accent hover:underline">
               <Check size={15} aria-hidden /> C&apos;est fait
             </button>
           </div>
@@ -273,11 +273,11 @@ export function NextMoveCard({
             {shown.request && <CopyRequest text={shown.request} className="mt-2" />}
             <dl className="mt-3 grid gap-1.5 text-[0.8125rem]">
               <div className="flex gap-2">
-                <dt className="shrink-0 font-bold text-subtle">Corrige :</dt>
+                <dt className="shrink-0 font-semibold text-subtle">Corrige :</dt>
                 <dd className="min-w-0 font-semibold text-ink">{shown.problem}</dd>
               </div>
               <div className="flex gap-2">
-                <dt className="shrink-0 font-bold text-subtle">Terminé quand :</dt>
+                <dt className="shrink-0 font-semibold text-subtle">Terminé quand :</dt>
                 <dd className="min-w-0 font-semibold text-ink">{shown.doneWhen}</dd>
               </div>
             </dl>
@@ -315,7 +315,7 @@ export function NextMoveCard({
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           {shown ? (
-            <button type="button" onClick={skip} className="inline-flex min-h-10 items-center text-sm font-bold text-muted hover:text-ink max-lg:min-h-11">
+            <button type="button" onClick={skip} className="inline-flex min-h-10 items-center text-sm font-semibold text-muted hover:text-ink max-lg:min-h-11">
               Pas maintenant
             </button>
           ) : (
@@ -326,7 +326,7 @@ export function NextMoveCard({
             onClick={() => setDetails((value) => !value)}
             aria-expanded={details}
             aria-controls="next-move-details"
-            className="inline-flex min-h-10 items-center gap-1 text-sm font-bold text-accent hover:underline max-lg:min-h-11"
+            className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-accent hover:underline max-lg:min-h-11"
           >
             Détails <ChevronDown size={15} aria-hidden className={cn("transition-transform", details && "rotate-180")} />
           </button>
@@ -342,7 +342,7 @@ export function NextMoveCard({
                   {shown.terms.map((term) => (
                     <li key={`${term.id}-${term.reason}`} className="flex items-baseline justify-between gap-3 text-[0.875rem]">
                       <span className="min-w-0 text-ink">{term.reason}</span>
-                      <span className={cn("tabular shrink-0 font-bold", term.points > 0 ? "text-ink" : term.points < 0 ? "text-rose-300" : "text-subtle")}>
+                      <span className={cn("tabular shrink-0 font-semibold", term.points > 0 ? "text-ink" : term.points < 0 ? "text-rose-300" : "text-subtle")}>
                         {term.points === 0 ? "info" : signed(term.points)}
                       </span>
                     </li>
@@ -363,7 +363,7 @@ export function NextMoveCard({
                           {candidate.title}
                           <span className="text-subtle"> · {candidate.action}</span>
                         </span>
-                        <span className="tabular shrink-0 font-bold text-subtle">{candidate.score}</span>
+                        <span className="tabular shrink-0 font-semibold text-subtle">{candidate.score}</span>
                       </li>
                     ))}
                 </ul>

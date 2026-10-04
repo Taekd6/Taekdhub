@@ -99,7 +99,7 @@ export function ChapterNav({
                 >
                   {item.icon}
                 </span>
-                <span className={cn("relative text-xs leading-tight", current ? "font-bold" : "font-medium")}>
+                <span className={cn("relative text-xs leading-tight", current ? "font-semibold" : "font-medium")}>
                   {item.label}
                   <span
                     aria-hidden

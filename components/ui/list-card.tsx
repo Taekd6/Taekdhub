@@ -22,11 +22,11 @@ export function BlockHeader({
 }) {
   return (
     <div className={cn("flex items-baseline justify-between gap-4", className)}>
-      <h2 id={id} className="text-xl font-black tracking-[-0.02em] text-ink">
+      <h2 id={id} className="text-xl font-bold tracking-[-0.02em] text-ink">
         {title}
       </h2>
       {href && (
-        <Link href={href} className="inline-flex min-h-10 shrink-0 items-center text-sm font-bold text-accent hover:underline max-lg:min-h-11">
+        <Link href={href} className="inline-flex min-h-10 shrink-0 items-center text-sm font-semibold text-accent hover:underline max-lg:min-h-11">
           {hrefLabel}
         </Link>
       )}
@@ -83,11 +83,11 @@ export function DateBadge({ date, tone = 0 }: { date: Date | null; tone?: number
     >
       {date ? (
         <span className="flex flex-col items-center leading-none">
-          <span className="text-base font-black tabular">{date.getDate()}</span>
-          <span className="mt-0.5 text-[0.5625rem] font-extrabold opacity-85">{MONTHS_SHORT[date.getMonth()]}</span>
+          <span className="text-base font-bold tabular">{date.getDate()}</span>
+          <span className="mt-0.5 text-[0.5625rem] font-semibold opacity-85">{MONTHS_SHORT[date.getMonth()]}</span>
         </span>
       ) : (
-        <span className="text-base font-black">—</span>
+        <span className="text-base font-bold">—</span>
       )}
     </span>
   );
@@ -119,10 +119,10 @@ export function ListRow({
     <>
       {leading}
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[0.9375rem] font-extrabold text-ink">{title}</span>
-        {sub && <span className={cn("block truncate text-[0.8125rem] font-bold", subClassName ?? "text-subtle")}>{sub}</span>}
+        <span className="block truncate text-[0.9375rem] font-semibold text-ink">{title}</span>
+        {sub && <span className={cn("block truncate text-[0.8125rem] font-semibold", subClassName ?? "text-subtle")}>{sub}</span>}
       </span>
-      {value !== undefined && <span className="shrink-0 text-[0.9375rem] font-black tabular text-ink">{value}</span>}
+      {value !== undefined && <span className="shrink-0 text-[0.9375rem] font-bold tabular text-ink">{value}</span>}
     </>
   );
   const classes = "row-slide flex min-h-[4.25rem] items-center gap-3 rounded-[1.125rem] px-3 py-3";

@@ -33,7 +33,7 @@ function Rows({ items }: { items: BriefingItem[] }) {
           <Link href={item.href} className="row-hover -mx-2 flex min-h-[3.25rem] items-center gap-3 rounded-xl px-2 py-3">
             <span aria-hidden className={cn("h-2.5 w-2.5 shrink-0 rounded-full", DOT[item.tone])} />
             <span className="min-w-0 flex-1">
-              <span className="block break-words text-[0.9375rem] font-extrabold text-ink">{item.title}</span>
+              <span className="block break-words text-[0.9375rem] font-semibold text-ink">{item.title}</span>
               <span className="t-meta block text-[0.8125rem]">{item.detail}</span>
             </span>
             <ChevronRight size={16} aria-hidden className="shrink-0 text-subtle" />
@@ -138,22 +138,22 @@ export function BriefingScreen() {
       {/* ── MAINTENANT ── */}
       {move ? (
         <section aria-labelledby="point-maintenant" className="grad-card tone-brand sheen reveal p-5 sm:p-6" style={{ "--i": 1 } as CSSProperties}>
-          <p className="inline-flex items-center gap-1.5 text-[0.75rem] font-black uppercase tracking-[0.08em] opacity-85">
+          <p className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold opacity-90">
             <Target size={14} aria-hidden /> Maintenant
           </p>
-          {move.subject && move.title !== move.subject && <p className="mt-3 text-[0.9375rem] font-extrabold opacity-90">{move.subject}</p>}
+          {move.subject && move.title !== move.subject && <p className="mt-3 text-[0.9375rem] font-semibold opacity-90">{move.subject}</p>}
           <h2 id="point-maintenant" className={cn("t-heading break-words", move.subject && move.title !== move.subject ? "mt-0.5" : "mt-3")}>
             {move.title}
           </h2>
           <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
             <span className="t-stat tabular">{formatMinutesSpan(minutes)}</span>
-            <span className="text-[0.9375rem] font-extrabold opacity-85">· {move.action}</span>
+            <span className="text-[0.9375rem] font-semibold opacity-85">· {move.action}</span>
           </p>
           <p className="mt-2 text-[0.875rem] font-semibold opacity-90">{topReasons(move, 2).join(" · ")}</p>
           <button
             type="button"
             onClick={start}
-            className="press mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-6 text-[0.9375rem] font-black text-[#0b0b14] hover:brightness-95"
+            className="press mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-6 text-[0.9375rem] font-bold text-[#0b0b14] hover:brightness-95"
           >
             Commencer <ArrowRight size={16} aria-hidden />
           </button>
@@ -173,7 +173,7 @@ export function BriefingScreen() {
         <Button variant="secondary" size="lg" className="w-full sm:w-auto" onClick={() => router.replace("/dashboard")}>
           Aller à l&apos;accueil
         </Button>
-        <button type="button" onClick={neverAgain} className="inline-flex min-h-10 items-center text-[0.8125rem] font-bold text-muted hover:text-ink max-lg:min-h-11">
+        <button type="button" onClick={neverAgain} className="inline-flex min-h-10 items-center text-[0.8125rem] font-semibold text-muted hover:text-ink max-lg:min-h-11">
           Ne plus l&apos;afficher à l&apos;ouverture
         </button>
       </div>
