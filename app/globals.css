@@ -1274,6 +1274,20 @@
     }
   }
 
+  /* TUILE SOMBRE de la vitrine (app/page.tsx) — le noir d'Apple, avec la
+     lueur de la palette en coin : le seul fond sombre de la page, réservé
+     à ce qui doit trancher (le verrou de cours, l'installation). */
+  .landing-dark {
+    position: relative;
+    isolation: isolate;
+    color: #f5f5f7;
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgb(var(--g1-rgb) / 0.45), transparent 55%),
+      radial-gradient(90% 80% at 0% 100%, rgb(var(--g2-rgb) / 0.3), transparent 60%),
+      #1d1d1f;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 30px 60px -30px rgb(30 30 60 / 0.5);
+  }
+
   /* BANNIÈRE D'ALERTE (components/alerts/alert-center.tsx) — elle descend
      du haut comme une notification d'iOS : départ au-dessus de l'écran,
      léger dépassement, arrivée posée ; la suivante de la pile 90 ms après.
