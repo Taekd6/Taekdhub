@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeAnnaleLog } from "@/lib/annales";
 import { cardFromItem, deckFor } from "@/lib/anki-export";
-import { addLockCards, courseLocks, isRecalled, lockFor, lockKey, LOCK_CARDS_MAX, type LockCardInput } from "@/lib/course-lock";
+import { addLockCards, courseLocks, isRecalled, lockFor, lockKey, locksForClaude, LOCK_CARDS_MAX, rateLockCards, type LockCardInput } from "@/lib/course-lock";
 import { computeNextMove, rankCandidates, type NextMoveInput } from "@/lib/next-move/engine";
 import { resolveOutcomes } from "@/lib/next-move/history";
 import { dueReviewItems, rateReviewItem } from "@/lib/spaced-repetition";
@@ -173,5 +173,33 @@ describe("Anki — les fiches de Claude vont dans le paquet du chapitre", () => 
     expect(deckFor(item)).toBe("TaekdHub::Mathématiques::Réduction");
     expect(cardFromItem(item).tags).toEqual(expect.arrayContaining(["taekdhub", "claude", "verrou-cours"]));
     expect(deckFor({ subject: "Physique" })).toBe("TaekdHub::Physique");
+  });
+});
+
+describe("Claude interroge dans la conversation — rateLockCards et locksForClaude", () => {
+  it("get_today montre les fiches, leur verso, et lesquelles sont interrogeables", () => {
+    const items = locked();
+    const [today] = locksForClaude(items, CREATED);
+    expect(today).toMatchObject({ matiere: "Mathématiques", chapitre: "Réduction", fiches_restantes: 2 });
+    expect(today.fiches.every((fiche) => !fiche.interrogeable)).toBe(true);
+    expect(locksForClaude(items, NEXT_DAY)[0].fiches.every((fiche) => fiche.interrogeable && fiche.verso.length > 0)).toBe(true);
+  });
+
+  it("noter toutes les fiches « good » le lendemain déverrouille, et le dit", () => {
+    const items = locked();
+    const partial = rateLockCards(items, [{ id: items[0].id, note: "good" }], NEXT_DAY);
+    expect(partial.ok && partial.unlocked).toEqual([]);
+    expect(partial.ok && partial.stillLocked[0]).toContain("1 fiche de cours");
+    const all = rateLockCards(items, items.map((item) => ({ id: item.id, note: "good" as const })), NEXT_DAY);
+    expect(all.ok && all.unlocked).toEqual(["Réduction"]);
+    expect(all.ok && courseLocks(all.items, NEXT_DAY)).toEqual([]);
+  });
+
+  it("refuse une fiche inconnue ou une fiche de l'élève (le connecteur ne touche qu'aux fiches du verrou)", () => {
+    const own = normalizeReviewItem({ id: "perso", subject: "Physique", text: "Revoir Gauss", kind: "à revoir", createdAt: CREATED.toISOString(), doneAt: null })!;
+    const items = [...locked(), own];
+    expect(rateLockCards(items, [{ id: "inconnue", note: "good" }], NEXT_DAY).ok).toBe(false);
+    expect(rateLockCards(items, [{ id: "perso", note: "good" }], NEXT_DAY).ok).toBe(false);
+    expect(rateLockCards(items, [], NEXT_DAY).ok).toBe(false);
   });
 });

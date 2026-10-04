@@ -62,6 +62,15 @@ describe("connecteur MCP : la clé secrète contourne la RLS, donc chaque requê
     expect(route).toMatch(/if \(!isMcpKeyValid\(key, secret\)\)/);
   });
 
+  it("chaque modification de user_collections est filtrée par user_id et par révision", () => {
+    const updates = route.match(/from\("user_collections"\)\.update\([^;\n]*/g) ?? [];
+    expect(updates.length).toBeGreaterThan(0);
+    for (const update of updates) {
+      expect(update).toContain('.eq("user_id", user_id)');
+      expect(update).toContain('.eq("revision", baseRevision)');
+    }
+  });
+
   it("la clé secrète n'est jamais exposée au navigateur", () => {
     expect(route).not.toContain("NEXT_PUBLIC_SUPABASE_SECRET");
     expect(read("lib/supabase/client.ts")).not.toMatch(/SECRET|service_role\b(?!`)/);

@@ -1,7 +1,7 @@
 import { foldText, toSubject } from "@/lib/annales";
 import { bestProgrammeMatch } from "@/lib/programme";
 import { sanitizeReviewAnswer, sanitizeReviewText } from "@/lib/review-items";
-import { isLockRecalled } from "@/lib/spaced-repetition";
+import { isLockRecalled, rateReviewItem } from "@/lib/spaced-repetition";
 import { dayKey } from "@/lib/study";
 import type { ReviewItem } from "@/lib/storage";
 import type { Subject } from "@/lib/supabase/types";
@@ -158,4 +158,50 @@ export function addLockCards(items: ReviewItem[], inputs: LockCardInput[], now: 
     added.push(item);
   }
   return { ok: true, items: [...items, ...added], added, skipped: fresh.length - added.length };
+}
+
+export type CardNote = "again" | "hard" | "good" | "easy";
+
+/**
+ * Claude interroge l'élève dans la conversation (recto seul, réponse de
+ * tête), compare au verso, et note : c'est une séance de révision comme une
+ * autre, la note passe par le même calendrier FSRS. Seules les fiches du
+ * verrou sont notables ainsi — le connecteur ne touche pas au reste du carnet.
+ */
+export function rateLockCards(
+  items: ReviewItem[],
+  notes: Array<{ id: string; note: CardNote }>,
+  now: Date = new Date()
+): { ok: true; items: ReviewItem[]; unlocked: string[]; stillLocked: string[] } | { ok: false; error: string } {
+  if (notes.length === 0) return { ok: false, error: "Aucune note reçue." };
+  const byId = new Map(items.map((item) => [item.id, item]));
+  for (const { id } of notes) {
+    const item = byId.get(id);
+    if (!item || !isLockCard(item)) return { ok: false, error: `Fiche inconnue : ${id} (prends les identifiants de get_today → verrous).` };
+  }
+  const before = new Set(courseLocks(items, now).map((lock) => lock.key));
+  const next = notes.reduce((current, { id, note }) => rateReviewItem(current, id, note, now), items);
+  const after = courseLocks(next, now);
+  const afterKeys = new Set(after.map((lock) => lock.key));
+  const unlocked = [...before].filter((key) => !afterKeys.has(key));
+  const chapterOf = (key: string) => items.find((item) => isLockCard(item) && lockKey(item.subject, item.chapter) === key)?.chapter ?? key;
+  return { ok: true, items: next, unlocked: unlocked.map(chapterOf), stillLocked: after.map((lock) => lockSentence(lock)) };
+}
+
+/** Les verrous tels que Claude les lit dans `get_today` : de quoi interroger l'élève et refuser un exercice. */
+export function locksForClaude(items: ReviewItem[], now: Date = new Date()) {
+  const today = dayKey(now);
+  return courseLocks(items, now).map((lock) => ({
+    matiere: lock.subject,
+    chapitre: lock.chapter,
+    fiches_restantes: lock.remaining.length,
+    rate: lock.reasons,
+    fiches: lock.remaining.map((item) => ({
+      id: item.id,
+      recto: item.text,
+      verso: item.answer ?? "",
+      // Créée aujourd'hui : la retrouver maintenant ne prouverait rien (mémoire immédiate).
+      interrogeable: dayKey(item.createdAt) < today,
+    })),
+  }));
 }
