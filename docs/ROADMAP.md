@@ -47,7 +47,7 @@ Pourquoi cet ordre :
 - [ ] **P1-4** Jauge d'occupation du localStorage et alerte à 70 %.
 - [ ] **P1-5** Fuseau horaire du MCP passé en paramètre, sans modifier `process.env.TZ`. *(Reporté en phase 6 : les fonctions de date de `lib/` lisent toutes l'heure locale, donc la correction les touche toutes.)*
 - [ ] **P1-6** Premiers tests de composants (accueil, chrono) avec un DOM simulé.
-- [ ] **P1-7** Mesurer la couverture et tester `attempts`, `anki-snapshot`, `anki-mapping`, `week-snapshot`.
+- [ ] **P1-7** ~~Mesurer la couverture~~ (fait : `pnpm test:coverage`) ; `week-snapshot` testé en phase 2 ; restent `sync/collections` (branches de fusion), `next-move/history`, `sync/supabase-remote`.
 
 ### P2
 - [ ] **P2-1** `eslint.config.js` → `eslint.config.mjs`.

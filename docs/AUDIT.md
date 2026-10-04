@@ -70,7 +70,7 @@ Légende : **P0** = à corriger avant toute nouvelle fonctionnalité · **P1** =
 | P1-4 | **Quota localStorage (5 Mo)** | estimation dans `lib/storage.ts` : ≈ 1,4 Mo/an | Ça tient pour 2 ans de prépa, mais sans élagage ni alerte préventive. L'échec est bien géré (`writeKey` renvoie `false`, `<StorageAlert>`), mais il arrive trop tard. |
 | P1-5 | **`process.env.TZ` modifié au chargement du module MCP** | `route.ts`, ligne 20 | Effet de bord global sur tout le processus serveur. Inoffensif aujourd'hui (une seule route serveur), piégeux demain. |
 | P1-6 | **Aucun test de composant ni de parcours** | `vitest.config.ts` : logique pure uniquement | Les bugs de câblage (mauvais `save*`, copie périmée, P1-1) passent les 976 tests. |
-| P1-7 | **13 modules de `lib/` sans fichier de test** | dont `attempts.ts`, `anki-snapshot.ts`, `anki-mapping.ts`, `week-snapshot.ts`, `day-agenda-log.ts` | Certains sont peut-être couverts indirectement. **À mesurer** (couverture). |
+| P1-7 | **Couverture inégale** (mesurée : 92 % des lignes de `lib/`) | les 13 modules « sans fichier de test » sont presque tous couverts indirectement ; vrais trous : `week-snapshot.ts` (0 %), `gamification.ts` (12 %), `next-move/history.ts` (60 %), `sync/collections.ts` (76 %), `sync/supabase-remote.ts` (0 %) | Les branches peu testées de la fusion (`collections.ts`) sont justement celles qui protègent des pertes. |
 
 ### P2 — finition, cohérence, dette
 
