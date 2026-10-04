@@ -1186,8 +1186,9 @@ function lockCandidate(lock: CourseLock, blocked: string[]): MoveCandidate {
     problem: `Le cours de « ${lock.chapter} » n'est pas encore su : un exercice dessus se ferait avec la correction sous les yeux.`,
     doneWhen: `Les ${cards} de « ${lock.chapter} » retrouvées de tête — le chapitre est déverrouillé.`,
     minMinutes: Math.min(5, count * MINUTES_PER_CARD),
-    idealMinutes: clamp(count * MINUTES_PER_CARD + 10, 10, 30),
-    maxMinutes: 40,
+    // Les fiches, plus de quoi rouvrir le cours sur une fiche ratée — pas davantage.
+    idealMinutes: clamp(count * MINUTES_PER_CARD + 10, 10, 25),
+    maxMinutes: clamp(count * MINUTES_PER_CARD + 15, 15, 30),
     href: `/revoir/session?subject=${encodeURIComponent(lock.subject)}`,
     resource: { label: "Mon cours au chrono", href: timerHref(lock.subject) },
     terms,
