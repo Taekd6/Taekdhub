@@ -1,3 +1,10 @@
+# Paquets autorisés à exécuter leur script d'installation (binaires natifs).
+# pnpm 10 lit `onlyBuiltDependencies`, pnpm 11 et suivants lisent `allowBuilds` :
+# les deux sont gardés tant que le PC et Vercel n'ont pas la même version.
+# La version réellement utilisée est épinglée dans package.json (`packageManager`).
 onlyBuiltDependencies:
   - sharp
   - unrs-resolver
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
