@@ -245,6 +245,12 @@ pnpm build
 
 Génère un build de production : toutes les pages sont prérendues ; seule la route du connecteur MCP (`/api/mcp/[key]`) s'exécute côté serveur. Vérifié avec `tsc --noEmit`, `pnpm test`, `pnpm lint` et `next build` sans erreur.
 
+## Contrôles automatiques (CI)
+
+À chaque PR et à chaque push sur `main`, GitHub Actions (`.github/workflows/ci.yml`) lance les quatre mêmes commandes qu'en local : `pnpm lint`, `pnpm exec tsc --noEmit`, `pnpm test` et `pnpm build`. Une PR dont le contrôle est rouge ne se fusionne pas.
+
+`pnpm test:coverage` montre quelle part du code de `lib/` et `hooks/` est exécutée par les tests.
+
 ## Déploiement (Vercel)
 
 1. Importer le repo GitHub `Taekd6/Taekdhub` sur [vercel.com/new](https://vercel.com/new).
