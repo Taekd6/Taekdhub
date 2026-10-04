@@ -13,7 +13,7 @@ import { describe, expect, it } from "vitest";
  * ressemble à une pile de cartes.
  *
  * Ils lisent les SOURCES plutôt que le DOM : le projet teste volontairement
- * la logique pure sans environnement navigateur (voir vitest.config.ts), et
+ * la logique pure sans environnement navigateur (voir vitest.config.mts), et
  * ajouter jsdom uniquement pour ça coûterait plus que ça ne rapporte. La
  * vérification visuelle réelle se fait au navigateur, sur un build de
  * production.

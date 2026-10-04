@@ -19,7 +19,7 @@ import {
  *
  * `applyThemeMode` / `applyPalette` acceptent un `root` injectable : un
  * simple objet imitant les méthodes utilisées suffit, pas besoin
- * d'environnement DOM (voir vitest.config.ts).
+ * d'environnement DOM (voir vitest.config.mts).
  */
 function makeFakeRoot() {
   const attributes = new Map<string, string>();
