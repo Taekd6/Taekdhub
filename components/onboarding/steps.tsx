@@ -252,7 +252,7 @@ export function CapacityStep({ draft, onChange, marginPercent }: StepProps) {
               aria-pressed={active}
               onClick={() => onChange({ capacityByWeekday: [...preset.minutes] })}
               className={cn(
-                "press min-h-11 rounded-full px-4 text-left text-[0.8125rem] font-bold",
+                "press min-h-11 rounded-full px-4 text-left text-[0.8125rem] font-semibold",
                 active ? "bg-accent-solid text-accent-solid-foreground" : "bg-inset text-ink hover:bg-accent/15"
               )}
             >
@@ -335,7 +335,7 @@ export function ContestStep({ draft, onChange }: StepProps) {
         <p className="t-meta" aria-live="polite">
           {days === null ? "Pas de date pour l'instant." : days > 0 ? (
             <>
-              Dans <span className="tabular font-bold text-ink">{days}</span> jours.
+              Dans <span className="tabular font-semibold text-ink">{days}</span> jours.
             </>
           ) : (
             "Cette date est déjà passée."
@@ -388,7 +388,7 @@ export function RecapStep({ draft, marginPercent, onEdit }: StepProps & { onEdit
           >
             <dt className="t-meta min-w-0">{row.label}</dt>
             <dd className="flex min-w-0 items-center gap-1">
-              <span className="tabular truncate text-right text-[0.9375rem] font-bold">{row.value}</span>
+              <span className="tabular truncate text-right text-[0.9375rem] font-semibold">{row.value}</span>
               <Button type="button" variant="link" size="sm" className="px-2" onClick={() => onEdit(row.step)} aria-label={`Modifier : ${row.label}`}>
                 Modifier
               </Button>

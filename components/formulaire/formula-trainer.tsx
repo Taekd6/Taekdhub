@@ -134,10 +134,10 @@ export function FormulaTrainer() {
               <p className="t-heading leading-snug">{card.front}</p>
               {revealed ? (
                 <>
-                  <p className="well mt-5 rounded-2xl p-4 font-mono text-[0.9375rem] font-bold leading-relaxed text-ink">{card.back}</p>
+                  <p className="well mt-5 rounded-2xl p-4 font-mono text-[0.9375rem] font-semibold leading-relaxed text-ink">{card.back}</p>
                   <div className="mt-5 grid grid-cols-3 gap-2">
                     {KHOLLE_GRADES.map((value) => (
-                      <button key={value} type="button" onClick={() => grade(value)} className={cn("min-h-12 rounded-2xl text-[0.9375rem] font-extrabold transition-colors", GRADE_STYLE[value].className)}>
+                      <button key={value} type="button" onClick={() => grade(value)} className={cn("min-h-12 rounded-2xl text-[0.9375rem] font-semibold transition-colors", GRADE_STYLE[value].className)}>
                         {GRADE_STYLE[value].label}
                       </button>
                     ))}
@@ -162,7 +162,7 @@ export function FormulaTrainer() {
                   <li key={entry.card.id} className="flex items-start gap-3 py-2.5">
                     <span aria-hidden className={cn("mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full", DOT[entry.grade])} />
                     <div className="min-w-0">
-                      <p className="text-[0.875rem] font-bold text-ink">{entry.card.front}</p>
+                      <p className="text-[0.875rem] font-semibold text-ink">{entry.card.front}</p>
                       {entry.grade !== "su" && <p className="mt-0.5 font-mono text-[0.8125rem] text-muted">{entry.card.back}</p>}
                     </div>
                   </li>
@@ -191,7 +191,7 @@ export function FormulaTrainer() {
                         aria-pressed={on}
                         onClick={() => toggleGroup(group)}
                         className={cn(
-                          "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-bold transition-colors max-lg:min-h-11",
+                          "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-semibold transition-colors max-lg:min-h-11",
                           on ? "bg-accent/[0.14] text-accent" : "bg-inset text-muted hover:text-ink"
                         )}
                       >
@@ -226,7 +226,7 @@ export function FormulaTrainer() {
                 const last = history[entry.id]?.grade;
                 return (
                   <div key={entry.id} className="grid gap-1 py-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-4">
-                    <dt className="flex items-start gap-2 text-[0.875rem] font-bold text-muted">
+                    <dt className="flex items-start gap-2 text-[0.875rem] font-semibold text-muted">
                       <span aria-hidden className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", last ? DOT[last] : "bg-zinc-400/30")} />
                       {entry.front}
                     </dt>

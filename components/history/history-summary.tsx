@@ -29,13 +29,13 @@ export function HistorySummary({ summary }: { summary: HistorySummaryData }) {
     <GradientCard tone="brand" tilt={false} className="reveal p-5 sm:p-6">
       <dl className="flex items-end justify-between gap-4">
         <div className="min-w-0">
-          <dt className="text-[0.8125rem] font-bold opacity-80">Temps total</dt>
+          <dt className="text-[0.8125rem] font-semibold opacity-80">Temps total</dt>
           <dd className="t-card-figure mt-1 whitespace-nowrap">
             <CountUp value={Math.round(summary.totalSeconds / 60)} duration={1300} format={(minutes) => formatSpan(minutes * 60)} />
           </dd>
         </div>
         <div className="shrink-0 text-right">
-          <dt className="text-[0.8125rem] font-bold opacity-80">Séances</dt>
+          <dt className="text-[0.8125rem] font-semibold opacity-80">Séances</dt>
           <dd className="t-stat mt-1">
             <CountUp value={summary.sessionCount} />
           </dd>
@@ -47,8 +47,8 @@ export function HistorySummary({ summary }: { summary: HistorySummaryData }) {
           {sorted.map(({ subject, seconds }, index) => (
             <li key={subject}>
               <div className="flex items-center gap-2.5">
-                <span className="min-w-0 flex-1 truncate text-sm font-extrabold">{subject}</span>
-                <span className="tabular shrink-0 whitespace-nowrap text-[0.8125rem] font-bold opacity-85">{formatSpan(seconds)}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold">{subject}</span>
+                <span className="tabular shrink-0 whitespace-nowrap text-[0.8125rem] font-semibold opacity-85">{formatSpan(seconds)}</span>
               </div>
               <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/20" role="progressbar" aria-valuenow={Math.round((seconds / maxSeconds) * 100)} aria-valuemin={0} aria-valuemax={100}>
                 <div

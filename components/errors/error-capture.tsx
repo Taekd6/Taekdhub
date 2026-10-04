@@ -224,7 +224,7 @@ export function ErrorCapture({
                 className={cn(
                   // Même pastille que la saisie rapide de temps et le carnet
                   // « À revoir » : la matière retenue est INVERSÉE.
-                  "press grid h-9 min-w-9 place-items-center rounded-full px-1.5 text-xs font-extrabold leading-none max-lg:h-11",
+                  "press grid h-9 min-w-9 place-items-center rounded-full px-1.5 text-xs font-semibold leading-none max-lg:h-11",
                   active ? "grad-brand [box-shadow:0_6px_14px_-6px_var(--g1)]" : cn(subjectMeta[item].className, "hover:brightness-125")
                 )}
               >

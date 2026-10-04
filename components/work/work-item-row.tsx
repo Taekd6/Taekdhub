@@ -76,8 +76,8 @@ export function WorkItemRow({
           <span className="grid h-11 w-11 place-items-center rounded-full bg-rose-400/[0.14] text-rose-300">
             {due ? (
               <span className="flex flex-col items-center leading-none">
-                <span className="text-base font-black tabular">{due.getDate()}</span>
-                <span className="mt-0.5 text-[0.5625rem] font-extrabold">{MONTHS_SHORT[due.getMonth()].replace(".", "").toUpperCase()}</span>
+                <span className="text-base font-bold tabular">{due.getDate()}</span>
+                <span className="mt-0.5 text-[0.5625rem] font-semibold">{MONTHS_SHORT[due.getMonth()].replace(".", "").toUpperCase()}</span>
               </span>
             ) : (
               "—"
@@ -86,19 +86,19 @@ export function WorkItemRow({
         ) : (
           <DateBadge date={due} tone={tone} />
         )}
-        {due && <span className={cn("text-2xs font-bold", overdue ? "text-rose-300" : "text-subtle")}>{WEEKDAYS_SHORT[due.getDay()]}</span>}
+        {due && <span className={cn("text-2xs font-semibold", overdue ? "text-rose-300" : "text-subtle")}>{WEEKDAYS_SHORT[due.getDay()]}</span>}
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-3">
-          <p className="min-w-0 flex-1 text-[0.9375rem] font-extrabold leading-snug text-ink">{item.title}</p>
+          <p className="min-w-0 flex-1 text-[0.9375rem] font-semibold leading-snug text-ink">{item.title}</p>
           <p className="shrink-0 whitespace-nowrap text-right">
-            <span className="tabular text-[0.9375rem] font-black text-ink">{formatSpan(remainingMinutes * 60)}</span>
-            <span className="block text-2xs font-bold text-subtle">à faire</span>
+            <span className="tabular text-[0.9375rem] font-bold text-ink">{formatSpan(remainingMinutes * 60)}</span>
+            <span className="block text-2xs font-semibold text-subtle">à faire</span>
           </p>
         </div>
 
-        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem] font-bold text-subtle">
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem] font-semibold text-subtle">
           <span className="min-w-0">
             {WORK_ITEM_KIND_META[item.kind].label}
             {item.subject && ` · ${item.subject}`}
@@ -134,7 +134,7 @@ export function WorkItemRow({
               {/* Le geste de la rangée, en pastille à dégradé : il part au chrono. */}
               <Link
                 href={workHref}
-                className="grad-brand bounce-press inline-flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-extrabold [box-shadow:0_8px_18px_-8px_var(--g1)] max-lg:min-h-11"
+                className="grad-brand bounce-press inline-flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold [box-shadow:0_8px_18px_-8px_var(--g1)] max-lg:min-h-11"
               >
                 Travailler <ArrowRight size={14} strokeWidth={2.6} aria-hidden />
               </Link>

@@ -30,7 +30,7 @@ export function HomeTopBar({ name, contestDays, className }: { name: string; con
       <Link
         href="/settings"
         aria-label={name ? `${name} — réglages du profil` : "Réglages du profil"}
-        className="grad-brand bounce-press grid h-[2.375rem] w-[2.375rem] shrink-0 place-items-center rounded-full text-[0.9375rem] font-extrabold [box-shadow:0_8px_18px_-8px_var(--g1)]"
+        className="grad-brand bounce-press grid h-[2.375rem] w-[2.375rem] shrink-0 place-items-center rounded-full text-[0.9375rem] font-semibold [box-shadow:0_8px_18px_-8px_var(--g1)]"
       >
         {initial}
       </Link>
@@ -42,11 +42,11 @@ export function HomeTopBar({ name, contestDays, className }: { name: string; con
       >
         <span className="min-w-0 flex-1 truncate first-letter:uppercase">{date}</span>
         {contestDays !== null && (
-          <span className="shrink-0 font-extrabold text-accent" title="Jours avant le concours">
+          <span className="shrink-0 font-semibold text-accent" title="Jours avant le concours">
             J−{contestDays}
           </span>
         )}
-        <span className="shrink-0 text-[0.8125rem] font-extrabold text-ink">Le point ›</span>
+        <span className="shrink-0 text-[0.8125rem] font-semibold text-ink">Le point ›</span>
       </Link>
       <Link
         href="/settings"
@@ -71,7 +71,7 @@ function spanMinutes(minutes: number): string {
 function HeroFigure({ minutes }: { minutes: number }) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  const unit = "text-[0.47em] font-extrabold text-subtle/70";
+  const unit = "text-[0.47em] font-semibold text-subtle/70";
   if (h === 0) {
     return (
       <>
@@ -107,7 +107,7 @@ export function TodayHero({
   const met = goalMinutes > 0 && todayMinutes >= goalMinutes;
   return (
     <div className={cn("reveal text-center", className)} style={{ "--i": 1 } as CSSProperties}>
-      <p className="text-sm font-bold text-muted">Aujourd&apos;hui</p>
+      <p className="text-sm font-semibold text-muted">Aujourd&apos;hui</p>
       <p className="t-hero mt-1.5 text-ink">
         <span className="sr-only">{formatSpan(todayMinutes * 60)} de travail aujourd&apos;hui</span>
         <span aria-hidden>
@@ -118,7 +118,7 @@ export function TodayHero({
         {showChip && (
           <span
             className={cn(
-              "pop inline-flex items-center rounded-full px-3 py-1.5 text-[0.8125rem] font-extrabold tabular",
+              "pop inline-flex items-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold tabular",
               diff > 0 ? "bg-accent/10 text-accent" : "bg-inset text-muted"
             )}
             style={{ "--pop-delay": "1.2s" } as CSSProperties}
@@ -127,7 +127,7 @@ export function TodayHero({
           </span>
         )}
         {met && (
-          <span className="pop inline-flex items-center rounded-full bg-emerald-400/[0.14] px-3 py-1.5 text-[0.8125rem] font-extrabold text-emerald-300" style={{ "--pop-delay": "1.35s" } as CSSProperties}>
+          <span className="pop inline-flex items-center rounded-full bg-emerald-400/[0.14] px-3 py-1.5 text-[0.8125rem] font-semibold text-emerald-300" style={{ "--pop-delay": "1.35s" } as CSSProperties}>
             Objectif atteint
           </span>
         )}

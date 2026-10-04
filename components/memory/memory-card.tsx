@@ -78,14 +78,14 @@ export function MemoryCard({
           bannière du jour est déjà juste au-dessus : un titre suffit. */}
       {onMemoryPage && risky.length > 0 ? (
         <header className="grad-card tone-review sheen -mx-1 -mt-1 flex items-center gap-3.5 p-[1.125rem]">
-          <span aria-hidden className="grid h-[3.25rem] w-[3.25rem] shrink-0 place-items-center rounded-2xl bg-white/20 text-2xl font-black tabular">
+          <span aria-hidden className="grid h-[3.25rem] w-[3.25rem] shrink-0 place-items-center rounded-2xl bg-white/20 text-2xl font-bold tabular">
             <CountUp value={risky.length} />
           </span>
           <span className="min-w-0 flex-1">
             <h2 id="memoire-titre" className="t-card-title">
               À ne pas oublier
             </h2>
-            <span className="block text-[0.8125rem] font-bold opacity-85">
+            <span className="block text-[0.8125rem] font-semibold opacity-85">
               {risky.length} chapitre{risky.length > 1 ? "s" : ""} sous {Math.round(AT_RISK_THRESHOLD * 100)} %, à revoir
             </span>
           </span>
@@ -118,10 +118,10 @@ export function MemoryCard({
                 <SubjectAvatar subject={chapter.subject} size="md" />
                 <div className="min-w-0 flex-1">
                   <p className="flex items-baseline justify-between gap-3">
-                    <span className="min-w-0 break-words text-[0.9375rem] font-extrabold text-ink">{chapter.title}</span>
-                    <span className="tabular shrink-0 text-[0.9375rem] font-black text-ink">{formatChance(retrievability)}</span>
+                    <span className="min-w-0 break-words text-[0.9375rem] font-semibold text-ink">{chapter.title}</span>
+                    <span className="tabular shrink-0 text-[0.9375rem] font-bold text-ink">{formatChance(retrievability)}</span>
                   </p>
-                  <p className="text-[0.8125rem] font-bold text-subtle">
+                  <p className="text-[0.8125rem] font-semibold text-subtle">
                     {chapter.subject}
                     <span className="sr-only"> · {chanceSentence(retrievability)}</span>
                   </p>

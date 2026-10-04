@@ -77,7 +77,7 @@ export function MinuteStepper({
         aria-live="polite"
         className={cn(
           "tabular text-center",
-          large ? "t-card-figure min-w-[5ch]" : "min-w-[4.25rem] text-[0.9375rem] font-black",
+          large ? "t-card-figure min-w-[5ch]" : "min-w-[4.25rem] text-[0.9375rem] font-bold",
           value === 0 && "text-subtle"
         )}
       >
@@ -123,7 +123,7 @@ export function ProgressDots({ count, current }: { count: number; current: numbe
           style={{ width: `${percent}%` }}
         />
       </span>
-      <span aria-hidden className="shrink-0 text-[0.8125rem] font-black tabular text-ink">
+      <span aria-hidden className="shrink-0 text-[0.8125rem] font-bold tabular text-ink">
         {current + 1}/{count}
       </span>
     </div>

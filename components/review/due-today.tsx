@@ -67,14 +67,14 @@ export function DueToday({
       className={cn("flex items-center gap-3.5 p-[1.125rem]", className)}
       aria-label={`${due} ${due > 1 ? "entrées" : "entrée"} du carnet à revoir aujourd'hui${subject ? ` en ${subject}` : ""}, environ ${due * 2} minutes. Réviser.`}
     >
-      <span aria-hidden className="grid h-[3.25rem] w-[3.25rem] shrink-0 place-items-center rounded-2xl bg-white/20 text-2xl font-black tabular">
+      <span aria-hidden className="grid h-[3.25rem] w-[3.25rem] shrink-0 place-items-center rounded-2xl bg-white/20 text-2xl font-bold tabular">
         <CountUp value={due} />
       </span>
       <span aria-hidden className="min-w-0 flex-1">
         <span className="t-card-title block">Révisions du jour</span>
-        <span className="block truncate text-[0.8125rem] font-bold opacity-80">≈ {due * 2} min, de tête</span>
+        <span className="block truncate text-[0.8125rem] font-semibold opacity-80">≈ {due * 2} min, de tête</span>
       </span>
-      <span aria-hidden className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white px-4 py-2.5 text-sm font-black text-[#0b0b14]">
+      <span aria-hidden className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-[#0b0b14]">
         Go <ArrowRight size={14} strokeWidth={2.8} />
       </span>
     </GradientCard>

@@ -53,7 +53,7 @@ export function SessionDebrief({
         {entries.map((entry, index) => (
           <li key={index} className="well rounded-2xl p-4">
             <div className="flex items-start justify-between gap-3">
-              <p className="text-[0.9375rem] font-bold text-ink">
+              <p className="text-[0.9375rem] font-semibold text-ink">
                 {entry.mode === "refaire" ? `Refait : « ${entry.label} »` : entry.mode === "transfert" ? "Exercice de transfert" : `Exercice ${index + 1}`}
               </p>
               {entries.length > 1 && (
@@ -78,7 +78,7 @@ export function SessionDebrief({
                       type="button"
                       aria-pressed={entry.result === value}
                       onClick={() => update(index, { result: value, cause: value === "réussi" ? null : entry.cause })}
-                      className={cn("min-h-11 rounded-xl text-[0.875rem] font-extrabold capitalize transition-colors", entry.result === value ? RESULT_STYLE[value] : "bg-inset text-muted hover:text-ink")}
+                      className={cn("min-h-11 rounded-xl text-[0.875rem] font-semibold capitalize transition-colors", entry.result === value ? RESULT_STYLE[value] : "bg-inset text-muted hover:text-ink")}
                     >
                       {value}
                     </button>

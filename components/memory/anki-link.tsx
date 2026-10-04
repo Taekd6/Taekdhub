@@ -41,7 +41,7 @@ export function AnkiLink({ deck, size = "sm", className }: { deck?: string; size
       <a
         href={open}
         className={cn(
-          "grad-brand bounce-press inline-flex items-center gap-1.5 rounded-full font-extrabold [box-shadow:0_8px_18px_-8px_var(--g1)]",
+          "grad-brand bounce-press inline-flex items-center gap-1.5 rounded-full font-semibold [box-shadow:0_8px_18px_-8px_var(--g1)]",
           size === "sm" ? "min-h-9 px-4 text-sm max-lg:min-h-11" : "min-h-11 px-5 text-[0.9375rem]"
         )}
         data-anki-link="open"

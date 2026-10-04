@@ -96,8 +96,8 @@ export function WeekSection({ dayPlans, sessions }: { dayPlans: DayPlanRecord[];
               les afficher sur sept jours à côté d'un taux calculé sur six
               recréerait exactement la contradiction qu'on vient de fermer. */}
           <p className="mt-6 border-t border-line pt-5 text-[0.9375rem] text-ink">
-            Sur les journées terminées : prévu <span className="tabular font-bold">{formatSpan(settled.plannedMinutes * 60)}</span> · réalisé{" "}
-            <span className="tabular font-bold">{formatSpan(settled.actualMinutes * 60)}</span>.
+            Sur les journées terminées : prévu <span className="tabular font-semibold">{formatSpan(settled.plannedMinutes * 60)}</span> · réalisé{" "}
+            <span className="tabular font-semibold">{formatSpan(settled.actualMinutes * 60)}</span>.
           </p>
 
           {sentence ? (

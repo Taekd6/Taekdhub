@@ -45,7 +45,7 @@ export function SubjectAnnales({ subject }: { subject: Subject }) {
                 <span key={index} className={cn("h-2 w-2 rounded-full", DOT[result])} />
               ))}
             </span>
-            <span className="w-11 text-right text-sm font-extrabold tabular-nums text-ink">{Math.round((chapter.successRate ?? 0) * 100)} %</span>
+            <span className="w-11 text-right text-sm font-semibold tabular-nums text-ink">{Math.round((chapter.successRate ?? 0) * 100)} %</span>
           </li>
         ))}
       </ul>

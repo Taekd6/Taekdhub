@@ -155,7 +155,7 @@ export function ReviewNotebook() {
         {/* L'ÉTAT DU CARNET — une tuile collante à droite sur grand écran,
             sous la liste sur téléphone (l'action d'abord). */}
         <aside aria-label="État du carnet" className="surface h-fit p-6 lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)]">
-          <p className="text-[0.8125rem] font-bold text-muted">Ouvertes</p>
+          <p className="text-[0.8125rem] font-semibold text-muted">Ouvertes</p>
           <p className="t-figure-lg text-grad mt-1 tabular">
             <CountUp value={openTotal} />
           </p>
@@ -176,8 +176,8 @@ export function ReviewNotebook() {
                     )}
                   >
                     <SubjectAvatar subject={entry.subject} size="md" />
-                    <span className="min-w-0 flex-1 truncate text-sm font-extrabold text-ink">{entry.subject}</span>
-                    <span className="tabular shrink-0 text-[0.8125rem] font-bold text-muted">
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{entry.subject}</span>
+                    <span className="tabular shrink-0 text-[0.8125rem] font-semibold text-muted">
                       {entry.open} / {entry.total}
                     </span>
                   </button>

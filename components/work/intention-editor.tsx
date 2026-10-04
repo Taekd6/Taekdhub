@@ -25,7 +25,7 @@ export function IntentionEditor({ item, onPlan }: { item: WorkItem; onPlan: (id:
     return (
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {item.plan && (
-          <p className="flex min-w-0 items-center gap-1.5 text-[0.8125rem] font-bold text-ink">
+          <p className="flex min-w-0 items-center gap-1.5 text-[0.8125rem] font-semibold text-ink">
             <CalendarCheck size={14} className="shrink-0 text-accent" aria-hidden />
             {formatIntention(item.plan, item.title)}
           </p>
@@ -33,7 +33,7 @@ export function IntentionEditor({ item, onPlan }: { item: WorkItem; onPlan: (id:
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-accent/10 px-3 text-[0.8125rem] font-extrabold text-accent transition-colors hover:bg-accent/15 max-lg:min-h-11"
+          className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-accent/10 px-3 text-[0.8125rem] font-semibold text-accent transition-colors hover:bg-accent/15 max-lg:min-h-11"
         >
           {!item.plan && <CalendarCheck size={14} aria-hidden />}
           {item.plan ? "Modifier le plan" : "Planifier quand et où"}
@@ -50,7 +50,7 @@ export function IntentionEditor({ item, onPlan }: { item: WorkItem; onPlan: (id:
 
   return (
     <div className="mt-3 rounded-[1.25rem] bg-inset p-4">
-      <p className="mb-3 flex items-center gap-1.5 text-[0.8125rem] font-extrabold text-ink">
+      <p className="mb-3 flex items-center gap-1.5 text-[0.8125rem] font-semibold text-ink">
         <CalendarCheck size={14} className="text-accent" aria-hidden />
         Si c&apos;est… alors : <span className="min-w-0 truncate">{item.title}</span>
       </p>
@@ -58,15 +58,15 @@ export function IntentionEditor({ item, onPlan }: { item: WorkItem; onPlan: (id:
           champs alignés sur une grille, plus un ruban qui passe à la ligne
           au hasard de la largeur. */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <label className="grid min-w-0 gap-1 text-2xs font-bold text-muted">
+        <label className="grid min-w-0 gap-1 text-2xs font-semibold text-muted">
           Jour
           <Input type="date" value={day} onChange={(event) => setDay(event.target.value)} />
         </label>
-        <label className="grid min-w-0 gap-1 text-2xs font-bold text-muted">
+        <label className="grid min-w-0 gap-1 text-2xs font-semibold text-muted">
           Heure
           <Input type="time" value={time} onChange={(event) => setTime(event.target.value)} />
         </label>
-        <label className="col-span-2 grid min-w-0 gap-1 text-2xs font-bold text-muted sm:col-span-1">
+        <label className="col-span-2 grid min-w-0 gap-1 text-2xs font-semibold text-muted sm:col-span-1">
           Où
           <Input value={place} onChange={(event) => setPlace(event.target.value)} placeholder="au CDI, à la maison…" maxLength={60} />
         </label>

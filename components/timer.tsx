@@ -247,7 +247,7 @@ export function Timer() {
   const controls = (
     <div className="space-y-5">
       {moveHere && (
-        <p className="mx-auto w-fit max-w-full rounded-full bg-accent/10 px-4 py-2 text-center text-sm font-bold text-accent">
+        <p className="mx-auto w-fit max-w-full rounded-full bg-accent/10 px-4 py-2 text-center text-sm font-semibold text-accent">
           Prochain mouvement · {formatSpan(moveHere.minutes * 60)} · {MOVE_KIND_LABEL[moveHere.kind]} — {moveHere.title}
         </p>
       )}
@@ -340,7 +340,7 @@ export function Timer() {
     <FocusRing percent={dayPercent} large={fullscreen}>
       <p
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-full px-3 py-1 text-sm font-extrabold",
+          "inline-flex items-center justify-center gap-2 rounded-full px-3 py-1 text-sm font-semibold",
           running ? "bg-accent/10 text-accent" : "text-muted"
         )}
       >
@@ -356,8 +356,8 @@ export function Timer() {
       >
         {clock(seconds)}
       </p>
-      <p className="mt-2 text-sm font-bold text-muted">
-        <span className="tabular font-black text-ink">{formatSpan(daySeconds)}</span> sur {formatSpan(goalSeconds)} aujourd&apos;hui
+      <p className="mt-2 text-sm font-semibold text-muted">
+        <span className="tabular font-bold text-ink">{formatSpan(daySeconds)}</span> sur {formatSpan(goalSeconds)} aujourd&apos;hui
       </p>
     </FocusRing>
   );
@@ -459,7 +459,7 @@ export function Timer() {
         <div className="flex justify-center">{dial}</div>
         {selectedItem && (
           <p className="-mt-3 text-sm font-semibold text-muted">
-            Il reste <span className="font-black text-ink">{formatSpan(remainingMinutes(selectedItem, sessions) * 60)}</span> sur « {selectedItem.title} ».
+            Il reste <span className="font-bold text-ink">{formatSpan(remainingMinutes(selectedItem, sessions) * 60)}</span> sur « {selectedItem.title} ».
           </p>
         )}
         {actions}
@@ -510,7 +510,7 @@ function LongStopDialog({
         }}
       >
         <p className="text-sm text-ink">
-          Le chrono compte <span className="font-black">{formatSpan(counted)}</span>. As-tu vraiment travaillé tout ce temps ? Sinon, indique la durée réelle : elle compte dans ton budget de la semaine.
+          Le chrono compte <span className="font-bold">{formatSpan(counted)}</span>. As-tu vraiment travaillé tout ce temps ? Sinon, indique la durée réelle : elle compte dans ton budget de la semaine.
         </p>
         <label className="block w-40">
           <span className="t-label mb-1 block">Durée réelle (min)</span>
@@ -557,7 +557,7 @@ function RoundAction({
       >
         {children}
       </span>
-      <span className="whitespace-nowrap text-[0.8125rem] font-bold text-ink">{label}</span>
+      <span className="whitespace-nowrap text-[0.8125rem] font-semibold text-ink">{label}</span>
     </button>
   );
 }

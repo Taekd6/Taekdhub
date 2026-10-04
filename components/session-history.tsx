@@ -184,14 +184,14 @@ export function SessionHistory() {
                       des échéances), son nom, son total. */}
                   <h3 className="flex items-center gap-3 px-3 pb-1 pt-2">
                     <DateBadge date={day.date} tone={index} />
-                    <span className="min-w-0 flex-1 truncate text-lg font-black tracking-[-0.01em] text-ink first-letter:uppercase">{formatDayLabel(day.date)}</span>
-                    <span className="tabular shrink-0 whitespace-nowrap rounded-full bg-accent/10 px-3 py-1.5 text-[0.8125rem] font-black text-accent">
+                    <span className="min-w-0 flex-1 truncate text-lg font-bold tracking-[-0.01em] text-ink first-letter:uppercase">{formatDayLabel(day.date)}</span>
+                    <span className="tabular shrink-0 whitespace-nowrap rounded-full bg-accent/10 px-3 py-1.5 text-[0.8125rem] font-bold text-accent">
                       {formatSpan(day.seconds)}
                       {/* Les mots disparaissent sous `sm` : à 320 px, ils
                           faisaient déborder toute la page horizontalement.
                           Les deux chiffres, eux, restent. */}
                       {isToday(day.date) && plannedToday > 0 && (
-                        <span className="font-bold text-accent/70">
+                        <span className="font-semibold text-accent/70">
                           <span className="hidden sm:inline"> réalisées</span> · {formatSpan(plannedToday * 60)}
                           <span className="hidden sm:inline"> encore au planning</span>
                         </span>

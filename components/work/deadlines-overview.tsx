@@ -135,9 +135,9 @@ export function DeadlinesOverview() {
         /* LES 7 PROCHAINS JOURS — la capacité en barres à dégradé, puis le
            détail jour par jour. */
         <>
-          <h2 className="text-xl font-black tracking-[-0.02em] text-ink">Les 7 prochains jours</h2>
+          <h2 className="text-xl font-bold tracking-[-0.02em] text-ink">Les 7 prochains jours</h2>
           <p className="mt-1 text-[0.875rem] font-semibold text-muted">
-            <span className="tabular font-extrabold text-ink">{formatSpan(weekPlanned * 60)}</span> prévues sur{" "}
+            <span className="tabular font-semibold text-ink">{formatSpan(weekPlanned * 60)}</span> prévues sur{" "}
             <span className="tabular">{formatSpan(weekCapacity * 60)}</span>
           </p>
           <CapacityBars days={week} />
@@ -158,20 +158,20 @@ export function DeadlinesOverview() {
         <GradientCard tone="brand" tilt={false} className="reveal p-5 sm:p-7" style={{ "--i": 1 } as CSSProperties}>
           <dl>
             <div>
-              <dt className="text-[0.8125rem] font-bold opacity-80">Reste à faire</dt>
+              <dt className="text-[0.8125rem] font-semibold opacity-80">Reste à faire</dt>
               <dd className="t-card-figure mt-1 whitespace-nowrap">
                 <CountUp value={totalRemaining} duration={1400} format={(minutes) => formatSpan(minutes * 60)} />
               </dd>
             </div>
-            <div className="mt-5 flex flex-wrap gap-2 text-[0.8125rem] font-extrabold">
+            <div className="mt-5 flex flex-wrap gap-2 text-[0.8125rem] font-semibold">
               <div className="flex items-baseline gap-1.5 rounded-full bg-white/20 px-3 py-1.5">
-                <dd className="tabular text-[0.9375rem] font-black">
+                <dd className="tabular text-[0.9375rem] font-bold">
                   <CountUp value={open.length} />
                 </dd>
                 <dt>{open.length > 1 ? "échéances" : "échéance"}</dt>
               </div>
               <div className="flex items-baseline gap-1.5 rounded-full bg-white/20 px-3 py-1.5">
-                <dd className="tabular text-[0.9375rem] font-black">
+                <dd className="tabular text-[0.9375rem] font-bold">
                   <CountUp value={Math.max(0, weekCapacity - weekPlanned)} format={(minutes) => formatSpan(minutes * 60)} />
                 </dd>
                 <dt>libres sur 7 j</dt>
@@ -233,7 +233,7 @@ export function DeadlinesOverview() {
                   className={`px-3 pb-1 pt-2.5 ${group.id === "retard" ? "[&_h2]:text-rose-300" : ""}`}
                   title={
                     <>
-                      {group.title} <span className="tabular font-bold text-subtle">· {group.items.length}</span>
+                      {group.title} <span className="tabular font-semibold text-subtle">· {group.items.length}</span>
                     </>
                   }
                 />
@@ -329,7 +329,7 @@ function CapacityBars({ days }: { days: { date: string; load: { plannedMinutes: 
       </div>
       <div aria-hidden className="mt-2 flex gap-2">
         {days.map((day, index) => (
-          <span key={day.date} className={`min-w-0 flex-1 text-center text-2xs font-bold ${index === 0 ? "text-ink" : "text-subtle"}`}>
+          <span key={day.date} className={`min-w-0 flex-1 text-center text-2xs font-semibold ${index === 0 ? "text-ink" : "text-subtle"}`}>
             {index === 0 ? "Auj." : WEEKDAYS[new Date(`${day.date}T00:00:00`).getDay()].slice(0, 3)}
           </span>
         ))}

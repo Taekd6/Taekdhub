@@ -241,11 +241,11 @@ function SleepWorkChart({ days }: { days: SleepWorkDay[] }) {
                   side
                 )}
               >
-                <span className="font-bold capitalize">{date.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })}</span>
+                <span className="font-semibold capitalize">{date.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })}</span>
                 <span className="text-muted"> · nuit </span>
-                <span className="font-bold tabular">{day.sleepHours === null ? "—" : formatSleep(day.sleepHours)}</span>
+                <span className="font-semibold tabular">{day.sleepHours === null ? "—" : formatSleep(day.sleepHours)}</span>
                 <span className="text-muted"> · travail </span>
-                <span className="font-bold tabular">{day.minutes === null ? "—" : formatSpan(day.minutes * 60)}</span>
+                <span className="font-semibold tabular">{day.minutes === null ? "—" : formatSpan(day.minutes * 60)}</span>
               </span>
             </div>
           );

@@ -128,7 +128,7 @@ export function ProgressOverview() {
       <div className="grid gap-5 lg:grid-cols-12 lg:items-stretch lg:gap-6">
         <section aria-labelledby="progres-titre" className="min-w-0 lg:surface lg:col-span-7 lg:px-2 lg:pb-4 lg:pt-7">
           <div className="reveal text-center">
-            <h1 id="progres-titre" className="text-sm font-bold text-muted">
+            <h1 id="progres-titre" className="text-sm font-semibold text-muted">
               Mon évolution · cette semaine
             </h1>
             <p className="t-hero mt-1.5 text-ink">
@@ -138,11 +138,11 @@ export function ProgressOverview() {
               </span>
             </p>
             <p className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
-              <span className="pop inline-flex items-center rounded-full bg-inset px-3 py-1.5 text-[0.8125rem] font-extrabold text-muted" style={{ "--pop-delay": "1.1s" } as CSSProperties}>
+              <span className="pop inline-flex items-center rounded-full bg-inset px-3 py-1.5 text-[0.8125rem] font-semibold text-muted" style={{ "--pop-delay": "1.1s" } as CSSProperties}>
                 aujourd&apos;hui {formatSpan(hero.todayMinutes * 60)}
               </span>
               {goal > 0 && (
-                <span className="pop inline-flex items-center rounded-full bg-accent/10 px-3 py-1.5 text-[0.8125rem] font-extrabold text-accent" style={{ "--pop-delay": "1.25s" } as CSSProperties}>
+                <span className="pop inline-flex items-center rounded-full bg-accent/10 px-3 py-1.5 text-[0.8125rem] font-semibold text-accent" style={{ "--pop-delay": "1.25s" } as CSSProperties}>
                   {goalPercent} % de l&apos;objectif
                 </span>
               )}
@@ -169,13 +169,13 @@ export function ProgressOverview() {
             style={{ "--i": 5 } as CSSProperties}
           >
             <Ring value={goal > 0 ? goalPercent : 0} size={64} strokeWidth={7} variant="white">
-              <span aria-hidden className="text-sm font-black tabular">
+              <span aria-hidden className="text-sm font-bold tabular">
                 <CountUp value={goalPercent} format={(value) => `${value}%`} />
               </span>
             </Ring>
             <span aria-hidden className="min-w-0 flex-1">
               <span className="t-card-title block">Objectif de la semaine</span>
-              <span className="block truncate text-[0.8125rem] font-bold opacity-80">
+              <span className="block truncate text-[0.8125rem] font-semibold opacity-80">
                 {goal > 0 ? `${formatSpan(hero.weekMinutes * 60)} sur ${formatMinutesSpan(goal)}` : "Aucun objectif fixé"}
               </span>
             </span>
@@ -230,7 +230,7 @@ export function ProgressOverview() {
               content: (
                 <div className="space-y-5">
                   {/* Le bilan imprimable d'une période (lib/bilan.ts) : à montrer, ou à relire avant un conseil de classe. */}
-                  <Link href="/bilan" className="surface flex items-center justify-between gap-3 p-5 text-[0.9375rem] font-bold text-ink hover:text-accent">
+                  <Link href="/bilan" className="surface flex items-center justify-between gap-3 p-5 text-[0.9375rem] font-semibold text-ink hover:text-accent">
                     <span>
                       Bilan imprimable
                       <span className="t-meta block font-semibold">Temps, notes, erreurs et programme sur une page, en PDF.</span>
@@ -271,7 +271,7 @@ export function ProgressOverview() {
 function WeekFigure({ minutes }: { minutes: number }) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  const unit = "text-[0.47em] font-extrabold text-subtle/70";
+  const unit = "text-[0.47em] font-semibold text-subtle/70";
   if (h === 0) {
     return (
       <>
@@ -296,9 +296,9 @@ function WeekFigure({ minutes }: { minutes: number }) {
 function HeroTile({ label, detail, index, children }: { label: string; detail: string; index: number; children: React.ReactNode }) {
   return (
     <div className="surface reveal lift flex min-w-0 flex-col p-4 sm:p-5" style={{ "--i": index } as CSSProperties}>
-      <p className="text-[0.8125rem] font-bold text-muted">{label}</p>
+      <p className="text-[0.8125rem] font-semibold text-muted">{label}</p>
       <p className="t-stat mt-1 whitespace-nowrap text-ink">{children}</p>
-      <p className="mt-0.5 truncate text-xs font-bold text-subtle">{detail}</p>
+      <p className="mt-0.5 truncate text-xs font-semibold text-subtle">{detail}</p>
     </div>
   );
 }

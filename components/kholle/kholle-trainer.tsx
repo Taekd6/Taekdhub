@@ -198,9 +198,9 @@ export function KholleTrainer() {
           {question ? (
             <>
               <p className="t-heading leading-snug">{question.text}</p>
-              <p className={cn("mt-4 font-mono text-3xl font-black tabular-nums", overTime ? "text-amber-300" : "text-muted")} aria-live="off">
+              <p className={cn("mt-4 font-mono text-3xl font-bold tabular-nums", overTime ? "text-amber-300" : "text-muted")} aria-live="off">
                 {clock(elapsed)}
-                <span className="ml-2 align-middle font-sans text-2xs font-bold text-subtle">objectif {KHOLLE_TARGET_MINUTES} min</span>
+                <span className="ml-2 align-middle font-sans text-2xs font-semibold text-subtle">objectif {KHOLLE_TARGET_MINUTES} min</span>
               </p>
               <p className="t-meta mt-4">Au tableau : énonce, démontre, puis vérifie dans ton cours avant de t&apos;évaluer.</p>
               <div className="mt-5 grid grid-cols-3 gap-2">
@@ -209,7 +209,7 @@ export function KholleTrainer() {
                     key={value}
                     type="button"
                     onClick={() => grade(value)}
-                    className={cn("min-h-12 rounded-2xl text-[0.9375rem] font-extrabold transition-colors", GRADE_STYLE[value].className)}
+                    className={cn("min-h-12 rounded-2xl text-[0.9375rem] font-semibold transition-colors", GRADE_STYLE[value].className)}
                   >
                     {GRADE_STYLE[value].label}
                   </button>
@@ -249,7 +249,7 @@ export function KholleTrainer() {
               <ul className="mt-5 divide-y divide-line">
                 {answered.map((entry) => (
                   <li key={entry.question.id} className="flex items-start gap-3 py-2.5">
-                    <span className={cn("mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-2xs font-bold", GRADE_STYLE[entry.grade].className)}>{GRADE_STYLE[entry.grade].label}</span>
+                    <span className={cn("mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-2xs font-semibold", GRADE_STYLE[entry.grade].className)}>{GRADE_STYLE[entry.grade].label}</span>
                     <p className="min-w-0 flex-1 text-[0.875rem] font-semibold leading-snug text-ink">{entry.question.text}</p>
                     <span className="t-meta shrink-0 text-2xs tabular-nums">{clock(entry.seconds)}</span>
                   </li>
@@ -271,7 +271,7 @@ export function KholleTrainer() {
                 <Button onClick={start}>
                   <Shuffle size={15} aria-hidden /> Tirer une question
                 </Button>
-                <Link href="/kholle" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+                <Link href="/kholle" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
                   Mon programme de colle
                 </Link>
               </div>
@@ -307,7 +307,7 @@ export function KholleTrainer() {
                             aria-pressed={on}
                             onClick={() => toggleChapter(chapter.id)}
                             className={cn(
-                              "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-bold transition-colors max-lg:min-h-11",
+                              "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-semibold transition-colors max-lg:min-h-11",
                               on ? "bg-accent/[0.14] text-accent" : "bg-inset text-muted hover:text-ink"
                             )}
                           >

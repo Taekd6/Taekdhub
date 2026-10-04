@@ -84,12 +84,12 @@ export function SyncDecisionDialog({
         <dl className="space-y-2 rounded-2xl bg-inset px-4 py-3">
           <div>
             <dt className="t-label">Sur cet appareil</dt>
-            <dd className="text-[0.9375rem] font-bold text-ink">{describeCounts(decision.local)}</dd>
+            <dd className="text-[0.9375rem] font-semibold text-ink">{describeCounts(decision.local)}</dd>
           </div>
           {!importing && (
             <div>
               <dt className="t-label">Dans ton compte</dt>
-              <dd className="text-[0.9375rem] font-bold text-ink">{describeCounts(decision.remote)}</dd>
+              <dd className="text-[0.9375rem] font-semibold text-ink">{describeCounts(decision.remote)}</dd>
             </div>
           )}
         </dl>

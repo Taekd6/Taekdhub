@@ -103,15 +103,15 @@ export function BilanReport() {
           <table className="mt-6 w-full text-left text-[0.875rem]">
             <thead>
               <tr className="t-label">
-                <th className="pb-2 font-bold">Matière</th>
-                <th className="pb-2 font-bold">Temps</th>
-                <th className="pb-2 text-right font-bold">Notes</th>
+                <th className="pb-2 font-semibold">Matière</th>
+                <th className="pb-2 font-semibold">Temps</th>
+                <th className="pb-2 text-right font-semibold">Notes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {bilan.bySubject.map((entry) => (
                 <tr key={entry.subject}>
-                  <td className="py-2 pr-3 font-bold text-ink">{entry.subject}</td>
+                  <td className="py-2 pr-3 font-semibold text-ink">{entry.subject}</td>
                   <td className="w-1/2 py-2 pr-3">
                     <div className="flex items-center gap-2">
                       <span className="h-2 rounded-full bg-accent print:bg-zinc-500" style={{ width: `${Math.max(2, (entry.minutes / maxMinutes) * 100)}%` }} aria-hidden />
@@ -207,7 +207,7 @@ export function BilanReport() {
         <ul className="space-y-4">
           {bilan.programme.map(({ subject, summary }) => (
             <li key={subject}>
-              <div className="flex items-baseline justify-between gap-3 text-[0.875rem] font-bold text-ink">
+              <div className="flex items-baseline justify-between gap-3 text-[0.875rem] font-semibold text-ink">
                 <span>{subject}</span>
                 <span className="text-subtle">
                   {summary.seen} vu{summary.seen > 1 ? "s" : ""} sur {summary.total}
@@ -228,7 +228,7 @@ export function BilanReport() {
         </ul>
         <ul className={cn("mt-4 flex flex-wrap gap-x-4 gap-y-1")} aria-hidden>
           {PROGRAMME_STATUSES.filter((status) => status !== "pas-vu").map((status) => (
-            <li key={status} className="inline-flex items-center gap-1.5 text-2xs font-bold text-muted">
+            <li key={status} className="inline-flex items-center gap-1.5 text-2xs font-semibold text-muted">
               <span className={cn("h-2 w-2 rounded-full", STATUS_TONE[status].dot)} />
               {PROGRAMME_STATUS_META[status].label}
             </li>

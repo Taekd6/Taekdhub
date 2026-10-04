@@ -106,7 +106,7 @@ export function DayAgendaCard({
         <h2 id="day-agenda-titre" className="t-label inline-flex items-center gap-1.5">
           <CalendarClock size={14} aria-hidden /> Le reste de ta journée
         </h2>
-        <button type="button" onClick={() => setEditing((value) => !value)} aria-expanded={editing} className="inline-flex min-h-10 items-center gap-1 text-sm font-bold text-accent hover:underline max-lg:min-h-11">
+        <button type="button" onClick={() => setEditing((value) => !value)} aria-expanded={editing} className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-accent hover:underline max-lg:min-h-11">
           <Clock3 size={14} aria-hidden /> Il me reste…
         </button>
       </div>
@@ -119,7 +119,7 @@ export function DayAgendaCard({
       {editing && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {QUICK.map((minutes) => (
-            <button key={minutes} type="button" onClick={() => saveOverride(minutes)} className="min-h-10 rounded-full bg-inset px-3 text-sm font-bold text-ink hover:bg-accent/[0.12] max-lg:min-h-11">
+            <button key={minutes} type="button" onClick={() => saveOverride(minutes)} className="min-h-10 rounded-full bg-inset px-3 text-sm font-semibold text-ink hover:bg-accent/[0.12] max-lg:min-h-11">
               {formatMinutesSpan(minutes)}
             </button>
           ))}
@@ -132,12 +132,12 @@ export function DayAgendaCard({
             }}
           >
             <Input aria-label="Minutes restantes" inputMode="numeric" value={custom} onChange={(event) => setCustom(event.target.value)} placeholder="min" className="w-20" />
-            <button type="submit" className="min-h-10 rounded-full bg-inset px-3 text-sm font-bold text-ink max-lg:min-h-11">
+            <button type="submit" className="min-h-10 rounded-full bg-inset px-3 text-sm font-semibold text-ink max-lg:min-h-11">
               OK
             </button>
           </form>
           {agenda.budget.overridden && (
-            <button type="button" onClick={() => saveOverride(null)} className="min-h-10 text-sm font-bold text-muted hover:text-ink max-lg:min-h-11">
+            <button type="button" onClick={() => saveOverride(null)} className="min-h-10 text-sm font-semibold text-muted hover:text-ink max-lg:min-h-11">
               Revenir à ma capacité
             </button>
           )}
@@ -150,7 +150,7 @@ export function DayAgendaCard({
         <Link href={next.href} className="mt-4 flex items-center gap-3 rounded-2xl bg-inset px-4 py-3 hover:bg-accent/[0.08]">
           <span className="min-w-0 flex-1">
             <span className="t-label block">Prochaine action</span>
-            <span className="block truncate text-[0.9375rem] font-extrabold text-ink">{next.title}</span>
+            <span className="block truncate text-[0.9375rem] font-semibold text-ink">{next.title}</span>
             <span className="t-meta text-2xs">
               {formatMinutesSpan(next.minutes)} · {next.action}
             </span>
@@ -197,13 +197,13 @@ export function DayAgendaCard({
             {agenda.postponed.map((task) => (
               <li key={task.key} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[0.875rem] font-bold text-ink">{task.title}</span>
+                  <span className="block truncate text-[0.875rem] font-semibold text-ink">{task.title}</span>
                   <span className="t-meta text-2xs">
                     {task.reason} · {task.to}
                   </span>
                 </span>
                 {task.workItemId && (
-                  <button type="button" onClick={() => confirmPostpone(task)} className="min-h-9 text-2xs font-bold text-accent hover:underline max-lg:min-h-11">
+                  <button type="button" onClick={() => confirmPostpone(task)} className="min-h-9 text-2xs font-semibold text-accent hover:underline max-lg:min-h-11">
                     Confirmer le report
                   </button>
                 )}
@@ -220,7 +220,7 @@ export function DayAgendaCard({
 
       {versions.length > 1 && (
         <>
-          <button type="button" onClick={() => setShowLog((value) => !value)} aria-expanded={showLog} className="mt-4 inline-flex min-h-10 items-center gap-1 text-sm font-bold text-muted hover:text-ink max-lg:min-h-11">
+          <button type="button" onClick={() => setShowLog((value) => !value)} aria-expanded={showLog} className="mt-4 inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-muted hover:text-ink max-lg:min-h-11">
             Historique du jour · {versions.length} versions <ChevronDown size={14} aria-hidden className={cn("transition-transform", showLog && "rotate-180")} />
           </button>
           {showLog && (
@@ -233,7 +233,7 @@ export function DayAgendaCard({
                   const change = diffVersions(previous, version);
                   return (
                     <li key={version.at}>
-                      <span className="font-bold text-ink">{new Date(version.at).toTimeString().slice(0, 5)}</span>
+                      <span className="font-semibold text-ink">{new Date(version.at).toTimeString().slice(0, 5)}</span>
                       <span className="text-muted">
                         {" "}
                         · {formatMinutesSpan(version.budget)} restantes · {version.tasks.filter((task) => task.decision !== "déplacé").length} gardées, {version.tasks.filter((task) => task.decision === "déplacé").length} déplacées
@@ -259,12 +259,12 @@ function KeptRow({ task }: { task: KeptTask }) {
     <li className="flex items-center gap-3 py-2.5">
       <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-full", TIER_TONE[task.tier])} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[0.875rem] font-bold text-ink">{task.title}</span>
+        <span className="block truncate text-[0.875rem] font-semibold text-ink">{task.title}</span>
         <span className="t-meta text-2xs">
           {TIER_LABEL[task.tier]} · {task.tierReason}
         </span>
       </span>
-      <span className="shrink-0 text-right text-[0.875rem] font-bold tabular-nums text-ink">
+      <span className="shrink-0 text-right text-[0.875rem] font-semibold tabular-nums text-ink">
         {formatMinutesSpan(task.minutes)}
         {task.reducedFrom !== null && <span className="block text-2xs font-semibold text-amber-300">réduit (prévu {formatMinutesSpan(task.reducedFrom)})</span>}
       </span>
