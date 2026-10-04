@@ -1,0 +1,27 @@
+# Notifications iPhone : toutes les heures, le serveur calcule les alertes de
+# chaque appareil abonné et envoie au plus une notification (lib/push-plan.ts).
+# Le plan gratuit de Vercel n'autorise qu'un cron par jour : GitHub Actions le
+# remplace. GitHub peut décaler un passage de quelques minutes, sans gravité.
+name: Notifications
+
+on:
+  schedule:
+    # Minute 7 : les passages à l'heure pile sont les plus retardés par GitHub.
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  envoyer:
+    name: Passage horaire
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Appeler le serveur
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://taekdhub.vercel.app' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then echo "Secret CRON_SECRET absent : notifications non configurées."; exit 0; fi
+          curl -fsS --max-time 60 -H "Authorization: Bearer $CRON_SECRET" "$SITE_URL/api/push/cron"

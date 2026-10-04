@@ -23,10 +23,9 @@
  *
  * ─── CE QUI N'EST JAMAIS MIS EN CACHE ──────────────────────────────────
  *
- * `/api/…` — aucune route n'y répond aujourd'hui (le copilote IA, /api/ai,
- * a été retiré avec la banque d'exercices), mais toute route dynamique
- * future doit parler au serveur ou échouer franchement : une réponse
- * rejouée depuis un cache serait un mensonge.
+ * `/api/…` — le connecteur MCP et les notifications : une route dynamique
+ * doit parler au serveur ou échouer franchement, une réponse rejouée depuis
+ * un cache serait un mensonge.
  *
  * Et rien d'autre que des GET de même origine : pas de POST, pas de
  * ressource tierce.
@@ -41,10 +40,11 @@
  * portée d'un service worker : il ne peut ni le lire, ni l'effacer.
  */
 
+// v5 : refonte « Liquid Glass », notifications (push), écrans récents précachés.
 // v3 : ajout de /memoire (mémoire des chapitres, FSRS).
 // v2 : retrait de la banque d'exercices — les coquilles de /exercises,
 // /session et /concours précachées en v1 sont supprimées à l'activation.
-const VERSION = "v4";
+const VERSION = "v5";
 const SHELL = `taekdhub-shell-${VERSION}`;
 const ASSETS = `taekdhub-assets-${VERSION}`;
 const CURRENT = [SHELL, ASSETS];
@@ -76,6 +76,11 @@ const PRECACHE = [
   "/point",
   // Premier lancement — l'accueil guidé (app/(app)/bienvenue/page.tsx).
   "/bienvenue",
+  "/annales",
+  "/anki",
+  "/programme",
+  "/kholle",
+  "/bilan",
 ];
 
 self.addEventListener("install", (event) => {
@@ -164,6 +169,49 @@ self.addEventListener("fetch", (event) => {
         }
         throw error;
       }
+    })()
+  );
+});
+
+/*
+ * ─── NOTIFICATIONS ──────────────────────────────────────────────────────
+ *
+ * Le serveur (app/api/push/cron) envoie un JSON { title, body, url, tag }.
+ * Même `tag` : la nouvelle notification REMPLACE l'ancienne au lieu de
+ * s'empiler. Toucher la notification ouvre l'écran qui règle le problème —
+ * dans l'onglet déjà ouvert s'il y en a un.
+ */
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { title: "TaekdHub", body: event.data ? event.data.text() : "" };
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || "TaekdHub", {
+      body: data.body || "",
+      tag: data.tag || "taekdhub",
+      icon: "/pwa/icon-192",
+      badge: "/pwa/icon-192",
+      data: { url: data.url || "/dashboard" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || "/dashboard", self.location.origin).href;
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const client of windows) {
+        if (new URL(client.url).origin === self.location.origin) {
+          await client.focus();
+          return client.navigate(target);
+        }
+      }
+      return self.clients.openWindow(target);
     })()
   );
 });
