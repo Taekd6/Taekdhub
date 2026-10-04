@@ -19,12 +19,12 @@
 | Phase | Branche | Contenu | Touche les données ? |
 |---|---|---|---|
 | 0 | `claude/phase-0-audit` | `AUDIT.md` + `ROADMAP.md` | non |
-| 1 | `claude/phase-1-fondations` | P0-1, P0-2, P0-3, P1-5, P2-1 à P2-5 | non |
+| 1 | `claude/phase-1-fondations` | P0-1, P0-2, P0-3, P2-1 à P2-5 | non |
 | 2 | `claude/phase-2-ci-tests` | P0-5, P1-7, tests de scénario qui **reproduisent** P1-1 | non |
 | 3 | `claude/phase-3-store` | P1-1 : un store partagé unique (`useSyncExternalStore`) | **oui → pause** |
 | 4 | `claude/phase-4-schema` | P0-4 (migration `exercise_logs`), P2-6 (code et tables mortes) | **oui → pause** |
 | 5 | `claude/phase-5-synchro` | P1-2 (pierres tombales), P1-3 (horodatage `updatedAt`), P1-4 (alerte quota) | **oui → pause** |
-| 6 | `claude/phase-6-finition` | P2-7, P2-8, P2-9, P2-10, découpage de `storage.ts` | non |
+| 6 | `claude/phase-6-finition` | P1-5, P2-7, P2-8, P2-9, P2-10, découpage de `storage.ts` | non |
 
 Pourquoi cet ordre :
 1. **D'abord les outils** (phase 1). Tant que `pnpm test` échoue sur le PC, aucun contrôle n'est fiable.
@@ -45,7 +45,7 @@ Pourquoi cet ordre :
 - [ ] **P1-2** Suppressions synchronisées (`deletedAt`) sans risque de perte.
 - [ ] **P1-3** Vrai `updatedAt` sur les erreurs (et les autres collections modifiables).
 - [ ] **P1-4** Jauge d'occupation du localStorage et alerte à 70 %.
-- [ ] **P1-5** Fuseau horaire du MCP passé en paramètre, sans modifier `process.env.TZ`.
+- [ ] **P1-5** Fuseau horaire du MCP passé en paramètre, sans modifier `process.env.TZ`. *(Reporté en phase 6 : les fonctions de date de `lib/` lisent toutes l'heure locale, donc la correction les touche toutes.)*
 - [ ] **P1-6** Premiers tests de composants (accueil, chrono) avec un DOM simulé.
 - [ ] **P1-7** Mesurer la couverture et tester `attempts`, `anki-snapshot`, `anki-mapping`, `week-snapshot`.
 
