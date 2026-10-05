@@ -110,6 +110,7 @@ export function WorkItemRow({
           {feasibility.level === "juste" && <Badge variant="default">Marge nulle</Badge>}
           {item.important && <Badge variant="accent">Important</Badge>}
         </p>
+        {item.note && <p className="mt-0.5 text-[0.8125rem] text-subtle">{item.note}</p>}
 
         {explanation && <p className="mt-1 text-[0.8125rem] font-semibold text-muted">{explanation}</p>}
 

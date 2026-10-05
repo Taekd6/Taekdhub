@@ -21,6 +21,7 @@ import type { WorkItem, WorkItemKind, WorkItemStatus } from "@/lib/storage";
 export const WORK_ITEM_KIND_META: Record<WorkItemKind, { label: string; short: string }> = {
   dm: { label: "Devoir maison", short: "DM" },
   ds: { label: "Devoir surveillé", short: "DS" },
+  colle: { label: "Colle", short: "Colle" },
   exercices: { label: "Série d'exercices", short: "Exercices" },
   chapitre: { label: "Révision de chapitre", short: "Révision" },
   concours: { label: "Préparation concours", short: "Concours" },

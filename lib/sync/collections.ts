@@ -80,7 +80,7 @@ const STAMPS: Partial<Record<CollectionName, (item: Item) => string>> = {
   workItems: (item) => {
     const postponements = Array.isArray(item.postponements) ? item.postponements.filter(isItem).map((entry) => entry.at) : [];
     const scope = isItem(item.scope) ? item.scope.updatedAt : "";
-    return maxStamp(item.createdAt, item.completedAt, ...postponements, scope, item.status === "abandonné" ? "9" : "");
+    return maxStamp(item.createdAt, item.updatedAt, item.completedAt, ...postponements, scope, item.status === "abandonné" ? "9" : "");
   },
   // Une note résolue (score connu) l'emporte sur la même note encore en attente.
   grades: (item) => `${typeof item.score === "number" ? 1 : 0}${str(item.createdAt)}`,

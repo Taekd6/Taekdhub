@@ -596,8 +596,8 @@ export interface DayPlanRecord {
  * en réserve le temps et suit sa progression, sans prétendre savoir ce qu'il
  * y a dedans.
  */
-export type WorkItemKind = "dm" | "ds" | "exercices" | "chapitre" | "concours" | "autre";
-export const WORK_ITEM_KINDS: readonly WorkItemKind[] = ["dm", "ds", "exercices", "chapitre", "concours", "autre"];
+export type WorkItemKind = "dm" | "ds" | "colle" | "exercices" | "chapitre" | "concours" | "autre";
+export const WORK_ITEM_KINDS: readonly WorkItemKind[] = ["dm", "ds", "colle", "exercices", "chapitre", "concours", "autre"];
 
 /**
  * Cycle de vie. « abandonné » EST le mécanisme de suppression : voir la note
@@ -704,6 +704,15 @@ export interface WorkItem {
    * de `chapterIds`, qui renvoie à l'ancienne banque et n'est plus lu.
    */
   scope?: WorkItemScope;
+  /** Précision libre (« salle B12 », « calculatrice interdite »). Absente plutôt que `""`. */
+  note?: string;
+  /**
+   * ISO — dernière modification de l'échéance elle-même (titre, date…), posée
+   * par le connecteur MCP (lib/mcp-echeances.ts). Sans elle, une correction
+   * faite depuis Claude ne changerait aucun horodatage, et la fusion entre
+   * appareils (lib/sync/collections.ts) garderait l'ancienne version.
+   */
+  updatedAt?: string;
 }
 
 export interface WorkItemScope {
@@ -915,6 +924,8 @@ export function normalizeWorkItem(raw: unknown): WorkItem {
     // Absent plutôt que `null` : un travail sans programme garde exactement
     // la forme qu'il avait avant ce champ.
     ...(scope ? { scope } : {}),
+    ...(typeof item.note === "string" && item.note.trim() ? { note: item.note.trim() } : {}),
+    ...(isoDate(item.updatedAt) ? { updatedAt: isoDate(item.updatedAt)! } : {}),
     createdAt,
     // Une date d'achèvement n'a de sens que sur un travail terminé — un
     // `completedAt` traînant sur un travail rouvert fausserait le bilan

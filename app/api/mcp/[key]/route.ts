@@ -7,6 +7,7 @@ import { mutateCollection, type CollectionStore } from "@/lib/mcp-collections";
 import { addLockCards, courseLocks, lockFor, lockSentence, LOCK_CARDS_MAX, rateLockCards } from "@/lib/course-lock";
 import { toSubject } from "@/lib/annales";
 import { normalizeReviewItem, type ReviewItem } from "@/lib/storage";
+import { addEcheances, deleteEcheance, describeEcheance, ECHEANCE_SUBJECTS, ECHEANCE_TYPES, ECHEANCES_MAX, listEcheances, updateEcheance } from "@/lib/mcp-echeances";
 
 /**
  * CONNECTEUR MCP — la porte d'entrée de Claude dans TaekdHub.
@@ -83,6 +84,27 @@ async function readReviewItems(user_id: string): Promise<ReviewItem[]> {
 function asReviewItems(raw: unknown): ReviewItem[] {
   return Array.isArray(raw) ? raw.map(normalizeReviewItem).filter((item): item is ReviewItem => item !== null) : [];
 }
+
+const failure = (cause: unknown) => ({ ok: false as const, error: cause instanceof Error ? cause.message : "erreur inconnue" });
+
+/** La mémoire des chapitres, lue seule : les échéances y rattachent leurs chapitres sans jamais l'écrire. */
+async function readChapterMemory(user_id: string): Promise<unknown> {
+  return (await collectionStore(user_id, "chapterMemory").read())?.items ?? [];
+}
+
+const ECHEANCE_FIELDS = {
+  titre: z.string().min(1).max(120).describe("ex : « DS 3 — Électrocinétique », « Colle de maths », « DM 5 »"),
+  matiere: z.enum(ECHEANCE_SUBJECTS).describe("info = informatique tronc commun"),
+  type: z.enum(ECHEANCE_TYPES),
+  date: z.string().describe("jour de l'échéance, AAAA-MM-JJ (heure de Paris). Refusée si passée, inexistante (2026-02-30) ou à plus d'un an."),
+  chapitres: z
+    .array(z.string().max(80))
+    .max(24)
+    .optional()
+    .describe("chapitres au programme, avec le titre que l'élève leur donne dans TaekdHub (get_today → point_faible_principal / chapitres_qui_s_effacent). Les titres reconnus deviennent le programme de l'épreuve ; les autres sont gardés dans la note."),
+  note: z.string().max(300).optional().describe("précision libre : salle, calculatrice, consignes"),
+  minutes: z.number().int().min(5).max(1200).optional().describe("temps de PRÉPARATION que l'élève veut y consacrer, en minutes (le planificateur le réserve). 60 par défaut : demande-lui plutôt que de deviner."),
+};
 
 const LOCK_RULE =
   "RÈGLE DU VERROU DE COURS : si le chapitre visé figure dans `verrous` (get_today), NE DONNE PAS d'exercice dessus. Dis à l'élève de reprendre son cours, puis interroge-le sur les fiches `interrogeable: true` (recto seul ; il répond de tête ; compare au verso) et note avec review_cards. Le chapitre se déverrouille quand toutes ses fiches sont notées « good » ou « easy ».";
@@ -221,11 +243,102 @@ const mcp = createMcpHandler((server) => {
   );
 
   server.registerTool(
+    "add_echeance",
+    {
+      title: "Ajouter des échéances (DS, colles, DM…)",
+      description:
+        `Ajoute 1 à ${ECHEANCES_MAX} échéances d'un coup (ex : tout le planning de DS du trimestre). Elles apparaissent dans TaekdHub (écran Échéances, planificateur) et dans get_today. Une date invalide ou passée fait refuser TOUT le lot, rien n'est écrit : corrige et renvoie. Une échéance déjà présente (même titre, même jour) est sautée, pas dupliquée — renvoyer le même lot est donc sans danger. Vérifie ensuite avec list_echeances.`,
+      inputSchema: z.object({ echeances: z.array(z.object(ECHEANCE_FIELDS)).min(1).max(ECHEANCES_MAX) }),
+    },
+    async ({ echeances }) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const now = new Date();
+      const chapters = await readChapterMemory(user_id).catch(() => []);
+      const outcome = await mutateCollection(collectionStore(user_id, "workItems"), (current) => addEcheances(current, echeances, chapters, now)).catch(failure);
+      if (!outcome.ok) return text(`Erreur : ${outcome.error}`);
+      const { added, duplicates, unknownChapters } = outcome.value;
+      return text(
+        [
+          `${added.length} échéance${added.length > 1 ? "s" : ""} ajoutée${added.length > 1 ? "s" : ""}.`,
+          duplicates.length ? `Déjà présente${duplicates.length > 1 ? "s" : ""}, non dupliquée${duplicates.length > 1 ? "s" : ""} : ${duplicates.join(", ")}.` : "",
+          unknownChapters.length ? `Chapitres absents de la mémoire de l'élève, gardés dans la note : ${unknownChapters.join(", ")}.` : "",
+          JSON.stringify(added.map((item) => describeEcheance(item, chapters, now))),
+        ]
+          .filter(Boolean)
+          .join(" ")
+      );
+    }
+  );
+
+  server.registerTool(
+    "update_echeance",
+    {
+      title: "Modifier une échéance",
+      description:
+        "Corrige une échéance par son `id` (donné par list_echeances ou get_today) : seuls les champs fournis changent. `chapitres` REMPLACE la liste entière. Mêmes règles de date et de doublon que add_echeance.",
+      inputSchema: z.object({
+        id: z.string(),
+        titre: ECHEANCE_FIELDS.titre.optional(),
+        matiere: ECHEANCE_FIELDS.matiere.optional(),
+        type: ECHEANCE_FIELDS.type.optional(),
+        date: ECHEANCE_FIELDS.date.optional(),
+        chapitres: ECHEANCE_FIELDS.chapitres,
+        note: ECHEANCE_FIELDS.note,
+        minutes: ECHEANCE_FIELDS.minutes,
+      }),
+    },
+    async ({ id, ...patch }) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const now = new Date();
+      const chapters = await readChapterMemory(user_id).catch(() => []);
+      const outcome = await mutateCollection(collectionStore(user_id, "workItems"), (current) => updateEcheance(current, id, patch, chapters, now)).catch(failure);
+      if (!outcome.ok) return text(`Erreur : ${outcome.error}`);
+      return text(`Modifiée. ${JSON.stringify(describeEcheance(outcome.value, chapters, now))}`);
+    }
+  );
+
+  server.registerTool(
+    "delete_echeance",
+    {
+      title: "Supprimer une échéance",
+      description: "Supprime une échéance par son `id` (list_echeances). Elle disparaît de TaekdHub sur tous les appareils et de get_today. À n'utiliser que si l'élève le demande, ou pour une échéance créée par erreur.",
+      inputSchema: z.object({ id: z.string() }),
+    },
+    async ({ id }) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const outcome = await mutateCollection(collectionStore(user_id, "workItems"), (current) => deleteEcheance(current, id, new Date())).catch(failure);
+      if (!outcome.ok) return text(`Erreur : ${outcome.error}`);
+      return text(`Supprimée : « ${outcome.value.title} » (${outcome.value.dueDate ?? "sans date"}).`);
+    }
+  );
+
+  server.registerTool(
+    "list_echeances",
+    {
+      title: "Lister les échéances à venir",
+      description:
+        "Les échéances encore à faire, d'aujourd'hui à `jours` jours (toutes si absent), la plus proche d'abord, avec leur `id` (pour update_echeance / delete_echeance), leurs chapitres et leur note. Appelle-la après add_echeance pour vérifier, et avant d'en ajouter pour éviter les doublons de titre approchant.",
+      inputSchema: z.object({ jours: z.number().int().min(0).max(366).optional() }),
+    },
+    async ({ jours }) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const [items, chapters] = await Promise.all([collectionStore(user_id, "workItems").read(), readChapterMemory(user_id)]).catch((cause: unknown) => [failure(cause), null] as const);
+      if (items && "ok" in items) return text(`Erreur : ${items.error}`);
+      const list = listEcheances(items?.items, chapters, new Date(), jours);
+      return text(list.length ? JSON.stringify(list) : "Aucune échéance à venir.");
+    }
+  );
+
+  server.registerTool(
     "get_today",
     {
       title: "Où j'en suis aujourd'hui",
       description:
-        "L'état du jour dans TaekdHub : la recommandation Next Move (raison, problème corrigé, critère de fin), le point faible principal établi par le diagnostic (cours, méthode, application, calcul, temps… avec ses preuves), les exercices à refaire sans aide, les échéances et DS, la mémoire des chapitres, les erreurs récentes, les cartes Anki dues au dernier relevé. À appeler AVANT de proposer un exercice, pour viser le vrai point faible. " + LOCK_RULE,
+        "L'état du jour dans TaekdHub : la recommandation Next Move (raison, problème corrigé, critère de fin), le point faible principal établi par le diagnostic (cours, méthode, application, calcul, temps… avec ses preuves), les exercices à refaire sans aide, les échéances et DS des 14 prochains jours (avec leur `id`, modifiables par update_echeance), la mémoire des chapitres, les erreurs récentes, les cartes Anki dues au dernier relevé. À appeler AVANT de proposer un exercice, pour viser le vrai point faible. " + LOCK_RULE,
       inputSchema: z.object({}),
     },
     async () => {
