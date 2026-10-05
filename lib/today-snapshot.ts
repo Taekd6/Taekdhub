@@ -82,11 +82,14 @@ export function buildTodaySnapshot(collections: Record<string, unknown>, annaleR
     .sort((a, b) => a.days - b.days)
     .slice(0, LIST_MAX)
     .map(({ item, days }) => ({
+      id: item.id,
       titre: item.title,
       type: WORK_ITEM_KIND_META[item.kind].label,
       matiere: item.subject,
+      date: item.dueDate,
       dans_jours: days,
       reste_min: remainingMinutes(item, sessions),
+      ...(item.note ? { note: item.note } : {}),
     }));
 
   const from = new Date(now);
