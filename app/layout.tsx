@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Newsreader, Nunito } from "next/font/google";
+import { Inter, Newsreader } from "next/font/google";
 import { ThemeSync } from "@/components/theme-sync";
 import { ServiceWorker } from "@/components/service-worker";
 import { RevealObserver } from "@/components/ui/reveal";
@@ -52,23 +52,22 @@ try{var r=document.documentElement;if('IntersectionObserver' in window&&!(window
 /**
  * DEUX FAMILLES, DEUX RÔLES TRÈS INÉGAUX — voir l'en-tête d'app/globals.css.
  *
- * L'interface est composée en SF Pro Rounded sur les appareils Apple
- * (`ui-rounded`, en tête de `--font-sans`) : c'est la référence de l'élève,
- * et elle est déjà installée — rien à télécharger. `Nunito` n'est que le
- * RELAIS pour les autres systèmes : ronde et charnue comme elle, variable
- * (un seul fichier de 400 à 900), chiffres tabulaires. Exposée sous
- * `--font-nunito`, jamais appliquée directement : c'est la pile de
- * `--font-sans` qui décide.
+ * L'interface est composée en SF Pro (`-apple-system`, en tête de
+ * `--font-sans`), la police système d'Apple : sur iPhone et Mac, elle est
+ * déjà installée et rien n'est téléchargé. `Inter` n'est que le RELAIS pour
+ * les autres systèmes : même dessin néo-grotesque, mêmes chiffres
+ * tabulaires. Exposée sous `--font-inter`, jamais appliquée directement :
+ * c'est la pile de `--font-sans` qui décide.
  *
  * `Newsreader` ne sert qu'aux textes de LECTURE (`.t-read`) et aux grands
  * titres en serif. Seul l'axe `opsz` est chargé. (Il accompagnait aussi les
  * formules KaTeX des énoncés de l'ancienne banque d'exercices, retirée avec
  * KaTeX lui-même.)
  */
-const sans = Nunito({
+const sans = Inter({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-nunito",
+  variable: "--font-inter",
 });
 
 const serif = Newsreader({
@@ -119,7 +118,7 @@ export const viewport: Viewport = {
   // Doit correspondre à `--canvas-rgb` (app/globals.css) : c'est la couleur
   // que le navigateur mobile étend derrière la barre d'état. Le thème étant
   // clair PAR DÉFAUT quel que soit le système, une seule valeur : le fond clair.
-  themeColor: "#f5f6fa",
+  themeColor: "#f5f5f7",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

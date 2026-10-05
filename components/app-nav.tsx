@@ -22,9 +22,10 @@ import { cn } from "@/lib/cn";
  * PAS DE BANQUE, PAS DE CONCOURS : l'élève travaille sur ses propres
  * feuilles et ne fait qu'y consigner son temps et ses notes.
  *
- * REFONTE « REVOLUT CLAIR ». Barre haute en verre blanc translucide
- * (floutée) ; l'onglet actif prend l'ENCRE de la palette sur une pastille
- * teintée. Sur téléphone, l'accueil a sa propre barre (avatar, date,
+ * REFONTE « LIQUID GLASS » (iOS 26). Les deux barres sont des CAPSULES DE
+ * VERRE qui flottent au-dessus du contenu, détachées des bords : le contenu
+ * passe dessous, flouté et saturé. L'onglet actif prend l'ENCRE de la
+ * palette sur une pastille teintée. Sur téléphone, l'accueil a sa propre barre (avatar, date,
  * réglages — components/home/hero.tsx) : la barre haute globale s'y efface
  * pour laisser la maquette respirer. La barre d'onglets du bas porte en son
  * CENTRE le bouton rond du chrono, en dégradé — le geste principal, à
@@ -88,18 +89,12 @@ export function AppNav() {
   return (
     <>
       {/* ── BARRE HAUTE ────────────────────────────────────────────
-          La barre d'apple.com : translucide (le contenu passe DESSOUS,
-          flouté et saturé), 56 px, aucun cadre — un filet d'un pixel à
-          peine visible la sépare de la page. `sticky` et non `fixed` : la
-          page garde son flux normal, et la barre ne recouvre jamais une
-          ancre atteinte au clavier. */}
-      <header
-        className={cn(
-          "sticky top-0 z-40 border-b border-hairline/[0.07] bg-[var(--glass-bg)] backdrop-blur-xl backdrop-saturate-150 print:hidden",
-          onHome && "max-lg:hidden"
-        )}
-      >
-        <div className="mx-auto flex h-14 max-w-[var(--shell-max)] items-center gap-2 px-4 sm:px-6">
+          Une capsule de verre (`.glass`) de 56 px, à 12 px du haut et des
+          bords : elle flotte, le contenu défile dessous. `sticky` et non
+          `fixed` : la page garde son flux normal, et la barre ne recouvre
+          jamais une ancre atteinte au clavier. */}
+      <header className={cn("sticky top-0 z-40 px-3 pt-3 sm:px-4 print:hidden", onHome && "max-lg:hidden")}>
+        <div className="glass mx-auto flex h-14 max-w-[var(--shell-max)] items-center gap-2 rounded-full pl-3 pr-2 sm:pl-4">
           <Link
             href="/dashboard"
             className="press mr-1 flex min-h-11 shrink-0 items-center rounded-lg pr-2 lg:mr-6"
@@ -130,7 +125,7 @@ export function AppNav() {
                     href={href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "press relative z-10 rounded-full px-3.5 py-1.5 text-sm font-bold transition-colors duration-200",
+                      "press relative z-10 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors duration-200",
                       active ? "text-accent" : "text-muted hover:text-ink"
                     )}
                   >
@@ -165,14 +160,14 @@ export function AppNav() {
       </header>
 
       {/* ── BARRE D'ONGLETS MOBILE ─────────────────────────────────
-          Verre blanc flouté, cinq cases avec la marge de sécurité des
-          téléphones à encoche : deux destinations, le CHRONO au centre
-          (disque en dégradé qui déborde de la barre, comme le bouton
-          principal de Revolut), deux destinations. L'onglet actif prend
-          l'encre de la palette et un petit point en dégradé sous l'icône. */}
+          La barre d'onglets d'iOS 26 : une capsule de verre qui flotte à
+          12 px des bords, au-dessus de la marge de sécurité des téléphones à
+          encoche. Deux destinations, le CHRONO au centre (disque en dégradé
+          qui déborde de la capsule), deux destinations. L'onglet actif est
+          posé sur une pastille teintée, comme dans les apps d'Apple. */}
       <nav
         aria-label="Sections"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-hairline/[0.07] bg-[var(--glass-bg)] px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-150 lg:hidden print:hidden"
+        className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-[2rem] px-1.5 py-1 lg:hidden print:hidden"
       >
         {[...DESTINATIONS.slice(0, 2), null, ...DESTINATIONS.slice(2)].map((destination) => {
           if (!destination) {
@@ -185,7 +180,7 @@ export function AppNav() {
                 aria-current={active ? "page" : undefined}
                 className="group flex min-h-[var(--tabbar-h)] items-start justify-center"
               >
-                <span className="grad-brand -mt-5 grid h-14 w-14 place-items-center rounded-full ring-4 ring-canvas transition-transform duration-[250ms] ease-[cubic-bezier(.34,1.56,.64,1)] [box-shadow:0_10px_24px_-8px_var(--g1)] group-active:scale-[.92] motion-reduce:transform-none">
+                <span className="grad-brand -mt-4 grid h-14 w-14 place-items-center rounded-full ring-[3px] ring-white/70 transition-transform duration-[250ms] ease-[cubic-bezier(.34,1.56,.64,1)] [box-shadow:0_10px_24px_-8px_var(--g1)] group-active:scale-[.92] motion-reduce:transform-none">
                   <Timer size={24} strokeWidth={2.3} aria-hidden />
                 </span>
               </Link>
@@ -199,13 +194,12 @@ export function AppNav() {
               href={href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "press flex min-h-[var(--tabbar-h)] flex-col items-center justify-center gap-1 px-0.5 pb-1.5 pt-2 text-[0.6875rem] font-bold transition-colors duration-200",
-                active ? "text-accent" : "text-subtle"
+                "press flex min-h-[var(--tabbar-h)] flex-col items-center justify-center gap-1 rounded-[1.5rem] px-0.5 py-1.5 text-[0.6875rem] font-semibold transition-colors duration-300",
+                active ? "bg-accent/10 text-accent" : "text-subtle"
               )}
             >
-              <Icon size={22} strokeWidth={active ? 2.4 : 1.9} />
+              <Icon size={22} strokeWidth={active ? 2.2 : 1.8} />
               <span className="leading-none">{short}</span>
-              <span aria-hidden className={cn("grad-brand h-1 w-1 rounded-full transition-opacity", active ? "opacity-100" : "opacity-0")} />
             </Link>
           );
         })}
@@ -216,7 +210,7 @@ export function AppNav() {
 
 /**
  * SIGNATURE — une pastille ronde en dégradé de marque (l'avatar de
- * l'accueil, en petit), puis le nom en 900, à l'encre.
+ * l'accueil, en petit), puis le nom en 700, à l'encre.
  */
 export function Wordmark({ className }: { className?: string }) {
   return (

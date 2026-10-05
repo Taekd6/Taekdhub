@@ -39,7 +39,7 @@ export function PageHero({
     <header className={cn("reveal flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className)}>
       <div className="flex min-w-0 items-center gap-4">
         <div className="min-w-0 flex-1">
-          {eyebrow && <div className="mb-2 inline-flex max-w-full items-center rounded-full bg-accent/10 px-3 py-1 text-[0.8125rem] font-extrabold text-accent">{eyebrow}</div>}
+          {eyebrow && <div className="mb-2 inline-flex max-w-full items-center rounded-full bg-accent/10 px-3 py-1 text-[0.8125rem] font-semibold text-accent">{eyebrow}</div>}
           <h1 className="t-display">{title}</h1>
           {lede && <p className="mt-1.5 max-w-[46ch] text-[0.9375rem] font-semibold leading-snug text-muted sm:text-base">{lede}</p>}
           {children}

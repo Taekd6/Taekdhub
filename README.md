@@ -60,6 +60,26 @@ Quand un exercice rate **à cause du cours** (définition, théorème et ses hyp
 
 Côté données : les fiches sont de simples entrées `reviewItems` avec trois champs facultatifs (`chapter`, `origin: "claude"`, `reason`), et le calendrier garde la dernière note (`srs.lastRating`). Il n'y a **aucune migration**. Le connecteur écrit dans la collection synchronisée avec la même règle de révision que les appareils (`lib/mcp-collections.ts`) : personne n'écrase personne.
 
+### Alertes et notifications iPhone (`lib/alerts.ts`)
+
+Une seule règle décide de ce qui mérite d'interrompre. Elle sert deux fois : pour la bannière animée de l'app (`components/alerts/alert-center.tsx`) et pour les notifications iPhone.
+
+| Niveau | Quand |
+|---|---|
+| Urgent | une échéance à rendre aujourd'hui ou demain avec du travail restant ; une échéance dépassée ; un chapitre verrouillé dont les fiches sont à retrouver |
+| À faire | le minimum du soir pas atteint, à partir de 18 h ; rien de noté de la journée, à partir de 17 h |
+| Rappel | des fiches « À revoir » arrivées à échéance (dans l'app seulement) |
+
+**Dans l'app**, la plus importante descend du haut de l'écran, avec « + 2 autres » en dessous. « Plus tard » fait taire un rappel jusqu'au lendemain ; une urgence revient au bout de 2 h.
+
+**Sur l'iPhone, même l'app fermée** : toutes les heures, `.github/workflows/push.yml` appelle `/api/push/cron`. Le serveur calcule les alertes de chaque appareil abonné, puis envoie **au plus une** notification par passage. Il n'envoie jamais deux fois la même, et rien entre 22 h et 8 h.
+
+Mise en service (une fois) :
+1. Supabase : la migration `0010_push_subscriptions.sql` (déjà appliquée le 4 octobre 2026).
+2. Vercel → Environment Variables : `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `CRON_SECRET`, puis **Redeploy**.
+3. GitHub → Settings → Secrets and variables → Actions : le secret `CRON_SECRET`, avec la même valeur que dans Vercel.
+4. Sur l'iPhone : Safari → Partager → « Sur l'écran d'accueil ». Ouvrir TaekdHub depuis l'icône, puis Réglages → Notifications → **Activer**, puis **Envoyer un essai**. Apple ne donne les notifications web qu'aux apps installées (iOS 16.4 ou plus).
+
 ### Changer le secret du connecteur
 
 Le secret fait partie de l'URL du connecteur : il apparaît dans les journaux de Vercel. Change-le s'il a pu être vu (capture d'écran, journal partagé), ou par précaution chaque trimestre :

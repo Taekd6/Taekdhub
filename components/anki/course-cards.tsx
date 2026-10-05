@@ -50,7 +50,7 @@ export function CourseCards({ platform }: { platform: AnkiPlatform | null }) {
     >
       <div className="space-y-4">
         <div>
-          <p className="text-[0.9375rem] font-bold text-ink">Tout le paquet (iPhone ou ordinateur)</p>
+          <p className="text-[0.9375rem] font-semibold text-ink">Tout le paquet (iPhone ou ordinateur)</p>
           <p className="t-meta mt-1">
             {mobile ? "Télécharge-le, puis ouvre-le depuis l'app Fichiers : AnkiMobile l'importe." : "Télécharge-le, puis double-clique dessus (ou Fichier › Importer dans Anki)."} Réimporter une version mise à jour corrige les cartes sans les dupliquer ni perdre tes révisions.
           </p>
@@ -60,7 +60,7 @@ export function CourseCards({ platform }: { platform: AnkiPlatform | null }) {
         </div>
 
         <div>
-          <p className="text-[0.9375rem] font-bold text-ink">Chapitre par chapitre</p>
+          <p className="text-[0.9375rem] font-semibold text-ink">Chapitre par chapitre</p>
           <ul className="mt-2 divide-y divide-line">
             {COURSE_CHAPTERS.map((chapter) => (
               <li key={chapter.chapterId} className="flex items-center gap-3 py-2">
@@ -69,7 +69,7 @@ export function CourseCards({ platform }: { platform: AnkiPlatform | null }) {
                   <span className="truncate">{chapter.title}</span>
                   <span className="t-meta shrink-0 text-2xs">{chapter.cards.length} cartes</span>
                 </label>
-                <button type="button" onClick={() => setPreview((value) => (value === chapter.chapterId ? null : chapter.chapterId))} aria-expanded={preview === chapter.chapterId} className="shrink-0 text-2xs font-bold text-accent hover:underline">
+                <button type="button" onClick={() => setPreview((value) => (value === chapter.chapterId ? null : chapter.chapterId))} aria-expanded={preview === chapter.chapterId} className="shrink-0 text-2xs font-semibold text-accent hover:underline">
                   {preview === chapter.chapterId ? "Masquer" : "Voir"}
                 </button>
               </li>
@@ -79,7 +79,7 @@ export function CourseCards({ platform }: { platform: AnkiPlatform | null }) {
             <ul className="mt-3 space-y-2">
               {shown.cards.map((card) => (
                 <li key={card.front} className="well rounded-xl p-3 text-[0.875rem]">
-                  <p className="font-bold text-ink">{card.front}</p>
+                  <p className="font-semibold text-ink">{card.front}</p>
                   <p className="t-meta mt-1 whitespace-pre-line">{card.back}</p>
                 </li>
               ))}

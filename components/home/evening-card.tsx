@@ -27,7 +27,7 @@ export function EveningCard({ preferences, sessions, className }: { preferences:
         <h2 id="ce-soir-titre" className="t-title">
           Ce soir
         </h2>
-        <Link href="/settings#soirs" className="text-[0.875rem] font-bold text-accent hover:underline">
+        <Link href="/settings#soirs" className="text-[0.875rem] font-semibold text-accent hover:underline">
           Régler
         </Link>
       </div>
@@ -40,8 +40,8 @@ export function EveningCard({ preferences, sessions, className }: { preferences:
             <SubjectAvatar subject={entry.subject} />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="truncate text-[0.9375rem] font-bold text-ink">{entry.subject}</span>
-                <span className="tabular shrink-0 text-[0.875rem] font-bold text-ink">
+                <span className="truncate text-[0.9375rem] font-semibold text-ink">{entry.subject}</span>
+                <span className="tabular shrink-0 text-[0.875rem] font-semibold text-ink">
                   {entry.met ? (
                     <span className="inline-flex items-center gap-1 text-emerald-300">
                       <Check size={14} aria-hidden /> fait

@@ -118,17 +118,17 @@ export function ChapterList({
                               type="button"
                               onClick={() => onSelect(chapter.id)}
                               aria-pressed={selected}
-                              className="min-w-0 break-words text-left text-[0.9375rem] font-extrabold text-ink hover:underline"
+                              className="min-w-0 break-words text-left text-[0.9375rem] font-semibold text-ink hover:underline"
                             >
                               {chapter.title}
                             </button>
                           ) : (
-                            <p className="min-w-0 break-words text-[0.9375rem] font-extrabold text-ink">{chapter.title}</p>
+                            <p className="min-w-0 break-words text-[0.9375rem] font-semibold text-ink">{chapter.title}</p>
                           )}
-                          <span className="tabular shrink-0 text-[0.9375rem] font-black text-ink">{formatChance(retrievability)}</span>
+                          <span className="tabular shrink-0 text-[0.9375rem] font-bold text-ink">{formatChance(retrievability)}</span>
                         </div>
                         <RetentionBar retrievability={retrievability} className="mt-2" />
-                        <p className="mt-1.5 text-[0.8125rem] font-bold text-subtle">
+                        <p className="mt-1.5 text-[0.8125rem] font-semibold text-subtle">
                           <span className="sr-only">{chanceSentence(retrievability)}. </span>
                           {reminder <= today ? "À revoir maintenant" : `Prochain rappel ${formatDay(reminder, today)}`} · appris {formatDay(chapter.learnedAt, today)}
                           {chapter.reviews.length > 0 && ` · ${chapter.reviews.length} révision${chapter.reviews.length > 1 ? "s" : ""}`}

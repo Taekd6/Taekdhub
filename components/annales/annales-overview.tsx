@@ -123,7 +123,7 @@ export function AnnalesOverview() {
                   Réessayer
                 </Button>
               ) : status === "invité" ? (
-                <Link href="/settings#compte" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+                <Link href="/settings#compte" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
                   Me connecter
                 </Link>
               ) : null
@@ -179,7 +179,7 @@ export function AnnalesOverview() {
             <ul className="space-y-3">
               {levels.map((level) => (
                 <li key={level.level}>
-                  <div className="flex items-baseline justify-between gap-3 text-[0.9375rem] font-bold text-ink">
+                  <div className="flex items-baseline justify-between gap-3 text-[0.9375rem] font-semibold text-ink">
                     <span>{level.level}</span>
                     <span className="tabular-nums">{percent(level.successRate)}</span>
                   </div>
@@ -214,7 +214,7 @@ export function AnnalesOverview() {
         <Section variant="panel" title="Ce qui revient à la correction">
           <ul className="flex flex-wrap gap-2">
             {tags.map((tag) => (
-              <li key={tag.label} className="rounded-full bg-inset px-3 py-1.5 text-[0.8125rem] font-bold text-ink">
+              <li key={tag.label} className="rounded-full bg-inset px-3 py-1.5 text-[0.8125rem] font-semibold text-ink">
                 {tag.label} <span className="text-subtle">· {tag.count}</span>
               </li>
             ))}
@@ -257,7 +257,7 @@ function ChapterRow({ chapter }: { chapter: ChapterSummary }) {
     <li className="flex items-center gap-3 py-3">
       {chapter.subject && <SubjectAvatar subject={chapter.subject} size="md" />}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[0.9375rem] font-bold text-ink">{chapter.chapter}</p>
+        <p className="truncate text-[0.9375rem] font-semibold text-ink">{chapter.chapter}</p>
         <p className="t-meta text-2xs">
           {chapter.subjectLabel} · {chapter.count} essai{chapter.count > 1 ? "s" : ""} · dernier le {dateFormat.format(new Date(`${chapter.lastDay}T12:00:00`))}
         </p>
@@ -267,7 +267,7 @@ function ChapterRow({ chapter }: { chapter: ChapterSummary }) {
           <li key={index} className={cn("h-2.5 w-2.5 rounded-full", RESULT_META[result].dot)} title={RESULT_META[result].label} />
         ))}
       </ol>
-      <span className="w-12 shrink-0 text-right text-[0.9375rem] font-extrabold tabular-nums text-ink">{percent(chapter.successRate)}</span>
+      <span className="w-12 shrink-0 text-right text-[0.9375rem] font-semibold tabular-nums text-ink">{percent(chapter.successRate)}</span>
     </li>
   );
 }
@@ -289,11 +289,11 @@ function LogRow({ log, onRemove }: { log: AnnaleLog; onRemove: (id: string) => P
     <li className="flex items-start gap-3 py-3">
       {log.subject && <SubjectAvatar subject={log.subject} size="md" />}
       <div className="min-w-0 flex-1">
-        <p className="break-words text-[0.9375rem] font-bold leading-snug text-ink">
+        <p className="break-words text-[0.9375rem] font-semibold leading-snug text-ink">
           {log.chapter}
           {log.source && <span className="font-semibold text-muted"> · {log.source}</span>}
         </p>
-        <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-2xs font-bold text-subtle">
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-2xs font-semibold text-subtle">
           <Badge variant={meta.variant}>{meta.label}</Badge>
           {log.level && <Badge>{log.level}</Badge>}
           {log.hints > 0 && <span>{log.hints} indice{log.hints > 1 ? "s" : ""}</span>}
@@ -303,7 +303,7 @@ function LogRow({ log, onRemove }: { log: AnnaleLog; onRemove: (id: string) => P
         {log.errors.length > 0 && <p className="mt-1 break-words text-[0.875rem] font-semibold leading-snug text-muted">Erreurs : {log.errors.join(" · ")}</p>}
         {log.comment && <p className="mt-0.5 break-words text-[0.875rem] leading-snug text-muted">{log.comment}</p>}
         {failure && (
-          <p role="alert" className="mt-1 text-2xs font-bold text-rose-300">
+          <p role="alert" className="mt-1 text-2xs font-semibold text-rose-300">
             Suppression impossible : {failure}
           </p>
         )}

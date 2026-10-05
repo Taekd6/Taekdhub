@@ -66,12 +66,12 @@ export function ErrorStats({
             seule phrase de l'écran qui dit quoi faire de toutes ces lignes. */}
         {insight ? (
           <div className="grad-card tone-brand sheen p-4">
-            <p className="text-[0.8125rem] font-bold opacity-85">Le constat</p>
+            <p className="text-[0.8125rem] font-semibold opacity-85">Le constat</p>
             <p className="t-card-title mt-1">{insight.text}</p>
           </div>
         ) : (
           <p className="t-meta mt-1.5">
-            <span className="block font-bold text-ink">Le constat</span>
+            <span className="block font-semibold text-ink">Le constat</span>
             Pas encore de constat : il faut au moins {ERROR_INSIGHT_MIN} erreurs notées sur {ERROR_PERIOD_DAYS} jours dans une matière
             {subject
               ? ` (${recentForSubject} en ${subject} pour l'instant)`
@@ -83,8 +83,8 @@ export function ErrorStats({
         )}
         {trend.direction !== "insuffisant" && (
           <p className="t-meta mt-2 text-2xs">
-            <span className="tabular font-bold text-ink">{trend.recent}</span> ces {ERROR_PERIOD_DAYS} jours contre{" "}
-            <span className="tabular font-bold text-ink">{trend.previous}</span> les {ERROR_PERIOD_DAYS} précédents
+            <span className="tabular font-semibold text-ink">{trend.recent}</span> ces {ERROR_PERIOD_DAYS} jours contre{" "}
+            <span className="tabular font-semibold text-ink">{trend.previous}</span> les {ERROR_PERIOD_DAYS} précédents
             {trend.direction === "stable" ? " — à peu près autant." : trend.direction === "hausse" ? " — plus." : " — moins."} Ce compte suit aussi ta
             régularité à noter.
           </p>
@@ -93,7 +93,7 @@ export function ErrorStats({
 
       <div>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[0.9375rem] font-black text-ink">Par type</p>
+          <p className="text-[0.9375rem] font-bold text-ink">Par type</p>
           <SegmentedControl
             size="sm"
             ariaLabel="Période des statistiques"
@@ -119,8 +119,8 @@ export function ErrorStats({
             {byType.map((row, index) => (
               <li key={row.type}>
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className={cn("text-[0.875rem] font-bold", row.count > 0 ? "text-ink" : "text-muted")}>{ERROR_TYPE_META[row.type].label}</span>
-                  <span className="tabular text-[0.8125rem] font-black text-ink">{row.count}</span>
+                  <span className={cn("text-[0.875rem] font-semibold", row.count > 0 ? "text-ink" : "text-muted")}>{ERROR_TYPE_META[row.type].label}</span>
+                  <span className="tabular text-[0.8125rem] font-bold text-ink">{row.count}</span>
                 </div>
                 <div
                   role="img"
@@ -142,18 +142,18 @@ export function ErrorStats({
 
       {bySubject.length > 0 && !subject && (
         <div>
-          <p className="text-[0.9375rem] font-black text-ink">Par matière</p>
+          <p className="text-[0.9375rem] font-bold text-ink">Par matière</p>
           <ul className="mt-2 divide-y divide-line">
             {bySubject.map((row) => (
               <li key={row.subject} className="flex items-center gap-3 py-2.5">
                 <SubjectAvatar subject={row.subject} size="md" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[0.875rem] font-extrabold text-ink">{row.subject}</span>
-                  <span className="block truncate text-2xs font-bold text-subtle">
+                  <span className="block truncate text-[0.875rem] font-semibold text-ink">{row.subject}</span>
+                  <span className="block truncate text-2xs font-semibold text-subtle">
                     {row.top ? `Surtout : ${ERROR_TYPE_META[row.top].label.toLowerCase()} (${row.byType[row.top]})` : row.total < ERROR_INSIGHT_MIN ? "Trop peu pour dégager un type" : "Pas de type nettement en tête"}
                   </span>
                 </span>
-                <span className="tabular shrink-0 text-[0.9375rem] font-black text-ink">{row.total}</span>
+                <span className="tabular shrink-0 text-[0.9375rem] font-bold text-ink">{row.total}</span>
               </li>
             ))}
           </ul>
@@ -162,7 +162,7 @@ export function ErrorStats({
 
       {dominant && (
         <div className="well p-4">
-          <p className="text-[0.8125rem] font-extrabold text-accent">Que faire · {ERROR_TYPE_META[dominant].label}</p>
+          <p className="text-[0.8125rem] font-semibold text-accent">Que faire · {ERROR_TYPE_META[dominant].label}</p>
           <p className="mt-1 text-[0.8125rem] leading-5 text-ink">{ERROR_TYPE_META[dominant].advice}</p>
           {dominant === "cours" && (
             <p className="t-meta mt-1.5 inline-flex items-center gap-1 text-2xs">
@@ -187,7 +187,7 @@ export function ErrorStats({
 export function WhyItWorks() {
   return (
     <details className="group px-1">
-      <summary className="inline-flex min-h-9 cursor-pointer list-none items-center rounded-full bg-inset px-3.5 text-sm font-bold text-ink transition-colors hover:bg-hairline/[0.10] max-lg:min-h-11 [&::-webkit-details-marker]:hidden">
+      <summary className="inline-flex min-h-9 cursor-pointer list-none items-center rounded-full bg-inset px-3.5 text-sm font-semibold text-ink transition-colors hover:bg-hairline/[0.10] max-lg:min-h-11 [&::-webkit-details-marker]:hidden">
         Pourquoi ça marche
       </summary>
       <div className="t-meta mt-2 space-y-2 text-2xs leading-5">

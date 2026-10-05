@@ -228,7 +228,7 @@ function SubjectHero({
       <div className="flex items-center justify-between gap-3">
         <Link
           href="/preparation"
-          className="inline-flex min-h-9 items-center gap-1 rounded-full bg-white/20 py-1 pl-2 pr-3.5 text-[0.8125rem] font-extrabold text-white transition-colors hover:bg-white/30 max-lg:min-h-11"
+          className="inline-flex min-h-9 items-center gap-1 rounded-full bg-white/20 py-1 pl-2 pr-3.5 text-[0.8125rem] font-semibold text-white transition-colors hover:bg-white/30 max-lg:min-h-11"
         >
           <ChevronLeft size={16} strokeWidth={2.6} aria-hidden /> Matières
         </Link>
@@ -245,17 +245,17 @@ function SubjectHero({
               <CountUp value={weekMinutes} duration={1400} format={(value) => formatSpan(value * 60)} />
             </span>
           </p>
-          <p className="mt-1.5 text-[0.8125rem] font-bold opacity-80">
+          <p className="mt-1.5 text-[0.8125rem] font-semibold opacity-80">
             {target ? `cette semaine · sur ${formatMinutesSpan(target.targetMinutes)}` : `ces ${HUB_RECENT_DAYS} jours · pas de budget`}
           </p>
         </div>
         {target && (
           <Ring value={target.percent} size={88} strokeWidth={8} variant="white">
-            <span className="text-base font-black tabular">{target.percent}%</span>
+            <span className="text-base font-bold tabular">{target.percent}%</span>
           </Ring>
         )}
       </div>
-      <ul className="mt-5 flex flex-wrap gap-2 text-[0.8125rem] font-extrabold">
+      <ul className="mt-5 flex flex-wrap gap-2 text-[0.8125rem] font-semibold">
         <li className="rounded-full bg-white/20 px-3 py-1.5">
           <span className="tabular">{due}</span> à réviser aujourd&apos;hui
         </li>
@@ -368,19 +368,19 @@ function HubLanding({
                     <span className="t-glyph whitespace-nowrap">{SUBJECT_GLYPH[subject]}</span>
                     {target && (
                       <Ring value={target.percent} size={44} strokeWidth={5} variant="white">
-                        <span className="text-[0.625rem] font-black tabular">{target.percent}%</span>
+                        <span className="text-[0.625rem] font-bold tabular">{target.percent}%</span>
                       </Ring>
                     )}
                   </span>
                   <span aria-hidden className="mt-4 block min-w-0">
-                    <span className="block truncate text-base font-extrabold">{SUBJECT_CARD_NAME[subject]}</span>
-                    <span className="block whitespace-nowrap text-2xl font-black tabular tracking-[-0.02em] sm:text-3xl">
+                    <span className="block truncate text-base font-semibold">{SUBJECT_CARD_NAME[subject]}</span>
+                    <span className="block whitespace-nowrap text-2xl font-bold tabular tracking-[-0.02em] sm:text-3xl">
                       <CountUp value={minutes} format={(value) => formatSpan(value * 60)} />
                     </span>
-                    <span className="block truncate text-xs font-bold opacity-80">
+                    <span className="block truncate text-xs font-semibold opacity-80">
                       {target ? `sur ${formatMinutesSpan(target.targetMinutes)}` : `ces ${HUB_RECENT_DAYS} jours`}
                     </span>
-                    <span className="mt-2.5 flex flex-wrap gap-1 text-[0.6875rem] font-extrabold">
+                    <span className="mt-2.5 flex flex-wrap gap-1 text-[0.6875rem] font-semibold">
                       {deadlines > 0 && <span className="rounded-full bg-white/20 px-2 py-0.5">{deadlines} éch.</span>}
                       {open > 0 && <span className="rounded-full bg-white/20 px-2 py-0.5">{open} à revoir</span>}
                       {model.grades.average !== null && <span className="rounded-full bg-white/20 px-2 py-0.5">moy. {formatAverage(model.grades.average)}</span>}
@@ -406,7 +406,7 @@ const DAY_MONTH = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "lon
 function Figure({ label, value, detail }: { label: string; value: React.ReactNode; detail?: string }) {
   return (
     <div className="well min-w-0 p-4 sm:p-5">
-      <p className="text-[0.8125rem] font-bold text-muted">{label}</p>
+      <p className="text-[0.8125rem] font-semibold text-muted">{label}</p>
       <p className="t-stat mt-1 whitespace-nowrap text-ink">{value}</p>
       {detail && <p className="t-meta mt-1 text-2xs">{detail}</p>}
     </div>
@@ -496,10 +496,10 @@ function Overview({ subject, model, sessions }: { subject: Subject; model: HubSu
                 <li key={priority.item.id} className="row-slide flex min-h-[4.25rem] items-center gap-3 rounded-[1.125rem] px-3 py-2.5">
                   <DateBadge date={priority.item.dueDate ? new Date(`${priority.item.dueDate}T00:00:00`) : null} tone={index} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[0.9375rem] font-extrabold text-ink">{priority.item.title}</p>
+                    <p className="truncate text-[0.9375rem] font-semibold text-ink">{priority.item.title}</p>
                     <p
                       className={cn(
-                        "mt-0.5 truncate text-[0.8125rem] font-bold",
+                        "mt-0.5 truncate text-[0.8125rem] font-semibold",
                         priority.overdue ? "text-rose-300" : priority.daysUntilDue !== null && priority.daysUntilDue <= 2 ? "text-accent" : "text-subtle"
                       )}
                     >
@@ -757,12 +757,12 @@ function GradesTab({ subject, model, grades }: { subject: Subject; model: HubSub
                   {grade.score !== null ? formatAverage((grade.score / grade.maxScore) * 20) : "—"}
                 </ScoreBadge>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[0.9375rem] font-extrabold text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
-                  <span className="block truncate text-[0.8125rem] font-bold text-subtle">
+                  <span className="block truncate text-[0.9375rem] font-semibold text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
+                  <span className="block truncate text-[0.8125rem] font-semibold text-subtle">
                     {GRADE_KIND_META[grade.kind].short} · {DAY_MONTH.format(new Date(`${grade.date}T00:00:00`))}
                   </span>
                 </span>
-                <span className="tabular shrink-0 whitespace-nowrap text-[0.9375rem] font-black text-ink">{formatGrade(grade)}</span>
+                <span className="tabular shrink-0 whitespace-nowrap text-[0.9375rem] font-bold text-ink">{formatGrade(grade)}</span>
               </li>
             ))}
           </ul>

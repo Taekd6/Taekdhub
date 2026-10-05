@@ -63,7 +63,7 @@ export function ThemePicker() {
                 onClick={() => chooseMode(option)}
                 aria-pressed={active}
                 className={cn(
-                  "press flex min-h-9 flex-1 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold max-lg:min-h-11 sm:flex-none",
+                  "press flex min-h-9 flex-1 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold max-lg:min-h-11 sm:flex-none",
                   active ? "chip-on" : "text-muted hover:text-ink"
                 )}
               >
@@ -75,7 +75,7 @@ export function ThemePicker() {
       </Row>
 
       <div className="py-4 pr-4 sm:pr-5">
-        <p className="text-[0.9375rem] font-bold text-ink">Palette</p>
+        <p className="text-[0.9375rem] font-semibold text-ink">Palette</p>
         <div role="group" aria-label="Palette" className="mt-4 grid grid-cols-4 gap-3 sm:gap-4">
           {PALETTES.map((option) => {
             const active = option.id === palette;
@@ -112,7 +112,7 @@ export function ThemePicker() {
                     </span>
                   )}
                 </span>
-                <span aria-hidden className={cn("text-2xs font-bold", active ? "text-ink" : "text-subtle")}>
+                <span aria-hidden className={cn("text-2xs font-semibold", active ? "text-ink" : "text-subtle")}>
                   {option.label}
                 </span>
               </button>

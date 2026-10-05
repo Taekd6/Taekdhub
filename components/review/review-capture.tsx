@@ -205,7 +205,7 @@ export function ReviewCapture({
                     // retenue est INVERSÉE (aplat à la couleur du texte, lettre
                     // à la couleur du fond) — pas de contour d'accent, l'accent
                     // reste réservé à l'action.
-                    "press grid h-9 min-w-9 place-items-center rounded-full px-1.5 text-xs font-extrabold leading-none max-lg:h-11",
+                    "press grid h-9 min-w-9 place-items-center rounded-full px-1.5 text-xs font-semibold leading-none max-lg:h-11",
                     active ? "grad-brand [box-shadow:0_6px_14px_-6px_var(--g1)]" : cn(subjectMeta[item].className, "hover:brightness-125")
                   )}
                 >

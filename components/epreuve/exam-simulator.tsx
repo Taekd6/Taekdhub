@@ -139,14 +139,14 @@ export function ExamSimulator() {
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {saved.gradeId && (
-                <Link href={`/debrief?note=${encodeURIComponent(saved.gradeId)}`} className="grad-btn inline-flex min-h-10 items-center rounded-full px-4 text-sm font-bold max-lg:min-h-11">
+                <Link href={`/debrief?note=${encodeURIComponent(saved.gradeId)}`} className="grad-btn inline-flex min-h-10 items-center rounded-full px-4 text-sm font-semibold max-lg:min-h-11">
                   Débriefer cette épreuve
                 </Link>
               )}
-              <Link href={errorLogHref({ subject: saved.subject, source: "concours blanc", date: dayKey(new Date()) })} className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+              <Link href={errorLogHref({ subject: saved.subject, source: "concours blanc", date: dayKey(new Date()) })} className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
                 Noter mes erreurs
               </Link>
-              <Link href="/progress#notes" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+              <Link href="/progress#notes" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
                 Voir mes notes
               </Link>
             </div>
@@ -212,7 +212,7 @@ export function ExamSimulator() {
             </Button>
           }
         >
-          <p className={cn("font-mono text-5xl font-black tabular-nums sm:text-6xl", left < 0 ? "text-rose-300" : left < 15 * 60 ? "text-amber-300" : "text-ink")}>
+          <p className={cn("font-mono text-5xl font-bold tabular-nums sm:text-6xl", left < 0 ? "text-rose-300" : left < 15 * 60 ? "text-amber-300" : "text-ink")}>
             {clock(left)}
           </p>
           <p className="t-meta mt-2">{left < 0 ? "Temps écoulé — rends la copie." : `restant sur ${sim.durationMinutes / 60} h · ${minutes(elapsedSeconds(sim, current))} écoulées`}</p>
@@ -228,7 +228,7 @@ export function ExamSimulator() {
                     type="button"
                     onClick={() => update(focusQuestion(sim, question.id, new Date()))}
                     aria-pressed={active}
-                    className={cn("min-h-10 min-w-0 flex-1 rounded-lg px-2 text-left text-[0.9375rem] font-bold max-lg:min-h-11", active ? "text-accent" : "text-ink")}
+                    className={cn("min-h-10 min-w-0 flex-1 rounded-lg px-2 text-left text-[0.9375rem] font-semibold max-lg:min-h-11", active ? "text-accent" : "text-ink")}
                   >
                     {question.label}
                     <span className="ml-2 text-2xs font-semibold tabular-nums text-subtle">{clock(questionSeconds(sim, question, current))}</span>
@@ -298,7 +298,7 @@ export function ExamSimulator() {
           {sim.questions.map((question) => (
             <li key={question.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center">
               <div className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="text-[0.9375rem] font-bold text-ink">{question.label}</span>
+                <span className="text-[0.9375rem] font-semibold text-ink">{question.label}</span>
                 <span className="t-meta text-2xs tabular-nums">{minutes(question.seconds)}</span>
                 <BaremeInput value={question.points} onChange={(points) => update(updateQuestion(sim, question.id, { points }))} label={question.label} />
                 <button
@@ -318,7 +318,7 @@ export function ExamSimulator() {
                     aria-pressed={question.status === status}
                     onClick={() => update(updateQuestion(sim, question.id, { status }))}
                     className={cn(
-                      "min-h-8 rounded-full px-3 text-2xs font-bold transition-colors max-lg:min-h-10",
+                      "min-h-8 rounded-full px-3 text-2xs font-semibold transition-colors max-lg:min-h-10",
                       question.status === status ? STATUS_STYLE[status] : "bg-transparent text-subtle hover:text-ink"
                     )}
                   >
@@ -368,7 +368,7 @@ function BaremeInput({ value, onChange, label }: { value: number; onChange: (poi
   const [text, setText] = useState(String(value).replace(".", ","));
   useEffect(() => setText(String(value).replace(".", ",")), [value]);
   return (
-    <label className="inline-flex shrink-0 items-center gap-1 text-2xs font-bold text-subtle">
+    <label className="inline-flex shrink-0 items-center gap-1 text-2xs font-semibold text-subtle">
       <Input
         aria-label={`Barème de ${label}`}
         inputMode="decimal"

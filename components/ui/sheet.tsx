@@ -57,7 +57,7 @@ export function Sheet({
     <>
       {open && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end sm:hidden">
-          <div onClick={onClose} className="animate-fade-in absolute inset-0 bg-black/55" />
+          <div onClick={onClose} className="animate-fade-in absolute inset-0 bg-black/30 backdrop-blur-[6px]" />
           <div
             role="dialog"
             aria-modal="true"

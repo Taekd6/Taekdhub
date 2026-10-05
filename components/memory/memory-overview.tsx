@@ -61,7 +61,7 @@ export function MemoryOverview() {
         lede="Ta chance de te souvenir de chaque chapitre, aujourd'hui."
         illustration={<Illustration name="revisions" size={56} />}
         actions={
-          <Link href="/anki" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+          <Link href="/anki" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
             Relier Anki
           </Link>
         }
@@ -82,12 +82,12 @@ export function MemoryOverview() {
                   {entry.meanRetrievability !== null ? <span className="text-[0.8125rem]">{Math.round(entry.meanRetrievability * 100)}%</span> : "—"}
                 </ScoreBadge>
                 <div className="min-w-0">
-                  <p className="truncate text-[0.9375rem] font-extrabold text-ink">{entry.subject}</p>
-                  <p className="text-[0.8125rem] font-bold text-subtle">
+                  <p className="truncate text-[0.9375rem] font-semibold text-ink">{entry.subject}</p>
+                  <p className="text-[0.8125rem] font-semibold text-subtle">
                     {entry.count} chapitre{entry.count > 1 ? "s" : ""}
                     {entry.meanRetrievability !== null && <span className="sr-only"> · ≈ {Math.round(entry.meanRetrievability * 100)} % en moyenne</span>}
                   </p>
-                  <p className="text-[0.8125rem] font-bold text-subtle">
+                  <p className="text-[0.8125rem] font-semibold text-subtle">
                     {entry.atRisk > 0 ? (
                       <span className="text-[var(--review-a)]">
                         {entry.atRisk} à revoir maintenant

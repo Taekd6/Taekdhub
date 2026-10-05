@@ -96,7 +96,7 @@ export function SubjectCards({ cards, className }: { cards: SubjectCard[]; class
     <section aria-labelledby="matieres-titre" className={cn("reveal min-w-0", className)} style={{ "--i": 3 } as CSSProperties}>
       <BlockHeader id="matieres-titre" title="Matières" href="/preparation" className="mb-3" />
       {shown.length === 0 ? (
-        <Link href="/settings#budgets" className="surface lift block p-5 text-[0.9375rem] font-bold text-muted">
+        <Link href="/settings#budgets" className="surface lift block p-5 text-[0.9375rem] font-semibold text-muted">
           Fixe un budget par matière pour suivre ta semaine ›
         </Link>
       ) : (
@@ -122,11 +122,11 @@ export function SubjectCards({ cards, className }: { cards: SubjectCard[]; class
                   {card.targetMinutes > 0 && <CardRing percent={percent} index={index} />}
                 </span>
                 <span aria-hidden className="block">
-                  <span className="block text-base font-extrabold">{SUBJECT_CARD_NAME[card.subject]}</span>
-                  <span className="block text-2xl font-black tabular tracking-[-0.02em]">
+                  <span className="block text-base font-semibold">{SUBJECT_CARD_NAME[card.subject]}</span>
+                  <span className="block text-2xl font-bold tabular tracking-[-0.02em]">
                     <CountUp value={Math.round(card.seconds / 60)} format={(minutes) => formatSpan(minutes * 60)} />
                   </span>
-                  <span className="block text-xs font-bold opacity-75">
+                  <span className="block text-xs font-semibold opacity-75">
                     {card.targetMinutes > 0 ? `sur ${formatMinutesSpan(card.targetMinutes)}` : "cette semaine"}
                   </span>
                 </span>
@@ -154,12 +154,12 @@ export function ReviewBanner({ due, next, className }: { due: number; next: { da
       style={{ "--i": 4 } as CSSProperties}
       aria-label={done ? "Révisions à jour — ouvrir le carnet" : `${due} ${due > 1 ? "cartes" : "carte"} à revoir aujourd'hui, environ ${due * MINUTES_PER_CARD} minutes. Commencer.`}
     >
-      <span aria-hidden className="grid h-[3.25rem] w-[3.25rem] shrink-0 place-items-center rounded-2xl bg-white/20 text-2xl font-black tabular">
+      <span aria-hidden className="grid h-[3.25rem] w-[3.25rem] shrink-0 place-items-center rounded-2xl bg-white/20 text-2xl font-bold tabular">
         {done ? "✓" : <CountUp value={due} />}
       </span>
       <span aria-hidden className="min-w-0 flex-1">
         <span className="t-card-title block">{done ? "Révisions à jour" : "Révisions du jour"}</span>
-        <span className="block truncate text-[0.8125rem] font-bold opacity-80">
+        <span className="block truncate text-[0.8125rem] font-semibold opacity-80">
           {done
             ? next
               ? `Prochaine ${formatDueDay(next.day)} · ${next.count} ${next.count > 1 ? "cartes" : "carte"}`
@@ -167,7 +167,7 @@ export function ReviewBanner({ due, next, className }: { due: number; next: { da
             : `≈ ${due * MINUTES_PER_CARD} min`}
         </span>
       </span>
-      <span aria-hidden className="shrink-0 rounded-full bg-white px-4 py-2.5 text-sm font-black text-[#0b0b14]">
+      <span aria-hidden className="shrink-0 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-[#0b0b14]">
         {done ? "Carnet" : "Go"}
       </span>
     </GradientCard>
@@ -255,13 +255,13 @@ export function StatTiles({
   return (
     <div className={cn("reveal grid grid-cols-2 gap-3", className)} style={{ "--i": 6 } as CSSProperties}>
       <Link href="/progress" className="surface lift block p-4">
-        <p className="text-[0.8125rem] font-bold text-muted">Série</p>
+        <p className="text-[0.8125rem] font-semibold text-muted">Série</p>
         <p className="t-stat mt-1 text-ink">
           <CountUp value={streak} format={(value) => `${value} ${value > 1 ? "jours" : "jour"}`} />
         </p>
       </Link>
       <Link href="/progress" className="surface lift block p-4">
-        <p className="text-[0.8125rem] font-bold text-muted">Semaine</p>
+        <p className="text-[0.8125rem] font-semibold text-muted">Semaine</p>
         <p className="t-stat mt-1 text-ink">
           <CountUp value={Math.round(weekSeconds / 60)} format={(minutes) => formatSpan(minutes * 60)} />
         </p>

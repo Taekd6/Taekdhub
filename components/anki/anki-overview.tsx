@@ -205,12 +205,12 @@ export function AnkiOverview() {
               Ce ne sont pas des chiffres en temps réel.
             </p>
             {dueAge !== null && dueAge > ANKI_DUE_STALE_HOURS && (
-              <p className="mt-2 inline-flex items-center gap-1.5 text-[0.8125rem] font-bold text-amber-300">
+              <p className="mt-2 inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold text-amber-300">
                 <AlertTriangle size={14} aria-hidden /> Les cartes dues ont plus de {ANKI_DUE_STALE_HOURS} h : TaekdHub ne s&apos;en sert plus pour te conseiller.
               </p>
             )}
             {fullAgeDays !== null && fullAgeDays > ANKI_TREND_STALE_DAYS && (
-              <p className="mt-2 inline-flex items-center gap-1.5 text-[0.8125rem] font-bold text-amber-300">
+              <p className="mt-2 inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold text-amber-300">
                 <AlertTriangle size={14} aria-hidden /> Relevé complet vieux de {Math.round(fullAgeDays)} jours : le diagnostic l&apos;ignore jusqu&apos;au prochain.
               </p>
             )}
@@ -221,7 +221,7 @@ export function AnkiOverview() {
       <Section variant="panel" title="Relever" description="Un relevé ne fait que LIRE des compteurs dans Anki. Seul « Envoyer vers Anki », plus bas, y écrit, et seulement sur ton clic.">
         <div className="space-y-5">
           <div>
-            <p className="text-[0.9375rem] font-bold text-ink">Depuis Anki sur ordinateur (AnkiConnect)</p>
+            <p className="text-[0.9375rem] font-semibold text-ink">Depuis Anki sur ordinateur (AnkiConnect)</p>
             <p className="t-meta mt-1">Le relevé le plus complet : chaque paquet, ses cartes dues, ses échecs récents. À faire sur l&apos;ordinateur où Anki est ouvert ; le relevé se synchronise ensuite sur ton téléphone si tu es connecté.</p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Button onClick={() => void readFromAnki()} disabled={busy !== null || platform === "ios" || platform === "android"}>
@@ -238,7 +238,7 @@ export function AnkiOverview() {
           </div>
 
           <div>
-            <p className="text-[0.9375rem] font-bold text-ink">Par fichier</p>
+            <p className="text-[0.9375rem] font-semibold text-ink">Par fichier</p>
             <p className="t-meta mt-1">Un relevé exporté depuis TaekdHub (sur un autre navigateur ou ordinateur). Réimporter le même fichier ne crée pas de doublon.</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button variant="secondary" size="sm" onClick={() => fileInput.current?.click()}>
@@ -285,12 +285,12 @@ export function AnkiOverview() {
                 {hardChapters.map((entry) => (
                   <li key={entry.chapterId} className="flex items-center gap-3 py-2.5">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[0.9375rem] font-bold text-ink">{PROGRAMME_BY_ID.get(entry.chapterId)?.title}</p>
+                      <p className="truncate text-[0.9375rem] font-semibold text-ink">{PROGRAMME_BY_ID.get(entry.chapterId)?.title}</p>
                       <p className="t-meta text-2xs">
                         {entry.reviewed30} révisées · {entry.due} dues au relevé · {entry.lapsing} oubliées 4 fois ou plus · {entry.decks.length} paquet{entry.decks.length > 1 ? "s" : ""}
                       </p>
                     </div>
-                    <span className={cn("text-[0.9375rem] font-extrabold tabular-nums", (entry.failRate ?? 0) >= 0.2 ? "text-rose-300" : "text-ink")}>{Math.round((entry.failRate ?? 0) * 100)} %</span>
+                    <span className={cn("text-[0.9375rem] font-semibold tabular-nums", (entry.failRate ?? 0) >= 0.2 ? "text-rose-300" : "text-ink")}>{Math.round((entry.failRate ?? 0) * 100)} %</span>
                   </li>
                 ))}
               </ul>
@@ -341,7 +341,7 @@ function SetupSteps({ origin }: { origin: string }) {
   const config = ankiConnectConfig(origin);
   return (
     <ol className="well mt-3 list-decimal space-y-2 rounded-2xl p-4 pl-8 text-[0.875rem] leading-relaxed text-ink">
-      <li>Dans Anki (ordinateur) : Outils → Modules → Obtenir des modules → code <code className="font-mono font-bold">2055492159</code> (AnkiConnect), puis redémarre Anki.</li>
+      <li>Dans Anki (ordinateur) : Outils → Modules → Obtenir des modules → code <code className="font-mono font-semibold">2055492159</code> (AnkiConnect), puis redémarre Anki.</li>
       <li>
         Outils → Modules → AnkiConnect → Configuration, et remplace le contenu par :
         <pre className="mt-2 overflow-x-auto rounded-xl bg-inset p-3 font-mono text-2xs leading-relaxed">{config}</pre>
@@ -367,7 +367,7 @@ function ManualEntry({ onSave }: { onSave: (due: number | null, reviewedToday: n
   const parse = (value: string) => (value.trim() === "" ? null : Number.isFinite(Number(value)) && Number(value) >= 0 ? Math.round(Number(value)) : null);
   return (
     <div>
-      <p className="text-[0.9375rem] font-bold text-ink">Saisie rapide depuis AnkiMobile</p>
+      <p className="text-[0.9375rem] font-semibold text-ink">Saisie rapide depuis AnkiMobile</p>
       <p className="t-meta mt-1">Deux chiffres lus dans AnkiMobile (liste des paquets, et Statistiques → Aujourd&apos;hui). Sans détail par paquet : ils ne servent qu&apos;à Next Move et au suivi.</p>
       <div className="mt-3 grid max-w-md grid-cols-2 gap-2">
         <label className="block">
@@ -425,17 +425,17 @@ function MappingList({
           return (
             <li key={mapping.deck} className="grid gap-2 py-3 sm:grid-cols-2 sm:items-center">
               <div className="min-w-0">
-                <p className="break-words text-[0.875rem] font-bold text-ink">{mapping.deck}</p>
+                <p className="break-words text-[0.875rem] font-semibold text-ink">{mapping.deck}</p>
                 <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-2xs font-semibold text-subtle">
                   <Badge variant={mapping.kind === "proposée" ? "warning" : mapping.chapterId ? "success" : "default"}>{KIND_LABEL[mapping.kind]}</Badge>
                   {mapping.subject ?? "matière non reconnue"}
                   {suggestion && (
-                    <button type="button" onClick={() => onChange(mapping.deck, suggestion.id)} className="font-bold text-accent hover:underline">
+                    <button type="button" onClick={() => onChange(mapping.deck, suggestion.id)} className="font-semibold text-accent hover:underline">
                       Confirmer « {suggestion.title} »
                     </button>
                   )}
                   {(mapping.kind === "manuelle" || mapping.kind === "ignoré") && (
-                    <button type="button" onClick={() => onChange(mapping.deck, undefined)} className="font-bold text-subtle hover:text-ink">
+                    <button type="button" onClick={() => onChange(mapping.deck, undefined)} className="font-semibold text-subtle hover:text-ink">
                       Revenir à l&apos;automatique
                     </button>
                   )}

@@ -88,7 +88,7 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
         {justAdded && grades.some((grade) => grade.id === justAdded.id) && <GradeErrorsLink grade={justAdded} className="mt-3" />}
         {/* Le débrief question par question (lib/debrief.ts) : chapitres, causes, plan et nouvelles tentatives. */}
         {justAdded && grades.some((grade) => grade.id === justAdded.id) && justAdded.kind !== "dm" && (
-          <Link href={`/debrief?note=${encodeURIComponent(justAdded.id)}`} className="mt-2 inline-flex min-h-10 items-center gap-1.5 text-[0.875rem] font-bold text-accent hover:underline max-lg:min-h-11">
+          <Link href={`/debrief?note=${encodeURIComponent(justAdded.id)}`} className="mt-2 inline-flex min-h-10 items-center gap-1.5 text-[0.875rem] font-semibold text-accent hover:underline max-lg:min-h-11">
             <ClipboardCheck size={15} aria-hidden /> Débriefer cette copie question par question
           </Link>
         )}
@@ -192,8 +192,8 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
                         {row.stats.average !== null ? formatAverage(row.stats.average) : "—"}
                       </ScoreBadge>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[0.9375rem] font-extrabold text-ink">{row.subject}</span>
-                        <span className="tabular block truncate text-[0.8125rem] font-bold text-subtle">
+                        <span className="block truncate text-[0.9375rem] font-semibold text-ink">{row.subject}</span>
+                        <span className="tabular block truncate text-[0.8125rem] font-semibold text-subtle">
                           dernière {row.stats.latest ? formatGrade(row.stats.latest) : "—"}
                         </span>
                       </span>
@@ -201,7 +201,7 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
                           deux points font une variation, pas une tendance. */}
                       <span
                         className={cn(
-                          "grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-bold",
+                          "grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-semibold",
                           row.trend.direction === "hausse" ? "bg-accent/[0.14] text-accent" : "bg-inset text-muted"
                         )}
                         role="img"
@@ -234,13 +234,13 @@ export function GradesSection({ grades, onSave }: { grades: Grade[]; onSave: (gr
                   <li key={grade.id} className="row-slide flex min-h-[4.25rem] items-center gap-3 rounded-[1.125rem] py-2.5 pl-3 pr-1">
                     <ScoreBadge ratio={ratio}>{formatAverage(normalizedScore(grade))}</ScoreBadge>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[0.9375rem] font-extrabold text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
-                      <span className="block truncate text-[0.8125rem] font-bold text-subtle">
+                      <span className="block truncate text-[0.9375rem] font-semibold text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
+                      <span className="block truncate text-[0.8125rem] font-semibold text-subtle">
                         {grade.subject} · {GRADE_KIND_META[grade.kind].short} · {longDate.format(new Date(`${grade.date}T00:00:00`))}
                         {formatPrediction(grade) && <> · pronostic {formatPrediction(grade)}</>}
                       </span>
                     </span>
-                    <span className="tabular shrink-0 whitespace-nowrap text-[0.9375rem] font-black text-ink">{formatGrade(grade)}</span>
+                    <span className="tabular shrink-0 whitespace-nowrap text-[0.9375rem] font-bold text-ink">{formatGrade(grade)}</span>
                     {grade.kind !== "dm" && (
                       <Link href={`/debrief?note=${encodeURIComponent(grade.id)}`} title="Débriefer" aria-label={`Débriefer ${grade.title || GRADE_KIND_META[grade.kind].label}`} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-subtle hover:bg-inset hover:text-ink max-lg:h-11 max-lg:w-11">
                         <ClipboardCheck size={15} aria-hidden />

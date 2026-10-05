@@ -117,7 +117,7 @@ export function QuickLog({
               title={item}
               onClick={() => setSubject(item)}
               className={cn(
-                "press grid h-11 place-items-center rounded-full text-[0.8125rem] font-bold leading-none",
+                "press grid h-11 place-items-center rounded-full text-[0.8125rem] font-semibold leading-none",
                 active ? "grad-btn pop [box-shadow:0_8px_18px_-8px_var(--btn-g1)]" : "bg-inset text-ink hover:bg-zinc-700"
               )}
             >
@@ -143,7 +143,7 @@ export function QuickLog({
                 setCustom("");
               }}
               className={cn(
-                "press tabular min-h-10 rounded-full text-[0.8125rem] font-bold max-lg:min-h-11",
+                "press tabular min-h-10 rounded-full text-[0.8125rem] font-semibold max-lg:min-h-11",
                 active ? "grad-btn pop [box-shadow:0_8px_18px_-8px_var(--btn-g1)]" : "bg-inset text-muted hover:text-ink"
               )}
             >
@@ -200,7 +200,7 @@ export function QuickLog({
         <ul className="mt-3 divide-y divide-line">
           {recent.map((session) => (
             <li key={session.id} className={cn("flex items-center gap-2 py-1.5", session.id === justAdded && "animate-rise")}>
-              <span className={cn("grid h-6 w-6 shrink-0 place-items-center rounded-full text-[0.625rem] font-extrabold", subjectMeta[session.subject].className)}>
+              <span className={cn("grid h-6 w-6 shrink-0 place-items-center rounded-full text-[0.625rem] font-semibold", subjectMeta[session.subject].className)}>
                 {subjectMeta[session.subject].short}
               </span>
               <span className="tabular min-w-0 flex-1 truncate text-[0.8125rem] font-semibold text-muted">
@@ -210,7 +210,7 @@ export function QuickLog({
               <button
                 type="button"
                 onClick={() => undo(session.id)}
-                className="inline-flex min-h-8 items-center gap-1 rounded-full px-2 text-2xs font-bold text-subtle hover:bg-inset hover:text-ink max-lg:min-h-11"
+                className="inline-flex min-h-8 items-center gap-1 rounded-full px-2 text-2xs font-semibold text-subtle hover:bg-inset hover:text-ink max-lg:min-h-11"
                 aria-label={`Annuler ${formatSpan(session.duration_seconds)} de ${session.subject}`}
               >
                 <Undo2 size={12} /> Annuler

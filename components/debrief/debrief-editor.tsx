@@ -87,7 +87,7 @@ export function DebriefEditor() {
       <div className="mx-auto max-w-[56rem] space-y-8">
         {hero}
         <GradePicker grades={grades} attemptsGradeIds={new Set(attempts.map((attempt) => attempt.gradeId).filter((id): id is string => Boolean(id)))} onPick={(id) => router.push(`/debrief?note=${encodeURIComponent(id)}`)} onCreate={(created) => { saveGrades([...grades, created]); router.push(`/debrief?note=${encodeURIComponent(created.id)}`); }} />
-        {gradeId && <p role="alert" className="text-[0.875rem] font-bold text-rose-300">Cette note n&apos;existe plus sur cet appareil.</p>}
+        {gradeId && <p role="alert" className="text-[0.875rem] font-semibold text-rose-300">Cette note n&apos;existe plus sur cet appareil.</p>}
       </div>
     );
   }
@@ -159,13 +159,13 @@ function GradePicker({
               <li key={grade.id}>
                 <button type="button" onClick={() => onPick(grade.id)} className="flex min-h-12 w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-inset">
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[0.9375rem] font-bold text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
+                    <span className="block truncate text-[0.9375rem] font-semibold text-ink">{grade.title || GRADE_KIND_META[grade.kind].label}</span>
                     <span className="t-meta text-2xs">
                       {grade.subject} · {GRADE_KIND_META[grade.kind].short} · {dateFormat.format(new Date(`${grade.date}T12:00:00`))}
                       {attemptsGradeIds.has(grade.id) ? " · déjà débriefée" : ""}
                     </span>
                   </span>
-                  <span className="shrink-0 text-[0.9375rem] font-extrabold tabular-nums text-ink">{isScored(grade) ? `${formatAverage(grade.score)}/${formatAverage(grade.maxScore)}` : "en attente"}</span>
+                  <span className="shrink-0 text-[0.9375rem] font-semibold tabular-nums text-ink">{isScored(grade) ? `${formatAverage(grade.score)}/${formatAverage(grade.maxScore)}` : "en attente"}</span>
                   <ArrowRight size={16} aria-hidden className="shrink-0 text-subtle" />
                 </button>
               </li>
@@ -269,7 +269,7 @@ function QuestionsEditor({
         title={`${grade.title || GRADE_KIND_META[grade.kind].label} · ${grade.subject}`}
         description={`${isScored(grade) ? `${formatAverage(grade.score)}/${formatAverage(grade.maxScore)} · ` : ""}${dateFormat.format(new Date(`${grade.date}T12:00:00`))} · ${questions.length} question${questions.length > 1 ? "s" : ""}, ${missed} à reprendre`}
         action={
-          <Link href="/debrief" className="text-[0.8125rem] font-bold text-accent hover:underline">
+          <Link href="/debrief" className="text-[0.8125rem] font-semibold text-accent hover:underline">
             Autre copie
           </Link>
         }
@@ -298,7 +298,7 @@ function QuestionsEditor({
                     type="button"
                     aria-pressed={question.outcome === outcome}
                     onClick={() => update(index, { outcome, ...(outcome === "réussie" ? { cause: null, lackOfTime: false } : {}) })}
-                    className={cn("min-h-9 rounded-full px-3 text-[0.8125rem] font-bold transition-colors max-lg:min-h-11", question.outcome === outcome ? OUTCOME_STYLE[outcome] : "text-subtle hover:text-ink")}
+                    className={cn("min-h-9 rounded-full px-3 text-[0.8125rem] font-semibold transition-colors max-lg:min-h-11", question.outcome === outcome ? OUTCOME_STYLE[outcome] : "text-subtle hover:text-ink")}
                   >
                     {outcome}
                   </button>
@@ -366,7 +366,7 @@ function QuestionsEditor({
           </Button>
         </div>
         {error && (
-          <p role="alert" className="mt-3 text-[0.875rem] font-bold text-rose-300">
+          <p role="alert" className="mt-3 text-[0.875rem] font-semibold text-rose-300">
             {error}
           </p>
         )}
@@ -375,14 +375,14 @@ function QuestionsEditor({
       {result && (
         <Section variant="feature" title="Plan d'action">
           {!result.ok && (
-            <p role="alert" className="mb-4 text-[0.875rem] font-bold text-rose-300">
+            <p role="alert" className="mb-4 text-[0.875rem] font-semibold text-rose-300">
               Le navigateur a refusé l&apos;enregistrement (stockage plein ou bloqué) : le plan ci-dessous n&apos;est pas sauvegardé.
             </p>
           )}
           <ol className="space-y-5">
             {result.steps.map((step) => (
               <li key={step.title}>
-                <p className="text-[0.9375rem] font-extrabold text-ink">{step.title}</p>
+                <p className="text-[0.9375rem] font-semibold text-ink">{step.title}</p>
                 <ul className="mt-1.5 list-disc space-y-1 pl-5 text-[0.875rem] leading-relaxed text-muted">
                   {step.items.map((item) => (
                     <li key={item}>{item}</li>
@@ -392,10 +392,10 @@ function QuestionsEditor({
             ))}
           </ol>
           <div className="mt-5 flex flex-wrap gap-2">
-            <Link href="/annales" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+            <Link href="/annales" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
               Voir « À refaire »
             </Link>
-            <Link href={`/erreurs?subject=${encodeURIComponent(grade.subject)}`} className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+            <Link href={`/erreurs?subject=${encodeURIComponent(grade.subject)}`} className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
               Noter les bonnes idées au carnet
             </Link>
           </div>

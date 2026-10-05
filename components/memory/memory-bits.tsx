@@ -105,13 +105,13 @@ export function RatingPanel({
 export function WhyMemoryWorks() {
   return (
     <details className="group px-1">
-      <summary className="inline-flex min-h-9 cursor-pointer list-none items-center gap-1.5 rounded-full bg-inset px-3.5 text-sm font-bold text-ink transition-colors hover:bg-hairline/[0.10] max-lg:min-h-11 [&::-webkit-details-marker]:hidden">
+      <summary className="inline-flex min-h-9 cursor-pointer list-none items-center gap-1.5 rounded-full bg-inset px-3.5 text-sm font-semibold text-ink transition-colors hover:bg-hairline/[0.10] max-lg:min-h-11 [&::-webkit-details-marker]:hidden">
         <ChevronDown size={15} aria-hidden className="text-subtle transition-transform group-open:rotate-180" />
         Pourquoi ça marche
       </summary>
       <div className="t-meta mt-2 max-w-[62ch] space-y-2 text-[0.8125rem]">
         <p>
-          <span className="font-bold text-ink">On oublie vite, puis de moins en moins vite.</span> Ebbinghaus (1885) l&apos;a mesuré sur lui-même ; la courbe
+          <span className="font-semibold text-ink">On oublie vite, puis de moins en moins vite.</span> Ebbinghaus (1885) l&apos;a mesuré sur lui-même ; la courbe
           d&apos;oubli a été retrouvée depuis dans de nombreuses études (réplication de Murre &amp; Dros, 2015). Chaque révision réussie la rend plus
           plate : on tient plus longtemps avant la suivante.
         </p>

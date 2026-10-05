@@ -26,7 +26,7 @@ export function SubjectAvatar({ subject, size = "md" }: { subject: Subject; size
   return (
     <span
       className={cn(
-        "grad-brand grid shrink-0 place-items-center rounded-full font-black leading-none [box-shadow:0_6px_14px_-8px_var(--g1)]",
+        "grad-brand grid shrink-0 place-items-center rounded-full font-bold leading-none [box-shadow:0_6px_14px_-8px_var(--g1)]",
         size === "sm" && "h-[1.375rem] w-[1.375rem] text-[0.625rem]",
         size === "md" && "h-8 w-8 text-[0.75rem]",
         size === "lg" && "h-11 w-11 text-[0.9375rem]"

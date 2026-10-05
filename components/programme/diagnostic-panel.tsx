@@ -34,10 +34,10 @@ export function DiagnosticPanel({ context }: { context: DiagnosticContext }) {
           {insufficient > 0 ? ` ${insufficient} chapitre${insufficient > 1 ? "s ont" : " a"} déjà quelques traces.` : ""}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link href="/debrief" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+          <Link href="/debrief" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
             Débriefer un DS
           </Link>
-          <Link href="/anki" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+          <Link href="/anki" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
             Relier Anki
           </Link>
         </div>
@@ -51,7 +51,7 @@ export function DiagnosticPanel({ context }: { context: DiagnosticContext }) {
       {context.ankiStale && <p className="t-meta mt-4 text-2xs">Le dernier relevé Anki a plus de 7 jours : il n&apos;est pas utilisé.</p>}
       {others.length > 0 && (
         <>
-          <button type="button" onClick={() => setMore((value) => !value)} aria-expanded={more} className="mt-5 inline-flex min-h-10 items-center gap-1 text-sm font-bold text-accent hover:underline max-lg:min-h-11">
+          <button type="button" onClick={() => setMore((value) => !value)} aria-expanded={more} className="mt-5 inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-accent hover:underline max-lg:min-h-11">
             {others.length} autre{others.length > 1 ? "s" : ""} chapitre{others.length > 1 ? "s" : ""} à surveiller <ChevronDown size={15} aria-hidden className={cn("transition-transform", more && "rotate-180")} />
           </button>
           {more && (
@@ -73,9 +73,9 @@ function DiagnosisDetail({ diagnosis, primary = false }: { diagnosis: ChapterDia
   const finding = mainFinding(diagnosis)!;
   return (
     <div>
-      <p className={cn(primary ? "t-heading leading-snug" : "text-[0.9375rem] font-extrabold text-ink")}>
+      <p className={cn(primary ? "t-heading leading-snug" : "text-[0.9375rem] font-semibold text-ink")}>
         {diagnosis.chapter.title}
-        <span className="ml-2 align-middle text-[0.8125rem] font-bold text-subtle">{diagnosis.chapter.subject}</span>
+        <span className="ml-2 align-middle text-[0.8125rem] font-semibold text-subtle">{diagnosis.chapter.subject}</span>
       </p>
       <p className="mt-1.5 flex flex-wrap items-center gap-1.5">
         {diagnosis.findings.map((entry) => (
@@ -87,14 +87,14 @@ function DiagnosisDetail({ diagnosis, primary = false }: { diagnosis: ChapterDia
       </p>
       <dl className="mt-3 grid gap-1 text-[0.8125rem] sm:grid-cols-2">
         <div>
-          <dt className="inline font-bold text-subtle">Cours : </dt>
+          <dt className="inline font-semibold text-subtle">Cours : </dt>
           <dd className={cn("inline font-semibold", STATE_TONE[diagnosis.course.state])}>
             {STATE_WORD[diagnosis.course.state]}
             <span className="text-muted"> — {diagnosis.course.detail}</span>
           </dd>
         </div>
         <div>
-          <dt className="inline font-bold text-subtle">Application : </dt>
+          <dt className="inline font-semibold text-subtle">Application : </dt>
           <dd className={cn("inline font-semibold", STATE_TONE[diagnosis.application.state])}>
             {STATE_WORD[diagnosis.application.state]}
             <span className="text-muted"> — {diagnosis.application.detail}</span>
@@ -108,14 +108,14 @@ function DiagnosisDetail({ diagnosis, primary = false }: { diagnosis: ChapterDia
         ))}
       </ul>
       <p className="mt-2 text-[0.8125rem] text-muted">
-        <span className="font-bold text-subtle">Hypothèse : </span>
+        <span className="font-semibold text-subtle">Hypothèse : </span>
         {finding.hypothesis}
-        {finding.stale && <span className="font-bold text-amber-300"> (observations anciennes)</span>}
+        {finding.stale && <span className="font-semibold text-amber-300"> (observations anciennes)</span>}
       </p>
-      <p className="mt-3 text-[0.9375rem] font-bold text-ink">→ {finding.action}</p>
+      <p className="mt-3 text-[0.9375rem] font-semibold text-ink">→ {finding.action}</p>
       <p className="t-meta mt-1 text-[0.8125rem]">Terminé quand : {finding.doneWhen}</p>
       {diagnosis.retryKeys.length > 0 && (
-        <Link href="/annales" className="mt-2 inline-flex min-h-10 items-center gap-1 text-sm font-bold text-accent hover:underline max-lg:min-h-11">
+        <Link href="/annales" className="mt-2 inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-accent hover:underline max-lg:min-h-11">
           {diagnosis.retryKeys.length} exercice{diagnosis.retryKeys.length > 1 ? "s" : ""} à refaire sans aide <ArrowRight size={14} aria-hidden />
         </Link>
       )}

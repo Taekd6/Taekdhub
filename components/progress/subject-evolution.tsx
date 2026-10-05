@@ -78,7 +78,7 @@ export function SubjectEvolution({ sessions }: { sessions: WorkSession[] }) {
                   )}
                 </div>
                 <div className="col-start-3 row-start-1 text-right sm:col-start-4">
-                  <p className="tabular whitespace-nowrap text-[0.9375rem] font-bold text-ink">
+                  <p className="tabular whitespace-nowrap text-[0.9375rem] font-semibold text-ink">
                     {row.minutes > 0 ? formatSpan(row.minutes * 60) : "—"}
                     {row.minutes > 0 && <span className="ml-1.5 text-[0.8125rem] font-medium text-subtle">{row.percent} %</span>}
                   </p>

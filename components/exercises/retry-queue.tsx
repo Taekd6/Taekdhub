@@ -290,14 +290,14 @@ function ExerciseRow({ exercise, action, detail }: { exercise: Exercise; action:
   return (
     <li className="flex items-center gap-3 py-3">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[0.9375rem] font-bold text-ink">{exercise.label}</p>
+        <p className="truncate text-[0.9375rem] font-semibold text-ink">{exercise.label}</p>
         <p className="t-meta text-2xs">
           {exercise.subject ?? "Matière inconnue"}
           {chapter ? ` · ${chapter.title}` : ""} · dernier essai {last.result}, {ATTEMPT_HELP_LABEL[last.help].toLowerCase()}
           {!last.helpDeclared ? " (déduit des indices)" : ""}
         </p>
-        {detail && <p className="mt-1 text-2xs font-bold text-accent">{detail}</p>}
-        {exercise.changeApproach && <p className="mt-1 text-2xs font-bold text-amber-300">{exercise.changeApproach}</p>}
+        {detail && <p className="mt-1 text-2xs font-semibold text-accent">{detail}</p>}
+        {exercise.changeApproach && <p className="mt-1 text-2xs font-semibold text-amber-300">{exercise.changeApproach}</p>}
       </div>
       <div className="shrink-0">{action}</div>
     </li>
@@ -336,10 +336,10 @@ function RetrySession({
       <p className="t-meta mt-1">
         {exercise.steps.length} tentative{exercise.steps.length > 1 ? "s" : ""} avant celle-ci{progress ? ` · ${progress}` : ""}
       </p>
-      <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-inset px-3 py-1.5 text-[0.8125rem] font-bold text-ink">
+      <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-inset px-3 py-1.5 text-[0.8125rem] font-semibold text-ink">
         <EyeOff size={14} aria-hidden /> Correction cachée : ne l&apos;ouvre qu&apos;après avoir fini.
       </p>
-      <p className="mt-3 font-mono text-2xl font-black tabular-nums text-muted" aria-live="off">
+      <p className="mt-3 font-mono text-2xl font-bold tabular-nums text-muted" aria-live="off">
         {elapsed} min
       </p>
 
@@ -352,7 +352,7 @@ function RetrySession({
               type="button"
               aria-pressed={result === value}
               onClick={() => setResult(value)}
-              className={cn("min-h-11 rounded-xl text-[0.875rem] font-extrabold capitalize transition-colors", result === value ? RESULT_STYLE[value] : "bg-inset text-muted hover:text-ink")}
+              className={cn("min-h-11 rounded-xl text-[0.875rem] font-semibold capitalize transition-colors", result === value ? RESULT_STYLE[value] : "bg-inset text-muted hover:text-ink")}
             >
               {value}
             </button>
@@ -427,7 +427,7 @@ function QualityRow({ exercise, onSave }: { exercise: Exercise; onSave: (patch: 
   const issues = qualityIssues(exercise);
   return (
     <li className="py-3">
-      <p className="truncate text-[0.9375rem] font-bold text-ink">{exercise.label}</p>
+      <p className="truncate text-[0.9375rem] font-semibold text-ink">{exercise.label}</p>
       <ul className="t-meta text-2xs">
         {issues.map((issue) => (
           <li key={issue}>{QUALITY_ISSUE_LABEL[issue]}</li>
@@ -470,7 +470,7 @@ const ANALYSIS_FIELDS: { key: keyof BlockAnalysis; label: string; placeholder: s
 function BlockAnalysisFields({ value, onChange }: { value: BlockAnalysis; onChange: (value: BlockAnalysis) => void }) {
   return (
     <details className="mt-4 rounded-xl bg-inset p-3">
-      <summary className="inline-flex cursor-pointer items-center gap-2 text-[0.875rem] font-extrabold text-ink">
+      <summary className="inline-flex cursor-pointer items-center gap-2 text-[0.875rem] font-semibold text-ink">
         <Lightbulb size={14} aria-hidden /> Comprendre pourquoi je bloque
       </summary>
       <p className="t-meta mt-2 text-2xs">Correction en main, après l&apos;essai. Le réflexe et ce qu&apos;il faut reconnaître deviennent une fiche de méthode dans « À revoir ».</p>
@@ -506,7 +506,7 @@ function TransferForm({ check, onCancel, onSave }: { check: TransferCheck; onCan
           {check.analysis.tool && <li>Réflexe : {check.analysis.tool}</li>}
         </ul>
       )}
-      <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-inset px-3 py-1.5 text-[0.8125rem] font-bold text-ink">
+      <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-inset px-3 py-1.5 text-[0.8125rem] font-semibold text-ink">
         <EyeOff size={14} aria-hidden /> Sans relire la correction de l&apos;exercice d&apos;origine.
       </p>
       <CopyRequest text={transferRequest(check.exercise, check.analysis?.tool || null)} className="mt-3" />
@@ -514,7 +514,7 @@ function TransferForm({ check, onCancel, onSave }: { check: TransferCheck; onCan
         <label className="block sm:col-span-2">
           <span className="t-label mb-1.5 block">Le nouvel exercice</span>
           <Input value={label} onChange={(event) => setLabel(event.target.value)} maxLength={160} placeholder="TD 6 — exercice 3, ou l'énoncé donné par Claude" />
-          {sameStatement && <span className="mt-1 block text-2xs font-bold text-amber-300">C&apos;est le même énoncé : un transfert se vérifie sur un exercice différent.</span>}
+          {sameStatement && <span className="mt-1 block text-2xs font-semibold text-amber-300">C&apos;est le même énoncé : un transfert se vérifie sur un exercice différent.</span>}
         </label>
         <label className="block">
           <span className="t-label mb-1.5 block">Résultat</span>

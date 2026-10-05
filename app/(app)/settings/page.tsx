@@ -1,3 +1,4 @@
+import { PushSettings } from "@/components/notifications/push-settings";
 import { AccountSection } from "@/components/account/account-section";
 import { BriefingSetting } from "@/components/briefing/briefing-setting";
 import { CapacityForm } from "@/components/work/capacity-form";
@@ -26,6 +27,7 @@ export default function SettingsPage() {
       <ThemePicker />
       <PreferencesForm />
       <BriefingSetting />
+      <PushSettings />
       <CapacityForm />
       {/* ── Premier lancement : rouvrir l'accueil guidé ── */}
       <OnboardingRestartEntry />

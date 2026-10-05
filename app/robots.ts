@@ -11,7 +11,7 @@ import type { MetadataRoute } from "next";
  */
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/dashboard", "/preparation", "/progress", "/history", "/echeances", "/revoir", "/erreurs", "/settings", "/timer", "/memoire", "/point", "/bienvenue"] },
+    rules: { userAgent: "*", allow: "/", disallow: ["/dashboard", "/preparation", "/progress", "/history", "/echeances", "/revoir", "/erreurs", "/settings", "/timer", "/memoire", "/point", "/bienvenue", "/anki", "/annales", "/bilan", "/debrief", "/epreuve", "/formulaire", "/kholle", "/programme", "/api/"] },
     sitemap: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://taekdhub.vercel.app"}/sitemap.xml`,
   };
 }

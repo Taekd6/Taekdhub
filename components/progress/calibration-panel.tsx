@@ -203,11 +203,11 @@ function CalibrationChart({ points }: { points: CalibrationPoint[] }) {
                     side
                   )}
                 >
-                  <span className="font-bold">{point.subject}</span>
+                  <span className="font-semibold">{point.subject}</span>
                   <span className="text-muted"> · pronostic </span>
-                  <span className="font-bold tabular">{formatPoints(point.predicted)}</span>
+                  <span className="font-semibold tabular">{formatPoints(point.predicted)}</span>
                   <span className="text-muted"> · note </span>
-                  <span className="font-bold tabular">{formatPoints(point.actual)}</span>
+                  <span className="font-semibold tabular">{formatPoints(point.actual)}</span>
                 </span>
               </div>
             );

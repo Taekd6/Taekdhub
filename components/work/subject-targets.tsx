@@ -47,7 +47,7 @@ export function SubjectTargetList({
               <span
                 aria-hidden
                 className={cn(
-                  "mt-px grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1 text-[0.625rem] font-extrabold leading-none",
+                  "mt-px grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1 text-[0.625rem] font-semibold leading-none",
                   subjectMeta[row.subject].className
                 )}
               >
@@ -60,16 +60,16 @@ export function SubjectTargetList({
             )}
             <div className="min-w-0 flex-1" aria-hidden>
               <div className="flex items-baseline gap-2">
-                <span className={cn("min-w-0 flex-1 truncate font-bold text-ink", compact ? "text-[0.8125rem] leading-[1.125rem]" : "text-sm")}>{row.subject}</span>
+                <span className={cn("min-w-0 flex-1 truncate font-semibold text-ink", compact ? "text-[0.8125rem] leading-[1.125rem]" : "text-sm")}>{row.subject}</span>
                 <span className={cn("tabular shrink-0 whitespace-nowrap", compact ? "text-2xs" : "text-[0.8125rem]")}>
-                  <span className="font-bold text-ink">{formatSpan(row.doneSeconds)}</span>
+                  <span className="font-semibold text-ink">{formatSpan(row.doneSeconds)}</span>
                   <span className="text-muted"> / {formatMinutesSpan(row.targetMinutes)}</span>
                 </span>
               </div>
               <Meter value={row.percent} index={index} className={compact ? "mt-1" : "mt-2"} />
               {!compact && (
                 <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-2xs">
-                  <span className={cn("font-bold", pace.className)}>{pace.label}</span>
+                  <span className={cn("font-semibold", pace.className)}>{pace.label}</span>
                   {row.remainingMinutes > 0 && (
                     <span className="text-subtle">
                       reste {formatMinutesSpan(row.remainingMinutes)}
@@ -79,7 +79,7 @@ export function SubjectTargetList({
                 </p>
               )}
             </div>
-            {compact && <span className={cn("shrink-0 whitespace-nowrap text-2xs font-bold", pace.className)}>{pace.label}</span>}
+            {compact && <span className={cn("shrink-0 whitespace-nowrap text-2xs font-semibold", pace.className)}>{pace.label}</span>}
           </li>
         );
       })}

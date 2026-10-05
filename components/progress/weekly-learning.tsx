@@ -67,7 +67,7 @@ export function WeeklyLearningSection({
                 <li key={`${skill.label}-${skill.on}`} className="flex items-start gap-2 text-[0.9375rem] text-ink">
                   <CheckCircle2 size={16} aria-hidden className="mt-0.5 shrink-0 text-emerald-300" />
                   <span>
-                    <span className="font-bold">{skill.label}</span>
+                    <span className="font-semibold">{skill.label}</span>
                     <span className="t-meta block text-2xs">
                       {skill.proof}
                       {skill.chapter ? ` · ${skill.chapter}` : ""} · {fr(skill.on)}
@@ -88,7 +88,7 @@ export function WeeklyLearningSection({
             <ul className="space-y-2">
               {learning.recurring.map((entry) => (
                 <li key={`${entry.chapterId}-${entry.cause}`} className="text-[0.9375rem] text-ink">
-                  <span className="font-bold">{entry.chapter}</span> <span className="t-meta">({entry.subject})</span>
+                  <span className="font-semibold">{entry.chapter}</span> <span className="t-meta">({entry.subject})</span>
                   <span className="t-meta block text-2xs">{entry.fact}</span>
                 </li>
               ))}
@@ -115,7 +115,7 @@ export function WeeklyLearningSection({
             <ul className="space-y-3">
               {learning.toWork.map((entry) => (
                 <li key={entry.chapterId} className="text-[0.9375rem] text-ink">
-                  <span className="font-bold">{entry.chapter}</span> · {entry.label}{" "}
+                  <span className="font-semibold">{entry.chapter}</span> · {entry.label}{" "}
                   <Badge variant={entry.level === "établi" ? "warning" : "default"}>{entry.level}</Badge>
                   {entry.fact && <span className="t-meta block text-2xs">Fait : {entry.fact}</span>}
                   <span className="t-meta block text-2xs">Hypothèse : {entry.hypothesis}</span>

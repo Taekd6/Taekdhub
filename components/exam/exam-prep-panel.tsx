@@ -171,7 +171,7 @@ function ChapterRows({ prep, today, onRate }: { prep: ExamPrep; today: string; o
               <p className="truncate text-sm font-semibold text-ink">{entry.chapter.title}</p>
               <p className="t-meta text-2xs">{rowDetail(entry, today)}</p>
             </div>
-            <span className={cn("tabular shrink-0 text-sm font-bold", LEVEL_INK[entry.level])}>{formatChance(entry.onExam)}</span>
+            <span className={cn("tabular shrink-0 text-sm font-semibold", LEVEL_INK[entry.level])}>{formatChance(entry.onExam)}</span>
           </div>
           <RetentionBar retrievability={entry.onExam} className="mt-2" />
           {rating === entry.chapter.id ? (

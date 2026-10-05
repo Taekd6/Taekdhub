@@ -98,7 +98,7 @@ export function ProgrammeOverview() {
         lede="Tout le programme MP, coloré par ce que tu sais vraiment."
         illustration={<Illustration name="revisions" size={56} />}
         actions={
-          <Link href="/anki" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-bold text-ink max-lg:min-h-11">
+          <Link href="/anki" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
             Anki
           </Link>
         }
@@ -118,7 +118,7 @@ export function ProgrammeOverview() {
         </StatRow>
         <ul className="mt-6 flex flex-wrap gap-x-4 gap-y-2" aria-label="Légende">
           {PROGRAMME_STATUSES.map((status) => (
-            <li key={status} className="inline-flex items-center gap-1.5 text-[0.8125rem] font-bold text-muted">
+            <li key={status} className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold text-muted">
               <span aria-hidden className={cn("h-2.5 w-2.5 rounded-full", STATUS_TONE[status].dot)} />
               {PROGRAMME_STATUS_META[status].label} · {summary.counts[status]}
             </li>
@@ -164,7 +164,7 @@ export function ProgrammeOverview() {
           <ol className="divide-y divide-line">
             {plan.weeks.map((week, index) => (
               <li key={week.weekStart} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-baseline sm:gap-4">
-                <p className="w-36 shrink-0 text-[0.875rem] font-extrabold text-ink">
+                <p className="w-36 shrink-0 text-[0.875rem] font-semibold text-ink">
                   {index === 0 ? "Cette semaine" : `Sem. du ${weekFormat.format(new Date(`${week.weekStart}T12:00:00`))}`}
                 </p>
                 {week.chapters.length === 0 ? (
@@ -172,7 +172,7 @@ export function ProgrammeOverview() {
                 ) : (
                   <ul className="flex flex-wrap gap-1.5">
                     {week.chapters.map((entry) => (
-                      <li key={entry.chapter.id} className="inline-flex items-center gap-1.5 rounded-full bg-inset px-2.5 py-1 text-[0.8125rem] font-bold text-ink">
+                      <li key={entry.chapter.id} className="inline-flex items-center gap-1.5 rounded-full bg-inset px-2.5 py-1 text-[0.8125rem] font-semibold text-ink">
                         <span aria-hidden className={cn("h-2 w-2 rounded-full", STATUS_TONE[entry.status].dot)} />
                         <span className="text-subtle">{SHORT_SUBJECT[entry.chapter.subject]}</span> {entry.chapter.title}
                       </li>
@@ -205,13 +205,13 @@ function ChapterTile({ entry, finding, onToggleSeen }: { entry: ChapterMastery; 
   const canToggle = entry.status === "pas-vu" || (entry.status === "jamais" && entry.declaredSeen);
   return (
     <li className={cn("well flex min-h-[7.5rem] flex-col rounded-2xl border-l-4 p-4", tone.tile)}>
-      <p className="text-[0.9375rem] font-extrabold leading-snug text-ink">{entry.chapter.title}</p>
-      <p className={cn("mt-1 text-2xs font-bold", tone.text)}>
+      <p className="text-[0.9375rem] font-semibold leading-snug text-ink">{entry.chapter.title}</p>
+      <p className={cn("mt-1 text-2xs font-semibold", tone.text)}>
         {PROGRAMME_STATUS_META[entry.status].label}
         <span className="font-semibold text-subtle"> · {entry.reason}</span>
       </p>
       {finding && (
-        <p className="mt-1 text-2xs font-bold text-rose-300">
+        <p className="mt-1 text-2xs font-semibold text-rose-300">
           {FINDING_LABEL[finding.kind]} ({finding.level})
         </p>
       )}
@@ -222,7 +222,7 @@ function ChapterTile({ entry, finding, onToggleSeen }: { entry: ChapterMastery; 
             onClick={onToggleSeen}
             aria-pressed={entry.declaredSeen}
             className={cn(
-              "inline-flex min-h-8 items-center gap-1 rounded-full px-3 text-2xs font-bold transition-colors max-lg:min-h-10",
+              "inline-flex min-h-8 items-center gap-1 rounded-full px-3 text-2xs font-semibold transition-colors max-lg:min-h-10",
               entry.declaredSeen ? "bg-amber-400/[0.16] text-amber-300" : "bg-inset text-muted hover:text-ink"
             )}
           >

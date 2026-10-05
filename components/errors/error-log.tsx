@@ -159,8 +159,8 @@ export function ErrorLog() {
               <div className="space-y-6">
                 {groups.map((group) => (
                   <div key={group.key}>
-                    <p className="mb-1 text-[0.9375rem] font-black text-ink">
-                      {group.label} <span className="tabular font-bold text-subtle">· {group.entries.length}</span>
+                    <p className="mb-1 text-[0.9375rem] font-bold text-ink">
+                      {group.label} <span className="tabular font-semibold text-subtle">· {group.entries.length}</span>
                     </p>
                     <ul className="divide-y divide-line">
                       {group.entries.map((entry) => (
@@ -227,9 +227,9 @@ function ErrorRow({
     <li className={cn("flex items-start gap-3 py-3", fresh && "animate-fade-in")}>
       {showSubject && <SubjectAvatar subject={entry.subject} size="md" />}
       <div className="min-w-0 flex-1">
-        <p className="break-words text-[0.9375rem] font-bold leading-snug text-ink">{entry.description}</p>
+        <p className="break-words text-[0.9375rem] font-semibold leading-snug text-ink">{entry.description}</p>
         {entry.fix && <p className="mt-0.5 break-words text-[0.875rem] font-semibold leading-snug text-muted">→ {entry.fix}</p>}
-        <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-2xs font-bold text-subtle">
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-2xs font-semibold text-subtle">
           {/* Le TYPE en pastille : c'est la colonne qu'on parcourt des yeux. */}
           <span className="rounded-full bg-accent/10 px-2 py-0.5 text-accent">{ERROR_TYPE_META[entry.type].label}</span>
           {ERROR_SOURCE_META[entry.source].label}
