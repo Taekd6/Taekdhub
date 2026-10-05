@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, renderHook } from "@testing-library/react";
+import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { createReviewItem } from "@/lib/review-items";
@@ -18,9 +18,9 @@ import { localData } from "@/lib/storage";
  * périmée qui écrit efface ce que l'autre vient d'ajouter. Voir
  * docs/AUDIT.md, P1-1.
  *
- * `it.fails` : ce test RÉUSSIT tant que le bug existe. Il échouera le jour
- * où la phase 3 (store partagé) le corrige ; il suffira alors de remplacer
- * `it.fails` par `it`.
+ * Corrigé en phase 3 : un seul magasin par onglet (hooks/use-prepahub-data.ts).
+ * Ce test était `it.fails` tant que le bug existait ; il garde désormais la
+ * correction.
  */
 
 function item(text: string) {
@@ -28,10 +28,14 @@ function item(text: string) {
 }
 
 beforeEach(() => localStorage.clear());
-afterEach(() => localStorage.clear());
+afterEach(() => {
+  // Démonter les composants : le magasin partagé relit le disque au prochain premier abonné.
+  cleanup();
+  localStorage.clear();
+});
 
 describe("usePrepahubData — deux composants sur le même écran", () => {
-  it.fails("P1-1 : une copie périmée n'efface pas une entrée ajoutée par une autre", () => {
+  it("P1-1 : un composant n'efface plus une entrée ajoutée par un autre", () => {
     const a = renderHook(() => usePrepahubData());
     const b = renderHook(() => usePrepahubData());
     expect(a.result.current.ready).toBe(true);
@@ -44,7 +48,28 @@ describe("usePrepahubData — deux composants sur le même écran", () => {
 
     const stored = localData.reviewItems().map((entry) => entry.text);
     expect(stored).toContain("Revoir Taylor");
-    expect(stored).toContain("Revoir IPP"); // ← perdu aujourd'hui
+    expect(stored).toContain("Revoir IPP"); // ← perdu avant la phase 3
+    // Et les deux composants voient la même chose, tout de suite.
+    expect(a.result.current.reviewItems.map((entry) => entry.text)).toEqual(stored);
+    expect(b.result.current.reviewItems).toBe(a.result.current.reviewItems);
+  });
+
+  it("la même chose pour toutes les collections écrites en remplacement (notes, mémoire, tentatives…)", () => {
+    const a = renderHook(() => usePrepahubData());
+    const b = renderHook(() => usePrepahubData());
+    act(() => a.result.current.savePreferences({ ...a.result.current.preferences, displayName: "Taekd" }));
+    // B n'a PAS relu le disque : il construit sur son propre état, qui doit déjà être à jour.
+    act(() => b.result.current.savePreferences({ ...b.result.current.preferences, planningMarginPercent: 30 }));
+    expect(localData.preferences()).toMatchObject({ displayName: "Taekd", planningMarginPercent: 30 });
+  });
+
+  it("un écran démonté puis remonté relit le disque (une écriture faite ailleurs entre-temps n'est pas masquée)", () => {
+    const first = renderHook(() => usePrepahubData());
+    expect(first.result.current.reviewItems).toEqual([]);
+    first.unmount();
+    localData.saveReviewItems([item("Écrit par un autre onglet")]);
+    const again = renderHook(() => usePrepahubData());
+    expect(again.result.current.reviewItems.map((entry) => entry.text)).toEqual(["Écrit par un autre onglet"]);
   });
 
   it("le contournement actuel (relire le disque avant d'écrire) protège les préférences", () => {

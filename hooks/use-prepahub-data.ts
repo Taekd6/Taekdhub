@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { type ChapterMemory } from "@/lib/storage"; // mémoire des chapitres (FSRS)
-import { lastStorageWriteFailure, localData, purgeRetiredBankData, type NextMoveRecord, type DayPlanRecord, type ErrorEntry, type Grade, type Preferences, type ReviewItem, type WeekSnapshot, type WorkItem, type DailyCheckin } from "@/lib/storage";
+import { lastStorageWriteFailure, localData, normalizePreferences, purgeRetiredBankData, type NextMoveRecord, type DayPlanRecord, type ErrorEntry, type Grade, type Preferences, type ReviewItem, type WeekSnapshot, type WorkItem, type DailyCheckin } from "@/lib/storage";
 import { buildWeeklyPlan } from "@/lib/planning";
 import { dayKey } from "@/lib/study";
 import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
@@ -124,49 +124,100 @@ function readAll(): Omit<DataState, "ready" | "writeFailedAt"> {
   };
 }
 
-export function usePrepahubData() {
-  const [data, setData] = useState<DataState>({
-    sessions: [],
-    workItems: [],
-    grades: [],
-    dayPlans: [],
-    reviewItems: [],
-    errors: [],
-    checkins: [],
-    chapterMemory: [],
-    nextMoves: [],
-    attempts: [],
-    ankiSnapshots: [],
-    weekSnapshots: [],
-    lastBackupAt: null,
-    preferences: localData.preferences(),
-    ready: false,
-    writeFailedAt: null,
-  });
+/* ══════════════════════════════════════════════════════════════════
+   UN SEUL MAGASIN PAR ONGLET (phase 3 — docs/AUDIT.md, P1-1)
+   ══════════════════════════════════════════════════════════════════
 
-  const refresh = useCallback(() => {
-    setData({ ...readAll(), ready: true, writeFailedAt: lastStorageWriteFailure()?.at ?? null });
-  }, []);
+   Avant : chaque appel à `usePrepahubData()` (une quarantaine dans
+   l'application) gardait SA copie React des données. Une écriture d'un
+   composant ne prévenait pas les autres composants du même onglet
+   (l'événement `storage` ne part que vers les AUTRES onglets). Pour les
+   collections écrites en REMPLACEMENT (notes, erreurs, à revoir, tentatives,
+   mémoire, check-ins, Next Move, Anki, préférences), une copie périmée qui
+   écrivait EFFAÇAIT ce qu'une autre venait d'ajouter — prouvé par
+   hooks/use-prepahub-data.test.tsx. Le code s'en protégeait au cas par cas
+   (« un seul appelant par écran », relire le disque avant d'écrire) : une
+   discipline, pas une garantie.
 
-  useEffect(() => {
-    // Ménage AVANT la première lecture : efface, sur un appareil qui l'avait
-    // encore, l'ancienne banque d'exercices (≈ 2,8 Mo de quota rendus à
-    // l'élève). Sans effet dès la deuxième fois — voir
-    // lib/storage.ts#purgeRetiredBankData.
-    purgeRetiredBankData();
-    refresh();
+   Maintenant : UNE copie, au niveau du module, lue par tous les composants
+   via `useSyncExternalStore`. Toute écriture met à jour cette copie et
+   prévient TOUS les abonnés dans la foulée : un composant ne peut plus
+   construire sa prochaine écriture sur une liste périmée.
 
-    function onStorage(event: StorageEvent) {
-      if (event.key?.startsWith("prepahub:")) refresh();
+   L'interface du hook ne change pas : aucun écran n'a eu à être modifié.
+
+   Rendu serveur et hydratation : `SERVER_STATE` (vide, `ready: false`,
+   préférences par défaut) — identique des deux côtés, donc aucun écart
+   d'hydratation. La première lecture du disque a lieu au premier
+   abonnement, puis à chaque fois que le nombre d'abonnés repasse de 0 à 1
+   (un écran entièrement démonté puis remonté relit le disque, comme avant). */
+
+const SERVER_STATE: DataState = {
+  sessions: [],
+  workItems: [],
+  grades: [],
+  dayPlans: [],
+  reviewItems: [],
+  errors: [],
+  checkins: [],
+  chapterMemory: [],
+  nextMoves: [],
+  attempts: [],
+  ankiSnapshots: [],
+  weekSnapshots: [],
+  lastBackupAt: null,
+  preferences: normalizePreferences({}),
+  ready: false,
+  writeFailedAt: null,
+};
+
+let shared: DataState = SERVER_STATE;
+const subscribers = new Set<() => void>();
+let windowListening = false;
+
+/** Remplace l'état partagé et prévient tous les composants abonnés. */
+function setData(update: DataState | ((prev: DataState) => DataState)): void {
+  shared = typeof update === "function" ? update(shared) : update;
+  for (const notify of subscribers) notify();
+}
+
+/** Relit tout le disque — premier abonnement, autre onglet, synchronisation du compte. */
+function refreshShared(): void {
+  setData({ ...readAll(), ready: true, writeFailedAt: lastStorageWriteFailure()?.at ?? null });
+}
+
+function onStorage(event: StorageEvent): void {
+  if (event.key?.startsWith("prepahub:")) refreshShared();
+}
+
+function subscribe(notify: () => void): () => void {
+  const first = subscribers.size === 0;
+  subscribers.add(notify);
+  if (first) {
+    if (!windowListening) {
+      windowListening = true;
+      // Ménage AVANT la première lecture : efface, sur un appareil qui l'avait
+      // encore, l'ancienne banque d'exercices (≈ 2,8 Mo de quota rendus à
+      // l'élève). Sans effet dès la deuxième fois — voir
+      // lib/storage.ts#purgeRetiredBankData.
+      purgeRetiredBankData();
+      window.addEventListener("storage", onStorage);
+      // La synchronisation du compte a réécrit le disque (lib/sync/events.ts) : relire.
+      window.addEventListener(DATA_CHANGED_EVENT, refreshShared);
     }
-    window.addEventListener("storage", onStorage);
-    // La synchronisation du compte a réécrit le disque (lib/sync/events.ts) : relire.
-    window.addEventListener(DATA_CHANGED_EVENT, refresh);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener(DATA_CHANGED_EVENT, refresh);
-    };
-  }, [refresh]);
+    refreshShared();
+  }
+  return () => {
+    subscribers.delete(notify);
+  };
+}
+
+const getSnapshot = () => shared;
+const getServerSnapshot = () => SERVER_STATE;
+
+export function usePrepahubData() {
+  const data = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const refresh = useCallback(() => refreshShared(), []);
 
   /**
    * Écritures INCRÉMENTALES (une séance de plus) :
@@ -209,12 +260,10 @@ export function usePrepahubData() {
 
   /**
    * REMPLACEMENT, pour la même raison que `saveGrades` : une entrée du carnet
-   * se supprime, et une fusion par identifiant la ressusciterait. Le prix de
-   * ce choix est connu et accepté — une copie React PÉRIMÉE qui écrirait
-   * effacerait ce qu'une autre a ajouté. C'est pourquoi un seul composant
-   * par écran appelle le hook et passe `reviewItems`/`saveReviewItems` à ses
-   * enfants (voir components/review/review-capture.tsx), plutôt que chaque
-   * enfant ouvre sa propre copie.
+   * se supprime, et une fusion par identifiant la ressusciterait. Le risque
+   * d'autrefois — une copie React PÉRIMÉE qui effaçait ce qu'une autre
+   * venait d'ajouter — a disparu avec le magasin partagé (voir plus haut) :
+   * tous les composants lisent la même liste, à jour.
    *
    * Écriture refusée (quota) : l'état reçoit ce qui est RÉELLEMENT sur le
    * disque, pas la liste voulue — sinon la ligne s'afficherait comme notée
