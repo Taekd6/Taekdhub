@@ -150,6 +150,11 @@ describe("SCÉNARIO — lundi 17 h, gros DM de physique (10 h) à rendre vendred
     expect(plan.days.slice(0, 5).map((day) => day.load.plannedMinutes)).toEqual([62, 152, 62, 62, 62]);
   });
 
+  it("la charge affichée compte la réserve de maths restante : chaque soir de minimum est plein, pas « libre »", () => {
+    const monday0 = buildWeeklyPlan([dm], [], DEFAULTS, monday(17)).days[0].load;
+    expect(monday0).toMatchObject({ plannedMinutes: 62, reservedMinutes: 90, committedMinutes: 152, capacityMinutes: 152 });
+  });
+
   it("ce qui ne tient pas est dit, avec les chiffres — et la faisabilité dit exactement la même chose", () => {
     const plan = buildWeeklyPlan([dm], [], DEFAULTS, monday(17));
     expect(unplaceableOf(plan, dm.id)).toMatchObject({ cause: "capacité-insuffisante", missingMinutes: 200 });
@@ -185,6 +190,7 @@ describe("PLANNING ET MINIMUM DU SOIR (P0-3)", () => {
     const essay = workItem({ id: "fr", title: "Dissertation", subject: "Français", estimatedMinutes: 60, dueDate: "2026-09-16" });
     const plan = buildWeeklyPlan([essay], [], DEFAULTS, monday(8));
     expect(plan.days.slice(0, 3).map((day) => day.load.plannedMinutes)).toEqual([0, 60, 0]);
+    expect(plan.days.slice(0, 3).map((day) => day.load.reservedMinutes)).toEqual([150, 0, 150]);
     expect(unplaceableOf(plan, "fr")).toBeNull();
   });
 

@@ -16,13 +16,14 @@ import {
   MAX_WEEKLY_GOAL_MINUTES,
   ONBOARDING_DAILY_PRESETS,
   exceedsCapacity,
+  onboardingMinimumAdjustments,
   subjectTargetsTotal,
   suggestedWeeklyGoal,
   weeklyDeclaredCapacity,
   weeklyPlannableCapacity,
   type OnboardingDraft,
 } from "@/lib/onboarding";
-import { MAX_DAILY_CAPACITY_MINUTES, MAX_WEEKLY_SUBJECT_TARGET_MINUTES } from "@/lib/storage";
+import { MAX_DAILY_CAPACITY_MINUTES, MAX_WEEKLY_SUBJECT_TARGET_MINUTES, type Preferences } from "@/lib/storage";
 import { subjects } from "@/lib/study";
 import { cn } from "@/lib/cn";
 import { formatMinutesSpan } from "@/lib/utils";
@@ -45,6 +46,8 @@ export type StepProps = {
   onChange: (patch: Partial<OnboardingDraft>) => void;
   /** Marge de planification actuelle (Réglages) — pour annoncer la capacité PLANIFIABLE, pas seulement la déclarée. */
   marginPercent: number;
+  /** Minimum du soir actuel (Réglages) — l'accueil ne le règle pas, mais libère les soirs où celui par défaut ne tient plus. */
+  eveningMinimums: Preferences["eveningMinimums"];
 };
 
 /**
@@ -353,8 +356,10 @@ export function ContestStep({ draft, onChange }: StepProps) {
 
 /* ── 6. Récapitulatif ─────────────────────────────────────────────── */
 
-export function RecapStep({ draft, marginPercent, onEdit }: StepProps & { onEdit: (step: number) => void }) {
+export function RecapStep({ draft, marginPercent, eveningMinimums, onEdit }: StepProps & { onEdit: (step: number) => void }) {
   const followed = subjects.filter((subject) => draft.weeklySubjectTargets[subject] > 0);
+  // Les soirs dont le minimum par défaut ne tient plus dans le temps choisi : rendus libres (lib/onboarding.ts), et dit ici.
+  const freed = onboardingMinimumAdjustments(eveningMinimums, draft.capacityByWeekday, marginPercent);
   const rows: { label: string; value: React.ReactNode; step: number }[] = [
     { label: "Prénom", value: draft.displayName.trim() || "—", step: 0 },
     { label: "Objectif du jour", value: formatMinutesSpan(draft.dailyGoalMinutes), step: 1 },
@@ -369,6 +374,9 @@ export function RecapStep({ draft, marginPercent, onEdit }: StepProps & { onEdit
       value: `${formatMinutesSpan(weeklyPlannableCapacity(draft.capacityByWeekday, marginPercent))} / sem.`,
       step: 3,
     },
+    ...(freed.length > 0
+      ? [{ label: "Minimum du soir", value: `Soir libre : ${freed.map((day) => WEEKDAY_LABELS[day].toLowerCase()).join(", ")}`, step: 3 }]
+      : []),
     { label: "Concours", value: draft.contestDate ? longDate.format(new Date(`${draft.contestDate}T00:00:00`)) : "Pas de date", step: 4 },
   ];
 

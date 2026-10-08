@@ -31,9 +31,9 @@ export function DayPlan({ day, label, dense = false }: { day: PlannedDay; label:
       <div className="flex items-baseline justify-between gap-3">
         <h3 className="t-label min-w-0 truncate">{label}</h3>
         <p className="tabular t-meta shrink-0 whitespace-nowrap">
-          {load.plannedMinutes > 0 ? (
+          {load.committedMinutes > 0 ? (
             <>
-              <span className="text-ink">{formatSpan(load.plannedMinutes * 60)}</span>
+              <span className="text-ink">{formatSpan(load.committedMinutes * 60)}</span>
               <span> / {formatSpan(load.capacityMinutes * 60)}</span>
             </>
           ) : (
@@ -48,13 +48,13 @@ export function DayPlan({ day, label, dense = false }: { day: PlannedDay; label:
           mêmes que l'étiquette plus bas. */}
       {load.capacityMinutes > 0 && (
         <Meter
-          value={(load.plannedMinutes / load.capacityMinutes) * 100}
+          value={(load.committedMinutes / load.capacityMinutes) * 100}
           tone={load.status === "intenable" ? "danger" : load.status === "surchargé" ? "warning" : "accent"}
           className="mt-2"
         />
       )}
 
-      {day.slots.length > 0 ? (
+      {day.slots.length > 0 || load.reservedMinutes > 0 ? (
         <ul className="mt-1.5 space-y-1">
           {day.slots.map((slot) => (
             <li key={`${slot.date}-${slot.workItemId}`} className="flex items-baseline gap-3">
@@ -65,6 +65,13 @@ export function DayPlan({ day, label, dense = false }: { day: PlannedDay; label:
               <span className="tabular shrink-0 whitespace-nowrap text-sm text-muted">{formatSpan(slot.minutes * 60)}</span>
             </li>
           ))}
+          {/* La part du minimum du soir que les créneaux ci-dessus ne couvrent pas (lib/evening-minimums.ts#splitDayBudget). */}
+          {load.reservedMinutes > 0 && (
+            <li className="flex items-baseline gap-3">
+              <span className="min-w-0 flex-1 truncate text-sm text-muted">Minimum du soir</span>
+              <span className="tabular shrink-0 whitespace-nowrap text-sm text-muted">{formatSpan(load.reservedMinutes * 60)}</span>
+            </li>
+          )}
         </ul>
       ) : (
         <p className="t-meta mt-1 text-2xs">Rien de prévu.</p>

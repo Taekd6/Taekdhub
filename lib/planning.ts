@@ -326,7 +326,9 @@ export function buildWeeklyPlan(
     const key = dayKey(date);
     const slots = slotsByDay.get(key) ?? [];
     const planned = slots.reduce((total, slot) => total + slot.minutes, 0);
-    return { date: key, slots, load: computeDailyLoad(date, planned, preferences, sessions) };
+    // Ce qui reste réservé au minimum du soir une fois les créneaux posés (déjà diminué de ce que les échéances de la même matière en couvrent).
+    const reserved = [...(budgets.get(key)?.reserved.values() ?? [])].reduce((total, minutes) => total + minutes, 0);
+    return { date: key, slots, load: computeDailyLoad(date, planned, preferences, sessions, reserved) };
   });
 
   return { days, unplaceable, priorities };

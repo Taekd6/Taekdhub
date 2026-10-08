@@ -43,13 +43,21 @@ export const LOAD_STATUS_META: Record<LoadStatus, { label: string; tone: "neutra
 export interface DailyLoad {
   /** "AAAA-MM-JJ". */
   date: string;
-  /** Minutes réservées par le planning ce jour-là. */
+  /** Minutes réservées par le planning ce jour-là aux échéances — le chiffre que l'historique enregistre (`DayPlanRecord`). */
   plannedMinutes: number;
+  /**
+   * Minutes du minimum du soir encore réservées ce jour-là, après ce que les
+   * créneaux d'échéance de la même matière en couvrent déjà (voir
+   * lib/evening-minimums.ts#splitDayBudget). 0 sans minimum.
+   */
+  reservedMinutes: number;
+  /** `plannedMinutes + reservedMinutes` : ce que la journée doit réellement porter. C'est lui qui fixe l'état. */
+  committedMinutes: number;
   /** Ce que le planificateur a le droit de remplir — capacité déclarée moins la marge. */
   capacityMinutes: number;
   /** Capacité déclarée, marge comprise : le plafond réel de la journée. */
   declaredMinutes: number;
-  /** `plannedMinutes / capacityMinutes`, borné à 4 pour rester affichable. 0 si la capacité est nulle. */
+  /** `committedMinutes / capacityMinutes`, borné à 4 pour rester affichable. 0 si la capacité est nulle. */
   ratio: number;
   status: LoadStatus;
   /** Minutes au-delà de la capacité DÉCLARÉE — 0 partout sauf en « intenable ». C'est le chiffre à montrer : « dépassement de 45 min ». */
@@ -75,16 +83,20 @@ export function computeDailyLoad(
   date: Date,
   plannedMinutes: number,
   preferences: Preferences,
-  sessions: WorkSession[] = []
+  sessions: WorkSession[] = [],
+  reservedMinutes = 0
 ): DailyLoad {
   const capacity = plannableMinutes(preferences, date);
   const declared = declaredCapacityMinutes(preferences, date);
   const planned = Math.max(0, Math.round(plannedMinutes));
-  const ratio = capacity > 0 ? Math.min(4, planned / capacity) : planned > 0 ? 4 : 0;
+  const reserved = Math.max(0, Math.round(reservedMinutes));
+  // Le minimum du soir fait partie de la journée : un soir qui lui est promis n'est pas « léger ».
+  const committed = planned + reserved;
+  const ratio = capacity > 0 ? Math.min(4, committed / capacity) : committed > 0 ? 4 : 0;
 
   let status: LoadStatus;
-  if (planned > declared) status = "intenable";
-  else if (planned > capacity) status = "surchargé";
+  if (committed > declared) status = "intenable";
+  else if (committed > capacity) status = "surchargé";
   else if (capacity === 0) status = "léger";
   else if (ratio > NORMAL_RATIO) status = "chargé";
   else if (ratio > LIGHT_RATIO) status = "normal";
@@ -93,11 +105,13 @@ export function computeDailyLoad(
   return {
     date: dayKey(date),
     plannedMinutes: planned,
+    reservedMinutes: reserved,
+    committedMinutes: committed,
     capacityMinutes: capacity,
     declaredMinutes: declared,
     ratio,
     status,
-    overflowMinutes: Math.max(0, planned - declared),
+    overflowMinutes: Math.max(0, committed - declared),
     workedMinutes: workedMinutesOnDay(sessions, date),
   };
 }
@@ -110,10 +124,13 @@ export function computeDailyLoad(
  * le `DailyLoad` qu'elle reçoit.
  */
 export function describeLoad(load: DailyLoad): string {
-  if (load.capacityMinutes === 0 && load.plannedMinutes === 0) return "Aucune capacité déclarée ce jour-là.";
+  if (load.capacityMinutes === 0 && load.committedMinutes === 0) return "Aucune capacité déclarée ce jour-là.";
   if (load.status === "intenable") return `Dépassement de ${formatShort(load.overflowMinutes)} sur ta capacité du jour.`;
-  if (load.status === "surchargé") return `${formatShort(load.plannedMinutes)} prévues pour ${formatShort(load.capacityMinutes)} planifiables : la marge y passe.`;
-  if (load.plannedMinutes === 0) return `Rien de prévu — ${formatShort(load.capacityMinutes)} disponibles.`;
+  if (load.status === "surchargé") return `${formatShort(load.committedMinutes)} prévues pour ${formatShort(load.capacityMinutes)} planifiables : la marge y passe.`;
+  const minimum = `${formatShort(load.reservedMinutes)} pour le minimum du soir`;
+  if (load.committedMinutes === 0) return `Rien de prévu — ${formatShort(load.capacityMinutes)} disponibles.`;
+  if (load.plannedMinutes === 0) return `${minimum} — ${formatShort(load.capacityMinutes - load.reservedMinutes)} encore libres.`;
+  if (load.reservedMinutes > 0) return `${formatShort(load.plannedMinutes)} prévues + ${minimum}, sur ${formatShort(load.capacityMinutes)} planifiables.`;
   return `${formatShort(load.plannedMinutes)} prévues sur ${formatShort(load.capacityMinutes)} planifiables.`;
 }
 

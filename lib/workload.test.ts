@@ -78,3 +78,29 @@ describe("la phrase cite toujours un chiffre calculé", () => {
     expect(describeLoad(computeDailyLoad(MONDAY, 0, prefs()))).toBe("Rien de prévu — 1 h 36 disponibles.");
   });
 });
+
+/*
+ * LE MINIMUM DU SOIR DANS LA CHARGE. Le planning réserve le minimum avant
+ * les échéances (lib/evening-minimums.ts#splitDayBudget) ; la charge d'un
+ * jour doit donc le compter, sinon un soir déjà promis au minimum s'affichait
+ * « Rien de prévu — 1 h 36 disponibles ». `plannedMinutes` reste la seule
+ * part des échéances : c'est ce chiffre que l'historique enregistre.
+ */
+describe("la réserve du minimum du soir compte dans la charge", () => {
+  it("sans réserve, rien ne change : 0 réservée, engagé = prévu", () => {
+    expect(computeDailyLoad(MONDAY, 40, prefs())).toMatchObject({ reservedMinutes: 0, committedMinutes: 40, plannedMinutes: 40 });
+  });
+
+  it("prévu et réserve s'additionnent pour l'état de la journée, sans changer `plannedMinutes`", () => {
+    const load = computeDailyLoad(MONDAY, 30, prefs(), [], 60);
+    expect(load).toMatchObject({ plannedMinutes: 30, reservedMinutes: 60, committedMinutes: 90, status: "chargé" });
+  });
+
+  it("la phrase dit la part réservée au minimum", () => {
+    expect(describeLoad(computeDailyLoad(MONDAY, 30, prefs(), [], 60))).toBe("30 min prévues + 1 h pour le minimum du soir, sur 1 h 36 planifiables.");
+  });
+
+  it("un soir pris par le seul minimum n'est pas « rien de prévu »", () => {
+    expect(describeLoad(computeDailyLoad(MONDAY, 0, prefs(), [], 60))).toBe("1 h pour le minimum du soir — 36 min encore libres.");
+  });
+});
