@@ -42,7 +42,7 @@
  * anti-flash qui les pose avant le premier rendu.
  */
 
-export type PaletteId = "aurora" | "sunset" | "ocean" | "neon";
+export type PaletteId = "aurora" | "sunset" | "ocean" | "neon" | "foret" | "framboise" | "braise" | "lavande";
 
 export interface Palette {
   id: PaletteId;
@@ -121,6 +121,76 @@ export const PALETTES: Palette[] = [
     review: ["#84cc16", "#06b6d4"],
     dl: ["#16a34a", "#9333ea", "#0ea5e9"],
   },
+  /*
+   * QUATRE PALETTES AJOUTÉES À LA DEMANDE DE L'ÉLÈVE (« d'autres couleurs »),
+   * bâties sur le même gabarit : dégradé de marque clair, encre et boutons
+   * profonds (contraste vérifié par lib/theme.test.ts comme pour les autres),
+   * cartes en teintes soutenues pour porter du blanc.
+   */
+  {
+    id: "foret",
+    label: "Forêt",
+    c1: "#10b981",
+    c2: "#84cc16",
+    ink: "#047857",
+    solid: ["#047857", "#15803d"],
+    cards: [
+      ["#047857", "#0d9488"],
+      ["#15803d", "#65a30d"],
+      ["#0f766e", "#059669"],
+      ["#166534", "#0891b2"],
+    ],
+    review: ["#059669", "#ca8a04"],
+    dl: ["#047857", "#15803d", "#0f766e"],
+  },
+  {
+    id: "framboise",
+    label: "Framboise",
+    c1: "#f472b6",
+    c2: "#c084fc",
+    ink: "#be185d",
+    solid: ["#be185d", "#9d174d"],
+    cards: [
+      ["#db2777", "#9333ea"],
+      ["#be185d", "#f43f5e"],
+      ["#c026d3", "#ec4899"],
+      ["#9d174d", "#7c3aed"],
+    ],
+    review: ["#ec4899", "#f97316"],
+    dl: ["#db2777", "#c026d3", "#be185d"],
+  },
+  {
+    id: "braise",
+    label: "Braise",
+    c1: "#f87171",
+    c2: "#fb923c",
+    ink: "#b91c1c",
+    solid: ["#b91c1c", "#9f1239"],
+    cards: [
+      ["#b91c1c", "#ea580c"],
+      ["#9f1239", "#e11d48"],
+      ["#c2410c", "#dc2626"],
+      ["#7f1d1d", "#be123c"],
+    ],
+    review: ["#dc2626", "#d97706"],
+    dl: ["#b91c1c", "#c2410c", "#9f1239"],
+  },
+  {
+    id: "lavande",
+    label: "Lavande",
+    c1: "#a78bfa",
+    c2: "#f0abfc",
+    ink: "#6d28d9",
+    solid: ["#6d28d9", "#7e22ce"],
+    cards: [
+      ["#7c3aed", "#c026d3"],
+      ["#4f46e5", "#a855f7"],
+      ["#6d28d9", "#db2777"],
+      ["#5b21b6", "#2563eb"],
+    ],
+    review: ["#8b5cf6", "#ec4899"],
+    dl: ["#7c3aed", "#4f46e5", "#c026d3"],
+  },
 ];
 
 export const PALETTE_IDS: PaletteId[] = PALETTES.map((palette) => palette.id);
@@ -152,7 +222,7 @@ export function paletteById(id: PaletteId | string | undefined): Palette {
  * syntaxe récente (`?.`, `??`, étalement).
  */
 export function resolvePaletteId(raw: unknown): PaletteId {
-  const ids = ["aurora", "sunset", "ocean", "neon"];
+  const ids = ["aurora", "sunset", "ocean", "neon", "foret", "framboise", "braise", "lavande"];
   const prefs = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   if (typeof prefs.palette === "string" && ids.indexOf(prefs.palette) >= 0) return prefs.palette as PaletteId;
   const accent = typeof prefs.accent === "string" ? prefs.accent.trim().toLowerCase() : "";

@@ -726,6 +726,7 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
     expect(Object.keys(prefs).sort()).toEqual(
       [
         "ankiDeckChapters",
+        "avatarDataUrl",
         "briefingOnOpen",
         "capacityByWeekday",
         "colleChapters",
