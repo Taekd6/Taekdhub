@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { computeAlerts } from "@/lib/alerts";
 import { buildBriefing } from "@/lib/briefing";
-import { declaredCapacityMinutes } from "@/lib/capacity";
+import { declaredCapacityMinutes, plannableMinutes } from "@/lib/capacity";
 import { addLockCards, courseLocks, dueLockCards, lockSessionHref } from "@/lib/course-lock";
 import { computeDailyObjective } from "@/lib/daily-objective";
 import { buildDayAgenda } from "@/lib/day-agenda";
@@ -25,8 +25,8 @@ import type { Subject, WorkSession } from "@/lib/supabase/types";
  * vérifient que l'élève ne reçoit pas deux consignes contradictoires.
  *
  * `it.fails` : le comportement ACTUEL contredit le comportement visé, et
- * la correction n'appartient pas à ce lot (budget du jour unique, valeurs par
- * défaut). Le test RÉUSSIT tant que le défaut existe ; le jour où il est
+ * la correction n'appartient pas encore au lot en cours (budget du jour
+ * unique : P0-2 ; planning et minimum du soir : P0-3). Le test RÉUSSIT tant que le défaut existe ; le jour où il est
  * corrigé, il échoue, et il suffit de remplacer `it.fails` par `it`.
  */
 
@@ -64,10 +64,17 @@ const unplaceableOf = (plan: ReturnType<typeof buildWeeklyPlan>, id: string) => 
 const plannedFor = (plan: ReturnType<typeof buildWeeklyPlan>, id: string) =>
   plan.days.flatMap((day) => day.slots).filter((slot) => slot.workItemId === id).reduce((total, slot) => total + slot.minutes, 0);
 
-/* ── 1. Lundi soir, 2 h de maths faites, préférences par défaut ─────── */
+/* ── 1. Lundi soir, toute la capacité passée en maths, préférences par défaut ── */
 
-describe("SCÉNARIO — lundi 20 h, 2 h de maths faites, préférences par défaut", () => {
-  const scenario = input({ sessions: [session("Mathématiques", 120, monday(17))] });
+/*
+ * Avant P0-1, il suffisait de 2 h de maths : les anciens défauts (3 h 30 de
+ * minimum pour 2 h déclarées) rendaient la contradiction systématique. Avec
+ * des défauts cohérents, elle demande que l'élève passe TOUTE sa capacité
+ * déclarée (3 h 10) dans une seule matière — situation toujours réelle, et
+ * toujours contradictoire tant que le budget du jour n'est pas unique (P0-2).
+ */
+describe("SCÉNARIO — lundi 21 h, 3 h 10 de maths faites, préférences par défaut", () => {
+  const scenario = input({ sessions: [session("Mathématiques", 190, monday(17))], now: monday(21) });
 
   it("constat : le minimum du soir de physique n'est pas atteint, et l'alerte le dit", () => {
     const physics = eveningPlan(DEFAULTS, scenario.sessions, scenario.now).entries.find((entry) => entry.subject === "Physique")!;
@@ -75,7 +82,7 @@ describe("SCÉNARIO — lundi 20 h, 2 h de maths faites, préférences par défa
     expect(computeAlerts(scenario).some((alert) => alert.id.startsWith("soir"))).toBe(true);
   });
 
-  // P0-2 — Next Move s'arrête à la capacité DÉCLARÉE (120 min) pendant qu'un minimum reste à faire.
+  // P0-2 — Next Move s'arrête à la capacité DÉCLARÉE (190 min) pendant qu'un minimum reste à faire.
   it.fails("Next Move ne dit pas « assez pour aujourd'hui » tant qu'un minimum du soir reste à faire", () => {
     expect(computeNextMove(scenario).status).not.toBe("repos");
   });
@@ -94,8 +101,8 @@ describe("SCÉNARIO — lundi 20 h, 2 h de maths faites, préférences par défa
     expect(agenda.summary).not.toContain("Rien n'a été compressé");
   });
 
-  // P0-1 / P0-2 — objectif du jour (max(objectif, minimums) = 3 h 30) au-delà de la capacité déclarée (2 h).
-  it.fails("l'objectif du jour ne dépasse pas la capacité déclarée du jour", () => {
+  // Corrigé par P0-1 : l'objectif du jour (max(objectif, minimums) = 2 h 30) tient dans la capacité déclarée (3 h 10).
+  it("l'objectif du jour ne dépasse pas la capacité déclarée du jour", () => {
     expect(computeDailyObjective(scenario.sessions, effectiveDailyGoal(DEFAULTS, scenario.now), scenario.now).goalMinutes).toBeLessThanOrEqual(
       declaredCapacityMinutes(DEFAULTS, scenario.now)
     );
@@ -105,25 +112,24 @@ describe("SCÉNARIO — lundi 20 h, 2 h de maths faites, préférences par défa
 /* ── 2. Règle produit : le minimum du soir fait partie de la capacité ─ */
 
 describe("RÈGLE — le minimum du soir tient dans la capacité du jour", () => {
-  // P0-1 — décision prise : le minimum fait partie de la capacité. Les valeurs par défaut la violent
-  // (3 h 30 de minimum pour 2 h déclarées, 4 soirs par semaine). Les défauts ne changent pas dans ce lot.
-  it.fails("les préférences par défaut respectent la règle, jour par jour", () => {
+  // Corrigé par P0-1 — le détail (capacité PLANIFIABLE, saisie refusée, ancien réglage signalé) est dans lib/evening-minimum-rule.test.ts.
+  it("les préférences par défaut respectent la règle, jour par jour", () => {
     for (let day = 0; day < 7; day += 1) {
       const minimum = Object.values(DEFAULTS.eveningMinimums[day] ?? {}).reduce((sum: number, value) => sum + (value ?? 0), 0);
-      expect(minimum).toBeLessThanOrEqual(DEFAULTS.capacityByWeekday[day]);
+      expect(minimum).toBeLessThanOrEqual(plannableMinutes(DEFAULTS, new Date(2026, 8, 14 + day)));
     }
   });
 });
 
 /* ── 3. Un DM avec échéance, préférences par défaut ─────────────────── */
 
-describe("SCÉNARIO — lundi 17 h, DM de physique de 4 h à rendre vendredi", () => {
-  const dm = workItem({ id: "dm-physique", title: "DM 3", subject: "Physique", estimatedMinutes: 240, dueDate: "2026-09-18" });
+describe("SCÉNARIO — lundi 17 h, gros DM de physique (10 h) à rendre vendredi", () => {
+  const dm = workItem({ id: "dm-physique", title: "DM 3", subject: "Physique", estimatedMinutes: 600, dueDate: "2026-09-18" });
 
   it("constat : le planning le place entièrement avant l'échéance, dont une part aujourd'hui", () => {
     const plan = buildWeeklyPlan([dm], [], DEFAULTS, monday(17));
     expect(unplaceableOf(plan, dm.id)).toBeNull();
-    expect(plannedFor(plan, dm.id)).toBe(240);
+    expect(plannedFor(plan, dm.id)).toBe(600);
     expect(plan.days[0].slots.some((slot) => slot.workItemId === dm.id)).toBe(true);
   });
 
@@ -132,10 +138,12 @@ describe("SCÉNARIO — lundi 17 h, DM de physique de 4 h à rendre vendredi", (
     expect(agenda.kept.some((task) => task.key === `échéance:${dm.id}`)).toBe(true);
   });
 
-  // P0-3 — le planning ignore les minimums ; l'agenda les sert d'abord et repousse le DM, chaque jour.
-  it.fails("la part du jour réservée par le planning n'est pas repoussée à demain par l'agenda", () => {
-    const agenda = buildDayAgenda(input({ workItems: [dm], now: monday(17) }));
-    expect(agenda.postponed.some((task) => task.key === `échéance:${dm.id}`)).toBe(false);
+  // P0-3 — le planning ignore le minimum du soir : 120 min réservées au DM aujourd'hui, plus 150 min de
+  // minimum, pour 152 min planifiables. Avant P0-1 (minimum 210 > capacité), l'agenda repoussait même le DM entier.
+  it.fails("la part du jour réservée par le planning et le minimum du soir tiennent ensemble dans la capacité planifiable", () => {
+    const today = buildWeeklyPlan([dm], [], DEFAULTS, monday(17)).days[0].load;
+    const minimum = eveningPlan(DEFAULTS, [], monday(17)).totalMinMinutes;
+    expect(today.plannedMinutes + minimum).toBeLessThanOrEqual(today.capacityMinutes);
   });
 });
 

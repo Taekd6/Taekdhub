@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Group, Row } from "@/components/ui/grouped";
 import { SegmentedControl } from "@/components/ui/segmented";
-import { Skeleton } from "@/components/ui/state";
+import { Notice, Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { suggestCapacityFromHistory, WEEKDAY_LABELS } from "@/lib/capacity";
+import { describeEveningMinimumConflict, eveningMinimumConflicts, eveningMinimumSaveErrors, type EveningMinimumConflict } from "@/lib/evening-minimums";
 import { localData, MAX_DAILY_CAPACITY_MINUTES } from "@/lib/storage";
 import { formatSpan } from "@/lib/utils";
 
@@ -35,6 +36,8 @@ export function CapacityForm() {
   const [margin, setMargin] = useState<number>(preferences.planningMarginPercent);
   const [saved, setSaved] = useState(false);
   const [applied, setApplied] = useState(false);
+  // Enregistrement refusé : les soirs dont le minimum ne tiendrait plus dans la capacité planifiable.
+  const [refused, setRefused] = useState<EveningMinimumConflict[]>([]);
 
   useEffect(() => {
     setCapacity(preferences.capacityByWeekday);
@@ -49,7 +52,15 @@ export function CapacityForm() {
     // RÉELLEMENT enregistré à cet instant, pas par-dessus l'instantané pris
     // au montage — `usePrepahubData` n'est pas un contexte partagé, et le
     // sélecteur d'apparence vit sur la même page.
-    savePreferences({ ...localData.preferences(), capacityByWeekday: capacity, planningMarginPercent: margin });
+    const stored = localData.preferences();
+    const next = { ...stored, capacityByWeekday: capacity, planningMarginPercent: margin };
+    // RÈGLE : le minimum du soir fait partie de la capacité (lib/evening-minimums.ts).
+    // Une capacité (ou une marge) qui ne contiendrait plus le minimum enregistré
+    // d'un soir modifié n'est pas enregistrée : l'élève baisse d'abord ce minimum.
+    const errors = eveningMinimumSaveErrors(stored, next);
+    setRefused(errors);
+    if (errors.length > 0) return;
+    savePreferences(next);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
@@ -58,6 +69,9 @@ export function CapacityForm() {
     setCapacity((current) => current.map((value, index) => suggestions.find((entry) => entry.weekday === index)?.minutes ?? value));
     setApplied(true);
   }
+
+  // Les soirs dont le minimum dépasse la capacité saisie — y compris un ancien réglage déjà enregistré ainsi.
+  const conflicts = eveningMinimumConflicts({ eveningMinimums: preferences.eveningMinimums, capacityByWeekday: capacity, planningMarginPercent: margin });
 
   const plannableWeek = capacity.reduce((sum, value) => sum + Math.floor((value * Math.max(0, 100 - margin)) / 100), 0);
 
@@ -138,6 +152,15 @@ export function CapacityForm() {
           />
         </Row>
       </Group>
+
+      {conflicts.length > 0 && (
+        <Notice
+          tone={refused.length > 0 ? "danger" : "warning"}
+          title={refused.length > 0 ? "Non enregistré : ton minimum du soir ne tiendrait plus" : "Ton minimum du soir dépasse ton temps disponible"}
+        >
+          {conflicts.map(describeEveningMinimumConflict).join(" ; ")}. Le minimum fait partie de ce temps : augmente-le ici, ou baisse d&apos;abord le minimum du soir (Objectifs → Minimum du soir).
+        </Notice>
+      )}
 
       <div className="flex justify-end px-1">
         <Button type="submit" size="lg" className="max-sm:w-full">

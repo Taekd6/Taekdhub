@@ -25,13 +25,13 @@ function session(subject: Subject, start: Date, minutes: number): WorkSession {
 }
 
 describe("minimum du soir", () => {
-  it("par défaut : 2 h de maths et 1 h 30 de physique en semaine, sauf le mardi", () => {
-    expect(prefs.eveningMinimums[0]).toEqual({ Mathématiques: 120, Physique: 90 });
+  it("par défaut : 1 h 30 de maths et 1 h de physique en semaine, sauf le mardi", () => {
+    expect(prefs.eveningMinimums[0]).toEqual({ Mathématiques: 90, Physique: 60 });
     expect(prefs.eveningMinimums[1]).toEqual({});
     expect(prefs.eveningMinimums.slice(2, 5)).toEqual([
-      { Mathématiques: 120, Physique: 90 },
-      { Mathématiques: 120, Physique: 90 },
-      { Mathématiques: 120, Physique: 90 },
+      { Mathématiques: 90, Physique: 60 },
+      { Mathématiques: 90, Physique: 60 },
+      { Mathématiques: 90, Physique: 60 },
     ]);
     expect(prefs.eveningMinimums[5]).toEqual({});
     expect(prefs.eveningMinimums[6]).toEqual({});
@@ -43,7 +43,7 @@ describe("minimum du soir", () => {
       ["Mathématiques", 125, true],
       ["Physique", 30, false],
     ]);
-    expect(plan.totalMinMinutes).toBe(210);
+    expect(plan.totalMinMinutes).toBe(150);
     expect(plan.allMet).toBe(false);
   });
 
@@ -53,7 +53,7 @@ describe("minimum du soir", () => {
   });
 
   it("l'objectif du jour ne descend jamais sous les minimums", () => {
-    expect(effectiveDailyGoal(prefs, monday)).toBe(210);
+    expect(effectiveDailyGoal(prefs, monday)).toBe(150);
     expect(effectiveDailyGoal({ ...prefs, dailyGoalMinutes: 300 }, monday)).toBe(300);
   });
 

@@ -49,7 +49,12 @@ export function declaredCapacityMinutes(preferences: Preferences, date: Date): n
  * que la marge ne le permet qu'une de plus.
  */
 export function plannableMinutes(preferences: Preferences, date: Date): number {
-  const declared = declaredCapacityMinutes(preferences, date);
+  return plannableMinutesForWeekday(preferences, weekdayIndex(date));
+}
+
+/** Même calcul, pour un jour de la semaine (0 = lundi) plutôt qu'une date — voir lib/evening-minimums.ts#eveningMinimumConflicts. */
+export function plannableMinutesForWeekday(preferences: Pick<Preferences, "capacityByWeekday" | "planningMarginPercent">, weekday: number): number {
+  const declared = preferences.capacityByWeekday[weekday] ?? 0;
   const kept = Math.max(0, 100 - preferences.planningMarginPercent) / 100;
   return Math.floor(declared * kept);
 }
