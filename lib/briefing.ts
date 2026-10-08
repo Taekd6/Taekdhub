@@ -6,6 +6,7 @@ import { eveningPlan } from "@/lib/evening-minimums";
 import { isPending } from "@/lib/grades";
 import { formatClock, intentionsForToday } from "@/lib/intentions";
 import { computeNextMove, type NextMoveInput, type NextMovePlan } from "@/lib/next-move/engine";
+import { resolveOutcomes } from "@/lib/next-move/history";
 import { daysBetween, dueReviewItems, effectiveSchedule } from "@/lib/spaced-repetition";
 import { computeSubjectTargets } from "@/lib/subject-targets";
 import { dayKey } from "@/lib/study";
@@ -277,7 +278,17 @@ function summarize(urgent: number, postponed: number): string {
   return `${parts.join(", ")}.`;
 }
 
-export function buildBriefing(input: BriefingInput): Briefing {
+export function buildBriefing(raw: BriefingInput): Briefing {
+  // Le point s'ouvre AVANT l'accueil, qui est seul à enregistrer les issues
+  // constatées (components/next-move/next-move-card.tsx). On les constate donc
+  // ici aussi, en mémoire, sans rien écrire : une proposition suivie par un
+  // autre chemin ne doit pas être comptée comme « remise à plus tard ».
+  const history = resolveOutcomes(
+    raw.history,
+    { sessions: raw.sessions, reviewItems: raw.reviewItems, chapterMemory: raw.chapterMemory, attempts: raw.attempts, ankiSnapshots: raw.ankiSnapshots, ankiDeckChapters: raw.preferences.ankiDeckChapters },
+    raw.now
+  );
+  const input: BriefingInput = { ...raw, history };
   const move = computeNextMove({ ...input, availableMinutes: null });
   const urgent = urgentItems(input);
   const urgentWorkIds = new Set(urgent.map((item) => item.id.split(":")[1] ?? ""));

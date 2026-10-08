@@ -1,4 +1,4 @@
-import { courseLocks, lockSentence } from "@/lib/course-lock";
+import { courseLocks, lockSentence, lockSessionHref } from "@/lib/course-lock";
 import { eveningPlan } from "@/lib/evening-minimums";
 import { dueReviewItems } from "@/lib/spaced-repetition";
 import { dayKey } from "@/lib/study";
@@ -95,7 +95,7 @@ function lockAlerts(input: AlertInput, today: string): AppAlert[] {
       level: "urgent" as const,
       title: `Chapitre verrouillé : ${lock.chapter}`,
       body: `${lockSentence(lock)}. Retrouve-les de tête pour pouvoir avancer.`,
-      href: `/revoir/session?subject=${encodeURIComponent(lock.subject)}`,
+      href: lockSessionHref(lock),
       action: "Retrouver les fiches",
     }));
 }

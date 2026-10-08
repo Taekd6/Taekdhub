@@ -4,7 +4,7 @@ import { ANKI_DUE_STALE_HOURS, latestDueInfo, snapshotAgeHours, type AnkiSnapsho
 import { EXERCISE_LEVEL_LABEL, type ExerciseAttempt } from "@/lib/attempts";
 import { buildDiagnosticContext, type DiagnosticContext } from "@/lib/diagnostic-context";
 import { FINDING_LABEL, mainFinding, type FindingKind } from "@/lib/diagnostic";
-import { courseLocks, isLockCard, lockSentence, type CourseLock } from "@/lib/course-lock";
+import { courseLocks, isLockCard, lockSentence, lockSessionHref, type CourseLock } from "@/lib/course-lock";
 import { bestProgrammeMatch } from "@/lib/programme";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 import { exerciseRequest, levelToRequest, transferRequest, varietyWarning } from "@/lib/exercise-quality";
@@ -1189,7 +1189,7 @@ function lockCandidate(lock: CourseLock, blocked: string[]): MoveCandidate {
     // Les fiches, plus de quoi rouvrir le cours sur une fiche ratée — pas davantage.
     idealMinutes: clamp(count * MINUTES_PER_CARD + 10, 10, 25),
     maxMinutes: clamp(count * MINUTES_PER_CARD + 15, 15, 30),
-    href: `/revoir/session?subject=${encodeURIComponent(lock.subject)}`,
+    href: lockSessionHref(lock),
     resource: { label: "Mon cours au chrono", href: timerHref(lock.subject) },
     terms,
     score: 0,

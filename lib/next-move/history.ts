@@ -19,7 +19,10 @@ import type { Subject, WorkSession } from "@/lib/supabase/types";
  *  2. L'ISSUE SE CONSTATE, elle ne se devine pas. « Fait » n'est écrit que
  *     sur un clic explicite ou sur une trace réelle : une séance dans la
  *     matière après le démarrage, une carte notée, un rappel de chapitre
- *     enregistré. Sans trace, la ligne reste « commencé ».
+ *     enregistré. Sans trace, la ligne reste « commencé ». La même trace,
+ *     relevée après une simple PROPOSITION, vaut aussi : l'élève peut suivre
+ *     le conseil sans toucher « Commencer » (chrono ouvert à la main, agenda
+ *     du jour, Le point).
  *  3. AUCUNE CAUSALITÉ. Les statistiques (`summarizeHistory`) comptent —
  *     suivies, écartées, matières repoussées — et se taisent sous un
  *     minimum d'échantillons. Elles ne disent jamais « cette action fait
@@ -34,6 +37,12 @@ export const HISTORY_MAX = 400;
 export const PROPOSAL_DEDUP_HOURS = 3;
 /** Fenêtre pendant laquelle une trace (séance, révision) est rattachée à un démarrage. */
 export const OUTCOME_WINDOW_HOURS = 6;
+/**
+ * Âge maximal d'une ligne « proposé » encore examinée par `resolveOutcomes`.
+ * Au-delà, elle ne pèse plus sur rien (pénalité « ignoré » : 72 h ; Le
+ * point : 7 jours ; statistiques : 14 jours) — inutile de la relire.
+ */
+export const PROPOSAL_RESOLVE_DAYS = 14;
 /** Part de la durée proposée qu'il faut avoir réellement faite pour parler de « fait ». */
 export const OUTCOME_DONE_RATIO = 0.5;
 /** Sous ce nombre de propositions sur la période, aucune statistique n'est affichée. */
@@ -141,9 +150,18 @@ function minutesAfter(sessions: WorkSession[], subject: Subject | null, from: nu
 }
 
 /**
- * Constate l'issue des recommandations commencées, d'après les traces
- * réelles. Ne touche qu'aux lignes « commencé » ; renvoie la même référence
- * quand rien ne change.
+ * Constate l'issue des recommandations commencées OU seulement proposées,
+ * d'après les traces réelles. Renvoie la même référence quand rien ne
+ * change.
+ *
+ * Une ligne « proposé » n'est relue que pour passer à « fait » : sans trace,
+ * elle reste telle quelle (pas de minutes mesurées écrites à chaque séance).
+ * Avant, seules les lignes « commencé » étaient examinées : suivre un conseil
+ * sans passer par « Commencer » le faisait compter comme IGNORÉ — pénalité
+ * dans le moteur, et « souvent remis à plus tard » dans Le point. Pour une
+ * proposition, la fenêtre part de l'instant où elle a été montrée, et la
+ * date de résolution est bornée à la fin de cette fenêtre : une issue
+ * constatée des jours après ne doit pas se lire « fait il y a une heure ».
  *
  *   échéance / bloc / erreurs / rappel : du temps dans la matière (et pour
  *     un rappel, le rappel noté dans Mémoire suffit aussi) ;
@@ -157,12 +175,16 @@ function minutesAfter(sessions: WorkSession[], subject: Subject | null, from: nu
  */
 export function resolveOutcomes(history: NextMoveRecord[], sources: OutcomeSources, now: Date): NextMoveRecord[] {
   let changed = false;
+  const oldestProposal = now.getTime() - PROPOSAL_RESOLVE_DAYS * 24 * HOUR;
   const next = history.map((record) => {
-    if (record.status !== "commencé" || !record.startedAt) return record;
-    const from = new Date(record.startedAt).getTime();
+    const started = record.status === "commencé" && record.startedAt !== null;
+    const proposed = record.status === "proposé" && new Date(record.proposedAt).getTime() >= oldestProposal;
+    if (!started && !proposed) return record;
+    const anchor = started ? record.startedAt! : record.proposedAt;
+    const from = new Date(anchor).getTime();
     const to = Math.min(now.getTime(), from + OUTCOME_WINDOW_HOURS * HOUR);
     const minutes = minutesAfter(sources.sessions, record.subject, from, to);
-    const startDay = dayKey(record.startedAt);
+    const startDay = dayKey(anchor);
 
     // Refaire et Anki ne se constatent PAS au temps passé : il faut la trace de l'action elle-même.
     // Verrou de cours : fait seulement quand le chapitre est DÉVERROUILLÉ (fiches retrouvées), jamais au temps passé.
@@ -204,11 +226,11 @@ export function resolveOutcomes(history: NextMoveRecord[], sources: OutcomeSourc
       done = sources.chapterMemory.some((chapter) => chapter.id === chapterId && chapter.reviews.some((review) => review.day >= startDay));
     }
 
-    if (!done && minutes === (record.outcomeMinutes ?? 0)) return record;
+    if (!done && (proposed || minutes === (record.outcomeMinutes ?? 0))) return record;
     changed = true;
-    return done
-      ? { ...record, status: "fait" as const, resolvedAt: now.toISOString(), outcomeMinutes: minutes }
-      : { ...record, outcomeMinutes: minutes };
+    if (!done) return { ...record, outcomeMinutes: minutes };
+    const resolvedAt = proposed ? new Date(to).toISOString() : now.toISOString();
+    return { ...record, status: "fait" as const, resolvedAt, outcomeMinutes: minutes };
   });
   return changed ? next : history;
 }

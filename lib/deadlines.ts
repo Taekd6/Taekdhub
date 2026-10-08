@@ -97,10 +97,20 @@ export function computeFeasibility(
   // Aujourd'hui compte pour ce qu'il en reste (le temps déjà travaillé n'est
   // plus disponible) ; les jours suivants pour leur capacité planifiable
   // pleine, puisque rien n'y a encore été fait.
-  const today = remainingPlannableToday(preferences, sessions, now);
-  const laterStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  //
+  // UN REPORT (`notBeforeDate`) RETIRE LES JOURS QUI LE PRÉCÈDENT. Le
+  // planning (lib/planning.ts) ne place rien avant ce jour : compter ces
+  // jours ici faisait dire « casable » à un travail que le planning, lui,
+  // déclarait sans place — les deux verdicts se contredisaient sur le même
+  // travail, et Le point ne voyait jamais qu'un report avait cassé l'échéance.
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const notBefore = item.notBeforeDate ? new Date(`${item.notBeforeDate}T00:00:00`) : null;
+  const deferred = notBefore !== null && notBefore > startOfToday;
+  const today = deferred ? 0 : remainingPlannableToday(preferences, sessions, now);
+  const laterStart = deferred ? notBefore : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const due = new Date(`${item.dueDate}T00:00:00`);
-  const later = days >= 1 ? cumulativePlannableMinutes(preferences, laterStart, due) : 0;
+  // `cumulativePlannableMinutes` rend 0 quand le début dépasse l'échéance : échéance aujourd'hui, ou report après elle.
+  const later = cumulativePlannableMinutes(preferences, laterStart, due);
   const available = today + later;
 
   if (remaining === 0) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computeAlerts, pruneSnoozes, snoozeAlert, visibleAlerts, type AlertInput } from "@/lib/alerts";
-import { addLockCards } from "@/lib/course-lock";
+import { addLockCards, lockKey } from "@/lib/course-lock";
 import { createReviewItem } from "@/lib/review-items";
 import { normalizePreferences, normalizeWorkItem, type ReviewItem } from "@/lib/storage";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
@@ -50,7 +50,7 @@ describe("computeAlerts — ce qui mérite d'interrompre", () => {
     const items = created.ok ? created.items : [];
     expect(computeAlerts(input({ reviewItems: items, now: at(20, 4) })).some((alert) => alert.id.startsWith("verrou:"))).toBe(false);
     const [alert] = computeAlerts(input({ reviewItems: items }));
-    expect(alert).toMatchObject({ level: "urgent", title: "Chapitre verrouillé : Réduction", href: "/revoir/session?subject=Math%C3%A9matiques" });
+    expect(alert).toMatchObject({ level: "urgent", title: "Chapitre verrouillé : Réduction", href: `/revoir/session?subject=Math%C3%A9matiques&verrou=${encodeURIComponent(lockKey("Mathématiques", "Réduction"))}` });
   });
 
   it("minimum du soir : seulement à partir de 18 h, et il dit ce qui manque", () => {
