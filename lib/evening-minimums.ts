@@ -145,3 +145,61 @@ export function eveningMinimumSaveErrors(current: RulePreferences, next: RulePre
 export function describeEveningMinimumConflict(conflict: EveningMinimumConflict): string {
   return `${WEEKDAY_LABELS[conflict.weekday]} : ${formatMinutesSpan(conflict.minimumMinutes)} de minimum pour ${formatMinutesSpan(conflict.plannableMinutes)} planifiables`;
 }
+
+/* ── Le budget d'un jour, partagé avec le minimum du soir ───────────── */
+
+/**
+ * LE MINIMUM DU SOIR EST RÉSERVÉ AVANT TOUT LE RESTE.
+ *
+ * Le minimum fait partie de la capacité : le planning des échéances
+ * (lib/planning.ts) et leur faisabilité (lib/deadlines.ts) ne peuvent donc
+ * pas disposer de toute la capacité planifiable d'un soir de minimum. Avant,
+ * ils l'ignoraient : le planning réservait 2 h à un DM sur les 2 h 32 d'un
+ * soir qui en devait déjà 2 h 30 au minimum, et l'agenda du jour repoussait
+ * alors le DM — « casé » d'un côté, « à demain » de l'autre, chaque jour.
+ *
+ * Une séance compte pour le minimum de SA matière (c'est ce que mesure
+ * `eveningPlan`) : un DM de physique peut donc prendre la réserve de
+ * physique, jamais celle des maths. D'où un budget en deux parts :
+ *
+ *   reserved  ce qui reste à faire du minimum, matière par matière ;
+ *   free      le reste de la capacité, ouvert à tout travail.
+ *
+ * Réglage incohérent (minimum > capacité, signalé ailleurs) : la réserve
+ * est plafonnée à la capacité, matière après matière dans l'ordre de
+ * lib/study.ts — rien ne dépasse jamais la capacité planifiable.
+ */
+export interface DayBudget {
+  free: number;
+  reserved: Map<Subject, number>;
+}
+
+/**
+ * Le budget d'un jour. `capacity` : la capacité planifiable encore
+ * disponible ce jour-là (aujourd'hui : moins le travail déjà fait, voir
+ * lib/capacity.ts#remainingPlannableToday). Aujourd'hui, la réserve ne garde
+ * que ce qui RESTE du minimum ; un autre jour, le minimum entier.
+ */
+export function splitDayBudget(preferences: Preferences, sessions: WorkSession[], date: Date, capacity: number, now: Date = new Date()): DayBudget {
+  const remaining = new Map<Subject, number>();
+  if (dayKey(date) === dayKey(now)) {
+    for (const entry of eveningPlan(preferences, sessions, now).entries) remaining.set(entry.subject, Math.max(0, entry.minMinutes - entry.doneMinutes));
+  } else {
+    const minimums = minimumsFor(preferences, date);
+    for (const subject of subjects) remaining.set(subject, minimums[subject] ?? 0);
+  }
+  let left = Math.max(0, capacity);
+  const reserved = new Map<Subject, number>();
+  for (const subject of subjects) {
+    const minutes = Math.min(left, remaining.get(subject) ?? 0);
+    if (minutes <= 0) continue;
+    reserved.set(subject, minutes);
+    left -= minutes;
+  }
+  return { free: left, reserved };
+}
+
+/** Ce qu'un travail de cette matière peut prendre ce jour-là : la part libre, plus la réserve de SA matière. */
+export function availableFor(budget: DayBudget, subject: Subject | null): number {
+  return budget.free + (subject ? budget.reserved.get(subject) ?? 0 : 0);
+}

@@ -61,8 +61,6 @@ function input(overrides: Partial<NextMoveInput> = {}): NextMoveInput {
 }
 
 const unplaceableOf = (plan: ReturnType<typeof buildWeeklyPlan>, id: string) => plan.unplaceable.find((entry) => entry.item.id === id) ?? null;
-const plannedFor = (plan: ReturnType<typeof buildWeeklyPlan>, id: string) =>
-  plan.days.flatMap((day) => day.slots).filter((slot) => slot.workItemId === id).reduce((total, slot) => total + slot.minutes, 0);
 
 /* ── 1. Lundi soir, toute la capacité passée en maths, préférences par défaut ── */
 
@@ -82,23 +80,37 @@ describe("SCÉNARIO — lundi 21 h, 3 h 10 de maths faites, préférences par d�
     expect(computeAlerts(scenario).some((alert) => alert.id.startsWith("soir"))).toBe(true);
   });
 
-  // P0-2 — Next Move s'arrête à la capacité DÉCLARÉE (190 min) pendant qu'un minimum reste à faire.
-  it.fails("Next Move ne dit pas « assez pour aujourd'hui » tant qu'un minimum du soir reste à faire", () => {
+  // P0-2 — Next Move s'arrêtait à la capacité DÉCLARÉE (190 min) pendant qu'un minimum restait à faire.
+  it("Next Move ne dit pas « assez pour aujourd'hui » tant qu'un minimum du soir reste à faire", () => {
     expect(computeNextMove(scenario).status).not.toBe("repos");
   });
 
-  // P0-2 — l'alerte réclame la physique pendant que Next Move conseille de s'arrêter.
-  it.fails("l'alerte du soir et Next Move ne se contredisent pas", () => {
+  it("…et propose précisément ce minimum : la physique", () => {
+    expect(computeNextMove(scenario).primary).toMatchObject({ kind: "bloc", subject: "Physique" });
+  });
+
+  it("témoin : capacité atteinte ET minimums faits, « assez pour aujourd'hui » revient", () => {
+    // Une carte à revoir : sans aucune proposition, le moteur répondrait « vide », pas « repos ».
+    const card = createReviewItem({ subject: "Anglais", text: "to wield", kind: "à apprendre" }, new Date(2026, 8, 10))!;
+    const done = input({ sessions: [session("Mathématiques", 190, monday(16)), session("Physique", 60, monday(19, 30))], reviewItems: [card], now: monday(21) });
+    expect(eveningPlan(DEFAULTS, done.sessions, done.now).allMet).toBe(true);
+    expect(computeNextMove(done).status).toBe("repos");
+  });
+
+  // P0-2 — l'alerte réclamait la physique pendant que Next Move conseillait de s'arrêter.
+  it("l'alerte du soir et Next Move ne se contredisent pas", () => {
     const eveningAlert = computeAlerts(scenario).some((alert) => alert.id.startsWith("soir"));
     const rest = computeNextMove(scenario).status === "repos";
     expect(eveningAlert && rest).toBe(false);
   });
 
-  // P0-2 — l'agenda réduit la physique de 50 à 20 min, puis affirme que rien n'a été compressé.
-  it.fails("l'agenda ne prétend pas « rien n'a été compressé » quand il vient de réduire une tâche", () => {
+  // P0-2 — l'agenda réduisait la physique de 50 à 20 min, puis affirmait que rien n'avait été compressé.
+  it("l'agenda ne prétend pas « rien n'a été compressé » quand il vient de réduire une tâche", () => {
     const agenda = buildDayAgenda(scenario);
     expect(agenda.kept.some((task) => task.reducedFrom !== null)).toBe(true);
     expect(agenda.summary).not.toContain("Rien n'a été compressé");
+    // Le dépassement reste dit, avec son chiffre, et l'arbitrage reste à l'élève.
+    expect(agenda.summary).toContain("dépasse ton temps restant de 20 min");
   });
 
   // Corrigé par P0-1 : l'objectif du jour (max(objectif, minimums) = 2 h 30) tient dans la capacité déclarée (3 h 10).
@@ -123,14 +135,26 @@ describe("RÈGLE — le minimum du soir tient dans la capacité du jour", () => 
 
 /* ── 3. Un DM avec échéance, préférences par défaut ─────────────────── */
 
+/*
+ * Préférences par défaut : 152 min planifiables du lundi au vendredi, dont
+ * 150 de minimum (90 maths + 60 physique) les lundi, mercredi, jeudi et
+ * vendredi ; le mardi est libre. Règle (décision produit) : une séance sur
+ * un DM de PHYSIQUE compte pour le minimum de physique — le planning peut
+ * donc lui donner la réserve de physique, jamais celle de maths.
+ */
 describe("SCÉNARIO — lundi 17 h, gros DM de physique (10 h) à rendre vendredi", () => {
   const dm = workItem({ id: "dm-physique", title: "DM 3", subject: "Physique", estimatedMinutes: 600, dueDate: "2026-09-18" });
 
-  it("constat : le planning le place entièrement avant l'échéance, dont une part aujourd'hui", () => {
+  it("le planning ne lui donne que ce que le minimum de maths laisse : 62 min les soirs de minimum, 152 le mardi", () => {
     const plan = buildWeeklyPlan([dm], [], DEFAULTS, monday(17));
-    expect(unplaceableOf(plan, dm.id)).toBeNull();
-    expect(plannedFor(plan, dm.id)).toBe(600);
-    expect(plan.days[0].slots.some((slot) => slot.workItemId === dm.id)).toBe(true);
+    expect(plan.days.slice(0, 5).map((day) => day.load.plannedMinutes)).toEqual([62, 152, 62, 62, 62]);
+  });
+
+  it("ce qui ne tient pas est dit, avec les chiffres — et la faisabilité dit exactement la même chose", () => {
+    const plan = buildWeeklyPlan([dm], [], DEFAULTS, monday(17));
+    expect(unplaceableOf(plan, dm.id)).toMatchObject({ cause: "capacité-insuffisante", missingMinutes: 200 });
+    expect(unplaceableOf(plan, dm.id)!.reason).toContain("6 h 40 disponibles");
+    expect(computeFeasibility(dm, [], DEFAULTS, monday(17))).toMatchObject({ level: "non casable", availableMinutes: 400, shortfallMinutes: 200 });
   });
 
   it("témoin : sans minimum du soir, l'agenda garde bien la part du jour du DM", () => {
@@ -138,12 +162,68 @@ describe("SCÉNARIO — lundi 17 h, gros DM de physique (10 h) à rendre vendred
     expect(agenda.kept.some((task) => task.key === `échéance:${dm.id}`)).toBe(true);
   });
 
-  // P0-3 — le planning ignore le minimum du soir : 120 min réservées au DM aujourd'hui, plus 150 min de
-  // minimum, pour 152 min planifiables. Avant P0-1 (minimum 210 > capacité), l'agenda repoussait même le DM entier.
-  it.fails("la part du jour réservée par le planning et le minimum du soir tiennent ensemble dans la capacité planifiable", () => {
-    const today = buildWeeklyPlan([dm], [], DEFAULTS, monday(17)).days[0].load;
-    const minimum = eveningPlan(DEFAULTS, [], monday(17)).totalMinMinutes;
-    expect(today.plannedMinutes + minimum).toBeLessThanOrEqual(today.capacityMinutes);
+  // P0-3 — le planning ignorait le minimum du soir : 120 min réservées au DM aujourd'hui, plus 150 min de
+  // minimum, pour 152 min planifiables. Le temps du DM de physique compte pour le minimum de physique :
+  // seule la part du minimum que les créneaux de la même matière ne couvrent pas s'ajoute.
+  it("la part du jour réservée par le planning et le minimum du soir tiennent ensemble dans la capacité planifiable", () => {
+    const today = buildWeeklyPlan([dm], [], DEFAULTS, monday(17)).days[0];
+    const planned = new Map<string, number>();
+    for (const slot of today.slots) planned.set(slot.subject ?? "", (planned.get(slot.subject ?? "") ?? 0) + slot.minutes);
+    const uncovered = eveningPlan(DEFAULTS, [], monday(17)).entries.reduce((sum, entry) => sum + Math.max(0, entry.minMinutes - entry.doneMinutes - (planned.get(entry.subject) ?? 0)), 0);
+    expect(today.load.plannedMinutes + uncovered).toBeLessThanOrEqual(today.load.capacityMinutes);
+  });
+
+  it("l'agenda du jour garde la part du DM au lieu de la repousser", () => {
+    const agenda = buildDayAgenda(input({ workItems: [dm], now: monday(17) }));
+    expect(agenda.postponed.some((task) => task.key === `échéance:${dm.id}`)).toBe(false);
+  });
+});
+
+describe("PLANNING ET MINIMUM DU SOIR (P0-3)", () => {
+  it("un travail d'une AUTRE matière n'entame jamais le minimum du soir : il passe au jour sans minimum", () => {
+    // Lundi 8 h, français pour mercredi : lundi et mercredi n'ont que 2 min hors minimum, mardi est libre.
+    const essay = workItem({ id: "fr", title: "Dissertation", subject: "Français", estimatedMinutes: 60, dueDate: "2026-09-16" });
+    const plan = buildWeeklyPlan([essay], [], DEFAULTS, monday(8));
+    expect(plan.days.slice(0, 3).map((day) => day.load.plannedMinutes)).toEqual([0, 60, 0]);
+    expect(unplaceableOf(plan, "fr")).toBeNull();
+  });
+
+  it("le DM de physique remplit le minimum de physique, et laisse la part libre aux autres matières", () => {
+    // Lundi : 120 min planifiables, dont 60 réservées au minimum de physique, 60 libres.
+    const prefs = neutral({ capacityByWeekday: [120, 120, 120, 120, 120, 120, 120], eveningMinimums: [{ Physique: 60 }, {}, {}, {}, {}, {}, {}] });
+    const physics = workItem({ id: "phy", subject: "Physique", estimatedMinutes: 60, dueDate: "2026-09-14", important: true });
+    const french = workItem({ id: "fr", subject: "Français", estimatedMinutes: 60, dueDate: "2026-09-14" });
+    const plan = buildWeeklyPlan([physics, french], [], prefs, monday(8));
+    expect(plan.days[0].slots.map((slot) => [slot.workItemId, slot.minutes])).toEqual([
+      ["phy", 60],
+      ["fr", 60],
+    ]);
+    expect(plan.unplaceable).toEqual([]);
+  });
+
+  it("le temps déjà fait aujourd'hui dans une matière réduit d'autant ce qui lui reste réservé", () => {
+    // 60 min de maths faites : il reste 30 min de maths et 60 de physique à réserver, sur 92 min encore planifiables.
+    const essay = workItem({ id: "fr", subject: "Français", estimatedMinutes: 30, dueDate: "2026-09-14" });
+    const plan = buildWeeklyPlan([essay], [session("Mathématiques", 60, monday(14))], DEFAULTS, monday(17));
+    expect(plan.days[0].load.plannedMinutes).toBe(0);
+    expect(unplaceableOf(plan, "fr")).toMatchObject({ missingMinutes: 30 });
+    expect(computeFeasibility(essay, [session("Mathématiques", 60, monday(14))], DEFAULTS, monday(17)).availableMinutes).toBe(2);
+  });
+
+  it("réglage incohérent (minimum > capacité) : rien ne dépasse la capacité planifiable, rien n'est inventé", () => {
+    const incoherent = neutral({ capacityByWeekday: [60, 60, 60, 60, 60, 60, 60], eveningMinimums: [{ Mathématiques: 90, Physique: 60 }, {}, {}, {}, {}, {}, {}] });
+    const dm = workItem({ id: "p", subject: "Physique", estimatedMinutes: 60, dueDate: "2026-09-15" });
+    const plan = buildWeeklyPlan([dm], [], incoherent, monday(8));
+    for (const day of plan.days) expect(day.load.plannedMinutes).toBeLessThanOrEqual(day.load.capacityMinutes);
+    // Lundi est entièrement pris par le minimum de maths : le DM passe mardi, en entier, et tient.
+    expect(plan.days[0].slots).toEqual([]);
+    expect(plan.days[1].slots).toMatchObject([{ workItemId: "p", minutes: 60 }]);
+    expect(unplaceableOf(plan, "p")).toBeNull();
+  });
+
+  it("sans minimum du soir, rien ne change (non-régression)", () => {
+    const dm = workItem({ estimatedMinutes: 120, dueDate: "2026-09-17" });
+    expect(buildWeeklyPlan([dm], [], neutral(), monday(8)).days.slice(0, 4).map((day) => day.load.plannedMinutes)).toEqual([30, 30, 30, 30]);
   });
 });
 

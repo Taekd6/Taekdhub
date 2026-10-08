@@ -1,4 +1,5 @@
-import { cumulativePlannableMinutes, remainingPlannableToday } from "@/lib/capacity";
+import { plannableMinutes, remainingPlannableToday } from "@/lib/capacity";
+import { availableFor, splitDayBudget } from "@/lib/evening-minimums";
 import { daysUntilDue, isOverdue, remainingMinutes } from "@/lib/work-items";
 import type { WorkSession } from "@/lib/supabase/types";
 import type { Preferences, WorkItem } from "@/lib/storage";
@@ -106,12 +107,21 @@ export function computeFeasibility(
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const notBefore = item.notBeforeDate ? new Date(`${item.notBeforeDate}T00:00:00`) : null;
   const deferred = notBefore !== null && notBefore > startOfToday;
-  const today = deferred ? 0 : remainingPlannableToday(preferences, sessions, now);
-  const laterStart = deferred ? notBefore : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  //
+  // LE MINIMUM DU SOIR EST RÉSERVÉ, comme dans le planning : chaque jour
+  // n'offre à ce travail que sa part libre, plus la réserve du minimum de SA
+  // matière (lib/evening-minimums.ts#splitDayBudget). Les deux calculs
+  // partagent la même fonction : ils ne peuvent plus se contredire là-dessus.
   const due = new Date(`${item.dueDate}T00:00:00`);
-  // `cumulativePlannableMinutes` rend 0 quand le début dépasse l'échéance : échéance aujourd'hui, ou report après elle.
-  const later = cumulativePlannableMinutes(preferences, laterStart, due);
-  const available = today + later;
+  let available = 0;
+  const cursor = deferred ? new Date(notBefore) : new Date(startOfToday);
+  // Une échéance au-delà de 800 jours n'a pas de sens : simple garde contre une date aberrante.
+  for (let guard = 0; cursor <= due && guard < 800; guard += 1) {
+    const isToday = cursor.getTime() === startOfToday.getTime();
+    const capacity = isToday ? remainingPlannableToday(preferences, sessions, now) : plannableMinutes(preferences, cursor);
+    available += availableFor(splitDayBudget(preferences, sessions, cursor, capacity, now), item.subject);
+    cursor.setDate(cursor.getDate() + 1);
+  }
 
   if (remaining === 0) {
     return { level: "casable", remainingMinutes: 0, availableMinutes: available, shortfallMinutes: 0, reason: "Le temps estimé est déjà fait." };

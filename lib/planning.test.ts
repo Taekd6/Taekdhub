@@ -10,6 +10,9 @@ function prefs(overrides: Partial<Preferences> = {}): Preferences {
   return normalizePreferences({
     capacityByWeekday: [60, 60, 60, 60, 60, 120, 120],
     planningMarginPercent: 0,
+    // Ces scénarios portent sur le placement des échéances : aucun minimum du soir ne vient
+    // réserver une part de la capacité (ce cas-là est testé dans lib/scenarios.test.ts).
+    eveningMinimums: [{}, {}, {}, {}, {}, {}, {}],
     ...overrides,
   });
 }

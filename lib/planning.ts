@@ -2,6 +2,7 @@ import { plannableMinutes, remainingPlannableToday } from "@/lib/capacity";
 import { computeWorkItemPriority, sortByPriority, type WorkItemPriority } from "@/lib/deadlines";
 import { dayKey } from "@/lib/study";
 import { activeWorkItems, daysUntilDue, remainingMinutes, updateWorkItem } from "@/lib/work-items";
+import { availableFor, splitDayBudget, type DayBudget } from "@/lib/evening-minimums";
 import { computeDailyLoad, type DailyLoad } from "@/lib/workload";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
 import type { Preferences, WorkItem, WorkItemKind } from "@/lib/storage";
@@ -118,7 +119,10 @@ export interface WeeklyPlan {
  *     capacité PLANIFIABLE du jour (lib/capacity.ts). Une journée n'est donc
  *     jamais remplie à 100 % de la capacité déclarée par le planificateur —
  *     seule la réalité peut le faire, et c'est alors « surchargé » qui
- *     s'affiche.
+ *     s'affiche. Et dans cette capacité, LE MINIMUM DU SOIR EST RÉSERVÉ
+ *     D'ABORD : un travail n'y prend que la part libre, plus la réserve de
+ *     sa propre matière — une séance sur un DM de physique compte pour le
+ *     minimum de physique (lib/evening-minimums.ts#splitDayBudget).
  *
  *  4. CE QUI NE RENTRE PAS SE DIT. Les minutes qui n'ont pas trouvé de place
  *     avant l'échéance ne sont pas replacées après : elles ressortent dans
@@ -147,15 +151,23 @@ export function buildWeeklyPlan(
     return date;
   });
 
-  // Capacité restante par jour. Aujourd'hui démarre amputé de ce qui a déjà
-  // été travaillé : les minutes passées ne sont plus disponibles.
-  const capacityLeft = new Map<string, number>();
+  // Budget restant par jour. Aujourd'hui démarre amputé de ce qui a déjà
+  // été travaillé : les minutes passées ne sont plus disponibles. Le minimum
+  // du soir y est RÉSERVÉ d'abord, matière par matière : un travail ne prend
+  // que la part libre, plus la réserve de sa propre matière (voir
+  // lib/evening-minimums.ts#splitDayBudget).
+  const budgets = new Map<string, DayBudget>();
   horizon.forEach((date, index) => {
-    capacityLeft.set(dayKey(date), index === 0 ? remainingPlannableToday(preferences, sessions, now) : plannableMinutes(preferences, date));
+    const capacity = index === 0 ? remainingPlannableToday(preferences, sessions, now) : plannableMinutes(preferences, date);
+    budgets.set(dayKey(date), splitDayBudget(preferences, sessions, date, capacity, now));
   });
-  // La capacité de départ, avant tout placement : elle distingue « pas assez
+  // Le budget de départ, avant tout placement : il distingue « pas assez
   // de temps, même seul » de « le temps a été pris par d'autres travaux ».
-  const initialCapacity = new Map(capacityLeft);
+  const initialBudgets = new Map([...budgets].map(([key, budget]) => [key, { free: budget.free, reserved: new Map(budget.reserved) }]));
+  const left = (key: string, subject: Subject | null) => {
+    const budget = budgets.get(key);
+    return budget ? availableFor(budget, subject) : 0;
+  };
 
   const slotsByDay = new Map<string, PlannedSlot[]>(horizon.map((date) => [dayKey(date), []]));
   const unplaceable: UnplaceableWork[] = [];
@@ -277,12 +289,12 @@ export function buildWeeklyPlan(
     for (const date of window) {
       if (remaining <= 0) break;
       const key = dayKey(date);
-      const left = capacityLeft.get(key) ?? 0;
-      if (left <= 0) continue;
-      const minutes = Math.min(target, left, remaining);
+      const available = left(key, item.subject);
+      if (available <= 0) continue;
+      const minutes = Math.min(target, available, remaining);
       if (minutes < Math.min(MIN_SLOT_MINUTES, remaining)) continue;
       pushSlot(slotsByDay, key, item, minutes, explanation);
-      capacityLeft.set(key, left - minutes);
+      consume(budgets.get(key)!, item.subject, minutes);
       remaining -= minutes;
     }
 
@@ -292,21 +304,21 @@ export function buildWeeklyPlan(
     for (const date of window) {
       if (remaining <= 0) break;
       const key = dayKey(date);
-      const left = capacityLeft.get(key) ?? 0;
-      if (left <= 0) continue;
-      const minutes = Math.min(left, remaining);
+      const available = left(key, item.subject);
+      if (available <= 0) continue;
+      const minutes = Math.min(available, remaining);
       if (minutes < Math.min(MIN_SLOT_MINUTES, remaining)) continue;
       const existing = slotsByDay.get(key)?.find((slot) => slot.workItemId === item.id);
       if (existing) existing.minutes += minutes;
       else pushSlot(slotsByDay, key, item, minutes, explanation);
-      capacityLeft.set(key, left - minutes);
+      consume(budgets.get(key)!, item.subject, minutes);
       remaining -= minutes;
     }
 
     // Règle 4 — ce qui n'est pas entré se dit, avec son chiffre. Uniquement
     // pour une échéance que l'horizon atteint réellement : voir `dueBeyondHorizon`.
     if (remaining > 0 && item.dueDate && (days ?? 0) >= 0 && !dueBeyondHorizon) {
-      unplaceable.push(shortfall(item, needed, remaining, window, initialCapacity, preferences));
+      unplaceable.push(shortfall(item, needed, remaining, window, initialBudgets, preferences));
     }
   }
 
@@ -331,14 +343,18 @@ function shortfall(
   needed: number,
   missing: number,
   window: Date[],
-  initialCapacity: Map<string, number>,
+  initialBudgets: Map<string, DayBudget>,
   preferences: Preferences
 ): UnplaceableWork {
   const declared = window.reduce((total, date) => total + plannableMinutes(preferences, date), 0);
   if (declared === 0) {
     return { item, missingMinutes: missing, cause: "aucune-capacité", reason: `Aucune capacité déclarée d'ici l'échéance : il reste ${formatShort(missing)} à faire.` };
   }
-  const alone = window.reduce((total, date) => total + (initialCapacity.get(dayKey(date)) ?? 0), 0);
+  // « Seul » : la part libre de chaque jour, plus la réserve du minimum de SA matière.
+  const alone = window.reduce((total, date) => {
+    const budget = initialBudgets.get(dayKey(date));
+    return total + (budget ? availableFor(budget, item.subject) : 0);
+  }, 0);
   if (needed > alone) {
     return {
       item,
@@ -353,6 +369,18 @@ function shortfall(
     cause: "journées-pleines",
     reason: `${formatShort(missing)} ne trouvent pas de place avant l'échéance : tes journées d'ici là sont déjà pleines.`,
   };
+}
+
+/**
+ * Retire `minutes` du budget d'un jour pour un travail de `subject` : sa
+ * propre réserve de minimum d'abord (ce temps-là compte pour le minimum de
+ * sa matière), la part libre ensuite.
+ */
+function consume(budget: DayBudget, subject: Subject | null, minutes: number): void {
+  const own = subject ? budget.reserved.get(subject) ?? 0 : 0;
+  const fromReserve = Math.min(own, minutes);
+  if (subject && fromReserve > 0) budget.reserved.set(subject, own - fromReserve);
+  budget.free -= minutes - fromReserve;
 }
 
 function pushSlot(

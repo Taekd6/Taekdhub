@@ -1364,7 +1364,10 @@ export function computeNextMove(input: NextMoveInput): NextMovePlan {
  * LA CHARGE DU JOUR — de quoi ne pas toujours proposer davantage.
  *
  *   enough  minutes travaillées aujourd'hui ≥ capacité déclarée du jour
- *           (Réglages), ou fatigue forte et au moins la moitié faite ;
+ *           (Réglages), ou fatigue forte et au moins la moitié faite — ET
+ *           tout le minimum du soir fait. Le minimum fait partie de la
+ *           capacité : dire « assez » tant qu'il en reste contredisait
+ *           l'alerte du soir et l'agenda, qui le réclamaient au même moment ;
  *   tired   énergie ≤ 2 ET moins de 6 h de sommeil au dernier check-in.
  *
  * Sans capacité déclarée pour ce jour (0), pas de mode repos : on ne
@@ -1376,7 +1379,8 @@ export function dayLoad(input: Pick<NextMoveInput, "sessions" | "preferences" | 
   const capacity = input.preferences.capacityByWeekday[(input.now.getDay() + 6) % 7] ?? 0;
   const checkin = latestCheckin(input.checkins, input.now);
   const tired = Boolean(checkin && checkin.energy <= 2 && checkin.sleepHours < 6);
-  const enough = capacity > 0 && (minutes >= capacity || (tired && minutes >= capacity / 2));
+  const eveningDone = eveningPlan(input.preferences, input.sessions, input.now).entries.every((entry) => entry.met);
+  const enough = capacity > 0 && eveningDone && (minutes >= capacity || (tired && minutes >= capacity / 2));
   const reason = enough
     ? `${formatMinutesSpan(minutes)} de travail aujourd'hui pour ${formatMinutesSpan(capacity)} de capacité déclarée${tired ? ", et fatigue forte au dernier check-in" : ""}`
     : tired

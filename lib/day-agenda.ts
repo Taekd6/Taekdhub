@@ -321,7 +321,9 @@ export function buildDayAgenda(input: NextMoveInput, override: RemainingOverride
   const used = kept.reduce((sum, task) => sum + task.minutes, 0);
   const summary =
     overflow > 0
-      ? `L'indispensable dépasse ton temps restant de ${formatMinutesSpan(overflow)}. Rien n'a été compressé : décide ce que tu fais (prolonger, demander un délai).`
+      ? kept.some((task) => task.reducedFrom !== null)
+        ? `L'indispensable dépasse ton temps restant de ${formatMinutesSpan(overflow)}, même réduit au minimum : décide ce que tu fais (prolonger, demander un délai).`
+        : `L'indispensable dépasse ton temps restant de ${formatMinutesSpan(overflow)} : décide ce que tu fais (prolonger, demander un délai).`
       : kept.length === 0
         ? budget.minutes <= 0
           ? "Plus de temps prévu aujourd'hui : ce qui reste est déplacé à demain."
