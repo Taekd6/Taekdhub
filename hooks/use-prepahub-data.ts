@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { type ChapterMemory } from "@/lib/storage"; // mémoire des chapitres (FSRS)
-import { lastStorageWriteFailure, localData, purgeRetiredBankData, type NextMoveRecord, type DayPlanRecord, type ErrorEntry, type Grade, type Preferences, type ReviewItem, type WeekSnapshot, type WorkItem, type DailyCheckin } from "@/lib/storage";
+import { lastStorageWriteFailure, localData, normalizePreferences, purgeRetiredBankData, type NextMoveRecord, type DayPlanRecord, type ErrorEntry, type Grade, type Preferences, type ReviewItem, type WeekSnapshot, type WorkItem, type DailyCheckin } from "@/lib/storage";
 import { buildWeeklyPlan } from "@/lib/planning";
 import { dayKey } from "@/lib/study";
 import { captureWeekSnapshot, findMissingSnapshotWeekStart } from "@/lib/week-snapshot";
@@ -124,8 +124,42 @@ function readAll(): Omit<DataState, "ready" | "writeFailedAt"> {
   };
 }
 
-export function usePrepahubData() {
-  const [data, setData] = useState<DataState>({
+/* ══════════════════════════════════════════════════════════════════
+   LE STORE — une seule copie des données par onglet
+   ══════════════════════════════════════════════════════════════════
+
+   Avant, chaque appel de `usePrepahubData()` (27 composants) gardait SA
+   copie React des données, et une écriture d'une copie ne prévenait pas les
+   autres du même onglet. Pour les collections écrites en REMPLACEMENT, une
+   copie périmée qui écrivait effaçait ce qu'une autre venait d'ajouter
+   (docs/AUDIT.md, P1-1) ; seule la discipline « un appelant par écran » s'y
+   opposait.
+
+   Désormais l'onglet a UN instantané, partagé par tous les appelants via
+   `useSyncExternalStore`. Toute écriture passe par lui et prévient tout le
+   monde ; un autre onglet (événement `storage`) ou la synchronisation
+   (`DATA_CHANGED_EVENT`) le font relire. Les collections qu'une écriture
+   ne touche pas gardent leur référence : les `useMemo` des écrans ne se
+   recalculent pas pour rien.
+
+   Le premier rendu reste celui d'avant (`ready: false`, valeurs par
+   défaut) : `readAll` ÉCRIT (instantané de la semaine, intention du
+   lendemain), ce qui est interdit pendant un rendu. La lecture a lieu dans
+   `subscribe`, c'est-à-dire après le montage — comme l'ancien `useEffect`.
+   Quand plus aucun composant n'écoute, l'instantané est oublié : le suivant
+   relira le disque au lieu de partir d'une copie périmée.
+*/
+
+type Listener = () => void;
+
+const listeners = new Set<Listener>();
+/** `null` : pas encore lu (ou plus personne n'écoute) — les appelants voient alors `initialState()`. */
+let snapshot: DataState | null = null;
+let initial: DataState | null = null;
+let purged = false;
+
+function emptyState(preferences: Preferences): DataState {
+  return {
     sessions: [],
     workItems: [],
     grades: [],
@@ -139,156 +173,166 @@ export function usePrepahubData() {
     ankiSnapshots: [],
     weekSnapshots: [],
     lastBackupAt: null,
-    preferences: localData.preferences(),
+    preferences,
     ready: false,
     writeFailedAt: null,
-  });
+  };
+}
 
-  const refresh = useCallback(() => {
-    setData({ ...readAll(), ready: true, writeFailedAt: lastStorageWriteFailure()?.at ?? null });
-  }, []);
+/** Rendu serveur et hydratation : les valeurs par défaut, comme le serveur les voit. */
+const SERVER_STATE = emptyState(normalizePreferences({}));
 
-  useEffect(() => {
-    // Ménage AVANT la première lecture : efface, sur un appareil qui l'avait
-    // encore, l'ancienne banque d'exercices (≈ 2,8 Mo de quota rendus à
-    // l'élève). Sans effet dès la deuxième fois — voir
-    // lib/storage.ts#purgeRetiredBankData.
+/** Côté client, avant la première lecture : les préférences réelles (lecture seule), le reste vide. */
+function initialState(): DataState {
+  if (!initial) initial = emptyState(localData.preferences());
+  return initial;
+}
+
+function failure(): string | null {
+  return lastStorageWriteFailure()?.at ?? null;
+}
+
+function emit(): void {
+  for (const listener of Array.from(listeners)) listener();
+}
+
+/** Relit tout le disque et prévient tous les appelants. */
+function reload(): void {
+  // Ménage AVANT la première lecture : efface, sur un appareil qui l'avait
+  // encore, l'ancienne banque d'exercices (≈ 2,8 Mo de quota rendus à
+  // l'élève). Sans effet dès la deuxième fois — voir
+  // lib/storage.ts#purgeRetiredBankData.
+  if (!purged) {
     purgeRetiredBankData();
-    refresh();
+    purged = true;
+  }
+  snapshot = { ...readAll(), ready: true, writeFailedAt: failure() };
+  emit();
+}
 
-    function onStorage(event: StorageEvent) {
-      if (event.key?.startsWith("prepahub:")) refresh();
-    }
+/** Remplace une partie de l'instantané (après une écriture) et prévient tous les appelants. */
+function update(patch: Partial<DataState>): void {
+  if (!snapshot) snapshot = { ...readAll(), ready: true, writeFailedAt: failure() };
+  snapshot = { ...snapshot, ...patch, writeFailedAt: failure() };
+  emit();
+}
+
+function onStorage(event: StorageEvent): void {
+  if (event.key?.startsWith("prepahub:")) reload();
+}
+
+function subscribe(listener: Listener): () => void {
+  listeners.add(listener);
+  if (listeners.size === 1) {
     window.addEventListener("storage", onStorage);
     // La synchronisation du compte a réécrit le disque (lib/sync/events.ts) : relire.
-    window.addEventListener(DATA_CHANGED_EVENT, refresh);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener(DATA_CHANGED_EVENT, refresh);
-    };
-  }, [refresh]);
+    window.addEventListener(DATA_CHANGED_EVENT, reload);
+  }
+  if (!snapshot) reload();
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size > 0) return;
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(DATA_CHANGED_EVENT, reload);
+    snapshot = null;
+    initial = null;
+  };
+}
 
-  /**
-   * Écritures INCRÉMENTALES (une séance de plus) :
-   * fusionnées avec ce qui est réellement sur le disque plutôt qu'écrites en
-   * remplacement — voir lib/storage.ts#mergeById pour le scénario de perte
-   * totale que cela ferme. L'état React reçoit la liste RÉELLEMENT
-   * enregistrée, jamais celle qu'on croyait écrire.
-   */
-  const saveSessions = useCallback((sessions: WorkSession[]) => {
-    const stored = localData.mergeSessions(sessions);
-    setData((prev) => ({ ...prev, sessions: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
-  }, []);
+function getSnapshot(): DataState {
+  return snapshot ?? initialState();
+}
 
-  /** Suppression d'une séance — voir `localData.removeSession` : la fusion de `saveSessions` ne retire jamais rien. */
-  const removeSession = useCallback((id: string) => {
-    const stored = localData.removeSession(id);
-    setData((prev) => ({ ...prev, sessions: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
-  }, []);
+function getServerSnapshot(): DataState {
+  return SERVER_STATE;
+}
 
-  /**
-   * Écriture incrémentale, comme les séances : un travail
-   * n'est jamais retiré de la liste (il passe au statut « abandonné »), donc
-   * la fusion par identifiant reste correcte — voir lib/storage.ts#mergeStored.
-   */
-  const saveWorkItems = useCallback((workItems: WorkItem[]) => {
-    const stored = localData.mergeWorkItems(workItems);
-    setData((prev) => ({ ...prev, workItems: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
-  }, []);
+/* ── Écritures — les mêmes règles qu'avant, appliquées une seule fois pour tout l'onglet ── */
 
-  /**
-   * REMPLACEMENT, pas fusion — contrairement aux séances et aux travaux.
-   * Une note SE SUPPRIME : on saisit 14 au lieu de 4, on corrige. Une
-   * fusion par identifiant ressusciterait la note effacée depuis une copie
-   * React périmée.
-   */
-  const saveGrades = useCallback((grades: Grade[]) => {
-    localData.saveGrades(grades);
-    setData((prev) => ({ ...prev, grades, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
-  }, []);
+/**
+ * Écritures INCRÉMENTALES (une séance de plus) :
+ * fusionnées avec ce qui est réellement sur le disque plutôt qu'écrites en
+ * remplacement — voir lib/storage.ts#mergeById pour le scénario de perte
+ * totale que cela ferme. L'état reçoit la liste RÉELLEMENT enregistrée,
+ * jamais celle qu'on croyait écrire.
+ */
+function saveSessions(sessions: WorkSession[]): void {
+  update({ sessions: localData.mergeSessions(sessions) });
+}
 
-  /**
-   * REMPLACEMENT, pour la même raison que `saveGrades` : une entrée du carnet
-   * se supprime, et une fusion par identifiant la ressusciterait. Le prix de
-   * ce choix est connu et accepté — une copie React PÉRIMÉE qui écrirait
-   * effacerait ce qu'une autre a ajouté. C'est pourquoi un seul composant
-   * par écran appelle le hook et passe `reviewItems`/`saveReviewItems` à ses
-   * enfants (voir components/review/review-capture.tsx), plutôt que chaque
-   * enfant ouvre sa propre copie.
-   *
-   * Écriture refusée (quota) : l'état reçoit ce qui est RÉELLEMENT sur le
-   * disque, pas la liste voulue — sinon la ligne s'afficherait comme notée
-   * et disparaîtrait au rechargement, exactement ce que `merge*` a appris à
-   * éviter (voir lib/storage.ts#mergeAndStore).
-   */
-  const saveReviewItems = useCallback((reviewItems: ReviewItem[]) => {
-    const written = localData.saveReviewItems(reviewItems);
-    const stored = written ? reviewItems : localData.reviewItems();
-    setData((prev) => ({ ...prev, reviewItems: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
-  }, []);
+/** Suppression d'une séance — voir `localData.removeSession` : la fusion de `saveSessions` ne retire jamais rien. */
+function removeSession(id: string): void {
+  update({ sessions: localData.removeSession(id) });
+}
 
-  /* ── Carnet d'erreurs ──────────────────────────────────────────────
-     REMPLACEMENT, exactement comme `saveReviewItems` et pour les mêmes
-     raisons : une erreur se supprime, et une écriture refusée renvoie ce qui
-     est RÉELLEMENT sur le disque. Un seul appelant du hook par écran
-     (components/errors/error-log.tsx). */
-  const saveErrors = useCallback((errors: ErrorEntry[]) => {
-    const written = localData.saveErrors(errors);
-    const stored = written ? errors : localData.errors();
-    setData((prev) => ({ ...prev, errors: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
-  }, []);
-  /* ── fin carnet d'erreurs ── */
-  /* ── Check-in du soir ──
-   * REMPLACEMENT de la liste déjà mise à jour par
-   * lib/checkin-insights.ts#upsertCheckin (un check-in par jour, qui se
-   * corrige). Écriture refusée : l'état reçoit ce qui est RÉELLEMENT sur le
-   * disque, même règle que `saveReviewItems`. */
-  const saveCheckins = useCallback((checkins: DailyCheckin[]) => {
-    const written = localData.saveCheckins(checkins);
-    const stored = written ? checkins : localData.checkins();
-    setData((prev) => ({ ...prev, checkins: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
-  }, []);
+/**
+ * Écriture incrémentale, comme les séances : un travail n'est jamais retiré
+ * de la liste (il passe au statut « abandonné »), donc la fusion par
+ * identifiant reste correcte — voir lib/storage.ts#mergeStored.
+ */
+function saveWorkItems(workItems: WorkItem[]): void {
+  update({ workItems: localData.mergeWorkItems(workItems) });
+}
 
-  /* ── Mémoire des chapitres (FSRS) ──
-   * REMPLACEMENT, même règle que `saveReviewItems` : écriture refusée ⇒
-   * l'état reçoit ce qui est RÉELLEMENT sur le disque. */
-  const saveChapterMemory = useCallback((chapterMemory: ChapterMemory[]) => {
-    const written = localData.saveChapterMemory(chapterMemory);
-    const stored = written ? chapterMemory : localData.chapterMemory();
-    setData((prev) => ({ ...prev, chapterMemory: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
-  }, []);
-  /* ── fin mémoire des chapitres ── */
+/**
+ * REMPLACEMENT, pas fusion — contrairement aux séances et aux travaux.
+ * Une note SE SUPPRIME : on saisit 14 au lieu de 4, on corrige. Une fusion
+ * par identifiant ressusciterait la note effacée. Le remplacement est sûr
+ * parce que tous les appelants partagent désormais le même instantané :
+ * aucun ne peut plus écrire depuis une copie périmée.
+ */
+function saveGrades(grades: Grade[]): void {
+  localData.saveGrades(grades);
+  update({ grades });
+}
 
-  /* ── Historique Next Move ──
-   * REMPLACEMENT, même règle que `saveReviewItems`. La liste passée est
-   * déjà mise à jour et élaguée par lib/next-move/history.ts. */
-  const saveNextMoves = useCallback((nextMoves: NextMoveRecord[]) => {
-    const written = localData.saveNextMoves(nextMoves);
-    const stored = written ? nextMoves : localData.nextMoves();
-    setData((prev) => ({ ...prev, nextMoves: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
-  }, []);
+/**
+ * REMPLACEMENT, pour la même raison que `saveGrades` : une entrée se
+ * supprime, et une fusion par identifiant la ressusciterait.
+ *
+ * Écriture refusée (quota) : l'état reçoit ce qui est RÉELLEMENT sur le
+ * disque, pas la liste voulue — sinon la ligne s'afficherait comme notée et
+ * disparaîtrait au rechargement, exactement ce que `merge*` a appris à
+ * éviter (voir lib/storage.ts#mergeAndStore). Même règle pour toutes les
+ * collections ci-dessous.
+ */
+function replace<K extends keyof DataState>(key: K, value: DataState[K], write: (value: DataState[K]) => boolean, read: () => DataState[K]): boolean {
+  const written = write(value);
+  update({ [key]: written ? value : read() } as Partial<DataState>);
+  return written;
+}
 
-  /* ── Tentatives d'exercice et relevés Anki ──
-   * REMPLACEMENT, même règle que `saveReviewItems` : écriture refusée ⇒
-   * l'état reçoit ce qui est RÉELLEMENT sur le disque. */
-  const saveAttempts = useCallback((attempts: ExerciseAttempt[]) => {
-    const written = localData.saveAttempts(attempts);
-    const stored = written ? attempts : localData.attempts();
-    setData((prev) => ({ ...prev, attempts: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
-    return written;
-  }, []);
+const saveReviewItems = (reviewItems: ReviewItem[]) => void replace("reviewItems", reviewItems, localData.saveReviewItems, localData.reviewItems);
+/* ── Carnet d'erreurs — REMPLACEMENT, exactement comme `saveReviewItems`. ── */
+const saveErrors = (errors: ErrorEntry[]) => void replace("errors", errors, localData.saveErrors, localData.errors);
+/* ── Check-in du soir — REMPLACEMENT de la liste déjà mise à jour par lib/checkin-insights.ts#upsertCheckin (un check-in par jour, qui se corrige). ── */
+const saveCheckins = (checkins: DailyCheckin[]) => void replace("checkins", checkins, localData.saveCheckins, localData.checkins);
+/* ── Mémoire des chapitres (FSRS) ── */
+const saveChapterMemory = (chapterMemory: ChapterMemory[]) => void replace("chapterMemory", chapterMemory, localData.saveChapterMemory, localData.chapterMemory);
+/* ── Historique Next Move — la liste passée est déjà mise à jour et élaguée par lib/next-move/history.ts. ── */
+const saveNextMoves = (nextMoves: NextMoveRecord[]) => void replace("nextMoves", nextMoves, localData.saveNextMoves, localData.nextMoves);
+/* ── Tentatives d'exercice et relevés Anki — renvoient si l'écriture est passée. ── */
+const saveAttempts = (attempts: ExerciseAttempt[]) => replace("attempts", attempts, localData.saveAttempts, localData.attempts);
+const saveAnkiSnapshots = (ankiSnapshots: AnkiSnapshot[]) => replace("ankiSnapshots", ankiSnapshots, localData.saveAnkiSnapshots, localData.ankiSnapshots);
 
-  const saveAnkiSnapshots = useCallback((ankiSnapshots: AnkiSnapshot[]) => {
-    const written = localData.saveAnkiSnapshots(ankiSnapshots);
-    const stored = written ? ankiSnapshots : localData.ankiSnapshots();
-    setData((prev) => ({ ...prev, ankiSnapshots: stored, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
-    return written;
-  }, []);
+function savePreferences(preferences: Preferences): void {
+  localData.savePreferences(preferences);
+  update({ preferences });
+}
 
-  const savePreferences = useCallback((preferences: Preferences) => {
-    localData.savePreferences(preferences);
-    setData((prev) => ({ ...prev, preferences, writeFailedAt: lastStorageWriteFailure()?.at ?? null }));
-  }, []);
+/** Relit tout le disque (après une restauration de sauvegarde, par exemple) — pour TOUS les appelants. */
+function refresh(): void {
+  reload();
+}
 
-  return { ...data, refresh, saveSessions, removeSession, saveWorkItems, saveGrades, saveReviewItems, saveErrors, saveCheckins, saveChapterMemory, saveNextMoves, saveAttempts, saveAnkiSnapshots, savePreferences };
+const actions = { refresh, saveSessions, removeSession, saveWorkItems, saveGrades, saveReviewItems, saveErrors, saveCheckins, saveChapterMemory, saveNextMoves, saveAttempts, saveAnkiSnapshots, savePreferences };
+
+/**
+ * Les données de l'élève et leurs écritures. Même forme qu'avant le store :
+ * aucun appelant n'a à changer. Les fonctions d'écriture sont stables (même
+ * référence à chaque rendu).
+ */
+export function usePrepahubData() {
+  const data = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  return { ...data, ...actions };
 }
