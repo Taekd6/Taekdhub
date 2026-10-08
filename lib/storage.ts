@@ -203,24 +203,33 @@ function normalizeWeeklyFocus(raw: unknown): WeeklyFocus | null {
 /**
  * Capacité par défaut, du lundi au dimanche. Ce sont des VALEURS DE DÉPART
  * affichées telles quelles dans Réglages pour que l'élève les corrige, pas
- * une mesure de son emploi du temps : deux heures de travail personnel en
+ * une mesure de son emploi du temps : 3 h 10 de travail personnel en
  * semaine, davantage le week-end. Toute phrase de l'interface qui s'appuie
  * dessus doit dire « ta capacité », jamais « d'après tes habitudes » — voir
  * lib/capacity.ts, qui distingue explicitement la capacité DÉCLARÉE de la
  * capacité SUGGÉRÉE depuis l'historique.
  */
 /**
- * Minimum du soir par défaut — la règle de l'élève : chaque soir de semaine
- * SAUF le mardi, au moins 2 h de maths et 1 h 30 de physique. Le mardi et le
- * week-end n'imposent rien (le week-end a son propre rythme : les exercices).
+ * Minimum du soir par défaut : chaque soir de semaine SAUF le mardi, au moins
+ * 1 h 30 de maths et 1 h de physique. Le mardi et le week-end n'imposent rien
+ * (le week-end a son propre rythme : les exercices).
+ *
+ * RÈGLE : le minimum fait partie de la capacité, il ne dépasse jamais la
+ * capacité PLANIFIABLE du jour (lib/evening-minimums.ts#eveningMinimumConflicts).
+ * Ces 150 min tiennent dans les 152 planifiables d'un soir de semaine par
+ * défaut (190 déclarées, marge 20 %) — un test le vérifie jour par jour.
+ * L'ancien défaut (2 h + 1 h 30 = 210 min pour 96 planifiables) la violait.
+ * Une préférence déjà enregistrée garde ses valeurs : elle est signalée si
+ * elle viole la règle, jamais corrigée en silence.
  */
-const WEEKDAY_EVENING: Partial<Record<Subject, number>> = { Mathématiques: 120, Physique: 90 };
+const WEEKDAY_EVENING: Partial<Record<Subject, number>> = { Mathématiques: 90, Physique: 60 };
 export const DEFAULT_EVENING_MINIMUMS: Partial<Record<Subject, number>>[] = [
   WEEKDAY_EVENING, {}, WEEKDAY_EVENING, WEEKDAY_EVENING, WEEKDAY_EVENING, {}, {},
 ];
 export const MAX_EVENING_MINIMUM_MINUTES = 480;
 
-export const DEFAULT_CAPACITY_BY_WEEKDAY: number[] = [120, 120, 120, 120, 120, 240, 180];
+/* 3 h 10 du lundi au vendredi (et non plus 2 h) : de quoi contenir le minimum du soir par défaut (voir `WEEKDAY_EVENING`). */
+export const DEFAULT_CAPACITY_BY_WEEKDAY: number[] = [190, 190, 190, 190, 190, 240, 180];
 /** 20 % : un cinquième de la journée laissé libre. Réglable entre 0 et 50 % (voir `planningMarginPercent`). */
 export const DEFAULT_PLANNING_MARGIN_PERCENT = 20;
 export const MAX_PLANNING_MARGIN_PERCENT = 50;

@@ -1,0 +1,61 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ce que chaque élève voit (classement figé) > 1. nouvel élève, rien saisi 1`] = `
+{
+  "primary": null,
+  "top": [],
+}
+`;
+
+exports[`ce que chaque élève voit (classement figé) > 2. DM pour demain, un chapitre qui s'efface, des erreurs 1`] = `
+{
+  "primary": "échéance:dm",
+  "top": [
+    "échéance:dm",
+    "erreurs:Physique:méthode",
+    "rappel:series",
+  ],
+}
+`;
+
+exports[`ce que chaque élève voit (classement figé) > 3. DS de physique demain (Électrostatique au programme) et DM de maths demain 1`] = `
+{
+  "primary": "rappel:elec",
+  "top": [
+    "rappel:elec",
+    "échéance:dm",
+    "échéance:ds",
+  ],
+}
+`;
+
+exports[`ce que chaque élève voit (classement figé) > 4. soir de minimum, cartes dues, erreurs de physique 1`] = `
+{
+  "primary": "bloc:Mathématiques",
+  "top": [
+    "bloc:Mathématiques",
+    "erreurs:Physique:cours",
+    "cartes:Physique",
+  ],
+}
+`;
+
+exports[`ce que chaque élève voit (classement figé) > 5. fatigué (check-in), DM dans 5 jours, cartes dues 1`] = `
+{
+  "primary": "cartes:Anglais",
+  "top": [
+    "cartes:Anglais",
+    "échéance:dm5",
+  ],
+}
+`;
+
+exports[`ce que chaque élève voit (classement figé) > 6. DM en retard, chapitre verrouillé, 2 h de maths déjà faites 1`] = `
+{
+  "primary": "échéance:late",
+  "top": [
+    "échéance:late",
+    "verrou:m2-reduction",
+  ],
+}
+`;

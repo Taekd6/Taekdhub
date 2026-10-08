@@ -1,4 +1,5 @@
-import { MAX_DAILY_CAPACITY_MINUTES, MAX_WEEKLY_SUBJECT_TARGET_MINUTES, normalizePreferences, type Preferences } from "@/lib/storage";
+import { plannableMinutesForWeekday } from "@/lib/capacity";
+import { DEFAULT_EVENING_MINIMUMS, MAX_DAILY_CAPACITY_MINUTES, MAX_WEEKLY_SUBJECT_TARGET_MINUTES, normalizePreferences, type Preferences } from "@/lib/storage";
 import { subjects } from "@/lib/study";
 import type { Subject } from "@/lib/supabase/types";
 
@@ -199,6 +200,8 @@ export function draftFromPreferences(preferences: Preferences): OnboardingDraft 
  * Les champs que l'accueil ne règle pas (apparence, marge) sont conservés.
  */
 export function applyOnboarding(current: Preferences, draft: OnboardingDraft, now: Date = new Date()): Preferences {
+  const capacityByWeekday = draft.capacityByWeekday.map((value) => stepMinutes(value, 0, 0, MAX_DAILY_CAPACITY_MINUTES));
+  const cleared = new Set(onboardingMinimumAdjustments(current.eveningMinimums, capacityByWeekday, current.planningMarginPercent));
   return normalizePreferences({
     ...current,
     displayName: draft.displayName.trim(),
@@ -207,7 +210,8 @@ export function applyOnboarding(current: Preferences, draft: OnboardingDraft, no
     weeklySubjectTargets: Object.fromEntries(
       subjects.map((subject) => [subject, stepMinutes(draft.weeklySubjectTargets[subject] ?? 0, 0, 0, MAX_WEEKLY_SUBJECT_TARGET_MINUTES)])
     ),
-    capacityByWeekday: draft.capacityByWeekday.map((value) => stepMinutes(value, 0, 0, MAX_DAILY_CAPACITY_MINUTES)),
+    capacityByWeekday,
+    eveningMinimums: current.eveningMinimums.map((day, index) => (cleared.has(index) ? {} : day)),
     contestDate: draft.contestDate,
     onboardingCompletedAt: now.toISOString(),
   });
@@ -244,4 +248,39 @@ export function isOnboardingSnoozed(): boolean {
   } catch {
     return false;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   LE MINIMUM DU SOIR PAR DÉFAUT FACE À LA CAPACITÉ CHOISIE
+   ══════════════════════════════════════════════════════════════════
+
+   L'accueil fait choisir la capacité (un profil « Semaine chargée » met
+   60 min le soir) sans montrer le minimum du soir, dont la valeur par défaut
+   (1 h 30 de maths + 1 h de physique) ne tiendrait alors plus. Or le minimum
+   fait partie de la capacité (lib/evening-minimums.ts). Règle :
+
+     — un soir dont le minimum est EXACTEMENT celui par défaut, et qui ne
+       tient plus dans la capacité planifiable choisie, devient soir libre ;
+     — un minimum que l'élève a lui-même réglé n'est JAMAIS modifié (il
+       reste, signalé par l'alerte qui mène à Réglages).
+
+   Limite assumée : un élève qui aurait réglé à la main exactement les
+   valeurs par défaut est traité comme s'il ne les avait pas touchées.
+*/
+
+/** Les soirs (0 = lundi) dont le minimum par défaut ne tient plus dans la capacité choisie — ceux que l'accueil rend libres. */
+export function onboardingMinimumAdjustments(minimums: Preferences["eveningMinimums"], capacityByWeekday: readonly number[], marginPercent: number): number[] {
+  const out: number[] = [];
+  for (let weekday = 0; weekday < 7; weekday += 1) {
+    const day = minimums[weekday] ?? {};
+    const defaults = DEFAULT_EVENING_MINIMUMS[weekday] ?? {};
+    const total = Object.values(day).reduce((sum: number, value) => sum + (value ?? 0), 0);
+    if (total === 0 || !sameMinimums(day, defaults)) continue;
+    if (total > plannableMinutesForWeekday({ capacityByWeekday: [...capacityByWeekday], planningMarginPercent: marginPercent }, weekday)) out.push(weekday);
+  }
+  return out;
+}
+
+function sameMinimums(a: Partial<Record<Subject, number>>, b: Partial<Record<Subject, number>>): boolean {
+  return subjects.every((subject) => (a[subject] ?? 0) === (b[subject] ?? 0));
 }

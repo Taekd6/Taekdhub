@@ -1,5 +1,5 @@
-import { courseLocks, lockSentence } from "@/lib/course-lock";
-import { eveningPlan } from "@/lib/evening-minimums";
+import { courseLocks, lockSentence, lockSessionHref } from "@/lib/course-lock";
+import { describeEveningMinimumConflict, eveningMinimumConflicts, eveningPlan } from "@/lib/evening-minimums";
 import { dueReviewItems } from "@/lib/spaced-repetition";
 import { dayKey } from "@/lib/study";
 import { formatMinutesSpan } from "@/lib/utils";
@@ -25,7 +25,10 @@ import type { WorkSession } from "@/lib/supabase/types";
  *              fiches sont à retrouver aujourd'hui (lib/course-lock.ts) ;
  *   attention  minimum du soir pas atteint, à partir de 18 h ; rien noté de
  *              la journée, à partir de 17 h ;
- *   info       des fiches « À revoir » arrivées à échéance.
+ *   info       des fiches « À revoir » arrivées à échéance ; un minimum du
+ *              soir enregistré qui dépasse la capacité planifiable du jour
+ *              (réglage à corriger : dans l'application seulement, jamais
+ *              en notification).
  *
  * L'identifiant d'une alerte contient le JOUR : « Plus tard » la fait taire
  * pour la journée, et elle revient le lendemain si le problème demeure.
@@ -95,7 +98,7 @@ function lockAlerts(input: AlertInput, today: string): AppAlert[] {
       level: "urgent" as const,
       title: `Chapitre verrouillé : ${lock.chapter}`,
       body: `${lockSentence(lock)}. Retrouve-les de tête pour pouvoir avancer.`,
-      href: `/revoir/session?subject=${encodeURIComponent(lock.subject)}`,
+      href: lockSessionHref(lock),
       action: "Retrouver les fiches",
     }));
 }
@@ -131,6 +134,27 @@ function idleAlert(input: AlertInput, today: string): AppAlert | null {
   };
 }
 
+/**
+ * Un minimum du soir déjà ENREGISTRÉ qui dépasse la capacité planifiable du
+ * jour (lib/evening-minimums.ts#eveningMinimumConflicts) — ancienne version,
+ * autre appareil, accueil guidé. Réglages refuse désormais une telle saisie,
+ * mais ne réécrit jamais ce qui est déjà enregistré : on le DIT, avec les
+ * chiffres, et on mène à l'endroit où le corriger.
+ */
+function incoherentMinimumAlert(input: AlertInput, today: string): AppAlert | null {
+  const conflicts = eveningMinimumConflicts(input.preferences);
+  if (conflicts.length === 0) return null;
+  const lines = conflicts.map(describeEveningMinimumConflict);
+  return {
+    id: `minimum-incoherent:${today}`,
+    level: "info",
+    title: "Ton minimum du soir dépasse ton temps disponible",
+    body: `${lines.join(" ; ")}. Baisse le minimum ou augmente ta capacité, sinon tes consignes du soir se contredisent.`,
+    href: "/settings#soirs",
+    action: "Corriger",
+  };
+}
+
 function reviewAlert(input: AlertInput, today: string): AppAlert | null {
   // Les fiches du verrou ont leur propre alerte.
   const due = dueReviewItems(input.reviewItems, input.now).filter((item) => item.origin !== "claude");
@@ -154,6 +178,7 @@ export function computeAlerts(input: AlertInput): AppAlert[] {
     eveningAlert(input, today),
     idleAlert(input, today),
     reviewAlert(input, today),
+    incoherentMinimumAlert(input, today),
   ].filter((alert): alert is AppAlert => alert !== null);
   return alerts.sort((a, b) => LEVEL_RANK[a.level] - LEVEL_RANK[b.level]);
 }

@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Group, Row } from "@/components/ui/grouped";
 import { SegmentedControl } from "@/components/ui/segmented";
-import { Skeleton } from "@/components/ui/state";
+import { Notice, Skeleton } from "@/components/ui/state";
 import { SubjectAvatar } from "@/components/subject-avatar";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { localData, MAX_EVENING_MINIMUM_MINUTES, MAX_WEEKLY_SUBJECT_TARGET_MINUTES, type Preferences } from "@/lib/storage";
 import { WEEKDAY_LABELS } from "@/lib/capacity";
+import { describeEveningMinimumConflict, eveningMinimumConflicts, eveningMinimumSaveErrors, type EveningMinimumConflict } from "@/lib/evening-minimums";
 import type { Subject } from "@/lib/supabase/types";
 import { subjects } from "@/lib/study";
 import { formatMinutesSpan } from "@/lib/utils";
@@ -38,6 +39,8 @@ export function PreferencesForm() {
   const { preferences, savePreferences, ready } = usePrepahubData();
   const [prefs, setPrefs] = useState<Preferences>(preferences);
   const [saved, setSaved] = useState(false);
+  // Enregistrement refusé : les soirs dont le minimum dépasserait la capacité planifiable.
+  const [refused, setRefused] = useState<EveningMinimumConflict[]>([]);
 
   useEffect(() => {
     setPrefs(preferences);
@@ -58,18 +61,31 @@ export function PreferencesForm() {
   // d'enregistrer.
   function save(event: React.FormEvent) {
     event.preventDefault();
-    savePreferences({
-      ...localData.preferences(),
+    const stored = localData.preferences();
+    const next: Preferences = {
+      ...stored,
       displayName: prefs.displayName,
       dailyGoalMinutes: prefs.dailyGoalMinutes,
       weeklyGoalMinutes: prefs.weeklyGoalMinutes,
       contestDate: prefs.contestDate,
       weeklySubjectTargets: prefs.weeklySubjectTargets,
       eveningMinimums: prefs.eveningMinimums,
-    });
+    };
+    // RÈGLE : le minimum du soir fait partie de la capacité (lib/evening-minimums.ts).
+    // Un minimum modifié qui dépasserait la capacité planifiable du jour n'est
+    // PAS enregistré — rien du formulaire ne l'est, pour ne pas laisser croire
+    // que la saisie est passée. Jugé contre la capacité RÉELLEMENT enregistrée.
+    const errors = eveningMinimumSaveErrors(stored, next);
+    setRefused(errors);
+    if (errors.length > 0) return;
+    savePreferences(next);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
+
+  // Les soirs qui dépassent, tels que saisis — y compris un ancien réglage déjà enregistré ainsi.
+  const conflicts = eveningMinimumConflicts({ ...preferences, eveningMinimums: prefs.eveningMinimums });
+  const conflictDays = new Set(conflicts.map((conflict) => conflict.weekday));
 
   const subjectTotal = subjects.reduce((sum, subject) => sum + prefs.weeklySubjectTargets[subject], 0);
 
@@ -214,14 +230,28 @@ export function PreferencesForm() {
 
       {/* MINIMUM DU SOIR — voir lib/evening-minimums.ts. Une ligne par jour,
           deux matières : la règle de l'élève (maths et physique). */}
-      <Group id="soirs" title="Minimum du soir" footer="Minutes à faire au moins ce jour-là. 0 partout = soir libre.">
+      <Group
+        id="soirs"
+        title="Minimum du soir"
+        footer="Minutes à faire au moins ce jour-là, comprises dans ton temps disponible : jamais plus que ce qui est planifiable ce jour-là. 0 partout = soir libre."
+      >
         {!ready ? (
           <div className="py-3 pr-4">
             <Skeleton className="h-48 w-full" />
           </div>
         ) : (
           WEEKDAY_LABELS.map((label, dayIndex) => (
-            <Row key={label} label={label} hint={EVENING_SUBJECTS.every((subject) => !prefs.eveningMinimums[dayIndex]?.[subject]) ? "soir libre" : undefined}>
+            <Row
+              key={label}
+              label={label}
+              hint={
+                conflictDays.has(dayIndex)
+                  ? `dépasse : ${formatMinutesSpan(conflicts.find((conflict) => conflict.weekday === dayIndex)!.plannableMinutes)} planifiables`
+                  : EVENING_SUBJECTS.every((subject) => !prefs.eveningMinimums[dayIndex]?.[subject])
+                    ? "soir libre"
+                    : undefined
+              }
+            >
               {EVENING_SUBJECTS.map((subject) => {
                 const id = `soir-${dayIndex}-${subject}`;
                 return (
@@ -254,6 +284,12 @@ export function PreferencesForm() {
           ))
         )}
       </Group>
+
+      {ready && conflicts.length > 0 && (
+        <Notice tone={refused.length > 0 ? "danger" : "warning"} title={refused.length > 0 ? "Non enregistré : un minimum du soir dépasse ton temps disponible" : "Ton minimum du soir dépasse ton temps disponible"}>
+          {conflicts.map(describeEveningMinimumConflict).join(" ; ")}. Baisse ce minimum, ou augmente ta capacité dans « Temps disponible ».
+        </Notice>
+      )}
 
       <div className="flex justify-end px-1">
         <Button type="submit" size="lg" className="max-sm:w-full">

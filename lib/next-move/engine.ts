@@ -4,7 +4,7 @@ import { ANKI_DUE_STALE_HOURS, latestDueInfo, snapshotAgeHours, type AnkiSnapsho
 import { EXERCISE_LEVEL_LABEL, type ExerciseAttempt } from "@/lib/attempts";
 import { buildDiagnosticContext, type DiagnosticContext } from "@/lib/diagnostic-context";
 import { FINDING_LABEL, mainFinding, type FindingKind } from "@/lib/diagnostic";
-import { courseLocks, isLockCard, lockSentence, type CourseLock } from "@/lib/course-lock";
+import { courseLocks, isLockCard, lockSentence, lockSessionHref, type CourseLock } from "@/lib/course-lock";
 import { bestProgrammeMatch } from "@/lib/programme";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 import { exerciseRequest, levelToRequest, transferRequest, varietyWarning } from "@/lib/exercise-quality";
@@ -545,9 +545,19 @@ function recallCandidates(input: NextMoveInput): MoveCandidate[] {
         // et hors du vivier s'il n'était là que pour l'épreuve.
         if (terms.length === 0) continue;
       } else {
+        /*
+         * L'OUBLI N'EST COMPTÉ QU'UNE FOIS. « S'efface aujourd'hui » (`oubli`)
+         * et « ne tiendra pas jusqu'au jour J » mesurent la même mémoire qui
+         * décline : les additionner doublait le poids d'un chapitre menacé ET
+         * au programme (139 points contre 60 pour un DM à rendre demain). La
+         * part « mémoire » retenue est donc la plus forte des deux ; le
+         * terme ne porte en plus que ce que la proximité de l'épreuve ajoute.
+         */
+        const forgetting = terms.find((term) => term.id === "oubli")?.points ?? 0;
+        const onExamPoints = Math.min(RECALL_MAX_POINTS, Math.round((DESIRED_RETENTION - readiness.onExam) * RECALL_POINTS_PER_UNIT));
         terms.push({
           id: "au-programme",
-          points: Math.min(RECALL_MAX_POINTS, Math.round((DESIRED_RETENTION - readiness.onExam) * RECALL_POINTS_PER_UNIT)) + (exam.days <= 1 ? 20 : exam.days <= 3 ? 12 : 6),
+          points: Math.max(0, onExamPoints - forgetting) + (exam.days <= 1 ? 20 : exam.days <= 3 ? 12 : 6),
           reason: `Au programme ${exam.item.kind === "ds" ? "du DS" : "du concours blanc"} « ${exam.item.title} » ${inDaysLabel(exam.days)} : ${Math.round(readiness.onExam * 100)} % le jour J sans rappel, ${Math.round(readiness.ifReviewedToday * 100)} % avec un rappel aujourd'hui`,
         });
       }
@@ -1016,7 +1026,8 @@ function applyModifiers(candidate: MoveCandidate, input: NextMoveInput, contexts
   const context = candidate.subject ? contexts.get(candidate.subject) : undefined;
 
   if (context) {
-    if (context.exam && EXAM_PREP_KINDS.has(candidate.kind)) {
+    // Un chapitre AU PROGRAMME porte déjà la proximité de l'épreuve (`au-programme`) : ne pas la compter deux fois.
+    if (context.exam && EXAM_PREP_KINDS.has(candidate.kind) && !candidate.terms.some((term) => term.id === "au-programme")) {
       const points = context.exam.days <= 1 ? 25 : context.exam.days <= 3 ? 18 : 10;
       candidate.terms.push({ id: "évaluation-proche", points, reason: `${context.exam.kindLabel} « ${context.exam.title} » ${inDaysLabel(context.exam.days)}` });
     }
@@ -1189,7 +1200,7 @@ function lockCandidate(lock: CourseLock, blocked: string[]): MoveCandidate {
     // Les fiches, plus de quoi rouvrir le cours sur une fiche ratée — pas davantage.
     idealMinutes: clamp(count * MINUTES_PER_CARD + 10, 10, 25),
     maxMinutes: clamp(count * MINUTES_PER_CARD + 15, 15, 30),
-    href: `/revoir/session?subject=${encodeURIComponent(lock.subject)}`,
+    href: lockSessionHref(lock),
     resource: { label: "Mon cours au chrono", href: timerHref(lock.subject) },
     terms,
     score: 0,
@@ -1364,7 +1375,10 @@ export function computeNextMove(input: NextMoveInput): NextMovePlan {
  * LA CHARGE DU JOUR — de quoi ne pas toujours proposer davantage.
  *
  *   enough  minutes travaillées aujourd'hui ≥ capacité déclarée du jour
- *           (Réglages), ou fatigue forte et au moins la moitié faite ;
+ *           (Réglages), ou fatigue forte et au moins la moitié faite — ET
+ *           tout le minimum du soir fait. Le minimum fait partie de la
+ *           capacité : dire « assez » tant qu'il en reste contredisait
+ *           l'alerte du soir et l'agenda, qui le réclamaient au même moment ;
  *   tired   énergie ≤ 2 ET moins de 6 h de sommeil au dernier check-in.
  *
  * Sans capacité déclarée pour ce jour (0), pas de mode repos : on ne
@@ -1376,7 +1390,8 @@ export function dayLoad(input: Pick<NextMoveInput, "sessions" | "preferences" | 
   const capacity = input.preferences.capacityByWeekday[(input.now.getDay() + 6) % 7] ?? 0;
   const checkin = latestCheckin(input.checkins, input.now);
   const tired = Boolean(checkin && checkin.energy <= 2 && checkin.sleepHours < 6);
-  const enough = capacity > 0 && (minutes >= capacity || (tired && minutes >= capacity / 2));
+  const eveningDone = eveningPlan(input.preferences, input.sessions, input.now).entries.every((entry) => entry.met);
+  const enough = capacity > 0 && eveningDone && (minutes >= capacity || (tired && minutes >= capacity / 2));
   const reason = enough
     ? `${formatMinutesSpan(minutes)} de travail aujourd'hui pour ${formatMinutesSpan(capacity)} de capacité déclarée${tired ? ", et fatigue forte au dernier check-in" : ""}`
     : tired
@@ -1397,8 +1412,13 @@ export function skippedKeys(history: NextMoveRecord[], now: Date): Set<string> {
   return keys;
 }
 
-/** Les raisons à montrer sur la carte : les termes POSITIFS les plus lourds, puis les informations — au plus `limit`. */
-export function topReasons(candidate: MoveCandidate, limit = 3): string[] {
+/**
+ * Les raisons à montrer sur la carte : les termes POSITIFS les plus lourds,
+ * puis les informations — au plus `limit`, DEUX par défaut. Le calcul
+ * complet reste dans « Détails » ; la carte, elle, doit se lire d'un coup
+ * d'œil. (Le connecteur Claude, lib/today-snapshot.ts, en demande davantage.)
+ */
+export function topReasons(candidate: MoveCandidate, limit = 2): string[] {
   const positive = candidate.terms.filter((term) => term.points > 0).sort((a, b) => b.points - a.points);
   const neutral = candidate.terms.filter((term) => term.points === 0);
   return [...positive, ...neutral].slice(0, limit).map((term) => term.reason);

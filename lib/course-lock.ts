@@ -1,7 +1,7 @@
 import { foldText, toSubject } from "@/lib/annales";
 import { bestProgrammeMatch } from "@/lib/programme";
 import { sanitizeReviewAnswer, sanitizeReviewText } from "@/lib/review-items";
-import { isLockRecalled, rateReviewItem } from "@/lib/spaced-repetition";
+import { dueReviewItems, isLockRecalled, rateReviewItem } from "@/lib/spaced-repetition";
 import { dayKey } from "@/lib/study";
 import type { ReviewItem } from "@/lib/storage";
 import type { Subject } from "@/lib/supabase/types";
@@ -103,6 +103,23 @@ export function lockFor(locks: CourseLock[], subject: Subject | null, chapter: s
   if (!subject || !chapter) return null;
   const direct = locks.find((lock) => lock.subject === subject && lock.key === chapter);
   return direct ?? locks.find((lock) => lock.subject === subject && lock.key === lockKey(subject, chapter)) ?? null;
+}
+
+/**
+ * La séance « À revoir » de CE verrou : `?verrou=` porte la clé du chapitre
+ * jusqu'à la séance (components/review/review-session.tsx), qui n'y montre
+ * que ses fiches. Avant, le lien ne portait que la matière : « Cours
+ * d'abord : Réduction » ouvrait toutes les cartes dues de maths, et la durée
+ * annoncée (≈ 2 min par fiche) ne correspondait plus à ce qui s'affichait.
+ * Next Move et les alertes passent tous deux par ici.
+ */
+export function lockSessionHref(lock: Pick<CourseLock, "subject" | "key">): string {
+  return `/revoir/session?subject=${encodeURIComponent(lock.subject)}&verrou=${encodeURIComponent(lock.key)}`;
+}
+
+/** Les fiches du verrou `key` à retrouver aujourd'hui (même ordre que `dueReviewItems`). */
+export function dueLockCards(items: ReviewItem[], now: Date, key: string): ReviewItem[] {
+  return dueReviewItems(items, now).filter((item) => isLockCard(item) && lockKey(item.subject, item.chapter) === key);
 }
 
 /** « 3 fiches de cours à retrouver sur « Réduction » avant de refaire un exercice » — la phrase montrée partout. */

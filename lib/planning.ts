@@ -2,6 +2,7 @@ import { plannableMinutes, remainingPlannableToday } from "@/lib/capacity";
 import { computeWorkItemPriority, sortByPriority, type WorkItemPriority } from "@/lib/deadlines";
 import { dayKey } from "@/lib/study";
 import { activeWorkItems, daysUntilDue, remainingMinutes, updateWorkItem } from "@/lib/work-items";
+import { availableFor, splitDayBudget, type DayBudget } from "@/lib/evening-minimums";
 import { computeDailyLoad, type DailyLoad } from "@/lib/workload";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
 import type { Preferences, WorkItem, WorkItemKind } from "@/lib/storage";
@@ -64,12 +65,30 @@ export interface PlannedDay {
   load: DailyLoad;
 }
 
+/**
+ * POURQUOI un travail ne tient pas — chaque cause appelle une décision
+ * différente de l'élève, d'où l'obligation de ne pas les confondre :
+ *
+ *   aucune-capacité          aucune minute déclarée d'ici l'échéance : c'est
+ *                            un réglage (Réglages → capacité), pas un emploi
+ *                            du temps trop chargé ;
+ *   capacité-insuffisante    même seul, le travail ne tient pas dans le temps
+ *                            déclaré d'ici l'échéance ;
+ *   journées-pleines         seul, il tiendrait : ce sont d'AUTRES travaux,
+ *                            plus prioritaires, qui ont pris la place ;
+ *   reporté-après-échéance   un report (`notBeforeDate`) tombe après la date
+ *                            de rendu.
+ */
+export type UnplaceableCause = "aucune-capacité" | "capacité-insuffisante" | "journées-pleines" | "reporté-après-échéance";
+
 /** Un travail que le planificateur n'a PAS pu caser en entier avant son échéance — jamais masqué, jamais repoussé en douce après la date. */
 export interface UnplaceableWork {
   item: WorkItem;
   /** Minutes qui n'ont trouvé aucune place avant l'échéance. */
   missingMinutes: number;
-  /** Phrase explicite citant les deux nombres en jeu. */
+  /** La cause — voir `UnplaceableCause`. */
+  cause: UnplaceableCause;
+  /** Phrase explicite citant les nombres en jeu. */
   reason: string;
 }
 
@@ -100,7 +119,10 @@ export interface WeeklyPlan {
  *     capacité PLANIFIABLE du jour (lib/capacity.ts). Une journée n'est donc
  *     jamais remplie à 100 % de la capacité déclarée par le planificateur —
  *     seule la réalité peut le faire, et c'est alors « surchargé » qui
- *     s'affiche.
+ *     s'affiche. Et dans cette capacité, LE MINIMUM DU SOIR EST RÉSERVÉ
+ *     D'ABORD : un travail n'y prend que la part libre, plus la réserve de
+ *     sa propre matière — une séance sur un DM de physique compte pour le
+ *     minimum de physique (lib/evening-minimums.ts#splitDayBudget).
  *
  *  4. CE QUI NE RENTRE PAS SE DIT. Les minutes qui n'ont pas trouvé de place
  *     avant l'échéance ne sont pas replacées après : elles ressortent dans
@@ -129,12 +151,23 @@ export function buildWeeklyPlan(
     return date;
   });
 
-  // Capacité restante par jour. Aujourd'hui démarre amputé de ce qui a déjà
-  // été travaillé : les minutes passées ne sont plus disponibles.
-  const capacityLeft = new Map<string, number>();
+  // Budget restant par jour. Aujourd'hui démarre amputé de ce qui a déjà
+  // été travaillé : les minutes passées ne sont plus disponibles. Le minimum
+  // du soir y est RÉSERVÉ d'abord, matière par matière : un travail ne prend
+  // que la part libre, plus la réserve de sa propre matière (voir
+  // lib/evening-minimums.ts#splitDayBudget).
+  const budgets = new Map<string, DayBudget>();
   horizon.forEach((date, index) => {
-    capacityLeft.set(dayKey(date), index === 0 ? remainingPlannableToday(preferences, sessions, now) : plannableMinutes(preferences, date));
+    const capacity = index === 0 ? remainingPlannableToday(preferences, sessions, now) : plannableMinutes(preferences, date);
+    budgets.set(dayKey(date), splitDayBudget(preferences, sessions, date, capacity, now));
   });
+  // Le budget de départ, avant tout placement : il distingue « pas assez
+  // de temps, même seul » de « le temps a été pris par d'autres travaux ».
+  const initialBudgets = new Map([...budgets].map(([key, budget]) => [key, { free: budget.free, reserved: new Map(budget.reserved) }]));
+  const left = (key: string, subject: Subject | null) => {
+    const budget = budgets.get(key);
+    return budget ? availableFor(budget, subject) : 0;
+  };
 
   const slotsByDay = new Map<string, PlannedSlot[]>(horizon.map((date) => [dayKey(date), []]));
   const unplaceable: UnplaceableWork[] = [];
@@ -204,13 +237,23 @@ export function buildWeeklyPlan(
     });
 
     if (window.length === 0) {
-      // Même garde : si l'échéance est au-delà de l'horizon, l'absence de
-      // jour disponible DANS l'horizon ne dit rien sur l'échéance elle-même.
-      if (!dueBeyondHorizon) {
+      /*
+       * Fenêtre vide : seulement deux situations possibles.
+       *
+       *   — le report tombe APRÈS l'échéance : c'est un fait, et il se dit ;
+       *   — le premier jour autorisé est au-delà de l'horizon (report
+       *     lointain d'un travail sans échéance, en retard, ou dû plus tard) :
+       *     le planning ne voit pas ce jour, il n'en dit rien. Il affirmait
+       *     auparavant « aucun jour disponible avant l'échéance », y compris
+       *     pour un travail… sans échéance. Le retard d'un travail en retard
+       *     est déjà dit ailleurs (`isOverdue`).
+       */
+      if (due !== null && (days ?? -1) >= 0 && start > due) {
         unplaceable.push({
           item,
           missingMinutes: remaining,
-          reason: `Aucun jour disponible avant l'échéance : il reste ${formatShort(remaining)} à faire.`,
+          cause: "reporté-après-échéance",
+          reason: `Reporté au ${formatDay(start)}, après l'échéance du ${formatDay(due)} : il reste ${formatShort(remaining)} à faire.`,
         });
       }
       continue;
@@ -240,17 +283,18 @@ export function buildWeeklyPlan(
     const target = roundSlot(Math.ceil(remaining / daysToUse));
 
     const explanation = explainPlanningDecision(priority);
+    const needed = remaining;
 
     // Premier passage : la part visée, jour après jour.
     for (const date of window) {
       if (remaining <= 0) break;
       const key = dayKey(date);
-      const left = capacityLeft.get(key) ?? 0;
-      if (left <= 0) continue;
-      const minutes = Math.min(target, left, remaining);
+      const available = left(key, item.subject);
+      if (available <= 0) continue;
+      const minutes = Math.min(target, available, remaining);
       if (minutes < Math.min(MIN_SLOT_MINUTES, remaining)) continue;
       pushSlot(slotsByDay, key, item, minutes, explanation);
-      capacityLeft.set(key, left - minutes);
+      consume(budgets.get(key)!, item.subject, minutes);
       remaining -= minutes;
     }
 
@@ -260,25 +304,21 @@ export function buildWeeklyPlan(
     for (const date of window) {
       if (remaining <= 0) break;
       const key = dayKey(date);
-      const left = capacityLeft.get(key) ?? 0;
-      if (left <= 0) continue;
-      const minutes = Math.min(left, remaining);
+      const available = left(key, item.subject);
+      if (available <= 0) continue;
+      const minutes = Math.min(available, remaining);
       if (minutes < Math.min(MIN_SLOT_MINUTES, remaining)) continue;
       const existing = slotsByDay.get(key)?.find((slot) => slot.workItemId === item.id);
       if (existing) existing.minutes += minutes;
       else pushSlot(slotsByDay, key, item, minutes, explanation);
-      capacityLeft.set(key, left - minutes);
+      consume(budgets.get(key)!, item.subject, minutes);
       remaining -= minutes;
     }
 
     // Règle 4 — ce qui n'est pas entré se dit, avec son chiffre. Uniquement
     // pour une échéance que l'horizon atteint réellement : voir `dueBeyondHorizon`.
     if (remaining > 0 && item.dueDate && (days ?? 0) >= 0 && !dueBeyondHorizon) {
-      unplaceable.push({
-        item,
-        missingMinutes: remaining,
-        reason: `${formatShort(remaining)} ne trouvent pas de place avant l'échéance : tes journées d'ici là sont déjà pleines.`,
-      });
+      unplaceable.push(shortfall(item, needed, remaining, window, initialBudgets, preferences));
     }
   }
 
@@ -286,10 +326,63 @@ export function buildWeeklyPlan(
     const key = dayKey(date);
     const slots = slotsByDay.get(key) ?? [];
     const planned = slots.reduce((total, slot) => total + slot.minutes, 0);
-    return { date: key, slots, load: computeDailyLoad(date, planned, preferences, sessions) };
+    // Ce qui reste réservé au minimum du soir une fois les créneaux posés (déjà diminué de ce que les échéances de la même matière en couvrent).
+    const reserved = [...(budgets.get(key)?.reserved.values() ?? [])].reduce((total, minutes) => total + minutes, 0);
+    return { date: key, slots, load: computeDailyLoad(date, planned, preferences, sessions, reserved) };
   });
 
   return { days, unplaceable, priorities };
+}
+
+/**
+ * Ce qui manque à un travail daté une fois le placement fini, avec SA cause
+ * (voir `UnplaceableCause`). La phrase « tes journées sont déjà pleines »
+ * était dite dans tous les cas, y compris quand aucune minute n'était
+ * déclarée, ou quand le travail ne tenait pas même seul.
+ */
+function shortfall(
+  item: WorkItem,
+  needed: number,
+  missing: number,
+  window: Date[],
+  initialBudgets: Map<string, DayBudget>,
+  preferences: Preferences
+): UnplaceableWork {
+  const declared = window.reduce((total, date) => total + plannableMinutes(preferences, date), 0);
+  if (declared === 0) {
+    return { item, missingMinutes: missing, cause: "aucune-capacité", reason: `Aucune capacité déclarée d'ici l'échéance : il reste ${formatShort(missing)} à faire.` };
+  }
+  // « Seul » : la part libre de chaque jour, plus la réserve du minimum de SA matière.
+  const alone = window.reduce((total, date) => {
+    const budget = initialBudgets.get(dayKey(date));
+    return total + (budget ? availableFor(budget, item.subject) : 0);
+  }, 0);
+  if (needed > alone) {
+    return {
+      item,
+      missingMinutes: missing,
+      cause: "capacité-insuffisante",
+      reason: `${formatShort(missing)} ne trouvent pas de place avant l'échéance : il reste ${formatShort(needed)} à faire pour ${formatShort(alone)} disponibles.`,
+    };
+  }
+  return {
+    item,
+    missingMinutes: missing,
+    cause: "journées-pleines",
+    reason: `${formatShort(missing)} ne trouvent pas de place avant l'échéance : tes journées d'ici là sont déjà pleines.`,
+  };
+}
+
+/**
+ * Retire `minutes` du budget d'un jour pour un travail de `subject` : sa
+ * propre réserve de minimum d'abord (ce temps-là compte pour le minimum de
+ * sa matière), la part libre ensuite.
+ */
+function consume(budget: DayBudget, subject: Subject | null, minutes: number): void {
+  const own = subject ? budget.reserved.get(subject) ?? 0 : 0;
+  const fromReserve = Math.min(own, minutes);
+  if (subject && fromReserve > 0) budget.reserved.set(subject, own - fromReserve);
+  budget.free -= minutes - fromReserve;
 }
 
 function pushSlot(
@@ -382,7 +475,7 @@ export function postponeWorkItem(
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   if (!item) return { workItems, toDate: dayKey(today), breaksDeadline: false, warning: null };
 
-  const toDate = resolvePostponeTarget(target, preferences, today);
+  const { date: toDate, noCapacity } = resolvePostponeTarget(target, preferences, today);
   const next = updateWorkItem(
     workItems,
     id,
@@ -397,11 +490,18 @@ export function postponeWorkItem(
   const replanned = buildWeeklyPlan(next, sessions, preferences, now);
   const blocked = replanned.unplaceable.find((entry) => entry.item.id === id);
 
+  // « Prochain jour disponible » sans aucun jour disponible : le report a
+  // lieu (au bout de l'horizon), mais il ne doit pas se faire en silence.
+  const noDay = noCapacity
+    ? `Aucun jour avec du temps de travail déclaré dans les ${PLANNING_HORIZON_DAYS} prochains jours : reporté au ${formatDay(new Date(`${toDate}T00:00:00`))}.`
+    : null;
+  const warnings = [noDay, blocked ? blocked.reason : null].filter((entry): entry is string => entry !== null);
+
   return {
     workItems: next,
     toDate,
     breaksDeadline: Boolean(blocked),
-    warning: blocked ? blocked.reason : null,
+    warning: warnings.length > 0 ? warnings.join(" ") : null,
   };
 }
 
@@ -412,21 +512,27 @@ export function postponeWorkItem(
  * planifiable est non nulle — reporter au dimanche un élève qui a déclaré
  * zéro minute le dimanche ne reporterait rien du tout.
  */
-function resolvePostponeTarget(target: PostponeTarget, preferences: Preferences, today: Date): string {
+function resolvePostponeTarget(target: PostponeTarget, preferences: Preferences, today: Date): { date: string; noCapacity: boolean } {
   if (target === "demain") {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return dayKey(tomorrow);
+    return { date: dayKey(tomorrow), noCapacity: false };
   }
   if (target === "prochain-jour-disponible") {
     const cursor = new Date(today);
     for (let offset = 1; offset <= PLANNING_HORIZON_DAYS; offset += 1) {
-      cursor.setDate(cursor.getDate() + (offset === 1 ? 1 : 1));
-      if (plannableMinutes(preferences, cursor) > 0) return dayKey(cursor);
+      cursor.setDate(cursor.getDate() + 1);
+      if (plannableMinutes(preferences, cursor) > 0) return { date: dayKey(cursor), noCapacity: false };
     }
-    return dayKey(cursor);
+    // Aucun jour disponible sur l'horizon : on reporte à son dernier jour, et l'appelant le dit.
+    return { date: dayKey(cursor), noCapacity: true };
   }
-  return target;
+  return { date: target, noCapacity: false };
+}
+
+/** « jeudi 17 septembre » — un jour lisible dans une phrase. */
+function formatDay(date: Date): string {
+  return date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 }
 
 function formatShort(minutes: number): string {

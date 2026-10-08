@@ -14,6 +14,7 @@ import { EmptyState, Skeleton } from "@/components/ui/state";
 import { SubjectAvatar } from "@/components/subject-avatar";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { cn } from "@/lib/cn";
+import { courseLocks, dueLockCards } from "@/lib/course-lock";
 import { REVIEW_KIND_META } from "@/lib/review-items";
 import {
   dueReviewItems,
@@ -86,13 +87,20 @@ export function ReviewSession() {
   const [rated, setRated] = useState<RatedEntry[]>([]);
   const cardHeading = useRef<HTMLHeadingElement>(null);
 
+  // `?verrou=` — « Cours d'abord : <chapitre> » (Next Move, alertes) : seulement les fiches de CE verrou.
+  const [lockKey, setLockKey] = useState<string | null>(null);
+
   // `?subject=` — venir du hub d'une matière. Lu au montage, comme /revoir.
   useEffect(() => {
-    const wanted = new URLSearchParams(window.location.search).get("subject");
+    const params = new URLSearchParams(window.location.search);
+    const wanted = params.get("subject");
     if (wanted && (subjects as string[]).includes(wanted)) setSubject(wanted as Subject);
+    setLockKey(params.get("verrou"));
   }, []);
 
-  const due = useMemo(() => dueReviewItems(reviewItems, new Date(), subject), [reviewItems, subject]);
+  // Un verrou déjà levé (fiches retrouvées) ne filtre plus rien : on retombe sur la matière.
+  const lock = useMemo(() => (lockKey ? courseLocks(reviewItems, new Date()).find((entry) => entry.key === lockKey) ?? null : null), [lockKey, reviewItems]);
+  const due = useMemo(() => (lock ? dueLockCards(reviewItems, new Date(), lock.key) : dueReviewItems(reviewItems, new Date(), subject)), [lock, reviewItems, subject]);
   const byId = useMemo(() => new Map(reviewItems.map((item) => [item.id, item])), [reviewItems]);
   const current = phase === "run" ? byId.get(queue[index]) : undefined;
   const hasAnswer = Boolean(current?.answer);
@@ -285,7 +293,20 @@ export function ReviewSession() {
     return <SessionEnd items={reviewItems} rated={rated} subject={subject} onUndo={undo} />;
   }
 
-  return <SessionStart due={due} items={reviewItems} subject={subject} onClearSubject={() => setSubject(null)} onStart={start} />;
+  return (
+    <SessionStart
+      due={due}
+      items={reviewItems}
+      subject={subject}
+      lockChapter={lock?.chapter ?? null}
+      onClearSubject={() => {
+        setSubject(null);
+        setLockKey(null);
+      }}
+      onClearLock={() => setLockKey(null)}
+      onStart={start}
+    />
+  );
 }
 
 /* ── L'ACCUEIL ─────────────────────────────────────────────────────── */
@@ -294,13 +315,18 @@ function SessionStart({
   due,
   items,
   subject,
+  lockChapter,
   onClearSubject,
+  onClearLock,
   onStart,
 }: {
   due: ReviewItem[];
   items: ReviewItem[];
   subject: Subject | null;
+  /** Chapitre du verrou de cours quand la séance est filtrée sur ses fiches (`?verrou=`). */
+  lockChapter: string | null;
   onClearSubject: () => void;
+  onClearLock: () => void;
   onStart: () => void;
 }) {
   const next = nextReviewDay(items, new Date(), subject);
@@ -317,7 +343,14 @@ function SessionStart({
         illustration={<Illustration name="revisions" size={56} />}
       />
 
-      {subject && (
+      {lockChapter ? (
+        <p className="t-meta text-2xs">
+          Fiches de « {lockChapter} » seulement ·{" "}
+          <button type="button" onClick={onClearLock} className="inline-flex min-h-6 items-center text-accent hover:underline max-lg:min-h-11">
+            Toutes les cartes de la matière
+          </button>
+        </p>
+      ) : subject && (
         <p className="t-meta text-2xs">
           {subject} seulement ·{" "}
           <button type="button" onClick={onClearSubject} className="inline-flex min-h-6 items-center text-accent hover:underline max-lg:min-h-11">

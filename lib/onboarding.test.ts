@@ -4,12 +4,14 @@ import {
   draftFromPreferences,
   exceedsCapacity,
   hasCustomizedPreferences,
+  onboardingMinimumAdjustments,
   shouldOnboard,
   stepMinutes,
   suggestedWeeklyGoal,
   weeklyPlannableCapacity,
 } from "@/lib/onboarding";
-import { DEFAULT_WEEKLY_SUBJECT_TARGETS, normalizePreferences } from "@/lib/storage";
+import { DEFAULT_EVENING_MINIMUMS, DEFAULT_WEEKLY_SUBJECT_TARGETS, normalizePreferences } from "@/lib/storage";
+import { eveningMinimumConflicts } from "@/lib/evening-minimums";
 
 const EMPTY = { sessions: [], grades: [], workItems: [] };
 const fresh = () => normalizePreferences({});
@@ -113,5 +115,47 @@ describe("applyOnboarding", () => {
     const current = fresh();
     const next = applyOnboarding(current, { ...draftFromPreferences(current), contestDate: "bientôt" });
     expect(next.contestDate).toBe("");
+  });
+});
+
+/*
+ * L'ACCUEIL GUIDÉ ET LE MINIMUM DU SOIR. L'accueil fait choisir la capacité
+ * (profil « Semaine chargée » : 60 min le soir) sans montrer le minimum du
+ * soir. Un minimum PAR DÉFAUT qui ne tiendrait plus dans la capacité choisie
+ * est donc retiré (soir libre), et le récapitulatif le dit. Un minimum que
+ * l'élève a lui-même réglé n'est jamais touché : il reste, signalé par
+ * l'alerte de Réglages.
+ */
+describe("accueil guidé : le minimum du soir par défaut suit la capacité choisie", () => {
+  const BUSY_WEEK = [60, 60, 90, 60, 60, 240, 180]; // le profil « Semaine chargée »
+
+  it("capacité qui contient le minimum par défaut : rien n'est retiré", () => {
+    const current = fresh();
+    expect(onboardingMinimumAdjustments(current.eveningMinimums, current.capacityByWeekday, current.planningMarginPercent)).toEqual([]);
+    expect(applyOnboarding(current, draftFromPreferences(current)).eveningMinimums).toEqual(DEFAULT_EVENING_MINIMUMS);
+  });
+
+  it("« Semaine chargée » : les quatre soirs de minimum par défaut deviennent libres, et rien d'autre ne change", () => {
+    const current = fresh();
+    expect(onboardingMinimumAdjustments(current.eveningMinimums, BUSY_WEEK, current.planningMarginPercent)).toEqual([0, 2, 3, 4]);
+    const next = applyOnboarding(current, { ...draftFromPreferences(current), capacityByWeekday: BUSY_WEEK });
+    expect(next.eveningMinimums).toEqual([{}, {}, {}, {}, {}, {}, {}]);
+    expect(eveningMinimumConflicts(next)).toEqual([]);
+  });
+
+  it("seuls les soirs qui ne tiennent plus sont libérés", () => {
+    const current = fresh();
+    const capacity = [60, 190, 190, 190, 190, 240, 180]; // seul le lundi descend
+    expect(applyOnboarding(current, { ...draftFromPreferences(current), capacityByWeekday: capacity }).eveningMinimums).toEqual([
+      {},
+      ...DEFAULT_EVENING_MINIMUMS.slice(1),
+    ]);
+  });
+
+  it("un minimum réglé par l'élève n'est jamais modifié, même s'il ne tient plus", () => {
+    const own = { Mathématiques: 120 };
+    const current = normalizePreferences({ eveningMinimums: [own, {}, {}, {}, {}, {}, {}] });
+    expect(onboardingMinimumAdjustments(current.eveningMinimums, BUSY_WEEK, current.planningMarginPercent)).toEqual([]);
+    expect(applyOnboarding(current, { ...draftFromPreferences(current), capacityByWeekday: BUSY_WEEK }).eveningMinimums[0]).toEqual(own);
   });
 });

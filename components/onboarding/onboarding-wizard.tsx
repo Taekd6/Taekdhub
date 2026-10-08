@@ -111,6 +111,7 @@ export function OnboardingWizard({
     draft,
     onChange: (patch: Partial<OnboardingDraft>) => setDraft((current) => (current ? { ...current, ...patch } : current)),
     marginPercent: preferences.planningMarginPercent,
+    eveningMinimums: preferences.eveningMinimums,
     onEdit: go,
   };
 

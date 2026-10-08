@@ -41,7 +41,7 @@ Pourquoi cet ordre :
 - [ ] **P0-5** GitHub Actions : lint, types, tests et build sur chaque PR.
 
 ### P1
-- [ ] **P1-1** Store partagé : une seule copie des données par onglet, notifiée à chaque écriture.
+- [x] **P1-1** Store partagé : une seule copie des données par onglet, notifiée à chaque écriture (`hooks/use-prepahub-data.ts`, `useSyncExternalStore`).
 - [ ] **P1-2** Suppressions synchronisées (`deletedAt`) sans risque de perte.
 - [ ] **P1-3** Vrai `updatedAt` sur les erreurs (et les autres collections modifiables).
 - [ ] **P1-4** Jauge d'occupation du localStorage et alerte à 70 %.

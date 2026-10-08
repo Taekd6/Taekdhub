@@ -123,12 +123,12 @@ describe("absence de données", () => {
   });
 
   it("un nouvel inscrit avec les réglages par défaut : le minimum du soir suffit à proposer un vrai bloc", () => {
-    // Préférences par défaut de l'application : 2 h de maths et 1 h 30 de physique le jeudi soir.
+    // Préférences par défaut de l'application : 1 h 30 de maths et 1 h de physique le jeudi soir.
     const plan = computeNextMove(input({ preferences: normalizePreferences({}) }));
     expect(plan.status).toBe("ok");
     expect(plan.primary?.kind).toBe("bloc");
     expect(plan.primary?.subject).toBe("Mathématiques");
-    expect(topReasons(plan.primary!)[0]).toMatch(/Minimum du soir : encore 2 h en mathématiques/);
+    expect(topReasons(plan.primary!)[0]).toMatch(/Minimum du soir : encore 1 h 30 en mathématiques/);
   });
 });
 

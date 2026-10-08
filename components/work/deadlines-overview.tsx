@@ -118,7 +118,7 @@ export function DeadlinesOverview() {
   const totalRemaining = open.reduce((sum, entry) => sum + entry.remainingMinutes, 0);
   const week = plan.days.slice(0, 7);
   const weekCapacity = week.reduce((sum, day) => sum + day.load.capacityMinutes, 0);
-  const weekPlanned = week.reduce((sum, day) => sum + day.load.plannedMinutes, 0);
+  const weekPlanned = week.reduce((sum, day) => sum + day.load.committedMinutes, 0);
   const groups = groupByPeriod(open);
 
   /*
@@ -297,19 +297,20 @@ export function DeadlinesOverview() {
  * est prévu. Orange → rose quand la journée déborde : c'est le seul jour
  * qui demande une décision. Les barres poussent en cascade à l'entrée.
  */
-function CapacityBars({ days }: { days: { date: string; load: { plannedMinutes: number; capacityMinutes: number } }[] }) {
-  const max = Math.max(1, ...days.map((day) => Math.max(day.load.capacityMinutes, day.load.plannedMinutes)));
+function CapacityBars({ days }: { days: { date: string; load: { committedMinutes: number; capacityMinutes: number } }[] }) {
+  const max = Math.max(1, ...days.map((day) => Math.max(day.load.capacityMinutes, day.load.committedMinutes)));
   return (
     <figure
       className="mt-5"
       role="img"
       aria-label={`Capacité des 7 prochains jours : ${days
-        .map((day, index) => `${dayLabel(day.date, index)}, ${formatSpan(day.load.plannedMinutes * 60)} prévues sur ${formatSpan(day.load.capacityMinutes * 60)}`)
+        .map((day, index) => `${dayLabel(day.date, index)}, ${formatSpan(day.load.committedMinutes * 60)} prévues sur ${formatSpan(day.load.capacityMinutes * 60)}`)
         .join(" ; ")}.`}
     >
       <div aria-hidden className="flex h-28 items-end gap-2">
         {days.map((day, index) => {
-          const { plannedMinutes, capacityMinutes } = day.load;
+          // Engagé = créneaux d'échéance + réserve du minimum du soir (lib/workload.ts).
+          const { committedMinutes: plannedMinutes, capacityMinutes } = day.load;
           const over = plannedMinutes > capacityMinutes;
           const track = (Math.max(capacityMinutes, plannedMinutes) / max) * 100;
           const fill = capacityMinutes > 0 ? Math.min(100, (plannedMinutes / Math.max(capacityMinutes, plannedMinutes)) * 100) : plannedMinutes > 0 ? 100 : 0;

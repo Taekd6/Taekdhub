@@ -134,7 +134,7 @@ describe("Next Move — cours d'abord, exercice ensuite", () => {
     const lock = ranked.find((entry) => entry.key.startsWith("verrou:"))!;
     expect(lock.kind).toBe("cartes");
     expect(lock.title).toBe("Cours d'abord : Réduction");
-    expect(lock.href).toBe("/revoir/session?subject=Math%C3%A9matiques");
+    expect(lock.href).toBe(`/revoir/session?subject=Math%C3%A9matiques&verrou=${encodeURIComponent(lockKey("Mathématiques", "Réduction"))}`);
     expect(lock.terms.map((term) => term.reason).join(" ")).toContain("Réduction — Mines 2023");
     expect(lock.score).toBe(lock.terms.reduce((sum, term) => sum + term.points, 0));
     // Les fiches du verrou ne sont pas comptées une deuxième fois dans les révisions ordinaires.
