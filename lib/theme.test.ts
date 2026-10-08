@@ -55,8 +55,9 @@ describe("applyThemeMode", () => {
 });
 
 describe("palettes — les valeurs de la maquette validée", () => {
-  it("quatre palettes, Aurora par défaut, avec les couleurs de la maquette", () => {
-    expect(PALETTES.map((palette) => palette.id)).toEqual(["aurora", "sunset", "ocean", "neon"]);
+  it("huit palettes — les quatre de la maquette, puis Forêt, Framboise, Braise, Lavande —, Aurora par défaut", () => {
+    expect(PALETTES.map((palette) => palette.id)).toEqual(["aurora", "sunset", "ocean", "neon", "foret", "framboise", "braise", "lavande"]);
+    expect(PALETTES.map((palette) => palette.label)).toEqual(["Aurora", "Sunset", "Océan", "Néon", "Forêt", "Framboise", "Braise", "Lavande"]);
     expect(DEFAULT_PALETTE).toBe("aurora");
     const aurora = paletteById("aurora");
     expect([aurora.c1, aurora.c2, aurora.ink]).toEqual(["#7c5cff", "#22d3ee", "#5b3fd6"]);
@@ -70,6 +71,10 @@ describe("palettes — les valeurs de la maquette validée", () => {
       const all = [palette.c1, palette.c2, palette.ink, ...palette.solid, ...palette.cards.flat(), ...palette.review, ...palette.dl];
       for (const hex of all) expect(hexToRgb(hex), `${palette.id} ${hex}`).not.toBeNull();
     }
+  });
+
+  it("une palette ajoutée est reconnue à la lecture des préférences (et donc par le script anti-flash)", () => {
+    for (const id of ["foret", "framboise", "braise", "lavande"]) expect(resolvePaletteId({ palette: id })).toBe(id);
   });
 
   it("un identifiant inconnu retombe sur Aurora", () => {

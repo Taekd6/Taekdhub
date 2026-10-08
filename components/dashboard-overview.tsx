@@ -142,7 +142,7 @@ export function DashboardOverview() {
 
   return (
     <div className="mx-auto max-w-[68rem]">
-      <HomeTopBar name={preferences.displayName ?? ""} contestDays={contestDays} className="mb-6 lg:mb-10" />
+      <HomeTopBar name={preferences.displayName ?? ""} avatar={preferences.avatarDataUrl} contestDays={contestDays} className="mb-6 lg:mb-10" />
 
       <div className="flex flex-col gap-[1.375rem] lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-10 lg:gap-y-0">
         {/* ── COLONNE « FAIRE » ─────────────────────────────────────── */}

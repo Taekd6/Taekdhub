@@ -1,3 +1,4 @@
+import { AvatarPicker } from "@/components/account/avatar-picker";
 import { PushSettings } from "@/components/notifications/push-settings";
 import { AccountSection } from "@/components/account/account-section";
 import { BriefingSetting } from "@/components/briefing/briefing-setting";
@@ -24,6 +25,7 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-[44rem] space-y-10">
       <PageHero title="Réglages" lede="Apparence, objectifs, temps, compte et sauvegardes." />
+      <AvatarPicker />
       <ThemePicker />
       <PreferencesForm />
       <BriefingSetting />

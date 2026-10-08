@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Settings } from "lucide-react";
 import type { CSSProperties } from "react";
@@ -22,7 +23,7 @@ import { formatSpan } from "@/lib/utils";
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
-export function HomeTopBar({ name, contestDays, className }: { name: string; contestDays: number | null; className?: string }) {
+export function HomeTopBar({ name, avatar = null, contestDays, className }: { name: string; avatar?: string | null; contestDays: number | null; className?: string }) {
   const date = dateFormatter.format(new Date());
   const initial = (name.trim()[0] ?? "T").toUpperCase();
   return (
@@ -30,9 +31,10 @@ export function HomeTopBar({ name, contestDays, className }: { name: string; con
       <Link
         href="/settings"
         aria-label={name ? `${name} — réglages du profil` : "Réglages du profil"}
-        className="grad-brand bounce-press grid h-[2.375rem] w-[2.375rem] shrink-0 place-items-center rounded-full text-[0.9375rem] font-semibold [box-shadow:0_8px_18px_-8px_var(--g1)]"
+        className="grad-brand bounce-press grid h-[2.375rem] w-[2.375rem] shrink-0 place-items-center overflow-hidden rounded-full text-[0.9375rem] font-semibold [box-shadow:0_8px_18px_-8px_var(--g1)]"
       >
-        {initial}
+        {/* La photo de profil (Réglages → Photo), sinon l'initiale. */}
+        {avatar ? <Image src={avatar} alt="" width={38} height={38} unoptimized className="h-full w-full object-cover" /> : initial}
       </Link>
       {/* La date ouvre « Le point » du jour (app/(app)/point). */}
       <Link

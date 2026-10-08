@@ -1,6 +1,7 @@
 import { subjects } from "@/lib/study";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 import { normalizeAttempts, type ExerciseAttempt } from "@/lib/attempts";
+import { normalizeAvatar } from "@/lib/avatar";
 import { normalizeAnkiSnapshots, type AnkiSnapshot } from "@/lib/anki-snapshot";
 import { SRS_LADDER } from "@/lib/spaced-repetition";
 import { FSRS_RATINGS, normalizeFsrsMemory, replayMemory, type FsrsMemory, type FsrsRating, type FsrsState } from "@/lib/fsrs";
@@ -41,6 +42,12 @@ const nextMovesKey = "prepahub:next-moves";
  */
 export type Preferences = {
   displayName: string;
+  /**
+   * PHOTO DE PROFIL, déjà recadrée et réduite (data URL JPEG), ou `null`
+   * pour l'initiale du prénom. Voir lib/avatar.ts : validée à la lecture,
+   * jamais plus de quelques dizaines de kilo-octets.
+   */
+  avatarDataUrl: string | null;
   dailyGoalMinutes: number;
   weeklyGoalMinutes: number;
   contestDate: string;
@@ -269,6 +276,7 @@ export const MAX_WEEKLY_SUBJECT_TARGET_MINUTES = 3000;
 // reste cohérent avec ce nouveau quotidien (5 × 60 min ≈ une semaine de cours).
 const defaults: Preferences = {
   displayName: "",
+  avatarDataUrl: null,
   dailyGoalMinutes: 60,
   weeklyGoalMinutes: 300,
   contestDate: "",
@@ -1454,6 +1462,8 @@ export function normalizePreferences(raw: unknown): Preferences {
    */
   return {
     displayName: typeof item.displayName === "string" ? item.displayName : defaults.displayName,
+    // Photo : seulement une petite image JPEG/PNG/WebP en base64 (lib/avatar.ts) ; tout le reste est écarté.
+    avatarDataUrl: normalizeAvatar(item.avatarDataUrl),
     // Un objectif nul ou négatif produirait des divisions par zéro (« Infinity % »)
     // dans computeDailyObjective ; `JSON.stringify(NaN)` valant `null`, le cas
     // survit à un aller-retour de sauvegarde et doit donc être fermé ici.
