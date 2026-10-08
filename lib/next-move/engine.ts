@@ -545,9 +545,19 @@ function recallCandidates(input: NextMoveInput): MoveCandidate[] {
         // et hors du vivier s'il n'était là que pour l'épreuve.
         if (terms.length === 0) continue;
       } else {
+        /*
+         * L'OUBLI N'EST COMPTÉ QU'UNE FOIS. « S'efface aujourd'hui » (`oubli`)
+         * et « ne tiendra pas jusqu'au jour J » mesurent la même mémoire qui
+         * décline : les additionner doublait le poids d'un chapitre menacé ET
+         * au programme (139 points contre 60 pour un DM à rendre demain). La
+         * part « mémoire » retenue est donc la plus forte des deux ; le
+         * terme ne porte en plus que ce que la proximité de l'épreuve ajoute.
+         */
+        const forgetting = terms.find((term) => term.id === "oubli")?.points ?? 0;
+        const onExamPoints = Math.min(RECALL_MAX_POINTS, Math.round((DESIRED_RETENTION - readiness.onExam) * RECALL_POINTS_PER_UNIT));
         terms.push({
           id: "au-programme",
-          points: Math.min(RECALL_MAX_POINTS, Math.round((DESIRED_RETENTION - readiness.onExam) * RECALL_POINTS_PER_UNIT)) + (exam.days <= 1 ? 20 : exam.days <= 3 ? 12 : 6),
+          points: Math.max(0, onExamPoints - forgetting) + (exam.days <= 1 ? 20 : exam.days <= 3 ? 12 : 6),
           reason: `Au programme ${exam.item.kind === "ds" ? "du DS" : "du concours blanc"} « ${exam.item.title} » ${inDaysLabel(exam.days)} : ${Math.round(readiness.onExam * 100)} % le jour J sans rappel, ${Math.round(readiness.ifReviewedToday * 100)} % avec un rappel aujourd'hui`,
         });
       }
@@ -1016,7 +1026,8 @@ function applyModifiers(candidate: MoveCandidate, input: NextMoveInput, contexts
   const context = candidate.subject ? contexts.get(candidate.subject) : undefined;
 
   if (context) {
-    if (context.exam && EXAM_PREP_KINDS.has(candidate.kind)) {
+    // Un chapitre AU PROGRAMME porte déjà la proximité de l'épreuve (`au-programme`) : ne pas la compter deux fois.
+    if (context.exam && EXAM_PREP_KINDS.has(candidate.kind) && !candidate.terms.some((term) => term.id === "au-programme")) {
       const points = context.exam.days <= 1 ? 25 : context.exam.days <= 3 ? 18 : 10;
       candidate.terms.push({ id: "évaluation-proche", points, reason: `${context.exam.kindLabel} « ${context.exam.title} » ${inDaysLabel(context.exam.days)}` });
     }
@@ -1401,8 +1412,13 @@ export function skippedKeys(history: NextMoveRecord[], now: Date): Set<string> {
   return keys;
 }
 
-/** Les raisons à montrer sur la carte : les termes POSITIFS les plus lourds, puis les informations — au plus `limit`. */
-export function topReasons(candidate: MoveCandidate, limit = 3): string[] {
+/**
+ * Les raisons à montrer sur la carte : les termes POSITIFS les plus lourds,
+ * puis les informations — au plus `limit`, DEUX par défaut. Le calcul
+ * complet reste dans « Détails » ; la carte, elle, doit se lire d'un coup
+ * d'œil. (Le connecteur Claude, lib/today-snapshot.ts, en demande davantage.)
+ */
+export function topReasons(candidate: MoveCandidate, limit = 2): string[] {
   const positive = candidate.terms.filter((term) => term.points > 0).sort((a, b) => b.points - a.points);
   const neutral = candidate.terms.filter((term) => term.points === 0);
   return [...positive, ...neutral].slice(0, limit).map((term) => term.reason);
