@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `7209ad4`
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `e72480f`
 > (PR #28 : tête observée `504b1ae` avant cette mission, relue sur GitHub).
 
 ## Objectif général
@@ -51,10 +51,25 @@ ni outils.
 - Fraîcheur : `meta` (version, date de génération, dernière écriture par collection) et
   `donnees_anciennes` (aucune collection de travail écrite depuis plus de 48 h). Seuil provisoire :
   signale une absence de synchronisation récente, pas des données nécessairement incorrectes.
+- Programme de révision (`lib/revision-program.ts`, `/revision`) : une VUE sur Next Move et le plan du jour,
+  pas un moteur. Chaque élément dit quoi, pourquoi maintenant (palier + raisons chiffrées du moteur), combien
+  (durée gardée, réduite le cas échéant), fiabilité et par où commencer ; ce qui ne tient pas est reporté à
+  demain automatiquement. Fiabilité : « fiable » = fait enregistré (échéance datée, cartes dues, exercice raté,
+  constat du diagnostic établi et récent) ; « à confirmer » = signal du diagnostic ou constat de plus de 21 jours,
+  probabilité d'oubli sur moins de 3 rappels, échéance sans date. Notes sur les données au-dessus du
+  programme : aucune séance depuis 3 jours, synchronisation en échec, annales illisibles, relevé Anki ancien,
+  mémoire vide. « Commencer » écrit dans l'historique de Next Move comme la carte de l'accueil.
+- Fiches d'exercice (`lib/exercise-sheets.ts`, `/entrainement`) : matière, chapitre du programme, compétence,
+  difficulté, origine `ia` (original, sans source) ou `externe` (source obligatoire, lien http(s) seulement).
+  L'énoncé vient d'abord ; indices un à un, correction après confirmation ; l'aide enregistrée est celle
+  réellement ouverte et ne peut pas être déclarée plus légère (sinon « sans aide » prouverait ce qu'il ne prouve
+  pas). Lire la correction APRÈS « J'ai fini » ne change pas l'aide. Fiches stockées sur l'appareil
+  (`prepahub:exercise-sheets`, hors de `STORAGE_KEYS` : aucune collection synchronisée, aucune migration) et
+  incluses dans la sauvegarde exportée ; les tentatives (`fiche:<id>`) se synchronisent.
 - Les docs `AUDIT.md` et `ROADMAP.md` sont partiellement périmées : se fier au code.
 
 ## État actuel
-Branche `claude/loving-maxwell-oqm045`, dernier commit de code `7209ad4`, `main` = `1d75edd`.
+Branche `claude/loving-maxwell-oqm045`, dernier commit de code `e72480f`, `main` = `1d75edd`.
 
 **PR #28** (`Taekd6/Taekdhub`, créée par l'élève le 2026-10-14) : ouverte, non brouillon, non
 fusionnée, `mergeable_state` propre, base `main` (`1d75edd`). Relue avant la mission 4 : tête
@@ -82,6 +97,7 @@ SSO de Vercel (information de l'élève ; la session n'a pas pu les joindre, `ve
 | 3b | Résumé quotidien pour Hermes (`agenda_du_jour`, sans santé ni texte libre). Commit `b1676b7` |
 | 3c | `get_today` tolère des annales illisibles et le signale. Commit `303553d` |
 | 4 | Fraîcheur honnête pour Hermes : plan provisoire, séances anciennes, liste d'échéances non concluante. Commit `7209ad4` |
+| 5 | Programme de révision (`/revision`) et point d'entrée vers l'entraînement (`/entrainement`). Commit `e72480f` |
 
 Vérifications du dernier commit de code : 83 fichiers de tests, 1331 réussis + 1 échec attendu
 (`it.fails` antérieur), `tsc`, lint et build sans erreur. Contrôles propres à Hermes : chaînes
@@ -131,31 +147,37 @@ dépôt ni en conversation. Hermes liste exactement `get_today` et `list_echeanc
 Expérimentation de 14 jours : à mener par l'élève (avis O / T+ / T- / NP chaque soir, notés
 à la main). Date de début : à renseigner. Phase 2 non lancée.
 
+**Mission 5 (2026-10-14).** Audit : tout existait en pièces (Next Move = une action avec son pourquoi ; liste du
+jour = toutes les actions sans pourquoi ni lien ; bannière de cartes ; carte mémoire ; échéances ; « refaire » =
+copier une demande vers Claude puis revenir noter). Livré : `/revision` (lien « Voir le programme de révision »
+dans « Le reste de ta journée »), `/entrainement`, sauvegarde étendue (champ optionnel `exerciseSheets`,
+revalidé à la restauration). Vérifié : 85 fichiers de tests, 1380 réussis + 1 échec attendu antérieur, `tsc`,
+lint, build ; parcours réel sous Chromium (390 px) sur la version construite avec des données de test :
+programme, validation du formulaire (source obligatoire, lien `javascript:` refusé), énoncé avant indices et
+correction, aide « correction » imposée après ouverture, tentative et séance écrites, retour dans la liste.
+Non vérifié : sur un vrai compte (annales, synchronisation), sur l'appareil de l'élève, et en usage prolongé.
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
+- Les fiches d'exercice sont locales : changer d'appareil perd les énoncés (pas les essais). Les fiches ne sont
+  pas dans Hermes ni dans le connecteur de Claude. L'ordre des tâches du programme est celui du plan (palier,
+  poids), sans les plages de performance ; le placement horaire reste sur l'accueil.
 - Deux budgets du jour (capacité déclarée, capacité planifiable).
 - Le matin, le moteur lit le sommeil de la nuit d'avant la veille.
 - `exercise_logs` : migration 0009 à exécuter avant 0007 et 0008 sur une base neuve.
 
 ## Prochaine tâche envisagée
 Aucune lancée. Candidats, chacun à proposer avec son périmètre, accord requis :
-1. Premier branchement réel d'Hermes sur le Preview, par l'élève, sans code. Marche à suivre
-   proposée (valeurs saisies par l'élève, jamais communiquées) :
-   - choisir UN projet Vercel (`taekdhub` probable) et ne rien configurer sur l'autre ;
-   - y ajouter `MCP_HERMES_TOKEN` (aléatoire, `openssl rand -hex 32`) pour l'environnement
-     Preview seulement, limité à la branche `claude/loving-maxwell-oqm045` si possible ;
-   - vérifier que `SUPABASE_URL` et `SUPABASE_SECRET_KEY` existent pour Preview (le Preview lira alors
-     les vraies données) ; ne pas y mettre `MCP_SECRET` ;
-   - Settings → Deployment Protection → « Protection Bypass for Automation » (le SSO reste actif ;
-     contournement valable pour tout le projet, révocable ; disponibilité selon le plan non vérifiée) ;
-   - redéployer le Preview (la variable ne s'applique qu'aux nouveaux déploiements) ;
-   - dans Hermes : l'URL `…/api/mcp-hermes` avec les en-têtes `Authorization: Bearer …` et
-     `x-vercel-protection-bypass: …` ;
-   - vérifier : seuls `get_today` et `list_echeances`, `meta.fraicheur` présent, 401 sans `Authorization`.
-2. Bilan des 14 jours, puis ajuster plages, classification ou placement.
-3. Phase 2 : une seule règle de récupération (seulement après le bilan).
-4. Plus tard, avec accord : un bilan périodique structuré pour Hermes (lecture seule), ou un
-   rendu des échéances avec chapitres officiels (les tâches d'échéance n'ont pas de chapitre).
+1. Essai réel de `/revision` et `/entrainement` par l'élève pendant quelques jours : noter ce qui est inutile,
+   confus ou faux (les audits de ChatGPT/Hermes se confrontent ensuite au code).
+2. Synchroniser les fiches d'exercice (exigerait d'ajouter une collection : migration, donc accord explicite),
+   ou les rendre importables depuis un fichier / un lien.
+3. Reprendre les anciens écrans que le programme recoupe (carte « À ne pas oublier », bannière de cartes,
+   liste du jour) une fois l'usage confirmé : n'en retirer aucun avant.
+4. Bilan des 14 jours, puis ajuster plages, classification ou placement ; phase 2 : une seule règle de
+   récupération (seulement après le bilan).
+5. Hermes (reporté sur demande de l'élève) : production à redéployer après accord, jeton et contournement à
+   révoquer à la fin des essais.
 
 ## Limites d'intervention
 - Avant toute reprise : lire ce carnet, vérifier branche, HEAD et arbre ; signaler tout écart.
