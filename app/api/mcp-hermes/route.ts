@@ -86,7 +86,7 @@ const mcp = createMcpHandler((server) => {
     {
       title: "État du jour (sans texte libre)",
       description:
-        "L'état du jour dans TaekdHub, en lecture seule et sans aucun texte saisi par l'élève. `agenda_du_jour` résume la journée : tâches retenues (dans l'ordre suggéré) avec matière, chapitre du programme officiel, durée, priorité (indispensable, important, secondaire), niveau cognitif (elevee, moyenne, legere), plage horaire suggérée d'après les plages que l'élève a réglées (une hypothèse, pas une mesure de sa performance) et échéance ; capacité planifiable du jour et temps restant ; tâches reportées à demain (nature seulement). Le reste : prochain mouvement (genre, matière, minutes, identifiants de raisons), verrous de cours, points faibles par chapitre du programme, échéances à venir (type, matière, date, temps restant), chapitres qui s'effacent, erreurs récentes (matière, type, jour), annales en chiffres, cartes Anki dues. Le bloc `meta` donne la date de génération et la fraîcheur des données : si `donnees_anciennes` est vrai, aucune synchronisation récente n'a eu lieu — signale-le avant tout commentaire. Rien dans cette réponse ne permet d'écrire dans TaekdHub.",
+        "L'état du jour dans TaekdHub, en lecture seule et sans aucun texte saisi par l'élève. `agenda_du_jour` résume la journée : tâches retenues (dans l'ordre suggéré) avec matière, chapitre du programme officiel, durée, priorité (indispensable, important, secondaire), niveau cognitif (elevee, moyenne, legere), plage horaire suggérée d'après les plages que l'élève a réglées (une hypothèse, pas une mesure de sa performance) et échéance ; capacité planifiable du jour et temps restant ; tâches reportées à demain (nature seulement). Le reste : prochain mouvement (genre, matière, minutes, identifiants de raisons), verrous de cours, points faibles par chapitre du programme, échéances à venir (type, matière, date, temps restant), chapitres qui s'effacent, erreurs récentes (matière, type, jour), annales en chiffres, cartes Anki dues. Le bloc `meta` donne la date de génération et la fraîcheur des données : si `meta.fraicheur.consigne` n'est pas nul, applique-la et signale-le avant tout commentaire ; si `agenda_du_jour.provisoire` est vrai, le plan est provisoire, jamais la recommandation actuelle (`donnees_anciennes` ne dit pas si les séances sont à jour : lis `seances_anciennes`). Rien dans cette réponse ne permet d'écrire dans TaekdHub.",
       inputSchema: z.object({}),
     },
     () =>
@@ -111,7 +111,7 @@ const mcp = createMcpHandler((server) => {
     {
       title: "Échéances à venir (sans titre)",
       description:
-        "Les échéances encore à faire, d'aujourd'hui à `jours` jours (toutes si absent), la plus proche d'abord : type, matière, date, jours restants, minutes restantes, importance. Ni titre, ni note, ni identifiant : lecture seule. Le bloc `meta` donne la fraîcheur des données.",
+        "Les échéances encore à faire, d'aujourd'hui à `jours` jours (toutes si absent), la plus proche d'abord : type, matière, date, jours restants, minutes restantes, importance. Ni titre, ni note, ni identifiant : lecture seule. Le bloc `meta` donne la fraîcheur des données ; si `liste_concluante` est faux, une liste vide ne signifie PAS « aucune échéance ».",
       inputSchema: z.object({ jours: z.number().int().min(0).max(366).optional() }),
     },
     ({ jours }) =>

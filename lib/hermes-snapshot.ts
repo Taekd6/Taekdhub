@@ -128,13 +128,30 @@ export interface Freshness {
     anciennete_heures: number | null;
     /** Vrai si aucune collection de travail n'a été synchronisée depuis plus de `seuil_heures`. */
     donnees_anciennes: boolean;
+    /**
+     * Les séances (le temps déjà travaillé) sont-elles anciennes ? Distinct de `donnees_anciennes` : une
+     * autre collection récemment écrite (cartes à réviser…) rend ce dernier faux alors que les séances,
+     * qui fixent le « temps restant », datent de plusieurs jours.
+     */
+    seances_anciennes: boolean;
+    /** Âge de la dernière écriture des séances, `null` si elles n'ont jamais été synchronisées. */
+    anciennete_seances_heures: number | null;
+    /** Une ligne d'échéances existe côté serveur. Sinon une liste vide ne dit rien : elle n'a peut-être jamais été envoyée. */
+    echeances_synchronisees: boolean;
+    /** Ce que l'IA doit faire de cette fraîcheur (phrase fixe du code), `null` si rien à signaler. */
+    consigne: string | null;
     /** À lire avant d'interpréter `donnees_anciennes`. */
     precision: string;
   };
 }
 
 const FRESHNESS_NOTE =
-  "donnees_anciennes signale une ABSENCE DE SYNCHRONISATION RÉCENTE (aucune collection de travail écrite depuis plus de seuil_heures, règle provisoire), pas des données nécessairement incorrectes.";
+  "donnees_anciennes signale une ABSENCE DE SYNCHRONISATION RÉCENTE (aucune collection de travail écrite depuis plus de seuil_heures, règle provisoire), pas des données nécessairement incorrectes. Une écriture récente ne dit pas laquelle : voir seances_anciennes. Et l'absence d'écriture ne distingue pas une synchronisation défaillante d'une absence d'activité.";
+
+const CONSIGNE_SANS_SYNCHRO =
+  "Aucune synchronisation récente : ne présente pas ce plan comme la recommandation actuelle. Dis-le d'abord, demande à l'élève d'ouvrir TaekdHub puis relis. Une liste d'échéances vide n'est pas concluante.";
+const CONSIGNE_SEANCES_ANCIENNES =
+  "Les séances enregistrées ne sont pas récentes : le temps déjà travaillé et le temps restant peuvent être faux. Présente le plan comme provisoire tant que l'élève n'a pas confirmé ce qu'il a déjà fait.";
 
 /**
  * Les métadonnées de fraîcheur — et rien d'autre : quand chaque collection a
@@ -156,6 +173,10 @@ export function buildFreshness(stamps: CollectionStamps, now: Date): Freshness {
     if (!Number.isNaN(time) && (latest === null || time > latest)) latest = time;
   }
   const ageHours = latest === null ? null : Math.max(0, Math.round(((now.getTime() - latest) / 3_600_000) * 10) / 10);
+  const sessionsTime = collections.sessions ? new Date(collections.sessions).getTime() : NaN;
+  const sessionsAge = Number.isNaN(sessionsTime) ? null : Math.max(0, Math.round(((now.getTime() - sessionsTime) / 3_600_000) * 10) / 10);
+  const noRecentSync = ageHours === null || ageHours > STALE_AFTER_HOURS;
+  const sessionsOld = sessionsAge === null || sessionsAge > STALE_AFTER_HOURS;
   return {
     schema_version: HERMES_SCHEMA_VERSION,
     generated_at: now.toISOString(),
@@ -164,7 +185,11 @@ export function buildFreshness(stamps: CollectionStamps, now: Date): Freshness {
       collections,
       derniere_synchro_travail: latest === null ? null : new Date(latest).toISOString(),
       anciennete_heures: ageHours,
-      donnees_anciennes: ageHours === null || ageHours > STALE_AFTER_HOURS,
+      donnees_anciennes: noRecentSync,
+      seances_anciennes: sessionsOld,
+      anciennete_seances_heures: sessionsAge,
+      echeances_synchronisees: Boolean(collections.workItems),
+      consigne: noRecentSync ? CONSIGNE_SANS_SYNCHRO : sessionsOld ? CONSIGNE_SEANCES_ANCIENNES : null,
       precision: FRESHNESS_NOTE,
     },
   };
@@ -196,7 +221,13 @@ export function buildHermesEcheances(collections: Record<string, unknown>, stamp
     .filter((entry): entry is { item: typeof entry.item; days: number } => entry.days !== null && entry.days >= 0 && (jours === undefined || entry.days <= jours))
     // Ordre total sans passer par le titre : date, puis genre, matière, durée.
     .sort((a, b) => a.days - b.days || a.item.kind.localeCompare(b.item.kind) || (a.item.subject ?? "").localeCompare(b.item.subject ?? "") || a.item.estimatedMinutes - b.item.estimatedMinutes);
-  return { meta: buildFreshness(stamps, now), echeances: entries.map(({ item, days }) => echeanceView(item, days, sessions)) };
+  const meta = buildFreshness(stamps, now);
+  return {
+    meta,
+    /** Faux si la liste ne peut pas être prise pour l'état réel : aucune synchronisation récente, ou aucune échéance n'a jamais été envoyée au serveur. Une liste vide n'est alors pas « aucune échéance ». */
+    liste_concluante: meta.fraicheur.echeances_synchronisees && !meta.fraicheur.donnees_anciennes,
+    echeances: entries.map(({ item, days }) => echeanceView(item, days, sessions)),
+  };
 }
 
 /* ── Agenda du jour ───────────────────────────────────────────────── */
@@ -306,11 +337,15 @@ export function buildHermesToday(collections: Record<string, unknown>, annaleRow
   const placement = placeDay(agenda, preferences.performanceWindows, { workItems, chapterMemory, exercises: diagnosticContextOf(agendaInput).exercises, now });
   const candidates = new Map(rankCandidates(agendaInput).map((candidate) => [candidate.key, candidate]));
 
+  const meta = buildFreshness(stamps, now);
+  const freshness = meta.fraicheur;
   return {
-    meta: buildFreshness(stamps, now),
+    meta,
     // Une source illisible n'est pas une source vide : la réponse le dit (liste fermée), au lieu d'afficher des zéros.
     ...(unavailable.length > 0 ? { donnees_indisponibles: [...unavailable] } : {}),
     agenda_du_jour: {
+      /** Vrai si le plan repose sur des données anciennes (voir `meta.fraicheur.consigne`) : à présenter comme provisoire, jamais comme la recommandation actuelle. */
+      provisoire: freshness.donnees_anciennes || freshness.seances_anciennes,
       /** Capacité planifiable de la journée entière (capacité déclarée moins la marge) — déjà calculée par l'application. */
       capacite_planifiable_min: plannableMinutes(preferences, now),
       /** Ce qu'il reste de planifiable aujourd'hui (capacité, travail déjà fait et heure). */

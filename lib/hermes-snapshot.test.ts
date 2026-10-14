@@ -128,7 +128,7 @@ function outsideClosedList(payload: unknown): Array<{ path: string; value: strin
   const isoInstant = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
   const termId = /^[a-zà-ÿ0-9:-]{1,48}$/;
   return strings(payload).filter(({ path, value }) => {
-    if (path.endsWith(".precision")) return false; // phrase fixe du code, vérifiée à part
+    if (path.endsWith(".precision") || path.endsWith(".consigne")) return false; // phrase fixe du code, vérifiée à part
     if (/\.plage\.(debut|fin)$/.test(path)) return !clock.test(value);
     if (/\.raisons\[\d+\]\.id$/.test(path)) return !termId.test(value);
     if (/\.fraicheur\.collections\./.test(path) || isoDate.test(value) || isoInstant.test(value)) return !(isoDate.test(value) || isoInstant.test(value));
@@ -281,6 +281,45 @@ describe("fraîcheur — une absence de synchronisation récente, pas une preuve
     expect(precision).toMatch(/pas des données nécessairement incorrectes/i);
   });
 
+  it("une écriture récente d'une AUTRE collection ne cache pas des séances anciennes (cas observé le 14 octobre)", () => {
+    // Séances du 11, cartes à réviser écrites aujourd'hui : « pas de données anciennes », mais des séances anciennes.
+    const f = fresh({ sessions: at(72), reviewItems: at(1), workItems: at(300) }).fraicheur;
+    expect(f.donnees_anciennes).toBe(false);
+    expect(f.seances_anciennes).toBe(true);
+    expect(f.anciennete_seances_heures).toBe(72);
+    expect(f.consigne).toMatch(/provisoire/);
+    const plan = buildHermesToday(collections, annales, { sessions: at(72), reviewItems: at(1), workItems: at(300) }, NOW);
+    expect(plan.agenda_du_jour.provisoire).toBe(true);
+  });
+
+  it("rien de récent : la consigne interdit de présenter le plan comme actuel et de conclure d'une liste vide", () => {
+    const f = fresh({ sessions: at(100), workItems: at(100) }).fraicheur;
+    expect(f.donnees_anciennes).toBe(true);
+    expect(f.consigne).toMatch(/pas .* recommandation actuelle/);
+    expect(f.consigne).toMatch(/liste d'échéances vide n'est pas concluante/);
+    expect(buildHermesEcheances(collections, { sessions: at(100), workItems: at(100) }, NOW).liste_concluante).toBe(false);
+  });
+
+  it("tout est récent : aucune consigne, plan non provisoire, liste concluante", () => {
+    const stampsNow = { sessions: at(2), workItems: at(2) };
+    expect(fresh(stampsNow).fraicheur.consigne).toBeNull();
+    expect(buildHermesToday(collections, annales, stampsNow, NOW).agenda_du_jour.provisoire).toBe(false);
+    expect(buildHermesEcheances(collections, stampsNow, NOW).liste_concluante).toBe(true);
+  });
+
+  it("aucune ligne d'échéances côté serveur : la liste vide n'est pas concluante, même si tout le reste est récent", () => {
+    const stampsNoDeadlines = { sessions: at(2), reviewItems: at(2) };
+    expect(fresh(stampsNoDeadlines).fraicheur.echeances_synchronisees).toBe(false);
+    expect(buildHermesEcheances({}, stampsNoDeadlines, NOW)).toMatchObject({ liste_concluante: false, echeances: [] });
+  });
+
+  it("les réponses périmées restent dans les listes fermées (aucun texte libre ne passe avec la consigne)", () => {
+    const stale = buildHermesToday(collections, annales, { sessions: at(100) }, NOW);
+    expect(outsideClosedList(stale)).toEqual([]);
+    expect(outsideClosedList(buildHermesEcheances(collections, { sessions: at(100) }, NOW))).toEqual([]);
+    expect(JSON.stringify(stale)).not.toContain(S);
+  });
+
   it("la fraîcheur accompagne les deux outils", () => {
     expect(today.meta.fraicheur.donnees_anciennes).toBe(false);
     expect(echeances.meta.fraicheur.donnees_anciennes).toBe(false);
@@ -295,7 +334,7 @@ function todayWith(overrides: Record<string, unknown>) {
   return buildHermesToday({ ...collections, preferences: { ...(collections.preferences as object), ...overrides } }, annales, stamps, NOW);
 }
 
-const AGENDA_KEYS = ["capacite_planifiable_min", "depassement_min", "plages_configurees", "reportees_a_demain", "reste_planifiable_min", "taches", "total_retenu_min"];
+const AGENDA_KEYS = ["capacite_planifiable_min", "depassement_min", "plages_configurees", "provisoire", "reportees_a_demain", "reste_planifiable_min", "taches", "total_retenu_min"];
 const TASK_KEYS = ["adequation", "chapitre", "duree_initiale_min", "duree_min", "echeance", "genre", "matiere", "niveau_cognitif", "ordre", "plage", "priorite"];
 const POSTPONED_KEYS = ["chapitre", "duree_min", "genre", "matiere", "priorite"];
 
