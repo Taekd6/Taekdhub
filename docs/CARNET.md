@@ -1,7 +1,8 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `2dcd552`.
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `2dcd552`
+> (PR #28 observée à la tête `5486d88`).
 
 ## Objectif général
 TaekdHub est l'outil de travail personnel d'un élève de prépa MP (PWA Next.js 15, React 19,
@@ -43,8 +44,21 @@ ni outils.
 - Les docs `AUDIT.md` et `ROADMAP.md` sont partiellement périmées : se fier au code.
 
 ## État actuel
-Branche `claude/loving-maxwell-oqm045`, dernier commit de code `2dcd552`, aucune pull request,
-`main` = `1d75edd`.
+Branche `claude/loving-maxwell-oqm045`, dernier commit de code `2dcd552`, `main` = `1d75edd`.
+
+**PR #28** (`Taekd6/Taekdhub`, créée par l'élève le 2026-10-14) : ouverte, non brouillon, non
+fusionnée, `mergeable_state` propre, base `main`. Observée à la tête `5486d88` : 5 commits,
+24 fichiers (+2777 / −13). Contrôles terminés et verts : GitHub Actions « Lint, types, tests, build »,
+« Vercel Preview Comments », et les deux statuts Vercel ci-dessous. Ce commit de carnet s'y ajoute
+et relancera contrôles et Previews. Ni fusion ni déploiement en production sans accord explicite.
+
+**Deux projets Vercel** déploient ce dépôt, Previews prêts (« Ready ») sur les deux :
+- `taekdhub` : `https://taekdhub-git-claude-loving-maxwell-oqm045-taekd.vercel.app`
+- `taekdhub-vcrx` : `https://taekdhub-vcrx-git-claude-loving-maxwell-oqm045-taekd.vercel.app`
+
+Le README place la production sur `taekdhub.vercel.app` : `taekdhub` est probablement le projet
+principal et `taekdhub-vcrx` un doublon (inférence, non vérifiée). Les Previews sont protégés par le
+SSO de Vercel (information de l'élève ; la session n'a pas pu les joindre, `vercel.app` y est bloqué).
 
 | Mission | Résultat |
 |---|---|
@@ -62,9 +76,10 @@ fermée, authentification (en-tête manquant, mauvais schéma, mauvais jeton, je
 variable absente, jeton trop court), liste exacte des outils, absence d'appel d'écriture, essai HTTP
 local avec un jeton factice.
 
-Hermes n'est pas encore branché : `MCP_HERMES_TOKEN` n'est pas défini et la configuration d'Hermes
-n'a pas été touchée. Non vérifié : la route contre la vraie base Supabase (aucun identifiant
-disponible en session) ; un premier appel réel est à faire par l'élève.
+**Le branchement d'Hermes reste à faire.** Aucun projet Vercel n'a été choisi pour Hermes, aucun
+jeton `MCP_HERMES_TOKEN` n'a été créé, aucun réglage Vercel n'a été modifié (variables, protection)
+et la configuration d'Hermes n'a pas été touchée. Non vérifié : la route contre la vraie base
+Supabase (aucun identifiant disponible en session) ; un premier appel réel est à faire par l'élève.
 
 Expérimentation de 14 jours : à mener par l'élève (avis O / T+ / T- / NP chaque soir, notés
 à la main). Date de début : à renseigner. Phase 2 non lancée.
@@ -77,9 +92,19 @@ Expérimentation de 14 jours : à mener par l'élève (avis O / T+ / T- / NP cha
 
 ## Prochaine tâche envisagée
 Aucune lancée. Candidats, chacun à proposer avec son périmètre, accord requis :
-1. Premier branchement réel d'Hermes, par l'élève : définir `MCP_HERMES_TOKEN` (valeur aléatoire,
-   `openssl rand -hex 32`) dans l'hébergement, déclarer la route et l'en-tête dans Hermes, puis
-   vérifier un premier appel (`meta.fraicheur`, absence de texte libre). Aucun code requis.
+1. Premier branchement réel d'Hermes sur le Preview, par l'élève, sans code. Marche à suivre
+   proposée (valeurs saisies par l'élève, jamais communiquées) :
+   - choisir UN projet Vercel (`taekdhub` probable) et ne rien configurer sur l'autre ;
+   - y ajouter `MCP_HERMES_TOKEN` (aléatoire, `openssl rand -hex 32`) pour l'environnement
+     Preview seulement, limité à la branche `claude/loving-maxwell-oqm045` si possible ;
+   - vérifier que `SUPABASE_URL` et `SUPABASE_SECRET_KEY` existent pour Preview (le Preview lira alors
+     les vraies données) ; ne pas y mettre `MCP_SECRET` ;
+   - Settings → Deployment Protection → « Protection Bypass for Automation » (le SSO reste actif ;
+     contournement valable pour tout le projet, révocable ; disponibilité selon le plan non vérifiée) ;
+   - redéployer le Preview (la variable ne s'applique qu'aux nouveaux déploiements) ;
+   - dans Hermes : l'URL `…/api/mcp-hermes` avec les en-têtes `Authorization: Bearer …` et
+     `x-vercel-protection-bypass: …` ;
+   - vérifier : seuls `get_today` et `list_echeances`, `meta.fraicheur` présent, 401 sans `Authorization`.
 2. Bilan des 14 jours, puis ajuster plages, classification ou placement.
 3. Phase 2 : une seule règle de récupération (seulement après le bilan).
 4. Plus tard, avec accord : un bilan périodique structuré pour Hermes (lecture seule).
@@ -90,7 +115,10 @@ Aucune lancée. Candidats, chacun à proposer avec son périmètre, accord requi
 - Après accord : implémenter, vérifier (`pnpm test`, `pnpm exec tsc --noEmit`, `pnpm lint`,
   `pnpm build`), puis deux commits : un pour le code, un pour la mise à jour de ce carnet
   (résultat et hash du commit de code).
-- Ni pull request, ni fusion, ni déploiement sans accord explicite.
+- Ni nouvelle pull request, ni fusion, ni déploiement sans accord explicite. La PR #28 existe : ne
+  pas la fusionner ni déployer en production sans accord explicite.
+- Ne modifier ni réglage ni variable Vercel, ne créer aucun jeton, ne toucher à aucune configuration
+  d'Hermes : ces actions sont faites par l'élève.
 - Travailler sur la branche désignée ; ne jamais pousser sur `main`.
 - Ne jamais afficher ni copier de secrets, clés ou données personnelles.
 - Aucune phase 2 ni intégration Apple Watch sans demande.
