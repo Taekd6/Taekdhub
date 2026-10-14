@@ -1,8 +1,8 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `b1676b7`
-> (PR #28 : dernière tête observée `5486d88`, avant les commits `e5e7dca` et `b1676b7`).
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `303553d`
+> (PR #28 : dernière tête observée `5486d88`, avant les commits suivants).
 
 ## Objectif général
 TaekdHub est l'outil de travail personnel d'un élève de prépa MP (PWA Next.js 15, React 19,
@@ -54,7 +54,7 @@ ni outils.
 - Les docs `AUDIT.md` et `ROADMAP.md` sont partiellement périmées : se fier au code.
 
 ## État actuel
-Branche `claude/loving-maxwell-oqm045`, dernier commit de code `b1676b7`, `main` = `1d75edd`.
+Branche `claude/loving-maxwell-oqm045`, dernier commit de code `303553d`, `main` = `1d75edd`.
 
 **PR #28** (`Taekd6/Taekdhub`, créée par l'élève le 2026-10-14) : ouverte, non brouillon, non
 fusionnée, `mergeable_state` propre, base `main`. Dernière tête observée avant ce travail :
@@ -81,6 +81,7 @@ SSO de Vercel (information de l'élève ; la session n'a pas pu les joindre, `ve
 | 2.2 | Suggestions dans l'historique de l'agenda. Commit `521cf28` |
 | 3 | Accès Hermes en lecture seule (`/api/mcp-hermes`, jeton en en-tête). Commit `2dcd552` |
 | 3b | Résumé quotidien pour Hermes (`agenda_du_jour`, sans santé ni texte libre). Commit `b1676b7` |
+| 3c | `get_today` tolère des annales illisibles et le signale. Commit `303553d` |
 
 Vérifications du dernier commit de code : 83 fichiers de tests, 1331 réussis + 1 échec attendu
 (`it.fails` antérieur), `tsc`, lint et build sans erreur. Contrôles propres à Hermes : chaînes
@@ -91,10 +92,24 @@ manquant, mauvais schéma, mauvais jeton, jeton dans l'URL, variable absente, je
 exacte des outils, absence d'appel d'écriture, essai HTTP local avec un jeton factice. Des mutations
 volontaires (titre, clé, texte de report, séances, check-ins) sont bien détectées par ces tests.
 
-**Le branchement d'Hermes reste à faire.** Aucun projet Vercel n'a été choisi pour Hermes, aucun
-jeton `MCP_HERMES_TOKEN` n'a été créé, aucun réglage Vercel n'a été modifié (variables, protection)
-et la configuration d'Hermes n'a pas été touchée. Non vérifié : la route contre la vraie base
-Supabase (aucun identifiant disponible en session) ; un premier appel réel est à faire par l'élève.
+**Branchement d'Hermes (2026-10-14) : connecté, `get_today` à revalider.** Projet Vercel `taekdhub`,
+Preview de la branche. `MCP_HERMES_TOKEN` (Preview, cette branche, « sensitive ») et le contournement
+de protection ont été créés par l'élève ; les valeurs sont dans le `.env` d'Hermes, jamais dans le
+dépôt ni en conversation. Hermes liste exactement `get_today` et `list_echeances`.
+- Réglages Vercel touchés cette session (à la demande de l'élève) : `SUPABASE_URL` et
+  `SUPABASE_SECRET_KEY` remises en Production + Preview (une modification manuelle les avait
+  retirées de la Production), valeurs inchangées ; Preview redéployé. **Production non redéployée :
+  son dernier déploiement a été construit sans ces deux variables, donc le connecteur de Claude et
+  les notifications serveur sont probablement cassés. À redéployer après accord explicite.**
+- Constat sur la base : un seul compte, 8 collections. Depuis le Preview, la lecture d'`exercise_logs`
+  reçoit un 401 alors que les autres lectures passent ; les droits SQL du rôle serveur sont corrects.
+  Cause non trouvée (anomalie à creuser). Contournement `303553d` : `get_today` répond sans les
+  annales et signale `donnees_indisponibles: ["annales"]`.
+- Outil Vercel de la session : les appels avec `teamId`/`slug` renvoient 403, sans ces paramètres ils
+  passent ; les journaux d'exécution restent illisibles.
+- Reste à faire : vérifier `get_today` et `list_echeances` par un vrai appel d'Hermes sur le Preview
+  reconstruit ; décider du redéploiement de la Production ; à la fin des essais, révoquer le
+  contournement et le jeton.
 
 Expérimentation de 14 jours : à mener par l'élève (avis O / T+ / T- / NP chaque soir, notés
 à la main). Date de début : à renseigner. Phase 2 non lancée.
