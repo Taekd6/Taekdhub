@@ -98,9 +98,11 @@ const mcp = createMcpHandler((server) => {
           // Colonnes énumérées : ni `commentaire` ni `erreurs`.
           db().from("exercise_logs").select("id, created_at, matiere, chapitre, source, niveau, resultat, indices, temps_min, temps_prevu, aide").eq("user_id", user_id).order("created_at", { ascending: false }).limit(1000),
         ]);
-        if (!collections || annales.error) return text(UNAVAILABLE);
+        if (!collections) return text(UNAVAILABLE);
         if (Object.keys(collections.byName).length === 0) return text(NO_DATA);
-        return text(JSON.stringify(buildHermesToday(collections.byName, annales.data, collections.stamps, new Date())));
+        // Annales illisibles : le reste de la journée reste utile ; la réponse signale l'absence (jamais le message d'erreur de la base).
+        const annalesOk = !annales.error;
+        return text(JSON.stringify(buildHermesToday(collections.byName, annalesOk ? annales.data : [], collections.stamps, new Date(), annalesOk ? [] : ["annales"])));
       })
   );
 

@@ -230,6 +230,14 @@ describe("list_echeances pour Hermes", () => {
     expect(() => buildHermesToday({ workItems: "x", sessions: 42 }, "n'importe quoi", {}, NOW)).not.toThrow();
     expect(buildHermesEcheances({ workItems: { a: 1 } }, {}, NOW).echeances).toEqual([]);
   });
+
+  it("des annales illisibles sont signalées (liste fermée), sans effacer le reste de la journée", () => {
+    const degraded = buildHermesToday(collections, [], stamps, NOW, ["annales"]);
+    expect(degraded).toHaveProperty("donnees_indisponibles", ["annales"]);
+    expect(degraded.agenda_du_jour).toEqual(buildHermesToday(collections, [], stamps, NOW).agenda_du_jour);
+    // Sans panne, la clé n'existe pas : la réponse normale ne change pas.
+    expect(today).not.toHaveProperty("donnees_indisponibles");
+  });
 });
 
 describe("fraîcheur — une absence de synchronisation récente, pas une preuve d'erreur", () => {

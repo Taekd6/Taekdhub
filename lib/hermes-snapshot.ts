@@ -257,7 +257,7 @@ function agendaTaskView(placed: PlacedTask, order: number, candidates: ReadonlyM
  * brutes d'`exercise_logs` ; leurs textes (source, chapitre, commentaire,
  * erreurs) servent aux calculs mais ne sortent jamais.
  */
-export function buildHermesToday(collections: Record<string, unknown>, annaleRows: unknown, stamps: CollectionStamps, now: Date) {
+export function buildHermesToday(collections: Record<string, unknown>, annaleRows: unknown, stamps: CollectionStamps, now: Date, unavailable: readonly "annales"[] = []) {
   const sessions = list(collections.sessions, normalizeSession);
   const workItems = list(collections.workItems, normalizeWorkItem);
   const grades = list(collections.grades, normalizeGrade);
@@ -308,6 +308,8 @@ export function buildHermesToday(collections: Record<string, unknown>, annaleRow
 
   return {
     meta: buildFreshness(stamps, now),
+    // Une source illisible n'est pas une source vide : la réponse le dit (liste fermée), au lieu d'afficher des zéros.
+    ...(unavailable.length > 0 ? { donnees_indisponibles: [...unavailable] } : {}),
     agenda_du_jour: {
       /** Capacité planifiable de la journée entière (capacité déclarée moins la marge) — déjà calculée par l'application. */
       capacite_planifiable_min: plannableMinutes(preferences, now),
