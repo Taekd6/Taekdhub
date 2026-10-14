@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `e72480f`
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `0401692`
 > (PR #28 : tête observée `504b1ae` avant cette mission, relue sur GitHub).
 
 ## Objectif général
@@ -66,10 +66,26 @@ ni outils.
   pas). Lire la correction APRÈS « J'ai fini » ne change pas l'aide. Fiches stockées sur l'appareil
   (`prepahub:exercise-sheets`, hors de `STORAGE_KEYS` : aucune collection synchronisée, aucune migration) et
   incluses dans la sauvegarde exportée ; les tentatives (`fiche:<id>`) se synchronisent.
+- La suite d'une séance (`lib/follow-up.ts`, carte « Et maintenant ? » après le bilan du chrono et après un essai
+  sur une fiche) : UN choix par défaut + sa raison + UNE autre idée (« Remplacer »), jamais une liste. Règles :
+  temps restant nul ⇒ « assez pour aujourd'hui » ; réussi sans aide ⇒ on monte si `levelToRequest` le justifie ;
+  réussi avec aide ou partiel ⇒ un autre exercice du même niveau ; échec ⇒ la notion d'abord si la cause est le
+  cours, sinon un cran en dessous ; aucun exercice noté ⇒ un exercice pour mettre la notion à l'épreuve ; rien ne
+  dit sur quoi l'élève a travaillé ⇒ le programme du jour, et on le dit. Le chapitre vient, dans l'ordre : du dernier
+  exercice noté, de la recommandation commencée, du chapitre choisi au chrono, du travail planifié. L'exercice vient :
+  d'une fiche de l'élève (jamais tentée d'abord), d'une annale à refaire, sinon d'un original à générer par IA
+  (demande prête). Aucun catalogue de ressources externes vérifiées n'existe : aucun lien n'est inventé, une
+  ressource externe passe par une fiche qui garde source et lien. Énoncé, indices, correction : jamais dans la carte.
+- Évitement : repousser ou bloquer n'est ni une faute ni un abandon. Première étape de 5 à 10 minutes sans rien à
+  résoudre (`lib/small-step.ts`) : carte de suite, tâche proposée 3 fois sans suite (le moteur la rétrograde 72 h :
+  elle reste au programme avec un début plus petit), tâche mise de côté (« Pas maintenant » la retire du plan 24 h :
+  elle est reportée à demain avec un début plus petit), lecteur d'exercice (« Je ne sais pas par où commencer »,
+  qui ne révèle rien et ne compte pas comme une aide). Trois taps « terminé / partiel / j'ai bloqué » quand aucun
+  exercice n'est noté ; après un rappel de cours, ils notent aussi le rappel dans Ma mémoire (Bien / Dur / Oublié).
 - Les docs `AUDIT.md` et `ROADMAP.md` sont partiellement périmées : se fier au code.
 
 ## État actuel
-Branche `claude/loving-maxwell-oqm045`, dernier commit de code `e72480f`, `main` = `1d75edd`.
+Branche `claude/loving-maxwell-oqm045`, dernier commit de code `0401692`, `main` = `1d75edd`.
 
 **PR #28** (`Taekd6/Taekdhub`, créée par l'élève le 2026-10-14) : ouverte, non brouillon, non
 fusionnée, `mergeable_state` propre, base `main` (`1d75edd`). Relue avant la mission 4 : tête
@@ -98,6 +114,7 @@ SSO de Vercel (information de l'élève ; la session n'a pas pu les joindre, `ve
 | 3c | `get_today` tolère des annales illisibles et le signale. Commit `303553d` |
 | 4 | Fraîcheur honnête pour Hermes : plan provisoire, séances anciennes, liste d'échéances non concluante. Commit `7209ad4` |
 | 5 | Programme de révision (`/revision`) et point d'entrée vers l'entraînement (`/entrainement`). Commit `e72480f` |
+| 6 | La suite après chaque séance (`lib/follow-up.ts`), exercice prêt, premier pas plus petit, audit Anki. Commit `0401692` |
 
 Vérifications du dernier commit de code : 83 fichiers de tests, 1331 réussis + 1 échec attendu
 (`it.fails` antérieur), `tsc`, lint et build sans erreur. Contrôles propres à Hermes : chaînes
@@ -157,8 +174,38 @@ programme, validation du formulaire (source obligatoire, lien `javascript:` refu
 correction, aide « correction » imposée après ouverture, tentative et séance écrites, retour dans la liste.
 Non vérifié : sur un vrai compte (annales, synchronisation), sur l'appareil de l'élève, et en usage prolongé.
 
+**Mission 6 (2026-10-14) — audit du parcours séance → suite, et d'Anki.**
+- Ce que la séance enregistre : sujet, début, fin, durée, travail planifié, chapitre de MÉMOIRE (facultatif, choisi au
+  chrono) ; `note`, `result` et `hints_used` restent à `null` (hérités). Le résultat n'est pas dans la séance : il est
+  dans les TENTATIVES du bilan (résultat, aide, cause, chapitre, niveau → `attempts`, synchronisées), lues par
+  « À refaire », le diagnostic et Next Move. Avant : après le bilan, un simple message ; une séance de cours ou de
+  fiches (« Rien à noter ») ne laissait rien, et un rappel de cours n'entrait pas dans Ma mémoire sans resaisie.
+- Chapitres : `WorkSession.chapter_id` = identifiant de chapitre de MÉMOIRE, pas du programme. L'essai sur fiche
+  (mission 5) y écrivait un chapitre du programme : corrigé (plus de `chapter_id` pour ces séances).
+- Anki (audit du code, rien de modifié, aucune carte ni réglage touchés ; non vérifié sur un vrai Anki) :
+  lecture seule via AnkiConnect (`deckNames`, `findCards`, `getNumCardsReviewedByDay`) ; import MANUEL (bouton de
+  `/anki`, aucune fréquence automatique), seulement sur ordinateur (AnkiConnect n'existe pas sur iPhone ; saisie
+  manuelle des cartes dues ou fichier d'échange sinon) ; un relevé par jour et par source, 14 jours gardés,
+  collection `ankiSnapshots` synchronisée. Par paquet : cartes totales, dues, révisées sur 30 jours, ratées sur
+  30 jours, mûres, « sangsues ». Association paquet → chapitre prudente (manuelle, nom exact, héritée ; un
+  rapprochement partiel est seulement PROPOSÉ à l'élève). Fraîcheur : cartes dues utilisées par le moteur jusqu'à
+  24 h, tendances jusqu'à 7 jours. Limite : le relevé ne bouge pas quand l'élève fait ses cartes ; une séance Anki
+  n'est donc pas vue avant le prochain import. Réponse : l'élément Anki du programme devient « à confirmer » au-delà
+  de 6 h (« tu as pu faire des cartes depuis »), la suite de séance ne repropose pas Anki juste après une séance Anki
+  et dit de mettre le relevé à jour. TaekdHub ne duplique pas la répétition espacée d'Anki (aucune carte créée).
+- Vérifié : 86 fichiers de tests, 1404 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; parcours réel sous
+  Chromium (390 px, horloge simulée) : chrono 6 min → bilan « rien à noter » → carte de suite → tap « partiel » qui
+  note « Dur » dans Ma mémoire → proposition de fiche externe avec source et lien → « Remplacer » → début plus petit →
+  lecteur → « Je ne sais pas par où commencer » (énoncé, indices, correction restent cachés dans la carte).
+  Non vérifié : sur un vrai compte, sur l'appareil de l'élève, ni l'effet réel sur l'évitement (usage à observer).
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
+- Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un
+  original à Claude (copier la demande, coller l'énoncé), le seul geste manuel restant. Un catalogue de ressources
+  vérifiées supprimerait ce geste mais demande d'être maintenu et vérifié (liens, droits) : décision à prendre.
+- Un tap « terminé / partiel / j'ai bloqué » n'est conservé que pour un rappel de cours (Ma mémoire) et pour
+  « terminé » (historique Next Move) ; pour les autres séances il ne sert qu'à la suite affichée.
 - Les fiches d'exercice sont locales : changer d'appareil perd les énoncés (pas les essais). Les fiches ne sont
   pas dans Hermes ni dans le connecteur de Claude. L'ordre des tâches du programme est celui du plan (palier,
   poids), sans les plages de performance ; le placement horaire reste sur l'accueil.
@@ -168,16 +215,16 @@ Non vérifié : sur un vrai compte (annales, synchronisation), sur l'appareil de
 
 ## Prochaine tâche envisagée
 Aucune lancée. Candidats, chacun à proposer avec son périmètre, accord requis :
-1. Essai réel de `/revision` et `/entrainement` par l'élève pendant quelques jours : noter ce qui est inutile,
-   confus ou faux (les audits de ChatGPT/Hermes se confrontent ensuite au code).
-2. Synchroniser les fiches d'exercice (exigerait d'ajouter une collection : migration, donc accord explicite),
-   ou les rendre importables depuis un fichier / un lien.
-3. Reprendre les anciens écrans que le programme recoupe (carte « À ne pas oublier », bannière de cartes,
-   liste du jour) une fois l'usage confirmé : n'en retirer aucun avant.
-4. Bilan des 14 jours, puis ajuster plages, classification ou placement ; phase 2 : une seule règle de
-   récupération (seulement après le bilan).
-5. Hermes (reporté sur demande de l'élève) : production à redéployer après accord, jeton et contournement à
-   révoquer à la fin des essais.
+1. Essai réel pendant quelques jours : séance → bilan → « Et maintenant ? » → exercice. Noter ce qui bloque encore
+   (trop de clics ? fiche manquante ? mauvais niveau ?). C'est ce qui dira s'il faut un catalogue ou un autre geste.
+2. Alimenter la banque de fiches sans effort : catalogue de ressources externes vérifiées (source, lien, chapitre,
+   compétence) ou import depuis un fichier ; ou synchroniser les fiches (collection, migration : accord explicite).
+3. Rendre le relevé Anki moins manuel (rappel d'import au démarrage sur ordinateur, ou saisie des cartes dues en
+   deux taps après une séance) — seulement si l'essai montre que le défaut de fraîcheur gêne vraiment.
+4. Reprendre les anciens écrans que le programme recoupe (carte « À ne pas oublier », bannière de cartes, liste du
+   jour) une fois l'usage confirmé : n'en retirer aucun avant.
+5. Bilan des 14 jours, puis ajuster plages, classification ou placement ; phase 2 : une règle de récupération.
+6. Hermes (reporté sur demande de l'élève) : production à redéployer après accord, jeton et contournement à révoquer.
 
 ## Limites d'intervention
 - Avant toute reprise : lire ce carnet, vérifier branche, HEAD et arbre ; signaler tout écart.
