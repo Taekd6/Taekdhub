@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Check, ExternalLink, Eye, Lightbulb, Lock, Sparkles, Timer } from "lucide-react";
+import { Check, ExternalLink, Eye, Footprints, Lightbulb, Lock, Sparkles, Timer } from "lucide-react";
+import { FollowUpCard } from "@/components/follow-up/follow-up-card";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
@@ -106,6 +107,9 @@ export function SheetRunner({
   const [cause, setCause] = useState<AttemptCause | "">("");
   const [note, setNote] = useState("");
   const [outcome, setOutcome] = useState<string | null>(null);
+  // Ce qui vient d'être enregistré : la suite de la séance (lib/follow-up.ts) s'en sert, sans rien redemander.
+  const [saved, setSaved] = useState<{ attempt: ExerciseAttempt; session: WorkSession | null } | null>(null);
+  const [starter, setStarter] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const used = fixed ?? reveal;
@@ -134,8 +138,10 @@ export function SheetRunner({
     const next = upsertAttempts(attempts, [attempt]);
     saveAttempts(next);
     // Le temps passé compte comme n'importe quelle séance (objectif du jour, budget de la matière).
-    const session = createPracticeSession({ subject: sheet.subject, startedAt: new Date(end.getTime() - worked * 60_000), endedAt: end, note: `Entraînement : ${sheetLabel(sheet)}`, chapterId: sheet.chapterId }, end);
+    const session = createPracticeSession({ subject: sheet.subject, startedAt: new Date(end.getTime() - worked * 60_000), endedAt: end, note: `Entraînement : ${sheetLabel(sheet)}` }, end);
+    // Pas de `chapterId` ici : `WorkSession.chapter_id` désigne un chapitre de MÉMOIRE (ChapterMemory.id), pas un chapitre du programme.
     if (session) saveSessions([session]);
+    setSaved({ attempt, session });
 
     const exercise = buildExercises({ annales, attempts: next, retryDelaysDays, today: dayKey(end) }).find((entry) => entry.key === key);
     const proven = isCleanSuccess(attempt);
@@ -150,19 +156,20 @@ export function SheetRunner({
     );
   }
 
-  /* ── Après l'enregistrement ── */
+  /* ── Après l'enregistrement : la suite, choisie pour l'élève ── */
   if (outcome) {
     return (
       <div className="space-y-4">
         <Notice tone="info" title="Tentative enregistrée">
           {outcome}
         </Notice>
+        {saved && <FollowUpCard session={saved.session} attempts={[saved.attempt]} move={null} />}
         <div className="flex flex-wrap gap-2">
-          <Link href="/revision" className={buttonVariants({ variant: "primary", size: "md" })}>
-            Retour au programme <ArrowRight size={16} aria-hidden />
+          <Link href="/revision" className={buttonVariants({ variant: "secondary", size: "md" })}>
+            Voir le programme du jour
           </Link>
-          <Link href={trainingHref({ chapterId: sheet.chapterId })} className={buttonVariants({ variant: "secondary", size: "md" })}>
-            Autres exercices du chapitre
+          <Link href={trainingHref({ chapterId: sheet.chapterId })} className={buttonVariants({ variant: "ghost", size: "md" })}>
+            Tous les exercices du chapitre
           </Link>
         </div>
       </div>
@@ -211,6 +218,28 @@ export function SheetRunner({
         </div>
         <p className="mt-3 whitespace-pre-wrap break-words text-[0.9375rem] leading-7 text-ink">{sheet.statement}</p>
       </section>
+
+      {/* ── « Je ne sais pas par où commencer » : une première marche, sans rien révéler, sans compter comme une aide ── */}
+      {frozen === null && (
+        <section aria-label="Par où commencer" className="px-1">
+          <button type="button" onClick={() => setStarter((value) => !value)} aria-expanded={starter} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-accent hover:underline max-lg:min-h-11">
+            <Footprints size={14} aria-hidden /> Je ne sais pas par où commencer
+          </button>
+          {starter && (
+            <div role="status" className="mt-2 rounded-xl bg-accent/[0.08] px-3.5 py-3">
+              <p className="text-[0.9375rem] font-semibold text-ink">Trois petites choses, sans rien résoudre — cinq minutes.</p>
+              <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-[0.875rem] text-muted">
+                <li>Réécris l&apos;énoncé avec tes mots.</li>
+                <li>Note ce qu&apos;on te donne, et ce qu&apos;on te demande.</li>
+                <li>
+                  Parmi les définitions et théorèmes de « {chapter?.title ?? sheet.subject} », lesquels parlent de ces objets ? Écris-en un ou deux — même si tu hésites.
+                </li>
+              </ol>
+              <p className="t-meta mt-1.5 text-2xs">Ça ne révèle rien de l&apos;exercice et ne compte pas comme une aide : l&apos;essai peut rester « sans aide ». Après, tu continues ou tu ouvres un indice — les deux sont normaux.</p>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── 2. LES INDICES — un à un, comptés ── */}
       {sheet.hints.length > 0 && (

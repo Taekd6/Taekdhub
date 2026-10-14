@@ -1,10 +1,11 @@
-import { snapshotAgeHours } from "@/lib/anki-snapshot";
+import { latestDueInfo, snapshotAgeHours } from "@/lib/anki-snapshot";
 import type { ExerciseLevel } from "@/lib/attempts";
 import { buildDayAgenda, TIER_LABEL, type AgendaTier, type Budget, type RemainingOverride } from "@/lib/day-agenda";
 import { chapterTitle, mainFinding, STALE_DAYS } from "@/lib/diagnostic";
 import { levelToRequest } from "@/lib/exercise-quality";
 import { sheetHref, sheetIdOfKey, trainingHref } from "@/lib/exercise-sheets";
-import { computeNextMove, diagnosticContextOf, rankCandidates, topReasons, type MoveCandidate, type MoveKind, type NextMoveInput } from "@/lib/next-move/engine";
+import { computeNextMove, diagnosticContextOf, rankCandidates, skippedKeys, topReasons, type MoveCandidate, type MoveKind, type NextMoveInput } from "@/lib/next-move/engine";
+import { smallStepFor, type SmallStep } from "@/lib/small-step";
 import { dayKey } from "@/lib/study";
 import type { Subject } from "@/lib/supabase/types";
 
@@ -65,6 +66,11 @@ export const MIN_RECALLS = 3;
 export const STALE_WORK_DAYS = 3;
 /** Âge (en jours) d'un relevé Anki au-delà duquel il est signalé — le diagnostic, lui, l'écarte à 7 jours. */
 export const ANKI_NOTE_DAYS = 3;
+/**
+ * Au-delà de ces heures, un relevé Anki ne dit plus « combien de cartes il reste » : l'élève a pu en faire depuis.
+ * L'élément Anki devient alors « à confirmer » (le moteur, lui, ne s'en sert plus qu'à 24 h).
+ */
+export const ANKI_FRESH_HOURS = 6;
 
 export interface ItemReliability {
   level: Exclude<Reliability, "insuffisant">;
@@ -101,6 +107,11 @@ export interface RevisionItem {
   start: { href: string; label: string };
   /** Quand l'action consiste à faire un exercice : le niveau visé et la demande prête pour Claude. */
   exercise: { level: ExerciseLevel; request: string | null } | null;
+  /**
+   * Une tâche proposée plusieurs fois sans suite : ça arrive, surtout quand elle est difficile. On ne la retire pas
+   * et on ne la compte pas comme abandonnée — on offre une première étape plus petite, sans rien à résoudre.
+   */
+  avoidance: { note: string; smallStep: SmallStep } | null;
   /** La proposition du moteur, pour l'enregistrer dans l'historique de Next Move quand l'élève commence. `null` pour une part du planning des échéances. */
   candidate: MoveCandidate | null;
 }
@@ -113,6 +124,11 @@ export interface PostponedItem {
   minutes: number;
   reason: string;
   to: string;
+  /** « Pas maintenant » : mise de côté par l'élève. Elle revient d'elle-même ; ici, une façon plus douce de la reprendre. */
+  skipped: boolean;
+  smallStep: SmallStep | null;
+  start: { href: string; label: string };
+  candidate: MoveCandidate | null;
 }
 
 export type DataNoteId = "seances-anciennes" | "synchro-incomplete" | "annales-illisibles" | "anki-ancien" | "memoire-vide";
@@ -175,7 +191,14 @@ function reliabilityOf(candidate: MoveCandidate | null, task: { dueDate: string 
       : { level: "a-confirmer", reasons: ["Sans date limite : l'ordre est indicatif"] };
   }
   if (kind === "cartes") return { level: "fiable", reasons: ["Cartes arrivées à échéance selon ton carnet « À revoir »"] };
-  if (kind === "anki") return { level: "fiable", reasons: ["Chiffres de ton dernier relevé Anki"] };
+  if (kind === "anki") {
+    const due = latestDueInfo(input.ankiSnapshots ?? []);
+    const hours = due ? snapshotAgeHours(due.takenAt, input.now) : null;
+    if (hours === null) return { level: "a-confirmer", reasons: ["Aucun relevé Anki exploitable"] };
+    return hours <= ANKI_FRESH_HOURS
+      ? { level: "fiable", reasons: [`Relevé Anki d'il y a ${Math.round(hours)} h`] }
+      : { level: "a-confirmer", reasons: [`Relevé Anki d'il y a ${Math.round(hours)} h : tu as pu faire des cartes depuis. Mets-le à jour dans Anki (page Anki) pour savoir ce qu'il reste.`] };
+  }
   if (key.startsWith("verrou:")) return { level: "fiable", reasons: ["Règle du verrou de cours : des fiches de Claude ne sont pas encore retrouvées"] };
   if (key.startsWith("refaire:") || key.startsWith("transfert:")) return { level: "fiable", reasons: ["Repose sur tes tentatives enregistrées"] };
 
@@ -306,11 +329,31 @@ export function buildRevisionProgram(input: NextMoveInput, context: ProgramConte
       reliability: reliabilityOf(candidate, task, input, today),
       start,
       exercise,
+      avoidance: candidate?.terms.some((term) => term.id === "ignoré")
+        ? { note: "Proposé plusieurs fois sans suite : ça arrive, surtout quand c'est difficile. Elle reste au programme — voici une façon de la commencer sans effort.", smallStep: smallStepFor(candidate.kind, chapterTitle(chapterId)) }
+        : null,
       candidate,
     };
   });
 
-  const postponed: PostponedItem[] = agenda.postponed.map((task) => ({ key: task.key, title: task.title, subject: task.subject, tier: task.tier, minutes: task.idealMinutes, reason: task.reason, to: task.to }));
+  const skipped = skippedKeys(input.history, input.now);
+  const postponed: PostponedItem[] = agenda.postponed.map((task) => {
+    const candidate = candidates.get(task.key) ?? null;
+    const wasSkipped = skipped.has(task.key);
+    return {
+      key: task.key,
+      title: task.title,
+      subject: task.subject,
+      tier: task.tier,
+      minutes: task.idealMinutes,
+      reason: task.reason,
+      to: task.to,
+      skipped: wasSkipped,
+      smallStep: wasSkipped ? smallStepFor(candidate?.kind ?? "bloc", chapterTitle(candidate?.chapterId ?? null)) : null,
+      start: startOf(candidate, task.href, input).start,
+      candidate,
+    };
+  });
   const notes = dataNotes(input, context, today);
   const empty = computeNextMove(input).status === "vide" && items.length === 0;
   const overall: Reliability = empty ? "insuffisant" : notes.some((note) => note.level === "alerte") ? "a-confirmer" : "fiable";

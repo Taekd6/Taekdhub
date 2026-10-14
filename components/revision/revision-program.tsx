@@ -14,7 +14,7 @@ import { useKholleHistory } from "@/hooks/use-kholle-history";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { cn } from "@/lib/cn";
 import { DAY_AGENDA_KEY, parseLog } from "@/lib/day-agenda-log";
-import { topReasons } from "@/lib/next-move/engine";
+import { topReasons, type MoveCandidate } from "@/lib/next-move/engine";
 import { markStarted } from "@/lib/next-move/history";
 import { buildRevisionProgram, RELIABILITY_LABEL, type PostponedItem, type RevisionItem, type RevisionProgram } from "@/lib/revision-program";
 import { readFlag } from "@/lib/storage";
@@ -63,9 +63,10 @@ export function RevisionProgramScreen() {
     );
   }, [ready, tick, sessions, workItems, grades, reviewItems, errors, checkins, chapterMemory, preferences, annales, attempts, ankiSnapshots, kholle, nextMoves, account.status, account.lastSyncedAt, annalesStatus]);
 
-  function recordStart(item: RevisionItem) {
-    if (!item.candidate) return;
-    saveNextMoves(markStarted(nextMoves, item.candidate, item.minutes, topReasons(item.candidate), new Date()));
+  /** « Commencer » (ou sa version plus petite) : enregistré dans l'historique de Next Move, avec la durée réellement visée. */
+  function recordStart(candidate: MoveCandidate | null, minutes: number) {
+    if (!candidate) return;
+    saveNextMoves(markStarted(nextMoves, candidate, minutes, topReasons(candidate), new Date()));
   }
 
   return (
@@ -107,12 +108,12 @@ export function RevisionProgramScreen() {
             <ol className="space-y-4" aria-label="Programme du jour, dans l'ordre">
               {program.items.map((item, index) => (
                 <li key={item.key}>
-                  <ItemCard item={item} index={index} primary={index === 0} onStart={() => recordStart(item)} />
+                  <ItemCard item={item} index={index} primary={index === 0} onStart={(minutes) => recordStart(item.candidate, minutes)} />
                 </li>
               ))}
             </ol>
           )}
-          <Postponed items={program.postponed} />
+          <Postponed items={program.postponed} onStart={recordStart} />
           <p className="px-1 text-[0.8125rem] font-semibold leading-snug text-muted">
             Un programme calculé d&apos;après tes données (échéances, mémoire, erreurs, exercices, séances) avec les règles de Next Move — pas une vérité. Tu restes le meilleur juge de ce que tu peux faire aujourd&apos;hui.
           </p>
@@ -172,7 +173,7 @@ function Notes({ program }: { program: RevisionProgram }) {
 
 /* ── Un élément du programme ─────────────────────────────────────────── */
 
-function ItemCard({ item, index, primary, onStart }: { item: RevisionItem; index: number; primary: boolean; onStart: () => void }) {
+function ItemCard({ item, index, primary, onStart }: { item: RevisionItem; index: number; primary: boolean; onStart: (minutes: number) => void }) {
   const [open, setOpen] = useState(false);
   const confirm = item.reliability.level === "a-confirmer";
   const detailId = `programme-detail-${index}`;
@@ -221,7 +222,7 @@ function ItemCard({ item, index, primary, onStart }: { item: RevisionItem; index
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Link href={item.start.href} onClick={onStart} className={buttonVariants({ variant: primary ? "primary" : "secondary", size: "md" })}>
+        <Link href={item.start.href} onClick={() => onStart(item.minutes)} className={buttonVariants({ variant: primary ? "primary" : "secondary", size: "md" })}>
           {item.start.label} <ArrowRight size={16} aria-hidden />
         </Link>
         {item.exercise?.request && <CopyRequest text={item.exercise.request} />}
@@ -235,6 +236,21 @@ function ItemCard({ item, index, primary, onStart }: { item: RevisionItem; index
           Comment, et quand c&apos;est fini <ChevronDown size={14} aria-hidden className={cn("transition-transform", open && "rotate-180")} />
         </button>
       </div>
+
+      {item.avoidance && (
+        <div role="status" className="mt-3 rounded-xl bg-accent/[0.08] px-3.5 py-3">
+          <p className="text-[0.875rem] font-semibold text-ink">{item.avoidance.note}</p>
+          <p className="mt-1 text-[0.875rem] text-muted">
+            <span className="font-semibold text-ink">
+              {item.avoidance.smallStep.title} · {formatMinutesSpan(item.avoidance.smallStep.minutes)}
+            </span>{" "}
+            — {item.avoidance.smallStep.instruction}
+          </p>
+          <Link href={item.start.href} onClick={() => onStart(item.avoidance!.smallStep.minutes)} className={cn(buttonVariants({ variant: "secondary", size: "sm" }), "mt-2")}>
+            Commencer petit <ArrowRight size={14} aria-hidden />
+          </Link>
+        </div>
+      )}
 
       {open && (
         <dl id={detailId} className="mt-3 grid gap-2 border-t border-line pt-3 text-[0.875rem]">
@@ -272,7 +288,7 @@ function ItemCard({ item, index, primary, onStart }: { item: RevisionItem; index
 
 /* ── Ce qui est déplacé à demain, sans rien demander à l'élève ─────────── */
 
-function Postponed({ items }: { items: PostponedItem[] }) {
+function Postponed({ items, onStart }: { items: PostponedItem[]; onStart: (candidate: MoveCandidate | null, minutes: number) => void }) {
   if (items.length === 0) return null;
   return (
     <section aria-labelledby="programme-demain" className="surface p-5 sm:p-6">
@@ -282,15 +298,26 @@ function Postponed({ items }: { items: PostponedItem[] }) {
       <p className="t-meta mt-0.5 text-2xs">C&apos;est automatique : ces tâches reviendront d&apos;elles-mêmes. Rien n&apos;est perdu, et tu n&apos;as rien à replanifier.</p>
       <ul className="mt-2 divide-y divide-line">
         {items.map((task) => (
-          <li key={task.key} className="flex items-center gap-3 py-2.5">
-            <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-full", TIER_TONE[task.tier])} />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[0.875rem] font-semibold text-ink">{task.title}</span>
-              <span className="t-meta text-2xs">
-                {task.reason} · {task.to}
+          <li key={task.key} className="py-2.5">
+            <div className="flex items-center gap-3">
+              <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-full", TIER_TONE[task.tier])} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[0.875rem] font-semibold text-ink">{task.title}</span>
+                <span className="t-meta text-2xs">
+                  {task.reason} · {task.to}
+                </span>
               </span>
-            </span>
-            <span className="shrink-0 text-[0.875rem] font-semibold tabular-nums text-muted">{formatMinutesSpan(task.minutes)}</span>
+              <span className="shrink-0 text-[0.875rem] font-semibold tabular-nums text-muted">{formatMinutesSpan(task.minutes)}</span>
+            </div>
+            {task.skipped && task.smallStep && (
+              <p className="mt-1.5 pl-5 text-[0.8125rem] text-muted">
+                Mise de côté — elle revient demain, rien n&apos;est perdu. Si tu veux la garder vivante :{" "}
+                <Link href={task.start.href} onClick={() => onStart(task.candidate, task.smallStep!.minutes)} className="font-semibold text-accent hover:underline">
+                  {task.smallStep.title.toLowerCase()} ({formatMinutesSpan(task.smallStep.minutes)})
+                </Link>
+                .
+              </p>
+            )}
           </li>
         ))}
       </ul>

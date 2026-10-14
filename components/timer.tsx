@@ -17,8 +17,9 @@ import { formatSpan } from "@/lib/utils";
 import { MOVE_KIND_LABEL } from "@/lib/next-move/engine";
 import { activeMove } from "@/lib/next-move/history";
 import { SessionDebrief } from "@/components/exercises/session-debrief";
+import { FollowUpCard } from "@/components/follow-up/follow-up-card";
 import { useAnnales } from "@/hooks/use-annales";
-import { upsertAttempts } from "@/lib/attempts";
+import { upsertAttempts, type ExerciseAttempt } from "@/lib/attempts";
 import { buildExercises } from "@/lib/exercises";
 import type { NextMoveRecord } from "@/lib/storage";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
@@ -97,6 +98,8 @@ export function Timer() {
   // Bilan de séance (components/exercises/session-debrief.tsx) : la séance qui vient de se terminer, et la recommandation qu'elle servait.
   const [debrief, setDebrief] = useState<{ session: WorkSession; move: NextMoveRecord | null } | null>(null);
   const [debriefFlash, setDebriefFlash] = useState<string | null>(null);
+  // La suite de la séance (lib/follow-up.ts) : ce qui vient d'être fait, ce qui a été noté, la recommandation servie.
+  const [followUp, setFollowUp] = useState<{ session: WorkSession; attempts: ExerciseAttempt[]; move: NextMoveRecord | null } | null>(null);
   const { seconds, running, context, setContext, start, toggle, stop, orphan, adoptOrphan, dismissOrphan } = useWorkTimer<TimerContext>(TIMER_STORAGE_KEY, {
     subject: "Mathématiques",
     workItemId: null,
@@ -214,6 +217,7 @@ export function Timer() {
       };
       saveSessions([session, ...sessions]);
       setDebriefFlash(null);
+      setFollowUp(null);
       setDebrief({ session, move: activeMove(nextMoves, new Date()) });
       /*
        * Un travail « à faire » sur lequel on vient de passer du temps est
@@ -440,9 +444,13 @@ export function Timer() {
           session={debrief.session}
           move={debrief.move}
           exercises={buildExercises({ annales, attempts, retryDelaysDays: preferences.retryDelaysDays, today: dayKey(new Date()) })}
-          onSkip={() => setDebrief(null)}
+          onSkip={() => {
+            setFollowUp({ session: debrief.session, attempts: [], move: debrief.move });
+            setDebrief(null);
+          }}
           onSave={(created) => {
             saveAttempts(upsertAttempts(attempts, created));
+            setFollowUp({ session: debrief.session, attempts: created, move: debrief.move });
             setDebrief(null);
             setDebriefFlash(`${created.length} exercice${created.length > 1 ? "s" : ""} noté${created.length > 1 ? "s" : ""}. Les ratés reviendront dans « À refaire », et le diagnostic en tient compte.`);
           }}
@@ -453,6 +461,8 @@ export function Timer() {
           {debriefFlash}
         </p>
       )}
+
+      {followUp && !debrief && seconds === 0 && <FollowUpCard key={followUp.session.id} session={followUp.session} attempts={followUp.attempts} move={followUp.move} onClose={() => setFollowUp(null)} className="mt-7 sm:mt-10" />}
 
       <section aria-label="Séance" className="surface reveal mt-7 space-y-8 px-5 py-7 sm:mt-10 sm:space-y-10 sm:p-12" style={{ "--i": 1 } as CSSProperties}>
         {controls}
