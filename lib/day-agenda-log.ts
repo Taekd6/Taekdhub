@@ -1,4 +1,7 @@
+import { COGNITIVE_LABEL, COGNITIVE_LEVELS, type CognitiveLevel } from "@/lib/cognitive-load";
 import type { DayAgenda } from "@/lib/day-agenda";
+import type { DayPlacement, PlacementFit } from "@/lib/day-placement";
+import { clockToMinutes, PERFORMANCE_LEVELS, WINDOW_IDS, WINDOW_LABEL, type PerformanceLevel, type WindowId } from "@/lib/performance-windows";
 import { dayKey } from "@/lib/study";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
 import { formatMinutesSpan } from "@/lib/utils";
@@ -23,6 +26,15 @@ import { formatMinutesSpan } from "@/lib/utils";
  * recalcule depuis les données synchronisées. Une version par changement,
  * `MAX_VERSIONS` au plus par jour, les `KEEP_DAYS` derniers jours.
  *
+ * SUGGESTIONS HORAIRES. Quand des plages de performance sont configurées
+ * (lib/performance-windows.ts), chaque tâche gardée porte aussi ce que
+ * TaekdHub suggérait à cet instant : son exigence cognitive et la plage
+ * (lib/day-placement.ts). C'est une TRACE de ce qui a été affiché, pour
+ * pouvoir la comparer à l'avis de l'élève ; ce n'est PAS une mesure de ses
+ * résultats ni de son efficacité. Sans plages, rien n'est ajouté : le journal
+ * est exactement celui d'avant, et les anciennes entrées (sans suggestion)
+ * se lisent telles quelles.
+ *
  * Fonctions pures.
  */
 
@@ -34,6 +46,18 @@ const TOLERANCE = 10;
 
 export type TaskDecision = "gardé" | "réduit" | "déplacé";
 
+/**
+ * Ce que TaekdHub suggérait pour une tâche à l'instant de la version. Les
+ * heures de la plage sont RECOPIÉES : l'élève peut modifier ses plages
+ * ensuite, et on doit relire ce qui était réellement suggéré.
+ */
+export interface TaskSuggestion {
+  load: CognitiveLevel;
+  fit: PlacementFit;
+  /** `null` : hors plage (aucune plage restante où la tâche tenait). */
+  window: { id: WindowId; start: string; end: string; level: PerformanceLevel } | null;
+}
+
 export interface VersionTask {
   key: string;
   title: string;
@@ -41,6 +65,8 @@ export interface VersionTask {
   tier: string;
   minutes: number;
   decision: TaskDecision;
+  /** Absent : plages désactivées au moment de la version, ou version antérieure à ce champ ; absent aussi d'une tâche déplacée. */
+  suggestion?: TaskSuggestion;
 }
 
 export interface AgendaVersion {
@@ -69,12 +95,48 @@ export function parseLog(raw: string | null): AgendaLog {
     for (const [day, entry] of Object.entries(parsed.days)) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !entry || !Array.isArray(entry.versions)) continue;
       const override = entry.override && typeof entry.override.minutes === "number" && typeof entry.override.at === "string" ? entry.override : null;
-      days[day] = { versions: entry.versions.filter((version) => version && typeof version.at === "string" && Array.isArray(version.tasks)), override };
+      const versions = entry.versions.filter((version) => version && typeof version.at === "string" && Array.isArray(version.tasks));
+      days[day] = { versions: versions.map((version) => ({ ...version, tasks: version.tasks.map(withValidSuggestion) })), override };
     }
     return { days };
   } catch {
     return emptyLog();
   }
+}
+
+const FITS: readonly PlacementFit[] = ["ideale", "acceptable", "hors-plage"];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Une suggestion lisible, ou `null` : exigence, ajustement et plage doivent tous être valides. */
+function readSuggestion(raw: unknown): TaskSuggestion | null {
+  if (!isRecord(raw)) return null;
+  const load = COGNITIVE_LEVELS.find((candidate) => candidate === raw.load);
+  const fit = FITS.find((candidate) => candidate === raw.fit);
+  if (!load || !fit) return null;
+  const window = raw.window;
+  if (window === null) return { load, fit, window: null };
+  if (!isRecord(window)) return null;
+  const id = WINDOW_IDS.find((candidate) => candidate === window.id);
+  const level = PERFORMANCE_LEVELS.find((candidate) => candidate === window.level);
+  const start = clockToMinutes(window.start);
+  const end = clockToMinutes(window.end);
+  if (!id || !level || start === null || end === null || end <= start) return null;
+  return { load, fit, window: { id, start: window.start as string, end: window.end as string, level } };
+}
+
+/**
+ * Une tâche d'un ancien journal est rendue TELLE QUELLE (même objet). Seule
+ * une `suggestion` présente mais illisible est retirée — la tâche, elle, est
+ * conservée.
+ */
+function withValidSuggestion(task: VersionTask): VersionTask {
+  if (!isRecord(task) || !("suggestion" in task)) return task;
+  const { suggestion, ...rest } = task;
+  const read = readSuggestion(suggestion);
+  return read ? { ...rest, suggestion: read } : rest;
 }
 
 function doneBySubject(sessions: WorkSession[], now: Date): Partial<Record<Subject, number>> {
@@ -88,24 +150,54 @@ function doneBySubject(sessions: WorkSession[], now: Date): Partial<Record<Subje
   return out;
 }
 
-export function toVersion(agenda: DayAgenda, sessions: WorkSession[], now: Date): AgendaVersion {
+/**
+ * La version du plan à cet instant. `placement` (lib/day-placement.ts) ajoute
+ * à chaque tâche GARDÉE sa suggestion horaire ; absent ou désactivé (aucune
+ * plage configurée), rien n'est ajouté : même version qu'avant.
+ */
+export function toVersion(agenda: DayAgenda, sessions: WorkSession[], now: Date, placement?: DayPlacement | null): AgendaVersion {
+  const suggestions = new Map<string, TaskSuggestion>();
+  if (placement?.enabled) {
+    for (const placed of placement.ordered) {
+      if (!placed.placement) continue;
+      const { window, fit } = placed.placement;
+      suggestions.set(placed.task.key, { load: placed.load.level, fit, window: window ? { id: window.id, start: window.start, end: window.end, level: window.level } : null });
+    }
+  }
   return {
     at: now.toISOString(),
     budget: agenda.budget.minutes,
     overflow: agenda.overflow,
     doneBySubject: doneBySubject(sessions, now),
     tasks: [
-      ...agenda.kept.map((task) => ({ key: task.key, title: task.title, subject: task.subject, tier: task.tier, minutes: task.minutes, decision: (task.reducedFrom !== null ? "réduit" : "gardé") as TaskDecision })),
+      ...agenda.kept.map((task) => {
+        const suggestion = suggestions.get(task.key);
+        return { key: task.key, title: task.title, subject: task.subject, tier: task.tier, minutes: task.minutes, decision: (task.reducedFrom !== null ? "réduit" : "gardé") as TaskDecision, ...(suggestion ? { suggestion } : {}) };
+      }),
       ...agenda.postponed.map((task) => ({ key: task.key, title: task.title, subject: task.subject, tier: task.tier, minutes: 0, decision: "déplacé" as TaskDecision })),
     ],
   };
 }
 
+/** La suggestion d'une tâche en une ligne, ou `null` si la version n'en porte pas — pour relire le journal. */
+export function describeSuggestion(task: VersionTask): string | null {
+  const { suggestion } = task;
+  if (!suggestion) return null;
+  const where = suggestion.window ? `${WINDOW_LABEL[suggestion.window.id]} ${suggestion.window.start}-${suggestion.window.end} (plage ${suggestion.window.level})` : "hors plage";
+  return `${task.title} · ${COGNITIVE_LABEL[suggestion.load]} · ${where}`;
+}
+
 /** Deux versions décrivent-elles le même plan ? Le temps restant compte par paliers de `TOLERANCE`. */
 function samePlan(a: AgendaVersion, b: AgendaVersion): boolean {
+  // La suggestion compte quand elle existe : un changement de plage SEUL est une nouvelle version. Sans suggestion, la signature est celle d'avant.
+  const suggested = (task: VersionTask) => {
+    const { suggestion } = task;
+    if (!suggestion) return "";
+    return `|${suggestion.load}|${suggestion.fit}|${suggestion.window ? `${suggestion.window.id}@${suggestion.window.start}-${suggestion.window.end}:${suggestion.window.level}` : "-"}`;
+  };
   const signature = (version: AgendaVersion) =>
     version.tasks
-      .map((task) => `${task.key}|${task.decision}|${task.minutes}`)
+      .map((task) => `${task.key}|${task.decision}|${task.minutes}${suggested(task)}`)
       .sort()
       .join(";");
   return signature(a) === signature(b) && Math.abs(a.budget - b.budget) < TOLERANCE && a.overflow === b.overflow;

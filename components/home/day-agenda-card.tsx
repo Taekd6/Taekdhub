@@ -6,7 +6,7 @@ import { ArrowRight, CalendarClock, ChevronDown, Clock3 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/cn";
 import { buildDayAgenda, TIER_LABEL, type AgendaTier, type KeptTask, type PostponedTask } from "@/lib/day-agenda";
-import { DAY_AGENDA_KEY, diffVersions, parseLog, recordVersion, setOverride, toVersion, type AgendaLog } from "@/lib/day-agenda-log";
+import { DAY_AGENDA_KEY, describeSuggestion, diffVersions, parseLog, recordVersion, setOverride, toVersion, type AgendaLog } from "@/lib/day-agenda-log";
 import { COGNITIVE_LABEL } from "@/lib/cognitive-load";
 import { placeDay, type PlacedTask } from "@/lib/day-placement";
 import { computeNextMove, diagnosticContextOf, type NextMoveInput } from "@/lib/next-move/engine";
@@ -78,12 +78,12 @@ export function DayAgendaCard({
   // Une nouvelle version dans la trace, seulement si le plan a réellement changé.
   useEffect(() => {
     if (!ready) return;
-    const next = recordVersion(log, today, toVersion(agenda, data.sessions, now));
+    const next = recordVersion(log, today, toVersion(agenda, data.sessions, now, placement));
     if (next !== log) {
       setLog(next);
       writeFlag(DAY_AGENDA_KEY, JSON.stringify(next));
     }
-  }, [ready, agenda, log, today, data.sessions, now]);
+  }, [ready, agenda, placement, log, today, data.sessions, now]);
 
   if (!ready) return null;
 
@@ -266,6 +266,20 @@ export function DayAgendaCard({
                           {cause}
                         </p>
                       ))}
+                      {/* Seulement les versions qui portent des suggestions (plages configurées à ce moment-là). */}
+                      {version.tasks.some((task) => task.suggestion) && (
+                        <div className="mt-1 text-subtle">
+                          <p>Suggestions de l&apos;époque — d&apos;après tes plages, pas une mesure de tes résultats</p>
+                          <ul className="mt-0.5 space-y-0.5">
+                            {version.tasks
+                              .map(describeSuggestion)
+                              .filter((line): line is string => line !== null)
+                              .map((line, position) => (
+                                <li key={`${position}-${line}`}>{line}</li>
+                              ))}
+                          </ul>
+                        </div>
+                      )}
                     </li>
                   );
                 })}
