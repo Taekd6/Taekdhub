@@ -117,6 +117,10 @@ export function DayAgendaCard({
           <Clock3 size={14} aria-hidden /> Il me reste…
         </button>
       </div>
+      {/* Le même plan, avec le pourquoi, la durée, la fiabilité et un bouton « Commencer » pour chaque élément. */}
+      <Link href="/revision" className="mt-1 inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-accent hover:underline max-lg:min-h-11">
+        Voir le programme de révision <ArrowRight size={14} aria-hidden />
+      </Link>
 
       <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
         <span className="t-stat tabular">{formatMinutesSpan(agenda.budget.minutes)}</span>
