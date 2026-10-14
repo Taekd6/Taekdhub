@@ -1,8 +1,8 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `2dcd552`
-> (PR #28 observée à la tête `5486d88`).
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `b1676b7`
+> (PR #28 : dernière tête observée `5486d88`, avant les commits `e5e7dca` et `b1676b7`).
 
 ## Objectif général
 TaekdHub est l'outil de travail personnel d'un élève de prépa MP (PWA Next.js 15, React 19,
@@ -38,19 +38,31 @@ ni outils.
 - Aucun texte libre transmis à Hermes, même indirect (titres, notes, fiches, erreurs, libellés,
   clés d'exercices) et aucun identifiant d'échéance : la réponse est construite par liste blanche
   (`lib/hermes-snapshot.ts`). Les titres ne reviendront qu'après accord explicite.
+- Résumé quotidien pour Hermes : `get_today` contient `agenda_du_jour` (tâches retenues dans l'ordre
+  suggéré : matière, chapitre du programme officiel ou `null`, durée, priorité, niveau cognitif,
+  plage suggérée, échéance ; capacité planifiable du jour et temps restant ; tâches reportées à
+  demain par leur nature seulement). Il reprend `buildDayAgenda` et `placeDay` sans les modifier.
+  Le temps restant vient de la capacité déclarée : le « il me reste… » de l'élève, propre à son
+  appareil, n'existe pas côté serveur.
+- Aucun signal de santé pour Hermes : les check-ins (sommeil, énergie, stress) ne sont ni lus (la
+  route ne les demande pas à la base), ni transmis, ni cause d'un effet visible (le moteur tourne
+  sans eux pour cette vue). Pas de séances non plus. Conséquence assumée : sur Hermes, une fatigue
+  déclarée ne raccourcit pas la séance proposée comme dans l'application.
 - Fraîcheur : `meta` (version, date de génération, dernière écriture par collection) et
   `donnees_anciennes` (aucune collection de travail écrite depuis plus de 48 h). Seuil provisoire :
   signale une absence de synchronisation récente, pas des données nécessairement incorrectes.
 - Les docs `AUDIT.md` et `ROADMAP.md` sont partiellement périmées : se fier au code.
 
 ## État actuel
-Branche `claude/loving-maxwell-oqm045`, dernier commit de code `2dcd552`, `main` = `1d75edd`.
+Branche `claude/loving-maxwell-oqm045`, dernier commit de code `b1676b7`, `main` = `1d75edd`.
 
 **PR #28** (`Taekd6/Taekdhub`, créée par l'élève le 2026-10-14) : ouverte, non brouillon, non
-fusionnée, `mergeable_state` propre, base `main`. Observée à la tête `5486d88` : 5 commits,
-24 fichiers (+2777 / −13). Contrôles terminés et verts : GitHub Actions « Lint, types, tests, build »,
-« Vercel Preview Comments », et les deux statuts Vercel ci-dessous. Ce commit de carnet s'y ajoute
-et relancera contrôles et Previews. Ni fusion ni déploiement en production sans accord explicite.
+fusionnée, `mergeable_state` propre, base `main`. Dernière tête observée avant ce travail :
+`5486d88` (5 commits, 24 fichiers, +2777 / −13), contrôles terminés et verts (GitHub Actions
+« Lint, types, tests, build », « Vercel Preview Comments », deux statuts Vercel). Depuis, des commits
+ont été poussés (`e5e7dca` carnet, `b1676b7` résumé quotidien Hermes, puis la mise à jour de ce
+carnet) : les contrôles et les Previews des deux projets se reconstruisent à chaque push, leur
+résultat n'a pas été relu après ces pushs. Ni fusion ni déploiement en production sans accord.
 
 **Deux projets Vercel** déploient ce dépôt, Previews prêts (« Ready ») sur les deux :
 - `taekdhub` : `https://taekdhub-git-claude-loving-maxwell-oqm045-taekd.vercel.app`
@@ -68,13 +80,16 @@ SSO de Vercel (information de l'élève ; la session n'a pas pu les joindre, `ve
 | 2.1 | Protocole de 14 jours, sans code |
 | 2.2 | Suggestions dans l'historique de l'agenda. Commit `521cf28` |
 | 3 | Accès Hermes en lecture seule (`/api/mcp-hermes`, jeton en en-tête). Commit `2dcd552` |
+| 3b | Résumé quotidien pour Hermes (`agenda_du_jour`, sans santé ni texte libre). Commit `b1676b7` |
 
-Vérifications du dernier commit de code : 83 fichiers de tests, 1314 réussis + 1 échec attendu
+Vérifications du dernier commit de code : 83 fichiers de tests, 1331 réussis + 1 échec attendu
 (`it.fails` antérieur), `tsc`, lint et build sans erreur. Contrôles propres à Hermes : chaînes
 témoin de texte libre absentes de toute la réponse, chaque chaîne de la réponse issue d'une liste
-fermée, authentification (en-tête manquant, mauvais schéma, mauvais jeton, jeton dans l'URL,
-variable absente, jeton trop court), liste exacte des outils, absence d'appel d'écriture, essai HTTP
-local avec un jeton factice.
+fermée (y compris journée chargée, tâches reportées et sans plages), clés exactes de l'agenda, un
+check-in épuisé donne exactement la même réponse qu'aucun check-in, authentification (en-tête
+manquant, mauvais schéma, mauvais jeton, jeton dans l'URL, variable absente, jeton trop court), liste
+exacte des outils, absence d'appel d'écriture, essai HTTP local avec un jeton factice. Des mutations
+volontaires (titre, clé, texte de report, séances, check-ins) sont bien détectées par ces tests.
 
 **Le branchement d'Hermes reste à faire.** Aucun projet Vercel n'a été choisi pour Hermes, aucun
 jeton `MCP_HERMES_TOKEN` n'a été créé, aucun réglage Vercel n'a été modifié (variables, protection)
@@ -107,7 +122,8 @@ Aucune lancée. Candidats, chacun à proposer avec son périmètre, accord requi
    - vérifier : seuls `get_today` et `list_echeances`, `meta.fraicheur` présent, 401 sans `Authorization`.
 2. Bilan des 14 jours, puis ajuster plages, classification ou placement.
 3. Phase 2 : une seule règle de récupération (seulement après le bilan).
-4. Plus tard, avec accord : un bilan périodique structuré pour Hermes (lecture seule).
+4. Plus tard, avec accord : un bilan périodique structuré pour Hermes (lecture seule), ou un
+   rendu des échéances avec chapitres officiels (les tâches d'échéance n'ont pas de chapitre).
 
 ## Limites d'intervention
 - Avant toute reprise : lire ce carnet, vérifier branche, HEAD et arbre ; signaler tout écart.
