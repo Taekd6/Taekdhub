@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/cn";
 import { buildDayAgenda, TIER_LABEL, type AgendaTier, type KeptTask, type PostponedTask } from "@/lib/day-agenda";
 import { DAY_AGENDA_KEY, diffVersions, parseLog, recordVersion, setOverride, toVersion, type AgendaLog } from "@/lib/day-agenda-log";
-import { computeNextMove, type NextMoveInput } from "@/lib/next-move/engine";
+import { COGNITIVE_LABEL } from "@/lib/cognitive-load";
+import { placeDay, type PlacedTask } from "@/lib/day-placement";
+import { computeNextMove, diagnosticContextOf, type NextMoveInput } from "@/lib/next-move/engine";
 import { postponeWorkItem } from "@/lib/planning";
 import { readFlag, writeFlag, type NextMoveRecord, type WorkItem } from "@/lib/storage";
 import { dayKey } from "@/lib/study";
@@ -67,6 +69,11 @@ export function DayAgendaCard({
   const input = useMemo(() => ({ ...data, history, now }), [data, history, now]);
   const agenda = useMemo(() => buildDayAgenda(input, override), [input, override]);
   const nextKey = useMemo(() => computeNextMove(input).primary?.key ?? null, [input]);
+  // Plages de performance (Réglages) : aucune ⇒ `placement.enabled` est faux et la liste reste celle du plan.
+  const placement = useMemo(
+    () => placeDay(agenda, data.preferences.performanceWindows, { workItems: data.workItems, chapterMemory: data.chapterMemory, exercises: diagnosticContextOf(input).exercises, now }),
+    [agenda, data.preferences.performanceWindows, data.workItems, data.chapterMemory, input, now]
+  );
 
   // Une nouvelle version dans la trace, seulement si le plan a réellement changé.
   useEffect(() => {
@@ -181,10 +188,26 @@ export function DayAgendaCard({
         </div>
       )}
 
+      {placement.enabled && agenda.kept.length > 0 && (
+        <div className="mt-4 rounded-2xl border border-line p-4">
+          <p className="t-label">Ordre suggéré selon tes plages</p>
+          <p className="t-meta mt-0.5 text-2xs">{placement.summary} Ce sont tes hypothèses (Réglages), pas une mesure de ta performance : tu restes libre de l&apos;ordre.</p>
+          {placement.warnings.length > 0 && (
+            <ul role="status" className="mt-2 space-y-1 text-[0.8125rem]">
+              {placement.warnings.map((warning) => (
+                <li key={warning.key} className={warning.essential ? "font-semibold text-rose-300" : "text-amber-300"}>
+                  <span className="font-semibold">{warning.title}</span> — {warning.message}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {agenda.kept.length > 0 && (
         <ul className="mt-4 divide-y divide-line">
-          {agenda.kept.map((task) => (
-            <KeptRow key={task.key} task={task} />
+          {placement.ordered.map((placed) => (
+            <KeptRow key={placed.task.key} task={placed.task} placed={placement.enabled ? placed : null} />
           ))}
         </ul>
       )}
@@ -254,16 +277,28 @@ export function DayAgendaCard({
   );
 }
 
-function KeptRow({ task }: { task: KeptTask }) {
+function KeptRow({ task, placed }: { task: KeptTask; placed: PlacedTask | null }) {
   return (
     <li className="flex items-center gap-3 py-2.5">
       <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-full", TIER_TONE[task.tier])} />
-      <span className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1">
         <span className="block truncate text-[0.875rem] font-semibold text-ink">{task.title}</span>
         <span className="t-meta text-2xs">
           {TIER_LABEL[task.tier]} · {task.tierReason}
         </span>
-      </span>
+        {/* Seulement avec des plages configurées : l'exigence, la plage suggérée, et pourquoi. */}
+        {placed?.placement && (
+          <div className="t-meta text-2xs">
+            <span className={cn("font-semibold", placed.placement.fit === "hors-plage" ? "text-amber-300" : "text-ink")}>
+              {placed.placement.window ? `${placed.placement.window.start}-${placed.placement.window.end}` : "Hors plage"} · {placed.placement.note}
+            </span>
+            <details className="mt-0.5">
+              <summary className="cursor-pointer text-subtle hover:text-ink">Pourquoi « {COGNITIVE_LABEL[placed.load.level]} » ?</summary>
+              <p className="mt-0.5">{placed.load.explanation}</p>
+            </details>
+          </div>
+        )}
+      </div>
       <span className="shrink-0 text-right text-[0.875rem] font-semibold tabular-nums text-ink">
         {formatMinutesSpan(task.minutes)}
         {task.reducedFrom !== null && <span className="block text-2xs font-semibold text-amber-300">réduit (prévu {formatMinutesSpan(task.reducedFrom)})</span>}

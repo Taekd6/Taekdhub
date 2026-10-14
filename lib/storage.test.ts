@@ -736,6 +736,7 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
         "eveningMinimums",
         "onboardingCompletedAt",
         "palette",
+        "performanceWindows",
         "planningMarginPercent",
         "programmeSeen",
         "retryDelaysDays",

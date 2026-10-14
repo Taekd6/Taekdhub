@@ -3,6 +3,7 @@ import { PushSettings } from "@/components/notifications/push-settings";
 import { AccountSection } from "@/components/account/account-section";
 import { BriefingSetting } from "@/components/briefing/briefing-setting";
 import { CapacityForm } from "@/components/work/capacity-form";
+import { PerformanceWindowsForm } from "@/components/work/performance-windows-form";
 import { DataBackup } from "@/components/data-backup";
 import { PageHero } from "@/components/ui/page-hero";
 import { PreferencesForm } from "@/components/preferences-form";
@@ -31,6 +32,7 @@ export default function SettingsPage() {
       <BriefingSetting />
       <PushSettings />
       <CapacityForm />
+      <PerformanceWindowsForm />
       {/* ── Premier lancement : rouvrir l'accueil guidé ── */}
       <OnboardingRestartEntry />
       {/* ── fin premier lancement ── */}

@@ -2,6 +2,7 @@ import { subjects } from "@/lib/study";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 import { normalizeAttempts, type ExerciseAttempt } from "@/lib/attempts";
 import { normalizeAvatar } from "@/lib/avatar";
+import { normalizePerformanceWindows, type PerformanceWindow } from "@/lib/performance-windows";
 import { normalizeAnkiSnapshots, type AnkiSnapshot } from "@/lib/anki-snapshot";
 import { SRS_LADDER } from "@/lib/spaced-repetition";
 import { FSRS_RATINGS, normalizeFsrsMemory, replayMemory, type FsrsMemory, type FsrsRating, type FsrsState } from "@/lib/fsrs";
@@ -174,6 +175,16 @@ export type Preferences = {
    * Champ du document `preferences`, déjà synchronisé : aucune migration.
    */
   weeklyFocus: WeeklyFocus | null;
+  /**
+   * PLAGES DE PERFORMANCE (lib/performance-windows.ts) : les heures où l'élève
+   * SUPPOSE travailler le mieux (matin, après-midi, soir), servant à suggérer
+   * un ordre pour les tâches du plan du jour (lib/day-placement.ts). Une
+   * hypothèse qu'il règle lui-même, pas une mesure. `null` : aucune plage
+   * configurée, le plan du jour est affiché comme avant. Champ du document
+   * `preferences`, déjà synchronisé : aucune migration. Absent d'une
+   * préférence ou d'une sauvegarde antérieure ⇒ `null`.
+   */
+  performanceWindows: PerformanceWindow[] | null;
   /*
    * `subjectPalette` / `subjectColors` (palette et surcharges de couleur par
    * matière, refonte « Nuit ») n'existent plus : les matières n'ont plus de
@@ -293,6 +304,7 @@ const defaults: Preferences = {
   ankiDeckChapters: {},
   retryDelaysDays: [2, 5, 12],
   weeklyFocus: null,
+  performanceWindows: null,
 };
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
@@ -1497,6 +1509,7 @@ export function normalizePreferences(raw: unknown): Preferences {
     ankiDeckChapters: normalizeDeckChapters(item.ankiDeckChapters),
     retryDelaysDays: normalizeRetryDelays(item.retryDelaysDays),
     weeklyFocus: normalizeWeeklyFocus(item.weeklyFocus),
+    performanceWindows: normalizePerformanceWindows(item.performanceWindows),
     // `accent`, `subjectPalette` et `subjectColors` ne sont pas recopiés :
     // lus (pour la migration ci-dessus), puis abandonnés.
   };
