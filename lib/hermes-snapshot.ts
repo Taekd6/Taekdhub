@@ -5,14 +5,19 @@ import { normalizeAttempts } from "@/lib/attempts";
 import { buildDiagnosticContext } from "@/lib/diagnostic-context";
 import { mainFinding } from "@/lib/diagnostic";
 import { dueRetries } from "@/lib/exercises";
+import { plannableMinutes } from "@/lib/capacity";
 import { atRisk } from "@/lib/chapter-memory";
+import { buildDayAgenda } from "@/lib/day-agenda";
+import { placeDay, type PlacedTask } from "@/lib/day-placement";
 import { courseLocks } from "@/lib/course-lock";
 import { ERROR_TYPE_META } from "@/lib/error-log";
+import { diagnosticContextOf, rankCandidates, type MoveCandidate, type NextMoveInput } from "@/lib/next-move/engine";
 import { buildRetroplanning, bestProgrammeMatch, computeMastery, summarizeMastery } from "@/lib/programme";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 import {
+  type ChapterMemory,
+  type DailyCheckin,
   normalizeChapterMemory,
-  normalizeCheckin,
   normalizeErrorEntry,
   normalizeGrade,
   normalizeNextMoveRecord,
@@ -49,6 +54,12 @@ import { activeWorkItems, daysUntilDue, remainingMinutes, WORK_ITEM_KIND_META } 
  * Aucun identifiant stable d'échéance, de fiche, d'exercice ou de recommandation
  * n'est renvoyé : Hermes lit, il n'a rien à désigner pour écrire.
  *
+ * `agenda_du_jour` (le résumé quotidien) reprend le plan adaptatif de
+ * l'application (lib/day-agenda.ts) et sa suggestion de plage
+ * (lib/day-placement.ts) SANS les recalculer ni les modifier : une tâche y est
+ * décrite par sa matière, son chapitre du programme officiel, sa durée, sa
+ * priorité (palier), son niveau cognitif et sa plage — jamais par son titre.
+ *
  * Les moteurs de lib/ sont ceux de l'application (mêmes normalisations, mêmes
  * calculs) : Hermes voit les mêmes faits que l'élève, sans leurs mots.
  *
@@ -65,7 +76,9 @@ export const STALE_AFTER_HOURS = 48;
 
 /** Les collections dont la dernière synchronisation dit « l'élève a travaillé et synchronisé récemment ». */
 const WORK_COLLECTIONS = ["sessions", "workItems", "reviewItems", "errors", "chapterMemory", "attempts"] as const;
-const KNOWN_COLLECTIONS: ReadonlySet<string> = new Set(Object.keys(STORAGE_KEYS));
+/** Toutes les collections SAUF les check-ins : la route ne les lit pas, et la fraîcheur ne les nomme pas. */
+export const HERMES_COLLECTIONS: readonly string[] = Object.keys(STORAGE_KEYS).filter((name) => name !== "checkins");
+const KNOWN_COLLECTIONS: ReadonlySet<string> = new Set(HERMES_COLLECTIONS);
 
 const ERROR_WINDOW_DAYS = 14;
 const DEADLINE_HORIZON_DAYS = 14;
@@ -186,6 +199,56 @@ export function buildHermesEcheances(collections: Record<string, unknown>, stamp
   return { meta: buildFreshness(stamps, now), echeances: entries.map(({ item, days }) => echeanceView(item, days, sessions)) };
 }
 
+/* ── Agenda du jour ───────────────────────────────────────────────── */
+
+/** Nombre de jours entre deux jours calendaires « AAAA-MM-JJ » (négatif si `date` est passée). */
+function daysBetween(from: string, date: string): number {
+  return Math.round((new Date(`${date}T00:00:00`).getTime() - new Date(`${from}T00:00:00`).getTime()) / 86_400_000);
+}
+
+/**
+ * Le chapitre du PROGRAMME officiel visé par une tâche du plan, ou `null`.
+ *
+ * Les clés de tâche (`MoveCandidate.key`) sont lues ICI et jamais renvoyées :
+ * certaines recopient un libellé simplifié. Un chapitre tapé par l'élève
+ * (mémoire) est rapproché du programme ; un chapitre libre devient `null`.
+ */
+function chapterRefOfTask(key: string, candidate: MoveCandidate | undefined, memories: readonly ChapterMemory[]): ProgrammeRef | null {
+  const direct = programmeRef(candidate?.chapterId);
+  if (direct) return direct;
+  const rest = (prefix: string) => (key.startsWith(prefix) ? key.slice(prefix.length) : null);
+  const memoryId = rest("rappel:");
+  if (memoryId !== null) {
+    const memory = memories.find((entry) => entry.id === memoryId);
+    return memory ? programmeRefOf(memory.subject, memory.title) : null;
+  }
+  for (const prefix of ["cours:", "kholle:", "calcul:", "exercice:", "verrou:", "anki:"]) {
+    const part = rest(prefix);
+    if (part !== null) return programmeRef(part.split(":")[0]);
+  }
+  return null;
+}
+
+function agendaTaskView(placed: PlacedTask, order: number, candidates: ReadonlyMap<string, MoveCandidate>, memories: readonly ChapterMemory[], today: string) {
+  const { task, load, placement } = placed;
+  const candidate = candidates.get(task.key);
+  return {
+    ordre: order,
+    genre: candidate?.kind ?? (task.key.startsWith("échéance:") ? "échéance" : null),
+    matiere: task.subject,
+    chapitre: chapterRefOfTask(task.key, candidate, memories),
+    priorite: task.tier,
+    niveau_cognitif: load.level,
+    duree_min: task.minutes,
+    /** Durée avant réduction, `null` si la tâche n'a pas été réduite. */
+    duree_initiale_min: task.reducedFrom,
+    echeance: task.dueDate ? { date: task.dueDate, dans_jours: daysBetween(today, task.dueDate) } : null,
+    /** La plage suggérée d'après les plages de l'élève (une hypothèse qu'il règle, pas une mesure) ; `null` sans plages ou hors plage. */
+    plage: placement?.window ? { id: placement.window.id, debut: placement.window.start, fin: placement.window.end, niveau: placement.window.level } : null,
+    adequation: placement ? placement.fit : null,
+  };
+}
+
 /* ── L'état du jour ───────────────────────────────────────────────── */
 
 /**
@@ -200,7 +263,8 @@ export function buildHermesToday(collections: Record<string, unknown>, annaleRow
   const grades = list(collections.grades, normalizeGrade);
   const reviewItems = list(collections.reviewItems, normalizeReviewItem);
   const errors = list(collections.errors, normalizeErrorEntry);
-  const checkins = list(collections.checkins, normalizeCheckin);
+  // Les check-ins (sommeil, énergie, stress) ne sont NI lus NI transmis, et n'influencent aucun calcul de cette vue : le moteur, qui s'en sert pour raccourcir une séance ou freiner un long bloc, tourne ici sans eux. Aucun signal de santé ne peut donc filtrer par ses effets (raisons, durées, statut du jour).
+  const checkins: DailyCheckin[] = [];
   const chapterMemory = list(collections.chapterMemory, normalizeChapterMemory);
   const history = list(collections.nextMoves, normalizeNextMoveRecord);
   const preferences = normalizePreferences(collections.preferences ?? {});
@@ -236,8 +300,28 @@ export function buildHermesToday(collections: Record<string, unknown>, annaleRow
   const plan = buildRetroplanning(mastery, preferences.contestDate, today);
   const annaleTotals = countResults(annales);
 
+  // L'agenda du jour : le plan adaptatif de l'application, tel quel. Le « il me reste… » de l'élève (propre à son appareil) n'existe pas ici : le temps restant vient de la capacité déclarée.
+  const agendaInput: NextMoveInput = { sessions, workItems, grades, reviewItems, errors, checkins, chapterMemory, preferences, history, annales, attempts, ankiSnapshots, now, availableMinutes: null };
+  const agenda = buildDayAgenda(agendaInput);
+  const placement = placeDay(agenda, preferences.performanceWindows, { workItems, chapterMemory, exercises: diagnosticContextOf(agendaInput).exercises, now });
+  const candidates = new Map(rankCandidates(agendaInput).map((candidate) => [candidate.key, candidate]));
+
   return {
     meta: buildFreshness(stamps, now),
+    agenda_du_jour: {
+      /** Capacité planifiable de la journée entière (capacité déclarée moins la marge) — déjà calculée par l'application. */
+      capacite_planifiable_min: plannableMinutes(preferences, now),
+      /** Ce qu'il reste de planifiable aujourd'hui (capacité, travail déjà fait et heure). */
+      reste_planifiable_min: agenda.budget.minutes,
+      total_retenu_min: agenda.used,
+      /** Minutes indispensables qui dépassent le temps restant : 0 si tout tient. */
+      depassement_min: agenda.overflow,
+      plages_configurees: placement.enabled,
+      /** Dans l'ordre suggéré. */
+      taches: placement.ordered.map((placed, index) => agendaTaskView(placed, index + 1, candidates, chapterMemory, today)),
+      /** Reportées à demain : leur nature seulement, jamais leur titre. */
+      reportees_a_demain: agenda.postponed.map((task) => ({ genre: candidates.get(task.key)?.kind ?? (task.key.startsWith("échéance:") ? "échéance" : null), matiere: task.subject, chapitre: chapterRefOfTask(task.key, candidates.get(task.key), chapterMemory), priorite: task.tier, duree_min: task.idealMinutes })),
+    },
     date: today,
     statut_du_jour: move.status,
     prochain_mouvement: primary

@@ -76,6 +76,12 @@ describe("accès Hermes — aucune écriture, aucune fuite", () => {
     expect(imports).toEqual(["@/lib/hermes-auth", "@/lib/hermes-snapshot", "@supabase/supabase-js", "mcp-handler", "zod"].sort());
   });
 
+  it("les check-ins ne sont pas demandés à la base : la lecture des collections est limitée à la liste de Hermes", () => {
+    const source = code(ROUTE);
+    expect(source).toMatch(/\.in\(\s*"collection"\s*,\s*\[\.\.\.HERMES_COLLECTIONS\]\s*\)/);
+    expect(source).not.toMatch(/checkins/i);
+  });
+
   it("les erreurs de la base ne sont jamais relayées", () => {
     expect(code(ROUTE)).not.toMatch(/error\.message|\.message\b/);
   });

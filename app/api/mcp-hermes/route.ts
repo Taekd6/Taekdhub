@@ -1,7 +1,7 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
-import { buildHermesEcheances, buildHermesToday, type CollectionStamps } from "@/lib/hermes-snapshot";
+import { buildHermesEcheances, buildHermesToday, HERMES_COLLECTIONS, type CollectionStamps } from "@/lib/hermes-snapshot";
 import { isHermesAuthorized } from "@/lib/hermes-auth";
 
 /**
@@ -67,9 +67,9 @@ async function safely(read: () => Promise<ReturnType<typeof text>>) {
 const UNAVAILABLE = "Erreur : lecture impossible pour le moment.";
 const NO_DATA = "Aucune donnée synchronisée : l'élève doit être connecté à son compte dans TaekdHub.";
 
-/** Les collections de l'élève et la date de leur dernière écriture, en lecture seule. */
+/** Les collections de l'élève et la date de leur dernière écriture, en lecture seule. Les check-ins ne sont pas demandés à la base. */
 async function readCollections(user_id: string) {
-  const { data, error } = await db().from("user_collections").select("collection, items, updated_at").eq("user_id", user_id);
+  const { data, error } = await db().from("user_collections").select("collection, items, updated_at").eq("user_id", user_id).in("collection", [...HERMES_COLLECTIONS]);
   if (error) return null;
   const byName: Record<string, unknown> = {};
   const stamps: CollectionStamps = {};
@@ -86,7 +86,7 @@ const mcp = createMcpHandler((server) => {
     {
       title: "État du jour (sans texte libre)",
       description:
-        "L'état du jour dans TaekdHub, en lecture seule et sans aucun texte saisi par l'élève : prochain mouvement (genre, matière, minutes, identifiants de raisons), verrous de cours, points faibles par chapitre du programme, échéances à venir (type, matière, date, temps restant), chapitres qui s'effacent, erreurs récentes (matière, type, jour), annales en chiffres, cartes Anki dues. Le bloc `meta` donne la date de génération et la fraîcheur des données : si `donnees_anciennes` est vrai, aucune synchronisation récente n'a eu lieu — signale-le avant tout commentaire. Rien dans cette réponse ne permet d'écrire dans TaekdHub.",
+        "L'état du jour dans TaekdHub, en lecture seule et sans aucun texte saisi par l'élève. `agenda_du_jour` résume la journée : tâches retenues (dans l'ordre suggéré) avec matière, chapitre du programme officiel, durée, priorité (indispensable, important, secondaire), niveau cognitif (elevee, moyenne, legere), plage horaire suggérée d'après les plages que l'élève a réglées (une hypothèse, pas une mesure de sa performance) et échéance ; capacité planifiable du jour et temps restant ; tâches reportées à demain (nature seulement). Le reste : prochain mouvement (genre, matière, minutes, identifiants de raisons), verrous de cours, points faibles par chapitre du programme, échéances à venir (type, matière, date, temps restant), chapitres qui s'effacent, erreurs récentes (matière, type, jour), annales en chiffres, cartes Anki dues. Le bloc `meta` donne la date de génération et la fraîcheur des données : si `donnees_anciennes` est vrai, aucune synchronisation récente n'a eu lieu — signale-le avant tout commentaire. Rien dans cette réponse ne permet d'écrire dans TaekdHub.",
       inputSchema: z.object({}),
     },
     () =>

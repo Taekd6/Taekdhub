@@ -3,10 +3,13 @@ import { createChapter } from "@/lib/chapter-memory";
 import { addLockCards } from "@/lib/course-lock";
 import { createErrorEntry } from "@/lib/error-log";
 import { createGrade } from "@/lib/grades";
-import { buildFreshness, buildHermesEcheances, buildHermesToday, HERMES_SCHEMA_VERSION, STALE_AFTER_HOURS } from "@/lib/hermes-snapshot";
+import { buildFreshness, buildHermesEcheances, buildHermesToday, HERMES_COLLECTIONS, HERMES_SCHEMA_VERSION, STALE_AFTER_HOURS } from "@/lib/hermes-snapshot";
 import { computeNextMove, topReasons } from "@/lib/next-move/engine";
 import { recordProposal } from "@/lib/next-move/history";
 import { PROGRAMME, PROGRAMME_BY_ID } from "@/lib/programme-data";
+import { PERFORMANCE_LEVELS, starterWindows, WINDOW_IDS } from "@/lib/performance-windows";
+import { AGENDA_TIERS } from "@/lib/day-agenda";
+import { COGNITIVE_LEVELS } from "@/lib/cognitive-load";
 import { createReviewItem } from "@/lib/review-items";
 import { ERROR_TYPE_META } from "@/lib/error-log";
 import { MOVE_KIND_LABEL } from "@/lib/next-move/engine";
@@ -68,7 +71,7 @@ function student() {
   const ankiSnapshots = [
     { id: "anki:2026-09-23", day: day(-1), takenAt: new Date(2026, 8, 23, 20).toISOString(), source: "fichier", decks: [{ name: `MP::${S}_PAQUET`, total: 40, due: 7, reviewed30: 20, failed30: 3, mature: 10, lapsing: 1 }], reviewsByDay: [], manual: null },
   ];
-  const preferences = normalizePreferences({ displayName: `${S}_PRENOM`, contestDate: "2027-04-20", eveningMinimums: [{}, {}, {}, {}, {}, {}, {}], weeklySubjectTargets: NO_TARGETS, capacityByWeekday: [240, 240, 240, 240, 240, 240, 240], planningMarginPercent: 0 });
+  const preferences = normalizePreferences({ displayName: `${S}_PRENOM`, contestDate: "2027-04-20", eveningMinimums: [{}, {}, {}, {}, {}, {}, {}], weeklySubjectTargets: NO_TARGETS, capacityByWeekday: [240, 240, 240, 240, 240, 240, 240], planningMarginPercent: 0, performanceWindows: starterWindows() });
   const base: NextMoveInput = { sessions: sessions as never, workItems, grades, reviewItems, errors, checkins, chapterMemory: [memoryProgramme, memoryLibre], preferences, history: [], now: NOW, availableMinutes: null };
   // L'historique recopie les raisons du moteur, qui citent les titres : le pire cas indirect.
   const plan = computeNextMove(base);
@@ -94,6 +97,43 @@ function strings(value: unknown, path = "$"): Array<{ path: string; value: strin
   if (Array.isArray(value)) return value.flatMap((entry, index) => strings(entry, `${path}[${index}]`));
   if (value && typeof value === "object") return Object.entries(value).flatMap(([key, entry]) => strings(entry, `${path}.${key}`));
   return [];
+}
+
+/** Les chaînes d'une réponse qui n'appartiennent à AUCUNE liste fermée (valeurs énumérées, dates, heures « HH:MM », identifiants techniques de raisons, chapitres du programme). */
+function outsideClosedList(payload: unknown): Array<{ path: string; value: string }> {
+  const programmeTitles = new Set(PROGRAMME.map((chapter) => chapter.title));
+  const closed = new Set<string>([
+    ...subjects,
+    ...Object.keys(MOVE_KIND_LABEL),
+    "pause",
+    ...Object.values(WORK_ITEM_KIND_META).map((meta) => meta.label),
+    ...Object.values(ERROR_TYPE_META).map((meta) => meta.label),
+    ...programmeTitles,
+    ...PROGRAMME_BY_ID.keys(),
+    // statuts du jour, constats, niveaux, états, sources Anki, résultats d'annales
+    "ok", "calme", "vide", "repos", "trop-court",
+    "cours", "démonstration", "méthode", "application", "difficile", "calcul", "temps", "démarrage",
+    "établi", "signal", "tient", "fragile", "inconnu",
+    "ankiconnect", "fichier", "manuel",
+    "réussi", "partiel", "échec",
+    // agenda du jour : paliers, niveaux cognitifs, adéquation, plages
+    ...AGENDA_TIERS,
+    ...COGNITIVE_LEVELS,
+    "ideale", "acceptable", "hors-plage",
+    ...WINDOW_IDS,
+    ...PERFORMANCE_LEVELS,
+  ]);
+  const clock = /^([01]\d|2[0-3]):[0-5]\d$/;
+  const isoDate = /^\d{4}-\d{2}-\d{2}$/;
+  const isoInstant = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  const termId = /^[a-zà-ÿ0-9:-]{1,48}$/;
+  return strings(payload).filter(({ path, value }) => {
+    if (path.endsWith(".precision")) return false; // phrase fixe du code, vérifiée à part
+    if (/\.plage\.(debut|fin)$/.test(path)) return !clock.test(value);
+    if (/\.raisons\[\d+\]\.id$/.test(path)) return !termId.test(value);
+    if (/\.fraicheur\.collections\./.test(path) || isoDate.test(value) || isoInstant.test(value)) return !(isoDate.test(value) || isoInstant.test(value));
+    return !closed.has(value);
+  });
 }
 
 describe("vue d'Hermes — le jeu de données de test est bien riche (garde-fou contre un test vide)", () => {
@@ -135,32 +175,14 @@ describe("vue d'Hermes — aucun texte libre, même indirect", () => {
   });
 
   it("CONTRÔLE SÉVÈRE : chaque chaîne de la réponse appartient à une liste fermée", () => {
-    const programmeTitles = new Set(PROGRAMME.map((chapter) => chapter.title));
-    const closed = new Set<string>([
-      ...subjects,
-      ...Object.keys(MOVE_KIND_LABEL),
-      "pause",
-      ...Object.values(WORK_ITEM_KIND_META).map((meta) => meta.label),
-      ...Object.values(ERROR_TYPE_META).map((meta) => meta.label),
-      ...programmeTitles,
-      ...PROGRAMME_BY_ID.keys(),
-      // statuts du jour, constats, niveaux, états, sources Anki, résultats d'annales
-      "ok", "calme", "vide", "repos", "trop-court",
-      "cours", "démonstration", "méthode", "application", "difficile", "calcul", "temps", "démarrage",
-      "établi", "signal", "tient", "fragile", "inconnu",
-      "ankiconnect", "fichier", "manuel",
-      "réussi", "partiel", "échec",
-    ]);
-    const isoDate = /^\d{4}-\d{2}-\d{2}$/;
-    const isoInstant = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-    const termId = /^[a-zà-ÿ0-9:-]{1,48}$/;
-    const outside = strings({ today, echeances }).filter(({ path, value }) => {
-      if (path.endsWith(".precision")) return false; // phrase fixe du code, vérifiée à part
-      if (path.endsWith(".raisons[0].id") || /\.raisons\[\d+\]\.id$/.test(path)) return !termId.test(value);
-      if (/\.fraicheur\.collections\./.test(path) || isoDate.test(value) || isoInstant.test(value)) return !(isoDate.test(value) || isoInstant.test(value));
-      return !closed.has(value);
-    });
-    expect(outside).toEqual([]);
+    expect(outsideClosedList({ today, echeances })).toEqual([]);
+  });
+
+  it("CONTRÔLE SÉVÈRE, journée chargée (tâches reportées comprises) et sans plages", () => {
+    const crowded = todayWith({ capacityByWeekday: [45, 45, 45, 45, 45, 45, 45] });
+    expect(crowded.agenda_du_jour.reportees_a_demain.length).toBeGreaterThan(0);
+    expect(outsideClosedList(crowded)).toEqual([]);
+    expect(outsideClosedList(todayWith({ performanceWindows: null }))).toEqual([]);
   });
 
   it("les clés de chaque objet d'échéance sont exactement celles prévues : ni id, ni titre, ni note, ni chapitres", () => {
@@ -255,5 +277,139 @@ describe("fraîcheur — une absence de synchronisation récente, pas une preuve
     expect(today.meta.fraicheur.donnees_anciennes).toBe(false);
     expect(echeances.meta.fraicheur.donnees_anciennes).toBe(false);
     expect(buildHermesToday(collections, annales, { sessions: at(100) }, NOW).meta.fraicheur.donnees_anciennes).toBe(true);
+  });
+});
+
+/* ── Résumé quotidien : agenda_du_jour ────────────────────────────── */
+
+/** La même vue, avec d'autres préférences (capacité, plages…). */
+function todayWith(overrides: Record<string, unknown>) {
+  return buildHermesToday({ ...collections, preferences: { ...(collections.preferences as object), ...overrides } }, annales, stamps, NOW);
+}
+
+const AGENDA_KEYS = ["capacite_planifiable_min", "depassement_min", "plages_configurees", "reportees_a_demain", "reste_planifiable_min", "taches", "total_retenu_min"];
+const TASK_KEYS = ["adequation", "chapitre", "duree_initiale_min", "duree_min", "echeance", "genre", "matiere", "niveau_cognitif", "ordre", "plage", "priorite"];
+const POSTPONED_KEYS = ["chapitre", "duree_min", "genre", "matiere", "priorite"];
+
+describe("agenda du jour pour Hermes — ce qui est transmis, et seulement cela", () => {
+  const agenda = today.agenda_du_jour;
+
+  it("l'agenda n'est pas vide : tâches retenues, avec leur ordre suggéré", () => {
+    expect(agenda.taches.length).toBeGreaterThanOrEqual(4);
+    expect(agenda.taches.map((task) => task.ordre)).toEqual(agenda.taches.map((_, index) => index + 1));
+  });
+
+  it("les clés de l'agenda et de chaque tâche sont exactement celles prévues : ni titre, ni note, ni identifiant, ni séance, ni sommeil", () => {
+    expect(Object.keys(agenda).sort()).toEqual(AGENDA_KEYS);
+    for (const task of agenda.taches) expect(Object.keys(task).sort()).toEqual(TASK_KEYS);
+    for (const task of agenda.reportees_a_demain) expect(Object.keys(task).sort()).toEqual(POSTPONED_KEYS);
+    for (const forbidden of ["sessions", "checkins", "sommeil", "fatigue", "stress", "grades", "preferences"]) expect(Object.keys(today)).not.toContain(forbidden);
+  });
+
+  it("chaque tâche porte matière, durée, priorité, niveau cognitif, plage et adéquation, dans des listes fermées", () => {
+    for (const task of agenda.taches) {
+      expect(task.matiere === null || (subjects as readonly string[]).includes(task.matiere)).toBe(true);
+      expect(task.duree_min).toBeGreaterThan(0);
+      expect((AGENDA_TIERS as readonly string[]).includes(task.priorite)).toBe(true);
+      expect((COGNITIVE_LEVELS as readonly string[]).includes(task.niveau_cognitif)).toBe(true);
+      expect(task.plage).not.toBeNull();
+      expect(["ideale", "acceptable", "hors-plage"]).toContain(task.adequation);
+    }
+  });
+
+  it("le chapitre n'est donné que s'il est officiel ; un chapitre libre ou une tâche sans chapitre donne null", () => {
+    const chapters = agenda.taches.map((task) => task.chapitre);
+    expect(chapters.some((chapter) => chapter?.id === "m2-reduction")).toBe(true);
+    expect(chapters.some((chapter) => chapter === null)).toBe(true);
+    for (const chapter of chapters) if (chapter) expect(PROGRAMME_BY_ID.get(chapter.id)?.title).toBe(chapter.titre);
+  });
+
+  it("l'échéance utile d'une tâche est une date et un nombre de jours, rien d'autre", () => {
+    const withDeadline = agenda.taches.filter((task) => task.echeance !== null);
+    expect(withDeadline.length).toBeGreaterThanOrEqual(2);
+    expect(withDeadline.map((task) => task.echeance!.dans_jours)).toEqual(expect.arrayContaining([1, 6]));
+    for (const task of withDeadline) expect(Object.keys(task.echeance!).sort()).toEqual(["dans_jours", "date"]);
+  });
+
+  it("les tâches exigeantes vont en plage haute, comme dans l'application (placement non recalculé autrement)", () => {
+    const demanding = agenda.taches.filter((task) => task.niveau_cognitif === "elevee");
+    expect(demanding.length).toBeGreaterThanOrEqual(2);
+    for (const task of demanding) expect(task.plage?.niveau).toBe("haute");
+    const first = agenda.taches[0];
+    expect(first.niveau_cognitif).toBe("elevee");
+    expect(first.plage).toEqual({ id: "matin", debut: "08:00", fin: "12:00", niveau: "haute" });
+  });
+
+  it("la capacité planifiable est celle de l'application, sans nouvelle mesure", () => {
+    expect(agenda.capacite_planifiable_min).toBe(240);
+    expect(agenda.reste_planifiable_min).toBeLessThanOrEqual(agenda.capacite_planifiable_min);
+    expect(agenda.total_retenu_min).toBe(agenda.taches.reduce((sum, task) => sum + task.duree_min, 0));
+    expect(agenda.depassement_min).toBe(0);
+  });
+
+  it("la capacité suit la marge déclarée : 20 % de marge sur 240 min donnent 192 min planifiables", () => {
+    expect(todayWith({ planningMarginPercent: 20 }).agenda_du_jour.capacite_planifiable_min).toBe(192);
+  });
+});
+
+describe("agenda du jour pour Hermes — sans plages, et journée chargée", () => {
+  it("sans plages : aucune plage ni adéquation, mais le niveau cognitif et le reste sont là, et rien ne change d'autre", () => {
+    const plain = todayWith({ performanceWindows: null }).agenda_du_jour;
+    expect(plain.plages_configurees).toBe(false);
+    for (const task of plain.taches) {
+      expect(task.plage).toBeNull();
+      expect(task.adequation).toBeNull();
+      expect((COGNITIVE_LEVELS as readonly string[]).includes(task.niveau_cognitif)).toBe(true);
+    }
+    const essential = (list: typeof plain.taches) => list.map((task) => JSON.stringify({ ...task, ordre: 0, plage: null, adequation: null })).sort();
+    expect(essential(plain.taches)).toEqual(essential(today.agenda_du_jour.taches));
+    expect(plain.total_retenu_min).toBe(today.agenda_du_jour.total_retenu_min);
+  });
+
+  it("journée chargée : les tâches reportées à demain ne donnent que leur nature, jamais un titre", () => {
+    const crowded = todayWith({ capacityByWeekday: [45, 45, 45, 45, 45, 45, 45] });
+    expect(crowded.agenda_du_jour.reportees_a_demain.length).toBeGreaterThan(0);
+    for (const task of crowded.agenda_du_jour.reportees_a_demain) expect(Object.keys(task).sort()).toEqual(POSTPONED_KEYS);
+    expect(JSON.stringify(crowded)).not.toMatch(/zsentinelz/i);
+    // L'indispensable reste dans l'agenda, et le dépassement éventuel est dit.
+    expect(crowded.agenda_du_jour.taches.some((task) => task.priorite === "indispensable")).toBe(true);
+    expect(crowded.agenda_du_jour.depassement_min).toBeGreaterThanOrEqual(0);
+  });
+
+  it("des plages corrompues dans les préférences ne font fuiter aucune chaîne et n'activent rien", () => {
+    const hostile = todayWith({ performanceWindows: [{ id: "matin", start: `${S}_DEBUT`, end: `${S}_FIN`, level: `${S}_NIVEAU` }, `${S}_BRUT`] });
+    expect(hostile.agenda_du_jour.plages_configurees).toBe(false);
+    expect(JSON.stringify(hostile)).not.toMatch(/zsentinelz/i);
+  });
+
+  it("aucune donnée de santé, de séance ni de check-in dans toute la réponse", () => {
+    const keys = JSON.stringify(Object.keys(JSON.parse(everything).today)).toLowerCase();
+    for (const forbidden of ["sommeil", "sleep", "fatigue", "stress", "energie", "checkin", "seance", "session"]) expect(keys).not.toContain(forbidden);
+    // Les heures de travail déjà faites ne sortent pas : seulement des totaux de capacité.
+    expect(everything).not.toContain("duration_seconds");
+    expect(everything).not.toContain("started_at");
+  });
+});
+
+describe("aucun signal de santé : les check-ins ne sont ni lus, ni transmis, ni cause d'un effet visible", () => {
+  const tired = [{ date: day(0), sleepHours: 4, energy: 1, stress: 5, note: `${S}_EPUISE`, updatedAt: new Date(2026, 8, 24, 9).toISOString() }];
+  const withTired = { ...collections, checkins: tired };
+  const withoutCheckins = Object.fromEntries(Object.entries(collections).filter(([name]) => name !== "checkins"));
+
+  it("un check-in épuisé (4 h, énergie 1, stress 5) donne EXACTEMENT la même réponse qu'aucun check-in", () => {
+    expect(buildHermesToday(withTired, annales, stamps, NOW)).toEqual(buildHermesToday(withoutCheckins, annales, stamps, NOW));
+    expect(buildHermesEcheances(withTired, stamps, NOW)).toEqual(buildHermesEcheances(withoutCheckins, stamps, NOW));
+  });
+
+  it("aucune raison « fatigue », aucun statut de repos dû à la fatigue, aucune mention du check-in", () => {
+    const tiredJson = JSON.stringify(buildHermesToday(withTired, annales, stamps, NOW));
+    expect(tiredJson).not.toMatch(/fatigue|energie|énergie|sommeil|sleep|stress|checkin|EPUISE/i);
+  });
+
+  it("la fraîcheur ne nomme pas la collection des check-ins, même si la base la signale", () => {
+    const fresh = buildFreshness({ ...stamps, checkins: new Date(NOW.getTime() - 3_600_000).toISOString() }, NOW);
+    expect(Object.keys(fresh.fraicheur.collections)).not.toContain("checkins");
+    expect(HERMES_COLLECTIONS).not.toContain("checkins");
+    expect(HERMES_COLLECTIONS).toEqual(expect.arrayContaining(["sessions", "workItems", "reviewItems", "errors", "chapterMemory", "attempts", "preferences"]));
   });
 });
