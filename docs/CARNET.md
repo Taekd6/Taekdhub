@@ -1,8 +1,8 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `303553d`
-> (PR #28 : dernière tête observée `5486d88`, avant les commits suivants).
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `7209ad4`
+> (PR #28 : tête observée `504b1ae` avant cette mission, relue sur GitHub).
 
 ## Objectif général
 TaekdHub est l'outil de travail personnel d'un élève de prépa MP (PWA Next.js 15, React 19,
@@ -54,15 +54,14 @@ ni outils.
 - Les docs `AUDIT.md` et `ROADMAP.md` sont partiellement périmées : se fier au code.
 
 ## État actuel
-Branche `claude/loving-maxwell-oqm045`, dernier commit de code `303553d`, `main` = `1d75edd`.
+Branche `claude/loving-maxwell-oqm045`, dernier commit de code `7209ad4`, `main` = `1d75edd`.
 
 **PR #28** (`Taekd6/Taekdhub`, créée par l'élève le 2026-10-14) : ouverte, non brouillon, non
-fusionnée, `mergeable_state` propre, base `main`. Dernière tête observée avant ce travail :
-`5486d88` (5 commits, 24 fichiers, +2777 / −13), contrôles terminés et verts (GitHub Actions
-« Lint, types, tests, build », « Vercel Preview Comments », deux statuts Vercel). Depuis, des commits
-ont été poussés (`e5e7dca` carnet, `b1676b7` résumé quotidien Hermes, puis la mise à jour de ce
-carnet) : les contrôles et les Previews des deux projets se reconstruisent à chaque push, leur
-résultat n'a pas été relu après ces pushs. Ni fusion ni déploiement en production sans accord.
+fusionnée, `mergeable_state` propre, base `main` (`1d75edd`). Relue avant la mission 4 : tête
+`504b1ae` (= HEAD local), 10 commits, 24 fichiers, +3094 / −13 ; la mission 4 ajoute deux commits.
+L'ancienne mention « tête `5486d88`, 5 commits » était périmée : ce carnet retardait de cinq commits.
+Les contrôles GitHub n'ont pas été relus après les derniers pushs (outil de lecture des contrôles non
+utilisé). Ni fusion ni déploiement en production sans accord.
 
 **Deux projets Vercel** déploient ce dépôt, Previews prêts (« Ready ») sur les deux :
 - `taekdhub` : `https://taekdhub-git-claude-loving-maxwell-oqm045-taekd.vercel.app`
@@ -82,6 +81,7 @@ SSO de Vercel (information de l'élève ; la session n'a pas pu les joindre, `ve
 | 3 | Accès Hermes en lecture seule (`/api/mcp-hermes`, jeton en en-tête). Commit `2dcd552` |
 | 3b | Résumé quotidien pour Hermes (`agenda_du_jour`, sans santé ni texte libre). Commit `b1676b7` |
 | 3c | `get_today` tolère des annales illisibles et le signale. Commit `303553d` |
+| 4 | Fraîcheur honnête pour Hermes : plan provisoire, séances anciennes, liste d'échéances non concluante. Commit `7209ad4` |
 
 Vérifications du dernier commit de code : 83 fichiers de tests, 1331 réussis + 1 échec attendu
 (`it.fails` antérieur), `tsc`, lint et build sans erreur. Contrôles propres à Hermes : chaînes
@@ -105,6 +105,23 @@ dépôt ni en conversation. Hermes liste exactement `get_today` et `list_echeanc
   reçoit un 401 alors que les autres lectures passent ; les droits SQL du rôle serveur sont corrects.
   Cause non trouvée (anomalie à creuser). Contournement `303553d` : `get_today` répond sans les
   annales et signale `donnees_indisponibles: ["annales"]`.
+- **Mission 4 — chemin des données et fraîcheur.** Établi depuis le code : toute écriture locale d'une
+  collection la marque « à envoyer » (`SyncEngine.markDirty`), un envoi part après un court délai, puis
+  à chaque cycle (2 min, retour sur l'onglet, retour du réseau) ; un envoi est conditionnel à la
+  révision serveur (refus puis fusion, jamais d'écrasement) ; `updated_at` est posé par un déclencheur
+  serveur à chaque écriture. Aucun défaut de synchronisation n'est démontrable depuis le code : rien
+  n'a été corrigé de ce côté. Constaté en base (noms, révisions, dates seulement, jamais le contenu) :
+  `reviewItems` et `nextMoves` écrits le 14 octobre à 20:09 UTC (l'appli venait d'être ouverte),
+  `sessions` le 11 octobre à 20:14 UTC, aucune ligne `workItems` (aucune échéance jamais envoyée, ou
+  jamais créée : indécidable sans l'appareil), aucune ligne `attempts`, `errors`, `dayPlans`. La
+  contrainte `user_collections_known` accepte bien `attempts` et `ankiSnapshots` (migration 0008
+  appliquée). Défaut démontré : `donnees_anciennes` prenait la collection de travail la plus récente,
+  donc des cartes écrites aujourd'hui masquaient des séances vieilles de trois jours alors que les
+  séances fixent le « temps restant ». Corrigé par `7209ad4` : `seances_anciennes`, `echeances_synchronisees`,
+  `consigne` (phrase fixe), `agenda_du_jour.provisoire`, `liste_concluante`. Limite assumée : l'absence
+  d'écriture ne distingue pas une synchro défaillante d'une absence d'activité (il n'y a pas de
+  battement de cœur serveur ; en ajouter un exigerait une écriture ou une collection, hors périmètre).
+  Non vérifié : ce que l'appareil de l'élève contient, et si les séances du 12 au 14 octobre existent.
 - Outil Vercel de la session : les appels avec `teamId`/`slug` renvoient 403, sans ces paramètres ils
   passent ; les journaux d'exécution restent illisibles.
 - Reste à faire : vérifier `get_today` et `list_echeances` par un vrai appel d'Hermes sur le Preview
