@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-16, commit de code `64af51f`
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-16, commit de code `f4f9e6d`
 > (branche `claude/finalisation-hermes-tests`, non fusionnée).
 
 ## Objectif général
@@ -222,6 +222,19 @@ Non vérifié : sur un vrai compte (annales, synchronisation), sur l'appareil de
   `attempts`, `errors`, `checkins`, `dayPlans`. La contrainte en base accepte `workItems` et le moteur
   envoie toute collection locale non vide : cause la plus probable = aucune échéance saisie sur l'appareil connecté (non prouvé).
 - Non vérifié : appel authentifié en production ; égalité des valeurs du jeton (Vercel / .env d'Hermes).
+
+**Hermes en production + préparation de demain (2026-10-16, `f4f9e6d`).**
+- Production redéployée par l'élève (option A, toujours `7f081c3`) après avoir CHANGÉ la valeur de `MCP_HERMES_TOKEN`
+  (Vercel, ~22 h 26) et le `.env` d'Hermes (~22 h 28). Appel authentifié RÉEL réussi en production
+  (`scripts/hermes-check.mjs`) : refus sans jeton et jeton inventé, `tools/list` = `get_today`, `list_echeances`,
+  `list_echeances` en JSON, `get_today` en JSON 4 fois sur 5 ; 1 « lecture impossible » (premier appel d'une série, comme
+  sur le Preview). Cause non trouvée : journaux Vercel illisibles depuis la session (403) et route volontairement sans journal (test).
+  La nouvelle tentative (branche) n'est pas en production.
+- `config.yaml` d'Hermes pointe ENCORE vers l'ancien Preview `loving-maxwell` (non modifié : configuration de l'élève).
+- Données (base, sans contenu) : séances 49 (dernière écriture 13:18 UTC), aucune ligne `workItems`, `attempts`,
+  `errors`, `checkins`, `dayPlans`. L'appli affiche désormais l'état par collection (Échéances, Réglages → Compte).
+- Ajouts : état de synchronisation par collection (`lib/sync/status.ts`), carte « D'une évaluation à l'autre » sur /erreurs.
+  1523 tests (+1 échec attendu), lint, types, build ; vérifié dans Chromium (point, garde-fou sans marqueur « vu », carte, ligne).
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
