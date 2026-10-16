@@ -82,6 +82,11 @@ export function AnkiOverview() {
     setOrigin(window.location.origin);
   }, []);
 
+  // Le contenu n'existe qu'une fois les données chargées : le navigateur a déjà traité le « # » à ce moment-là (lien de Next Move).
+  useEffect(() => {
+    if (ready && window.location.hash === "#demonstrations") document.getElementById("demonstrations")?.scrollIntoView();
+  }, [ready]);
+
   const now = new Date();
   const full = useMemo(() => latestFullSnapshot(ankiSnapshots), [ankiSnapshots]);
   const dueInfo = useMemo(() => latestDueInfo(ankiSnapshots), [ankiSnapshots]);
@@ -268,7 +273,10 @@ export function AnkiOverview() {
 
       <CourseCards platform={platform} />
 
-      <DemonstrationsPanel platform={platform} attempts={attempts} saveAttempts={saveAttempts} preferences={preferences} savePreferences={savePreferences} />
+      {/* Ancre de Next Move : « Commencer » sur une restitution de démonstration mène ici (/anki#demonstrations). */}
+      <div id="demonstrations" className="scroll-mt-20">
+        <DemonstrationsPanel platform={platform} attempts={attempts} saveAttempts={saveAttempts} preferences={preferences} savePreferences={savePreferences} />
+      </div>
 
       <AnkiCardExport reviewItems={reviewItems} saveReviewItems={saveReviewItems} platform={platform} />
 

@@ -13,6 +13,8 @@ import { dueRetries } from "@/lib/exercises";
 import type { KholleHistory } from "@/lib/kholle";
 import { atRisk, AT_RISK_THRESHOLD, chapterTime, retrievabilityToday } from "@/lib/chapter-memory";
 import { chapterReadiness, examScopeIndex } from "@/lib/exam-prep";
+import { DEMONSTRATIONS } from "@/lib/demonstrations";
+import { computeRevision, revisionInputFromState, type RevisionFactOnExam } from "@/lib/revision-context";
 import { DESIRED_RETENTION } from "@/lib/fsrs";
 import { computeCalibration } from "@/lib/calibration";
 import { computeWorkItemPriority } from "@/lib/deadlines";
@@ -463,6 +465,11 @@ function round1(value: number): number {
 
 /* ── Génération des candidats ─────────────────────────────────────── */
 
+/** « du DS », « de la khôlle »… — le programme d'une khôlle compte comme celui d'une épreuve. */
+function examLabel(kind: WorkItem["kind"]): string {
+  return kind === "ds" ? "du DS" : kind === "colle" ? "de la khôlle" : "du concours blanc";
+}
+
 function timerHref(subject: Subject): string {
   return `/timer?matiere=${encodeURIComponent(subject)}`;
 }
@@ -525,7 +532,7 @@ function recallCandidates(input: NextMoveInput): MoveCandidate[] {
   // Chapitres au programme d'une épreuve proche (lib/exam-prep.ts) : ils
   // deviennent candidats même s'ils ne sont pas encore « menacés »
   // aujourd'hui, dès qu'ils n'atteindraient pas 90 % le jour J.
-  const scope = examScopeIndex(input.workItems, today, EXAM_WINDOW_DAYS);
+  const scope = examScopeIndex(input.workItems, today, EXAM_WINDOW_DAYS, { withColle: true });
   const pool = new Map<string, { chapter: ChapterMemory; retrievability: number }>();
   for (const entry of atRisk(input.chapterMemory, today)) pool.set(entry.chapter.id, entry);
   for (const chapter of input.chapterMemory) {
@@ -566,7 +573,7 @@ function recallCandidates(input: NextMoveInput): MoveCandidate[] {
         terms.push({
           id: "au-programme",
           points: Math.max(0, onExamPoints - forgetting) + (exam.days <= 1 ? 20 : exam.days <= 3 ? 12 : 6),
-          reason: `Au programme ${exam.item.kind === "ds" ? "du DS" : "du concours blanc"} « ${exam.item.title} » ${inDaysLabel(exam.days)} : ${Math.round(readiness.onExam * 100)} % le jour J sans rappel, ${Math.round(readiness.ifReviewedToday * 100)} % avec un rappel aujourd'hui`,
+          reason: `Au programme ${examLabel(exam.item.kind)} « ${exam.item.title} » ${inDaysLabel(exam.days)} : ${Math.round(readiness.onExam * 100)} % le jour J sans rappel, ${Math.round(readiness.ifReviewedToday * 100)} % avec un rappel aujourd'hui`,
         });
       }
     }
@@ -769,6 +776,17 @@ function errorCandidates(input: NextMoveInput): MoveCandidate[] {
  * ou d'application. Après trois échecs, la proposition CHANGE : refaire le
  * même exercice ne suffit plus (`changeApproach`).
  */
+const DEMO_KEY_PREFIX = "demo:";
+/** Où se restitue une démonstration — ancre de components/anki/anki-overview.tsx. */
+const DEMO_HREF = "/anki#demonstrations";
+const DEMO_MINUTES: [number, number, number] = [10, 20, 30];
+const DEMO_RESTITUTION_INSTRUCTION = "Sans notes : écris l'énoncé, les hypothèses et la preuve, puis compare à la référence et note la restitution (aide réellement utilisée comprise).";
+const DEMO_RESTITUTION_DONE = "Une restitution notée dans « Démonstrations » ; seule une réussite sans aide la ferme (revoir des cartes Anki n'est pas une restitution).";
+
+function demoOfKey(key: string) {
+  return key.startsWith(DEMO_KEY_PREFIX) ? DEMONSTRATIONS.find((demo) => `${DEMO_KEY_PREFIX}${demo.id}` === key) : undefined;
+}
+
 function retryCandidates(input: NextMoveInput, context: DiagnosticContext): MoveCandidate[] {
   const today = dayKey(input.now);
   const diagnosisByChapter = new Map(context.diagnoses.map((diagnosis) => [diagnosis.chapter.id, diagnosis]));
@@ -776,6 +794,9 @@ function retryCandidates(input: NextMoveInput, context: DiagnosticContext): Move
   const out: MoveCandidate[] = [];
   for (const exercise of dueRetries(context.exercises)) {
     if (!exercise.subject) continue;
+    // Une restitution de démonstration (clé `demo:<id>`) se refait dans /anki, pas dans « À refaire » : sans la démonstration, aucune action n'est proposée.
+    const demo = demoOfKey(exercise.key);
+    if (exercise.key.startsWith(DEMO_KEY_PREFIX) && !demo) continue;
     const count = perSubject.get(exercise.subject) ?? 0;
     if (count >= RETRY_PER_SUBJECT) continue;
     perSubject.set(exercise.subject, count + 1);
@@ -800,20 +821,24 @@ function retryCandidates(input: NextMoveInput, context: DiagnosticContext): Move
       key: `refaire:${exercise.key}`,
       kind: "refaire",
       subject: exercise.subject,
-      title: exercise.label,
-      action: exercise.changeApproach ? "changer d'approche" : "refaire sans aide",
-      instruction: exercise.changeApproach ?? "Correction cachée, chrono lancé, sans indice. Note ensuite le résultat et l'aide réellement utilisée.",
-      problem: exercise.changeApproach
-        ? `${exercise.failedStreak} tentatives sans réussite sans aide : refaire le même exercice ne suffit plus.`
-        : "Un exercice raté n'est pas encore réussi sans aide.",
-      doneWhen: exercise.changeApproach
-        ? "L'action de rechange est faite, puis l'exercice est retenté à sa prochaine date."
-        : "La tentative est notée dans « À refaire » — et l'exercice n'en sort que réussi sans aide.",
-      minMinutes: 15,
-      idealMinutes: ideal,
-      maxMinutes: Math.max(ideal, 45),
-      href: `/annales?refaire=${encodeURIComponent(exercise.key)}`,
-      resource: { label: "À refaire", href: "/annales" },
+      title: demo ? demo.title : exercise.label,
+      action: demo ? "restituer sans aide" : exercise.changeApproach ? "changer d'approche" : "refaire sans aide",
+      instruction: demo ? DEMO_RESTITUTION_INSTRUCTION : (exercise.changeApproach ?? "Correction cachée, chrono lancé, sans indice. Note ensuite le résultat et l'aide réellement utilisée."),
+      problem: demo
+        ? `La démonstration « ${demo.title} » n'a pas encore été restituée sans aide.`
+        : exercise.changeApproach
+          ? `${exercise.failedStreak} tentatives sans réussite sans aide : refaire le même exercice ne suffit plus.`
+          : "Un exercice raté n'est pas encore réussi sans aide.",
+      doneWhen: demo
+        ? DEMO_RESTITUTION_DONE
+        : exercise.changeApproach
+          ? "L'action de rechange est faite, puis l'exercice est retenté à sa prochaine date."
+          : "La tentative est notée dans « À refaire » — et l'exercice n'en sort que réussi sans aide.",
+      minMinutes: demo ? DEMO_MINUTES[0] : 15,
+      idealMinutes: demo ? DEMO_MINUTES[1] : ideal,
+      maxMinutes: demo ? DEMO_MINUTES[2] : Math.max(ideal, 45),
+      href: demo ? DEMO_HREF : `/annales?refaire=${encodeURIComponent(exercise.key)}`,
+      resource: demo ? { label: "Démonstrations", href: DEMO_HREF } : { label: "À refaire", href: "/annales" },
       terms,
       score: 0,
       ...(exercise.chapterId ? { chapterId: exercise.chapterId } : {}),
@@ -830,7 +855,7 @@ function retryCandidates(input: NextMoveInput, context: DiagnosticContext): Move
 function transferCandidates(input: NextMoveInput, context: DiagnosticContext): MoveCandidate[] {
   const today = dayKey(input.now);
   return transferChecks(context.exercises, input.attempts ?? [], input.preferences.retryDelaysDays, today)
-    .filter((check) => check.status === "à-faire" && check.exercise.subject)
+    .filter((check) => check.status === "à-faire" && check.exercise.subject && !check.exercise.key.startsWith(DEMO_KEY_PREFIX))
     .slice(0, 3)
     .map((check) => {
       const chapter = check.exercise.chapterId ? PROGRAMME_BY_ID.get(check.exercise.chapterId)?.title ?? null : null;
@@ -1179,6 +1204,173 @@ function weeklyFocusTerm(input: NextMoveInput, chapterId: string | null): ScoreT
   return { id: "bilan-semaine", points: WEEKLY_FOCUS_POINTS, reason: `Priorité adoptée au bilan du ${focus.decidedOn}` };
 }
 
+/* ── Contexte de révision ─────────────────────────────────────────── */
+
+/** Points de proximité d'une épreuve au programme — la même échelle que `au-programme` (rappels). */
+function examProximityPoints(days: number): number {
+  return days <= 1 ? 20 : days <= 3 ? 12 : 6;
+}
+
+function programmeTerm(fact: RevisionFactOnExam): ScoreTerm {
+  const { exam, kind } = fact;
+  return {
+    id: "au-programme",
+    points: examProximityPoints(exam.dans_jours),
+    reason: `Au programme ${examLabel(kind)} « ${exam.titre} » ${inDaysLabel(exam.dans_jours)}${fact.fact.chapitre ? ` (« ${fact.fact.chapitre} »)` : ""}`,
+  };
+}
+
+/** Ajoute un terme que le candidat n'a pas déjà : jamais deux fois la même proximité ni le même constat. */
+function addTerm(candidate: MoveCandidate, term: ScoreTerm): void {
+  if (candidate.terms.some((existing) => existing.id === term.id)) return;
+  candidate.terms.push(term);
+}
+
+const DEMO_FAILED_POINTS = 28;
+const DEMO_TODO_POINTS = 16;
+const RECURRING_DIFFICULTY_POINTS = 14;
+
+/**
+ * ALIGNEMENT SUR LE CONTEXTE DE RÉVISION (lib/revision-context.ts, outil MCP
+ * `get_contexte_revision`). Ce n'est PAS un second système de priorités : le
+ * barème ci-dessus reste seul juge de l'ordre. Le contexte de révision ne
+ * fournit que des FAITS — quelle démonstration d'une épreuve proche n'est pas
+ * restituée, quelle difficulté récurrente touche un chapitre du programme —,
+ * et chacun devient, selon le cas :
+ *   — un terme de score ajouté à l'action que le moteur propose DÉJÀ pour ce
+ *     fait (jamais deux actions pour le même fait) ;
+ *   — à défaut, un candidat créé avec les mêmes durées et la même mécanique
+ *     que les autres (capacité, historique, verrou de cours s'appliquent après).
+ *
+ * Retenus : restitution de démonstration, exercice ciblé et rappel de cours
+ * pour une difficulté RÉCURRENTE (un signal isolé n'est pas une conclusion).
+ * Écartés : les cartes Anki dues et la mémoire (déjà portées par leurs
+ * candidats), les explications demandées à une IA (pas une action de l'app).
+ * Programme inconnu : aucun candidat inventé, seulement une information sur
+ * l'échéance. Une difficulté corrigée par une réussite autonome n'est pas un
+ * fait du contexte : elle n'ajoute rien.
+ */
+function integrateRevision(candidates: MoveCandidate[], input: NextMoveInput): MoveCandidate[] {
+  const revision = computeRevision(revisionInputFromState(input), { horizonDays: EXAM_WINDOW_DAYS });
+  const byKey = new Map(candidates.map((candidate) => [candidate.key, candidate]));
+  const created: MoveCandidate[] = [];
+  const memoryChapter = new Map(input.chapterMemory.map((chapter) => [chapter.id, bestProgrammeMatch(chapter.subject, chapter.title)?.id ?? null]));
+
+  for (const echeance of revision.context.echeances) {
+    if (echeance.programme.connu) continue;
+    const candidate = byKey.get(`échéance:${echeance.echeance.id}`);
+    if (candidate) addTerm(candidate, { id: "programme-inconnu", points: 0, reason: `Programme de « ${echeance.echeance.titre} » inconnu : aucune révision par chapitre n'est déduite — renseigne-le dans Échéances` });
+  }
+
+  const register = (candidate: MoveCandidate) => {
+    byKey.set(candidate.key, candidate);
+    created.push(candidate);
+  };
+
+  for (const entry of revision.merged) {
+    const { fact } = entry;
+    const programmeId = fact.programmeChapterId;
+    const programme = programmeId ? PROGRAMME_BY_ID.get(programmeId) : undefined;
+
+    if (fact.source === "demonstration" && fact.action === "restituer-demonstration" && fact.demonstration) {
+      const demo = DEMONSTRATIONS.find((d) => d.id === fact.demonstration);
+      const subject = programme?.subject ?? null;
+      if (!demo || !subject) continue; // jamais d'action vers une démonstration absente
+      // Une démonstration jamais travaillée n'a aucune observation : le contexte propose d'abord sa carte, que Next Move ne sait pas créer. Pas de restitution à l'aveugle.
+      if (fact.demoState === "non-travaillée") continue;
+      const key = `refaire:${DEMO_KEY_PREFIX}${demo.id}`;
+      const failed = fact.demoState === "restitution-incomplète";
+      const stateReason = fact.pourquoi[1] ?? fact.rang;
+      const existing = byKey.get(key);
+      if (existing) {
+        addTerm(existing, programmeTerm(entry));
+        continue;
+      }
+      register({
+        key,
+        kind: "refaire",
+        subject,
+        title: demo.title,
+        action: "restituer sans aide",
+        instruction: DEMO_RESTITUTION_INSTRUCTION,
+        problem: `La démonstration « ${demo.title} » n'a pas encore été restituée sans aide.`,
+        doneWhen: DEMO_RESTITUTION_DONE,
+        minMinutes: DEMO_MINUTES[0],
+        idealMinutes: DEMO_MINUTES[1],
+        maxMinutes: DEMO_MINUTES[2],
+        href: DEMO_HREF,
+        resource: { label: "Démonstrations", href: DEMO_HREF },
+        terms: [{ id: "démonstration", points: failed ? DEMO_FAILED_POINTS : DEMO_TODO_POINTS, reason: stateReason }, programmeTerm(entry)],
+        score: 0,
+        chapterId: programme!.id,
+      });
+      continue;
+    }
+
+    if (fact.source === "difficulte" && fact.difficulty === "récurrente" && programme) {
+      const difficultyTerm: ScoreTerm = { id: "difficulté-récurrente", points: RECURRING_DIFFICULTY_POINTS, reason: fact.pourquoi[1] ?? fact.rang };
+      if (fact.action === "refaire-exercice") {
+        // Un exercice déjà proposé pour ce chapitre (à refaire, ciblé, transfert) porte l'action : pas de doublon.
+        const existing = candidates.find((candidate) => candidate.kind === "refaire" && candidate.chapterId === programme.id && !candidate.key.startsWith(`refaire:${DEMO_KEY_PREFIX}`));
+        if (existing) {
+          addTerm(existing, difficultyTerm);
+          addTerm(existing, programmeTerm(entry));
+          continue;
+        }
+        const shape = adaptedAction("application", programme.id, programme.title)!;
+        if (byKey.has(shape.key)) continue;
+        const target = levelToRequest(diagnosticContextOf(input).exercises, programme.id);
+        register({
+          key: shape.key,
+          kind: shape.kind,
+          subject: programme.subject,
+          title: `${shape.title} : ${programme.title}`,
+          action: shape.action,
+          instruction: `Refais sans aide un exercice du chapitre.${shape.suffix} Niveau visé : ${EXERCISE_LEVEL_LABEL[target.level]} (${target.reason}).`,
+          problem: `Difficulté récurrente sur « ${programme.title} ».`,
+          doneWhen: fact.verification,
+          minMinutes: shape.minutes[0],
+          idealMinutes: shape.minutes[1],
+          maxMinutes: shape.minutes[2],
+          href: shape.href,
+          resource: { label: "Diagnostic", href: "/programme" },
+          terms: [difficultyTerm, programmeTerm(entry)],
+          score: 0,
+          request: exerciseRequest({ subject: programme.subject, chapter: programme.title, level: target.level }),
+          chapterId: programme.id,
+        });
+      } else if (fact.action === "rappel-actif") {
+        const existing = candidates.find((candidate) => candidate.kind === "rappel" && (candidate.key === `cours:${programme.id}` || (candidate.key.startsWith("rappel:") && memoryChapter.get(candidate.key.slice("rappel:".length)) === programme.id)));
+        if (existing) {
+          addTerm(existing, difficultyTerm);
+          addTerm(existing, programmeTerm(entry));
+          continue;
+        }
+        const shape = adaptedAction("cours", programme.id, programme.title)!;
+        register({
+          key: shape.key,
+          kind: shape.kind,
+          subject: programme.subject,
+          title: `${shape.title} : ${programme.title}`,
+          action: shape.action,
+          instruction: `Sans tes notes : définitions, théorèmes, une démonstration clé, puis vérifie.${shape.suffix}`,
+          problem: `Difficulté récurrente sur « ${programme.title} ».`,
+          doneWhen: fact.verification,
+          minMinutes: shape.minutes[0],
+          idealMinutes: shape.minutes[1],
+          maxMinutes: shape.minutes[2],
+          href: shape.href,
+          resource: { label: "Diagnostic", href: "/programme" },
+          terms: [difficultyTerm, programmeTerm(entry)],
+          score: 0,
+          chapterId: programme.id,
+        });
+      }
+    }
+  }
+  return [...candidates, ...created];
+}
+
 /* ── Classement ───────────────────────────────────────────────────── */
 
 /** Tous les candidats, notés et classés. Exposé pour les tests et pour le détail « pourquoi ». */
@@ -1197,7 +1389,7 @@ export function rankCandidates(input: NextMoveInput): MoveCandidate[] {
     ...cardCandidates(input),
     ...blockCandidates(input, contexts),
   ];
-  const locked = applyCourseLocks(candidates, input);
+  const locked = applyCourseLocks(integrateRevision(candidates, input), input);
   for (const candidate of locked) applyModifiers(candidate, input, contexts);
   return absorbBlocks(locked).sort(compareCandidates);
 }
