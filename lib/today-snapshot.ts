@@ -101,7 +101,7 @@ export function buildTodaySnapshot(collections: Record<string, unknown>, annaleR
     .map((entry) => ({ matiere: entry.subject, type: ERROR_TYPE_META[entry.type].label, erreur: entry.description, bonne_idee: entry.fix, jour: entry.date }));
 
   const time = computeTimeCalibration(annales);
-  const mastery = computeMastery({ chapterMemory, annales, attempts, seen: preferences.programmeSeen, today });
+  const mastery = computeMastery({ chapterMemory, annales, attempts, seen: preferences.programmeSeen, today, sessions });
   const programmeSummary = summarizeMastery(mastery);
   const plan = buildRetroplanning(mastery, preferences.contestDate, today);
   const annaleTotals = countResults(annales);

@@ -6,6 +6,7 @@ import { AlertTriangle, Check, Clipboard, Download, RefreshCw, Upload } from "lu
 import { ChapterSelect } from "@/components/exercises/chapter-select";
 import { AnkiCardExport } from "@/components/anki/anki-card-export";
 import { CourseCards } from "@/components/anki/course-cards";
+import { DemonstrationsPanel } from "@/components/anki/demonstrations-panel";
 import { AnkiLink } from "@/components/memory/anki-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -68,7 +69,7 @@ const KIND_LABEL: Record<DeckMapping["kind"], string> = {
  *   saisie       depuis AnkiMobile : deux chiffres, sans détail par paquet.
  */
 export function AnkiOverview() {
-  const { ankiSnapshots, saveAnkiSnapshots, preferences, savePreferences, ready, reviewItems, saveReviewItems } = usePrepahubData();
+  const { ankiSnapshots, saveAnkiSnapshots, preferences, savePreferences, ready, reviewItems, saveReviewItems, attempts, saveAttempts } = usePrepahubData();
   const [platform, setPlatform] = useState<AnkiPlatform | null>(null);
   const [origin, setOrigin] = useState("https://taekdhub.vercel.app");
   const [busy, setBusy] = useState<SnapshotProgress | null>(null);
@@ -266,6 +267,8 @@ export function AnkiOverview() {
       </Section>
 
       <CourseCards platform={platform} />
+
+      <DemonstrationsPanel platform={platform} attempts={attempts} saveAttempts={saveAttempts} preferences={preferences} savePreferences={savePreferences} />
 
       <AnkiCardExport reviewItems={reviewItems} saveReviewItems={saveReviewItems} platform={platform} />
 

@@ -1,4 +1,4 @@
-import { ATTEMPT_CAUSE_LABEL, type AttemptCause, type ExerciseAttempt, type ExerciseLevel } from "@/lib/attempts";
+import { ATTEMPT_CAUSE_LABEL, type AttemptCause, type DiagnosisConfidence, type ExerciseAttempt, type ExerciseLevel } from "@/lib/attempts";
 import { buildExercises, type Exercise } from "@/lib/exercises";
 import type { AnnaleLog } from "@/lib/annales";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
@@ -45,6 +45,12 @@ export interface DebriefQuestion {
   note: string;
   /** Niveau de la question (direct, classique, difficile), s'il est indiqué. */
   level?: ExerciseLevel | null;
+  /** Fiabilité du diagnostic de cause (débrief IA). Absent : posé par l'élève. */
+  confidence?: DiagnosisConfidence | null;
+  /** Posée par un débrief IA validé par l'élève. */
+  byAi?: boolean;
+  /** La bonne idée (« ce qu'il fallait faire »), si elle est connue : devient la `fix` de l'erreur. */
+  correction?: string | null;
 }
 
 /** Le passage d'une cause d'échec au type d'erreur du carnet (qui n'a ni « démarrage » ni « compréhension »). */
@@ -116,6 +122,8 @@ export function buildDebrief(grade: Grade, questions: DebriefQuestion[], now: Da
       gradeId: grade.id,
       note: question.note.trim() || null,
       ...(question.level ? { level: question.level } : {}),
+      ...(question.confidence ? { confidence: question.confidence } : {}),
+      ...(question.byAi ? { byAi: true as const } : {}),
     });
     if (result !== "réussi" && (cause || question.lackOfTime)) {
       const type = cause ? ERROR_TYPE_FOR_CAUSE[cause] : "temps";
@@ -126,10 +134,11 @@ export function buildDebrief(grade: Grade, questions: DebriefQuestion[], now: Da
         source: SOURCE_FOR_KIND[grade.kind] ?? "autre",
         type,
         description: `${title} — ${label} : ${cause ? ATTEMPT_CAUSE_LABEL[cause].toLowerCase() : "manque de temps"}${question.note.trim() ? ` (${question.note.trim()})` : ""}`.slice(0, 300),
-        fix: null,
+        fix: question.correction?.trim() ? question.correction.trim().slice(0, 300) : null,
         chapterId: null,
         exerciseId: null,
         reviewItemId: null,
+        ...(question.confidence ? { confidence: question.confidence } : {}),
         ...(question.chapterId && PROGRAMME_BY_ID.has(question.chapterId) ? { programmeChapterId: question.chapterId } : {}),
         exerciseKey: question.linkedExerciseKey ?? key,
         createdAt: at,
@@ -178,6 +187,9 @@ export function questionsFromAttempts(gradeId: string, attempts: ExerciseAttempt
         linkedExerciseKey: error && error.exerciseKey !== attempt.exerciseKey ? error.exerciseKey ?? null : null,
         note: attempt.note ?? "",
         level: attempt.level ?? null,
+        ...(attempt.confidence ? { confidence: attempt.confidence } : {}),
+        ...(attempt.byAi ? { byAi: true } : {}),
+        ...(error?.fix ? { correction: error.fix } : {}),
       };
     });
 }

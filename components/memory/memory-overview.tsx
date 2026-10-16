@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChapterList } from "@/components/memory/chapter-list";
 import { MemoryCard } from "@/components/memory/memory-card";
 import { chanceSentence, formatDay, WhyMemoryWorks } from "@/components/memory/memory-bits";
@@ -38,6 +38,11 @@ export function MemoryOverview() {
   const today = dayKey(new Date());
   const active = useMemo(() => chapterMemory.filter((chapter) => !chapter.archived), [chapterMemory]);
   const [picked, setPicked] = useState<string | null>(null);
+  // `?ajouter=` — venir d'une recommandation « chapitre vu, jamais revu » (lib/next-move/engine.ts). Lu après le montage : pas de Suspense à gérer.
+  const [prefillProgrammeId, setPrefillProgrammeId] = useState<string | null>(null);
+  useEffect(() => {
+    setPrefillProgrammeId(new URLSearchParams(window.location.search).get("ajouter"));
+  }, []);
   // Par défaut, le chapitre le plus menacé : c'est lui dont la courbe parle.
   const selected =
     active.find((chapter) => chapter.id === picked) ??
@@ -104,7 +109,7 @@ export function MemoryOverview() {
       )}
 
       <Section variant="panel" title="Tous les chapitres" description="Le plus menacé d'abord · touche un titre pour sa courbe.">
-        <ChapterList chapters={chapterMemory} saveChapters={saveChapterMemory} selectedId={selected?.id ?? null} onSelect={setPicked} sessions={sessions} />
+        <ChapterList chapters={chapterMemory} saveChapters={saveChapterMemory} selectedId={selected?.id ?? null} onSelect={setPicked} sessions={sessions} prefillProgrammeId={prefillProgrammeId} />
       </Section>
 
       <WhyMemoryWorks />

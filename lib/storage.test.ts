@@ -733,6 +733,7 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
         "colleChapters",
         "contestDate",
         "dailyGoalMinutes",
+        "demoCards",
         "displayName",
         "eveningMinimums",
         "onboardingCompletedAt",

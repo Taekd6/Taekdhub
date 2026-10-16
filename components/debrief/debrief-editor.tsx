@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { ArrowRight, ClipboardCheck, Plus, Trash2 } from "lucide-react";
+import { AiDebriefImport } from "@/components/debrief/ai-import";
 import { ChapterSelect } from "@/components/exercises/chapter-select";
 import { Button } from "@/components/ui/button";
 import { Illustration } from "@/components/ui/illustrations";
@@ -38,13 +39,25 @@ function emptyQuestion(index: number): DebriefQuestion {
   return { label: `Q${index}`, chapterId: null, outcome: "fausse", cause: null, lackOfTime: false, points: null, minutes: null, linkedExerciseKey: null, note: "" };
 }
 
-function readDraft(gradeId: string): DebriefQuestion[] | null {
+interface DebriefDraft {
+  questions: DebriefQuestion[];
+  /** Brouillon issu d'une IA (components/debrief/ai-import.tsx) : il passe avant un débrief enregistré, qu'il a déjà fusionné. */
+  ai: boolean;
+  notes: { summary: string | null; uncertainties: string[]; warnings: string[] } | null;
+}
+
+function readDraft(gradeId: string): DebriefDraft | null {
   try {
     const raw = readFlag(DEBRIEF_DRAFT_KEY);
     if (!raw) return null;
-    const draft = JSON.parse(raw) as { gradeId?: string; questions?: { label: string; points: number; outcome: QuestionOutcome; minutes: number | null }[] };
+    const draft = JSON.parse(raw) as { gradeId?: string; ai?: boolean; notes?: DebriefDraft["notes"]; questions?: DebriefQuestion[] };
     if (draft.gradeId !== gradeId || !Array.isArray(draft.questions)) return null;
-    return draft.questions.map((question) => ({ ...emptyQuestion(0), label: question.label, points: question.points, outcome: question.outcome, minutes: question.minutes }));
+    if (draft.ai === true) return { questions: draft.questions.map((question) => ({ ...emptyQuestion(0), ...question })), ai: true, notes: draft.notes ?? null };
+    return {
+      questions: draft.questions.map((question) => ({ ...emptyQuestion(0), label: question.label, points: question.points, outcome: question.outcome, minutes: question.minutes })),
+      ai: false,
+      notes: null,
+    };
   } catch {
     return null;
   }
@@ -86,11 +99,14 @@ export function DebriefEditor() {
     return (
       <div className="mx-auto max-w-[56rem] space-y-8">
         {hero}
+        <AiDebriefImport grades={grades} saveGrades={saveGrades} attempts={attempts} errors={errors} onOpen={(id) => router.push(`/debrief?note=${encodeURIComponent(id)}`)} />
         <GradePicker grades={grades} attemptsGradeIds={new Set(attempts.map((attempt) => attempt.gradeId).filter((id): id is string => Boolean(id)))} onPick={(id) => router.push(`/debrief?note=${encodeURIComponent(id)}`)} onCreate={(created) => { saveGrades([...grades, created]); router.push(`/debrief?note=${encodeURIComponent(created.id)}`); }} />
         {gradeId && <p role="alert" className="text-[0.875rem] font-semibold text-rose-300">Cette note n&apos;existe plus sur cet appareil.</p>}
       </div>
     );
   }
+
+  const aiDraft = readDraft(grade.id);
 
   return (
     <div className="mx-auto max-w-[56rem] space-y-8">
@@ -100,8 +116,10 @@ export function DebriefEditor() {
         grade={grade}
         initial={(() => {
           const saved = questionsFromAttempts(grade.id, attempts, errors);
-          return saved.length > 0 ? saved : readDraft(grade.id) ?? [emptyQuestion(1)];
+          if (aiDraft?.ai) return aiDraft.questions;
+          return saved.length > 0 ? saved : aiDraft?.questions ?? [emptyQuestion(1)];
         })()}
+        aiNotes={aiDraft?.ai ? aiDraft.notes : null}
         exercises={buildExercises({ annales, attempts, retryDelaysDays: preferences.retryDelaysDays, today: dayKey(new Date()) }).filter((exercise) => exercise.subject === grade.subject && !exercise.key.startsWith(`ds:${grade.id}:`))}
         onSave={(questions) => {
           const built = buildDebrief(grade, questions, new Date());
@@ -233,12 +251,14 @@ function GradePicker({
 function QuestionsEditor({
   grade,
   initial,
+  aiNotes,
   exercises,
   onSave,
   plan,
 }: {
   grade: Grade;
   initial: DebriefQuestion[];
+  aiNotes: DebriefDraft["notes"];
   exercises: { key: string; label: string }[];
   onSave: (questions: DebriefQuestion[]) => { attempts: Parameters<typeof debriefPlan>[0]["attempts"]; ok: boolean };
   plan: (questions: DebriefQuestion[], attempts: Parameters<typeof debriefPlan>[0]["attempts"]) => ReturnType<typeof debriefPlan>;
@@ -248,7 +268,8 @@ function QuestionsEditor({
   const [error, setError] = useState<string | null>(null);
 
   function update(index: number, patch: Partial<DebriefQuestion>) {
-    setQuestions((current) => current.map((question, position) => (position === index ? { ...question, ...patch } : question)));
+    // Trancher la cause soi-même lève la réserve de l'IA : c'est désormais le diagnostic de l'élève.
+    setQuestions((current) => current.map((question, position) => (position === index ? { ...question, ...patch, ...("cause" in patch ? { confidence: null } : {}) } : question)));
     setResult(null);
   }
 
@@ -274,9 +295,26 @@ function QuestionsEditor({
           </Link>
         }
       >
+        {aiNotes && (
+          <div className="well mb-4 rounded-2xl p-4 text-[0.875rem] leading-relaxed text-muted">
+            <p className="font-semibold text-ink">Brouillon proposé par une IA — rien n&apos;est enregistré tant que tu n&apos;as pas cliqué sur « Enregistrer ».</p>
+            {aiNotes.summary && <p className="mt-1">{aiNotes.summary}</p>}
+            {[...aiNotes.uncertainties.map((entry) => `Doute de l'IA : ${entry}`), ...aiNotes.warnings].map((entry) => (
+              <p key={entry} className="mt-1">
+                {entry}
+              </p>
+            ))}
+          </div>
+        )}
         <ol className="space-y-4">
           {questions.map((question, index) => (
             <li key={index} className="well rounded-2xl p-4">
+              {question.byAi && (
+                <p className="mb-2 text-2xs font-semibold text-subtle">
+                  Proposée par l&apos;IA
+                  {question.confidence === "incertaine" ? " · cause à trancher par toi" : question.confidence === "probable" ? " · cause probable, à confirmer" : ""}
+                </p>
+              )}
               <div className="grid gap-3 sm:grid-cols-4">
                 <label className="block">
                   <span className="t-label mb-1.5 block">Question</span>
@@ -342,6 +380,10 @@ function QuestionsEditor({
                   <label className="inline-flex items-center gap-2 text-[0.8125rem] font-semibold text-muted">
                     <input type="checkbox" checked={question.lackOfTime} onChange={(event) => update(index, { lackOfTime: event.target.checked })} className="h-4 w-4 accent-[var(--btn-g1)]" />
                     J&apos;ai manqué de temps
+                  </label>
+                  <label className="block sm:col-span-2">
+                    <span className="t-label mb-1.5 block">La bonne idée (ce qu&apos;il fallait faire)</span>
+                    <Input value={question.correction ?? ""} onChange={(event) => update(index, { correction: event.target.value || null })} maxLength={300} placeholder="Facultatif — elle ira dans ton carnet d'erreurs" />
                   </label>
                   <label className="block sm:col-span-2">
                     <span className="t-label mb-1.5 block">Note (facultatif)</span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Archive, ArchiveRestore, Pencil, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnkiLink } from "@/components/memory/anki-link";
 import { chanceSentence, formatDay, RatingPanel, RetentionBar } from "@/components/memory/memory-bits";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
   setArchived,
 } from "@/lib/chapter-memory";
 import type { FsrsRating } from "@/lib/fsrs";
+import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 import type { ChapterMemory } from "@/lib/storage";
 import { dayKey, subjects } from "@/lib/study";
 import type { Subject, WorkSession } from "@/lib/supabase/types";
@@ -45,7 +46,10 @@ export function ChapterList({
   selectedId,
   onSelect,
   sessions = [],
+  prefillProgrammeId = null,
 }: {
+  /** Chapitre du programme à pré-remplir dans la saisie (recommandation « jamais revu »). */
+  prefillProgrammeId?: string | null;
   /** Séances — pour afficher le temps chronométré sur chaque chapitre (`WorkSession.chapter_id`). */
   sessions?: WorkSession[];
   chapters: ChapterMemory[];
@@ -83,7 +87,7 @@ export function ChapterList({
 
   return (
     <div className="space-y-5">
-      <AddChapterForm subject={subject} today={today} onAdd={(created) => saveChapters([...chapters, created])} />
+      <AddChapterForm subject={subject} today={today} prefillProgrammeId={prefillProgrammeId} onAdd={(created) => saveChapters([...chapters, created])} />
 
       {active.length === 0 ? (
         <p className="t-meta">
@@ -196,12 +200,30 @@ export function ChapterList({
 }
 
 /** La saisie : un titre, une date (aujourd'hui par défaut), un paquet Anki facultatif. */
-function AddChapterForm({ subject, today, onAdd }: { subject: Subject | null; today: string; onAdd: (chapter: ChapterMemory) => void }) {
+function AddChapterForm({
+  subject,
+  today,
+  onAdd,
+  prefillProgrammeId,
+}: {
+  subject: Subject | null;
+  today: string;
+  onAdd: (chapter: ChapterMemory) => void;
+  prefillProgrammeId: string | null;
+}) {
   const [title, setTitle] = useState("");
   const [learnedAt, setLearnedAt] = useState(today);
   const [deck, setDeck] = useState("");
   const [chosen, setChosen] = useState<Subject>(subject ?? subjects[0]);
   const target = subject ?? chosen;
+
+  // Un identifiant inconnu (lien ancien, programme modifié) ne pré-remplit rien : la saisie reste libre.
+  useEffect(() => {
+    const programme = prefillProgrammeId ? PROGRAMME_BY_ID.get(prefillProgrammeId) : undefined;
+    if (!programme) return;
+    setTitle(programme.title.slice(0, CHAPTER_TITLE_MAX));
+    setChosen(programme.subject);
+  }, [prefillProgrammeId]);
 
   function submit(event: React.FormEvent) {
     event.preventDefault();

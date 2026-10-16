@@ -1,6 +1,6 @@
 import { subjects } from "@/lib/study";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
-import { normalizeAttempts, type ExerciseAttempt } from "@/lib/attempts";
+import { DIAGNOSIS_CONFIDENCES, normalizeAttempts, type DiagnosisConfidence, type ExerciseAttempt } from "@/lib/attempts";
 import { normalizeSheets, type ExerciseSheet } from "@/lib/exercise-sheets";
 import { normalizeAvatar } from "@/lib/avatar";
 import { normalizePerformanceWindows, type PerformanceWindow } from "@/lib/performance-windows";
@@ -165,6 +165,13 @@ export type Preferences = {
    */
   ankiDeckChapters: Record<string, string | null>;
   /**
+   * Démonstrations dont la carte Anki existe (lib/demonstrations.ts) : identifiant de la
+   * démonstration → instant où TaekdHub l'a envoyée ou retrouvée dans Anki
+   * (recherche par la référence « th-demo-… »). Sert à choisir « revoir la carte »
+   * plutôt que « l'ajouter ». Jamais d'identifiant interne de note Anki ici.
+   */
+  demoCards: Record<string, string>;
+  /**
    * « REFAIRE SANS AIDE » (lib/exercises.ts) : délais, en jours, avant la
    * 1re, 2e, 3e… nouvelle tentative d'un exercice raté. Le dernier délai
    * vaut pour toutes les suivantes.
@@ -305,6 +312,7 @@ const defaults: Preferences = {
   programmeSeen: [],
   colleChapters: [],
   ankiDeckChapters: {},
+  demoCards: {},
   retryDelaysDays: [2, 5, 12],
   weeklyFocus: null,
   performanceWindows: null,
@@ -567,6 +575,8 @@ export interface ErrorEntry {
    * carnet » — si l'entrée a été supprimée depuis, le bouton reparaît.
    */
   reviewItemId: string | null;
+  /** Fiabilité du type d'erreur quand il vient d'un débrief IA (lib/ai-debrief.ts). Absent : saisie de l'élève. */
+  confidence?: DiagnosisConfidence;
   createdAt: string;
 }
 
@@ -1270,6 +1280,7 @@ export function normalizeErrorEntry(raw: unknown): ErrorEntry | null {
     reviewItemId: optionalText(item.reviewItemId),
     ...(optionalText(item.programmeChapterId) && PROGRAMME_BY_ID.has(optionalText(item.programmeChapterId)!) ? { programmeChapterId: optionalText(item.programmeChapterId)! } : {}),
     ...(optionalText(item.exerciseKey) ? { exerciseKey: optionalText(item.exerciseKey)! } : {}),
+    ...((DIAGNOSIS_CONFIDENCES as unknown[]).includes(item.confidence) ? { confidence: item.confidence as DiagnosisConfidence } : {}),
     createdAt,
   };
 }
@@ -1510,6 +1521,7 @@ export function normalizePreferences(raw: unknown): Preferences {
     programmeSeen: normalizeProgrammeIds(item.programmeSeen),
     colleChapters: normalizeProgrammeIds(item.colleChapters),
     ankiDeckChapters: normalizeDeckChapters(item.ankiDeckChapters),
+    demoCards: normalizeDemoCards(item.demoCards),
     retryDelaysDays: normalizeRetryDelays(item.retryDelaysDays),
     weeklyFocus: normalizeWeeklyFocus(item.weeklyFocus),
     performanceWindows: normalizePerformanceWindows(item.performanceWindows),
@@ -1557,6 +1569,15 @@ function normalizeDeckChapters(raw: unknown): Record<string, string | null> {
     if (!name || name.length > 300) continue;
     if (chapter === null) out[name] = null;
     else if (typeof chapter === "string" && PROGRAMME_BY_ID.has(chapter)) out[name] = chapter;
+  }
+  return out;
+}
+
+function normalizeDemoCards(raw: unknown): Record<string, string> {
+  if (!isRecord(raw)) return {};
+  const out: Record<string, string> = {};
+  for (const [id, at] of Object.entries(raw).slice(0, 500)) {
+    if (/^[a-z0-9][a-z0-9-]{0,79}$/.test(id) && typeof at === "string" && isoDate(at)) out[id] = at;
   }
   return out;
 }

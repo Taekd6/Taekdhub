@@ -7,6 +7,11 @@ import { mutateCollection, type CollectionStore } from "@/lib/mcp-collections";
 import { addLockCards, courseLocks, lockFor, lockSentence, LOCK_CARDS_MAX, rateLockCards } from "@/lib/course-lock";
 import { toSubject } from "@/lib/annales";
 import { normalizeReviewItem, type ReviewItem } from "@/lib/storage";
+import { aiDebriefPrompt } from "@/lib/ai-debrief";
+import { demonstrationsReport, restitutionPrompt } from "@/lib/demonstrations";
+import { normalizeAttempts } from "@/lib/attempts";
+import { normalizePreferences } from "@/lib/storage";
+import { evaluationHistory, pedagogyInputFrom, recurringDifficulties, resolveChapter, LAST_EVALUATIONS_DEFAULT, LAST_EVALUATIONS_MAX } from "@/lib/pedagogy";
 import { addEcheances, deleteEcheance, describeEcheance, ECHEANCE_SUBJECTS, ECHEANCE_TYPES, ECHEANCES_MAX, listEcheances, updateEcheance } from "@/lib/mcp-echeances";
 
 /**
@@ -108,6 +113,37 @@ const ECHEANCE_FIELDS = {
 
 const LOCK_RULE =
   "RÈGLE DU VERROU DE COURS : si le chapitre visé figure dans `verrous` (get_today), NE DONNE PAS d'exercice dessus. Dis à l'élève de reprendre son cours, puis interroge-le sur les fiches `interrogeable: true` (recto seul ; il répond de tête ; compare au verso) et note avec review_cards. Le chapitre se déverrouille quand toutes ses fiches sont notées « good » ou « easy ».";
+
+/**
+ * LECTURE de la mémoire pédagogique (lib/pedagogy.ts) : les collections de
+ * l'élève et ses annales, jamais modifiées. Les outils `get_debriefs` et
+ * `get_recommandations` n'appellent aucune écriture.
+ */
+async function readPedagogy(user_id: string) {
+  const client = db();
+  const [collections, annales] = await Promise.all([
+    client.from("user_collections").select("collection, items").eq("user_id", user_id),
+    client.from("exercise_logs").select("*").eq("user_id", user_id).order("created_at", { ascending: false }).limit(1000),
+  ]);
+  if (collections.error) throw new Error(collections.error.message);
+  const byName: Record<string, unknown> = {};
+  for (const row of collections.data ?? []) byName[row.collection as string] = row.items;
+  // Annales illisibles : on analyse sans elles plutôt que d'échouer.
+  return pedagogyInputFrom(byName, annales.error ? [] : annales.data, new Date());
+}
+
+const SCOPE_FIELDS = {
+  matiere: z.string().optional().describe("maths / physique / chimie… — restreint à une matière"),
+  chapitre: z.string().optional().describe("identifiant du programme (ex. m2-reduction) ou titre (« réduction »). Un titre ambigu est refusé plutôt que deviné."),
+};
+
+function scopeFrom(args: { matiere?: string; chapitre?: string }): { ok: true; subject: ReturnType<typeof toSubject>; chapterId: string | null } | { ok: false; error: string } {
+  const subject = args.matiere ? toSubject(args.matiere) : null;
+  if (args.matiere && !subject) return { ok: false, error: `Matière « ${args.matiere} » inconnue.` };
+  const chapterId = args.chapitre ? resolveChapter(args.chapitre, subject) : null;
+  if (args.chapitre && !chapterId) return { ok: false, error: `Chapitre « ${args.chapitre} » non reconnu avec certitude : donne son identifiant du programme (voir debrief_format) ou précise la matière.` };
+  return { ok: true, subject, chapterId };
+}
 
 const mcp = createMcpHandler((server) => {
   server.registerTool(
@@ -330,6 +366,99 @@ const mcp = createMcpHandler((server) => {
       if (items && "ok" in items) return text(`Erreur : ${items.error}`);
       const list = listEcheances(items?.items, chapters, new Date(), jours);
       return text(list.length ? JSON.stringify(list) : "Aucune échéance à venir.");
+    }
+  );
+
+  server.registerTool(
+    "debrief_format",
+    {
+      title: "Format d'un débrief de copie",
+      description:
+        "LECTURE SEULE. Renvoie la consigne et le format JSON dans lesquels analyser une copie (DS, colle) pour qu'elle entre dans TaekdHub, avec les identifiants des chapitres du programme. Tu n'écris RIEN dans TaekdHub : donne le JSON à l'élève ; il le colle dans TaekdHub (Débrief → Importer un débrief IA), vérifie, corrige et enregistre lui-même.",
+      inputSchema: z.object({}),
+    },
+    async () => text(aiDebriefPrompt())
+  );
+
+  server.registerTool(
+    "get_debriefs",
+    {
+      title: "Historique des débriefs",
+      description:
+        "LECTURE SEULE. Les dernières évaluations débriefées (DS, colles), question par question : chapitre, résultat, cause ET sa fiabilité (`confiance` : « incertaine » = l'élève n'a pas tranché), erreur du carnet avec sa bonne idée, et l'état de la correction (« corrigée » seulement après une réussite sans aide). Ciblé : filtre par matière et/ou chapitre, 3 évaluations par défaut (10 au plus). À appeler pour « analyse mes derniers DS ». Une note sans débrief n'y figure pas : dis-le plutôt que d'inventer.",
+      inputSchema: z.object({ ...SCOPE_FIELDS, derniers: z.number().int().min(1).max(LAST_EVALUATIONS_MAX).optional().describe(`nombre d'évaluations (défaut ${LAST_EVALUATIONS_DEFAULT})`) }),
+    },
+    async (args) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const scope = scopeFrom(args);
+      if (!scope.ok) return text(`Erreur : ${scope.error}`);
+      const input = await readPedagogy(user_id).catch(failure);
+      if ("ok" in input) return text(`Erreur : ${input.error}`);
+      const evaluations = evaluationHistory(input, { subject: scope.subject, chapterId: scope.chapterId, last: args.derniers });
+      return text(
+        JSON.stringify({
+          date: input.today,
+          evaluations,
+          donnees: evaluations.length === 0 ? "Aucun débrief enregistré pour ce périmètre : il manque des données, ne conclus rien." : `${evaluations.length} évaluation(s) débriefée(s).`,
+        })
+      );
+    }
+  );
+
+  server.registerTool(
+    "get_recommandations",
+    {
+      title: "Ce qu'il faut retravailler, et pourquoi",
+      description:
+        "LECTURE SEULE. Les difficultés par chapitre qui se répètent dans l'historique, avec leurs observations datées, la règle appliquée (`justification`), l'action, le support (cours / anki / exercice / ia), l'échéance concernée et CE QUI FERAIT CONSIDÉRER LA DIFFICULTÉ COMME CORRIGÉE (`verification`). « récurrente » = au moins deux évaluations ou exercices distincts ; « signal » = une seule observation, `donnees_suffisantes: false` — ne conclus pas. `corrigees` : ce qui est déjà réglé, à ne pas reproposer. Ne recalcule aucun score : cite ces observations pour justifier un conseil.",
+      inputSchema: z.object(SCOPE_FIELDS),
+    },
+    async (args) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const scope = scopeFrom(args);
+      if (!scope.ok) return text(`Erreur : ${scope.error}`);
+      const input = await readPedagogy(user_id).catch(failure);
+      if ("ok" in input) return text(`Erreur : ${input.error}`);
+      const report = recurringDifficulties(input, { subject: scope.subject, chapterId: scope.chapterId });
+      return text(JSON.stringify({ date: input.today, ...report, donnees: report.recommandations.length === 0 ? "Aucune difficulté observée dans l'historique : il manque peut-être des débriefs." : undefined }));
+    }
+  );
+
+  server.registerTool(
+    "restitution_format",
+    {
+      title: "Format d'une restitution de démonstration",
+      description:
+        "LECTURE SEULE. Renvoie la consigne et le format JSON pour comparer la restitution d'une démonstration à sa preuve de référence, avec les identifiants des démonstrations connues. Tu n'écris RIEN dans TaekdHub : donne le JSON à l'élève ; il le colle dans TaekdHub (Anki → Démonstrations), vérifie, puis enregistre lui-même. Une carte Anki ciblée n'est proposée que dans ce JSON : c'est l'élève qui la valide.",
+      inputSchema: z.object({}),
+    },
+    async () => text(restitutionPrompt())
+  );
+
+  server.registerTool(
+    "get_demonstrations",
+    {
+      title: "État des démonstrations",
+      description:
+        "LECTURE SEULE. Pour chaque démonstration : son état OBSERVÉ (non travaillée, restitution incomplète, réussite avec aide, réussite autonome, à réactiver) et pourquoi, les dernières restitutions avec leurs lacunes (hypothèse, étape, justification, raisonnement), les lacunes qui REVIENNENT, les actions possibles (revoir la carte, carte ciblée, refaire, expliquer) avec leur raison, et la référence de la carte Anki. Ouvrir une carte ou y passer du temps n'est jamais une observation. `dans_anki: inconnu` = TaekdHub ne peut pas interroger Anki à distance : demande à l'élève, ne suppose pas. Ne crée jamais de carte pour une première lacune.",
+      inputSchema: z.object({ ...SCOPE_FIELDS, demonstration: z.string().optional().describe("identifiant d'une démonstration (restitution_format)") }),
+    },
+    async (args) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const scope = scopeFrom(args);
+      if (!scope.ok) return text(`Erreur : ${scope.error}`);
+      const rows = await db().from("user_collections").select("collection, items").eq("user_id", user_id).in("collection", ["attempts", "preferences"]);
+      if (rows.error) return text(`Erreur : ${rows.error.message}`);
+      const byName: Record<string, unknown> = {};
+      for (const row of rows.data ?? []) byName[row.collection as string] = row.items;
+      const report = demonstrationsReport(
+        { attempts: normalizeAttempts(byName.attempts), demoCards: normalizePreferences(byName.preferences ?? {}).demoCards, today: new Date().toLocaleDateString("en-CA") },
+        { subject: scope.subject, chapterId: scope.chapterId, demoId: args.demonstration ?? null }
+      );
+      return text(JSON.stringify({ demonstrations: report, donnees: report.length === 0 ? "Aucune démonstration pour ce périmètre." : report.every((entry) => entry.restitutions === 0) ? "Aucune restitution enregistrée : il manque des observations, ne conclus rien sur la maîtrise." : undefined }));
     }
   );
 

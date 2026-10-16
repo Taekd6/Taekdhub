@@ -29,8 +29,8 @@ export type AttemptHelp = "sans" | "indices" | "correction";
 export const ATTEMPT_HELPS: readonly AttemptHelp[] = ["sans", "indices", "correction"];
 export const ATTEMPT_HELP_LABEL: Record<AttemptHelp, string> = { sans: "Sans aide", indices: "Avec indices", correction: "Correction ouverte" };
 
-export type AttemptOrigin = "annale" | "ds" | "épreuve" | "exercice";
-export const ATTEMPT_ORIGINS: readonly AttemptOrigin[] = ["annale", "ds", "épreuve", "exercice"];
+export type AttemptOrigin = "annale" | "ds" | "épreuve" | "exercice" | "démonstration";
+export const ATTEMPT_ORIGINS: readonly AttemptOrigin[] = ["annale", "ds", "épreuve", "exercice", "démonstration"];
 
 /**
  * La cause d'un échec, telle que l'élève la déclare. Distincte du type
@@ -83,6 +83,32 @@ export interface BlockAnalysis {
   cue: string;
 }
 
+/**
+ * Fiabilité d'un diagnostic de CAUSE posé par une IA (lib/ai-debrief.ts) :
+ *   probable    l'IA a une raison, sans certitude — la cause est gardée et marquée ;
+ *   incertaine  l'IA ne peut pas trancher — la cause n'est PAS enregistrée
+ *               (absent = diagnostic de l'élève, sans réserve).
+ */
+export type DiagnosisConfidence = "probable" | "incertaine";
+export const DIAGNOSIS_CONFIDENCES: readonly DiagnosisConfidence[] = ["probable", "incertaine"];
+
+/**
+ * Ce qui a manqué dans la RESTITUTION d'une démonstration (lib/demonstrations.ts) :
+ *   hypothèse      une hypothèse oubliée ou mal posée ;
+ *   étape          une étape manquante ou dans le désordre ;
+ *   justification  un argument non justifié (le théorème invoqué n'est pas cité) ;
+ *   raisonnement   une erreur de logique, ou un raisonnement qu'on ne comprend pas.
+ */
+export type DemoGapKind = "hypothèse" | "étape" | "justification" | "raisonnement";
+export const DEMO_GAP_KINDS: readonly DemoGapKind[] = ["hypothèse", "étape", "justification", "raisonnement"];
+
+export interface DemoGap {
+  kind: DemoGapKind;
+  detail: string;
+  /** Numéro (à partir de 1) de l'étape de la preuve de référence, quand il est connu. */
+  step?: number;
+}
+
 export interface ExerciseAttempt {
   id: string;
   /** Identifie l'EXERCICE : toutes ses tentatives partagent cette clé (lib/exercises.ts#annaleKey, `ds:<note>:<question>`…). */
@@ -112,6 +138,12 @@ export interface ExerciseAttempt {
   level?: ExerciseLevel;
   /** Analyse du blocage, après un échec. */
   analysis?: BlockAnalysis;
+  /** Restitution d'une démonstration : ce qui a manqué, précisément. Absent des autres tentatives. */
+  gaps?: DemoGap[];
+  /** Fiabilité du diagnostic de cause, quand il vient d'une IA. Absent des tentatives saisies à la main. */
+  confidence?: DiagnosisConfidence;
+  /** Posée par un débrief importé d'une IA et validé par l'élève (traçabilité). */
+  byAi?: true;
   /**
    * EXERCICE DE TRANSFERT : la clé de l'exercice d'origine dont cet essai,
    * sur un énoncé DIFFÉRENT, vérifie la méthode (lib/transfer.ts).
@@ -183,7 +215,25 @@ export function normalizeAttempt(raw: unknown): ExerciseAttempt | null {
     ...(oneOf(EXERCISE_LEVELS, raw.level) ? { level: oneOf(EXERCISE_LEVELS, raw.level)! } : {}),
     ...(normalizeAnalysis(raw.analysis) ? { analysis: normalizeAnalysis(raw.analysis)! } : {}),
     ...(text(raw.transferOf, 300) ? { transferOf: text(raw.transferOf, 300)! } : {}),
+    ...(normalizeGaps(raw.gaps).length > 0 ? { gaps: normalizeGaps(raw.gaps) } : {}),
+    ...(oneOf(DIAGNOSIS_CONFIDENCES, raw.confidence) ? { confidence: oneOf(DIAGNOSIS_CONFIDENCES, raw.confidence)! } : {}),
+    ...(raw.byAi === true ? { byAi: true as const } : {}),
   };
+}
+
+export function normalizeGaps(raw: unknown): DemoGap[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry): DemoGap | null => {
+      if (!isRecord(entry)) return null;
+      const kind = oneOf(DEMO_GAP_KINDS, entry.kind);
+      const detail = text(entry.detail, 200);
+      if (!kind || !detail) return null;
+      const step = typeof entry.step === "number" && Number.isInteger(entry.step) && entry.step >= 1 && entry.step <= 50 ? entry.step : undefined;
+      return { kind, detail, ...(step ? { step } : {}) };
+    })
+    .filter((gap): gap is DemoGap => gap !== null)
+    .slice(0, 8);
 }
 
 /** Une analyse lisible : au moins le réflexe ou ce qu'il faut reconnaître. */
