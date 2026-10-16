@@ -1,8 +1,8 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `0401692`
-> (PR #28 : tête observée `504b1ae` avant cette mission, relue sur GitHub).
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-16, commit de code `dd65ce3`
+> (branche `claude/finalisation-hermes-tests`, non fusionnée).
 
 ## Objectif général
 TaekdHub est l'outil de travail personnel d'un élève de prépa MP (PWA Next.js 15, React 19,
@@ -198,6 +198,18 @@ Non vérifié : sur un vrai compte (annales, synchronisation), sur l'appareil de
   note « Dur » dans Ma mémoire → proposition de fiche externe avec source et lien → « Remplacer » → début plus petit →
   lecteur → « Je ne sais pas par où commencer » (énoncé, indices, correction restent cachés dans la carte).
   Non vérifié : sur un vrai compte, sur l'appareil de l'élève, ni l'effet réel sur l'évitement (usage à observer).
+
+**Mission de finalisation (2026-10-16), branche  (depuis  = ).**
+- Écart constaté : la PR #28 est fusionnée ( = ) ; démonstrations, débrief IA, temps par chapitre du programme
+  étaient seulement sur  (partie de l'ancien main) : fusionnée dans la branche ().
+- Corrigé () : boucle possible du point, point sans saisie, débrief renvoyé qui écrasait une correction manuelle,
+  démonstrations mal routées (annales, transfert) et qui passaient devant un DM du lendemain, lecture Hermes intermittente.
+- Hermes : production () contient la route ; refus vérifiés en HTTP (sans jeton, jeton inventé, autre schéma,
+  jeton dans l'URL).  Production créé 61 s APRÈS ce déploiement : la production le refuse, jeton d'Hermes
+  compris (401). À faire par l'élève : aligner la valeur (Vercel = .env d'Hermes), redéployer, pointer config.yaml vers la
+  production (docs/HERMES.md). Vrai appel réussi sur l'ancien Preview avec le .env d'Hermes : 2 outils, JSON lisible.
+- Non vérifié : appel authentifié en production, e-mail de réinitialisation réel, Scratchpad d'AnkiMobile, parcours navigateur
+  complet après les derniers correctifs (point vérifié dans Chromium : sans saisie → accueil ; avec saisie → point).
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
