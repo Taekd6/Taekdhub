@@ -23,9 +23,9 @@ describe("(8) aucun accès sans autorisation, et la mémoire pédagogique se lit
     vi.stubEnv("MCP_SECRET", "le-bon-secret");
   });
 
-  it("les trois outils du pipeline débrief n'écrivent rien : aucune insertion, mise à jour ni mutation de collection", () => {
+  it("les outils du pipeline débrief et démonstrations n'écrivent rien : aucune insertion, mise à jour ni mutation de collection", () => {
     const source = readFileSync(ROUTE, "utf8");
-    for (const tool of ["debrief_format", "get_debriefs", "get_recommandations"]) {
+    for (const tool of ["debrief_format", "get_debriefs", "get_recommandations", "restitution_format", "get_demonstrations"]) {
       const start = source.indexOf(`"${tool}"`);
       expect(start, `${tool} doit être enregistré`).toBeGreaterThan(-1);
       const next = source.indexOf("server.registerTool(", start);

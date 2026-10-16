@@ -8,6 +8,9 @@ import { addLockCards, courseLocks, lockFor, lockSentence, LOCK_CARDS_MAX, rateL
 import { toSubject } from "@/lib/annales";
 import { normalizeReviewItem, type ReviewItem } from "@/lib/storage";
 import { aiDebriefPrompt } from "@/lib/ai-debrief";
+import { demonstrationsReport, restitutionPrompt } from "@/lib/demonstrations";
+import { normalizeAttempts } from "@/lib/attempts";
+import { normalizePreferences } from "@/lib/storage";
 import { evaluationHistory, pedagogyInputFrom, recurringDifficulties, resolveChapter, LAST_EVALUATIONS_DEFAULT, LAST_EVALUATIONS_MAX } from "@/lib/pedagogy";
 import { addEcheances, deleteEcheance, describeEcheance, ECHEANCE_SUBJECTS, ECHEANCE_TYPES, ECHEANCES_MAX, listEcheances, updateEcheance } from "@/lib/mcp-echeances";
 
@@ -420,6 +423,42 @@ const mcp = createMcpHandler((server) => {
       if ("ok" in input) return text(`Erreur : ${input.error}`);
       const report = recurringDifficulties(input, { subject: scope.subject, chapterId: scope.chapterId });
       return text(JSON.stringify({ date: input.today, ...report, donnees: report.recommandations.length === 0 ? "Aucune difficulté observée dans l'historique : il manque peut-être des débriefs." : undefined }));
+    }
+  );
+
+  server.registerTool(
+    "restitution_format",
+    {
+      title: "Format d'une restitution de démonstration",
+      description:
+        "LECTURE SEULE. Renvoie la consigne et le format JSON pour comparer la restitution d'une démonstration à sa preuve de référence, avec les identifiants des démonstrations connues. Tu n'écris RIEN dans TaekdHub : donne le JSON à l'élève ; il le colle dans TaekdHub (Anki → Démonstrations), vérifie, puis enregistre lui-même. Une carte Anki ciblée n'est proposée que dans ce JSON : c'est l'élève qui la valide.",
+      inputSchema: z.object({}),
+    },
+    async () => text(restitutionPrompt())
+  );
+
+  server.registerTool(
+    "get_demonstrations",
+    {
+      title: "État des démonstrations",
+      description:
+        "LECTURE SEULE. Pour chaque démonstration : son état OBSERVÉ (non travaillée, restitution incomplète, réussite avec aide, réussite autonome, à réactiver) et pourquoi, les dernières restitutions avec leurs lacunes (hypothèse, étape, justification, raisonnement), les lacunes qui REVIENNENT, les actions possibles (revoir la carte, carte ciblée, refaire, expliquer) avec leur raison, et la référence de la carte Anki. Ouvrir une carte ou y passer du temps n'est jamais une observation. `dans_anki: inconnu` = TaekdHub ne peut pas interroger Anki à distance : demande à l'élève, ne suppose pas. Ne crée jamais de carte pour une première lacune.",
+      inputSchema: z.object({ ...SCOPE_FIELDS, demonstration: z.string().optional().describe("identifiant d'une démonstration (restitution_format)") }),
+    },
+    async (args) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const scope = scopeFrom(args);
+      if (!scope.ok) return text(`Erreur : ${scope.error}`);
+      const rows = await db().from("user_collections").select("collection, items").eq("user_id", user_id).in("collection", ["attempts", "preferences"]);
+      if (rows.error) return text(`Erreur : ${rows.error.message}`);
+      const byName: Record<string, unknown> = {};
+      for (const row of rows.data ?? []) byName[row.collection as string] = row.items;
+      const report = demonstrationsReport(
+        { attempts: normalizeAttempts(byName.attempts), demoCards: normalizePreferences(byName.preferences ?? {}).demoCards, today: new Date().toLocaleDateString("en-CA") },
+        { subject: scope.subject, chapterId: scope.chapterId, demoId: args.demonstration ?? null }
+      );
+      return text(JSON.stringify({ demonstrations: report, donnees: report.length === 0 ? "Aucune démonstration pour ce périmètre." : report.every((entry) => entry.restitutions === 0) ? "Aucune restitution enregistrée : il manque des observations, ne conclus rien sur la maîtrise." : undefined }));
     }
   );
 

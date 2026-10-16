@@ -1,0 +1,60 @@
+{
+ "model": {
+  "modelName": "TaekdHub — Démonstration",
+  "inOrderFields": [
+   "Nom",
+   "Hypotheses",
+   "Enonce",
+   "Preuve",
+   "Critiques",
+   "Ref",
+   "Chapitre"
+  ],
+  "css": ".card { font-family: -apple-system, \"Segoe UI\", sans-serif; font-size: 19px; line-height: 1.45; text-align: left; color: #1f2430; background: #fbfaf7; }\n.th-demo { max-width: 40rem; margin: 0 auto; }\n.th-kind { font-size: 0.72em; letter-spacing: .08em; text-transform: uppercase; color: #8a8f9c; }\n.th-name { font-size: 1.25em; font-weight: 700; margin: .2em 0 .7em; }\n.th-hyp ul, .th-block ul, .th-block ol { margin: .3em 0 .6em 1.2em; padding: 0; }\n.th-hyp b, .th-block b { display: block; font-size: .85em; color: #5b6272; }\n.th-task { margin: .9em 0; padding: .6em .8em; border-left: 3px solid #1f2430; background: #f0eee8; }\n.th-board { min-height: 45vh; border: 1.5px dashed #b8bcc7; border-radius: 10px; }\n.th-block { margin: .8em 0; }\n.th-statement { margin: .3em 0; }\n.th-why { display: block; font-size: .85em; color: #5b6272; }\n.th-critical { padding: .5em .8em; border-left: 3px solid #b3402f; background: #f7ecea; }\n.th-ref { margin-top: 1.2em; font-size: .7em; color: #8a8f9c; }\n.nightMode .card, .night_mode .card { color: #e8e9ee; background: #1d1f26; }\n.nightMode .th-task, .night_mode .th-task { background: #2a2d37; border-color: #e8e9ee; }\n.nightMode .th-critical, .night_mode .th-critical { background: #34262a; }",
+  "cardTemplates": [
+   {
+    "Name": "Restitution",
+    "Front": "<div class=\"th-demo\">\n  <div class=\"th-kind\">Démonstration à restituer</div>\n  <div class=\"th-name\">{{Nom}}</div>\n  {{#Hypotheses}}<div class=\"th-hyp\"><b>Hypothèses</b>{{Hypotheses}}</div>{{/Hypotheses}}\n  <div class=\"th-task\">Sans support : énonce précisément le résultat, puis démontre-le en entier — au tableau, sur papier ou au Scratchpad. Ne retourne la carte qu'après.</div>\n  <div class=\"th-board\" aria-label=\"Zone de travail\"></div>\n</div>",
+    "Back": "<div class=\"th-demo\">\n  <div class=\"th-kind\">Référence</div>\n  <div class=\"th-name\">{{Nom}}</div>\n  <div class=\"th-block\"><b>Énoncé</b><div class=\"th-statement\">{{Enonce}}</div></div>\n  <div class=\"th-block\"><b>Démonstration</b>{{Preuve}}</div>\n  {{#Critiques}}<div class=\"th-block th-critical\"><b>Points critiques à vérifier dans ta restitution</b>{{Critiques}}</div>{{/Critiques}}\n  <div class=\"th-ref\">{{Chapitre}} · {{Ref}}</div>\n</div>"
+   }
+  ]
+ },
+ "notes": [
+  {
+   "ref": "th-demo-m1-theoreme-du-rang",
+   "deck": "TaekdHub::Mathématiques::Applications linéaires",
+   "fields": {
+    "Nom": "Théorème du rang",
+    "Hypotheses": "<ul><li>E est un espace vectoriel de dimension finie</li><li>u est une application linéaire de E dans F (F quelconque, pas nécessairement de dimension finie)</li></ul>",
+    "Enonce": "Si E est de dimension finie et u ∈ ℒ(E, F), alors Im u est de dimension finie et<br>dim E = dim Ker u + rg u.",
+    "Preuve": "<ol><li>Ker u est un sous-espace de E, donc de dimension finie. Soit S un supplémentaire de Ker u dans E : E = Ker u ⊕ S et dim E = dim Ker u + dim S.<span class=\"th-why\">↳ Existence d'un supplémentaire en dimension finie ; dimension d'une somme directe.</span></li><li>On note v la restriction de u à S, vue comme application v : S → Im u. Elle est linéaire.<span class=\"th-why\">↳ On restreint à S, pas à E tout entier : c'est ce qui rend v injective.</span></li><li>v est injective : Ker v = S ∩ Ker u = {0}.<span class=\"th-why\">↳ La somme E = Ker u ⊕ S est directe.</span></li><li>v est surjective : soit y ∈ Im u, y = u(x). On écrit x = k + s avec k ∈ Ker u et s ∈ S. Alors y = u(k) + u(s) = u(s) = v(s).<span class=\"th-why\">↳ Existence de la décomposition x = k + s ; u(k) = 0.</span></li><li>Donc v est un isomorphisme de S sur Im u. Ainsi Im u est de dimension finie et dim Im u = dim S.<span class=\"th-why\">↳ Un isomorphisme conserve la dimension.</span></li><li>Conclusion : dim E = dim Ker u + dim S = dim Ker u + rg u.</li></ol>",
+    "Critiques": "<ul><li>L'hypothèse porte sur E (dimension finie) ; F est quelconque.</li><li>Le supplémentaire S n'est pas unique, mais sa dimension l'est : elle vaut rg u.</li><li>On restreint u à S, pas à E : sur E, u n'est pas injective.</li><li>Ne pas écrire E = Ker u ⊕ Im u : c'est faux en général (Im u est dans F, pas dans E).</li></ul>",
+    "Ref": "th-demo-m1-theoreme-du-rang",
+    "Chapitre": "Applications linéaires"
+   },
+   "tags": [
+    "taekdhub",
+    "démonstration",
+    "théorème"
+   ]
+  },
+  {
+   "ref": "th-demo-m1-cauchy-schwarz",
+   "deck": "TaekdHub::Mathématiques::Espaces préhilbertiens réels",
+   "fields": {
+    "Nom": "Inégalité de Cauchy-Schwarz",
+    "Hypotheses": "<ul><li>E est un espace préhilbertien réel, de produit scalaire (· | ·) et de norme associée ‖·‖</li></ul>",
+    "Enonce": "Pour tous x, y ∈ E : |(x | y)| ≤ ‖x‖ ‖y‖,<br>avec égalité si et seulement si x et y sont colinéaires (liés).",
+    "Preuve": "<ol><li>Si y = 0, les deux membres sont nuls et x, y sont liés : le résultat est acquis. On suppose y ≠ 0, donc ‖y‖² &gt; 0.<span class=\"th-why\">↳ Séparation du produit scalaire.</span></li><li>Pour tout t ∈ ℝ, P(t) = ‖x + t y‖² = ‖x‖² + 2t (x | y) + t² ‖y‖² ≥ 0.<span class=\"th-why\">↳ Bilinéarité et symétrie ; positivité du produit scalaire.</span></li><li>P est un trinôme du second degré (coefficient dominant ‖y‖² &gt; 0) de signe constant sur ℝ : son discriminant est ≤ 0.<span class=\"th-why\">↳ Un trinôme qui ne change pas de signe n'a pas deux racines distinctes.</span></li><li>Le discriminant vaut 4 (x | y)² − 4 ‖x‖² ‖y‖² ≤ 0, d'où (x | y)² ≤ ‖x‖² ‖y‖² puis |(x | y)| ≤ ‖x‖ ‖y‖.<span class=\"th-why\">↳ On passe à la racine carrée, croissante sur ℝ₊.</span></li><li>Égalité : elle a lieu si et seulement si le discriminant est nul, donc P a une racine double t₀ : ‖x + t₀ y‖² = 0, soit x = −t₀ y, et x, y sont liés. Réciproquement, si x et y sont liés, un calcul direct donne l'égalité.<span class=\"th-why\">↳ Séparation : ‖z‖² = 0 ⇒ z = 0.</span></li></ol>",
+    "Critiques": "<ul><li>Traiter à part le cas y = 0 avant de parler de trinôme du second degré.</li><li>Dire pourquoi P(t) ≥ 0 pour tout t réel, c'est ce qui donne le signe du discriminant.</li><li>Le cas d'égalité demande les deux sens (⇒ par la racine double, ⇐ par calcul).</li></ul>",
+    "Ref": "th-demo-m1-cauchy-schwarz",
+    "Chapitre": "Espaces préhilbertiens réels"
+   },
+   "tags": [
+    "taekdhub",
+    "démonstration",
+    "théorème"
+   ]
+  }
+ ]
+}

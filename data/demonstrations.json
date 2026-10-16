@@ -1,0 +1,52 @@
+{
+ "version": 1,
+ "demonstrations": [
+  {
+   "id": "m1-theoreme-du-rang",
+   "chapterId": "m1-applications-lineaires",
+   "title": "Théorème du rang",
+   "kind": "théorème",
+   "hypotheses": [
+    "E est un espace vectoriel de dimension finie",
+    "u est une application linéaire de E dans F (F quelconque, pas nécessairement de dimension finie)"
+   ],
+   "statement": "Si E est de dimension finie et u ∈ ℒ(E, F), alors Im u est de dimension finie et\ndim E = dim Ker u + rg u.",
+   "steps": [
+    { "text": "Ker u est un sous-espace de E, donc de dimension finie. Soit S un supplémentaire de Ker u dans E : E = Ker u ⊕ S et dim E = dim Ker u + dim S.", "why": "Existence d'un supplémentaire en dimension finie ; dimension d'une somme directe." },
+    { "text": "On note v la restriction de u à S, vue comme application v : S → Im u. Elle est linéaire.", "why": "On restreint à S, pas à E tout entier : c'est ce qui rend v injective." },
+    { "text": "v est injective : Ker v = S ∩ Ker u = {0}.", "why": "La somme E = Ker u ⊕ S est directe." },
+    { "text": "v est surjective : soit y ∈ Im u, y = u(x). On écrit x = k + s avec k ∈ Ker u et s ∈ S. Alors y = u(k) + u(s) = u(s) = v(s).", "why": "Existence de la décomposition x = k + s ; u(k) = 0." },
+    { "text": "Donc v est un isomorphisme de S sur Im u. Ainsi Im u est de dimension finie et dim Im u = dim S.", "why": "Un isomorphisme conserve la dimension." },
+    { "text": "Conclusion : dim E = dim Ker u + dim S = dim Ker u + rg u." }
+   ],
+   "critical": [
+    "L'hypothèse porte sur E (dimension finie) ; F est quelconque.",
+    "Le supplémentaire S n'est pas unique, mais sa dimension l'est : elle vaut rg u.",
+    "On restreint u à S, pas à E : sur E, u n'est pas injective.",
+    "Ne pas écrire E = Ker u ⊕ Im u : c'est faux en général (Im u est dans F, pas dans E)."
+   ]
+  },
+  {
+   "id": "m1-cauchy-schwarz",
+   "chapterId": "m1-prehilbertiens",
+   "title": "Inégalité de Cauchy-Schwarz",
+   "kind": "théorème",
+   "hypotheses": [
+    "E est un espace préhilbertien réel, de produit scalaire (· | ·) et de norme associée ‖·‖"
+   ],
+   "statement": "Pour tous x, y ∈ E : |(x | y)| ≤ ‖x‖ ‖y‖,\navec égalité si et seulement si x et y sont colinéaires (liés).",
+   "steps": [
+    { "text": "Si y = 0, les deux membres sont nuls et x, y sont liés : le résultat est acquis. On suppose y ≠ 0, donc ‖y‖² > 0.", "why": "Séparation du produit scalaire." },
+    { "text": "Pour tout t ∈ ℝ, P(t) = ‖x + t y‖² = ‖x‖² + 2t (x | y) + t² ‖y‖² ≥ 0.", "why": "Bilinéarité et symétrie ; positivité du produit scalaire." },
+    { "text": "P est un trinôme du second degré (coefficient dominant ‖y‖² > 0) de signe constant sur ℝ : son discriminant est ≤ 0.", "why": "Un trinôme qui ne change pas de signe n'a pas deux racines distinctes." },
+    { "text": "Le discriminant vaut 4 (x | y)² − 4 ‖x‖² ‖y‖² ≤ 0, d'où (x | y)² ≤ ‖x‖² ‖y‖² puis |(x | y)| ≤ ‖x‖ ‖y‖.", "why": "On passe à la racine carrée, croissante sur ℝ₊." },
+    { "text": "Égalité : elle a lieu si et seulement si le discriminant est nul, donc P a une racine double t₀ : ‖x + t₀ y‖² = 0, soit x = −t₀ y, et x, y sont liés. Réciproquement, si x et y sont liés, un calcul direct donne l'égalité.", "why": "Séparation : ‖z‖² = 0 ⇒ z = 0." }
+   ],
+   "critical": [
+    "Traiter à part le cas y = 0 avant de parler de trinôme du second degré.",
+    "Dire pourquoi P(t) ≥ 0 pour tout t réel, c'est ce qui donne le signe du discriminant.",
+    "Le cas d'égalité demande les deux sens (⇒ par la racine double, ⇐ par calcul)."
+   ]
+  }
+ ]
+}
