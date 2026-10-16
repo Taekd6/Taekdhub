@@ -108,6 +108,17 @@ export function scopeIds(item: Pick<WorkItem, "scope">): string[] {
 }
 
 /**
+ * Peut-on rattacher un PROGRAMME (des chapitres) à cette échéance ? Les épreuves
+ * (DS, concours blanc) — et la khôlle, dont le programme se saisit comme celui
+ * d'un DS : sans lui, ni l'élève ni une IA ne savent sur quoi elle porte
+ * (lib/revision-context.ts). Ce n'est PAS `isExamItem` : les calculs de
+ * préparation (plan de rappels, bonus de Next Move) restent ceux des épreuves.
+ */
+export function hasProgramme(item: Pick<WorkItem, "kind">): boolean {
+  return isExamItem(item) || item.kind === "colle";
+}
+
+/**
  * Nouveau programme — dédoublonné, borné, horodaté (l'horodatage départage
  * deux appareils qui l'ont modifié chacun de leur côté, voir
  * lib/sync/collections.ts). Un programme VIDÉ reste présent, liste vide et
@@ -128,10 +139,10 @@ export function withScope(item: WorkItem, chapterIds: string[], now: Date = new 
  * datés entre aujourd'hui et `horizonDays`. Filtrées sur une matière si
  * `subject` est donné.
  */
-export function upcomingExams(workItems: WorkItem[], today: string, options: { subject?: Subject | null; horizonDays?: number } = {}): WorkItem[] {
+export function upcomingExams(workItems: WorkItem[], today: string, options: { subject?: Subject | null; horizonDays?: number; withColle?: boolean } = {}): WorkItem[] {
   const horizon = options.horizonDays ?? EXAM_PREP_HORIZON_DAYS;
   return activeWorkItems(workItems)
-    .filter((item) => isExamItem(item) && item.dueDate !== null)
+    .filter((item) => (options.withColle ? hasProgramme(item) : isExamItem(item)) && item.dueDate !== null)
     .filter((item) => (options.subject ? item.subject === options.subject : true))
     .filter((item) => {
       const days = dayDiff(today, item.dueDate!);
@@ -236,9 +247,9 @@ export function buildExamPrep(item: WorkItem, sources: ExamPrepSources, now: Dat
  * du chapitre → l'épreuve la plus proche qui le contient. Une seule épreuve
  * par chapitre (la plus proche), pour ne pas compter deux fois le même bonus.
  */
-export function examScopeIndex(workItems: WorkItem[], today: string, horizonDays: number): Map<string, { item: WorkItem; days: number }> {
+export function examScopeIndex(workItems: WorkItem[], today: string, horizonDays: number, options: { withColle?: boolean } = {}): Map<string, { item: WorkItem; days: number }> {
   const index = new Map<string, { item: WorkItem; days: number }>();
-  for (const item of upcomingExams(workItems, today, { horizonDays })) {
+  for (const item of upcomingExams(workItems, today, { horizonDays, withColle: options.withColle })) {
     const days = dayDiff(today, item.dueDate!);
     for (const id of scopeIds(item)) if (!index.has(id)) index.set(id, { item, days });
   }

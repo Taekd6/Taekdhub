@@ -1,0 +1,196 @@
+{
+ "workItems": [
+  {
+   "id": "66c588ce-c827-44ed-9951-85833375338f",
+   "title": "[TEST] Khôlle maths vendredi",
+   "kind": "colle",
+   "subject": "Mathématiques",
+   "estimatedMinutes": 60,
+   "dueDate": "2026-10-23",
+   "dueTime": null,
+   "status": "à faire",
+   "important": false,
+   "notBeforeDate": null,
+   "chapterIds": [],
+   "createdAt": "2026-10-16T16:07:18.842Z",
+   "completedAt": null,
+   "postponements": [],
+   "scope": {
+    "chapterIds": [
+     "7844bfab-c377-4bd6-b7f6-3fcd8f9ad859"
+    ],
+    "updatedAt": "2026-10-16T16:07:20.997Z"
+   }
+  }
+ ],
+ "chapterMemory": [
+  {
+   "id": "7844bfab-c377-4bd6-b7f6-3fcd8f9ad859",
+   "subject": "Mathématiques",
+   "title": "Applications linéaires",
+   "learnedAt": "2026-10-16",
+   "card": {
+    "stability": 2.3065,
+    "difficulty": 2.11810397,
+    "state": "review",
+    "reps": 1,
+    "lapses": 0,
+    "lastReview": "2026-10-16",
+    "due": "2026-10-19"
+   },
+   "reviews": [],
+   "archived": false,
+   "createdAt": "2026-10-16T16:07:20.806Z"
+  }
+ ],
+ "grades": [
+  {
+   "id": "48197515-bfa0-4223-aa25-282314af51b6",
+   "subject": "Mathématiques",
+   "title": "[TEST] DS 1 — applications linéaires",
+   "kind": "ds",
+   "date": "2026-09-26",
+   "score": 9,
+   "maxScore": 20,
+   "createdAt": "2026-10-16T16:07:22.199Z"
+  },
+  {
+   "id": "d52fda88-b532-48d0-97ec-1f947ac462c2",
+   "subject": "Mathématiques",
+   "title": "[TEST] DS 2 — applications linéaires",
+   "kind": "ds",
+   "date": "2026-10-10",
+   "score": 9,
+   "maxScore": 20,
+   "createdAt": "2026-10-16T16:07:24.733Z"
+  }
+ ],
+ "attempts": [
+  {
+   "id": "debrief:48197515-bfa0-4223-aa25-282314af51b6:q2",
+   "exerciseKey": "ds:48197515-bfa0-4223-aa25-282314af51b6:q2",
+   "label": "[TEST] DS 1 — applications linéaires — Q2",
+   "subject": "Mathématiques",
+   "chapterId": "m1-applications-lineaires",
+   "origin": "ds",
+   "day": "2026-09-26",
+   "createdAt": "2026-09-26T12:00:00.000Z",
+   "updatedAt": "2026-10-16T16:07:23.496Z",
+   "result": "échec",
+   "help": "sans",
+   "minutes": null,
+   "plannedMinutes": null,
+   "cause": "cours",
+   "lackOfTime": false,
+   "gradeId": "48197515-bfa0-4223-aa25-282314af51b6",
+   "note": "[TEST] hypothèse du théorème du rang oubliée",
+   "byAi": true
+  },
+  {
+   "id": "demo:m1-theoreme-du-rang:2026-10-08",
+   "exerciseKey": "demo:m1-theoreme-du-rang",
+   "label": "Théorème du rang (démonstration)",
+   "subject": "Mathématiques",
+   "chapterId": "m1-applications-lineaires",
+   "origin": "démonstration",
+   "day": "2026-10-08",
+   "createdAt": "2026-10-08T12:00:00.000Z",
+   "updatedAt": "2026-10-16T16:07:26.619Z",
+   "result": "partiel",
+   "help": "sans",
+   "minutes": null,
+   "plannedMinutes": null,
+   "cause": null,
+   "lackOfTime": false,
+   "gradeId": null,
+   "note": null,
+   "gaps": [
+    {
+     "kind": "hypothèse",
+     "detail": "[TEST] dimension finie oubliée"
+    }
+   ],
+   "byAi": true
+  },
+  {
+   "id": "debrief:d52fda88-b532-48d0-97ec-1f947ac462c2:q4",
+   "exerciseKey": "ds:d52fda88-b532-48d0-97ec-1f947ac462c2:q4",
+   "label": "[TEST] DS 2 — applications linéaires — Q4",
+   "subject": "Mathématiques",
+   "chapterId": "m1-applications-lineaires",
+   "origin": "ds",
+   "day": "2026-10-10",
+   "createdAt": "2026-10-10T12:00:00.000Z",
+   "updatedAt": "2026-10-16T16:07:24.909Z",
+   "result": "échec",
+   "help": "sans",
+   "minutes": null,
+   "plannedMinutes": null,
+   "cause": "cours",
+   "lackOfTime": false,
+   "gradeId": "d52fda88-b532-48d0-97ec-1f947ac462c2",
+   "note": "[TEST] hypothèse du théorème du rang oubliée",
+   "byAi": true
+  },
+  {
+   "id": "demo:m1-theoreme-du-rang:2026-10-13",
+   "exerciseKey": "demo:m1-theoreme-du-rang",
+   "label": "Théorème du rang (démonstration)",
+   "subject": "Mathématiques",
+   "chapterId": "m1-applications-lineaires",
+   "origin": "démonstration",
+   "day": "2026-10-13",
+   "createdAt": "2026-10-13T12:00:00.000Z",
+   "updatedAt": "2026-10-16T16:07:26.823Z",
+   "result": "partiel",
+   "help": "sans",
+   "minutes": null,
+   "plannedMinutes": null,
+   "cause": null,
+   "lackOfTime": false,
+   "gradeId": null,
+   "note": null,
+   "gaps": [
+    {
+     "kind": "hypothèse",
+     "detail": "[TEST] dimension finie oubliée"
+    }
+   ],
+   "byAi": true
+  }
+ ],
+ "errors": [
+  {
+   "id": "debrief-err:48197515-bfa0-4223-aa25-282314af51b6:q2",
+   "subject": "Mathématiques",
+   "date": "2026-09-26",
+   "source": "DS",
+   "type": "cours",
+   "description": "[TEST] DS 1 — applications linéaires — Q2 : cours (je ne savais pas) ([TEST] hypothèse du théorème du rang oubliée)",
+   "fix": null,
+   "chapterId": null,
+   "exerciseId": null,
+   "reviewItemId": null,
+   "programmeChapterId": "m1-applications-lineaires",
+   "exerciseKey": "ds:48197515-bfa0-4223-aa25-282314af51b6:q2",
+   "createdAt": "2026-10-16T16:07:23.496Z"
+  },
+  {
+   "id": "debrief-err:d52fda88-b532-48d0-97ec-1f947ac462c2:q4",
+   "subject": "Mathématiques",
+   "date": "2026-10-10",
+   "source": "DS",
+   "type": "cours",
+   "description": "[TEST] DS 2 — applications linéaires — Q4 : cours (je ne savais pas) ([TEST] hypothèse du théorème du rang oubliée)",
+   "fix": null,
+   "chapterId": null,
+   "exerciseId": null,
+   "reviewItemId": null,
+   "programmeChapterId": "m1-applications-lineaires",
+   "exerciseKey": "ds:d52fda88-b532-48d0-97ec-1f947ac462c2:q4",
+   "createdAt": "2026-10-16T16:07:24.909Z"
+  }
+ ],
+ "preferences": null,
+ "ankiSnapshots": null
+}

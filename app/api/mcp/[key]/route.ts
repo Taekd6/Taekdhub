@@ -9,6 +9,7 @@ import { toSubject } from "@/lib/annales";
 import { normalizeReviewItem, type ReviewItem } from "@/lib/storage";
 import { aiDebriefPrompt } from "@/lib/ai-debrief";
 import { demonstrationsReport, restitutionPrompt } from "@/lib/demonstrations";
+import { buildRevisionContext, MAX_HORIZON_DAYS, revisionInputFrom } from "@/lib/revision-context";
 import { normalizeAttempts } from "@/lib/attempts";
 import { normalizePreferences } from "@/lib/storage";
 import { evaluationHistory, pedagogyInputFrom, recurringDifficulties, resolveChapter, LAST_EVALUATIONS_DEFAULT, LAST_EVALUATIONS_MAX } from "@/lib/pedagogy";
@@ -130,6 +131,19 @@ async function readPedagogy(user_id: string) {
   for (const row of collections.data ?? []) byName[row.collection as string] = row.items;
   // Annales illisibles : on analyse sans elles plutôt que d'échouer.
   return pedagogyInputFrom(byName, annales.error ? [] : annales.data, new Date());
+}
+
+/** LECTURE du contexte de révision (lib/revision-context.ts) : toutes les collections de l'élève et ses annales, jamais modifiées. */
+async function readRevision(user_id: string) {
+  const client = db();
+  const [collections, annales] = await Promise.all([
+    client.from("user_collections").select("collection, items").eq("user_id", user_id),
+    client.from("exercise_logs").select("*").eq("user_id", user_id).order("created_at", { ascending: false }).limit(1000),
+  ]);
+  if (collections.error) throw new Error(collections.error.message);
+  const byName: Record<string, unknown> = {};
+  for (const row of collections.data ?? []) byName[row.collection as string] = row.items;
+  return revisionInputFrom(byName, annales.error ? [] : annales.data, new Date());
 }
 
 const SCOPE_FIELDS = {
@@ -459,6 +473,39 @@ const mcp = createMcpHandler((server) => {
         { subject: scope.subject, chapterId: scope.chapterId, demoId: args.demonstration ?? null }
       );
       return text(JSON.stringify({ demonstrations: report, donnees: report.length === 0 ? "Aucune démonstration pour ce périmètre." : report.every((entry) => entry.restitutions === 0) ? "Aucune restitution enregistrée : il manque des observations, ne conclus rien sur la maîtrise." : undefined }));
+    }
+  );
+
+  server.registerTool(
+    "get_contexte_revision",
+    {
+      title: "Contexte de révision : khôlles, DS et priorités",
+      description:
+        "LECTURE SEULE. Le contexte pour « que dois-je réviser pour ma prochaine khôlle / mon DS ? », sans que l'élève ait à te le recopier : les prochaines épreuves datées (khôlle, DS, concours blanc) avec LEUR programme (chapitres rattachés dans TaekdHub), et pour chaque chapitre les difficultés récurrentes non corrigées, les erreurs ouvertes des évaluations précédentes, les démonstrations au programme (état observé, actions, carte Anki connue ou non), le souvenir attendu le jour J et les chiffres du dernier relevé Anki. `priorites` : au plus 8 actions, chacune avec ses FAITS (`pourquoi`), son rang et ce qui la vérifierait ; avec `minutes`, celles qui tiennent dans le temps. FILTRES : `type` (colle / DS / concours), `matiere`, `chapitre`, `echeance` (id), `jours` ou `avant` (AAAA-MM-JJ), `minutes`. RÈGLES : un programme inconnu est signalé dans `donnees_manquantes`, jamais deviné à partir de la matière ; ne recommande rien que `priorites` ne contienne, cite ses faits, et dis qu'il manque des données quand c'est le cas. Les révisions Anki ne sont PAS des restitutions. `anki` dit ce que TaekdHub voit — ou ne voit pas — d'Anki. `programme_colle_de_la_semaine` n'a pas de date : ne le rattache pas à une khôlle sans confirmation de l'élève.",
+      inputSchema: z.object({
+        ...SCOPE_FIELDS,
+        type: z.enum(["colle", "DS", "concours", "toutes"]).optional().describe("sorte d'épreuve (toutes par défaut)"),
+        echeance: z.string().optional().describe("identifiant d'une échéance (list_echeances)"),
+        jours: z.number().int().min(0).max(MAX_HORIZON_DAYS).optional().describe("fenêtre à partir d'aujourd'hui (21 par défaut)"),
+        avant: z.string().optional().describe("jusqu'à ce jour inclus, AAAA-MM-JJ (« avant vendredi ») ; prime sur `jours`"),
+        minutes: z.number().int().min(5).max(600).optional().describe("temps disponible : les priorités sont choisies pour y tenir"),
+      }),
+    },
+    async (args) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const scope = scopeFrom(args);
+      if (!scope.ok) return text(`Erreur : ${scope.error}`);
+      let horizon = args.jours;
+      if (args.avant !== undefined) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(args.avant)) return text("Erreur : `avant` doit être au format AAAA-MM-JJ.");
+        const days = Math.round((Date.parse(`${args.avant}T00:00:00Z`) - Date.parse(`${new Date().toLocaleDateString("en-CA")}T00:00:00Z`)) / 86_400_000);
+        if (!Number.isFinite(days) || days < 0) return text("Erreur : `avant` est dans le passé ou n'existe pas.");
+        horizon = days;
+      }
+      const input = await readRevision(user_id).catch(failure);
+      if ("ok" in input) return text(`Erreur : ${input.error}`);
+      return text(JSON.stringify(buildRevisionContext(input, { type: args.type, subject: scope.subject, chapterId: scope.chapterId, examId: args.echeance ?? null, horizonDays: horizon, minutes: args.minutes ?? null })));
     }
   );
 

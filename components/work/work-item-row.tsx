@@ -9,7 +9,7 @@ import { Meter } from "@/components/ui/progress";
 import { DateBadge } from "@/components/ui/list-card";
 import { cn } from "@/lib/cn";
 import { explainPriority, type WorkItemPriority } from "@/lib/deadlines";
-import { isExamItem, scopeIds } from "@/lib/exam-prep";
+import { hasProgramme, scopeIds } from "@/lib/exam-prep";
 import { progressPercent, WORK_ITEM_KIND_META } from "@/lib/work-items";
 import { formatSpan } from "@/lib/utils";
 import type { WorkSession } from "@/lib/supabase/types";
@@ -139,7 +139,7 @@ export function WorkItemRow({
               >
                 Travailler <ArrowRight size={14} strokeWidth={2.6} aria-hidden />
               </Link>
-              {onPrepare && isExamItem(item) && item.dueDate && (
+              {onPrepare && hasProgramme(item) && item.dueDate && (
                 <Button size="sm" variant="ghost" onClick={() => onPrepare(item.id)} aria-label={`Préparer « ${item.title} » : programme et état de la mémoire`}>
                   <GraduationCap size={14} aria-hidden /> {scoped > 0 ? `Programme · ${scoped}` : "Programme"}
                 </Button>

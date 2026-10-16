@@ -10,6 +10,7 @@ import {
   scopeIds,
   upcomingExams,
   withScope,
+  hasProgramme,
 } from "@/lib/exam-prep";
 import { normalizeWorkItem, type ChapterMemory, type ErrorEntry, type WorkItem } from "@/lib/storage";
 import { mergeList } from "@/lib/sync/collections";
@@ -99,6 +100,16 @@ describe("withScope / scopeIds — le programme d'une épreuve", () => {
     const remote = withScope(exam(), ["a", "b"], new Date("2026-09-24T09:00:00.000Z"));
     const merged = mergeList("workItems", [local], [remote]) as WorkItem[];
     expect(scopeIds(merged[0])).toEqual(["a", "b"]);
+  });
+});
+
+describe("hasProgramme — qui peut recevoir un programme", () => {
+  it("les épreuves ET la khôlle ; ni un DM, ni un TD, ni un travail libre", () => {
+    for (const kind of ["ds", "concours", "colle"] as const) expect(hasProgramme({ kind })).toBe(true);
+    for (const kind of ["dm", "exercices", "chapitre", "autre"] as const) expect(hasProgramme({ kind })).toBe(false);
+  });
+  it("la khôlle n'est pas pour autant une épreuve de préparation : isExamItem (plan, bonus de Next Move) reste inchangé", () => {
+    expect(isExamItem({ kind: "colle" })).toBe(false);
   });
 });
 
