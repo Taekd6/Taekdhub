@@ -28,3 +28,26 @@ export function createPracticeSession(
     ...(input.chapterId ? { chapter_id: input.chapterId } : {}),
   };
 }
+
+/**
+ * Les séances d'une khôlle : UNE PAR CHAPITRE (donc par matière), mises bout
+ * à bout jusqu'à `end`. `chapterId` est un identifiant du PROGRAMME
+ * (lib/programme-data.ts) — `WorkSession.chapter_id` peut porter l'un ou
+ * l'autre, voir `chapterWorkIndex` (lib/programme.ts). Un chapitre interrogé
+ * moins d'une minute au total ne laisse pas de séance.
+ */
+export function khollePracticeSessions(entries: ReadonlyArray<{ subject: Subject; chapterId: string; seconds: number }>, end: Date): WorkSession[] {
+  const byChapter = new Map<string, { subject: Subject; seconds: number }>();
+  for (const entry of entries) {
+    const current = byChapter.get(entry.chapterId);
+    byChapter.set(entry.chapterId, { subject: entry.subject, seconds: (current?.seconds ?? 0) + entry.seconds });
+  }
+  const sessions: WorkSession[] = [];
+  let cursor = end.getTime();
+  for (const [chapterId, { subject, seconds }] of byChapter) {
+    const session = createPracticeSession({ subject, startedAt: new Date(cursor - seconds * 1000), endedAt: new Date(cursor), note: "Khôlle", chapterId }, end);
+    if (session) sessions.push(session);
+    cursor -= seconds * 1000;
+  }
+  return sessions;
+}

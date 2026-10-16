@@ -15,6 +15,7 @@ import { useKholleHistory } from "@/hooks/use-kholle-history";
 import { DiagnosticPanel } from "@/components/programme/diagnostic-panel";
 import { buildDiagnosticContext } from "@/lib/diagnostic-context";
 import { FINDING_LABEL, mainFinding, type Finding } from "@/lib/diagnostic";
+import { formatMinutesSpan } from "@/lib/utils";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { cn } from "@/lib/cn";
 import { PROGRAMME_SUBJECTS } from "@/lib/programme-data";
@@ -56,7 +57,7 @@ const contestFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: 
  * trace. UN SEUL `usePrepahubData()` pour l'écran.
  */
 export function ProgrammeOverview() {
-  const { chapterMemory, preferences, savePreferences, ready, attempts, errors, ankiSnapshots, workItems } = usePrepahubData();
+  const { chapterMemory, preferences, savePreferences, ready, attempts, errors, ankiSnapshots, workItems, sessions } = usePrepahubData();
   const { logs: annales } = useAnnales();
   const kholle = useKholleHistory();
   // Le diagnostic des lacunes (lib/diagnostic.ts) : le point faible principal, et le constat de chaque tuile.
@@ -69,8 +70,8 @@ export function ProgrammeOverview() {
   const today = dayKey(new Date());
 
   const mastery = useMemo(
-    () => computeMastery({ chapterMemory, annales, attempts, seen: preferences.programmeSeen, today }),
-    [chapterMemory, annales, attempts, preferences.programmeSeen, today]
+    () => computeMastery({ chapterMemory, annales, attempts, seen: preferences.programmeSeen, today, sessions }),
+    [chapterMemory, annales, attempts, preferences.programmeSeen, today, sessions]
   );
   const summary = useMemo(() => summarizeMastery(mastery), [mastery]);
   const plan = useMemo(() => buildRetroplanning(mastery, preferences.contestDate, today), [mastery, preferences.contestDate, today]);
@@ -210,6 +211,7 @@ function ChapterTile({ entry, finding, onToggleSeen }: { entry: ChapterMastery; 
         {PROGRAMME_STATUS_META[entry.status].label}
         <span className="font-semibold text-subtle"> · {entry.reason}</span>
       </p>
+      {entry.workedMinutes > 0 && <p className="mt-1 text-2xs font-semibold text-subtle">{formatMinutesSpan(entry.workedMinutes)} chronométrées</p>}
       {finding && (
         <p className="mt-1 text-2xs font-semibold text-rose-300">
           {FINDING_LABEL[finding.kind]} ({finding.level})

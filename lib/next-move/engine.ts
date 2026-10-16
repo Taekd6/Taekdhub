@@ -632,7 +632,7 @@ function recallCandidates(input: NextMoveInput): MoveCandidate[] {
 function neverRevisedCandidates(input: NextMoveInput, context: DiagnosticContext): MoveCandidate[] {
   if (input.preferences.programmeSeen.length === 0) return [];
   const today = dayKey(input.now);
-  const mastery = computeMastery({ chapterMemory: input.chapterMemory, annales: input.annales ?? [], attempts: input.attempts ?? [], seen: input.preferences.programmeSeen, today });
+  const mastery = computeMastery({ chapterMemory: input.chapterMemory, annales: input.annales ?? [], attempts: input.attempts ?? [], seen: input.preferences.programmeSeen, today, sessions: input.sessions });
   const shelved = new Set(
     input.chapterMemory.filter((chapter) => chapter.archived).map((chapter) => bestProgrammeMatch(chapter.subject, chapter.title)?.id).filter(Boolean) as string[]
   );
@@ -661,7 +661,7 @@ function neverRevisedCandidates(input: NextMoveInput, context: DiagnosticContext
       resource: { label: "Programme", href: "/programme" },
       terms: [
         { id: "jamais-revu", points: NEVER_REVISED_POINTS, reason: "Vu en cours (d'après toi), sans révision, exercice ni annale depuis" },
-        { id: "sans-mesure", points: 0, reason: "Aucune mesure d'oubli tant qu'il n'est pas dans Mémoire" },
+        { id: "sans-mesure", points: 0, reason: entry.workedMinutes > 0 ? `${formatMinutesSpan(entry.workedMinutes)} chronométrées dessus, mais aucune mesure d'oubli tant qu'il n'est pas dans Mémoire` : "Aucune mesure d'oubli tant qu'il n'est pas dans Mémoire" },
       ],
       score: 0,
       chapterId: chapter.id,

@@ -3,7 +3,7 @@ import { AT_RISK_THRESHOLD, retrievabilityToday } from "@/lib/chapter-memory";
 import { DESIRED_RETENTION } from "@/lib/fsrs";
 import { PROGRAMME, type ProgrammeChapter } from "@/lib/programme-data";
 import type { ChapterMemory } from "@/lib/storage";
-import type { Subject } from "@/lib/supabase/types";
+import type { Subject, WorkSession } from "@/lib/supabase/types";
 
 /**
  * LA CARTE DU PROGRAMME — « qu'est-ce qui est solide, qu'est-ce qui
@@ -64,6 +64,10 @@ export interface ChapterMastery {
   declaredSeen: boolean;
   /** La phrase qui justifie le statut. */
   reason: string;
+  /** Minutes chronométrées sur ce chapitre (Mémoire, rangés compris, et khôlle). Information : n'entre PAS dans le statut. */
+  workedMinutes: number;
+  /** Dernier jour travaillé (AAAA-MM-JJ), `null` sans temps. */
+  lastWorkedDay: string | null;
 }
 
 function keysOf(chapter: ProgrammeChapter): string[] {
@@ -138,6 +142,40 @@ export interface ProgrammeInput {
   attempts?: { chapterId: string | null; result: "réussi" | "partiel" | "échec" }[];
   seen: string[];
   today: string;
+  /** Séances — pour le temps par chapitre. Absentes : `workedMinutes` vaut 0. */
+  sessions?: ReadonlyArray<WorkSession>;
+}
+
+export interface ChapterWork {
+  minutes: number;
+  lastDay: string | null;
+}
+
+/**
+ * Le temps chronométré, par chapitre du PROGRAMME. `WorkSession.chapter_id`
+ * porte l'un de deux identifiants : un chapitre de Mémoire (chrono — on le
+ * rattache au programme par son titre, y compris s'il est rangé : le temps
+ * passé reste passé) ou directement un chapitre du programme (khôlle).
+ * Une séance dont l'identifiant ne mène nulle part (chapitre supprimé) est
+ * ignorée, jamais répartie après coup.
+ */
+export function chapterWorkIndex(sessions: ReadonlyArray<WorkSession>, chapterMemory: ReadonlyArray<ChapterMemory>, programme: readonly ProgrammeChapter[] = PROGRAMME): Map<string, ChapterWork> {
+  const known = new Set(programme.map((chapter) => chapter.id));
+  const viaMemory = new Map<string, string>();
+  for (const entry of chapterMemory) {
+    const match = bestProgrammeMatch(entry.subject, entry.title, programme);
+    if (match) viaMemory.set(entry.id, match.id);
+  }
+  const seconds = new Map<string, { seconds: number; lastDay: string | null }>();
+  for (const session of sessions) {
+    if (!session.chapter_id) continue;
+    const id = known.has(session.chapter_id) ? session.chapter_id : viaMemory.get(session.chapter_id);
+    if (!id) continue;
+    const day = new Date(session.started_at).toLocaleDateString("en-CA");
+    const current = seconds.get(id) ?? { seconds: 0, lastDay: null };
+    seconds.set(id, { seconds: current.seconds + session.duration_seconds, lastDay: !current.lastDay || day > current.lastDay ? day : current.lastDay });
+  }
+  return new Map([...seconds].map(([id, value]) => [id, { minutes: Math.round(value.seconds / 60), lastDay: value.lastDay }]));
 }
 
 export function computeMastery(input: ProgrammeInput, programme: readonly ProgrammeChapter[] = PROGRAMME): ChapterMastery[] {
@@ -153,6 +191,7 @@ export function computeMastery(input: ProgrammeInput, programme: readonly Progra
     const match = bestProgrammeMatch(log.subject, log.chapter, programme);
     if (match) annalesById.set(match.id, [...(annalesById.get(match.id) ?? []), log]);
   }
+  const work = chapterWorkIndex(input.sessions ?? [], input.chapterMemory, programme);
   return programme.map((chapter) => {
     const memory = memoryById.get(chapter.id) ?? [];
     const annales = annalesById.get(chapter.id) ?? [];
@@ -163,7 +202,8 @@ export function computeMastery(input: ProgrammeInput, programme: readonly Progra
     const annalesRate = results.length > 0 ? results.reduce((sum, result) => sum + (result === "réussi" ? 1 : result === "partiel" ? 0.5 : 0), 0) / results.length : null;
     const declaredSeen = seen.has(chapter.id);
     const { status, reason } = classify(retrievability, annalesRate, results.length, declaredSeen);
-    return { chapter, status, memory, retrievability, annales, annalesRate, declaredSeen, reason };
+    const worked = work.get(chapter.id);
+    return { chapter, status, memory, retrievability, annales, annalesRate, declaredSeen, reason, workedMinutes: worked?.minutes ?? 0, lastWorkedDay: worked?.lastDay ?? null };
   });
 }
 

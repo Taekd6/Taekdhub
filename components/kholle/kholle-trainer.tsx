@@ -30,11 +30,11 @@ import {
   type KholleHistory,
   type KholleQuestion,
 } from "@/lib/kholle";
-import { createPracticeSession } from "@/lib/practice-session";
+import { khollePracticeSessions } from "@/lib/practice-session";
 import { PROGRAMME, PROGRAMME_BY_ID, PROGRAMME_SUBJECTS } from "@/lib/programme-data";
 import { readFlag, writeFlag } from "@/lib/storage";
 import { dayKey } from "@/lib/study";
-import type { Subject, WorkSession } from "@/lib/supabase/types";
+import type { Subject } from "@/lib/supabase/types";
 
 const SHORT_SUBJECT: Record<string, string> = { Mathématiques: "Maths", Physique: "Physique", Chimie: "Chimie" };
 
@@ -157,19 +157,11 @@ export function KholleTrainer() {
 
   function finish() {
     const end = new Date();
-    // Une séance par matière, mises bout à bout jusqu'à maintenant : le temps de chaque question compte pour SA matière.
-    const bySubject = new Map<Subject, { seconds: number; chapterId: string }>();
-    for (const entry of answered) {
-      const current = bySubject.get(entry.question.chapter.subject);
-      bySubject.set(entry.question.chapter.subject, { seconds: (current?.seconds ?? 0) + entry.seconds, chapterId: current?.chapterId ?? entry.question.chapter.id });
-    }
-    const sessions: WorkSession[] = [];
-    let cursor = end.getTime();
-    for (const [entrySubject, { seconds }] of bySubject) {
-      const session = createPracticeSession({ subject: entrySubject, startedAt: new Date(cursor - seconds * 1000), endedAt: new Date(cursor), note: "Khôlle" }, end);
-      if (session) sessions.push(session);
-      cursor -= seconds * 1000;
-    }
+    // Une séance par chapitre, mises bout à bout jusqu'à maintenant : le temps de chaque question compte pour SON chapitre.
+    const sessions = khollePracticeSessions(
+      answered.map((entry) => ({ subject: entry.question.chapter.subject, chapterId: entry.question.chapter.id, seconds: entry.seconds })),
+      end
+    );
     if (sessions.length > 0) saveSessions(sessions);
     setRunning(false);
     setQuestion(null);
