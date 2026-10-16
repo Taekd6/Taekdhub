@@ -34,10 +34,16 @@ const env = { ...process.env };
 if (envFile) {
   for (const line of fs.readFileSync(envFile, "utf8").split(/\r?\n/)) {
     const match = /^\s*(?:export\s+)?([A-Z0-9_]+)\s*=\s*(.*)\s*$/.exec(line);
-    if (match) env[match[1]] = match[2].replace(/^['"]|['"]$/g, "");
+    // Espaces et retour chariot autour de la valeur : sinon un faux 401.
+    if (match) env[match[1]] = match[2].trim().replace(/^['"]|['"]$/g, "").trim();
   }
 }
-const token = env.TAEKDHUB_MCP_TOKEN;
+const token = env.TAEKDHUB_MCP_TOKEN?.trim() || undefined;
+// Le jeton ne part jamais en clair : HTTPS obligatoire (sauf essai local).
+if (token && !/^https:\/\//.test(url) && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(url)) {
+  console.error("Refus : le jeton ne s'envoie qu'en HTTPS.");
+  process.exit(2);
+}
 const isPreview = !/^https:\/\/taekdhub\.vercel\.app\//.test(url);
 const bypass = isPreview ? env.VERCEL_AUTOMATION_BYPASS_SECRET : undefined;
 
@@ -116,6 +122,10 @@ for (const [name, args] of [["get_today", {}], ["list_echeances", { jours: 14 }]
     ok(`${name} : JSON, clés ${Object.keys(parsed).join(", ")}`);
     if (fraicheur) console.log(`     fraîcheur : dernière synchro ${fraicheur.derniere_synchro_travail ?? "?"} · données anciennes ${fraicheur.donnees_anciennes} · consigne ${JSON.stringify(fraicheur.consigne)}`);
     if (parsed.donnees_indisponibles?.length) console.log(`     indisponible : ${parsed.donnees_indisponibles.join(", ")}`);
+    if (name === "list_echeances") {
+      console.log(`     échéances : ${parsed.echeances?.length ?? "?"} · liste concluante : ${parsed.liste_concluante} · échéances synchronisées : ${fraicheur?.echeances_synchronisees}`);
+      if (parsed.liste_concluante === false) console.log("     ⚠ liste non concluante : aucune échéance n'a jamais été synchronisée — une liste vide ne veut pas dire « aucune échéance ».");
+    }
   }
 }
 

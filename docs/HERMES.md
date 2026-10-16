@@ -8,7 +8,7 @@ les valeurs restent dans Vercel et dans le `.env` d'Hermes.
 | Environnement | URL | Remarque |
 |---|---|---|
 | **Production** | `https://taekdhub.vercel.app/api/mcp-hermes` | à utiliser au quotidien |
-| Preview d'une branche | `https://taekdhub-git-<branche>-taekd.vercel.app/api/mcp-hermes` | protégé par le SSO Vercel : exige en plus `x-vercel-protection-bypass` |
+| Preview d'une branche | `https://taekdhub-git-<branche>-taekd.vercel.app/api/mcp-hermes` | protégé par le SSO Vercel : exige en plus `x-vercel-protection-bypass`. Un `MCP_HERMES_TOKEN` Preview n'existe que pour la branche `claude/loving-maxwell-oqm045` : les autres Previews refusent tout (fermé par défaut). |
 
 C'est un serveur MCP en HTTP (« streamable HTTP »), méthode `POST`. Il est **séparé** du connecteur
 de Claude (`/api/mcp/<secret>`), qui garde son propre secret et ses outils d'écriture.
@@ -21,7 +21,11 @@ de Claude (`/api/mcp/<secret>`), qui garde son propre secret et ses outils d'éc
   32 caractères, **tout** est refusé. Comparaison à temps constant. Refus : `401 Unauthorized`, sans détail.
 - Le jeton vit à deux endroits, qui doivent avoir **la même valeur** :
   - Vercel → projet `taekdhub` → Settings → Environment Variables → `MCP_HERMES_TOKEN` (Production) ;
-  - `%LOCALAPPDATA%\hermes\.env` → `TAEKDHUB_MCP_TOKEN=…`.
+  - `%LOCALAPPDATA%\hermes\.env` (PowerShell : `$env:LOCALAPPDATA\hermes\.env`) → `TAEKDHUB_MCP_TOKEN=…`.
+
+Le `.env` d'Hermes contient aujourd'hui la valeur du jeton **Preview**. Rien ne garantit qu'elle soit
+la même que celle de **Production** : Vercel ne permet pas de comparer deux valeurs « sensitive ». Seul
+le test de la section 7 le dit (après redéploiement).
 
 **Récupérer la valeur.** `MCP_HERMES_TOKEN` est une variable « sensitive » : Vercel ne la réaffiche
 jamais. La valeur est celle que tu as enregistrée en la créant (gestionnaire de mots de passe). Si tu
@@ -38,7 +42,13 @@ ne l'as plus, crée-en une nouvelle (étape 3.1) : on ne relit pas l'ancienne.
    ```
    Colle-le dans Vercel (`MCP_HERMES_TOKEN`, Production, type Sensitive) **et** dans le `.env` d'Hermes
    (`TAEKDHUB_MCP_TOKEN=…`). Ne le colle nulle part ailleurs (ni conversation, ni dépôt).
-2. **Redéployer la production** : Vercel → Deployments → le dernier déploiement Production → ⋯ → Redeploy.
+2. **Redéployer la production** — deux façons, au choix (aucune ne touche aux données) :
+   - **A. Redéployer la version actuelle** (`main` = `7f081c3`) : Vercel → projet `taekdhub` → Deployments →
+     le déploiement *Production* le plus récent (`taekdhub-2i7e8937s`) → ⋯ → **Redeploy** → confirmer. Le
+     nouveau déploiement lit les variables actuelles, `MCP_HERMES_TOKEN` comprise. Le code ne change pas.
+   - **B. Fusionner la branche de finalisation dans `main`** (après relecture) : Vercel déploie la production
+     tout seul, avec les variables actuelles et la nouvelle tentative de lecture côté Hermes.
+   Attendre l'état **Ready** avant de tester.
 3. **Pointer Hermes vers la production**, dans `%LOCALAPPDATA%\hermes\config.yaml` :
    ```yaml
    mcp_servers:
@@ -87,15 +97,22 @@ Supabase : ce que l'appareil n'a pas encore synchronisé n'y est pas.
 
 ## 7. Test simple
 
-Depuis le dossier du dépôt :
+Depuis le dossier du dépôt, dans **PowerShell** :
 
+```powershell
+node scripts/hermes-check.mjs https://taekdhub.vercel.app/api/mcp-hermes "$env:LOCALAPPDATA\hermes\.env"
 ```
-node scripts/hermes-check.mjs https://taekdhub.vercel.app/api/mcp-hermes %LOCALAPPDATA%\hermes\.env
-```
+
+(Invite de commandes `cmd` : remplacer le dernier argument par `"%LOCALAPPDATA%\hermes\.env"`.)
 
 Le script n'affiche jamais le jeton. Il vérifie : refus sans jeton, refus d'un jeton inventé, les deux outils
 annoncés, puis `get_today` et `list_echeances` en JSON. « Tout est bon » = Hermes peut lire TaekdHub.
 Dernier essai côté Hermes : lui demander « Qu'est-ce que je fais aujourd'hui d'après TaekdHub ? ».
+
+**Échéances.** Si le script affiche `liste concluante : false`, aucune échéance n'a jamais atteint le compte.
+Pour trancher entre « aucune saisie » et « pas envoyée » : sur l'appareil connecté, ouvrir Échéances (en
+ajouter une de test si la liste est vide), attendre ~2 min (ou Réglages → Compte → Synchroniser), puis
+relancer le script : `échéances synchronisées` doit passer à `true`.
 
 ## 8. Erreurs courantes
 
