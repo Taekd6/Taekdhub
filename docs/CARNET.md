@@ -199,13 +199,13 @@ Non vérifié : sur un vrai compte (annales, synchronisation), sur l'appareil de
   lecteur → « Je ne sais pas par où commencer » (énoncé, indices, correction restent cachés dans la carte).
   Non vérifié : sur un vrai compte, sur l'appareil de l'élève, ni l'effet réel sur l'évitement (usage à observer).
 
-**Mission de finalisation (2026-10-16), branche  (depuis  = ).**
-- Écart constaté : la PR #28 est fusionnée ( = ) ; démonstrations, débrief IA, temps par chapitre du programme
-  étaient seulement sur  (partie de l'ancien main) : fusionnée dans la branche ().
-- Corrigé () : boucle possible du point, point sans saisie, débrief renvoyé qui écrasait une correction manuelle,
+**Mission de finalisation (2026-10-16), branche `claude/finalisation-hermes-tests` (depuis `main` = `7f081c3`).**
+- Écart constaté : la PR #28 est fusionnée (`main` = `7f081c3`) ; démonstrations, débrief IA, temps par chapitre du programme
+  étaient seulement sur `claude/taekdhub-planning-engine-oqmwoy` (partie de l'ancien main) : fusionnée dans la branche (`fac24f6`).
+- Corrigé (`dd65ce3`) : boucle possible du point, point sans saisie, débrief renvoyé qui écrasait une correction manuelle,
   démonstrations mal routées (annales, transfert) et qui passaient devant un DM du lendemain, lecture Hermes intermittente.
-- Hermes : production () contient la route ; refus vérifiés en HTTP (sans jeton, jeton inventé, autre schéma,
-  jeton dans l'URL).  Production créé 61 s APRÈS ce déploiement : la production le refuse, jeton d'Hermes
+- Hermes : production (`7f081c3`) contient la route ; refus vérifiés en HTTP (sans jeton, jeton inventé, autre schéma,
+  jeton dans l'URL). `MCP_HERMES_TOKEN` Production créé 61 s APRÈS ce déploiement : la production le refuse, jeton d'Hermes
   compris (401). À faire par l'élève : aligner la valeur (Vercel = .env d'Hermes), redéployer, pointer config.yaml vers la
   production (docs/HERMES.md). Vrai appel réussi sur l'ancien Preview avec le .env d'Hermes : 2 outils, JSON lisible.
 - Non vérifié : appel authentifié en production, e-mail de réinitialisation réel, Scratchpad d'AnkiMobile, parcours navigateur
