@@ -2,6 +2,7 @@ import type { ExerciseAttempt } from "@/lib/attempts";
 import type { AnkiSnapshot } from "@/lib/anki-snapshot";
 import { ankiByChapter } from "@/lib/anki-mapping";
 import { courseLocks } from "@/lib/course-lock";
+import { bestProgrammeMatch } from "@/lib/programme";
 import { effectiveSchedule } from "@/lib/spaced-repetition";
 import { dayKey } from "@/lib/study";
 import type { MoveCandidate } from "@/lib/next-move/engine";
@@ -221,7 +222,13 @@ export function resolveOutcomes(history: NextMoveRecord[], sources: OutcomeSourc
         return last !== null && new Date(last).getTime() >= from;
       });
     }
-    if (!done && record.kind === "rappel") {
+    if (!done && record.kind === "rappel" && record.key.startsWith("jamais:")) {
+      // Chapitre vu, jamais consolidé : fait quand le chapitre entre dans Mémoire, ou qu'un exercice y est noté, après la proposition.
+      const programmeId = record.key.slice("jamais:".length);
+      done =
+        sources.chapterMemory.some((chapter) => new Date(chapter.createdAt).getTime() >= from && bestProgrammeMatch(chapter.subject, chapter.title)?.id === programmeId) ||
+        (sources.attempts ?? []).some((attempt) => attempt.chapterId === programmeId && new Date(attempt.createdAt).getTime() >= from);
+    } else if (!done && record.kind === "rappel") {
       const chapterId = record.key.slice("rappel:".length);
       done = sources.chapterMemory.some((chapter) => chapter.id === chapterId && chapter.reviews.some((review) => review.day >= startDay));
     }

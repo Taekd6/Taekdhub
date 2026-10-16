@@ -5,7 +5,7 @@ import { EXERCISE_LEVEL_LABEL, type ExerciseAttempt } from "@/lib/attempts";
 import { buildDiagnosticContext, type DiagnosticContext } from "@/lib/diagnostic-context";
 import { FINDING_LABEL, mainFinding, type FindingKind } from "@/lib/diagnostic";
 import { courseLocks, isLockCard, lockSentence, lockSessionHref, type CourseLock } from "@/lib/course-lock";
-import { bestProgrammeMatch } from "@/lib/programme";
+import { bestProgrammeMatch, computeMastery } from "@/lib/programme";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 import { exerciseRequest, levelToRequest, transferRequest, varietyWarning } from "@/lib/exercise-quality";
 import { transferChecks } from "@/lib/transfer";
@@ -225,6 +225,14 @@ const RETRY_LATE_MAX = 10;
 const RETRY_DIAGNOSTIC = 8;
 const RETRY_PER_SUBJECT = 2;
 /** Diagnostic (lib/diagnostic.ts) : un constat établi pèse plus qu'un signal. */
+/**
+ * Chapitre déclaré « vu en cours » (carte du programme) sans AUCUNE trace —
+ * ni Mémoire, ni exercice, ni annale. Pas d'oubli mesuré, donc pas d'urgence
+ * inventée : un poids modeste, que seule une épreuve proche fait monter.
+ */
+const NEVER_REVISED_POINTS = 12;
+/** Un seul chapitre jamais revu par matière : cocher toute l'année « vue » ne doit pas noyer le plan. */
+const NEVER_REVISED_PER_SUBJECT = 1;
 /** Chapitre adopté comme priorité au bilan de la semaine (lib/weekly-learning.ts). */
 const WEEKLY_FOCUS_POINTS = 12;
 const DIAGNOSTIC_ESTABLISHED = 18;
@@ -607,6 +615,59 @@ function recallCandidates(input: NextMoveInput): MoveCandidate[] {
     perSubject.set(subject, count + 1);
     return true;
   });
+}
+
+/**
+ * CHAPITRE VU, JAMAIS CONSOLIDÉ. La carte du programme (lib/programme.ts) le
+ * classe « jamais revu » : l'élève l'a déclaré vu en cours, et rien d'autre
+ * n'existe. Sans cette porte d'entrée, il restait invisible du plan — pas de
+ * chapitre dans Mémoire, donc pas de rappel ; pas d'exercice, donc pas de
+ * constat de diagnostic. L'action : un premier rappel actif, puis ajouter le
+ * chapitre à Mémoire. Dès qu'il y est (ou qu'un exercice y est noté), son
+ * statut change et la proposition disparaît d'elle-même.
+ *
+ * Écartés : un chapitre RANGÉ dans Mémoire (choix explicite de l'élève), et
+ * un chapitre que le diagnostic traite déjà (action plus précise).
+ */
+function neverRevisedCandidates(input: NextMoveInput, context: DiagnosticContext): MoveCandidate[] {
+  if (input.preferences.programmeSeen.length === 0) return [];
+  const today = dayKey(input.now);
+  const mastery = computeMastery({ chapterMemory: input.chapterMemory, annales: input.annales ?? [], attempts: input.attempts ?? [], seen: input.preferences.programmeSeen, today });
+  const shelved = new Set(
+    input.chapterMemory.filter((chapter) => chapter.archived).map((chapter) => bestProgrammeMatch(chapter.subject, chapter.title)?.id).filter(Boolean) as string[]
+  );
+  const diagnosed = new Set(context.diagnoses.filter((diagnosis) => diagnosis.findings.length > 0).map((diagnosis) => diagnosis.chapter.id));
+  const perSubject = new Map<Subject, number>();
+  const out: MoveCandidate[] = [];
+  for (const entry of mastery) {
+    const { chapter } = entry;
+    if (entry.status !== "jamais" || shelved.has(chapter.id) || diagnosed.has(chapter.id)) continue;
+    const count = perSubject.get(chapter.subject) ?? 0;
+    if (count >= NEVER_REVISED_PER_SUBJECT) continue;
+    perSubject.set(chapter.subject, count + 1);
+    out.push({
+      key: `jamais:${chapter.id}`,
+      kind: "rappel",
+      subject: chapter.subject,
+      title: chapter.title,
+      action: "premier rappel actif",
+      instruction: "Sans tes notes : écris définitions, théorèmes et une démonstration clé, puis vérifie et corrige. Ajoute ensuite le chapitre à Mémoire pour que son oubli soit suivi.",
+      problem: `« ${chapter.title} » est vu en cours, mais jamais retravaillé.`,
+      doneWhen: "Le chapitre est ajouté à Mémoire : son suivi de l'oubli démarre.",
+      minMinutes: 10,
+      idealMinutes: 25,
+      maxMinutes: 30,
+      href: `/memoire?ajouter=${encodeURIComponent(chapter.id)}`,
+      resource: { label: "Programme", href: "/programme" },
+      terms: [
+        { id: "jamais-revu", points: NEVER_REVISED_POINTS, reason: "Vu en cours (d'après toi), sans révision, exercice ni annale depuis" },
+        { id: "sans-mesure", points: 0, reason: "Aucune mesure d'oubli tant qu'il n'est pas dans Mémoire" },
+      ],
+      score: 0,
+      chapterId: chapter.id,
+    });
+  }
+  return out;
 }
 
 function cardCandidates(input: NextMoveInput): MoveCandidate[] {
@@ -1127,6 +1188,7 @@ export function rankCandidates(input: NextMoveInput): MoveCandidate[] {
   const candidates = [
     ...deadlineCandidates(input),
     ...recallCandidates(input),
+    ...neverRevisedCandidates(input, diagnostic),
     ...errorCandidates(input),
     ...retryCandidates(input, diagnostic),
     ...transferCandidates(input, diagnostic),

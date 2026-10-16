@@ -195,7 +195,16 @@ function classify(candidate: MoveCandidate, input: NextMoveInput): { tier: Agend
     return { tier: "important", reason, workItemId: null, dueDate: null };
   }
   if (ids.has("diagnostic")) return { tier: "important", reason: "Action adaptée au diagnostic", workItemId: null, dueDate: null };
-  if (candidate.kind === "rappel") return { tier: "important", reason: ids.has("au-programme") ? "Au programme d'une épreuve" : "Chapitre qui s'efface", workItemId: null, dueDate: null };
+  // Vu en cours, jamais revu : sans mesure d'oubli, « secondaire » — sauf épreuve proche dans la matière.
+  if (ids.has("jamais-revu")) {
+    return ids.has("évaluation-proche")
+      ? { tier: "important", reason: "Chapitre jamais revu, épreuve dans la semaine", workItemId: null, dueDate: null }
+      : { tier: "secondaire", reason: "Chapitre vu, jamais revu", workItemId: null, dueDate: null };
+  }
+  if (candidate.kind === "rappel") {
+    const reason = ids.has("au-programme") ? "Au programme d'une épreuve" : "Chapitre qui s'efface";
+    return { tier: "important", reason, workItemId: null, dueDate: null };
+  }
   if (candidate.kind === "anki") return { tier: "important", reason: "Cours qui résiste dans Anki", workItemId: null, dueDate: null };
   if (ids.has("évaluation-proche")) return { tier: "important", reason: "Épreuve dans la semaine", workItemId: null, dueDate: null };
   if (candidate.kind === "bloc") return { tier: "secondaire", reason: "Objectif de la semaine", workItemId: null, dueDate: null };
