@@ -83,6 +83,15 @@ export interface BlockAnalysis {
   cue: string;
 }
 
+/**
+ * Fiabilité d'un diagnostic de CAUSE posé par une IA (lib/ai-debrief.ts) :
+ *   probable    l'IA a une raison, sans certitude — la cause est gardée et marquée ;
+ *   incertaine  l'IA ne peut pas trancher — la cause n'est PAS enregistrée
+ *               (absent = diagnostic de l'élève, sans réserve).
+ */
+export type DiagnosisConfidence = "probable" | "incertaine";
+export const DIAGNOSIS_CONFIDENCES: readonly DiagnosisConfidence[] = ["probable", "incertaine"];
+
 export interface ExerciseAttempt {
   id: string;
   /** Identifie l'EXERCICE : toutes ses tentatives partagent cette clé (lib/exercises.ts#annaleKey, `ds:<note>:<question>`…). */
@@ -112,6 +121,10 @@ export interface ExerciseAttempt {
   level?: ExerciseLevel;
   /** Analyse du blocage, après un échec. */
   analysis?: BlockAnalysis;
+  /** Fiabilité du diagnostic de cause, quand il vient d'une IA. Absent des tentatives saisies à la main. */
+  confidence?: DiagnosisConfidence;
+  /** Posée par un débrief importé d'une IA et validé par l'élève (traçabilité). */
+  byAi?: true;
   /**
    * EXERCICE DE TRANSFERT : la clé de l'exercice d'origine dont cet essai,
    * sur un énoncé DIFFÉRENT, vérifie la méthode (lib/transfer.ts).
@@ -183,6 +196,8 @@ export function normalizeAttempt(raw: unknown): ExerciseAttempt | null {
     ...(oneOf(EXERCISE_LEVELS, raw.level) ? { level: oneOf(EXERCISE_LEVELS, raw.level)! } : {}),
     ...(normalizeAnalysis(raw.analysis) ? { analysis: normalizeAnalysis(raw.analysis)! } : {}),
     ...(text(raw.transferOf, 300) ? { transferOf: text(raw.transferOf, 300)! } : {}),
+    ...(oneOf(DIAGNOSIS_CONFIDENCES, raw.confidence) ? { confidence: oneOf(DIAGNOSIS_CONFIDENCES, raw.confidence)! } : {}),
+    ...(raw.byAi === true ? { byAi: true as const } : {}),
   };
 }
 

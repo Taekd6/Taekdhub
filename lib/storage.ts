@@ -1,6 +1,6 @@
 import { subjects } from "@/lib/study";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
-import { normalizeAttempts, type ExerciseAttempt } from "@/lib/attempts";
+import { DIAGNOSIS_CONFIDENCES, normalizeAttempts, type DiagnosisConfidence, type ExerciseAttempt } from "@/lib/attempts";
 import { normalizeAvatar } from "@/lib/avatar";
 import { normalizeAnkiSnapshots, type AnkiSnapshot } from "@/lib/anki-snapshot";
 import { SRS_LADDER } from "@/lib/spaced-repetition";
@@ -552,6 +552,8 @@ export interface ErrorEntry {
    * carnet » — si l'entrée a été supprimée depuis, le bouton reparaît.
    */
   reviewItemId: string | null;
+  /** Fiabilité du type d'erreur quand il vient d'un débrief IA (lib/ai-debrief.ts). Absent : saisie de l'élève. */
+  confidence?: DiagnosisConfidence;
   createdAt: string;
 }
 
@@ -1255,6 +1257,7 @@ export function normalizeErrorEntry(raw: unknown): ErrorEntry | null {
     reviewItemId: optionalText(item.reviewItemId),
     ...(optionalText(item.programmeChapterId) && PROGRAMME_BY_ID.has(optionalText(item.programmeChapterId)!) ? { programmeChapterId: optionalText(item.programmeChapterId)! } : {}),
     ...(optionalText(item.exerciseKey) ? { exerciseKey: optionalText(item.exerciseKey)! } : {}),
+    ...((DIAGNOSIS_CONFIDENCES as unknown[]).includes(item.confidence) ? { confidence: item.confidence as DiagnosisConfidence } : {}),
     createdAt,
   };
 }
