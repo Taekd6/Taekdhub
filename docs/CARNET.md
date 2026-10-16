@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-16, commit de code `dd65ce3`
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-16, commit de code `64af51f`
 > (branche `claude/finalisation-hermes-tests`, non fusionnée).
 
 ## Objectif général
@@ -210,6 +210,18 @@ Non vérifié : sur un vrai compte (annales, synchronisation), sur l'appareil de
   production (docs/HERMES.md). Vrai appel réussi sur l'ancien Preview avec le .env d'Hermes : 2 outils, JSON lisible.
 - Non vérifié : appel authentifié en production, e-mail de réinitialisation réel, Scratchpad d'AnkiMobile, parcours navigateur
   complet après les derniers correctifs (point vérifié dans Chromium : sans saisie → accueil ; avec saisie → point).
+
+**Vérification Hermes avant redéploiement (2026-10-16, `64af51f`).**
+- Branche `claude/finalisation-hermes-tests` : à jour avec `main` (0 commit de retard), arbre propre ; lint, types, 1518 tests
+  (+1 échec attendu), build OK en local (Node 24 ; la CI GitHub utilise Node 22). La CI GitHub (« Contrôles ») ne tourne que sur
+  une PR ou un push sur `main` : aucune PR, donc jamais exécutée sur cette branche. Statuts Vercel du commit : verts (deux projets).
+- Vercel (lecture seule, aucune valeur lue) : `MCP_HERMES_TOKEN` Production présent (« sensitive », une seule entrée) ;
+  `taekdhub.vercel.app` appartient bien au projet `taekdhub` ; production accessible sans SSO. Le déploiement de
+  production (`7f081c3`) précède toujours la variable : non redéployé, en attente d'accord.
+- Supabase (noms, révisions, dates, nombres d'éléments ; aucun contenu lu) : 8 collections, aucune ligne `workItems`,
+  `attempts`, `errors`, `checkins`, `dayPlans`. La contrainte en base accepte `workItems` et le moteur
+  envoie toute collection locale non vide : cause la plus probable = aucune échéance saisie sur l'appareil connecté (non prouvé).
+- Non vérifié : appel authentifié en production ; égalité des valeurs du jeton (Vercel / .env d'Hermes).
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
