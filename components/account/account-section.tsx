@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useAccount, type AccountStatus } from "@/components/account/account-provider";
+import { SyncOverview } from "@/components/account/sync-status";
 import { Button } from "@/components/ui/button";
 import { Group, Row } from "@/components/ui/grouped";
 import { Input } from "@/components/ui/input";
@@ -234,6 +235,8 @@ export function AccountSection() {
           Synchroniser
         </Button>
       </Row>
+      {/* Ce qui est réellement dans le compte, collection de travail par collection. */}
+      <SyncOverview />
       {account.error && status === "erreur" && (
         <div className="py-3 pr-4 sm:pr-5">
           <Notice tone="danger">{account.error}</Notice>

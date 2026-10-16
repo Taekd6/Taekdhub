@@ -1,5 +1,6 @@
 "use client";
 
+import { RecurringDifficulties } from "@/components/errors/recurring-difficulties";
 import Link from "next/link";
 import { BookmarkCheck, BookmarkPlus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -44,7 +45,7 @@ import type { Subject } from "@/lib/supabase/types";
  * s'effaceraient mutuellement leurs ajouts.
  */
 export function ErrorLog() {
-  const { errors, saveErrors, reviewItems, saveReviewItems, ready, attempts, preferences } = usePrepahubData();
+  const { errors, saveErrors, reviewItems, saveReviewItems, ready, attempts, preferences, grades, workItems, chapterMemory } = usePrepahubData();
   const { logs: annales } = useAnnales();
   // Une erreur reliée à un exercice n'est « corrigée » qu'après une réussite sans aide (lib/exercises.ts#verifyError).
   const exercisesByKey = useMemo(
@@ -188,6 +189,9 @@ export function ErrorLog() {
         <aside aria-label="Ce qui revient" className="h-fit space-y-4 lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)]">
           <div className="surface p-6">
             <ErrorStats errors={errors} subject={subject === "all" ? null : subject} period={period} onPeriod={setPeriod} />
+          </div>
+          <div className="surface p-6">
+            <RecurringDifficulties grades={grades} attempts={attempts} errors={errors} workItems={workItems} chapterMemory={chapterMemory} annales={annales} retryDelaysDays={preferences.retryDelaysDays} />
           </div>
           <WhyItWorks />
         </aside>

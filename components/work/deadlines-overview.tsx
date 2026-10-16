@@ -8,6 +8,7 @@ import { GradientCard } from "@/components/ui/gradient-card";
 import { Split } from "@/components/ui/layout";
 import { BlockHeader } from "@/components/ui/list-card";
 import { PageHero } from "@/components/ui/page-hero";
+import { CollectionSyncLine } from "@/components/account/sync-status";
 import { Section } from "@/components/ui/section";
 import { Notice, Skeleton } from "@/components/ui/state";
 import { DayPlan } from "@/components/work/day-plan";
@@ -150,7 +151,11 @@ export function DeadlinesOverview() {
       }
     >
       <div className="min-w-0 space-y-8 sm:space-y-10">
-        <PageHero title="Échéances" lede="Ce que tu as à rendre, et quand le travailler." illustration={<Illustration name="echeances" size={48} />} />
+        <div>
+          <PageHero title="Échéances" lede="Ce que tu as à rendre, et quand le travailler." illustration={<Illustration name="echeances" size={48} />} />
+          {/* Sont-elles dans ton compte ? (ce que cet appareil en sait — lib/sync/status.ts) */}
+          <CollectionSyncLine collection="workItems" className="mt-3" />
+        </div>
 
         {/* LES TROIS CHIFFRES, dans une carte en dégradé : le reste à faire en
             très grand, puis deux pastilles de verre. Ils montent quand on

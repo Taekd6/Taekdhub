@@ -180,6 +180,11 @@ export class SyncEngine {
     return this.local.write(STORAGE_KEYS[collection], JSON.stringify(value));
   }
 
+  /** Entrées d'UNE collection sur cet appareil — pour un état de synchronisation sans relire toutes les collections. */
+  localCount(collection: CollectionName): number {
+    return countItems(collection, this.readLocal(collection));
+  }
+
   localCounts(): DataCounts {
     const counts: DataCounts = {};
     for (const collection of COLLECTIONS) counts[collection] = countItems(collection, this.readLocal(collection));

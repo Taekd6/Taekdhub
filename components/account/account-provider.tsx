@@ -6,6 +6,8 @@ import { onLocalWrite, readFlag, writeRawSilently } from "@/lib/storage";
 import { accountsEnabled, supabase } from "@/lib/supabase/client";
 import { SyncEngine, type DecisionChoice, type PendingDecision, type SyncReport } from "@/lib/sync/engine";
 import { announceDataChanged } from "@/lib/sync/events";
+import { collectionSyncStatus, type CollectionSyncStatus } from "@/lib/sync/status";
+import type { CollectionName } from "@/lib/sync/collections";
 import { supabaseRemote } from "@/lib/sync/supabase-remote";
 
 /**
@@ -63,6 +65,8 @@ export interface AccountContextValue {
   resolveDecision(choice: DecisionChoice): Promise<void>;
   syncNow(): Promise<void>;
   hasPendingChanges(): boolean;
+  /** Ce que cet appareil sait du sort d'une collection (lib/sync/status.ts), ou `null` sans compte configuré. */
+  syncStatusOf(collection: CollectionName): CollectionSyncStatus | null;
 }
 
 const AccountContext = createContext<AccountContextValue | null>(null);
@@ -90,6 +94,7 @@ const DISABLED: AccountContextValue = {
   resolveDecision: async () => {},
   syncNow: async () => {},
   hasPendingChanges: () => false,
+  syncStatusOf: () => null,
 };
 
 /** Accalmie après une écriture locale avant d'envoyer (une saisie en entraîne souvent plusieurs). */
@@ -344,6 +349,10 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   );
 
   const hasPendingChanges = useCallback(() => engine?.hasPendingChanges() ?? false, [engine]);
+  const syncStatusOf = useCallback(
+    (collection: CollectionName) => (engine ? collectionSyncStatus(engine.readMeta(), collection, engine.localCount(collection), userRef.current?.id ?? null) : null),
+    [engine]
+  );
 
   useEffect(() => {
     if (engine) setLastSyncedAt(engine.readMeta().lastSyncedAt);
@@ -352,9 +361,9 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AccountContextValue>(
     () =>
       engine
-        ? { enabled: true, status, user, lastSyncedAt, error, decision, recovery, sendPasswordReset, updatePassword, signInWithPassword, signUp, sendMagicLink, signOut, resolveDecision, syncNow, hasPendingChanges }
+        ? { enabled: true, status, user, lastSyncedAt, error, decision, recovery, sendPasswordReset, updatePassword, signInWithPassword, signUp, sendMagicLink, signOut, resolveDecision, syncNow, hasPendingChanges, syncStatusOf }
         : DISABLED,
-    [engine, status, user, lastSyncedAt, error, decision, recovery, sendPasswordReset, updatePassword, signInWithPassword, signUp, sendMagicLink, signOut, resolveDecision, syncNow, hasPendingChanges]
+    [engine, status, user, lastSyncedAt, error, decision, recovery, sendPasswordReset, updatePassword, signInWithPassword, signUp, sendMagicLink, signOut, resolveDecision, syncNow, hasPendingChanges, syncStatusOf]
   );
 
   return (
