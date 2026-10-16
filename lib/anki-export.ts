@@ -49,8 +49,49 @@ export interface AnkiExportResult {
   added: number;
   duplicates: number;
   failed: number;
+  /** Cartes qu'Anki avait rangées ailleurs que dans le paquet demandé, et que TaekdHub y a déplacées (voir `ensureDeck`). */
+  moved?: number;
+  /** Cartes rangées ailleurs que dans le paquet demandé et qu'on n'a pas pu déplacer : à ranger à la main. */
+  unplaced?: number;
   /** Les fiches réellement ajoutées ou déjà présentes — elles sont dans Anki. */
   inAnki: string[];
+}
+
+/**
+ * LE PAQUET DEMANDÉ N'EST PAS TOUJOURS CELUI OBTENU. Constaté avec le vrai
+ * AnkiConnect (version du dépôt) sur un Anki récent : le paramètre `deckName`
+ * d'`addNotes` est ignoré et la note tombe dans « Default » — du coup les
+ * cartes ne sont plus dans le paquet du chapitre (le pont Anki ne les associe
+ * plus à rien) et la détection de doublons « dans le paquet » ne voit rien.
+ * Après chaque ajout, on VÉRIFIE donc où sont les cartes des notes qu'on vient
+ * de créer, et on déplace celles qui sont ailleurs (`changeDeck`). Seules les
+ * notes créées par cet envoi sont concernées. Tout échec est compté, jamais
+ * levé : les notes sont déjà dans Anki.
+ */
+export async function ensureDeck(transport: AnkiTransport, placements: { noteIds: number[]; deck: string }[]): Promise<{ moved: number; unplaced: number }> {
+  let moved = 0;
+  let unplaced = 0;
+  for (const { noteIds, deck } of placements) {
+    if (noteIds.length === 0) continue;
+    try {
+      const cards = await transport("findCards", { query: `nid:${noteIds.join(",")}` });
+      if (!Array.isArray(cards) || cards.length === 0) continue;
+      const info = await transport("cardsInfo", { cards });
+      if (!Array.isArray(info)) continue;
+      const wrong = info.filter((card: { deckName?: string }) => card.deckName !== deck).map((card: { cardId: number }) => card.cardId);
+      if (wrong.length === 0) continue;
+      try {
+        await transport("changeDeck", { cards: wrong, deck });
+        moved += wrong.length;
+      } catch {
+        unplaced += wrong.length;
+      }
+    } catch {
+      // Vérification impossible : on ne prétend pas que tout est en place, mais on ne casse pas un envoi réussi.
+      unplaced += noteIds.length;
+    }
+  }
+  return { moved, unplaced };
 }
 
 /** Une carte à verser dans Anki — fiche de TaekdHub ou carte de cours (lib/course-cards.ts). */
@@ -100,6 +141,7 @@ export async function sendCards(transport: AnkiTransport, cards: AnkiCard[]): Pr
   const ids = toAdd.length > 0 ? ((await transport("addNotes", { notes: toAdd })) as (number | null)[]) : [];
 
   const inAnki: string[] = [];
+  const created = new Map<string, number[]>();
   let added = 0;
   let failed = 0;
   let cursor = 0;
@@ -112,9 +154,11 @@ export async function sendCards(transport: AnkiTransport, cards: AnkiCard[]): Pr
     if (typeof id === "number") {
       added += 1;
       inAnki.push(card.id);
+      created.set(card.deck, [...(created.get(card.deck) ?? []), id]);
     } else failed += 1;
   });
-  return { added, duplicates: cards.length - added - failed, failed, inAnki };
+  const placed = await ensureDeck(transport, [...created].map(([deck, noteIds]) => ({ deck, noteIds })));
+  return { added, duplicates: cards.length - added - failed, failed, ...placed, inAnki };
 }
 
 /** Fichier texte importable dans Anki (Fichier › Importer) : recto, verso, paquet, étiquettes. */

@@ -12,8 +12,15 @@ met les notes à jour au lieu de les dupliquer, et l'historique de révision
 est conservé par Anki.
 
     node --experimental-strip-types scripts/export-demo-notes.mjs
-    python3 scripts/build-demo-deck.py
+    python3 scripts/build-demo-deck.py                       # toutes les démonstrations
+    python3 scripts/build-demo-deck.py --only m1-theoreme-du-rang --out public/anki/taekdhub-demonstration-ipad.apkg
+
+`--only` (répétable) limite le paquet à certaines démonstrations : le paquet
+d'essai pour l'iPad en contient UNE. Mêmes GUID, même type de note, mêmes
+paquets que le paquet complet : importer l'un puis l'autre met à jour les
+notes, sans doublon.
 """
+import argparse
 import hashlib
 import json
 import pathlib
@@ -21,6 +28,10 @@ import pathlib
 import genanki
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+ARGS = argparse.ArgumentParser()
+ARGS.add_argument("--only", action="append", default=[], help="identifiant d'une démonstration (répétable)")
+ARGS.add_argument("--out", default="public/anki/taekdhub-demonstrations.apkg")
+ARGS = ARGS.parse_args()
 DATA = json.loads((ROOT / "data" / "demonstrations.notes.json").read_text(encoding="utf-8"))
 
 
@@ -37,8 +48,17 @@ MODEL = genanki.Model(
     css=spec["css"],
 )
 
+def ref_id(note):
+    return note["ref"].removeprefix("th-demo-")
+
+
+selected = [note for note in DATA["notes"] if not ARGS.only or ref_id(note) in ARGS.only]
+unknown = set(ARGS.only) - {ref_id(note) for note in DATA["notes"]}
+if unknown:
+    raise SystemExit(f"Démonstration inconnue : {', '.join(sorted(unknown))}")
+
 decks = {}
-for note in DATA["notes"]:
+for note in selected:
     deck = decks.setdefault(note["deck"], genanki.Deck(stable_id(note["deck"]), note["deck"]))
     deck.add_note(
         genanki.Note(
@@ -49,6 +69,6 @@ for note in DATA["notes"]:
         )
     )
 
-out = ROOT / "public" / "anki" / "taekdhub-demonstrations.apkg"
+out = ROOT / ARGS.out
 genanki.Package(list(decks.values())).write_to_file(str(out))
-print(f"{out.relative_to(ROOT)} : {len(DATA['notes'])} notes, {len(decks)} paquets")
+print(f"{out.relative_to(ROOT)} : {len(selected)} notes, {len(decks)} paquets")

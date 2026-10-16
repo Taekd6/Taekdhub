@@ -22,6 +22,7 @@ import {
   recordRestitution,
   restitutionPrompt,
   sendDemoNotes,
+  syncDemoCards,
   targetedCard,
   type DemoAction,
   type DemoActionKind,
@@ -31,6 +32,7 @@ import { localData, type Preferences } from "@/lib/storage";
 import { dayKey } from "@/lib/study";
 
 const DECK_URL = "/anki/taekdhub-demonstrations.apkg";
+const TRIAL_DECK_URL = "/anki/taekdhub-demonstration-ipad.apkg";
 
 const ACTION_LABEL: Record<DemoActionKind, string> = {
   "revoir-carte": "Revoir la carte Anki",
@@ -106,11 +108,13 @@ export function DemonstrationsPanel({
   const value: ParsedRestitution | null = parsed?.ok ? parsed.value : null;
 
   /** Relu sur le disque : les réglages et les tentatives s'écrivent en remplacement. */
-  function rememberCards(ids: string[]) {
-    if (ids.length === 0) return;
+  function rememberCards(ids: string[], verified = false) {
+    if (ids.length === 0 && !verified) return;
     const current = localData.preferences();
     const at = new Date().toISOString();
-    savePreferences({ ...current, demoCards: { ...current.demoCards, ...Object.fromEntries(ids.map((id) => [id, current.demoCards[id] ?? at])) } });
+    // Après une vérification, la liste est EXACTEMENT ce qu'Anki contient ; après un envoi, on ajoute.
+    const demoCards = verified ? syncDemoCards(current.demoCards, ids, DEMONSTRATIONS.map((demo) => demo.id), at) : { ...current.demoCards, ...Object.fromEntries(ids.map((id) => [id, current.demoCards[id] ?? at])) };
+    savePreferences({ ...current, demoCards });
   }
 
   async function send() {
@@ -122,7 +126,9 @@ export function DemonstrationsPanel({
       const parts = [`${result.added.length} ajoutée${result.added.length > 1 ? "s" : ""}`];
       if (result.alreadyThere.length > 0) parts.push(`${result.alreadyThere.length} déjà dans Anki (laissée${result.alreadyThere.length > 1 ? "s" : ""} telle${result.alreadyThere.length > 1 ? "s" : ""} : tes révisions sont intactes)`);
       if (result.failed.length > 0) parts.push(`${result.failed.length} refusée${result.failed.length > 1 ? "s" : ""} par Anki`);
-      setMessage({ tone: result.failed.length > 0 ? "error" : "ok", text: `${parts.join(", ")}. Synchronise Anki pour les retrouver sur ton téléphone.` });
+      if (result.moved > 0) parts.push(`${result.moved} carte${result.moved > 1 ? "s" : ""} qu'Anki avait rangée${result.moved > 1 ? "s" : ""} hors du paquet du chapitre, déplacée${result.moved > 1 ? "s" : ""} par TaekdHub`);
+      if (result.unplaced > 0) parts.push(`${result.unplaced} carte${result.unplaced > 1 ? "s" : ""} hors du paquet du chapitre, à ranger à la main dans Anki`);
+      setMessage({ tone: result.failed.length > 0 || result.unplaced > 0 ? "error" : "ok", text: `${parts.join(", ")}. Synchronise Anki pour les retrouver sur ton téléphone.` });
     } catch (cause) {
       setMessage({ tone: "error", text: cause instanceof Error ? cause.message : "L'envoi a échoué." });
     } finally {
@@ -135,7 +141,7 @@ export function DemonstrationsPanel({
     setMessage(null);
     try {
       const found = await findDemoNotes(fetchTransport(), DEMONSTRATIONS);
-      rememberCards(found);
+      rememberCards(found, true);
       setMessage({ tone: "ok", text: found.length > 0 ? `${found.length} démonstration${found.length > 1 ? "s" : ""} déjà dans Anki (retrouvée${found.length > 1 ? "s" : ""} par leur référence).` : "Aucune carte de démonstration dans Anki pour l'instant." });
     } catch (cause) {
       setMessage({ tone: "error", text: cause instanceof Error ? cause.message : "La vérification a échoué." });
@@ -172,7 +178,12 @@ export function DemonstrationsPanel({
     setCardMessage(null);
     try {
       const result = await sendCards(fetchTransport(), [card]);
-      setCardMessage({ tone: result.failed > 0 ? "error" : "ok", text: result.added > 0 ? "Carte ajoutée à Anki." : result.duplicates > 0 ? "Cette carte est déjà dans Anki : rien n'a été créé." : "Anki a refusé la carte." });
+      const moved = (result.moved ?? 0) > 0 ? " Anki l'avait rangée hors du paquet du chapitre : TaekdHub l'y a déplacée." : "";
+      const unplaced = (result.unplaced ?? 0) > 0 ? " Elle n'est pas dans le paquet du chapitre : range-la à la main dans Anki." : "";
+      setCardMessage({
+        tone: result.failed > 0 || (result.unplaced ?? 0) > 0 ? "error" : "ok",
+        text: `${result.added > 0 ? "Carte ajoutée à Anki." : result.duplicates > 0 ? "Cette carte est déjà dans Anki : rien n'a été créé." : "Anki a refusé la carte."}${moved}${unplaced}`,
+      });
     } catch (cause) {
       setCardMessage({ tone: "error", text: cause instanceof Error ? cause.message : "L'ajout a échoué." });
     } finally {
@@ -199,9 +210,15 @@ export function DemonstrationsPanel({
     >
       <div className="space-y-5">
         <div>
-          <a href={DECK_URL} download className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}>
-            <Download size={14} aria-hidden /> Télécharger le paquet (.apkg)
-          </a>
+          <div className="flex flex-wrap gap-2">
+            <a href={TRIAL_DECK_URL} download className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}>
+              <Download size={14} aria-hidden /> Paquet d&apos;essai (1 démonstration)
+            </a>
+            <a href={DECK_URL} download className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}>
+              <Download size={14} aria-hidden /> Toutes les démonstrations ({DEMONSTRATIONS.length})
+            </a>
+          </div>
+          <p className="t-meta mt-2 text-2xs">Premier essai sur iPad ou iPhone : importe d&apos;abord le paquet d&apos;essai, vérifie le Scratchpad, puis le paquet complet (mêmes notes : rien n&apos;est dupliqué). Pas à pas : docs/DEMONSTRATIONS.md. Sur ordinateur, l&apos;envoi direct (AnkiConnect) suppose qu&apos;un paquet ait été importé une première fois : l&apos;import installe l&apos;unique type de note.</p>
           <p className="t-meta mt-2 text-2xs">
             {mobile ? "Ouvre-le depuis l'app Fichiers : AnkiMobile l'importe." : "Double-clique dessus, ou Fichier › Importer dans Anki."} Réimporter une version corrigée met la carte à jour sans la dupliquer ni perdre tes révisions.
           </p>

@@ -5,6 +5,7 @@ import { DEMO_AFMT, DEMO_FIELDS, DEMO_MODEL, DEMO_MODEL_NAME, DEMO_QFMT, demoRef
 import {
   DEMONSTRATIONS,
   REACTIVATE_AFTER_DAYS,
+  correctedGaps,
   demoActions,
   demoById,
   demoDeck,
@@ -15,14 +16,17 @@ import {
   recordRestitution,
   recurringGaps,
   restitutionAttempt,
+  DemoNoteTypeMissingError,
   sendDemoNotes,
+  syncDemoCards,
   targetedCard,
   type ParsedRestitution,
 } from "@/lib/demonstrations";
 import { recurringDifficulties } from "@/lib/pedagogy";
 import { rankCandidates } from "@/lib/next-move/engine";
 import { normalizePreferences } from "@/lib/storage";
-import type { AnkiTransport } from "@/lib/anki-connect";
+import { AnkiConnectError, fetchTransport, type AnkiTransport } from "@/lib/anki-connect";
+import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 
 const NOW = new Date(2026, 9, 16, 18, 0);
 const TODAY = "2026-10-16";
@@ -52,7 +56,8 @@ describe("la carte : recto sans fuite, verso complet, aucune dépendance", () =>
     for (const d of DEMONSTRATIONS) {
       const front = previewFace("front", demoNoteOf(d).fields);
       expect(front).toContain(d.title);
-      for (const hypothesis of d.hypotheses) expect(front).toContain(hypothesis);
+      const esc = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      for (const hypothesis of d.hypotheses) expect(front).toContain(esc(hypothesis));
       expect(front).toMatch(/Sans support/);
       expect(front).toContain("th-board");
       expect(front).not.toContain(d.statement.split("\n")[0]);
@@ -64,9 +69,10 @@ describe("la carte : recto sans fuite, verso complet, aucune dépendance", () =>
   it("le verso donne l'énoncé exact, chaque étape avec sa justification, et les points critiques", () => {
     for (const d of DEMONSTRATIONS) {
       const back = previewFace("back", demoNoteOf(d).fields);
-      expect(back).toContain(d.statement.split("\n")[0].replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
+      const esc = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      expect(back).toContain(esc(d.statement.split("\n")[0]));
       expect((back.match(/<li>/g) ?? []).length).toBe(d.steps.length + d.critical.length);
-      for (const step of d.steps.filter((s) => s.why)) expect(back).toContain(step.why!.replace(/&/g, "&amp;").replace(/</g, "&lt;"));
+      for (const step of d.steps.filter((s) => s.why)) expect(back).toContain(esc(step.why!));
     }
   });
 
@@ -302,12 +308,19 @@ describe("AnkiConnect : sans doublon, sans écraser, lecture séparée de l'écr
     expect(anki.names().every((name) => ["multi", "findNotes"].includes(name))).toBe(true);
   });
 
-  it("crée le type de note s'il manque, puis ajoute — avec les champs et le paquet du chapitre", async () => {
+  it("sans le type de note, n'écrit RIEN et demande d'importer d'abord le paquet (jamais de second type de note)", async () => {
     const anki = fakeAnki();
+    await expect(sendDemoNotes(anki.transport, [demo])).rejects.toBeInstanceOf(DemoNoteTypeMissingError);
+    await expect(sendDemoNotes(anki.transport, [demo])).rejects.toThrow(/Importe d'abord un paquet/);
+    expect(anki.names()).toEqual(["modelNames", "modelNames"]);
+    expect(anki.names()).not.toContain("createModel");
+  });
+
+  it("avec le type de note installé : ajoute, avec les champs et le paquet du chapitre", async () => {
+    const anki = fakeAnki({ models: [DEMO_MODEL_NAME] });
     const result = await sendDemoNotes(anki.transport, [demo]);
-    expect(result).toEqual({ added: [RANG], alreadyThere: [], failed: [] });
-    const create = anki.calls.find((c) => c.action === "createModel")!;
-    expect(create.params).toMatchObject({ modelName: DEMO_MODEL_NAME, isCloze: false });
+    expect(result).toEqual({ added: [RANG], alreadyThere: [], failed: [], moved: 0, unplaced: 0 });
+    expect(anki.names()).not.toContain("createModel");
     const add = anki.calls.find((c) => c.action === "addNotes")!.params as { notes: { deckName: string; fields: Record<string, string>; options: { allowDuplicate: boolean } }[] };
     expect(add.notes[0].deckName).toBe("TaekdHub::Mathématiques::Applications linéaires");
     expect(add.notes[0].fields.Ref).toBe(demoRef(RANG));
@@ -331,7 +344,7 @@ describe("AnkiConnect : sans doublon, sans écraser, lecture séparée de l'écr
     expect((await sendDemoNotes(all.transport, DEMONSTRATIONS)).added).toEqual([]);
     expect(all.names()).not.toContain("addNotes");
     const refused = fakeAnki({ models: [DEMO_MODEL_NAME], addResult: [null] });
-    expect(await sendDemoNotes(refused.transport, [demo])).toEqual({ added: [], alreadyThere: [], failed: [RANG] });
+    expect(await sendDemoNotes(refused.transport, [demo])).toEqual({ added: [], alreadyThere: [], failed: [RANG], moved: 0, unplaced: 0 });
   });
 });
 
@@ -366,5 +379,203 @@ describe("lecture par une IA (get_demonstrations)", () => {
     expect(all.every((entry) => entry.etat === "Non travaillée" && entry.restitutions === 0)).toBe(true);
     expect(demonstrationsReport({ attempts: [], demoCards: {}, today: TODAY }, { chapterId: "m1-prehilbertiens" }).map((entry) => entry.id)).toEqual(["m1-cauchy-schwarz"]);
     expect(demonstrationsReport({ attempts: [], demoCards: {}, today: TODAY }, { subject: "Physique" })).toEqual([]);
+  });
+});
+
+/* ── Mission « usage réel » : banque étendue, boucle complète, Anki indisponible ── */
+
+describe("la banque de démonstrations : sources explicites, rien d'inventé", () => {
+  it("chaque démonstration est complète : hypothèses, énoncé, preuve en étapes, erreurs classiques, chapitre, sources", () => {
+    expect(DEMONSTRATIONS.length).toBeGreaterThanOrEqual(8);
+    for (const d of DEMONSTRATIONS) {
+      expect(d.hypotheses.length, d.id).toBeGreaterThan(0);
+      expect(d.statement.trim().length, d.id).toBeGreaterThan(10);
+      expect(d.steps.length, d.id).toBeGreaterThanOrEqual(3);
+      expect(d.steps.some((s) => s.why), d.id).toBe(true);
+      expect(d.critical.length, d.id).toBeGreaterThan(0);
+      expect(d.id).toMatch(/^m[12]-[a-z0-9-]+$/);
+      expect((d.sources ?? []).length, d.id).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("la source cite une question de cours QUI EXISTE dans le programme du dépôt, pour ce chapitre ; et dit que la rédaction n'est pas le cours officiel", () => {
+    for (const d of DEMONSTRATIONS) {
+      const [first, second] = d.sources!;
+      const quoted = first.match(/« ([^»]+) »\s*$/)?.[1];
+      expect(quoted, d.id).toBeTruthy();
+      expect(PROGRAMME_BY_ID.get(d.chapterId)!.questions, d.id).toContain(quoted);
+      expect(first).toContain(PROGRAMME_BY_ID.get(d.chapterId)!.title);
+      expect(second).toMatch(/TON cours/);
+      expect(second).toMatch(/pas le texte officiel/);
+    }
+  });
+
+  it("le verso affiche les sources", () => {
+    for (const d of DEMONSTRATIONS) expect(previewFace("back", demoNoteOf(d).fields)).toContain("TON cours");
+  });
+});
+
+describe("boucle complète : restituer, signaler, corriger — vérifié par une réussite autonome", () => {
+  const success = (day: string) => restitution(day, { resultat: "réussie", aide: "sans", lacunes: [] });
+
+  it("une lacune récurrente est vérifiée corrigée par une réussite autonome POSTÉRIEURE, avec le jour de la preuve", () => {
+    const list = history(restitution("2026-10-01"), restitution("2026-10-05"), success("2026-10-12"));
+    expect(recurringGaps(RANG, list)).toEqual([]);
+    const [fixed] = correctedGaps(RANG, list);
+    expect(fixed).toMatchObject({ kind: "hypothèse", count: 2, correctedOn: "2026-10-12", days: ["2026-10-01", "2026-10-05"] });
+    expect(demoStatus(RANG, list, TODAY).state).toBe("réussite-autonome");
+    expect(demoActions({ demo, attempts: list, cardInAnki: true, today: TODAY }).map((a) => a.kind)).toEqual(["rien"]);
+  });
+
+  it("une réussite avec aide ne corrige rien : la lacune reste ouverte", () => {
+    const list = history(restitution("2026-10-01"), restitution("2026-10-05"), restitution("2026-10-12", { resultat: "réussie", aide: "indices", lacunes: [] }));
+    expect(recurringGaps(RANG, list)).toHaveLength(1);
+    expect(correctedGaps(RANG, list)).toEqual([]);
+  });
+
+  it("si la lacune revient après la correction, elle repart de zéro : une seule occurrence ne rouvre pas la carte ciblée", () => {
+    const list = history(restitution("2026-10-01"), restitution("2026-10-05"), success("2026-10-08"), restitution("2026-10-14"));
+    expect(recurringGaps(RANG, list)).toEqual([]);
+    expect(correctedGaps(RANG, list)).toHaveLength(1);
+    const again = history(restitution("2026-10-01"), restitution("2026-10-05"), success("2026-10-08"), restitution("2026-10-12"), restitution("2026-10-14"));
+    expect(recurringGaps(RANG, again)[0]).toMatchObject({ count: 2, days: ["2026-10-12", "2026-10-14"] });
+  });
+
+  it("une lacune vue une seule fois puis suivie d'une réussite n'est pas rapportée comme « corrigée » : elle n'avait pas été récurrente", () => {
+    expect(correctedGaps(RANG, history(restitution("2026-10-01"), success("2026-10-05")))).toEqual([]);
+  });
+
+  it("le rapport pour les IA expose les lacunes corrigées et leur preuve", async () => {
+    const { demonstrationsReport } = await import("@/lib/demonstrations");
+    const list = history(restitution("2026-10-01"), restitution("2026-10-05"), success("2026-10-12"));
+    const [report] = demonstrationsReport({ attempts: list, demoCards: {}, today: TODAY }, { demoId: RANG });
+    expect(report.lacunes_recurrentes).toEqual([]);
+    expect(report.lacunes_corrigees[0]).toMatchObject({ type: "hypothèse", corrigee_le: "2026-10-12" });
+  });
+});
+
+describe("les révisions d'Anki ne sont pas des restitutions", () => {
+  it("le module des démonstrations ne lit ni les relevés Anki, ni les cartes à revoir, ni la planification : seules les restitutions comptent", () => {
+    const source = readFileSync("lib/demonstrations.ts", "utf8");
+    expect(source).not.toMatch(/anki-snapshot|spaced-repetition|review-items|chapter-memory|from "@\/lib\/fsrs"[^;]*(reviewMemory|replayMemory)/);
+    // Seuls les AJOUTS de notes passent par AnkiConnect ; jamais de réponse, de report ou de modification de carte.
+    expect(source).not.toMatch(/answerCards|setDueDate|suspend|forgetCards|updateNoteFields|relearn/);
+  });
+  it("avec ou sans révisions dans Anki, l'état ne dépend que des restitutions enregistrées", () => {
+    const withReviews = history(restitution("2026-10-10"));
+    expect(demoStatus(RANG, withReviews, TODAY)).toEqual(demoStatus(RANG, [...withReviews], TODAY));
+    expect(demoStatus(RANG, [], TODAY).state).toBe("non-travaillée");
+  });
+});
+
+describe("le lien carte ↔ démonstration reflète Anki après une vérification", () => {
+  const ids = DEMONSTRATIONS.map((d) => d.id);
+  it("garde la date des cartes retrouvées, retire celles qui n'y sont plus, ajoute les nouvelles", () => {
+    const current = { [RANG]: "2026-10-01T10:00:00.000Z", "m1-cauchy-schwarz": "2026-10-02T10:00:00.000Z" };
+    const next = syncDemoCards(current, [RANG, "m2-lemme-abel"], ids, "2026-10-16T09:00:00.000Z");
+    expect(next).toEqual({ [RANG]: "2026-10-01T10:00:00.000Z", "m2-lemme-abel": "2026-10-16T09:00:00.000Z" });
+  });
+  it("ne perd pas une donnée d'un identifiant que ce code ne connaît plus", () => {
+    expect(syncDemoCards({ "ancienne-demo": "2026-09-01T00:00:00.000Z" }, [], ids, "2026-10-16T09:00:00.000Z")).toEqual({ "ancienne-demo": "2026-09-01T00:00:00.000Z" });
+  });
+});
+
+describe("AnkiConnect indisponible", () => {
+  const down: AnkiTransport = async () => {
+    throw new AnkiConnectError("Anki ne répond pas.", "injoignable");
+  };
+
+  it("l'envoi échoue proprement : une erreur claire, rien n'est marqué, aucune écriture tentée", async () => {
+    const calls: string[] = [];
+    const transport: AnkiTransport = async (action, params) => {
+      calls.push(action);
+      return down(action, params);
+    };
+    await expect(sendDemoNotes(transport, [demo])).rejects.toMatchObject({ kind: "injoignable", message: expect.stringMatching(/Anki ne répond pas/) });
+    expect(calls).toEqual(["modelNames"]);
+    await expect(findDemoNotes(down, [demo])).rejects.toBeInstanceOf(AnkiConnectError);
+  });
+
+  it("le vrai transport réseau : un serveur absent donne « injoignable », jamais un blocage ni une exception brute", async () => {
+    const transport = fetchTransport("http://127.0.0.1:1", 3000);
+    await expect(transport("version")).rejects.toMatchObject({ kind: "injoignable" });
+  });
+
+  it("une erreur renvoyée par AnkiConnect lui-même est rapportée, avec son message", async () => {
+    const refusing: AnkiTransport = async (action) => {
+      if (action === "modelNames") return [DEMO_MODEL_NAME];
+      if (action === "multi") return [[]];
+      if (action === "createDeck") return 1;
+      throw new AnkiConnectError("AnkiConnect : collection is not available", "réponse");
+    };
+    await expect(sendDemoNotes(refusing, [demo])).rejects.toMatchObject({ kind: "réponse", message: expect.stringMatching(/collection is not available/) });
+  });
+});
+
+describe("le paquet demandé n'est pas toujours le paquet obtenu (défaut constaté avec le vrai AnkiConnect)", () => {
+  /** Anki qui ignore `deckName` : les notes tombent dans « Default », comme observé avec le vrai module. */
+  function quirkyAnki(opts: { changeDeckFails?: boolean } = {}) {
+    const calls: { action: string; params?: Record<string, unknown> }[] = [];
+    const decks = new Map<number, string>();
+    let next = 500;
+    const transport: AnkiTransport = async (action, params) => {
+      calls.push({ action, params });
+      if (action === "modelNames") return [DEMO_MODEL_NAME, "Basic"];
+      if (action === "multi") return (params as { actions: { action: string }[] }).actions.map((entry) => (entry.action === "modelFieldNames" ? ["Front", "Back"] : []));
+      if (action === "canAddNotes") return (params as { notes: unknown[] }).notes.map(() => true);
+      if (action === "addNotes") return (params as { notes: unknown[] }).notes.map(() => { next += 1; decks.set(next, "Default"); return next; });
+      if (action === "findCards") return String((params as { query: string }).query).replace("nid:", "").split(",").map(Number);
+      if (action === "cardsInfo") return (params as { cards: number[] }).cards.map((cardId) => ({ cardId, deckName: decks.get(cardId) }));
+      if (action === "changeDeck") {
+        if (opts.changeDeckFails) throw new AnkiConnectError("AnkiConnect : changeDeck unsupported", "réponse");
+        for (const id of (params as { cards: number[] }).cards) decks.set(id, (params as { deck: string }).deck);
+      }
+      return null;
+    };
+    return { transport, calls, decks };
+  }
+
+  it("après l'envoi d'une démonstration, la carte est vérifiée puis déplacée dans le paquet du chapitre", async () => {
+    const anki = quirkyAnki();
+    const result = await sendDemoNotes(anki.transport, [demo]);
+    expect(result).toMatchObject({ added: [RANG], moved: 1, unplaced: 0 });
+    expect([...anki.decks.values()]).toEqual(["TaekdHub::Mathématiques::Applications linéaires"]);
+    const move = anki.calls.find((c) => c.action === "changeDeck")!.params as { deck: string };
+    expect(move.deck).toBe("TaekdHub::Mathématiques::Applications linéaires");
+  });
+
+  it("une carte ciblée envoyée par sendCards suit la même règle", async () => {
+    const { sendCards } = await import("@/lib/anki-export");
+    const anki = quirkyAnki();
+    const result = await sendCards(anki.transport, [{ id: "c1", front: "Q ?", back: "R", deck: "TaekdHub::Mathématiques::Applications linéaires", tags: ["taekdhub"] }]);
+    expect(result).toMatchObject({ added: 1, moved: 1, unplaced: 0 });
+    expect([...anki.decks.values()]).toEqual(["TaekdHub::Mathématiques::Applications linéaires"]);
+  });
+
+  it("si Anki ne sait pas déplacer, l'envoi n'est pas présenté comme parfait : « à ranger à la main », sans exception", async () => {
+    const anki = quirkyAnki({ changeDeckFails: true });
+    const result = await sendDemoNotes(anki.transport, [demo]);
+    expect(result).toMatchObject({ added: [RANG], moved: 0, unplaced: 1 });
+  });
+
+  it("une carte déjà dans le bon paquet n'est jamais déplacée", async () => {
+    const { ensureDeck } = await import("@/lib/anki-export");
+    const calls: string[] = [];
+    const transport: AnkiTransport = async (action) => {
+      calls.push(action);
+      if (action === "findCards") return [7];
+      if (action === "cardsInfo") return [{ cardId: 7, deckName: "A::B" }];
+      return null;
+    };
+    expect(await ensureDeck(transport, [{ noteIds: [7], deck: "A::B" }])).toEqual({ moved: 0, unplaced: 0 });
+    expect(calls).not.toContain("changeDeck");
+  });
+
+  it("un transport qui ne répond pas à la vérification n'invalide pas un envoi réussi", async () => {
+    const { ensureDeck } = await import("@/lib/anki-export");
+    const transport: AnkiTransport = async () => {
+      throw new AnkiConnectError("Anki ne répond plus", "injoignable");
+    };
+    expect(await ensureDeck(transport, [{ noteIds: [1, 2], deck: "A" }])).toEqual({ moved: 0, unplaced: 2 });
   });
 });

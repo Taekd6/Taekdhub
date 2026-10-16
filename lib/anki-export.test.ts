@@ -34,7 +34,7 @@ describe("envoi par AnkiConnect", () => {
       return null;
     };
     const result = await sendToAnki(transport, [item("a", { answer: "x < y\nligne 2" }), item("b"), item("c", { subject: "Physique" })]);
-    expect(result).toEqual({ added: 1, duplicates: 1, failed: 1, inAnki: ["a", "b"] });
+    expect(result).toEqual({ added: 1, duplicates: 1, failed: 1, moved: 0, unplaced: 0, inAnki: ["a", "b"] });
     expect(calls.filter((call) => call.action === "createDeck").map((call) => call.params!.deck)).toEqual(["TaekdHub::Mathématiques", "TaekdHub::Physique"]);
     const added = calls.find((call) => call.action === "addNotes")!.params!.notes as { fields: Record<string, string>; deckName: string; tags: string[]; options: { allowDuplicate: boolean } }[];
     expect(added).toHaveLength(2);

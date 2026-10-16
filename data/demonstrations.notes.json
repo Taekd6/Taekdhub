@@ -8,14 +8,15 @@
    "Preuve",
    "Critiques",
    "Ref",
-   "Chapitre"
+   "Chapitre",
+   "Source"
   ],
-  "css": ".card { font-family: -apple-system, \"Segoe UI\", sans-serif; font-size: 19px; line-height: 1.45; text-align: left; color: #1f2430; background: #fbfaf7; }\n.th-demo { max-width: 40rem; margin: 0 auto; }\n.th-kind { font-size: 0.72em; letter-spacing: .08em; text-transform: uppercase; color: #8a8f9c; }\n.th-name { font-size: 1.25em; font-weight: 700; margin: .2em 0 .7em; }\n.th-hyp ul, .th-block ul, .th-block ol { margin: .3em 0 .6em 1.2em; padding: 0; }\n.th-hyp b, .th-block b { display: block; font-size: .85em; color: #5b6272; }\n.th-task { margin: .9em 0; padding: .6em .8em; border-left: 3px solid #1f2430; background: #f0eee8; }\n.th-board { min-height: 45vh; border: 1.5px dashed #b8bcc7; border-radius: 10px; }\n.th-block { margin: .8em 0; }\n.th-statement { margin: .3em 0; }\n.th-why { display: block; font-size: .85em; color: #5b6272; }\n.th-critical { padding: .5em .8em; border-left: 3px solid #b3402f; background: #f7ecea; }\n.th-ref { margin-top: 1.2em; font-size: .7em; color: #8a8f9c; }\n.nightMode .card, .night_mode .card { color: #e8e9ee; background: #1d1f26; }\n.nightMode .th-task, .night_mode .th-task { background: #2a2d37; border-color: #e8e9ee; }\n.nightMode .th-critical, .night_mode .th-critical { background: #34262a; }",
+  "css": ".card { font-family: -apple-system, \"Segoe UI\", sans-serif; font-size: 19px; line-height: 1.45; text-align: left; color: #1f2430; background: #fbfaf7; }\n.th-demo { max-width: 40rem; margin: 0 auto; }\n.th-kind { font-size: 0.72em; letter-spacing: .08em; text-transform: uppercase; color: #8a8f9c; }\n.th-name { font-size: 1.25em; font-weight: 700; margin: .2em 0 .7em; }\n.th-hyp ul, .th-block ul, .th-block ol { margin: .3em 0 .6em 1.2em; padding: 0; }\n.th-hyp b, .th-block b { display: block; font-size: .85em; color: #5b6272; }\n.th-task { margin: .9em 0; padding: .6em .8em; border-left: 3px solid #1f2430; background: #f0eee8; }\n.th-board { min-height: 45vh; border: 1.5px dashed #b8bcc7; border-radius: 10px; }\n.th-block { margin: .8em 0; }\n.th-statement { margin: .3em 0; }\n.th-why { display: block; font-size: .85em; color: #5b6272; }\n.th-critical { padding: .5em .8em; border-left: 3px solid #b3402f; background: #f7ecea; }\n.th-source { margin-top: 1em; font-size: .75em; color: #5b6272; }\n.th-ref { margin-top: .6em; font-size: .7em; color: #8a8f9c; }\n.nightMode .card, .night_mode .card { color: #e8e9ee; background: #1d1f26; }\n.nightMode .th-task, .night_mode .th-task { background: #2a2d37; border-color: #e8e9ee; }\n.nightMode .th-critical, .night_mode .th-critical { background: #34262a; }",
   "cardTemplates": [
    {
     "Name": "Restitution",
     "Front": "<div class=\"th-demo\">\n  <div class=\"th-kind\">Démonstration à restituer</div>\n  <div class=\"th-name\">{{Nom}}</div>\n  {{#Hypotheses}}<div class=\"th-hyp\"><b>Hypothèses</b>{{Hypotheses}}</div>{{/Hypotheses}}\n  <div class=\"th-task\">Sans support : énonce précisément le résultat, puis démontre-le en entier — au tableau, sur papier ou au Scratchpad. Ne retourne la carte qu'après.</div>\n  <div class=\"th-board\" aria-label=\"Zone de travail\"></div>\n</div>",
-    "Back": "<div class=\"th-demo\">\n  <div class=\"th-kind\">Référence</div>\n  <div class=\"th-name\">{{Nom}}</div>\n  <div class=\"th-block\"><b>Énoncé</b><div class=\"th-statement\">{{Enonce}}</div></div>\n  <div class=\"th-block\"><b>Démonstration</b>{{Preuve}}</div>\n  {{#Critiques}}<div class=\"th-block th-critical\"><b>Points critiques à vérifier dans ta restitution</b>{{Critiques}}</div>{{/Critiques}}\n  <div class=\"th-ref\">{{Chapitre}} · {{Ref}}</div>\n</div>"
+    "Back": "<div class=\"th-demo\">\n  <div class=\"th-kind\">Référence</div>\n  <div class=\"th-name\">{{Nom}}</div>\n  <div class=\"th-block\"><b>Énoncé</b><div class=\"th-statement\">{{Enonce}}</div></div>\n  <div class=\"th-block\"><b>Démonstration</b>{{Preuve}}</div>\n  {{#Critiques}}<div class=\"th-block th-critical\"><b>Points critiques à vérifier dans ta restitution</b>{{Critiques}}</div>{{/Critiques}}\n  {{#Source}}<div class=\"th-source\">{{Source}}</div>{{/Source}}\n  <div class=\"th-ref\">{{Chapitre}} · {{Ref}}</div>\n</div>"
    }
   ]
  },
@@ -30,7 +31,8 @@
     "Preuve": "<ol><li>Ker u est un sous-espace de E, donc de dimension finie. Soit S un supplémentaire de Ker u dans E : E = Ker u ⊕ S et dim E = dim Ker u + dim S.<span class=\"th-why\">↳ Existence d'un supplémentaire en dimension finie ; dimension d'une somme directe.</span></li><li>On note v la restriction de u à S, vue comme application v : S → Im u. Elle est linéaire.<span class=\"th-why\">↳ On restreint à S, pas à E tout entier : c'est ce qui rend v injective.</span></li><li>v est injective : Ker v = S ∩ Ker u = {0}.<span class=\"th-why\">↳ La somme E = Ker u ⊕ S est directe.</span></li><li>v est surjective : soit y ∈ Im u, y = u(x). On écrit x = k + s avec k ∈ Ker u et s ∈ S. Alors y = u(k) + u(s) = u(s) = v(s).<span class=\"th-why\">↳ Existence de la décomposition x = k + s ; u(k) = 0.</span></li><li>Donc v est un isomorphisme de S sur Im u. Ainsi Im u est de dimension finie et dim Im u = dim S.<span class=\"th-why\">↳ Un isomorphisme conserve la dimension.</span></li><li>Conclusion : dim E = dim Ker u + dim S = dim Ker u + rg u.</li></ol>",
     "Critiques": "<ul><li>L'hypothèse porte sur E (dimension finie) ; F est quelconque.</li><li>Le supplémentaire S n'est pas unique, mais sa dimension l'est : elle vaut rg u.</li><li>On restreint u à S, pas à E : sur E, u n'est pas injective.</li><li>Ne pas écrire E = Ker u ⊕ Im u : c'est faux en général (Im u est dans F, pas dans E).</li></ul>",
     "Ref": "th-demo-m1-theoreme-du-rang",
-    "Chapitre": "Applications linéaires"
+    "Chapitre": "Applications linéaires",
+    "Source": "Question de cours du programme TaekdHub (lib/programme-data.ts, chapitre « Applications linéaires ») : « Énoncer et démontrer le théorème du rang. »<br>Rédaction : preuve classique écrite pour TaekdHub, à comparer avec TON cours (notations et ordre des étapes peuvent différer). Ce n'est pas le texte officiel de ton professeur."
    },
    "tags": [
     "taekdhub",
@@ -48,7 +50,122 @@
     "Preuve": "<ol><li>Si y = 0, les deux membres sont nuls et x, y sont liés : le résultat est acquis. On suppose y ≠ 0, donc ‖y‖² &gt; 0.<span class=\"th-why\">↳ Séparation du produit scalaire.</span></li><li>Pour tout t ∈ ℝ, P(t) = ‖x + t y‖² = ‖x‖² + 2t (x | y) + t² ‖y‖² ≥ 0.<span class=\"th-why\">↳ Bilinéarité et symétrie ; positivité du produit scalaire.</span></li><li>P est un trinôme du second degré (coefficient dominant ‖y‖² &gt; 0) de signe constant sur ℝ : son discriminant est ≤ 0.<span class=\"th-why\">↳ Un trinôme qui ne change pas de signe n'a pas deux racines distinctes.</span></li><li>Le discriminant vaut 4 (x | y)² − 4 ‖x‖² ‖y‖² ≤ 0, d'où (x | y)² ≤ ‖x‖² ‖y‖² puis |(x | y)| ≤ ‖x‖ ‖y‖.<span class=\"th-why\">↳ On passe à la racine carrée, croissante sur ℝ₊.</span></li><li>Égalité : elle a lieu si et seulement si le discriminant est nul, donc P a une racine double t₀ : ‖x + t₀ y‖² = 0, soit x = −t₀ y, et x, y sont liés. Réciproquement, si x et y sont liés, un calcul direct donne l'égalité.<span class=\"th-why\">↳ Séparation : ‖z‖² = 0 ⇒ z = 0.</span></li></ol>",
     "Critiques": "<ul><li>Traiter à part le cas y = 0 avant de parler de trinôme du second degré.</li><li>Dire pourquoi P(t) ≥ 0 pour tout t réel, c'est ce qui donne le signe du discriminant.</li><li>Le cas d'égalité demande les deux sens (⇒ par la racine double, ⇐ par calcul).</li></ul>",
     "Ref": "th-demo-m1-cauchy-schwarz",
-    "Chapitre": "Espaces préhilbertiens réels"
+    "Chapitre": "Espaces préhilbertiens réels",
+    "Source": "Question de cours du programme TaekdHub (lib/programme-data.ts, chapitre « Espaces préhilbertiens réels ») : « Démontrer l'inégalité de Cauchy-Schwarz et son cas d'égalité. »<br>Rédaction : preuve classique écrite pour TaekdHub, à comparer avec TON cours (notations et ordre des étapes peuvent différer). Ce n'est pas le texte officiel de ton professeur."
+   },
+   "tags": [
+    "taekdhub",
+    "démonstration",
+    "théorème"
+   ]
+  },
+  {
+   "ref": "th-demo-m2-sous-espaces-propres-somme-directe",
+   "deck": "TaekdHub::Mathématiques::Réduction des endomorphismes",
+   "fields": {
+    "Nom": "Sous-espaces propres associés à des valeurs propres distinctes : somme directe",
+    "Hypotheses": "<ul><li>E est un espace vectoriel sur 𝕂 (la dimension finie n'est pas nécessaire) et u ∈ ℒ(E)</li><li>λ₁, …, λₚ sont des valeurs propres de u deux à deux distinctes</li><li>Eᵢ = Ker(u − λᵢ id) désigne le sous-espace propre associé à λᵢ</li></ul>",
+    "Enonce": "La somme E₁ + … + Eₚ est directe.",
+    "Preuve": "<ol><li>Il s'agit de montrer que la seule décomposition de 0 est la décomposition triviale : si x₁ + … + xₚ = 0 avec xᵢ ∈ Eᵢ, alors tous les xᵢ sont nuls. On procède par récurrence sur p ; pour p = 1, x₁ = 0 est immédiat.<span class=\"th-why\">↳ Caractérisation d'une somme directe par l'unicité de la décomposition du vecteur nul.</span></li><li>Soit p ≥ 2 et supposons le résultat vrai pour p − 1 sous-espaces propres. Soient xᵢ ∈ Eᵢ avec (1) x₁ + … + xₚ = 0.<span class=\"th-why\">↳ Hérédité de la récurrence.</span></li><li>On applique u à (1) : (2) λ₁x₁ + … + λₚxₚ = 0, car u(xᵢ) = λᵢxᵢ. On multiplie (1) par λₚ : (3) λₚx₁ + … + λₚxₚ = 0.<span class=\"th-why\">↳ xᵢ ∈ Eᵢ = Ker(u − λᵢ id).</span></li><li>On soustrait (3) à (2) : (λ₁ − λₚ)x₁ + … + (λₚ₋₁ − λₚ)xₚ₋₁ = 0. Chaque (λᵢ − λₚ)xᵢ appartient à Eᵢ (sous-espace vectoriel).<span class=\"th-why\">↳ Le terme en xₚ a disparu : c'est l'idée de la preuve.</span></li><li>Par hypothèse de récurrence (somme E₁ + … + Eₚ₋₁ directe), (λᵢ − λₚ)xᵢ = 0 pour tout i &lt; p. Comme λᵢ ≠ λₚ, xᵢ = 0 pour tout i &lt; p.<span class=\"th-why\">↳ Les valeurs propres sont deux à deux distinctes : c'est là que l'hypothèse sert.</span></li><li>En reportant dans (1), xₚ = 0. La seule décomposition de 0 est donc triviale : la somme est directe.</li></ol>",
+    "Critiques": "<ul><li>La récurrence porte sur l'énoncé « la seule décomposition de 0 est triviale », pour p − 1 puis p sous-espaces.</li><li>L'hypothèse λᵢ ≠ λₚ est utilisée à l'étape où l'on simplifie (λᵢ − λₚ)xᵢ = 0.</li><li>Aucune hypothèse de dimension finie : le résultat vaut dans tout espace vectoriel.</li></ul>",
+    "Ref": "th-demo-m2-sous-espaces-propres-somme-directe",
+    "Chapitre": "Réduction des endomorphismes",
+    "Source": "Question de cours du programme TaekdHub (lib/programme-data.ts, chapitre « Réduction des endomorphismes ») : « Montrer que des sous-espaces propres associés à des valeurs propres distinctes sont en somme directe. »<br>Rédaction : preuve classique écrite pour TaekdHub, à comparer avec TON cours (notations et ordre des étapes peuvent différer). Ce n'est pas le texte officiel de ton professeur."
+   },
+   "tags": [
+    "taekdhub",
+    "démonstration",
+    "théorème"
+   ]
+  },
+  {
+   "ref": "th-demo-m2-valeurs-propres-symetrique",
+   "deck": "TaekdHub::Mathématiques::Espaces euclidiens",
+   "fields": {
+    "Nom": "Valeurs propres d'une matrice symétrique réelle : elles sont réelles",
+    "Hypotheses": "<ul><li>A ∈ 𝓜ₙ(ℝ) est symétrique : ᵗA = A (c'est le cas de la matrice d'un endomorphisme symétrique dans une base orthonormée)</li><li>On cherche les valeurs propres de A parmi les complexes : λ ∈ ℂ avec AX = λX pour un X ∈ 𝓜ₙ,₁(ℂ) non nul</li></ul>",
+    "Enonce": "Toute valeur propre complexe d'une matrice symétrique réelle est réelle.",
+    "Preuve": "<ol><li>Soit λ ∈ ℂ une valeur propre de A et X ∈ 𝓜ₙ,₁(ℂ), X ≠ 0, tel que AX = λX. On note X* = ᵗX̄ (transposée de la conjuguée de X).<span class=\"th-why\">↳ On travaille dans ℂ : un polynôme caractéristique réel peut avoir des racines non réelles a priori.</span></li><li>Premier calcul : X*(AX) = X*(λX) = λ X*X = λ(|x₁|² + … + |xₙ|²).<span class=\"th-why\">↳ X*X = Σ |xₖ|².</span></li><li>Second calcul : X*A = ᵗ(ᵗA X̄) = ᵗ(A X̄), car ᵗA = A. Or A est réelle, donc A X̄ = conj(AX) = conj(λX) = λ̄ X̄. Ainsi X*A = λ̄ X*, puis X*AX = λ̄ X*X = λ̄(|x₁|² + … + |xₙ|²).<span class=\"th-why\">↳ Deux hypothèses sur A : symétrique (ᵗA = A) ET à coefficients réels (Ā = A).</span></li><li>Par différence, (λ − λ̄)(|x₁|² + … + |xₙ|²) = 0. Comme X ≠ 0, |x₁|² + … + |xₙ|² &gt; 0, donc λ = λ̄ : λ est réel.<span class=\"th-why\">↳ Une somme de carrés de modules est strictement positive dès qu'un des xₖ est non nul.</span></li></ol>",
+    "Critiques": "<ul><li>Il faut passer par ℂ et par la conjuguée : ᵗX A X (sans conjugaison) ne permet pas de conclure.</li><li>Les deux hypothèses sont utilisées : ᵗA = A et Ā = A.</li><li>On finit en justifiant que X*X &gt; 0 (X ≠ 0).</li></ul>",
+    "Ref": "th-demo-m2-valeurs-propres-symetrique",
+    "Chapitre": "Espaces euclidiens",
+    "Source": "Question de cours du programme TaekdHub (lib/programme-data.ts, chapitre « Espaces euclidiens ») : « Montrer que les valeurs propres d'un endomorphisme symétrique sont réelles. »<br>Rédaction : preuve classique écrite pour TaekdHub, à comparer avec TON cours (notations et ordre des étapes peuvent différer). Ce n'est pas le texte officiel de ton professeur."
+   },
+   "tags": [
+    "taekdhub",
+    "démonstration",
+    "théorème"
+   ]
+  },
+  {
+   "ref": "th-demo-m2-image-compact-continue",
+   "deck": "TaekdHub::Mathématiques::Espaces vectoriels normés, topologie",
+   "fields": {
+    "Nom": "Image d'un compact par une application continue",
+    "Hypotheses": "<ul><li>E et F sont des espaces vectoriels normés</li><li>K est une partie compacte de E : toute suite d'éléments de K admet une sous-suite qui converge vers un élément de K (Bolzano-Weierstrass)</li><li>f : K → F est continue</li></ul>",
+    "Enonce": "f(K) est une partie compacte de F.",
+    "Preuve": "<ol><li>Soit (yₙ) une suite d'éléments de f(K). Pour tout n, on choisit xₙ ∈ K tel que yₙ = f(xₙ).<span class=\"th-why\">↳ Définition de f(K) : chaque yₙ a au moins un antécédent dans K.</span></li><li>K est compact : il existe φ strictement croissante de ℕ dans ℕ et x ∈ K tels que (x_φ(n)) converge vers x.<span class=\"th-why\">↳ Compacité de K, au sens séquentiel ; la limite x est DANS K.</span></li><li>f est continue en x : par caractérisation séquentielle de la continuité, f(x_φ(n)) tend vers f(x), c'est-à-dire y_φ(n) → f(x).<span class=\"th-why\">↳ Continuité de f en x ∈ K, qui existe parce que la limite est dans K.</span></li><li>Comme x ∈ K, f(x) ∈ f(K). Ainsi toute suite de f(K) admet une sous-suite qui converge vers un élément de f(K) : f(K) est compact.</li></ol>",
+    "Critiques": "<ul><li>La limite x doit appartenir à K : c'est ce qui permet d'appliquer la continuité de f en x et d'avoir f(x) ∈ f(K).</li><li>On extrait la sous-suite sur les antécédents xₙ, pas sur les yₙ.</li><li>Le résultat est faux sans continuité, et la continuité sur K seul suffit.</li></ul>",
+    "Ref": "th-demo-m2-image-compact-continue",
+    "Chapitre": "Espaces vectoriels normés, topologie",
+    "Source": "Question de cours du programme TaekdHub (lib/programme-data.ts, chapitre « Espaces vectoriels normés, topologie ») : « Montrer que l'image d'un compact par une application continue est compacte. »<br>Rédaction : preuve classique écrite pour TaekdHub, à comparer avec TON cours (notations et ordre des étapes peuvent différer). Ce n'est pas le texte officiel de ton professeur."
+   },
+   "tags": [
+    "taekdhub",
+    "démonstration",
+    "théorème"
+   ]
+  },
+  {
+   "ref": "th-demo-m2-limite-uniforme-continue",
+   "deck": "TaekdHub::Mathématiques::Suites et séries de fonctions",
+   "fields": {
+    "Nom": "Limite uniforme de fonctions continues",
+    "Hypotheses": "<ul><li>A est une partie d'un espace vectoriel normé (par exemple un intervalle de ℝ) et chaque fₙ : A → 𝕂 est continue</li><li>La suite (fₙ) converge UNIFORMÉMENT sur A vers une fonction f</li></ul>",
+    "Enonce": "La fonction f est continue sur A.",
+    "Preuve": "<ol><li>Soit a ∈ A et ε &gt; 0. Par convergence uniforme, il existe un entier N tel que sup_A |f_N − f| ≤ ε/3, c'est-à-dire |f_N(x) − f(x)| ≤ ε/3 pour tout x ∈ A.<span class=\"th-why\">↳ Définition de la convergence uniforme : le même N convient pour tous les x à la fois.</span></li><li>f_N est continue en a : il existe δ &gt; 0 tel que, pour x ∈ A avec ‖x − a‖ &lt; δ, |f_N(x) − f_N(a)| ≤ ε/3.<span class=\"th-why\">↳ Continuité de la fonction f_N, N étant déjà fixé.</span></li><li>Pour x ∈ A avec ‖x − a‖ &lt; δ : |f(x) − f(a)| ≤ |f(x) − f_N(x)| + |f_N(x) − f_N(a)| + |f_N(a) − f(a)| ≤ ε/3 + ε/3 + ε/3 = ε.<span class=\"th-why\">↳ Inégalité triangulaire ; le premier et le troisième terme se majorent grâce à la convergence uniforme (en x puis en a).</span></li><li>Donc f est continue en a, et ce pour tout a ∈ A : f est continue sur A.</li></ol>",
+    "Critiques": "<ul><li>L'indice N est choisi AVANT δ, et ne dépend pas de x : c'est l'uniformité.</li><li>Avec la seule convergence simple, c'est faux : xⁿ sur [0, 1] converge simplement vers une fonction discontinue.</li><li>Le ε/3 sert trois fois : en x, au point central, et en a.</li></ul>",
+    "Ref": "th-demo-m2-limite-uniforme-continue",
+    "Chapitre": "Suites et séries de fonctions",
+    "Source": "Question de cours du programme TaekdHub (lib/programme-data.ts, chapitre « Suites et séries de fonctions ») : « Montrer que la limite uniforme d'une suite de fonctions continues est continue. »<br>Rédaction : preuve classique écrite pour TaekdHub, à comparer avec TON cours (notations et ordre des étapes peuvent différer). Ce n'est pas le texte officiel de ton professeur."
+   },
+   "tags": [
+    "taekdhub",
+    "démonstration",
+    "théorème"
+   ]
+  },
+  {
+   "ref": "th-demo-m2-lemme-abel",
+   "deck": "TaekdHub::Mathématiques::Séries entières",
+   "fields": {
+    "Nom": "Lemme d'Abel",
+    "Hypotheses": "<ul><li>Σ aₙzⁿ est une série entière à coefficients complexes</li><li>z₀ ∈ ℂ est tel que la suite (aₙz₀ⁿ) est BORNÉE</li></ul>",
+    "Enonce": "Pour tout z ∈ ℂ tel que |z| &lt; |z₀|, la série Σ aₙzⁿ converge absolument.<br>Conséquence : le rayon de convergence R de la série vérifie R ≥ |z₀|.",
+    "Preuve": "<ol><li>Soit M ≥ 0 tel que |aₙz₀ⁿ| ≤ M pour tout n. Soit z ∈ ℂ avec |z| &lt; |z₀| ; en particulier z₀ ≠ 0.<span class=\"th-why\">↳ Hypothèse : (aₙz₀ⁿ) bornée. Si |z| &lt; |z₀| alors |z₀| &gt; 0.</span></li><li>On pose q = |z| / |z₀| ∈ [0, 1[. Alors |aₙzⁿ| = |aₙz₀ⁿ| · qⁿ ≤ M qⁿ pour tout n.<span class=\"th-why\">↳ |zⁿ| = |z₀ⁿ| qⁿ.</span></li><li>La série géométrique Σ M qⁿ converge car 0 ≤ q &lt; 1. Par comparaison de séries à termes positifs, Σ |aₙzⁿ| converge : Σ aₙzⁿ converge absolument.<span class=\"th-why\">↳ Théorème de comparaison pour les séries à termes positifs.</span></li><li>Conséquence : pour tout r ∈ [0, |z₀|[, la série converge absolument pour |z| = r ; le rayon de convergence R, borne supérieure des r pour lesquels (aₙrⁿ) est bornée, vérifie donc R ≥ |z₀|.</li></ol>",
+    "Critiques": "<ul><li>L'hypothèse est « bornée » (et non « tend vers 0 ») : elle suffit.</li><li>L'inégalité est STRICTE : |z| &lt; |z₀|. Le lemme ne dit rien en |z| = |z₀|.</li><li>La majoration se fait avec le quotient q = |z| / |z₀| &lt; 1.</li></ul>",
+    "Ref": "th-demo-m2-lemme-abel",
+    "Chapitre": "Séries entières",
+    "Source": "Question de cours du programme TaekdHub (lib/programme-data.ts, chapitre « Séries entières ») : « Énoncer et démontrer le lemme d'Abel. »<br>Rédaction : preuve classique écrite pour TaekdHub, à comparer avec TON cours (notations et ordre des étapes peuvent différer). Ce n'est pas le texte officiel de ton professeur."
+   },
+   "tags": [
+    "taekdhub",
+    "démonstration",
+    "lemme"
+   ]
+  },
+  {
+   "ref": "th-demo-m2-markov-bienayme-tchebychev",
+   "deck": "TaekdHub::Mathématiques::Probabilités et variables aléatoires discrètes",
+   "fields": {
+    "Nom": "Inégalités de Markov et de Bienaymé-Tchebychev",
+    "Hypotheses": "<ul><li>Markov : X est une variable aléatoire discrète réelle POSITIVE, d'espérance finie, et a &gt; 0</li><li>Bienaymé-Tchebychev : X est une variable aléatoire discrète réelle admettant un moment d'ordre 2 (donc une espérance et une variance), et a &gt; 0</li></ul>",
+    "Enonce": "Markov : P(X ≥ a) ≤ E(X) / a.<br>Bienaymé-Tchebychev : P(|X − E(X)| ≥ a) ≤ V(X) / a².",
+    "Preuve": "<ol><li>Markov. Comme X ≥ 0, E(X) = Σ x P(X = x), somme de termes positifs sur les valeurs x de X. En ne gardant que les x ≥ a : E(X) ≥ Σ_{x ≥ a} x P(X = x) ≥ a Σ_{x ≥ a} P(X = x) = a P(X ≥ a).<span class=\"th-why\">↳ Termes positifs : on peut minorer une somme par une sous-somme ; pour x ≥ a, x P(X = x) ≥ a P(X = x).</span></li><li>Comme a &gt; 0, on divise : P(X ≥ a) ≤ E(X) / a.</li><li>Bienaymé-Tchebychev. On pose Y = (X − E(X))². C'est une variable aléatoire positive, d'espérance E(Y) = V(X) finie.<span class=\"th-why\">↳ Définition de la variance ; l'existence du moment d'ordre 2 assure que V(X) est finie.</span></li><li>Pour a &gt; 0, les événements {|X − E(X)| ≥ a} et {Y ≥ a²} sont égaux.<span class=\"th-why\">↳ La fonction t ↦ t² est strictement croissante sur ℝ₊.</span></li><li>On applique Markov à Y avec le réel a² &gt; 0 : P(|X − E(X)| ≥ a) = P(Y ≥ a²) ≤ E(Y) / a² = V(X) / a².</li></ol>",
+    "Critiques": "<ul><li>Markov exige X ≥ 0 (on minore une somme de termes positifs).</li><li>Bienaymé-Tchebychev se déduit de Markov appliquée à (X − E(X))², pas à X.</li><li>Les deux inégalités supposent a &gt; 0 : on divise par a et par a².</li></ul>",
+    "Ref": "th-demo-m2-markov-bienayme-tchebychev",
+    "Chapitre": "Probabilités et variables aléatoires discrètes",
+    "Source": "Question de cours du programme TaekdHub (lib/programme-data.ts, chapitre « Probabilités et variables aléatoires discrètes ») : « Démontrer l'inégalité de Markov et celle de Bienaymé-Tchebychev. »<br>Rédaction : preuve classique écrite pour TaekdHub, à comparer avec TON cours (notations et ordre des étapes peuvent différer). Ce n'est pas le texte officiel de ton professeur."
    },
    "tags": [
     "taekdhub",

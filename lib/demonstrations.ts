@@ -1,8 +1,9 @@
 import data from "@/data/demonstrations.json";
 import { foldText } from "@/lib/annales";
 import type { AnkiTransport } from "@/lib/anki-connect";
+import { ensureDeck } from "@/lib/anki-export";
 import { DEMO_GAP_KINDS, isCleanSuccess, upsertAttempts, type AttemptHelp, type AttemptResult, type DemoGap, type DemoGapKind, type ExerciseAttempt } from "@/lib/attempts";
-import { DEMO_MODEL, DEMO_MODEL_NAME, demoNote, demoRef, type DemoNote, type Demonstration } from "@/lib/demo-cards";
+import { DEMO_MODEL_NAME, demoNote, demoRef, type DemoNote, type Demonstration } from "@/lib/demo-cards";
 import { dayDiff } from "@/lib/fsrs";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 import type { Subject } from "@/lib/supabase/types";
@@ -118,29 +119,66 @@ export interface RecurringGap {
   /** Libellé de la lacune la plus récente de ce groupe. */
   detail: string;
   step?: number;
-  /** Restitutions distinctes où elle apparaît. */
+  /** Restitutions distinctes où elle apparaît, depuis la dernière réussite autonome. */
   count: number;
   days: string[];
+  /** Jour de la réussite autonome qui a suivi : la difficulté est vérifiée corrigée. `null` : encore ouverte. */
+  correctedOn: string | null;
 }
 
 function gapKey(gap: DemoGap): string {
   return gap.step ? `${gap.kind}#${gap.step}` : `${gap.kind}|${foldText(gap.detail)}`;
 }
 
-/** Les lacunes qui reviennent : même type et même étape (ou même texte), dans au moins `RECURRING_GAP_MIN` restitutions distinctes. */
-export function recurringGaps(demoId: string, attempts: readonly ExerciseAttempt[]): RecurringGap[] {
-  const groups = new Map<string, RecurringGap>();
+/**
+ * Les lacunes qui REVIENNENT : même type et même étape (ou même texte), dans
+ * au moins `RECURRING_GAP_MIN` restitutions distinctes — comptées depuis la
+ * dernière RÉUSSITE AUTONOME. Une réussite sans aide ferme toutes les
+ * lacunes ouvertes (elles passent en « corrigées », avec le jour de la
+ * preuve) ; si l'une revient ensuite, elle repart de zéro. Les révisions de
+ * la carte dans Anki n'entrent jamais ici : seules comptent les restitutions.
+ */
+function gapRuns(demoId: string, attempts: readonly ExerciseAttempt[]): { open: RecurringGap[]; corrected: RecurringGap[] } {
+  let open = new Map<string, RecurringGap>();
+  const corrected: RecurringGap[] = [];
   for (const attempt of restitutionsOf(demoId, attempts)) {
+    if (isCleanSuccess(attempt)) {
+      for (const group of open.values()) if (group.count >= RECURRING_GAP_MIN) corrected.push({ ...group, correctedOn: attempt.day });
+      open = new Map();
+      continue;
+    }
     const seenHere = new Set<string>();
     for (const gap of attempt.gaps ?? []) {
       const key = gapKey(gap);
       if (seenHere.has(key)) continue;
       seenHere.add(key);
-      const current = groups.get(key);
-      groups.set(key, { kind: gap.kind, detail: gap.detail, step: gap.step, count: (current?.count ?? 0) + 1, days: [...(current?.days ?? []), attempt.day] });
+      const current = open.get(key);
+      open.set(key, { kind: gap.kind, detail: gap.detail, step: gap.step, count: (current?.count ?? 0) + 1, days: [...(current?.days ?? []), attempt.day], correctedOn: null });
     }
   }
-  return [...groups.values()].filter((group) => group.count >= RECURRING_GAP_MIN).sort((a, b) => b.count - a.count || a.kind.localeCompare(b.kind));
+  return { open: [...open.values()].filter((group) => group.count >= RECURRING_GAP_MIN).sort((a, b) => b.count - a.count || a.kind.localeCompare(b.kind)), corrected };
+}
+
+export function recurringGaps(demoId: string, attempts: readonly ExerciseAttempt[]): RecurringGap[] {
+  return gapRuns(demoId, attempts).open;
+}
+
+/** Les lacunes récurrentes qu'une réussite autonome a depuis vérifiées corrigées. */
+export function correctedGaps(demoId: string, attempts: readonly ExerciseAttempt[]): RecurringGap[] {
+  return gapRuns(demoId, attempts).corrected;
+}
+
+/**
+ * Le lien carte ↔ démonstration après une VÉRIFICATION dans Anki : exactement
+ * les démonstrations retrouvées. Une carte supprimée dans Anki n'y reste pas
+ * marquée ; une carte déjà connue garde sa date.
+ */
+export function syncDemoCards(current: Readonly<Record<string, string>>, found: readonly string[], known: readonly string[], at: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const id of known) if (found.includes(id)) out[id] = current[id] ?? at;
+  // Un identifiant que ce code ne connaît plus est conservé tel quel : on ne perd pas une donnée sur une simple vérification.
+  for (const [id, date] of Object.entries(current)) if (!known.includes(id)) out[id] = date;
+  return out;
 }
 
 export type DemoActionKind = "revoir-carte" | "ajouter-carte" | "creer-carte-ciblee" | "refaire" | "expliquer" | "rien";
@@ -422,18 +460,36 @@ export interface SendDemoResult {
   added: string[];
   alreadyThere: string[];
   failed: string[];
+  /** Cartes rangées par Anki hors du paquet du chapitre, puis déplacées par TaekdHub (voir `ensureDeck`). */
+  moved: number;
+  /** Cartes hors du paquet du chapitre qu'on n'a pas pu déplacer. */
+  unplaced: number;
 }
 
 /**
- * Verse les démonstrations CHOISIES dans Anki : le type de note est créé s'il
- * manque ; une démonstration dont la note existe déjà (même `Ref`) n'est pas
+ * Le type de note s'installe en IMPORTANT le paquet (.apkg), jamais en le créant
+ * par AnkiConnect : un type créé par AnkiConnect reçoit un identifiant aléatoire,
+ * différent de celui du paquet, et le paquet — importé plus tard, sur l'iPad ou
+ * ailleurs — créerait alors un SECOND type « … Démonstration+ ». Constaté avec le
+ * vrai Anki. Un seul type, donc : le paquet d'abord.
+ */
+export class DemoNoteTypeMissingError extends Error {
+  constructor() {
+    super(`Le type de note « ${DEMO_MODEL_NAME} » n'est pas dans ton Anki. Importe d'abord un paquet de démonstrations (bouton « Paquet d'essai » ou « Toutes les démonstrations »), puis recommence : l'import installe le type de note une fois pour toutes.`);
+    this.name = "DemoNoteTypeMissingError";
+  }
+}
+
+/**
+ * Verse les démonstrations CHOISIES dans Anki : le type de note doit déjà y
+ * être (voir `DemoNoteTypeMissingError`) ; une démonstration dont la note existe déjà (même `Ref`) n'est pas
  * recréée — ni modifiée : ses cartes et leur planification restent celles
  * d'Anki.
  */
 export async function sendDemoNotes(transport: AnkiTransport, demos: readonly Demonstration[]): Promise<SendDemoResult> {
-  if (demos.length === 0) return { added: [], alreadyThere: [], failed: [] };
+  if (demos.length === 0) return { added: [], alreadyThere: [], failed: [], moved: 0, unplaced: 0 };
   const models = (await transport("modelNames")) as string[];
-  if (!models.includes(DEMO_MODEL_NAME)) await transport("createModel", { ...DEMO_MODEL, isCloze: false });
+  if (!models.includes(DEMO_MODEL_NAME)) throw new DemoNoteTypeMissingError();
   const present = new Set(await findDemoNotes(transport, demos));
   const todo = demos.filter((demo) => !present.has(demo.id));
   for (const deck of new Set(todo.map(demoDeck))) await transport("createDeck", { deck });
@@ -444,8 +500,16 @@ export async function sendDemoNotes(transport: AnkiTransport, demos: readonly De
   const ids = notes.length > 0 ? ((await transport("addNotes", { notes })) as (number | null)[]) : [];
   const added: string[] = [];
   const failed: string[] = [];
-  todo.forEach((demo, index) => (typeof ids[index] === "number" ? added : failed).push(demo.id));
-  return { added, alreadyThere: [...present], failed };
+  const created = new Map<string, number[]>();
+  todo.forEach((demo, index) => {
+    const id = ids[index];
+    if (typeof id === "number") {
+      added.push(demo.id);
+      created.set(demoDeck(demo), [...(created.get(demoDeck(demo)) ?? []), id]);
+    } else failed.push(demo.id);
+  });
+  const placed = await ensureDeck(transport, [...created].map(([deck, noteIds]) => ({ deck, noteIds })));
+  return { added, alreadyThere: [...present], failed, ...placed };
 }
 
 /* ── Pour le connecteur MCP (lecture seule) ───────────────────────── */
@@ -481,6 +545,7 @@ export function demonstrationsReport(input: DemoReportInput, filter: { chapterId
         .reverse()
         .map((attempt) => ({ jour: attempt.day, resultat: attempt.result, aide: attempt.help, lacunes: attempt.gaps ?? [] })),
       lacunes_recurrentes: recurringGaps(demo.id, input.attempts).map((gap) => ({ type: gap.kind, detail: gap.detail, etape: gap.step ?? null, restitutions: gap.count, jours: gap.days })),
+      lacunes_corrigees: correctedGaps(demo.id, input.attempts).map((gap) => ({ type: gap.kind, detail: gap.detail, etape: gap.step ?? null, corrigee_le: gap.correctedOn, preuve: "réussite autonome postérieure à la dernière occurrence" })),
       actions: demoActions({ demo, attempts: input.attempts, cardInAnki: sentAt !== null, today: input.today }).map((action) => ({ action: action.kind, pourquoi: action.why, ...(action.target ? { lacune: { type: action.target.kind, detail: action.target.detail, etape: action.target.step ?? null } } : {}) })),
       carte_anki: { reference: demoRef(demo.id), paquet: demoDeck(demo), dans_anki: sentAt ? `oui (envoyée ou retrouvée le ${sentAt.slice(0, 10)})` : "inconnu : TaekdHub ne peut pas interroger Anki à distance" },
     };

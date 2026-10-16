@@ -46,11 +46,16 @@ export interface Demonstration {
   statement: string;
   steps: DemoStep[];
   critical: string[];
+  /**
+   * D'où vient la rédaction — affiché au verso. L'énoncé et la preuve sont une
+   * rédaction classique, pas le texte de ton cours : on le dit.
+   */
+  sources?: string[];
 }
 
 export const DEMO_MODEL_NAME = "TaekdHub — Démonstration";
 export const DEMO_TAG = "démonstration";
-export const DEMO_FIELDS = ["Nom", "Hypotheses", "Enonce", "Preuve", "Critiques", "Ref", "Chapitre"] as const;
+export const DEMO_FIELDS = ["Nom", "Hypotheses", "Enonce", "Preuve", "Critiques", "Ref", "Chapitre", "Source"] as const;
 
 export const DEMO_QFMT = `<div class="th-demo">
   <div class="th-kind">Démonstration à restituer</div>
@@ -66,6 +71,7 @@ export const DEMO_AFMT = `<div class="th-demo">
   <div class="th-block"><b>Énoncé</b><div class="th-statement">{{Enonce}}</div></div>
   <div class="th-block"><b>Démonstration</b>{{Preuve}}</div>
   {{#Critiques}}<div class="th-block th-critical"><b>Points critiques à vérifier dans ta restitution</b>{{Critiques}}</div>{{/Critiques}}
+  {{#Source}}<div class="th-source">{{Source}}</div>{{/Source}}
   <div class="th-ref">{{Chapitre}} · {{Ref}}</div>
 </div>`;
 
@@ -81,7 +87,8 @@ export const DEMO_CSS = `.card { font-family: -apple-system, "Segoe UI", sans-se
 .th-statement { margin: .3em 0; }
 .th-why { display: block; font-size: .85em; color: #5b6272; }
 .th-critical { padding: .5em .8em; border-left: 3px solid #b3402f; background: #f7ecea; }
-.th-ref { margin-top: 1.2em; font-size: .7em; color: #8a8f9c; }
+.th-source { margin-top: 1em; font-size: .75em; color: #5b6272; }
+.th-ref { margin-top: .6em; font-size: .7em; color: #8a8f9c; }
 .nightMode .card, .night_mode .card { color: #e8e9ee; background: #1d1f26; }
 .nightMode .th-task, .night_mode .th-task { background: #2a2d37; border-color: #e8e9ee; }
 .nightMode .th-critical, .night_mode .th-critical { background: #34262a; }`;
@@ -111,6 +118,7 @@ export function renderDemoFields(demo: Demonstration, chapterTitle: string): Rec
     Critiques: list("ul", demo.critical.map(esc)),
     Ref: demoRef(demo.id),
     Chapitre: esc(chapterTitle),
+    Source: (demo.sources ?? []).map(esc).join("<br>"),
   };
 }
 
