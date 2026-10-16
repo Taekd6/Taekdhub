@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BRIEFING_SEEN_KEY, LAST_ACTIVITY_KEY, buildBriefing, shouldShowBriefing } from "@/lib/briefing";
+import { BRIEFING_SEEN_KEY, LAST_ACTIVITY_KEY, briefingShownInThisTab, buildBriefing, shouldShowBriefing } from "@/lib/briefing";
+import { KHOLLE_HISTORY_KEY, parseKholleHistory } from "@/lib/kholle";
 import { localData, readFlag } from "@/lib/storage";
 
 /**
@@ -22,7 +23,8 @@ export function BriefingGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const now = new Date();
     const preferences = localData.preferences();
-    if (shouldShowBriefing(preferences, readFlag(BRIEFING_SEEN_KEY), now, readFlag(LAST_ACTIVITY_KEY))) {
+    // Déjà montré dans cet onglet : jamais de second aiguillage (voir lib/briefing.ts#briefingShownInThisTab).
+    if (!briefingShownInThisTab() && shouldShowBriefing(preferences, readFlag(BRIEFING_SEEN_KEY), now, readFlag(LAST_ACTIVITY_KEY))) {
       const briefing = buildBriefing({
         sessions: localData.sessions(),
         workItems: localData.workItems(),
@@ -33,6 +35,11 @@ export function BriefingGate({ children }: { children: React.ReactNode }) {
         chapterMemory: localData.chapterMemory(),
         preferences,
         history: localData.nextMoves(),
+        // Les mêmes données que l'écran du point (sauf les annales, propres au compte) :
+        // sinon l'aiguillage et l'écran pouvaient juger différemment « rien à dire ».
+        attempts: localData.attempts(),
+        ankiSnapshots: localData.ankiSnapshots(),
+        kholle: parseKholleHistory(readFlag(KHOLLE_HISTORY_KEY)),
         now,
       });
       if (briefing.hasContent) {

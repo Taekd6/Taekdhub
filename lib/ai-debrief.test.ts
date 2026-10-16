@@ -198,3 +198,33 @@ describe("(9) compatibilité avec les historiques existants", () => {
     expect(weird.byAi).toBeUndefined();
   });
 });
+
+describe("renvoi d'un débrief : la correction de l'élève fait foi", () => {
+  it("une cause tranchée À LA MAIN n'est pas remplacée par une autre cause de l'IA au renvoi", () => {
+    const value = parse(FULL);
+    const first = save(value);
+    // L'élève a corrigé Q2 (l'IA disait « méthode ») en « cours » : la question devient la sienne.
+    const saved = questionsFromAttempts(first.grade.id, first.attempts, first.errors).map((q) =>
+      q.label === "Q2" ? { ...q, cause: "cours" as const, confidence: null, byAi: false } : q
+    );
+    const second = parse({ ...FULL, questions: [{ libelle: "Q2", chapitre: "m1-derivabilite", resultat: "partielle", cause: "calcul", confiance: "certaine" }] });
+    const q2 = mergeWithSaved(second.questions, saved).find((q) => q.label === "Q2")!;
+    expect(q2).toMatchObject({ cause: "cours", outcome: "fausse", chapterId: "m2-reduction", byAi: false });
+  });
+
+  it("une question encore intacte de l'IA est bien mise à jour par le renvoi", () => {
+    const value = parse(FULL);
+    const first = save(value);
+    const saved = questionsFromAttempts(first.grade.id, first.attempts, first.errors);
+    const second = parse({ ...FULL, questions: [{ libelle: "Q2", chapitre: "m2-reduction", resultat: "partielle", cause: "calcul", confiance: "certaine" }] });
+    const q2 = mergeWithSaved(second.questions, saved).find((q) => q.label === "Q2")!;
+    expect(q2).toMatchObject({ cause: "calcul", outcome: "partielle", byAi: true });
+  });
+
+  it("une question saisie à la main (sans IA) reste celle de l'élève ; l'IA complète seulement le vide", () => {
+    const manual = [{ label: "Q4", chapterId: null, outcome: "fausse" as const, cause: "méthode" as const, lackOfTime: false, points: null, minutes: null, linkedExerciseKey: null, note: "" }];
+    const second = parse({ ...FULL, questions: [{ libelle: "Q4", chapitre: "m2-reduction", resultat: "réussie", description: "Juste en fait." }] });
+    const q4 = mergeWithSaved(second.questions, manual).find((q) => q.label === "Q4")!;
+    expect(q4).toMatchObject({ outcome: "fausse", cause: "méthode", chapterId: "m2-reduction", note: "Juste en fait." });
+  });
+});

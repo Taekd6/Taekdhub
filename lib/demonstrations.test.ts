@@ -368,3 +368,45 @@ describe("lecture par une IA (get_demonstrations)", () => {
     expect(demonstrationsReport({ attempts: [], demoCards: {}, today: TODAY }, { subject: "Physique" })).toEqual([]);
   });
 });
+
+describe("Next Move et les démonstrations", () => {
+  const base = { sessions: [], workItems: [], grades: [], reviewItems: [], errors: [], checkins: [], chapterMemory: [], preferences: normalizePreferences({}), history: [], now: NOW, availableMinutes: null };
+  const demoMoves = (attempts: ExerciseAttempt[]) => rankCandidates({ ...base, attempts }).filter((candidate) => candidate.key.startsWith("refaire:demo:"));
+
+  it("une restitution incomplète : UN seul candidat, qui mène à la démonstration (pas aux annales)", () => {
+    const moves = demoMoves(history(restitution("2026-10-14")));
+    expect(moves).toHaveLength(1);
+    expect(moves[0]).toMatchObject({ key: `refaire:demo:${RANG}`, href: `/anki#demo-${RANG}`, action: "restitution sans support", chapterId: "m1-applications-lineaires" });
+    expect(moves[0].terms[0].reason).toBe("Dernière restitution incomplète (il y a 2 j)");
+  });
+
+  it("jamais restituée : aucune proposition — rien n'a été observé", () => {
+    expect(demoMoves([])).toEqual([]);
+  });
+
+  it("réussie seule récemment : plus rien à proposer ; ancienne : on vérifie qu'elle tient", () => {
+    const success = (day: string) => restitution(day, { resultat: "réussie", lacunes: [] });
+    expect(demoMoves(history(success("2026-10-10")))).toEqual([]);
+    // 35 jours avant le 16 octobre, au-delà de REACTIVATE_AFTER_DAYS.
+    expect(REACTIVATE_AFTER_DAYS).toBeLessThan(35);
+    const old = demoMoves(history(success("2026-09-11")));
+    expect(old.map((move) => move.terms[0].id)).toEqual(["démo-à-réactiver"]);
+  });
+
+  it("la même lacune dans deux restitutions ajoute sa raison", () => {
+    const moves = demoMoves(history(restitution("2026-10-05"), restitution("2026-10-14")));
+    expect(moves[0].terms.map((term) => term.id)).toContain("démo-lacune-récurrente");
+  });
+});
+
+describe("une démonstration ne prend pas la place d'un objectif de temps", () => {
+  it("elle n'absorbe pas le bloc de la matière et reste derrière un DM pour le lendemain", () => {
+    const preferences = normalizePreferences({});
+    const dm = { id: "w-dm", title: "DM 5", kind: "dm" as const, subject: "Mathématiques" as const, estimatedMinutes: 120, dueDate: "2026-10-17", dueTime: null, status: "à faire" as const, important: false, notBeforeDate: null, chapterIds: [], createdAt: "2026-10-11T08:00:00.000Z", completedAt: null, postponements: [] };
+    const ranked = rankCandidates({ sessions: [], workItems: [dm], grades: [], reviewItems: [], errors: [], checkins: [], chapterMemory: [], preferences, history: [], now: NOW, availableMinutes: null, attempts: history(restitution("2026-10-14")) });
+    const demoMove = ranked.find((candidate) => candidate.key === `refaire:demo:${RANG}`)!;
+    const dmMove = ranked.find((candidate) => candidate.key === "échéance:w-dm")!;
+    expect(demoMove.terms.some((term) => term.id.startsWith("bloc:"))).toBe(false);
+    expect(dmMove.score).toBeGreaterThan(demoMove.score);
+  });
+});

@@ -75,6 +75,11 @@ export function AccountSection() {
     return () => clearInterval(id);
   }, []);
 
+  // Arrivée par le lien « mot de passe oublié » : Réglages s'ouvre en haut, le champ est ici — on y va.
+  useEffect(() => {
+    if (account.recovery) document.getElementById("compte")?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [account.recovery]);
+
   if (!account.enabled) {
     return (
       <Group id="compte" title="Compte" footer="Tes données restent dans ce navigateur. Pense à exporter une sauvegarde régulièrement.">

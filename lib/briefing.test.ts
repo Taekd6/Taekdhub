@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BRIEFING_SECTION_MAX, buildBriefing, greetingFor, shouldShowBriefing, type BriefingInput } from "@/lib/briefing";
+import { BRIEFING_SECTION_MAX, briefingShownInThisTab, buildBriefing, greetingFor, hasUserData, markBriefingShownInThisTab, resetBriefingTabGuard, shouldShowBriefing, type BriefingInput } from "@/lib/briefing";
 import { createChapter } from "@/lib/chapter-memory";
 import { createErrorEntry } from "@/lib/error-log";
 import { createReviewItem } from "@/lib/review-items";
@@ -209,6 +209,13 @@ describe("aujourd'hui", () => {
   it("le prochain mouvement est celui de Next Move", () => {
     const briefing = buildBriefing(input({ preferences: prefs({ eveningMinimums: [{}, {}, {}, { Physique: 60 }, {}, {}, {}] }) }));
     expect(briefing.move.primary?.key).toBe("bloc:Physique");
+    // Seulement des réglages (minimum du soir), aucune saisie : pas d'écran imposé à l'ouverture.
+    expect(briefing.hasContent).toBe(false);
+  });
+
+  it("dès qu'une saisie réelle existe, le point a quelque chose à dire", () => {
+    const preferences = prefs({ eveningMinimums: [{}, {}, {}, { Physique: 60 }, {}, {}, {}] });
+    const briefing = buildBriefing(input({ preferences, workItems: [workItem({ dueDate: "2026-10-20" })] }));
     expect(briefing.hasContent).toBe(true);
   });
 });
@@ -219,5 +226,38 @@ describe("pas de doublon", () => {
     const briefing = buildBriefing(input({ reviewItems: old }));
     expect(briefing.postponed.map((item) => item.id)).toContain("cartes-en-retard");
     expect(briefing.today.map((item) => item.id)).not.toContain("cartes-du-jour");
+  });
+});
+
+describe("garde-fous de l'ouverture", () => {
+  it("une fois le point montré dans l'onglet, l'aiguillage ne recommence pas (stockage en échec compris)", () => {
+    resetBriefingTabGuard();
+    expect(briefingShownInThisTab()).toBe(false);
+    markBriefingShownInThisTab();
+    expect(briefingShownInThisTab()).toBe(true);
+    resetBriefingTabGuard();
+  });
+
+  it("minuit : un point vu à 23 h 50 revient à 0 h 10, même sans 4 h d'absence", () => {
+    const seen = new Date(2026, 8, 24, 23, 50).toISOString();
+    expect(shouldShowBriefing(prefs(), seen, new Date(2026, 8, 25, 0, 10), seen)).toBe(true);
+  });
+
+  it("au travail depuis le matin : l'activité récente empêche le retour du point à midi", () => {
+    const seen = new Date(2026, 8, 24, 8, 0).toISOString();
+    const active = new Date(2026, 8, 24, 11, 55).toISOString();
+    expect(shouldShowBriefing(prefs(), seen, new Date(2026, 8, 24, 12, 30), active)).toBe(false);
+    expect(shouldShowBriefing(prefs(), seen, new Date(2026, 8, 24, 16, 0), active)).toBe(true);
+  });
+
+  it("une trace d'activité illisible retombe sur le dernier affichage", () => {
+    const seen = new Date(2026, 8, 24, 8, 0).toISOString();
+    expect(shouldShowBriefing(prefs(), seen, new Date(2026, 8, 24, 13, 0), "pas une date")).toBe(true);
+  });
+
+  it("un chapitre rangé seul ne compte pas comme une donnée saisie", () => {
+    const archived = { ...createChapter({ subject: "Physique", title: "Optique", learnedAt: "2026-07-01" }, NOW, "opt"), archived: true };
+    expect(hasUserData(input({ chapterMemory: [archived] }))).toBe(false);
+    expect(hasUserData(input({ chapterMemory: [{ ...archived, archived: false }] }))).toBe(true);
   });
 });

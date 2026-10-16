@@ -330,6 +330,10 @@ export function aiDebriefPrompt(): string {
  *     l'exercice relié et la cause déjà posés ;
  *   — une question enregistrée que l'IA ne mentionne plus est CONSERVÉE
  *     (l'élève la retire lui-même s'il le veut).
+ *   — une question que l'ÉLÈVE a saisie ou modifiée (`byAi` différent de
+ *     `true`) l'emporte entièrement : l'IA ne peut qu'en compléter les champs
+ *     vides (chapitre, niveau, bonne idée, description). Sa cause, son résultat
+ *     et son chapitre ne sont jamais remplacés par un renvoi.
  * Les libellés se comparent par `slug`, comme les identifiants de
  * `buildDebrief` : même libellé, même tentative — remplacée, jamais doublée.
  */
@@ -339,6 +343,16 @@ export function mergeWithSaved(incoming: readonly DebriefQuestion[], saved: read
     const before = savedBySlug.get(slug(question.label));
     if (!before) return question;
     savedBySlug.delete(slug(question.label));
+    if (before.byAi !== true) {
+      // La version de l'élève fait foi ; l'IA ne remplit que ce qui manque.
+      return {
+        ...before,
+        chapterId: before.chapterId ?? question.chapterId,
+        level: before.level ?? question.level ?? null,
+        correction: before.correction ?? question.correction ?? null,
+        note: before.note || question.note,
+      };
+    }
     const keepCause = question.cause === null && before.cause !== null && question.outcome !== "réussie";
     return {
       ...question,

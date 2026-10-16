@@ -1,3 +1,4 @@
+import { DEMONSTRATIONS, demoKey, demoStatus, demoSubject, recurringGaps } from "@/lib/demonstrations";
 import type { AnnaleLog } from "@/lib/annales";
 import { mainDeck } from "@/lib/anki-mapping";
 import { ANKI_DUE_STALE_HOURS, latestDueInfo, snapshotAgeHours, type AnkiSnapshot } from "@/lib/anki-snapshot";
@@ -775,7 +776,9 @@ function retryCandidates(input: NextMoveInput, context: DiagnosticContext): Move
   const perSubject = new Map<string, number>();
   const out: MoveCandidate[] = [];
   for (const exercise of dueRetries(context.exercises)) {
-    if (!exercise.subject) continue;
+    // Une restitution de démonstration est aussi une tentative (clé `demo:<id>`) : elle a son propre
+    // candidat, qui mène au bon endroit (`demoCandidates`), pas à « À refaire » des annales.
+    if (!exercise.subject || isDemoExerciseKey(exercise.key)) continue;
     const count = perSubject.get(exercise.subject) ?? 0;
     if (count >= RETRY_PER_SUBJECT) continue;
     perSubject.set(exercise.subject, count + 1);
@@ -822,6 +825,78 @@ function retryCandidates(input: NextMoveInput, context: DiagnosticContext): Move
   return out;
 }
 
+/* ── Démonstrations (lib/demonstrations.ts) ──────────────────────────── */
+
+/** Dernière restitution incomplète ou ratée : la preuve ne tient pas encore. */
+const DEMO_INCOMPLETE = 22;
+/** Réussie, mais avec indices ou la preuve sous les yeux. */
+const DEMO_WITH_HELP = 15;
+/** Réussite autonome ancienne : on vérifie qu'elle tient. */
+const DEMO_REACTIVATE = 12;
+/** La même lacune revient dans plusieurs restitutions. */
+const DEMO_RECURRING = 6;
+
+/**
+ * DÉMONSTRATIONS — une restitution à refaire, seulement sur OBSERVATION.
+ *
+ * Trois états seulement deviennent candidats : dernière restitution
+ * incomplète, réussite avec aide, réussite autonome trop ancienne
+ * (`REACTIVATE_AFTER_DAYS`). Une démonstration jamais restituée N'EST PAS
+ * proposée : rien n'a été observé, et le plan ne doit pas se remplir de
+ * toutes les démonstrations du programme. Anki reste maître de la
+ * répétition de la carte ; ici, on propose seulement de vérifier qu'on sait
+ * refaire la preuve SANS support.
+ *
+ * Clé `refaire:demo:<id>` : l'historique (lib/next-move/history.ts) ne la
+ * dit faite qu'à l'enregistrement d'une NOUVELLE restitution — jamais au
+ * temps passé.
+ */
+function isDemoExerciseKey(key: string): boolean {
+  return key.startsWith(demoKey(""));
+}
+
+function demoCandidates(input: NextMoveInput): MoveCandidate[] {
+  const attempts = input.attempts ?? [];
+  if (attempts.length === 0) return [];
+  const today = dayKey(input.now);
+  const out: MoveCandidate[] = [];
+  for (const demo of DEMONSTRATIONS) {
+    const status = demoStatus(demo.id, attempts, today);
+    const ago = status.lastDay ? daysAgoLabel(dayDistance(status.lastDay, today)) : "";
+    let base: ScoreTerm | null = null;
+    if (status.state === "restitution-incomplète") base = { id: "démo-incomplète", points: DEMO_INCOMPLETE, reason: `Dernière restitution incomplète (${ago})` };
+    else if (status.state === "réussite-avec-aide") base = { id: "démo-avec-aide", points: DEMO_WITH_HELP, reason: `Restituée ${ago} avec aide : pas encore seule` };
+    else if (status.state === "à-réactiver") base = { id: "démo-à-réactiver", points: DEMO_REACTIVATE, reason: `Dernière restitution sans aide ${ago} : vérifie qu'elle tient` };
+    if (!base) continue;
+    const terms: ScoreTerm[] = [base];
+    const recurring = recurringGaps(demo.id, attempts)[0];
+    if (recurring) {
+      terms.push({ id: "démo-lacune-récurrente", points: DEMO_RECURRING, reason: `Même lacune (${recurring.kind}${recurring.step ? `, étape ${recurring.step}` : ""}) dans ${recurring.count} restitutions` });
+    }
+    const focus = weeklyFocusTerm(input, demo.chapterId);
+    if (focus) terms.push(focus);
+    out.push({
+      key: `refaire:${demoKey(demo.id)}`,
+      kind: "refaire",
+      subject: demoSubject(demo),
+      title: demo.title,
+      action: "restitution sans support",
+      instruction: "Sans support : énonce le résultat et ses hypothèses, puis démontre-le en entier. Compare ensuite à la preuve de référence et enregistre ta restitution (étapes oubliées comprises).",
+      problem: status.because,
+      doneWhen: "Une nouvelle restitution est enregistrée dans Démonstrations.",
+      minMinutes: 10,
+      idealMinutes: 20,
+      maxMinutes: 30,
+      href: `/anki#demo-${demo.id}`,
+      resource: { label: "Démonstrations", href: "/anki#demonstrations" },
+      terms,
+      score: 0,
+      chapterId: demo.chapterId,
+    });
+  }
+  return out;
+}
+
 /**
  * TRANSFERT (lib/transfer.ts) : un exercice raté puis réussi sans aide
  * appelle, une semaine plus tard, un exercice DIFFÉRENT qui demande la même
@@ -830,7 +905,8 @@ function retryCandidates(input: NextMoveInput, context: DiagnosticContext): Move
 function transferCandidates(input: NextMoveInput, context: DiagnosticContext): MoveCandidate[] {
   const today = dayKey(input.now);
   return transferChecks(context.exercises, input.attempts ?? [], input.preferences.retryDelaysDays, today)
-    .filter((check) => check.status === "à-faire" && check.exercise.subject)
+    // Pas de « transfert » pour une démonstration : on la refait, on ne la transpose pas.
+    .filter((check) => check.status === "à-faire" && check.exercise.subject && !isDemoExerciseKey(check.exercise.key))
     .slice(0, 3)
     .map((check) => {
       const chapter = check.exercise.chapterId ? PROGRAMME_BY_ID.get(check.exercise.chapterId)?.title ?? null : null;
@@ -1191,6 +1267,7 @@ export function rankCandidates(input: NextMoveInput): MoveCandidate[] {
     ...neverRevisedCandidates(input, diagnostic),
     ...errorCandidates(input),
     ...retryCandidates(input, diagnostic),
+    ...demoCandidates(input),
     ...transferCandidates(input, diagnostic),
     ...diagnosticCandidates(input, diagnostic),
     ...ankiCandidates(input, diagnostic),
@@ -1281,7 +1358,9 @@ function absorbBlocks(candidates: MoveCandidate[]): MoveCandidate[] {
   const removed = new Set<MoveCandidate>();
   for (const block of candidates.filter((candidate) => candidate.kind === "bloc")) {
     const concrete = candidates
-      .filter((candidate) => candidate.kind === "refaire" && candidate.subject === block.subject)
+      // Une restitution de démonstration (10 à 30 min) ne remplace pas un objectif de TEMPS : elle
+      // n'absorbe pas le bloc, sinon elle passerait devant une échéance du lendemain.
+      .filter((candidate) => candidate.kind === "refaire" && candidate.subject === block.subject && !isDemoExerciseKey(candidate.key.slice("refaire:".length)))
       .sort(compareCandidates)[0];
     if (!concrete) continue;
     // « Compte pour le soir » ferait doublon avec le minimum du soir repris du bloc.

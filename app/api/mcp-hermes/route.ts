@@ -57,11 +57,20 @@ const text = (t: string) => ({ content: [{ type: "text" as const, text: t }] });
  * réponse : son message pourrait nommer une adresse, une table ou une requête.
  */
 async function safely(read: () => Promise<ReturnType<typeof text>>) {
-  try {
-    return await read();
-  } catch {
-    return text(UNAVAILABLE);
+  // UNE nouvelle tentative après un échec : une lecture Supabase échoue parfois de façon passagère
+  // (constaté sur le Preview : environ un appel sur six). Toujours en lecture seule, et le message
+  // reste générique si le second essai échoue aussi.
+  let result = text(UNAVAILABLE);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      result = await read();
+    } catch {
+      result = text(UNAVAILABLE);
+    }
+    if (result.content[0].text !== UNAVAILABLE) return result;
+    if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 400));
   }
+  return result;
 }
 /** Aucun message d'erreur de la base n'est relayé : il pourrait nommer une table, un identifiant ou une requête. */
 const UNAVAILABLE = "Erreur : lecture impossible pour le moment.";

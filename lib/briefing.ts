@@ -61,7 +61,12 @@ export interface Briefing {
   urgent: BriefingItem[];
   postponed: BriefingItem[];
   today: BriefingItem[];
-  /** `false` quand il n'y a vraiment rien à dire (nouvel inscrit) — l'écran n'est alors pas imposé. */
+  /**
+   * `false` quand il n'y a vraiment rien à dire — l'écran n'est alors pas
+   * imposé à l'ouverture. Exige au moins une donnée SAISIE par l'élève
+   * (`hasUserData`) : les réglages par défaut (minimum du soir) ne suffisent
+   * pas à justifier un écran d'ouverture.
+   */
   hasContent: boolean;
 }
 
@@ -278,6 +283,23 @@ function summarize(urgent: number, postponed: number): string {
   return `${parts.join(", ")}.`;
 }
 
+/**
+ * L'élève a-t-il déjà saisi quelque chose ? Séances, échéances actives, notes,
+ * cartes, erreurs, chapitres, tentatives d'exercice. Les préférences, l'historique
+ * de Next Move et les bilans figés n'en sont pas : ils existent sans saisie.
+ */
+export function hasUserData(input: BriefingInput): boolean {
+  return (
+    input.sessions.length > 0 ||
+    activeWorkItems(input.workItems).length > 0 ||
+    input.grades.length > 0 ||
+    input.reviewItems.length > 0 ||
+    input.errors.length > 0 ||
+    input.chapterMemory.some((chapter) => !chapter.archived) ||
+    (input.attempts?.length ?? 0) > 0
+  );
+}
+
 export function buildBriefing(raw: BriefingInput): Briefing {
   // Le point s'ouvre AVANT l'accueil, qui est seul à enregistrer les issues
   // constatées (components/next-move/next-move-card.tsx). On les constate donc
@@ -302,12 +324,35 @@ export function buildBriefing(raw: BriefingInput): Briefing {
     urgent,
     postponed,
     today,
-    hasContent: move.status !== "vide" || urgent.length + postponed.length + today.length > 0,
+    hasContent: hasUserData(input) && (move.status !== "vide" || urgent.length + postponed.length + today.length > 0),
   };
 }
 
 /** Clé LOCALE (propre à l'appareil, jamais synchronisée) : dernière fois que le point a été affiché. */
 export const BRIEFING_SEEN_KEY = "prepahub:briefing:seen";
+
+/*
+ * Garde-fou EN MÉMOIRE, propre à l'onglet : une fois le point affiché, l'aiguillage
+ * de l'accueil ne renvoie plus jamais dessus dans cet onglet. Sans lui, un stockage
+ * qui refuse d'écrire (quota plein, navigation privée stricte) laissait
+ * `BRIEFING_SEEN_KEY` vide : l'accueil renvoyait au point, « Aller à l'accueil »
+ * ramenait à l'accueil, qui renvoyait au point — une boucle sans issue.
+ */
+let shownInThisTab = false;
+
+/** À appeler par l'écran du point dès son affichage. */
+export function markBriefingShownInThisTab(): void {
+  shownInThisTab = true;
+}
+
+export function briefingShownInThisTab(): boolean {
+  return shownInThisTab;
+}
+
+/** Réservé aux tests. */
+export function resetBriefingTabGuard(): void {
+  shownInThisTab = false;
+}
 
 /** Clé LOCALE : dernier signe d'activité dans l'application (components/activity-tracker.tsx). */
 export const LAST_ACTIVITY_KEY = "prepahub:activity:last";

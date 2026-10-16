@@ -269,7 +269,14 @@ function QuestionsEditor({
 
   function update(index: number, patch: Partial<DebriefQuestion>) {
     // Trancher la cause soi-même lève la réserve de l'IA : c'est désormais le diagnostic de l'élève.
-    setQuestions((current) => current.map((question, position) => (position === index ? { ...question, ...patch, ...("cause" in patch ? { confidence: null } : {}) } : question)));
+    // Toute modification fait de la question CELLE DE L'ÉLÈVE (`byAi: false`) : un renvoi du même
+    // débrief par l'IA ne l'écrasera plus (lib/ai-debrief.ts#mergeWithSaved). Une réserve de l'IA sur
+    // une cause non touchée reste portée par `confidence`.
+    setQuestions((current) =>
+      current.map((question, position) =>
+        position === index ? { ...question, ...patch, ...("cause" in patch ? { confidence: null } : {}), ...(question.byAi ? { byAi: false } : {}) } : question
+      )
+    );
     setResult(null);
   }
 

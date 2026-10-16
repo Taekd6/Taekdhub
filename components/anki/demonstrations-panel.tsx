@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ClipboardCopy, Download, FileInput, Search, Send } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Section } from "@/components/ui/section";
@@ -89,6 +89,12 @@ export function DemonstrationsPanel({
   preferences: Preferences;
   savePreferences: (value: Preferences) => void;
 }) {
+  // Arrivée par /anki#demo-<id> (Next Move) : le panneau se rend après les données, le navigateur a
+  // donc déjà renoncé à défiler — on le fait au montage.
+  useEffect(() => {
+    const target = window.location.hash.slice(1);
+    if (target === "demonstrations" || target.startsWith("demo-")) document.getElementById(target)?.scrollIntoView({ block: "start" });
+  }, []);
   const today = dayKey(new Date());
   const mobile = platform === "ios" || platform === "android";
   const [open, setOpen] = useState<{ id: string; face: "front" | "back" } | null>(null);
@@ -192,6 +198,8 @@ export function DemonstrationsPanel({
   }
 
   return (
+    // Ancres : /anki#demonstrations (le panneau) et /anki#demo-<id> (une démonstration) — liens de Next Move.
+    <div id="demonstrations" className="scroll-mt-[calc(var(--nav-h)+1.5rem)]">
     <Section
       variant="panel"
       title="Démonstrations"
@@ -216,7 +224,7 @@ export function DemonstrationsPanel({
             const actions = demoActions({ demo, attempts, cardInAnki: cardKnown(demo.id), today });
             const shown = open?.id === demo.id ? open.face : null;
             return (
-              <li key={demo.id} className="py-3">
+              <li key={demo.id} id={`demo-${demo.id}`} className="scroll-mt-[calc(var(--nav-h)+1.5rem)] py-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <label className="flex min-w-0 flex-1 items-center gap-2 text-[0.9375rem] font-semibold text-ink">
                     {!mobile && <input type="checkbox" checked={selected.includes(demo.id)} onChange={() => setSelected((list) => (list.includes(demo.id) ? list.filter((id) => id !== demo.id) : [...list, demo.id]))} className="h-4 w-4 shrink-0 accent-[var(--btn-g1)]" aria-label={`Choisir ${demo.title}`} />}
@@ -354,5 +362,6 @@ export function DemonstrationsPanel({
         </div>
       </div>
     </Section>
+    </div>
   );
 }

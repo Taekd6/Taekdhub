@@ -7,7 +7,7 @@ import { useEffect, useMemo, type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { BRIEFING_SEEN_KEY, buildBriefing, type BriefingItem, type BriefingTone } from "@/lib/briefing";
+import { BRIEFING_SEEN_KEY, buildBriefing, markBriefingShownInThisTab, type BriefingItem, type BriefingTone } from "@/lib/briefing";
 import { cn } from "@/lib/cn";
 import { useAnnales } from "@/hooks/use-annales";
 import { useKholleHistory } from "@/hooks/use-kholle-history";
@@ -78,6 +78,7 @@ export function BriefingScreen() {
 
   // Vu : l'accueil ne ramènera pas ici avant demain (ou une longue absence).
   useEffect(() => {
+    markBriefingShownInThisTab();
     writeFlag(BRIEFING_SEEN_KEY, new Date().toISOString());
   }, []);
 
