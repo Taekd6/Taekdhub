@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { STORAGE_KEYS, buildBackupPayload, lastStorageWriteFailure, localData, onLocalWrite, writeRawSilently, normalizeCheckin, normalizeErrorEntry, normalizeGrade, normalizePreferences, normalizeSession, normalizeWorkItem, purgeRetiredBankData, restoreBackup, validateBackupPayload } from "@/lib/storage";
+import { createSheet, EMPTY_DRAFT } from "@/lib/exercise-sheets";
 import { DEFAULT_PALETTE, PALETTE_IDS } from "@/lib/theme";
 import type { AttemptResult, WorkSession } from "@/lib/supabase/types";
 
@@ -539,7 +540,7 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     const outcome = withQuotaStorage({}, 1_000_000, () => restoreBackup(backup()));
     expect(outcome.ok).toBe(true);
     expect(outcome.failedAt).toBeNull();
-    expect(outcome.restored).toHaveLength(13);
+    expect(outcome.restored).toHaveLength(14);
   });
 
   it("les séances ne passent pas → RIEN n'est touché, et c'est dit", () => {
@@ -736,6 +737,7 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
         "eveningMinimums",
         "onboardingCompletedAt",
         "palette",
+        "performanceWindows",
         "planningMarginPercent",
         "programmeSeen",
         "retryDelaysDays",
@@ -1284,6 +1286,30 @@ describe("tentatives d'exercice et relevés Anki — sauvegarde", () => {
     void _b;
     expect(validateBackupPayload(older)).toBe(true);
     expect(validateBackupPayload({ ...roundTripped, attempts: "cassé" })).toBe(false);
+  });
+
+  it("les fiches d'exercice sont sauvegardées, restaurées revalidées, et absentes d'une ancienne sauvegarde ; elles ne sont PAS une collection synchronisée", () => {
+    const sheet = createSheet(
+      { ...EMPTY_DRAFT, subject: "Mathématiques", chapterId: "m2-reduction", competence: "Diagonaliser", level: "classique", origin: "externe", statement: "Montrer que A est diagonalisable.", sourceName: "Mines 2023", sourceUrl: "https://example.org/s.pdf" },
+      new Date("2026-10-14T10:00:00.000Z"),
+      "fiche-1"
+    )!;
+    const payload = withWritableStorage({ "prepahub:exercise-sheets": JSON.stringify([sheet]) }, () => buildBackupPayload(new Date("2026-10-15T00:00:00.000Z")));
+    expect(payload.exerciseSheets).toEqual([sheet]);
+    const roundTripped = JSON.parse(JSON.stringify(payload));
+    expect(validateBackupPayload(roundTripped)).toBe(true);
+    expect(withWritableStorage({}, () => (restoreBackup(roundTripped), localData.exerciseSheets()))).toEqual([sheet]);
+    // Un fichier trafiqué : la fiche sans source (ressource externe) ou au lien dangereux n'est pas restaurée telle quelle.
+    const tampered = { ...roundTripped, exerciseSheets: [{ ...sheet, source: null }, { ...sheet, id: "x", source: { name: "A", url: "javascript:alert(1)" } }] };
+    const restored = withWritableStorage({}, () => (restoreBackup(tampered), localData.exerciseSheets()));
+    expect(restored.map((entry) => entry.id)).toEqual(["x"]);
+    expect(restored[0].source).toEqual({ name: "A", url: null });
+    // Ancienne sauvegarde sans le champ ; forme cassée refusée ; jamais dans les collections synchronisées.
+    const { exerciseSheets: _sheets, ...older } = roundTripped;
+    void _sheets;
+    expect(validateBackupPayload(older)).toBe(true);
+    expect(validateBackupPayload({ ...roundTripped, exerciseSheets: "cassé" })).toBe(false);
+    expect(Object.keys(STORAGE_KEYS)).not.toContain("exerciseSheets");
   });
 
   it("une erreur garde son chapitre du programme et son exercice ; un chapitre inconnu est retiré", () => {
