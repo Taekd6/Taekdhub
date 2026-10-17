@@ -6,3 +6,6 @@ tsconfig.tsbuildinfo
 
 # Copies de travail des agents Claude Code
 .claude/worktrees/
+
+# Copies locales de documents externes : jamais publiées
+referentiel/_cache/

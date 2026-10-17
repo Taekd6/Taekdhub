@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "note": "Registre des sources. 'statut_acces' dit ce qui a réellement été fait. Aucune source n'a été lue à ce jour : l'environnement de travail refuse la connexion à ces hôtes (403 de la politique réseau, constaté le 2026-10-17).",
+  "sources": [
+    {
+      "id": "PROG-MP",
+      "type": "programme_officiel",
+      "titre": "Programme de mathématiques de la classe de MP (programme officiel en vigueur) : section « Séries numériques et familles sommables »",
+      "url_candidate": "https://www.education.gouv.fr/media/25094/download",
+      "url_a_confirmer": true,
+      "statut_acces": "identifiée, non lue (URL remontée par une recherche ; son identité exacte n'est pas confirmée)",
+      "droits": "texte officiel public",
+      "notes": "Source prioritaire pour le statut « au programme » et les démonstrations exigibles."
+    },
+    {
+      "id": "PROG-MP-2013",
+      "type": "programme_officiel",
+      "titre": "Arrêté d'octobre 2013, programmes de MP (copie hébergée par ip2i.in2p3.fr)",
+      "url_candidate": "https://cours.ip2i.in2p3.fr/marteau/agreg-interne/MV/Programmes_2eme_Annee/arreteMP_Programmes_Oct2013_70p.pdf",
+      "statut_acces": "identifiée, non lue",
+      "droits": "texte officiel public",
+      "notes": "ANCIEN programme : la filière a été réformée depuis (à vérifier). Ne pas l'utiliser pour trancher l'exigibilité actuelle. Les titres de section relevés par la recherche (« Séries numériques et vectorielles », « Familles sommables ») suggèrent une organisation différente."
+    },
+    {
+      "id": "COURS-LANDELLE-1",
+      "type": "cours_professeur",
+      "auteur": "B. Landelle (CPGE, lycée ISM)",
+      "titre": "Séries numériques (polycopié, version 1)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=3189",
+      "statut_acces": "identifiée, non lue",
+      "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "COURS-LANDELLE-2",
+      "type": "cours_professeur",
+      "auteur": "B. Landelle (CPGE, lycée ISM)",
+      "titre": "Séries numériques (polycopié, version 2)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=4377",
+      "statut_acces": "identifiée, non lue",
+      "droits": "idem",
+      "notes": "Même auteur que COURS-LANDELLE-1 : ne compte pas comme source indépendante."
+    },
+    {
+      "id": "COLLE-BUFFON",
+      "type": "feuille_de_colle",
+      "auteur": "lycée Buffon (MP*)",
+      "titre": "Programme de colle mentionnant séries à termes positifs, comparaison série-intégrale, sommation des relations de comparaison, séries alternées",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-buffon/download?id=2877",
+      "statut_acces": "identifiée, non lue",
+      "droits": "publié sur cahier-de-prepa.fr",
+      "notes": "Programme de colle : utile pour la liste des notions, pas pour les énoncés."
+    },
+    {
+      "id": "COLLE-IZQUIERDO",
+      "type": "feuille_de_colle",
+      "auteur": "ENS (Izquierdo)",
+      "titre": "Colle 5 MP",
+      "url_candidate": "https://www.math.ens.psl.eu/~izquierdo/Colle 5 MP.pdf",
+      "statut_acces": "identifiée, non lue",
+      "droits": "publié par son auteur"
+    },
+    {
+      "id": "UNIV-YGER",
+      "type": "cours_universitaire",
+      "auteur": "A. Yger (Bordeaux)",
+      "titre": "MAT401 (2007)",
+      "url_candidate": "https://www.math.u-bordeaux.fr/~ayger/mat401.pdf",
+      "statut_acces": "identifiée, non lue",
+      "droits": "publié par son auteur",
+      "notes": "Cours universitaire, plus général que le programme MP : source complémentaire seulement."
+    },
+    {
+      "id": "COMM-GROUPE-REUSSITE",
+      "type": "site_commercial",
+      "titre": "Cours en ligne « Séries numériques (maths spé) » (Groupe Réussite)",
+      "url_candidate": "https://groupe-reussite.fr/ressources/cours-en-ligne-series-numeriques-maths-spe/",
+      "statut_acces": "identifiée, non lue",
+      "droits": "site commercial : ne pas contourner un éventuel accès payant ; ne pas recopier",
+      "notes": "Qualité non établie ; à n'utiliser qu'après lecture critique."
+    },
+    {
+      "id": "MANUELS-REFERENCE",
+      "type": "manuel",
+      "titre": "Manuels de référence MP (à choisir avec toi) : ouvrages papier ou numériques que tu possèdes ou peux emprunter",
+      "statut_acces": "non consultable (non fournis)",
+      "droits": "ouvrages protégés : jamais recopiés ; cités avec chapitre et page si tu me les donnes",
+      "notes": "Je ne cite aucun manuel précis ici : je n'en ai consulté aucun."
+    }
+  ],
+  "hotes_refuses_par_la_politique_reseau": [
+    "cahier-de-prepa.fr",
+    "www.education.gouv.fr",
+    "cache.media.education.gouv.fr",
+    "www.math.ens.psl.eu",
+    "fr.wikipedia.org",
+    "arxiv.org"
+  ]
+}

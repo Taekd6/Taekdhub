@@ -1,5 +1,7 @@
 # Audit pédagogique des cartes Anki scientifiques de TaekdHub
 
+> **Index et état à jour : `docs/ANKI-REFERENTIEL.md`.** Ce rapport est valable pour les cartes livrées par TaekdHub ; son §0 (« collection non accessible ») est périmé : l'export JSONL a été fourni ensuite (`docs/AUDIT-COLLECTION-ANKI.md`).
+
 Rapport en lecture seule : aucune carte, aucun paquet, aucune collection n'a été modifié.
 Aucune correction n'est appliquée ; ce document sert à décider ensemble de l'étape suivante.
 

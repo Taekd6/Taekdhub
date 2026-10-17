@@ -1,5 +1,7 @@
 # Pilote : « Séries numériques » en cartes qui se laissent apprendre
 
+> **Version 1, conservée telle quelle.** Une version 2 corrigée (61 cartes) est dans `referentiel/maths/series-numeriques/cartes-v2.md` ; le rapport de validation est dans `referentiel/maths/series-numeriques/validation-pilote.md`.
+
 **Proposition, rien n'est appliqué.** Aucune carte n'a été ajoutée, modifiée ni importée dans ta collection ;
 ce fichier montre seulement à quoi pourrait ressembler un chapitre repris avec les défauts de l'audit en moins
 (voir `docs/AUDIT-COLLECTION-ANKI.md`, §2).

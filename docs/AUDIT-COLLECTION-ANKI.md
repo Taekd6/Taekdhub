@@ -1,5 +1,7 @@
 # Audit de la collection Anki personnelle (maths, physique, chimie)
 
+> **Index et état à jour : `docs/ANKI-REFERENTIEL.md`.**
+
 Rapport distinct de `docs/AUDIT-ANKI-MATHS.md` (qui portait sur les cartes livrées par TaekdHub, pas sur ta collection).
 Lecture seule : le fichier fourni n'a pas été modifié, aucune carte, aucun identifiant n'a été touché.
 
