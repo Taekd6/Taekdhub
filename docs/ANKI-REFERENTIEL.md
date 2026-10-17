@@ -26,6 +26,7 @@ L'anglais est hors périmètre : le fichier JSONL ne contient aucun paquet d'ang
 | `docs/ANKI-PILOTE-SERIES-NUMERIQUES.md` | pilote v1, 46 cartes | **Remplacé** par la v2 (conservé pour mémoire). |
 | `referentiel/` | méthode, registre des sources, cartes par chapitre | **Référence vivante.** |
 | `referentiel/maths/series-numeriques/` | validation + cartes v2 (61) | **Fait**, vérifié mathématiquement, aucune source consultée. |
+| `referentiel/maths/fondements-probabilites/` | validation + cartes (49) | **Première version**, vérifié mathématiquement, aucune source consultée, 3 exigibilités à confirmer. |
 
 ## 3. Contradictions relevées et résolues
 - **« Ta collection n'est pas accessible »** (`AUDIT-ANKI-MATHS.md`) contre un audit de ta collection (`AUDIT-COLLECTION-ANKI.md`) : l'export JSONL a été fourni entre les deux ; le premier rapport porte sur les cartes du dépôt, le second sur ta collection.
