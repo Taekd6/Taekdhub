@@ -293,30 +293,6 @@
       "droits": "publié par son auteur sur mickaelprost.fr ; consultation légale, pas de republication"
     },
     {
-      "id": "PROST-MP-MATHEMATIQUES",
-      "type": "cours_professeur",
-      "auteur": "Mickaël Prost (CPGE MP, Louis-le-Grand)",
-      "titre": "mp_mathematiques.pdf (polycopié de cours, 2026-2027)",
-      "url_candidate": "https://mickaelprost.fr/docs/coursexos/mp_mathematiques.pdf",
-      "statut_acces": "lue",
-      "sha256_16": "90dbe4520f2336a0",
-      "lecture": "texte extrait avec pdftotext, relu par l'agent le 2026-10-17",
-      "limite": "cours d'un professeur ; ne prouve pas à lui seul l'exigibilité officielle",
-      "droits": "publié par son auteur sur mickaelprost.fr ; consultation légale, pas de republication"
-    },
-    {
-      "id": "PROST-MPSI-MATHEMATIQUES",
-      "type": "cours_professeur",
-      "auteur": "Mickaël Prost (CPGE MP, Louis-le-Grand)",
-      "titre": "mpsi_mathematiques.pdf (polycopié de cours, 2026-2027)",
-      "url_candidate": "https://mickaelprost.fr/docs/coursexos/mpsi_mathematiques.pdf",
-      "statut_acces": "lue",
-      "sha256_16": "7a1c14d45592fd6b",
-      "lecture": "texte extrait avec pdftotext, relu par l'agent le 2026-10-17",
-      "limite": "cours d'un professeur ; ne prouve pas à lui seul l'exigibilité officielle",
-      "droits": "publié par son auteur sur mickaelprost.fr ; consultation légale, pas de republication"
-    },
-    {
       "id": "PROST-PREHILBERTIENS",
       "type": "cours_professeur",
       "auteur": "Mickaël Prost (CPGE MP, Louis-le-Grand)",
@@ -435,6 +411,28 @@
       "lecture": "texte extrait avec pdftotext, relu par l'agent le 2026-10-17",
       "limite": "cours d'un professeur ; ne prouve pas à lui seul l'exigibilité officielle",
       "droits": "publié par son auteur sur mickaelprost.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "PROGRAMME-MP-2021",
+      "type": "programme_officiel",
+      "auteur": "Ministère de l'enseignement supérieur, de la recherche et de l'innovation (2021)",
+      "titre": "Programme de mathématiques MP/MPI, annexe 1 (BO 2021)",
+      "url_candidate": "https://mickaelprost.fr/docs/coursexos/mp_mathematiques.pdf",
+      "statut_acces": "lue",
+      "sha256_16": "90dbe4520f2336a0",
+      "limite": "texte officiel lu sur une copie hébergée par mickaelprost.fr (le site du ministère reste inaccessible) ; la copie n'a pas été comparée octet à octet au BO",
+      "droits": "texte réglementaire public ; pas de republication ici"
+    },
+    {
+      "id": "PROGRAMME-MPSI-2021",
+      "type": "programme_officiel",
+      "auteur": "Ministère de l'enseignement supérieur, de la recherche et de l'innovation (2021)",
+      "titre": "Programme de mathématiques MPSI/MP2I, annexe 1 (BO 2021)",
+      "url_candidate": "https://mickaelprost.fr/docs/coursexos/mpsi_mathematiques.pdf",
+      "statut_acces": "lue",
+      "sha256_16": "7a1c14d45592fd6b",
+      "limite": "texte officiel lu sur une copie hébergée par mickaelprost.fr (le site du ministère reste inaccessible) ; la copie n'a pas été comparée octet à octet au BO",
+      "droits": "texte réglementaire public ; pas de republication ici"
     }
   ],
   "hotes_refuses_par_la_politique_reseau": [
