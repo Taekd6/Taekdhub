@@ -732,3 +732,26 @@ describe("refaire sans aide, diagnostic, Anki, repos", () => {
     expect(rankCandidates(input({ errors: courseErrors, chapterMemory: [memory] })).some((entry) => entry.key === "cours:m2-reduction")).toBe(false);
   });
 });
+
+describe("topReasons : les raisons « Remplit aussi » passent après les raisons propres", () => {
+  const term = (id: string, points: number, reason: string) => ({ id, points, reason });
+  const candidate = (terms: MoveCandidate["terms"]) => ({ key: "refaire:x", kind: "refaire", subject: null, title: "x", action: "a", instruction: "", problem: "", doneWhen: "", minMinutes: 10, idealMinutes: 20, maxMinutes: 30, href: "/", resource: null, terms, score: terms.reduce((sum, entry) => sum + entry.points, 0) }) as MoveCandidate;
+
+  it("une raison propre moins lourde passe devant une raison absorbée plus lourde", () => {
+    const move = candidate([term("bloc:objectif-hebdo", 30, "Remplit aussi : objectif"), term("a", 28, "propre A"), term("b", 12, "propre B")]);
+    expect(topReasons(move)).toEqual(["propre A", "propre B"]);
+    expect(topReasons(move, 3)).toEqual(["propre A", "propre B", "Remplit aussi : objectif"]);
+  });
+
+  it("repli : avec une seule raison propre, la raison absorbée complète ; sans raison propre, elle passe en premier", () => {
+    expect(topReasons(candidate([term("a", 5, "propre"), term("bloc:x", 30, "Remplit aussi : x"), term("info", 0, "information")]))).toEqual(["propre", "Remplit aussi : x"]);
+    expect(topReasons(candidate([term("bloc:x", 30, "Remplit aussi : x"), term("bloc:y", 10, "Remplit aussi : y"), term("info", 0, "information")]))).toEqual(["Remplit aussi : x", "Remplit aussi : y"]);
+  });
+
+  it("sans raison absorbée, l'ordre est celui d'avant (poids décroissant, informations ensuite) ; le score n'est pas touché", () => {
+    const move = candidate([term("a", 5, "petit"), term("info", 0, "information"), term("b", 20, "gros")]);
+    const before = move.score;
+    expect(topReasons(move, 3)).toEqual(["gros", "petit", "information"]);
+    expect(move.score).toBe(before);
+  });
+});

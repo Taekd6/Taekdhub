@@ -121,6 +121,27 @@ describe("1 · khôlle proche + démonstration plusieurs fois ratée", () => {
   });
 });
 
+describe("1 bis · raisons affichées : « Remplit aussi » ne masque pas la raison propre à l'action", () => {
+  const demo = byKey(rankCandidates(input({ workItems: items([KHOLLE_3J]), attempts: fragileDemo() })), DEMO_KEY)!;
+
+  it("le bloc hebdomadaire est bien absorbé (score et détails inchangés)", () => {
+    const absorbed = demo.terms.find((term) => term.id.startsWith("bloc:"))!;
+    expect(absorbed).toBeDefined();
+    expect(absorbed.points).toBeGreaterThan(demo.terms.find((term) => term.id === "au-programme")!.points); // plus lourd : c'est lui qui masquait
+    expect(demo.score).toBe(demo.terms.reduce((total, term) => total + term.points, 0));
+  });
+
+  it("la carte montre le constat observé puis l'épreuve, pas l'objectif de la semaine", () => {
+    const reasons = topReasons(demo);
+    expect(reasons).toHaveLength(2);
+    expect(reasons[0]).toMatch(/Restitution incomplète/);
+    expect(reasons[1]).toMatch(/Au programme de la khôlle/);
+    expect(reasons.join(" ")).not.toMatch(/Remplit aussi/);
+    // Le détail complet, lui, garde le terme absorbé.
+    expect(topReasons(demo, 10).join(" ")).toMatch(/Remplit aussi/);
+  });
+});
+
 describe("2 · DS proche + erreur récurrente", () => {
   const debriefs = reductionDebriefs();
   const base = input({ workItems: items([DS_4J]), ...debriefs });

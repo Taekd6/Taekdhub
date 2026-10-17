@@ -1671,9 +1671,18 @@ export function skippedKeys(history: NextMoveRecord[], now: Date): Set<string> {
  * puis les informations — au plus `limit`, DEUX par défaut. Le calcul
  * complet reste dans « Détails » ; la carte, elle, doit se lire d'un coup
  * d'œil. (Le connecteur Claude, lib/today-snapshot.ts, en demande davantage.)
+ *
+ * Les termes « Remplit aussi : … » (`bloc:*`, repris d'un bloc de travail
+ * absorbé par `absorbBlocks`) sont SECONDAIRES : ils passent après les raisons
+ * propres à l'action, même plus lourdes — « Au programme de la khôlle… » dit
+ * pourquoi CETTE action, pas l'objectif de la semaine. Faute de raison propre,
+ * ils comptent comme avant. Le score et « Détails » n'en dépendent pas.
  */
 export function topReasons(candidate: MoveCandidate, limit = 2): string[] {
-  const positive = candidate.terms.filter((term) => term.points > 0).sort((a, b) => b.points - a.points);
+  const byWeight = (a: ScoreTerm, b: ScoreTerm) => b.points - a.points;
+  const positive = candidate.terms.filter((term) => term.points > 0);
+  const own = positive.filter((term) => !term.id.startsWith("bloc:")).sort(byWeight);
+  const absorbed = positive.filter((term) => term.id.startsWith("bloc:")).sort(byWeight);
   const neutral = candidate.terms.filter((term) => term.points === 0);
-  return [...positive, ...neutral].slice(0, limit).map((term) => term.reason);
+  return [...own, ...absorbed, ...neutral].slice(0, limit).map((term) => term.reason);
 }
