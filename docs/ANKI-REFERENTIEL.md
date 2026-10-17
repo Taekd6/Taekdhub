@@ -3,19 +3,21 @@
 Point d'entrée unique. Il remplace la lecture croisée des rapports successifs et signale ce qui est périmé.
 Dernière consolidation : voir `git log -- docs/ANKI-REFERENTIEL.md`.
 
-## 1. Sources réellement accessibles (état vérifié)
+## 1. Sources réellement accessibles (état vérifié le 2026-10-17)
 
 | Ressource | Accessible ? | Utilisée pour |
 |---|---|---|
-| `data/course-cards.json` (117 cartes de cours maths, 13 chapitres de spé), `data/demonstrations*.json` (8 démonstrations) | oui, dans le dépôt | `AUDIT-ANKI-MATHS.md` |
-| Export JSONL de ta collection **sans anglais** (2 162 cartes ; Maths MP 1 309, Physique 757, Chimie 96, Informatique 0) | oui, téléversé (hors dépôt, jamais committé) | `AUDIT-COLLECTION-ANKI.md` |
-| Sauvegarde `.colpkg` d'origine | **non** | : |
-| PDF de cours, programme officiel, manuels | **non** | : |
-| Accès réseau (sites de CPGE, éduscol, Wikipédia…) | **non** (politique réseau : 403) | : |
+| `data/course-cards.json` (117 cartes), `data/demonstrations*.json` (8) | oui, dans le dépôt | `AUDIT-ANKI-MATHS.md` |
+| Export JSONL de ta collection **sans anglais** (Maths MP 1 309 notes, Physique 757, Chimie 96, Informatique 0) | oui, téléversé (hors dépôt, jamais committé) | audit, et **base de toutes les cartes de maths** : chaque note est reprise, corrigée ou complétée |
+| Sauvegarde `.colpkg` d'origine | non | : |
+| Cours de B. Landelle (CH01 à CH07), cahier-de-prepa.fr | **oui, lus** | recoupement (`LANDELLE-CH0k`) |
+| Cours de Mickaël Prost (21 polycopiés), mickaelprost.fr | **oui, lus** | recoupement (`PROST-…`) |
+| Programmes officiels MP et MPSI 2021 | **oui, lus sur une copie hébergée par mickaelprost.fr** (non comparée au BO ; le site du ministère répond 403) | exigibilité (`PROGRAMME-MP-2021`, `PROGRAMME-MPSI-2021`) |
+| Colle ENS (Izquierdo), 1 page | oui, lue | exigibilité des séries |
+| Physique, chimie, informatique (cours) | **non encore traités** | : |
 
-Conséquences : aucune carte n'est **confirmée par une source** ; tout ce qui est « vérifié » l'est par raisonnement (voir les trois niveaux de
-validation dans `referentiel/README.md`). Aucune conformité au programme ou à ton cours n'est affirmée.
-L'anglais est hors périmètre : le fichier JSONL ne contient aucun paquet d'anglais (vérifié sur les noms de paquets uniquement).
+Aucun PDF n'est copié dans le dépôt (`referentiel/_cache/` est ignoré par git). Le détail est dans `referentiel/sources.json`.
+L'anglais est hors périmètre : aucun fichier d'anglais n'a été lu.
 
 ## 2. Les documents, leur statut
 
@@ -25,9 +27,35 @@ L'anglais est hors périmètre : le fichier JSONL ne contient aucun paquet d'ang
 | `docs/AUDIT-COLLECTION-ANKI.md` | audit de **ta** collection (export sans anglais) : inventaire, erreurs vérifiées, couverture, forme des cartes | **Valable** (≈ 200 cartes lues une à une, le reste par mesures automatiques). |
 | `docs/ANKI-PILOTE-SERIES-NUMERIQUES.md` | pilote v1, 46 cartes | **Remplacé** par la v2 (conservé pour mémoire). |
 | `referentiel/` | méthode, registre des sources, cartes par chapitre | **Référence vivante.** |
-| `referentiel/maths/series-numeriques/` | validation + cartes v2 (61) | **Fait**, vérifié mathématiquement, aucune source consultée. |
-| `referentiel/maths/fondements-probabilites/` | validation + cartes (49) | **Première version**, vérifié mathématiquement, aucune source consultée, 3 exigibilités à confirmer. |
-| `referentiel/info/complexite-tri/` | validation + cartes (24) | **Esquisse**, exigibilité à confirmer (programme non consulté, langage non précisé). |
+| `referentiel/maths/algebre-lineaire/` | `cartes*.jsonl` (283) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/calcul-differentiel/` | `cartes*.jsonl` (83) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/complexes-polynomes/` | `cartes*.jsonl` (122) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/determinants/` | `cartes*.jsonl` (82) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/endomorphismes-euclidiens/` | `cartes*.jsonl` (82) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/equations-differentielles/` | `cartes*.jsonl` (82) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/espaces-prehilbertiens/` | `cartes*.jsonl` (100) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/espaces-vectoriels-normes/` | `cartes*.jsonl` (198) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/fonctions-vectorielles/` | `cartes*.jsonl` (48) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/fondements-probabilites/` | `cartes*.jsonl` (120) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/integrales-generalisees/` | `cartes*.jsonl` (103) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/integrales-parametre/` | `cartes*.jsonl` (63) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/moments-variables-aleatoires/` | `cartes*.jsonl` (51) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/rappels-mpsi-algebre/` | `cartes*.jsonl` (140) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/rappels-mpsi-analyse/` | `cartes*.jsonl` (245) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/reduction/` | `cartes*.jsonl` (138) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/series-entieres/` | `cartes*.jsonl` (71) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/series-numeriques/` | `cartes*.jsonl` (123) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/structures-algebriques/` | `cartes*.jsonl` (172) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/suites-series-fonctions/` | `cartes*.jsonl` (76) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/maths/techniques-asymptotiques/` | `cartes*.jsonl` (53) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/info/complexite-tri/` | `cartes*.jsonl` (24) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+
+## 2 bis. Bilan chiffré (2 435 cartes de maths + 24 d'informatique)
+- 1 309 notes de ta collection (maths) : 1 260 retrouvées dans le champ `anciennes` de cartes du référentiel ; les 49 autres sont les 5 notes écartées avec motif (hors programme) dans `espaces-vectoriels-normes/validation.md`, plus les 46 notes de séries numériques traitées dans `cartes-v2.jsonl` (qui n'a pas de champ `anciennes`).
+- Origine des cartes : 938 scindées, 784 réécrites, 518 nouvelles, 37 corrigées, 34 fusionnées, 18 reprises telles quelles, le reste rédigé sans note d'origine.
+- Validation : 2 317 cartes citent au moins une source lue, 118 n'en citent aucune (résultat vérifié à la main) ; 2 244 ont une exigibilité « confirmée : figure dans … », 175 sont « à confirmer ».
+- Les erreurs de ta collection trouvées au passage (une trentaine, voir les `validation.md`) sont corrigées dans les nouvelles cartes ; ta collection n'a pas été modifiée.
+- Paquet à importer à la main : `public/anki/taekdhub-referentiel.apkg` (identifiants dérivés de l'id de carte). Régénération : `python3 scripts/referentiel/referentiel.py deck`.
 
 ## 3. Contradictions relevées et résolues
 - **« Ta collection n'est pas accessible »** (`AUDIT-ANKI-MATHS.md`) contre un audit de ta collection (`AUDIT-COLLECTION-ANKI.md`) : l'export JSONL a été fourni entre les deux ; le premier rapport porte sur les cartes du dépôt, le second sur ta collection.

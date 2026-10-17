@@ -56,7 +56,7 @@ def check():
             rectos.add(c["recto"])
             if len(c["verso"]) > 450:
                 errors.append(f"{where}: verso trop long ({len(c['verso'])} caractères) : scinder la carte")
-            if "?" not in c["recto"] and not re.match(r"^(Énoncer|Donner|Citer|Calculer|Définir|Écrire|Rappeler|Démontrer|Montrer|Déterminer|Expliquer|Compléter|Quelle|Quel|Que|Qu')", c["recto"]):
+            if "?" not in c["recto"] and not re.match(r"^(Énoncer|Donner|Citer|Calculer|Définir|Écrire|Rappeler|Démontrer|Montrer|Déterminer|Expliquer|Compléter|Caractériser|Justifier|Conclure|Dériver|Esquisser|Étudier|Exprimer|Décomposer|Déduire|Appliquer|Résoudre|Simplifier|Retrouver|Interpréter|Vérifier|Réduire|Comparer|Distinguer|Identifier|Utiliser|Quelle|Quel|Que|Qu')", c["recto"]):
                 errors.append(f"{where}: recto sans question (« {c['recto'][:50]} »)")
             v = c["validation"]
             if v.get("mathematique") not in ("vérifié", "à vérifier"):
