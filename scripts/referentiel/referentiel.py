@@ -12,7 +12,7 @@ import json, re, sys, glob, os, html
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 REF = os.path.join(ROOT, "referentiel")
-TYPES = {"définition", "énoncé", "hypothèses", "piège", "contre-exemple", "exemple", "méthode", "formule", "démonstration", "ordre de grandeur"}
+TYPES = {"définition", "énoncé", "hypothèses", "piège", "contre-exemple", "exemple", "méthode", "formule", "démonstration", "ordre de grandeur", "interprétation", "dimension"}
 SOURCE_OK = re.compile(r"^(aucune consultée.*|[A-Z0-9-]+(, [A-Z0-9-]+)*)$")
 MATIERES = {"maths": "Mathématiques", "physique": "Physique", "chimie": "Chimie", "info": "Informatique"}
 ENGLISH = re.compile(r"anglais|english", re.I)
@@ -66,6 +66,11 @@ def check():
     # une carte ne peut citer qu'une source effectivement lue
     try:
         sources = {s["id"]: s for s in json.load(open(os.path.join(REF, "sources.json"), encoding="utf-8"))["sources"]}
+        for extra in sorted(glob.glob(os.path.join(REF, "sources", "*.json"))):
+            for s in json.load(open(extra, encoding="utf-8"))["sources"]:
+                if s["id"] in sources:
+                    errors.append(f"{os.path.relpath(extra, ROOT)}: id de source déjà défini : {s['id']}")
+                sources[s["id"]] = s
     except Exception as e:
         sources = {}
         errors.append(f"sources.json illisible : {e}")

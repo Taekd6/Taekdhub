@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const REF = join(process.cwd(), "referentiel");
-const TYPES = ["définition", "énoncé", "hypothèses", "piège", "contre-exemple", "exemple", "méthode", "formule", "démonstration", "ordre de grandeur"];
+const TYPES = ["définition", "énoncé", "hypothèses", "piège", "contre-exemple", "exemple", "méthode", "formule", "démonstration", "ordre de grandeur", "interprétation", "dimension"];
 
 type Carte = {
   id: string;
@@ -26,7 +26,11 @@ const files = walk(REF).filter((f) => /cartes[^/]*\.jsonl$/.test(f));
 const cartes = files.flatMap((f) =>
   readFileSync(f, "utf8").split("\n").filter(Boolean).map((l) => ({ file: f, ...(JSON.parse(l) as Carte) })),
 );
-const sources: { id: string; statut_acces: string }[] = JSON.parse(readFileSync(join(REF, "sources.json"), "utf8")).sources;
+type Source = { id: string; statut_acces: string };
+const extraFiles = walk(join(REF, "sources")).filter((f) => f.endsWith(".json"));
+const sources: Source[] = [join(REF, "sources.json"), ...extraFiles].flatMap(
+  (f) => (JSON.parse(readFileSync(f, "utf8")) as { sources: Source[] }).sources,
+);
 
 describe("référentiel de cours : cartes", () => {
   it("contient des cartes", () => expect(cartes.length).toBeGreaterThan(0));
@@ -46,6 +50,11 @@ describe("référentiel de cours : cartes", () => {
       expect(c.recto.length, c.id).toBeGreaterThan(10);
       expect(c.verso.length, c.id).toBeLessThanOrEqual(450);
     }
+  });
+
+  it("n'a pas d'identifiant de source en double", () => {
+    const ids = sources.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("ne cite qu'une source effectivement lue", () => {

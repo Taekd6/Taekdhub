@@ -1,0 +1,158 @@
+{
+  "sources": [
+    {
+      "id": "ISM-PC-EM-1",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée ISM (nom non indiqué sur le document)",
+      "titre": "Électromagnétisme 1 (cours-EM-1.pdf, 2026-2027)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=5052",
+      "statut_acces": "lue",
+      "sha256_16": "2318a5ddf497f62a",
+      "limite": "cours d'une classe précise, chapitre éventuellement incomplet (année en cours)",
+      "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "ISM-PC-M1",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée ISM (nom non indiqué sur le document)",
+      "titre": "Mécanique 1 (Cours-M1.pdf, 2026-2027)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=4857",
+      "statut_acces": "lue",
+      "sha256_16": "738081762396804e",
+      "limite": "cours d'une classe précise, chapitre éventuellement incomplet (année en cours)",
+      "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "ISM-PC-M2",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée ISM (nom non indiqué sur le document)",
+      "titre": "Mécanique 2 (Cours-M2.pdf, 2026-2027)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=4891",
+      "statut_acces": "lue",
+      "sha256_16": "17728d72542ab6bb",
+      "limite": "cours d'une classe précise, chapitre éventuellement incomplet (année en cours)",
+      "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "ISM-PC-O-1",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée ISM (nom non indiqué sur le document)",
+      "titre": "Optique 1 (cours-O-1.pdf, 2026-2027)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=4906",
+      "statut_acces": "lue",
+      "sha256_16": "d993af1b2d350a58",
+      "limite": "cours d'une classe précise, chapitre éventuellement incomplet (année en cours)",
+      "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "ISM-PC-O-2",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée ISM (nom non indiqué sur le document)",
+      "titre": "Optique 2 (cours-O-2.pdf, 2026-2027)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=4929",
+      "statut_acces": "lue",
+      "sha256_16": "69a141c1e5dc41ba",
+      "limite": "cours d'une classe précise, chapitre éventuellement incomplet (année en cours)",
+      "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "ISM-PC-O-3",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée ISM (nom non indiqué sur le document)",
+      "titre": "Optique 3 (cours-O-3.pdf, 2026-2027)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=4951",
+      "statut_acces": "lue",
+      "sha256_16": "67e08676e31f5ac4",
+      "limite": "cours d'une classe précise, chapitre éventuellement incomplet (année en cours)",
+      "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "ISM-PC-O-4",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée ISM (nom non indiqué sur le document)",
+      "titre": "Optique 4 (cours-O-4.pdf, 2026-2027)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=4974",
+      "statut_acces": "lue",
+      "sha256_16": "efb5af5a89f4a7fe",
+      "limite": "cours d'une classe précise, chapitre éventuellement incomplet (année en cours)",
+      "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "ISM-PC-THCH-1",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée ISM (nom non indiqué sur le document)",
+      "titre": "Thermochimie 1 (cours-ThCh-1.pdf, 2026-2027)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=4994",
+      "statut_acces": "lue",
+      "sha256_16": "984394f5309daa92",
+      "limite": "cours d'une classe précise, chapitre éventuellement incomplet (année en cours)",
+      "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "ISM-PC-THCH-2",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée ISM (nom non indiqué sur le document)",
+      "titre": "Thermochimie 2 (cours-ThCh-2.pdf, 2026-2027)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=5014",
+      "statut_acces": "lue",
+      "sha256_16": "7ba49289ce623383",
+      "limite": "cours d'une classe précise, chapitre éventuellement incomplet (année en cours)",
+      "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "ISM-PC-THCH-3",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée ISM (nom non indiqué sur le document)",
+      "titre": "Thermochimie 3 (cours-ThCh-3.pdf, 2026-2027)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=5039",
+      "statut_acces": "lue",
+      "sha256_16": "625ec732c7c90cb9",
+      "limite": "cours d'une classe précise, chapitre éventuellement incomplet (année en cours)",
+      "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "ISM-PC-TS-1",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée ISM (nom non indiqué sur le document)",
+      "titre": "Traitement du signal 1 (cours-TS-1.pdf, 2026-2027)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=4839",
+      "statut_acces": "lue",
+      "sha256_16": "15a4ec02f64c5969",
+      "limite": "cours d'une classe précise, chapitre éventuellement incomplet (année en cours)",
+      "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "ISM-PC-TS-2",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée ISM (nom non indiqué sur le document)",
+      "titre": "Traitement du signal 2 (cours-TS-2.pdf, 2026-2027)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-ism/download?id=4844",
+      "statut_acces": "lue",
+      "sha256_16": "050f35f797c66f6a",
+      "limite": "cours d'une classe précise, chapitre éventuellement incomplet (année en cours)",
+      "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+    },
+    {
+      "id": "PROGRAMME-PC-MP-2021",
+      "type": "programme_officiel",
+      "auteur": "Ministère de l'enseignement supérieur, de la recherche et de l'innovation (2021)",
+      "titre": "Programme de physique-chimie de la voie MP, annexe 2 (BO 2021)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-buffon/download?id=1951",
+      "statut_acces": "lue",
+      "sha256_16": "67db38349223b07c",
+      "limite": "texte officiel lu sur une copie hébergée par cahier-de-prepa.fr (MP Buffon) ; le site du ministère reste inaccessible ; copie non comparée au BO",
+      "droits": "texte réglementaire public ; pas de republication ici"
+    },
+    {
+      "id": "LESBRE-MP-2018",
+      "type": "notes_etudiant",
+      "auteur": "D. Lesbre (étudiant MP*, notes de cours)",
+      "titre": "Notes de cours de physique-chimie de MP* 2017-2018",
+      "url_candidate": "https://www.normalesup.org/~dlesbre/files/Cours_Physique_Chimie_MP.pdf",
+      "statut_acces": "lue",
+      "sha256_16": "0010ce4fcda57509",
+      "limite": "ANCIEN PROGRAMME (avant la réforme de 2021, pas de physique quantique ni de plasma tel qu'actuellement) ; notes d'étudiant, non relues par un professeur : source de recoupement faible",
+      "droits": "publié par son auteur ; consultation légale, pas de republication"
+    }
+  ]
+}
