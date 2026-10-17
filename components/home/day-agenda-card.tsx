@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, CalendarClock, ChevronDown, Clock3 } from "lucide-react";
+import { CalendarClock, ChevronDown, Clock3 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/cn";
 import { buildDayAgenda, TIER_LABEL, type AgendaTier, type KeptTask, type PostponedTask } from "@/lib/day-agenda";
 import { DAY_AGENDA_KEY, diffVersions, parseLog, recordVersion, setOverride, toVersion, type AgendaLog } from "@/lib/day-agenda-log";
-import { computeNextMove, type NextMoveInput } from "@/lib/next-move/engine";
+import type { NextMoveInput } from "@/lib/next-move/engine";
 import { postponeWorkItem } from "@/lib/planning";
 import { readFlag, writeFlag, type NextMoveRecord, type WorkItem } from "@/lib/storage";
 import { dayKey } from "@/lib/study";
@@ -21,14 +20,18 @@ const TIER_TONE: Record<AgendaTier, string> = {
 
 const QUICK = [30, 60, 90, 120];
 
+/** Au-delà, la liste se replie derrière « Voir tout » : l'essentiel de la journée tient en quelques lignes. */
+const KEPT_SHOWN = 4;
+
 /**
  * LE RESTE DE TA JOURNÉE — le plan adaptatif (lib/day-agenda.ts).
  *
- * Quatre choses seulement, dans cet ordre : le temps qui reste (et d'où vient
- * le chiffre), la prochaine action, ce qui a changé depuis la dernière
+ * Quelques choses seulement, dans cet ordre : le temps qui reste (et d'où vient
+ * le chiffre), ce qui a changé depuis la dernière
  * version et pourquoi (lib/day-agenda-log.ts), puis ce qui est gardé et ce
- * qui est déplacé à demain. Le reste — la trace complète du jour — est
- * replié.
+ * qui est déplacé à demain. La prochaine action n'est pas répétée ici (c'est
+ * Next Move, juste au-dessus) ; le détail des reports et la trace complète du
+ * jour sont repliés.
  *
  * Recalculé chaque minute, comme Next Move ; chaque version qui change
  * réellement est gardée dans la trace de l'appareil. « Il me reste… »
@@ -52,6 +55,8 @@ export function DayAgendaCard({
   // Sans cela, la première version du jour était enregistrée dans une trace VIDE, et écrasait celle du matin.
   const [log, setLog] = useState<AgendaLog>(() => parseLog(readFlag(DAY_AGENDA_KEY)));
   const [showLog, setShowLog] = useState(false);
+  const [showPostponed, setShowPostponed] = useState(false);
+  const [showAllKept, setShowAllKept] = useState(false);
   const [editing, setEditing] = useState(false);
   const [custom, setCustom] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -66,7 +71,6 @@ export function DayAgendaCard({
   const override = log.days[today]?.override ?? null;
   const input = useMemo(() => ({ ...data, history, now }), [data, history, now]);
   const agenda = useMemo(() => buildDayAgenda(input, override), [input, override]);
-  const nextKey = useMemo(() => computeNextMove(input).primary?.key ?? null, [input]);
 
   // Une nouvelle version dans la trace, seulement si le plan a réellement changé.
   useEffect(() => {
@@ -82,7 +86,6 @@ export function DayAgendaCard({
 
   const versions = log.days[today]?.versions ?? [];
   const diff = versions.length >= 2 ? diffVersions(versions[versions.length - 2], versions[versions.length - 1]) : null;
-  const next = agenda.kept.find((task) => task.key === nextKey) ?? agenda.kept[0] ?? null;
 
   function saveOverride(minutes: number | null) {
     const updated = setOverride(log, today, minutes === null ? null : { minutes, at: new Date().toISOString() });
@@ -146,19 +149,6 @@ export function DayAgendaCard({
 
       <p className={cn("mt-3 text-[0.9375rem] font-semibold", agenda.overflow > 0 ? "text-rose-300" : "text-ink")}>{agenda.summary}</p>
 
-      {next && (
-        <Link href={next.href} className="mt-4 flex items-center gap-3 rounded-2xl bg-inset px-4 py-3 hover:bg-accent/[0.08]">
-          <span className="min-w-0 flex-1">
-            <span className="t-label block">Prochaine action</span>
-            <span className="block truncate text-[0.9375rem] font-semibold text-ink">{next.title}</span>
-            <span className="t-meta text-2xs">
-              {formatMinutesSpan(next.minutes)} · {next.action}
-            </span>
-          </span>
-          <ArrowRight size={16} aria-hidden className="shrink-0 text-subtle" />
-        </Link>
-      )}
-
       {diff && (diff.causes.length > 0 || diff.changes.length > 0) && (
         <div className="mt-4 rounded-2xl border border-line p-4" role="status">
           <p className="t-label">Recalculé depuis {new Date(diff.since).toTimeString().slice(0, 5)}</p>
@@ -182,34 +172,47 @@ export function DayAgendaCard({
       )}
 
       {agenda.kept.length > 0 && (
-        <ul className="mt-4 divide-y divide-line">
-          {agenda.kept.map((task) => (
-            <KeptRow key={task.key} task={task} />
-          ))}
-        </ul>
+        <>
+          <ul className="mt-4 divide-y divide-line">
+            {(showAllKept ? agenda.kept : agenda.kept.slice(0, KEPT_SHOWN)).map((task) => (
+              <KeptRow key={task.key} task={task} />
+            ))}
+          </ul>
+          {agenda.kept.length > KEPT_SHOWN && (
+            <button type="button" onClick={() => setShowAllKept((value) => !value)} aria-expanded={showAllKept} className="mt-1 inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-accent hover:underline max-lg:min-h-11">
+              {showAllKept ? "Voir moins" : `Voir tout · ${agenda.kept.length}`} <ChevronDown size={14} aria-hidden className={cn("transition-transform", showAllKept && "rotate-180")} />
+            </button>
+          )}
+        </>
       )}
 
       {agenda.postponed.length > 0 && (
-        <div className="mt-4">
-          <p className="t-label">Déplacé à demain · {agenda.postponed.length}</p>
-          <p className="t-meta mt-0.5 text-2xs">Rien n&apos;est perdu : ces tâches reviendront d&apos;elles-mêmes. Pas de quoi culpabiliser, c&apos;est un arbitrage.</p>
-          <ul className="mt-1.5 divide-y divide-line">
-            {agenda.postponed.map((task) => (
-              <li key={task.key} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[0.875rem] font-semibold text-ink">{task.title}</span>
-                  <span className="t-meta text-2xs">
-                    {task.reason} · {task.to}
-                  </span>
-                </span>
-                {task.workItemId && (
-                  <button type="button" onClick={() => confirmPostpone(task)} className="min-h-9 text-2xs font-semibold text-accent hover:underline max-lg:min-h-11">
-                    Confirmer le report
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
+        <div className="mt-3">
+          <button type="button" onClick={() => setShowPostponed((value) => !value)} aria-expanded={showPostponed} className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-muted hover:text-ink max-lg:min-h-11">
+            Déplacé à demain · {agenda.postponed.length} <ChevronDown size={14} aria-hidden className={cn("transition-transform", showPostponed && "rotate-180")} />
+          </button>
+          {showPostponed && (
+            <>
+              <p className="t-meta mt-0.5 text-2xs">Rien n&apos;est perdu : ces tâches reviendront d&apos;elles-mêmes. Pas de quoi culpabiliser, c&apos;est un arbitrage.</p>
+              <ul className="mt-1.5 divide-y divide-line">
+                {agenda.postponed.map((task) => (
+                  <li key={task.key} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[0.875rem] font-semibold text-ink">{task.title}</span>
+                      <span className="t-meta text-2xs">
+                        {task.reason} · {task.to}
+                      </span>
+                    </span>
+                    {task.workItemId && (
+                      <button type="button" onClick={() => confirmPostpone(task)} className="min-h-9 text-2xs font-semibold text-accent hover:underline max-lg:min-h-11">
+                        Confirmer le report
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
       {notice && (

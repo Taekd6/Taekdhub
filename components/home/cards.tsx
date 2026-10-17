@@ -82,7 +82,7 @@ function CardRing({ percent, index }: { percent: number; index: number }) {
 }
 
 /**
- * GALERIE DES MATIÈRES — des cartes en dégradé de 158 × 190, qui flottent,
+ * GALERIE DES MATIÈRES — des cartes en dégradé de 140 × 156, qui flottent,
  * s'inclinent au survol, et défilent à l'horizontale. Les couleurs suivent
  * la liste CYCLÉE de la palette (carte 1, 2, 3, 4, 1…) : elles ne disent pas
  * « c'est les maths », seulement « carte suivante ».
@@ -115,7 +115,7 @@ export function SubjectCards({ cards, className }: { cards: SubjectCard[]; class
                 href={`/preparation?subject=${encodeURIComponent(card.subject)}`}
                 aria-label={`${card.subject} : ${formatSpan(card.seconds)} cette semaine${card.targetMinutes > 0 ? ` sur ${formatMinutesSpan(card.targetMinutes)}` : ""}`}
                 wrapperClassName="shrink-0 snap-start"
-                className="flex h-[11.875rem] w-[9.875rem] flex-col justify-between p-4"
+                className="flex h-[9.75rem] w-[8.75rem] flex-col justify-between p-3.5"
               >
                 <span aria-hidden className="flex items-start justify-between gap-2">
                   <span className="t-glyph whitespace-nowrap">{SUBJECT_GLYPH[card.subject]}</span>
@@ -146,29 +146,39 @@ const MINUTES_PER_CARD = 2;
 
 export function ReviewBanner({ due, next, className }: { due: number; next: { day: string; count: number } | null; className?: string }) {
   const done = due === 0;
+  // Rien à faire : une ligne calme, pas un bandeau saturé qui réclame l'attention (le dégradé reste réservé à « Révisions du jour »).
+  if (done) {
+    return (
+      <Link href="/revoir" className={cn("reveal surface flex items-center justify-between gap-3 px-5 py-3.5", className)} style={{ "--i": 4 } as CSSProperties} aria-label="Révisions à jour — ouvrir le carnet">
+        <span aria-hidden className="min-w-0">
+          <span className="t-card-title block">Révisions à jour</span>
+          <span className="t-meta block truncate text-[0.8125rem]">{next ? `Prochaine ${formatDueDay(next.day)} · ${next.count} ${next.count > 1 ? "cartes" : "carte"}` : "Rien de programmé"}</span>
+        </span>
+        <span aria-hidden className="shrink-0 text-sm font-semibold text-accent">
+          Carnet ›
+        </span>
+      </Link>
+    );
+  }
   return (
     <GradientCard
       tone="review"
-      href={done ? "/revoir" : "/revoir/session"}
+      href="/revoir/session"
       className={cn("reveal flex items-center gap-3.5 p-[1.125rem]", className)}
       style={{ "--i": 4 } as CSSProperties}
-      aria-label={done ? "Révisions à jour — ouvrir le carnet" : `${due} ${due > 1 ? "cartes" : "carte"} à revoir aujourd'hui, environ ${due * MINUTES_PER_CARD} minutes. Commencer.`}
+      aria-label={`${due} ${due > 1 ? "cartes" : "carte"} à revoir aujourd'hui, environ ${due * MINUTES_PER_CARD} minutes. Commencer.`}
     >
       <span aria-hidden className="grid h-[3.25rem] w-[3.25rem] shrink-0 place-items-center rounded-2xl bg-white/20 text-2xl font-bold tabular">
-        {done ? "✓" : <CountUp value={due} />}
+        <CountUp value={due} />
       </span>
       <span aria-hidden className="min-w-0 flex-1">
-        <span className="t-card-title block">{done ? "Révisions à jour" : "Révisions du jour"}</span>
+        <span className="t-card-title block">Révisions du jour</span>
         <span className="block truncate text-[0.8125rem] font-semibold opacity-80">
-          {done
-            ? next
-              ? `Prochaine ${formatDueDay(next.day)} · ${next.count} ${next.count > 1 ? "cartes" : "carte"}`
-              : "Rien de programmé"
-            : `≈ ${due * MINUTES_PER_CARD} min`}
+          ≈ {due * MINUTES_PER_CARD} min
         </span>
       </span>
       <span aria-hidden className="shrink-0 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-[#0b0b14]">
-        {done ? "Carnet" : "Go"}
+        Go
       </span>
     </GradientCard>
   );
@@ -252,6 +262,8 @@ export function StatTiles({
   className?: string;
 }) {
   const weekPercent = weekGoalMinutes > 0 ? Math.min(100, Math.round((weekSeconds / 60 / weekGoalMinutes) * 100)) : 0;
+  // Série et semaine à zéro : deux tuiles qui n'apprennent rien. Elles reviennent avec le premier temps noté.
+  if (streak === 0 && weekSeconds === 0) return null;
   return (
     <div className={cn("reveal grid grid-cols-2 gap-3", className)} style={{ "--i": 6 } as CSSProperties}>
       <Link href="/progress" className="surface lift block p-4">

@@ -269,32 +269,7 @@ export function NextMoveCard({
                 </li>
               ))}
             </ul>
-            <p className="t-meta mt-2 text-[0.8125rem]">{shown.instruction}</p>
-            {shown.request && <CopyRequest text={shown.request} className="mt-2" />}
-            <dl className="mt-3 grid gap-1.5 text-[0.8125rem]">
-              <div className="flex gap-2">
-                <dt className="shrink-0 font-semibold text-subtle">Corrige :</dt>
-                <dd className="min-w-0 font-semibold text-ink">{shown.problem}</dd>
-              </div>
-              <div className="flex gap-2">
-                <dt className="shrink-0 font-semibold text-subtle">Terminé quand :</dt>
-                <dd className="min-w-0 font-semibold text-ink">{shown.doneWhen}</dd>
-              </div>
-            </dl>
-          </div>
-        )}
-
-        {/* ── PUIS ── */}
-        {following.length > 0 && (
-          <div className="mt-4">
-            <h3 className="t-label">Puis</h3>
-            <ol className="mt-1.5 space-y-1">
-              {following.map((step, index) => (
-                <li key={`${step.candidate?.key ?? "pause"}-${index}`} className={cn("text-[0.9375rem] font-semibold", step.type === "pause" ? "text-muted" : "text-ink")}>
-                  → {stepLine(step)}
-                </li>
-              ))}
-            </ol>
+            {shown.request && <CopyRequest text={shown.request} className="mt-3" />}
           </div>
         )}
 
@@ -335,6 +310,34 @@ export function NextMoveCard({
         {/* ── DÉTAILS ── */}
         {details && (
           <div id="next-move-details" className="mt-3 space-y-4 border-t border-line pt-4">
+            {shown && (
+              <div>
+                <h3 className="t-label">Comment s&apos;y prendre</h3>
+                <p className="mt-1.5 text-[0.875rem] text-ink">{shown.instruction}</p>
+                <dl className="mt-3 grid gap-1.5 text-[0.8125rem]">
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 font-semibold text-subtle">Corrige :</dt>
+                    <dd className="min-w-0 font-semibold text-ink">{shown.problem}</dd>
+                  </div>
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 font-semibold text-subtle">Terminé quand :</dt>
+                    <dd className="min-w-0 font-semibold text-ink">{shown.doneWhen}</dd>
+                  </div>
+                </dl>
+              </div>
+            )}
+            {following.length > 0 && (
+              <div>
+                <h3 className="t-label">Puis</h3>
+                <ol className="mt-1.5 space-y-1">
+                  {following.map((step, index) => (
+                    <li key={`${step.candidate?.key ?? "pause"}-${index}`} className={cn("text-[0.875rem]", step.type === "pause" ? "text-muted" : "text-ink")}>
+                      → {stepLine(step)}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
             {shown && (
               <div>
                 <h3 className="t-label">Le calcul, point par point</h3>

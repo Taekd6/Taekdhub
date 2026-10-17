@@ -1,7 +1,7 @@
 "use client";
 
-import { Copy, Plus, SquareX, Timer } from "lucide-react";
-import { useMemo, type CSSProperties } from "react";
+import { ChevronDown, Copy, Plus, SquareX, Timer } from "lucide-react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
 import { QuickLog } from "@/components/work/quick-log";
 import { ReviewCapture } from "@/components/review/review-capture";
@@ -18,6 +18,7 @@ import { useKholleHistory } from "@/hooks/use-kholle-history";
 import { DeadlinesCard, ReviewBanner, StatTiles, SubjectCards } from "@/components/home/cards";
 import { ActionButtons, type ActionItem } from "@/components/ui/action-buttons";
 import { BlockHeader } from "@/components/ui/list-card";
+import { cn } from "@/lib/cn";
 import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { computeStreak } from "@/lib/gamification";
@@ -35,12 +36,7 @@ import { dayKey, subjects as allSubjects, totalSeconds } from "@/lib/study";
  * geste de l'application. « Noter » descend à la saisie rapide de cette
  * même page (ancre `#noter`).
  */
-const ACTIONS: ActionItem[] = [
-  { label: "Chrono", icon: Timer, href: "/timer", primary: true },
-  { label: "Noter", icon: Plus, href: "#noter" },
-  { label: "Réviser", icon: Copy, href: "/revoir/session" },
-  { label: "Erreur", icon: SquareX, href: "/erreurs" },
-];
+
 
 /**
  * ÉCRAN D'ACCUEIL — la maquette validée « D2 · Style Revolut clair »,
@@ -74,6 +70,18 @@ const ACTIONS: ActionItem[] = [
  * l'état, et une seconde copie resterait figée après une saisie.
  */
 export function DashboardOverview() {
+  // « Noter du temps » est replié : le formulaire n'apparaît qu'à la demande (bouton « Noter » ou son en-tête).
+  const [noterOpen, setNoterOpen] = useState(false);
+  const openNoter = () => {
+    setNoterOpen(true);
+    requestAnimationFrame(() => document.getElementById("noter")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  };
+  const actions: ActionItem[] = [
+    { label: "Chrono", icon: Timer, href: "/timer", primary: true },
+    { label: "Noter", icon: Plus, onClick: openNoter },
+    { label: "Réviser", icon: Copy, href: "/revoir/session" },
+    { label: "Erreur", icon: SquareX, href: "/erreurs" },
+  ];
   const { sessions, workItems, reviewItems, preferences, ready, saveSessions, removeSession, saveReviewItems, checkins, saveCheckins, chapterMemory, saveChapterMemory, grades, errors, nextMoves, saveNextMoves, attempts, ankiSnapshots, saveWorkItems } = usePrepahubData();
   const kholle = useKholleHistory();
 
@@ -158,16 +166,25 @@ export function DashboardOverview() {
           {/* LE RESTE DE LA JOURNÉE — le plan adaptatif (lib/day-agenda.ts) : temps restant, arbitrage, ce qui a changé. */}
           <DayAgendaCard data={nextMoveData} history={nextMoves} saveWorkItems={saveWorkItems} ready={ready} className="order-1 lg:order-none" />
           <div className="reveal order-3 lg:order-none" style={{ "--i": 2 } as CSSProperties}>
-            <ActionButtons items={ACTIONS} className="lg:mx-auto lg:max-w-md" />
+            <ActionButtons items={actions} className="lg:mx-auto lg:max-w-md" />
           </div>
           {/* Minimum du soir — voir lib/evening-minimums.ts. */}
           <EveningCard preferences={preferences} sessions={sessions} className="order-3 lg:order-none" />
           <SubjectCards cards={subjectCards} className="order-4 lg:order-none" />
 
-          {/* NOTER DU TEMPS — la cible du bouton « Noter ». */}
+          {/* NOTER DU TEMPS — la cible du bouton « Noter » ; replié tant qu'on n'a rien à noter. */}
           <section id="noter" aria-labelledby="noter-titre" className="surface reveal order-8 scroll-mt-24 p-5 sm:p-6 lg:order-none">
-            <BlockHeader id="noter-titre" title="Noter du temps" className="mb-4" />
-            <QuickLog sessions={sessions} saveSessions={saveSessions} removeSession={removeSession} ready={ready} />
+            <button type="button" onClick={() => setNoterOpen((value) => !value)} aria-expanded={noterOpen} aria-controls="noter-contenu" className="flex w-full items-center justify-between gap-4 text-left">
+              <h2 id="noter-titre" className="text-xl font-bold tracking-[-0.02em] text-ink">
+                Noter du temps
+              </h2>
+              <ChevronDown size={18} aria-hidden className={cn("shrink-0 text-subtle transition-transform", noterOpen && "rotate-180")} />
+            </button>
+            {noterOpen && (
+              <div id="noter-contenu" className="mt-4">
+                <QuickLog sessions={sessions} saveSessions={saveSessions} removeSession={removeSession} ready={ready} />
+              </div>
+            )}
           </section>
 
           <section aria-labelledby="reprendre-titre" className="surface reveal order-10 p-5 sm:p-6 lg:order-none">
@@ -188,7 +205,7 @@ export function DashboardOverview() {
           {/* La courbe sort de la colonne jusqu'aux bords de l'écran sur
               téléphone, comme dans la maquette ; sur grand écran, elle se
               pose dans une tuile. */}
-          <WeekCurve week={week} className="order-2 -mx-4 sm:-mx-6 lg:order-none lg:mx-0 lg:rounded-[1.625rem] lg:bg-[var(--surface-bg)] lg:px-2 lg:pb-4 lg:pt-6 lg:[box-shadow:var(--surface-shadow)]" />
+          {weeklySummary.totalSeconds > 0 && <WeekCurve week={week} className="order-2 -mx-4 sm:-mx-6 lg:order-none lg:mx-0 lg:rounded-[1.625rem] lg:bg-[var(--surface-bg)] lg:px-2 lg:pb-4 lg:pt-6 lg:[box-shadow:var(--surface-shadow)]" />}
           <ReviewBanner due={reviews.due.length} next={reviews.next} className="order-5 lg:order-none" />
           {/* ── MÉMOIRE DES CHAPITRES (FSRS) — « À ne pas oublier », juste après
               les révisions du jour. Voir components/memory/memory-card.tsx. ── */}

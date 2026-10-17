@@ -186,10 +186,13 @@ export function AnkiOverview() {
         </p>
       )}
 
+      {!dueInfo && !full ? (
+        // Aucun relevé : une phrase, pas une grande carte vide au-dessus de ce qui permet d'en faire un.
+        <p className="t-meta px-1">
+          <span className="font-semibold text-ink">Dernier relevé.</span> Aucun pour l&apos;instant : TaekdHub ne sait rien de ta collection Anki. Choisis une façon de relever ci-dessous.
+        </p>
+      ) : (
       <Section variant="feature" title="Dernier relevé">
-        {!dueInfo && !full ? (
-          <p className="t-meta">Aucun relevé pour l&apos;instant : TaekdHub ne sait rien de ta collection Anki. Choisis une façon de relever ci-dessous.</p>
-        ) : (
           <>
             <StatRow>
               <Stat
@@ -221,8 +224,8 @@ export function AnkiOverview() {
               </p>
             )}
           </>
-        )}
       </Section>
+      )}
 
       <Section variant="panel" title="Relever" description="Un relevé ne fait que LIRE des compteurs dans Anki. Seul « Envoyer vers Anki », plus bas, y écrit, et seulement sur ton clic.">
         <div className="space-y-5">

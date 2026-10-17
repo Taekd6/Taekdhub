@@ -65,6 +65,23 @@ export function MemoryCard({
     );
   }
 
+  // Rien de menacé : une ligne calme, pas une carte entière pour dire que tout va bien.
+  if (risky.length === 0) {
+    return (
+      <section aria-label="Mémoire des chapitres" className="surface reveal flex items-center justify-between gap-3 px-5 py-3.5" data-memory-card>
+        <p className="min-w-0">
+          <span className="t-card-title block">À ne pas oublier</span>
+          <span className="t-meta block text-[0.8125rem]">{`Tes ${tracked} chapitre${tracked > 1 ? "s tiennent" : " tient"} pour l'instant.`}</span>
+        </p>
+        {!onMemoryPage && (
+          <Link href="/memoire" className="inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-accent hover:underline sm:min-h-8">
+            Ma mémoire ›
+          </Link>
+        )}
+      </section>
+    );
+  }
+
   function rate(id: string, value: FsrsRating) {
     saveChapters(chapters.map((chapter) => (chapter.id === id ? rateChapter(chapter, value, today) : chapter)));
     setRating(null);

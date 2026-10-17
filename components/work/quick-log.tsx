@@ -184,7 +184,7 @@ export function QuickLog({
         />
       </div>
 
-      <Button size="lg" className="mt-5 w-full" disabled={!ready || !valid} onClick={add}>
+      <Button size="lg" variant="secondary" className="mt-5 w-full" disabled={!ready || !valid} onClick={add}>
         {justAdded ? (
           <>
             <Check size={16} strokeWidth={3} /> Ajouté
