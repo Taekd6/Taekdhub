@@ -199,17 +199,16 @@ Fichier : `cartes-suite.jsonl`, 62 cartes `sn-62` à `sn-123` (chapitre `series-
 LANDELLE-CH02 et PROST-SOMMATION lus en entier (sections I à VII pour Prost ; I et II pour Landelle). Les fiches `mp_mathematiques.txt` et `mpsi_mathematiques.txt` (sections séries, familles sommables, dénombrabilité) ont été lues mais leurs ids PROST-MP-MATHEMATIQUES et PROST-MPSI-MATHEMATIQUES sont **absents de `sources.json` au moment du contrôle** : non cités dans les champs `source`. Aucune source web supplémentaire n'a été utilisée pour ce chapitre.
 
 ### 9.2 Ce qui manquait (62 cartes)
-- **Dénombrabilité et familles sommables** (cartes `sn-85` à `sn-123`, hors des 61 cartes) : 31 notes de la collection (ensembles dénombrables, sommabilité positive et complexe, paquets, Fubini, contre-exemples, réarrangement) n'avaient aucune carte. 35 de ces cartes reprennent ces notes ; les autres viennent de PROST-SOMMATION (exercices 12 à 15, partie VII).
-- **Compléments sur les séries** (`sn-62` à `sn-84`) : inégalité sur les sommes, encadrement u ≤ v ≤ w, structure d'espace vectoriel, séries vectorielles (programme MP), plan d'étude, série de Bertrand, alternées (définition, encadrement de Rₙ, approximation, contre-exemple sans décroissance, Abel/Dirichlet HP), comparaison série-intégrale (piège e^{−t}, √k, f′ intégrable), développement affiné de Hₙ (démonstration), Cesàro et suites récurrentes (Landelle).
+- **Dénombrabilité et familles sommables** (cartes `sn-86` à `sn-123`) : les 31 notes de la collection sur ce thème (ensembles dénombrables, sommabilité positive et complexe, paquets, Fubini, contre-exemples, réarrangement) n'avaient aucune carte dans les 61 ; elles sont reprises ici, avec en plus des exercices de PROST-SOMMATION (exercices 12 à 15).
+- **Compléments sur les séries** (`sn-62` à `sn-85`) : inégalité sur les sommes, encadrement u ≤ v ≤ w, structure d'espace vectoriel, séries vectorielles (programme MP), plan d'étude, série de Bertrand, alternées (définition, encadrement de Rₙ, approximation, contre-exemple sans décroissance, Abel/Dirichlet HP), comparaison série-intégrale (piège e^{−t}, √k, f′ intégrable), développement affiné de Hₙ (démonstration), Cesàro et suites récurrentes (Landelle).
 - Total : 62 cartes, dont 27 sans note d'origine (nouvelles).
 - Notes ch02 toutes traitées : séries (25 + 21 démonstrations) → `cartes-v2.jsonl` ; dénombrabilité/familles (8 « Cours 2.x » et 31 notes) → `cartes-suite.jsonl`.
 
 ### 9.3 Erreurs et défauts dans les 61 cartes existantes (non corrigés)
 1. `sn-31` : « quelles hypothèses sont nécessaires ? » : la décroissance et la limite nulle sont **suffisantes**, pas nécessaires (la limite nulle l'est ; la décroissance ne l'est pas, ex. une alternée non monotone peut converger). Contre-exemple utile pour la décroissance : voir `sn-75`.
-2. `sn-20` : écrite avec « bornée » sans mention d'hypothèse α>1 pour la divergence ; correcte, mais `sn-21` : « ∃α ≤ 1 avec nᵅuₙ → +∞ » est vrai ; rien de faux. (RAS, vérifié.)
-3. `sn-48` : pas d'erreur ; la preuve est seulement esquissée (O(1/n²) non justifié) : à étoffer avec `sn-84`.
-4. `cartes-v2.jsonl` n'a pas les champs `anciennes` (schéma v1) : les `check` passent, mais le lien note → carte n'est pas porté par ces cartes.
-5. `sn-14`, `sn-16`, `sn-18` : formulations correctes ; `sn-16` demande des termes positifs alors qu'un signe constant suffit (nuance).
+2. `sn-48` : preuve seulement esquissée (le O(1/n²) de 1/(n+1) − ln(1+1/n) n'est pas justifié) ; compléter par le DL de ln(1+x).
+3. `sn-16` : demande des termes positifs alors qu'un signe constant à partir d'un rang suffit (nuance, pas une erreur).
+4. `cartes-v2.jsonl` n'a pas le champ `anciennes` (schéma v1) : le lien note → carte n'y est pas porté.
 Aucune erreur mathématique grave trouvée dans les 61 cartes (chaque énoncé a été recalculé).
 
 ### 9.4 Défauts des notes d'origine de la collection (ch02)
