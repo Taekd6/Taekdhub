@@ -1,0 +1,48 @@
+{
+  "sources": [
+    {
+      "id": "PC-LAFAYETTE-CHC1",
+      "type": "cours_professeur",
+      "auteur": "Lycée La Fayette (MP)",
+      "titre": "Chimie ChC1 : Effets thermiques des réactions chimiques, 1er principe et enthalpie de réaction (cours MP)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=1676",
+      "statut_acces": "lue",
+      "sha256_16": "640b5cfcbea46fc0",
+      "limite": "Cours à trous (exercices à compléter) ; programme 2021 ; fixe l'approximation d'Ellingham comme Δ_rH° indépendant de T hors changement d'état.",
+      "droits": "publié par son auteur ; consultation légale, pas de republication"
+    },
+    {
+      "id": "PC-LAFAYETTE-CHC2",
+      "type": "cours_professeur",
+      "auteur": "Lycée La Fayette (MP)",
+      "titre": "Chimie ChC2 : Équilibres chimiques et déplacements (cours MP)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=1688",
+      "statut_acces": "lue",
+      "sha256_16": "9931b895c12ef798",
+      "limite": "Cours à trous ; lu par recherche ciblée (critère d'évolution, variance, van 't Hoff, déplacements) et non intégralement.",
+      "droits": "publié par son auteur ; consultation légale, pas de republication"
+    },
+    {
+      "id": "PC-POINCARE-COLLE-C19",
+      "type": "cours_professeur",
+      "auteur": "Lycée H. Poincaré (MP)",
+      "titre": "Programme de colle MP 2025/26, semaine C19 : cinétique de l'oxydoréduction, corrosion, protection (capacités exigibles)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-poincare/download?id=321",
+      "statut_acces": "lue",
+      "sha256_16": "b7ace11c414d1b4e",
+      "limite": "Plan et capacités, pas un cours rédigé.",
+      "droits": "publié par son auteur ; consultation légale, pas de republication"
+    },
+    {
+      "id": "PC-ENSLYON-LC28",
+      "type": "cours_professeur",
+      "auteur": "B. Monnet (ENS Lyon, préparation agrégation)",
+      "titre": "LC28 Cinétique électrochimique (note de leçon, 2020)",
+      "url_candidate": "https://perso.ens-lyon.fr/benjamin.monnet/LC/LC28%20Cin%c3%a9tique%20%c3%a9lectrochimique/LC28%20Cin%c3%a9tique%20%c3%a9lectrochimique.pdf",
+      "statut_acces": "lue",
+      "sha256_16": "4d9f5ea004c40db6",
+      "limite": "Note de leçon niveau L3, 2020 (programme antérieur), source faible ; la convention de signe de i y diffère (i = -nFv) de celle des cours MP (i_a = nFv > 0).",
+      "droits": "publié par son auteur ; consultation légale, pas de republication"
+    }
+  ]
+}

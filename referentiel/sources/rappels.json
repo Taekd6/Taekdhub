@@ -1,0 +1,48 @@
+{
+ "sources": [
+  {
+   "id": "PC-LAFAYETTE-CHARGE-EB",
+   "type": "cours_professeur",
+   "auteur": "mp-lafayette (ressource MPSI-MP2I, doc 657)",
+   "titre": "Mouvements de particules chargées dans des champs E et B uniformes et permanents (ch. P15, PTSI)",
+   "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=657",
+   "statut_acces": "lue",
+   "sha256_16": "dc7e3cbd9526b2f5",
+   "limite": "cours de 1re année (programme 2021) ; lu partiellement pour charge-EB (plan, ch. A à C) ; trous à compléter dans les cours à trous",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-LAFAYETTE-ODG-MP",
+   "type": "cours_professeur",
+   "auteur": "MP La Fayette (doc 1391)",
+   "titre": "ODG à connaître (extrait du programme MPSI-MP)",
+   "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=1391",
+   "statut_acces": "lue",
+   "sha256_16": "d8cea17ae73e6ea8",
+   "limite": "cours de 1re année (programme 2021) ; lu partiellement pour charge-EB (plan, ch. A à C) ; trous à compléter dans les cours à trous",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-CHAMPOLLION-THERMO-2",
+   "type": "cours_professeur",
+   "auteur": "hébergé sur mpi-champollion (doc 755)",
+   "titre": "Thermodynamique ch. 2 : premier principe (PTSI Vaucanson 2021/22)",
+   "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=755",
+   "statut_acces": "lue",
+   "sha256_16": "55d98d94efac020f",
+   "limite": "cours de 1re année (programme 2021) ; lu partiellement pour charge-EB (plan, ch. A à C) ; trous à compléter dans les cours à trous",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-CHAMPOLLION-THERMO-4",
+   "type": "cours_professeur",
+   "auteur": "hébergé sur mpi-champollion (doc 757)",
+   "titre": "Thermodynamique ch. 4 : second principe, bilans d'entropie (PTSI Vaucanson 2021/22)",
+   "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=757",
+   "statut_acces": "lue",
+   "sha256_16": "50a66d6986a43fe9",
+   "limite": "cours de 1re année (programme 2021) ; lu partiellement pour charge-EB (plan, ch. A à C) ; trous à compléter dans les cours à trous",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  }
+ ]
+}

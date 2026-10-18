@@ -1,0 +1,70 @@
+{
+  "sources": [
+    {
+      "id": "PC-LAFAYETTE-CHT1",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée La Fayette (nom non indiqué)",
+      "titre": "Thermodynamique ChT1 : transformation infinitésimale et changement d'état (MP)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=1390",
+      "statut_acces": "lue",
+      "sha256_16": "d3c5a571429e1a9c",
+      "limite": "cours MP La Fayette, programme 2021",
+      "droits": "publié par son auteur ; consultation légale, pas de republication"
+    },
+    {
+      "id": "PC-LAFAYETTE-CHT2",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée La Fayette (nom non indiqué)",
+      "titre": "Thermodynamique ChT2 : bilans pour un fluide en écoulement stationnaire (MP)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=3867",
+      "statut_acces": "lue",
+      "sha256_16": "8360dbd7fe9c4a43",
+      "limite": "cours MP La Fayette, programme 2021",
+      "droits": "publié par son auteur ; consultation légale, pas de republication"
+    },
+    {
+      "id": "PC-LAFAYETTE-CHT3",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée La Fayette (nom non indiqué)",
+      "titre": "Thermodynamique ChT3 : machines thermiques (MP)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=3868",
+      "statut_acces": "lue",
+      "sha256_16": "17c5c7990a682dd3",
+      "limite": "cours MP La Fayette, programme 2021",
+      "droits": "publié par son auteur ; consultation légale, pas de republication"
+    },
+    {
+      "id": "PC-LAFAYETTE-CHT4",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique-chimie MP, lycée La Fayette (nom non indiqué)",
+      "titre": "Thermodynamique ChT4 : transferts thermiques (MP)",
+      "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=1448",
+      "statut_acces": "lue",
+      "sha256_16": "ed2462587f27d49f",
+      "limite": "cours MP La Fayette, programme 2021",
+      "droits": "publié par son auteur ; consultation légale, pas de republication"
+    },
+    {
+      "id": "PC-CHAMPOLLION-THERMO-CH1",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique, lycée Champollion (nom non indiqué)",
+      "titre": "Thermodynamique, chapitre 1 : diffusion thermique (MPI 2025/26)",
+      "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=1436",
+      "statut_acces": "lue",
+      "sha256_16": "2208419ebe549ea3",
+      "limite": "cours MPI, texte extrait avec quelques symboles dégradés ; valeur de lambda du polystyrène (0,004) manifestement fausse",
+      "droits": "publié par son auteur ; consultation légale, pas de republication"
+    },
+    {
+      "id": "PC-CHAMPOLLION-THERMO-CH2",
+      "type": "cours_professeur",
+      "auteur": "professeur de physique, lycée Champollion (nom non indiqué)",
+      "titre": "Thermodynamique, chapitre 2 : rayonnement thermique (MPI 2022/23)",
+      "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=726",
+      "statut_acces": "lue",
+      "sha256_16": "6867d46139d67745",
+      "limite": "cours MPI 2022/23 ; rayonnement du corps noir hors programme MP explicite",
+      "droits": "publié par son auteur ; consultation légale, pas de republication"
+    }
+  ]
+}

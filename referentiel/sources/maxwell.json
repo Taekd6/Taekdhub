@@ -1,0 +1,59 @@
+{
+ "sources": [
+  {
+   "id": "PC-LAFAYETTE-EM4-MAXWELL",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MP/MPI, lycée La Fayette",
+   "titre": "ChEM4 Electromagnétisme en régime variable (Maxwell, énergie, Poynting)",
+   "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=1872",
+   "statut_acces": "lue",
+   "sha256_16": "9f4f6425e3eb3487",
+   "limite": "cours de classe, date non précisée (programme 2021)",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-LAFAYETTE-EM6-PLASMA",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MP/MPI, lycée La Fayette",
+   "titre": "ChEM6 EM dans plasma",
+   "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=2062",
+   "statut_acces": "lue",
+   "sha256_16": "e4f5f5a0c3c15c85",
+   "limite": "cours de classe, date non précisée",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-CHAMPOLLION-EM6-MAXWELL",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique MPI, lycée Champollion",
+   "titre": "Cours EM chapitre 6 Équations de Maxwell (2025/26) et encadrés",
+   "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=1429",
+   "statut_acces": "lue",
+   "sha256_16": "61956bd83e5a8b35",
+   "limite": "texte du PDF en partie dégradé (police) ; encadrés à compléter",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-CHAMPOLLION-EM9-CONDUCTEUR",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique MPI, lycée Champollion",
+   "titre": "Encadrés EM chapitre 9 Conducteur ohmique, modèle de Drude (2025/26)",
+   "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=1489",
+   "statut_acces": "lue",
+   "sha256_16": "84905c2d13dbd41d",
+   "limite": "encadrés seulement, plusieurs parties vides",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-LAFAYETTE-QC-MPSI",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie, lycée La Fayette",
+   "titre": "Questions de cours MPSI/MP2I été 2026 (chapitres champ magnétique et induction)",
+   "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=2559",
+   "statut_acces": "lue",
+   "sha256_16": "b9fbca33ba10a9c7",
+   "limite": "liste de questions de cours, pas un cours rédigé ; sert à l'exigibilité de l'induction (programme MPSI)",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  }
+ ]
+}

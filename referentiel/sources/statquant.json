@@ -1,0 +1,37 @@
+{
+ "sources": [
+  {
+   "id": "PC-ENS-PHYSTAT-TD",
+   "type": "cours_professeur",
+   "auteur": "Jules Fillette (ENS-PSL, LPENS), préparation à l'agrégation de physique",
+   "titre": "Travaux dirigés de physique statistique pour l'agrégation, TD I : la physique statistique en prépa MP (version du 20 octobre 2022)",
+   "url_candidate": "https://www.lpens.ens.psl.eu/wp-content/uploads/2022/10/TDPhyStat_23_PrepaMP.pdf",
+   "statut_acces": "lue",
+   "sha256_16": "70b35e9436d8fa34",
+   "limite": "exercices et corrigés de niveau prépa/agrégation ; lus : paramagnétisme, systèmes à deux niveaux, capacité thermique de H2 (corrigé) ; pas un cours structuré",
+   "droits": "publié par son auteur (licence CC BY-NC-SA 4.0) ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-CHAMPOLLION-MECAQ1",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique, lycée Champollion (MPI)",
+   "titre": "Mécanique quantique, chapitre 1 : fonction d'onde (cours MPI 2023/24)",
+   "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=749",
+   "statut_acces": "lue",
+   "sha256_16": "5b45db38971d70c8",
+   "limite": "classe MPI, même programme de physique quantique que MP ; extrait de texte avec symboles mathématiques partiellement perdus",
+   "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-CHAMPOLLION-MECAQ2",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique, lycée Champollion (MPI)",
+   "titre": "Mécanique quantique, chapitre 2 : potentiel constant par morceaux (cours MPI 2023/24)",
+   "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=772",
+   "statut_acces": "lue",
+   "sha256_16": "63d5fb5e3ddbfbd3",
+   "limite": "classe MPI, même programme de physique quantique que MP ; extrait de texte avec symboles mathématiques partiellement perdus",
+   "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+  }
+ ]
+}

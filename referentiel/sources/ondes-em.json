@@ -1,0 +1,70 @@
+{
+ "sources": [
+  {
+   "id": "PC-CHAMPOLLION-EM-CH7",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MPI, lycée Champollion (nom non indiqué)",
+   "titre": "Électromagnétisme Ch.7 Ondes électromagnétiques dans le vide (2025/26)",
+   "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=1453",
+   "statut_acces": "lue",
+   "sha256_16": "8507a6b5fa71628c",
+   "limite": "filière MPI ; texte extrait avec symboles grecs dégradés, formules relues par raisonnement",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-CHAMPOLLION-EM-CH8",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MPI, lycée Champollion (nom non indiqué)",
+   "titre": "Électromagnétisme Ch.8 Propagation dans un plasma dilué (2025/26)",
+   "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=1456",
+   "statut_acces": "lue",
+   "sha256_16": "6800781d1f0e07a3",
+   "limite": "filière MPI ; extraction de texte partiellement dégradée",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-CHAMPOLLION-EM-CH9",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MPI, lycée Champollion (nom non indiqué)",
+   "titre": "Électromagnétisme Ch.9 Conducteur ohmique (2025/26)",
+   "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=1489",
+   "statut_acces": "lue",
+   "sha256_16": "e42d24fc96b1d413",
+   "limite": "filière MPI ; extraction dégradée, lue en partie (effet de peau, début de la réflexion)",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-CHAMPOLLION-EM-CH10-2324",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MPI, lycée Champollion (nom non indiqué)",
+   "titre": "Électromagnétisme Ch.10 Rayonnement d'un dipôle oscillant (2023/24)",
+   "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=639",
+   "statut_acces": "lue",
+   "sha256_16": "1508d580383e8541",
+   "limite": "millésime 2023/24 (ancienne version du cours) ; programme 2021 respecté",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-LAFAYETTE-CHEM5",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MP-MPI, lycée La Fayette (nom non indiqué)",
+   "titre": "ChEM5 Ondes électromagnétiques dans le vide",
+   "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=1936",
+   "statut_acces": "lue",
+   "sha256_16": "d07d8e1a08fe1b83",
+   "limite": "lue : plan, relation de dispersion, structure, polarisation ; énergie parcourue en diagonale",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-LAFAYETTE-CHEM6",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MP-MPI, lycée La Fayette (nom non indiqué)",
+   "titre": "ChEM6 Ondes électromagnétiques dans un plasma, dispersion",
+   "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=2062",
+   "statut_acces": "lue",
+   "sha256_16": "e4f5f5a0c3c15c85",
+   "limite": "lue jusqu'à la vitesse de groupe du doublet ; annexes non lues",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  }
+ ]
+}

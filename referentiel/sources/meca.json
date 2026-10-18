@@ -1,0 +1,37 @@
+{
+ "sources": [
+  {
+   "id": "PC-CHAMPOLLION-MECA-CH2",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MPI, lycée Champollion",
+   "titre": "Mécanique chapitre 2 : changements de référentiels, mécanique en référentiel non galiléen (2026-2027)",
+   "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=1662",
+   "statut_acces": "lue",
+   "sha256_16": "f647802c13eed5f9",
+   "limite": "cours d'une classe MPI précise, 6 pages, énoncés sans démonstrations détaillées",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-CHAMPOLLION-MECA-CH1",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MPI, lycée Champollion",
+   "titre": "Mécanique chapitre 1 : encadrés (vecteur rotation, roulement, cône de frottement, mesure de f) (2026-2027)",
+   "url_candidate": "https://cahier-de-prepa.fr/mpi-champollion/download?id=1664",
+   "statut_acces": "lue",
+   "sha256_16": "a3c31910edb6025a",
+   "limite": "simples encadrés d'exercices, sans énoncé complet des lois de Coulomb",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-NOMAD-CORDE-VIBRANTE",
+   "type": "cours_professeur",
+   "auteur": "Nomad Education (mini-cours BCPST 2e année)",
+   "titre": "Phénomènes de propagation non dispersifs : équation de d'Alembert (corde vibrante)",
+   "url_candidate": "https://www.nomadeducation.fr/revisions/prepa-bcpst-2eme-annee-lb6f7b26/phenomenes-de-propagation-non-dispersifs-equatio-cyffe671",
+   "statut_acces": "lue",
+   "sha256_16": "2ef3a7b0ab7848de",
+   "limite": "mini-cours BCPST (autre filière), date non indiquée, très résumé",
+   "droits": "publié par son auteur ; consultation légale, pas de republication"
+  }
+ ]
+}

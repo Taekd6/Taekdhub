@@ -1,0 +1,59 @@
+{
+ "sources": [
+  {
+   "id": "PC-LAFAYETTE-ELEC-CHE1",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MP/MPI, lycée La Fayette (nom non indiqué)",
+   "titre": "Chapitre E1 : Signaux périodiques, spectre et filtrage (MP/MPI)",
+   "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=1388",
+   "statut_acces": "lue",
+   "sha256_16": "5356011ad81934f0",
+   "limite": "cours d'une classe précise ; version 2025-2026 probable",
+   "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-LAFAYETTE-ELEC-TP1",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MP/MPI, lycée La Fayette (nom non indiqué)",
+   "titre": "TP1 : Régimes transitoires de systèmes linéaires (révisions MPSI)",
+   "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=1389",
+   "statut_acces": "lue",
+   "sha256_16": "a6349b44736ea9d4",
+   "limite": "sujet de TP, pas un cours complet",
+   "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-LAFAYETTE-ELEC-TP2",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MP/MPI, lycée La Fayette (nom non indiqué)",
+   "titre": "TP2 : Signaux périodiques, spectre et filtrage",
+   "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=1447",
+   "statut_acces": "lue",
+   "sha256_16": "589283212bb9c36d",
+   "limite": "sujet de TP, pas un cours complet",
+   "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-LAFAYETTE-ELEC-QC",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MP/MPI, lycée La Fayette (nom non indiqué)",
+   "titre": "Questions de cours MPSI-MP2I (liste, été 2026)",
+   "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=2559",
+   "statut_acces": "lue",
+   "sha256_16": "b9fbca33ba10a9c7",
+   "limite": "liste d'intitulés, sans corrigé",
+   "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+  },
+  {
+   "id": "PC-LAFAYETTE-ELEC-ODG",
+   "type": "cours_professeur",
+   "auteur": "professeur de physique-chimie MP/MPI, lycée La Fayette (nom non indiqué)",
+   "titre": "Ordres de grandeur à connaître (MP)",
+   "url_candidate": "https://cahier-de-prepa.fr/mp-lafayette/download?id=1391",
+   "statut_acces": "lue",
+   "sha256_16": "d8cea17ae73e6ea8",
+   "limite": "liste brute, une page",
+   "droits": "publié par son auteur sur cahier-de-prepa.fr ; consultation légale, pas de republication"
+  }
+ ]
+}
