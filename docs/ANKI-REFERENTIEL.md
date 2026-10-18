@@ -91,6 +91,7 @@ L'anglais est hors périmètre : aucun fichier d'anglais n'a été lu.
 - Origine des cartes : 938 scindées, 784 réécrites, 518 nouvelles, 37 corrigées, 34 fusionnées, 18 reprises telles quelles, le reste rédigé sans note d'origine.
 - Validation : 2 317 cartes citent au moins une source lue, 118 n'en citent aucune (résultat vérifié à la main) ; 2 244 ont une exigibilité « confirmée : figure dans … », 175 sont « à confirmer ».
 - Les erreurs de ta collection trouvées au passage (une trentaine, voir les `validation.md`) sont corrigées dans les nouvelles cartes ; ta collection n'a pas été modifiée.
+- Contrôle qualité : voir `docs/CONTROLE-QUALITE-REFERENTIEL.md`.
 - Paquet à importer à la main : `public/anki/taekdhub-referentiel.apkg` (identifiants dérivés de l'id de carte). Régénération : `python3 scripts/referentiel/referentiel.py deck`.
 
 ## 2 ter. Bilan physique-chimie (962 + 2 cartes)
