@@ -1,0 +1,8 @@
+# Validation : électrostatique (43 cartes, préfixe es)
+
+Bilan sur 33 notes phys_04 + 21 notes M&P (Electrostat M/P) = 54 notes : 32 réécrites, 8 fusionnées, 3 nouvelles (cartes), 0 reprise telle quelle, 0 écartée (div(rot)=0 et div j = −∂ρ/∂t fusionnées dans le chapitre analyse-vectorielle).
+- Sources lues : PC-LAFAYETTE-EM1-ELECTROSTAT, ISM-PC-EM-1, PROGRAMME-PC-MP-2021. Les calculs des cartes M&P (disque, capacités cylindrique/sphérique, Thomson, plasma, résistance, τ = ε₀/γ) ont été recalculés ; source « aucune consultée » imposée par l'outil quand aucune source lue ne contient le résultat.
+- Erreurs d'origine : (1) la démonstration « boule » (note 1790858881125) est tronquée à l'étape 4 par un caractère « < » perdu à l'export : reconstruit ; aucune erreur de fond.
+- Cartes M&P ambiguës : note 1768758740977 (recto ET verso vides) : question déduite = champ et potentiel d'une sphère chargée en surface, à confirmer ; « Force électromotrice » (1768757149711) : interprété comme fem de générateur ; « Cylindre/Sphérique » : capacités ; « n* » (Drude) : densité de porteurs.
+- Exigibilité : hors programme explicite : modèle de Drude (aucun modèle d'Ohm local exigible), conducteurs en équilibre. Au programme : Coulomb, Gauss (admis), capacité du condensateur plan, énergie d'une charge dans un champ, analogie gravitationnelle (Gauss). Énergie de distribution : seul ½CU² et ε₀E²/2 (programme 4.4).
+- Divergences : ISM/Lafayette concordent (notations d, e pour la distance des armatures ; Q_int ou ℰ_int). Champ de claquage : 3·10⁶ V/m (Lafayette), ordre de grandeur de 100 V/m pour l'atmosphère non lu.
