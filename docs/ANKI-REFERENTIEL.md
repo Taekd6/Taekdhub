@@ -14,7 +14,9 @@ Dernière consolidation : voir `git log -- docs/ANKI-REFERENTIEL.md`.
 | Cours de Mickaël Prost (21 polycopiés), mickaelprost.fr | **oui, lus** | recoupement (`PROST-…`) |
 | Programmes officiels MP et MPSI 2021 | **oui, lus sur une copie hébergée par mickaelprost.fr** (non comparée au BO ; le site du ministère répond 403) | exigibilité (`PROGRAMME-MP-2021`, `PROGRAMME-MPSI-2021`) |
 | Colle ENS (Izquierdo), 1 page | oui, lue | exigibilité des séries |
-| Physique, chimie, informatique (cours) | **non encore traités** | : |
+| Programme officiel de physique-chimie MP (annexe 2, 2021) | **oui, lu sur une copie hébergée par cahier-de-prepa.fr (MP Buffon)**, non comparée au BO | exigibilité (`PROGRAMME-PC-MP-2021`) |
+| Cours publics de physique-chimie (lycées ISM, La Fayette, Champollion, ENS/LPENS, Poincaré, autres), notes Lesbre 2018 (ancien programme) | **oui, lus** (un à deux cours par chapitre, voir `referentiel/sources/*.json`) | recoupement (`PC-…`, `ISM-PC-…`, `LESBRE-MP-2018`) |
+| Informatique (cours) | non traitée au-delà de l'esquisse | : |
 
 Aucun PDF n'est copié dans le dépôt (`referentiel/_cache/` est ignoré par git). Le détail est dans `referentiel/sources.json`.
 L'anglais est hors périmètre : aucun fichier d'anglais n'a été lu.
@@ -50,12 +52,52 @@ L'anglais est hors périmètre : aucun fichier d'anglais n'a été lu.
 | `referentiel/maths/techniques-asymptotiques/` | `cartes*.jsonl` (53) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
 | `referentiel/info/complexite-tri/` | `cartes*.jsonl` (24) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
 
+| `referentiel/physique/analyse-vectorielle/` | `cartes*.jsonl` (30) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/conducteurs-induction/` | `cartes*.jsonl` (38) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/diffusion-thermique/` | `cartes*.jsonl` (44) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/dipole-rayonnant/` | `cartes*.jsonl` (13) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/dipoles/` | `cartes*.jsonl` (23) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/electrocinetique-alo/` | `cartes*.jsonl` (58) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/electronique-numerique/` | `cartes*.jsonl` (22) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/electrostatique/` | `cartes*.jsonl` (43) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/equations-de-maxwell/` | `cartes*.jsonl` (49) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/magnetostatique/` | `cartes*.jsonl` (29) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/ondes-em-vide/` | `cartes*.jsonl` (36) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/ondes-mecaniques/` | `cartes*.jsonl` (19) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/ondes-plasmas-conducteurs/` | `cartes*.jsonl` (34) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/optique-geometrique/` | `cartes*.jsonl` (14) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/optique-ondulatoire/` | `cartes*.jsonl` (52) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/physique-quantique/` | `cartes*.jsonl` (37) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/physique-statistique/` | `cartes*.jsonl` (27) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/rappels-induction-mpsi/` | `cartes*.jsonl` (7) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/rappels-mecanique-point/` | `cartes*.jsonl` (26) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/rappels-mpsi-physique/` | `cartes*.jsonl` (0) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/rappels-ordres-de-grandeur/` | `cartes*.jsonl` (19) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/rappels-particules-chargees/` | `cartes*.jsonl` (8) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/rappels-physique-quantique-mpsi/` | `cartes*.jsonl` (3) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/rappels-thermodynamique-mpsi/` | `cartes*.jsonl` (28) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/referentiels-non-galileens/` | `cartes*.jsonl` (36) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/signaux-filtrage/` | `cartes*.jsonl` (30) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/systemes-de-points-solide/` | `cartes*.jsonl` (54) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/physique/thermodynamique/` | `cartes*.jsonl` (57) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/chimie/electrochimie-courbes-iE-corrosion/` | `cartes*.jsonl` (25) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/chimie/electrochimie-redox-piles/` | `cartes*.jsonl` (13) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/chimie/rappels-mpsi-chimie/` | `cartes*.jsonl` (38) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/chimie/thermochimie-premier-principe/` | `cartes*.jsonl` (18) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+| `referentiel/chimie/thermochimie-second-principe-equilibres/` | `cartes*.jsonl` (34) + `validation.md` | Cartes reprises de ta collection, recoupées ; voir le rapport du dossier. |
+
 ## 2 bis. Bilan chiffré (2 435 cartes de maths + 24 d'informatique)
 - 1 309 notes de ta collection (maths) : 1 260 retrouvées dans le champ `anciennes` de cartes du référentiel ; les 49 autres sont les 5 notes écartées avec motif (hors programme) dans `espaces-vectoriels-normes/validation.md`, plus les 46 notes de séries numériques traitées dans `cartes-v2.jsonl` (qui n'a pas de champ `anciennes`).
 - Origine des cartes : 938 scindées, 784 réécrites, 518 nouvelles, 37 corrigées, 34 fusionnées, 18 reprises telles quelles, le reste rédigé sans note d'origine.
 - Validation : 2 317 cartes citent au moins une source lue, 118 n'en citent aucune (résultat vérifié à la main) ; 2 244 ont une exigibilité « confirmée : figure dans … », 175 sont « à confirmer ».
 - Les erreurs de ta collection trouvées au passage (une trentaine, voir les `validation.md`) sont corrigées dans les nouvelles cartes ; ta collection n'a pas été modifiée.
 - Paquet à importer à la main : `public/anki/taekdhub-referentiel.apkg` (identifiants dérivés de l'id de carte). Régénération : `python3 scripts/referentiel/referentiel.py deck`.
+
+## 2 ter. Bilan physique-chimie (962 + 2 cartes)
+- 853 notes de ta collection (757 de physique dont 117 « M&P - Physique » presque toutes sans verso, 96 de chimie) : **toutes** retrouvées dans le champ `anciennes` des cartes du référentiel (aucune écartée sauf motif documenté dans les `validation.md`).
+- 834 cartes de physique (23 chapitres) et 128 de chimie (5 chapitres) ; 906 citent au moins une source lue, 56 non (résultat vérifié à la main) ; 616 ont une exigibilité confirmée par le programme 2021, 346 sont « à confirmer » ou hors programme (rappels MPSI, hors programme explicite, absent des sources).
+- Erreurs de ta collection corrigées (une soixantaine, détaillées dans chaque `validation.md`) : unités manquantes ou fausses, signes `<` `>` perdus à l'export, formules sans condition de validité, ordres de grandeur faux (ex. nombre d'oscillations d'un RLC ≈ Q/π, moment dipolaire de l'eau ≈ 1,85 D).
+- **Limites réelles** : un seul cours rédigé récent pour plusieurs chapitres (économie de ressources) ; l'électrochimie (Nernst, piles) et le dipôle magnétique n'ont qu'une source partielle ; l'induction n'a que des questions de cours comme source ; plusieurs cours Champollion/La Fayette sont des PDF image sans texte (non lus) ; les ordres de grandeur ajoutés sont à recouper.
 
 ## 3. Contradictions relevées et résolues
 - **« Ta collection n'est pas accessible »** (`AUDIT-ANKI-MATHS.md`) contre un audit de ta collection (`AUDIT-COLLECTION-ANKI.md`) : l'export JSONL a été fourni entre les deux ; le premier rapport porte sur les cartes du dépôt, le second sur ta collection.

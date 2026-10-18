@@ -1,0 +1,44 @@
+# Cartes : thermochimie-premier-principe
+
+Généré par `scripts/referentiel/referentiel.py md` depuis le `.jsonl` voisin : **ne pas modifier à la main**.
+
+Validation : « vérifié » = contrôlé par raisonnement ; source : voir `referentiel/sources.json` ; exigibilité : voir colonne.
+
+
+### A. Grandeurs de réaction et état standard
+
+| # | Type | Recto | Verso | Exigibilité | Remarque |
+|---|---|---|---|---|---|
+| t1-01 | définition | Définir une grandeur de réaction Δ_rX pour une grandeur extensive X et l'écrire avec les grandeurs molaires partielles. | Δ_rX = (∂X/∂ξ)_{T,P} = Σ ν_i·X_m,i (X_m,i grandeur molaire partielle de i, ν_i algébrique). Exemples : Δ_rH en J/mol, Δ_rG, Δ_rS en J/(K·mol). Intensive, dépend de l'écriture de l'équation. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) et PC-LAFAYETTE-CHC1 | Unités et dépendance à l'écriture de l'équation ajoutées. |
+| t1-02 | définition | Quel est l'état standard d'un constituant physico-chimique à la température T ? | Constituant pur dans le même état physique, à T, sous P° = 1 bar : gaz = gaz parfait pur sous P° ; solide ou liquide = phase condensée pure ; solvant = liquide pur ; soluté = solution infiniment diluée à c° = 1 mol/L (état fictif). Défini à toute température T. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) et PC-LAFAYETTE-CHC1 | Précisé « même état physique » et « état fictif » pour le soluté. |
+| t1-03 | définition | Quel est l'état standard de référence d'un élément à la température T ? | Corps simple dans son état physique le plus stable à T sous P° (ex. C : graphite ; Br2 : liquide à 298 K ; H2, N2, O2 : gaz). Son enthalpie standard de formation est nulle par convention. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) ; PC-LAFAYETTE-CHC1 et ISM-PC-THCH-1 | Formulation d'origine ambiguë : c'est l'état physique stable à T qui compte. |
+| t1-04 | définition | Pourquoi Δ_rH(T,P) ≈ Δ_rH°(T) et que vaut dH lors d'une variation dξ à T, P fixées ? | L'enthalpie d'un gaz parfait et celle d'une phase condensée idéale ne dépendent pas de P, donc H_m,k(T,P) ≈ H°_m,k(T) et Δ_rH ≈ Δ_rH°(T). Alors dH = Δ_rH°(T)·dξ, soit ΔH = ξ·Δ_rH° si T est constante. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) et PC-LAFAYETTE-CHC1 |  |
+
+### B. Enthalpie standard de réaction et loi de Hess
+
+| # | Type | Recto | Verso | Exigibilité | Remarque |
+|---|---|---|---|---|---|
+| t1-05 | définition | Définir l'enthalpie standard de formation Δ_fH°. | Enthalpie standard de la réaction de formation d'une mole du composé à partir des corps simples dans leur état standard de référence, à T (ex. Δ_fH°(CO2,g) = −393,5 kJ/mol à 298 K). Nulle pour un corps simple dans son état de référence. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) ; PC-LAFAYETTE-CHC1 et ISM-PC-THCH-1 | Exemple chiffré ajouté. |
+| t1-06 | formule | Énoncer la loi de Hess pour le calcul de Δ_rH°. | Δ_rH° = Σ ν_i·Δ_fH°_i (ν_i algébriques : produits positifs, réactifs négatifs), en J/mol. Valable à une température T où les Δ_fH° sont tabulées ; ne pas oublier les états physiques ni les corps simples (Δ_fH° = 0). | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) ; PC-LAFAYETTE-CHC1 et ISM-PC-THCH-1 | Conventions de signe et états physiques précisés. |
+| t1-07 | méthode | Comment obtenir Δ_rH° d'une réaction qui est combinaison linéaire d'autres réactions ? | Si (3) = a·(1) + b·(2), alors Δ_rH°₃ = a·Δ_rH°₁ + b·Δ_rH°₂ (H fonction d'état). Inverser une réaction change le signe de Δ_rH° ; multiplier l'équation par λ multiplie Δ_rH° par λ. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) et PC-LAFAYETTE-CHC1 |  |
+| t1-08 | démonstration | Démontrer la loi de Hess Δ_rH° = Σ ν_i Δ_fH°_i. | (1) Δ_rH° = Σ ν_i H°_m,i. (2) Pour chaque i : Δ_fH°_i = H°_m,i − Σ_éléments(coefficients × H° des corps simples). (3) Dans Σ ν_i Δ_fH°_i les termes des corps simples s'annulent car la réaction conserve chaque élément. Donc Δ_rH° = Σ ν_i Δ_fH°_i. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) et PC-LAFAYETTE-CHC1 | Plan d'origine condensé en trois étapes. |
+| t1-09 | interprétation | Quel est le lien entre le signe de Δ_rH° et le caractère exothermique ou endothermique d'une réaction ? | Δ_rH° < 0 : exothermique (à T, P fixées, la réaction cède de la chaleur au milieu extérieur) ; Δ_rH° > 0 : endothermique (elle en reçoit). Q_P = ΔH = ξ·Δ_rH° pour une transformation isotherme monobare. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) et PC-LAFAYETTE-CHC1 |  |
+| t1-10 | méthode | Comment estimer Δ_rH° à partir des énergies de liaison ? | Pour une réaction entièrement en phase gaz : Δ_rH° ≈ Σ D(liaisons rompues) − Σ D(liaisons formées), D en J/mol positif (enthalpie standard de dissociation de la liaison). Estimation grossière (énergies moyennes) ; elle ne tient pas compte des changements d'état. | confirmé pour l'estimation : PC-LAFAYETTE-CHC1 ; l'estimation par énergies de liaison n'est pas citée dans PROGRAMME-PC-MP-2021 (à confirmer) | Formule explicite et limites ajoutées. |
+| t1-11 | formule | Comment calculer la variation d'enthalpie d'un changement d'état ? | Pour une quantité n de corps pur à T : ΔH = n·Δ_trH_m(T) (J), avec Δ_trH_m (J/mol) tabulée : > 0 pour vaporisation et fusion, < 0 pour liquéfaction et solidification. Les grandeurs standard de réaction changent de valeur aux températures de changement d'état d'un constituant. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) et PC-LAFAYETTE-CHC1 |  |
+
+### C. Effets thermiques d'une réaction monobare
+
+| # | Type | Recto | Verso | Exigibilité | Remarque |
+|---|---|---|---|---|---|
+| t1-12 | formule | Quel est le transfert thermique d'une réaction isotherme et monobare ? | Q_P = ΔH = ξ·Δ_rH° (J ; ξ en mol, Δ_rH° en J/mol), sans autre travail que celui des forces de pression, T fixée, P extérieure constante égale à P initiale et finale. Q_P < 0 : le système cède de la chaleur (exothermique). | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) et PC-LAFAYETTE-CHC1 | Hypothèses et unités ajoutées ; « mélange idéal » explicité (grandeurs de réaction ≈ standard). |
+| t1-13 | exemple | Calculer le transfert thermique libéré par la combustion de 1 mol de CH4(g) en CO2(g) et H2O(g) à 298 K, isotherme monobare. | CH4 + 2 O2 = CO2 + 2 H2O(g). Δ_fH° en kJ/mol : CH4 −74,8 ; CO2 −393,5 ; H2O(g) −241,8. Δ_rH° = −393,5 − 2·241,8 + 74,8 = −802,3 kJ/mol ; Q_P = ΔH = −802 kJ (chaleur cédée). Avec H2O(l) : ≈ −890 kJ/mol. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) et PC-LAFAYETTE-CHC1 | Valeurs de Δ_fH° usuelles (298 K) ; calcul vérifié. |
+| t1-14 | méthode | Comment évaluer la température finale d'une transformation chimique adiabatique et monobare ? | Chemin fictif (H fonction d'état) : 1) réaction à T₀ : ΔH₁ = ξ·Δ_rH°(T₀) ; 2) échauffement de tout le système final (produits, inertes, excès) de T₀ à T_f : ΔH₂ = ∫ Σ n_i C°p,m,i dT. Adiabatique monobare : ΔH₁ + ΔH₂ = 0. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) et PC-LAFAYETTE-CHC1 | Précision : tous les constituants finaux sont chauffés. |
+| t1-15 | démonstration | Retrouver l'expression de la température de flamme T_f pour des C°p constants. | Réaction totale et rapide à T₀, P constante, adiabatique : ΔH = 0. ΔH₁ = ξ_max·Δ_rH°(T₀) ; ΔH₂ = (Σ n_i C°p,m,i)(T_f − T₀). D'où T_f = T₀ − ξ_max·Δ_rH° / Σ n_i C°p,m,i ; T_f > T₀ si Δ_rH° < 0. Ajouter les changements d'état éventuels. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) et PC-LAFAYETTE-CHC1 | Hypothèses regroupées en tête. |
+| t1-16 | piège | Quelles hypothèses font de T_f une valeur idéale (en général un majorant) ? | Réaction supposée totale et instantanée, aucune perte thermique (adiabatique), Δ_rH° et C°p indépendants de T, pas de dissociation des produits à haute température. En réalité la température atteinte est plus basse ; elle est plus faible aussi si des inertes (N2 de l'air) chauffent. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) et PC-LAFAYETTE-CHC1 |  |
+
+### D. Influence de la température
+
+| # | Type | Recto | Verso | Exigibilité | Remarque |
+|---|---|---|---|---|---|
+| t1-17 | hypothèses | Énoncer l'approximation d'Ellingham et son domaine de validité. | Tant qu'aucun constituant ne change d'état, Δ_rH° et Δ_rS° sont supposés indépendants de T. Δ_rH° et Δ_rS° sont discontinus aux températures de changement d'état d'un constituant. Programme 2021 : Δ_rH° indépendante de T. | confirmé : figure dans PROGRAMME-PC-MP-2021 (8.1) et PC-LAFAYETTE-CHC1 | Domaine de validité précisé ; énoncé au programme pour Δ_rH° (et Δ_rS° en 8.2). |
+| t1-18 | formule | Énoncer la loi de Kirchhoff pour Δ_rH° et Δ_rS°. | dΔ_rH°/dT = Δ_rC°p = Σ ν_i C°p,m,i ; dΔ_rS°/dT = Δ_rC°p/T. Si Δ_rC°p ≈ 0 (ou T proche de T₁) : approximation d'Ellingham. Intégrée à C°p constants : Δ_rH°(T₂) = Δ_rH°(T₁) + Δ_rC°p·(T₂ − T₁). | à confirmer / hors programme : le programme 2021 impose Δ_rH° indépendante de T ; la loi de Kirchhoff figure dans ISM-PC-THCH-1 mais n'est pas exigible | Forme intégrée ajoutée. |
