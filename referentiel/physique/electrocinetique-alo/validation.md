@@ -1,0 +1,9 @@
+# Validation : Électrocinétique et ALI (préfixe ea)
+
+- Cartes : 58. Origines : {'réécrite': 30, 'nouvelle': 12, 'scindée de la note 1790858881849': 2, 'corrigée': 3, 'fusionnée': 10, 'reprise telle quelle': 1}.
+- Notes d'origine du lot : toutes présentes dans `anciennes` (aucune écartée).
+- Sources lues : PROGRAMME-PC-MP-2021, ISM-PC-TS-1, ISM-PC-TS-2, PC-LAFAYETTE-ELEC-CHE1, PC-LAFAYETTE-ELEC-TP1, PC-LAFAYETTE-ELEC-TP2, PC-LAFAYETTE-ELEC-QC, PC-LAFAYETTE-ELEC-ODG (enregistrées dans referentiel/sources/electronique.json ; les deux premières déjà dans physique-base.json).
+- Exigibilité : Prérequis MPSI : PROGRAMME-PC-MP-2021 §2 indique que la MP complète l'étude des circuits linéaires de MPSI ; les montages à ALI figurent en TP (schémas fournis). Stabilité de l'ALI réel, analogies, dérivateur : à confirmer / hors programme MP strict.
+- Erreurs trouvées : (1) nombre d'oscillations visibles « ≈ Q » : en fait ≈ Q/π (note 1790858881839) ; (2) oscilloscope 1 MΩ, pas 10 MΩ sans sonde ×10 (divergence ISM / Lafayette) ; (3) avion de ligne « ~100 MW » surestimé (10–100 MW) ; (4) comparateur à hystérésis : seuils ±R1/(R1+R2)·Vsat sans schéma précisé (ajouté, plus version non inverseuse) ; (5) versos tronqués (caractères « < » et « > » avalés) pour 1790858881845, 881883, 881879 : reconstruits. Verso M&P de 1768839200949 vérifié (racines correctes). Notes M&P à verso vide reconstruites (sommateur, inverseur, non inverseur, intégrateur, hystérésis) ; « Montage Amplificateur » interprété comme non inverseur.
+- Exactitude « vérifiée par raisonnement » : formules recalculées (dimension, cas limites, calculs de gains et de seuils). Ordres de grandeur d'ALI (±15 V, 13,5 V, 20 mA, 13 V/µs) non recontrôlés sur une source lue : à confirmer.
+- Ne pas dire « conforme au BO » : la copie n'est pas comparée au BO.
