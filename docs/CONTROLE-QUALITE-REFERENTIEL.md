@@ -36,5 +36,36 @@ Cartes contrôlées : ailette et équation de la chaleur (dt-39 à 44), moment m
 - Le programme officiel est lu sur des copies hébergées par des tiers, non comparées au Bulletin officiel.
 - La relecture intégrale des 3 423 cartes n'a pas été faite : l'absence d'erreur détectée n'est pas une preuve d'absence d'erreur.
 
-## 5. Statut du paquet
+## 5. Statut du paquet (avant test d'import)
 `public/anki/taekdhub-referentiel.apkg` : **valide, 3 423 notes, GUID uniques, régénéré après la correction de `og-06`**. Non importé : à importer à la main. Ta collection Anki n'est pas modifiée ; l'anglais n'est pas touché.
+
+## 6. Test d'import réel (2026-10-18)
+
+**Environnement.** Bibliothèque officielle `anki` 26.9.3 (moteur Rust d'Anki), collection **temporaire** créée dans `/tmp/anki-test-*` (supprimée après coup). Ton profil Anki, ta collection principale et AnkiWeb n'ont été ni ouverts ni touchés. L'interface graphique d'Anki n'a **pas** été lancée : l'import a été fait par la fonction d'import du moteur, avec les options par défaut (aucune fusion de types de notes). Paquet testé : `public/anki/taekdhub-referentiel.apkg`, créé à 05:08:07, soit après la correction de `og-06` et juste avant son commit (05:08:27) ; il n'a pas été régénéré.
+
+**Tests exécutés et résultats** (scripts rejouables : `scripts/referentiel/test_import.py` et `scripts/referentiel/test_historique_import.py`).
+| Test | Résultat |
+|---|---|
+| Import 1 dans une collection contenant 6 « anciennes » notes factices | **3 423 notes nouvelles**, 0 doublon, 0 conflit ; total 3 429 notes et 3 429 cartes |
+| Anciennes notes et cartes après l'import | **identiques** (ids, GUID, dates, champs, intervalle, échéance) |
+| Historique de révision (4 révisions factices créées avant l'import) | **identique après l'import 1 et après l'import 2** (revlog, état des cartes, notes) |
+| Import 2 du même paquet | **0 nouvelle note, 3 423 reconnues comme déjà présentes, 0 mise à jour** ; totaux inchangés |
+| GUID | 3 429 distincts sur 3 429 notes |
+| Type de note | un seul type ajouté, « TaekdHub — Référentiel » (champs Recto, Verso, Id ; 1 gabarit) ; aucun type existant modifié |
+| Paquets | 59 paquets créés sous `TaekdHub::Référentiel::<matière>::<chapitre>` (54 chapitres + niveaux parents), séparés de tes paquets existants |
+| Champs | **0 champ vide** ; texte des 3 423 notes **identique** à celui des `.jsonl` (comparaison exacte) ; 0 identifiant du JSONL absent |
+| Rendu par le moteur | question et réponse générées pour les 3 423 cartes, la question contient toujours son recto ; `og-06` affiche bien la version corrigée |
+| 5 recouvrements | les 5 paires sont **importées toutes les deux**, avec des GUID distincts et dans des paquets différents ; rien n'est supprimé ni fusionné |
+
+**Constats (pas de correction nécessaire).**
+- Les champs `origine` et `note` des `.jsonl` ne sont **pas** des champs de la note Anki : seuls Recto, Verso et l'id de la carte (affiché en pied de réponse) sont importés. La traçabilité complète reste dans les `.jsonl` et les `validation.md`.
+- Les formules sont du texte Unicode simple (pas de MathJax) : aucun problème de syntaxe possible, mais l'apparence dépend des polices de l'appareil. Le texte contient 777 caractères de l'alphabet mathématique (𝒞, 𝟙, 𝓜…) et 1 548 diacritiques combinants (vecteurs E⃗…).
+- Un second import du même paquet n'écrase rien. Le cas d'un paquet *modifié* puis réimporté (mise à jour des notes à GUID identique) n'a pas été testé, faute de nouvelle génération.
+
+**Limites restantes.**
+- L'application Anki (bureau, AnkiDroid, AnkiMobile) n'a pas été utilisée : le rendu visuel des symboles et des combinants n'a pas été vu à l'écran. À vérifier au premier import sur ton appareil (quelques cartes de vecteurs et de lettres cursives).
+- Le test porte sur une collection factice : tes vraies notes ne partagent aucun GUID avec le paquet (GUID dérivés de nos ids de carte), donc aucune ne peut être écrasée, mais je n'ai pas lu ta collection pour le confirmer.
+- Conseil pour le vrai import : sauvegarder la collection (Fichier > Exporter > .colpkg) avant, importer dans le profil habituel sans cocher « mettre à jour les types de notes », puis vérifier le nombre de notes (+3 423).
+
+## 7. Statut du paquet
+**Importable sans perte** dans le test isolé : valide, 3 423 notes, GUID uniques, réimportation sans doublon, anciennes notes et historique intacts. Aucune modification du paquet n'a été nécessaire.
