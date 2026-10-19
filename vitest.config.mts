@@ -9,6 +9,8 @@ import { defineConfig } from "vitest/config";
  * L'alias `@/*` reprend celui de tsconfig.json.
  */
 export default defineConfig({
+  // tsconfig.json garde `jsx: preserve` (Next compile le JSX lui-même) : les tests de composants ont besoin du JSX automatique.
+  oxc: { jsx: { runtime: "automatic" } },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./", import.meta.url)),

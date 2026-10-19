@@ -1,4 +1,5 @@
 import { foldText } from "@/lib/annales";
+import { PROGRAMME_BY_ID } from "@/lib/programme-data";
 
 /**
  * PAQUETS DU RÉFÉRENTIEL → CHAPITRES DU PROGRAMME.
@@ -76,4 +77,17 @@ export function isReferentielDeck(path: readonly string[]): boolean {
 export function referentielChapterId(path: readonly string[]): string | null {
   if (!isReferentielDeck(path) || path.length === 0) return null;
   return BY_FOLDED.get(foldText(path[path.length - 1])) ?? null;
+}
+
+/**
+ * Les paquets du référentiel rattachés à un chapitre du programme (sens inverse de la table), nom Anki complet :
+ * `TaekdHub::Référentiel::<matière>::<chapitre>`. Vide quand le chapitre n'a aucun paquet sûr (jamais deviné).
+ */
+export function referentielDecksForChapter(chapterId: string): string[] {
+  const chapter = PROGRAMME_BY_ID.get(chapterId);
+  if (!chapter) return [];
+  return Object.entries(REFERENTIEL_DECK_CHAPTERS)
+    .filter(([, id]) => id === chapterId)
+    .map(([slug]) => `TaekdHub::Référentiel::${chapter.subject}::${slug}`)
+    .sort();
 }

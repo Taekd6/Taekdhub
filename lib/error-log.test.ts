@@ -22,6 +22,7 @@ import {
   topType,
 } from "@/lib/error-log";
 import { REVIEW_TEXT_MAX, createReviewItem } from "@/lib/review-items";
+import { errorRevisionHint } from "@/lib/error-log";
 import type { ErrorEntry, ErrorType } from "@/lib/storage";
 import type { Subject } from "@/lib/supabase/types";
 
@@ -208,3 +209,20 @@ describe("passerelles", () => {
     expect(canSendToReview(list[0], [])).toBe(true);
   });
 });
+
+describe("errorRevisionHint — où revoir la notion d'une erreur", () => {
+  it("renvoie les paquets du référentiel du chapitre quand il est connu et rattaché", () => {
+    expect(errorRevisionHint({ programmeChapterId: "m2-reduction" })).toEqual({
+      chapterId: "m2-reduction",
+      chapterTitle: "Réduction des endomorphismes",
+      decks: ["TaekdHub::Référentiel::Mathématiques::reduction"],
+    });
+  });
+
+  it("ne devine rien : erreur à la main (sans chapitre), chapitre inconnu ou sans paquet sûr → null", () => {
+    expect(errorRevisionHint({})).toBeNull();
+    expect(errorRevisionHint({ programmeChapterId: "inconnu" })).toBeNull();
+    expect(errorRevisionHint({ programmeChapterId: "m1-logique" })).toBeNull();
+  });
+});
+

@@ -18,6 +18,7 @@ import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { cn } from "@/lib/cn";
 import {
   canSendToReview,
+  errorRevisionHint,
   ERROR_SOURCE_META,
   ERROR_TYPE_META,
   filterErrors,
@@ -221,6 +222,7 @@ function ErrorRow({
   onSendToReview: () => void;
   onRemove: () => void;
 }) {
+  const hint = errorRevisionHint(entry);
   const sendable = entry.type === "cours" && canSendToReview(entry, reviewItems);
   const sent = entry.type === "cours" && !sendable;
   return (
@@ -242,6 +244,12 @@ function ErrorRow({
             </Link>
           )}
         </p>
+        {hint && (
+          <p className="t-meta mt-1 break-words text-2xs text-muted">
+            Cartes à revoir sur « {hint.chapterTitle} » : paquet Anki{hint.decks.length > 1 ? "s" : ""}{" "}
+            {hint.decks.map((deck) => `« ${deck.split("::").pop()} »`).join(", ")} (référentiel) — ensuite, refais l&apos;exercice sans aide pour la vérifier.
+          </p>
+        )}
         {sendable && (
           <button
             type="button"

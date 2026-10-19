@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { ANKI_MIN_REVIEWED, ankiByChapter, mapDecks } from "@/lib/anki-mapping";
 import type { AnkiDeckStat, AnkiSnapshot } from "@/lib/anki-snapshot";
 import { PROGRAMME_BY_ID } from "@/lib/programme-data";
-import { REFERENTIEL_DECK_CHAPTERS } from "@/lib/referentiel-decks";
+import { REFERENTIEL_DECK_CHAPTERS, referentielDecksForChapter } from "@/lib/referentiel-decks";
 
 /**
  * Les paquets du référentiel s'appellent `TaekdHub::Référentiel::<matière>::<chapitre>` : le pont Anki ne les rattache
@@ -119,6 +119,28 @@ describe("les révisions du référentiel alimentent les chiffres Anki par chapi
     const name = "TaekdHub::Référentiel::Physique::ondes-em-vide";
     expect(ankiByChapter(snapshot([deck(name, 25, 10)]), { [name]: null }).size).toBe(0);
     expect(ankiByChapter(snapshot([deck(name, 25, 10)]), { [name]: "p2-maxwell" }).get("p2-maxwell")!.failed30).toBe(10);
+  });
+});
+
+describe("paquets du référentiel d'un chapitre (sens inverse)", () => {
+  const real = new Set(decks().map((d) => d.name));
+
+  it("donne les noms Anki complets, triés ; vide sans paquet sûr ou chapitre inconnu", () => {
+    expect(referentielDecksForChapter("m2-reduction")).toEqual(["TaekdHub::Référentiel::Mathématiques::reduction"]);
+    expect(referentielDecksForChapter("p2-ondes-em")).toEqual(["TaekdHub::Référentiel::Physique::ondes-em-vide", "TaekdHub::Référentiel::Physique::ondes-plasmas-conducteurs"]);
+    expect(referentielDecksForChapter("m1-logique")).toEqual([]);
+    expect(referentielDecksForChapter("inconnu")).toEqual([]);
+  });
+
+  it("ne renvoie que des paquets qui existent vraiment dans le référentiel, et qui se rattachent à ce chapitre", () => {
+    for (const id of new Set(Object.values(REFERENTIEL_DECK_CHAPTERS))) {
+      const names = referentielDecksForChapter(id);
+      expect(names.length, id).toBeGreaterThan(0);
+      for (const name of names) {
+        expect(real.has(name), name).toBe(true);
+        expect(mapDecks([name], {})[0].chapterId, name).toBe(id);
+      }
+    }
   });
 });
 

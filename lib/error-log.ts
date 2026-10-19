@@ -1,3 +1,5 @@
+import { PROGRAMME_BY_ID } from "@/lib/programme-data";
+import { referentielDecksForChapter } from "@/lib/referentiel-decks";
 import { dayKey, subjects } from "@/lib/study";
 import { REVIEW_TEXT_MAX, type NewReviewItemInput } from "@/lib/review-items";
 import { ERROR_SOURCES, ERROR_TYPES, type ErrorEntry, type ErrorSource, type ErrorType, type GradeKind, type ReviewItem } from "@/lib/storage";
@@ -440,4 +442,23 @@ export function canSendToReview(entry: ErrorEntry, reviewItems: ReviewItem[]): b
 /** Relie l'erreur à l'entrée « À revoir » créée à partir d'elle. */
 export function linkReviewItem(entries: ErrorEntry[], errorId: string, reviewItemId: string): ErrorEntry[] {
   return entries.map((entry) => (entry.id === errorId ? { ...entry, reviewItemId } : entry));
+}
+
+export interface ErrorRevisionHint {
+  chapterId: string;
+  chapterTitle: string;
+  /** Paquets Anki du référentiel à revoir pour ce chapitre (nom complet). */
+  decks: string[];
+}
+
+/**
+ * Où revoir la notion d'une erreur ? Seulement quand le chapitre du programme est CONNU (posé par le débrief d'un DS :
+ * `programmeChapterId`) ET qu'un paquet du référentiel lui est rattaché sans ambiguïté. Une erreur notée à la main n'a pas
+ * de chapitre : on ne le devine pas (`null`). Les révisions de ces paquets alimentent ensuite le diagnostic (lib/anki-mapping.ts).
+ */
+export function errorRevisionHint(entry: Pick<ErrorEntry, "programmeChapterId">): ErrorRevisionHint | null {
+  const chapter = entry.programmeChapterId ? PROGRAMME_BY_ID.get(entry.programmeChapterId) : undefined;
+  if (!chapter) return null;
+  const decks = referentielDecksForChapter(chapter.id);
+  return decks.length > 0 ? { chapterId: chapter.id, chapterTitle: chapter.title, decks } : null;
 }
