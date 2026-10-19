@@ -6,8 +6,8 @@ import { BackupReminder } from "@/components/backup-reminder";
 import { QuickLog } from "@/components/work/quick-log";
 import { ReviewCapture } from "@/components/review/review-capture";
 import { DailyCheckinCard } from "@/components/checkin/daily-checkin"; // check-in du soir
-import { HomeTopBar, TodayHero, WeekCurve } from "@/components/home/hero";
-import { DayProgress, DesktopGreeting, QuoteCard, WeekStrip } from "@/components/home/desktop-header";
+import { HomeTopBar, WeekCurve } from "@/components/home/hero";
+import { DayProgress, HomeGreeting, QuoteCard, WeekStrip } from "@/components/home/desktop-header";
 import { IntentionsCard } from "@/components/home/intentions-card";
 import { EveningCard } from "@/components/home/evening-card";
 import { effectiveDailyGoal } from "@/lib/evening-minimums";
@@ -150,20 +150,14 @@ export function DashboardOverview() {
   return (
     <div className="mx-auto max-w-[68rem]">
       <HomeTopBar name={preferences.displayName ?? ""} avatar={preferences.avatarDataUrl} contestDays={contestDays} className="mb-6 lg:hidden" />
-      {/* Grand écran : salutation, horloge et semaine (maquette « tableau de bord »). */}
-      <DesktopGreeting todayMinutes={objective.workedMinutes} yesterdayMinutes={yesterdayMinutes} className="mb-6 hidden lg:flex" />
+      {/* Salutation (et, dès lg, horloge) puis la semaine : maquette « tableau de bord ». */}
+      <HomeGreeting todayMinutes={objective.workedMinutes} yesterdayMinutes={yesterdayMinutes} className="mb-4 lg:mb-6" />
 
-      <WeekStrip week={week} className="mb-6 hidden lg:grid" />
+      <WeekStrip week={week} className="mb-5 lg:mb-6" />
 
       <div className="flex flex-col gap-[1.375rem] lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-10 lg:gap-y-0">
         {/* ── COLONNE « FAIRE » ─────────────────────────────────────── */}
         <div className="contents lg:col-span-7 lg:flex lg:flex-col lg:gap-8">
-          <TodayHero
-            todayMinutes={objective.workedMinutes}
-            yesterdayMinutes={yesterdayMinutes}
-            goalMinutes={objective.goalMinutes}
-            className="order-1 pt-2 lg:hidden"
-          />
           {/* ── NEXT MOVE — la réponse à « et maintenant ? », juste sous la journée. ── */}
           <NextMoveCard data={nextMoveData} history={nextMoves} saveHistory={saveNextMoves} ready={ready} className="order-1 lg:order-none" />
           {/* LE RESTE DE LA JOURNÉE — le plan adaptatif (lib/day-agenda.ts) : temps restant, arbitrage, ce qui a changé. */}
@@ -199,7 +193,7 @@ export function DashboardOverview() {
           {/* La courbe sort de la colonne jusqu'aux bords de l'écran sur
               téléphone, comme dans la maquette ; sur grand écran, elle se
               pose dans une tuile. */}
-          <DayProgress workedMinutes={objective.workedMinutes} goalMinutes={objective.goalMinutes} bySubject={todayBySubject} className="hidden lg:block" />
+          <DayProgress workedMinutes={objective.workedMinutes} goalMinutes={objective.goalMinutes} bySubject={todayBySubject} className="order-2 lg:order-none" />
           <WeekCurve week={week} className="order-2 -mx-4 sm:-mx-6 lg:order-none lg:mx-0 lg:rounded-[1.625rem] lg:bg-[var(--surface-bg)] lg:px-2 lg:pb-4 lg:pt-6 lg:[box-shadow:var(--surface-shadow)]" />
           <ReviewBanner due={reviews.due.length} next={reviews.next} className="order-5 lg:order-none" />
           {/* ── MÉMOIRE DES CHAPITRES (FSRS) — « À ne pas oublier », juste après
