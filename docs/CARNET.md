@@ -1,8 +1,8 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-19, commit de code `41fb603`.
-> Écart constaté ce jour : la PR #28 est FUSIONNÉE dans `main` (merge `7f081c3`, 2026-10-16) ; les paragraphes
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-19, commit de code `22b7729`.
+> Écart constaté ce jour : la PR #28 est FUSIONNÉE dans `main` (merge `7f081c3`, 2026-10-16) ; la PR #29 (mission 7) aussi (merge `e79f3cf`, production redéployée par Vercel, non vérifié) ; les paragraphes
 > « PR #28 ouverte » plus bas sont périmés. Branche de travail actuelle : `claude/laughing-meitner-p9o3si`.
 
 ## Objectif général
@@ -210,6 +210,8 @@ le thème reste dans Réglages), semaine glissante de 9 jours (la semaine lundi 
 vers `/programme`, `/entrainement`, `/preparation`, `/revision`, `/anki`, `/echeances`, `/progress`. Vérifié : 86 fichiers de tests,
 1404 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; capture réelle sous Chromium à 1536 px. Non vérifié : sur l'appareil de
 l'élève, en mode sombre, entre 1024 et 1280 px.
+
+**Mission 7b (2026-10-19) — accueil mobile.** Salutation courte, bandeau de la semaine, Next Move, reste de la journée, puis « Progression du jour » (remplace `TodayHero`, désormais sans appelant dans `components/home/hero.tsx`). Horloge, date longue et citation restent à partir de `lg`. Barre d'onglets du bas inchangée (4 destinations ; Révisions, Anki, Échéances restent atteignables par les cartes de l'accueil). Commit `22b7729`. Vérifié : 86 fichiers de tests, 1404 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; capture réelle à 390 px. Non vérifié : sur iPhone, en mode sombre.
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.

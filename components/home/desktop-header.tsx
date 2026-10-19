@@ -9,11 +9,12 @@ import type { Subject } from "@/lib/supabase/types";
 import { formatSpan } from "@/lib/utils";
 
 /**
- * L'ACCUEIL SUR GRAND ÉCRAN — les pièces propres à la maquette « tableau de
- * bord » : salutation, horloge, bandeau de la semaine, progression du jour,
- * citation. Aucune ne lit de données : tout arrive calculé du seul
- * `usePrepahubData()` de components/dashboard-overview.tsx. Les appelants
- * les masquent sous `lg` (le téléphone garde la maquette « Revolut clair »).
+ * L'ACCUEIL « TABLEAU DE BORD » — salutation, horloge, bandeau de la
+ * semaine, progression du jour, citation. Aucune pièce ne lit de données :
+ * tout arrive calculé du seul `usePrepahubData()` de
+ * components/dashboard-overview.tsx. Sur téléphone : salutation courte,
+ * semaine et progression ; l'horloge, la date longue et la citation
+ * n'apparaissent qu'à partir de `lg`.
  */
 
 const longDate = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -39,18 +40,18 @@ function subtitle(todayMinutes: number, yesterdayMinutes: number): string {
   return "Tu avances, à ton rythme.";
 }
 
-export function DesktopGreeting({ todayMinutes, yesterdayMinutes, className }: { todayMinutes: number; yesterdayMinutes: number; className?: string }) {
+export function HomeGreeting({ todayMinutes, yesterdayMinutes, className }: { todayMinutes: number; yesterdayMinutes: number; className?: string }) {
   const now = useNow();
   const evening = now ? now.getHours() >= 18 : false;
   return (
     <header className={cn("flex items-end justify-between gap-8", className)}>
       <div className="min-w-0">
-        <p className="text-sm font-medium text-muted first-letter:uppercase">{longDate.format(now ?? new Date())}</p>
-        <h1 className="mt-1 font-serif text-6xl font-semibold tracking-tight text-ink">{evening ? "Bonsoir" : "Bonjour"}</h1>
-        <p className="mt-2 font-serif text-xl text-muted">{subtitle(todayMinutes, yesterdayMinutes)}</p>
-        <p className="mt-1 font-serif text-lg italic text-subtle">« La régularité transforme les efforts en résultats. »</p>
+        <p className="hidden text-sm font-medium text-muted first-letter:uppercase lg:block">{longDate.format(now ?? new Date())}</p>
+        <h1 className="font-serif text-4xl lg:mt-1 lg:text-6xl font-semibold tracking-tight text-ink">{evening ? "Bonsoir" : "Bonjour"}</h1>
+        <p className="mt-1 font-serif text-lg text-muted lg:mt-2 lg:text-xl">{subtitle(todayMinutes, yesterdayMinutes)}</p>
+        <p className="mt-1 hidden font-serif text-lg italic text-subtle lg:block">« La régularité transforme les efforts en résultats. »</p>
       </div>
-      <div className="shrink-0 text-right" aria-hidden={now === null}>
+      <div className="hidden shrink-0 text-right lg:block" aria-hidden={now === null}>
         <p className="font-serif text-7xl font-light leading-none tracking-tight text-ink tabular" suppressHydrationWarning>
           {now ? clockFormat.format(now) : " "}
         </p>
