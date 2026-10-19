@@ -59,7 +59,7 @@ Cartes contrôlées : ailette et équation de la chaleur (dt-39 à 44), moment m
 
 **Constats (pas de correction nécessaire).**
 - Les champs `origine` et `note` des `.jsonl` ne sont **pas** des champs de la note Anki : seuls Recto, Verso et l'id de la carte (affiché en pied de réponse) sont importés. La traçabilité complète reste dans les `.jsonl` et les `validation.md`.
-- Les formules sont du texte Unicode simple (pas de MathJax) : aucun problème de syntaxe possible, mais l'apparence dépend des polices de l'appareil. Le texte contient 777 caractères de l'alphabet mathématique (𝒞, 𝟙, 𝓜…) et 1 548 diacritiques combinants (vecteurs E⃗…).
+- Les formules sont du texte Unicode simple (pas de MathJax) : aucun problème de syntaxe possible, mais l'apparence dépend des polices de l'appareil. Le texte contient 777 caractères de l'alphabet mathématique (𝒞, 𝟙, 𝓜…) et 1 548 diacritiques combinants. **Voir §8 : la flèche des vecteurs a été corrigée.**
 - Un second import du même paquet n'écrase rien. Le cas d'un paquet *modifié* puis réimporté (mise à jour des notes à GUID identique) n'a pas été testé, faute de nouvelle génération.
 
 **Limites restantes.**
@@ -68,4 +68,22 @@ Cartes contrôlées : ailette et équation de la chaleur (dt-39 à 44), moment m
 - Conseil pour le vrai import : sauvegarder la collection (Fichier > Exporter > .colpkg) avant, importer dans le profil habituel sans cocher « mettre à jour les types de notes », puis vérifier le nombre de notes (+3 423).
 
 ## 7. Statut du paquet
-**Importable sans perte** dans le test isolé : valide, 3 423 notes, GUID uniques, réimportation sans doublon, anciennes notes et historique intacts. Aucune modification du paquet n'a été nécessaire.
+**Importable sans perte** dans le test isolé (paquet régénéré le 2026-10-19 pour le correctif du §8) : valide, 3 423 notes, GUID uniques, réimportation sans doublon, anciennes notes et historique intacts. Aucune modification du paquet n'a été nécessaire.
+
+## 8. Rendu visuel : défaut trouvé et corrigé (2026-10-19)
+
+**Test.** Six cartes à risque (lettres cursives, doubles barres, vecteurs) rendues dans Chromium avec la feuille de style du paquet, captures d'écran relues.
+
+**Résultat avant correction.**
+- Les lettres cursives et doubles barres (𝒮, 𝔻, ℝ, ℂ, 𝕂) et les accents combinants macron, tilde, point, tréma, circonflexe s'affichent correctement.
+- **Défaut reproduit** : la flèche combinante U+20D7 des vecteurs (E⃗, n⃗, AM⃗…) s'affichait comme un **carré vide** avec la police par défaut du conteneur. Elle apparaît 1 304 fois dans 327 cartes. Sur ton appareil, le résultat dépend de ses polices, donc la correction est préventive mais le défaut était reproductible.
+
+**Correction.** `scripts/referentiel/referentiel.py` : la fonction `cell()` remplace chaque `X⃗` par `<span class="vec">X</span>`, et la feuille de style du type de note dessine la flèche « → » (présente dans toutes les polices) au-dessus de la lettre. Aucune carte, aucun GUID, aucun JSONL modifié : seul l'habillage du champ change.
+
+**Contrôles après correction (paquet régénéré une seule fois).**
+- Rendu : les vecteurs s'affichent avec une flèche au-dessus de la lettre (même échantillon de 6 cartes, capture relue).
+- Texte : pour les 3 423 cartes, le texte reconstruit depuis le champ Anki (balise `vec` remplacée par la flèche combinante) est **identique** au JSONL ; 0 flèche combinante restante hors habillage.
+- Import réel (collection temporaire, `scripts/referentiel/test_import.py`) rejoué : 3 423 notes nouvelles, réimport = 0 nouvelle note et 3 423 déjà présentes, GUID 3 429/3 429 distincts, 0 champ vide, 0 écart texte, anciennes notes inchangées, 5 recouvrements importés (GUID distincts). L'historique de révision (test déjà réussi) n'est pas affecté, le paquet n'ayant changé que par l'habillage des champs et la feuille de style.
+- Le test d'import signale 4 cartes « sans recto dans la question » : artefact du test (le recto commence par une flèche combinante comparée avant habillage), non un défaut ; le texte de ces cartes est identique au JSONL.
+
+**Limites restantes.** Toujours aucun test dans l'application Anki elle-même ; la mise en page fine (flèche légèrement serrée contre la ligne du dessus quand un vecteur est en début de ligne) et les polices de ton appareil restent à voir au premier import. Seuls la flèche combinante et ses cartes ont été corrigés : les autres symboles s'affichent correctement dans l'échantillon.

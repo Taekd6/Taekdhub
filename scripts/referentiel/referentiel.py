@@ -104,12 +104,21 @@ def md():
         print("écrit", os.path.relpath(target, ROOT))
 
 
+def cell(t):
+    """Texte d'un champ Anki. La flèche combinante U+20D7 (vecteur) s'affiche comme un carré vide avec beaucoup de
+    polices : on l'habille en HTML/CSS (flèche « → » présente partout) au lieu de compter sur la police."""
+    return re.sub(r"([^\s;])\u20d7", r'<span class="vec">\1</span>', html.escape(t, quote=False).replace("\n", "<br>"))
+
+
+VEC_CSS = ".vec{position:relative;display:inline-block}.vec::after{content:'\\2192';position:absolute;left:50%;top:-.6em;transform:translateX(-50%);font-size:.7em;line-height:1}"
+
+
 def deck():
     import genanki
     def sid(s):
         import zlib
         return zlib.crc32(s.encode()) & 0x7FFFFFFF | 0x40000000
-    css = ".card{font-family:system-ui,sans-serif;font-size:19px;text-align:left;max-width:34em;margin:auto}.src{color:#888;font-size:13px;margin-top:1em}"
+    css = ".card{font-family:system-ui,sans-serif;font-size:19px;text-align:left;max-width:34em;margin:auto}.src{color:#888;font-size:13px;margin-top:1em}" + VEC_CSS
     model = genanki.Model(sid("taekdhub-referentiel-modele-v1"), "TaekdHub — Référentiel", fields=[{"name": "Recto"}, {"name": "Verso"}, {"name": "Id"}],
         templates=[{"name": "Carte", "qfmt": "{{Recto}}", "afmt": "{{FrontSide}}<hr id=answer>{{Verso}}<div class=src>{{Id}}</div>"}], css=css)
     decks = {}
@@ -119,7 +128,6 @@ def deck():
         for c in load(path):
             name = f"TaekdHub::Référentiel::{matiere}::{c['chapitre']}"
             d = decks.setdefault(name, genanki.Deck(sid(name), name))
-            cell = lambda t: html.escape(t, quote=False).replace("\n", "<br>")
             # GUID dérivé de l'identifiant de la carte, JAMAIS de son texte : corriger un recto ne crée pas de doublon.
             note = genanki.Note(model=model, fields=[cell(c["recto"]), cell(c["verso"]), c["id"]], tags=["taekdhub", "referentiel", c["type"].replace(" ", "_")], guid=genanki.guid_for("taekdhub-referentiel", c["id"]))
             d.add_note(note)

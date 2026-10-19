@@ -48,7 +48,7 @@ J={}
 for f in glob.glob(ROOT+'/referentiel/**/cartes*.jsonl',recursive=True):
     for l in open(f,encoding='utf-8'):
         c=json.loads(l); J[c['id']]=c
-cell=lambda t: html.escape(t,quote=False).replace('\n','<br>')
+import sys as _s; _s.path.insert(0,_o.path.dirname(__file__)); from referentiel import cell
 bad=[];empty=0;byid={}
 for nid in col.find_notes('"note:TaekdHub — Référentiel"'):
     n=col.get_note(nid); r,v,i=n['Recto'],n['Verso'],n['Id']; byid[i]=nid
