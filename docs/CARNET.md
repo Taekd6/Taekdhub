@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-19, commit de code `22b7729`.
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-19, commit de code `49d8961`.
 > Écart constaté ce jour : la PR #28 est FUSIONNÉE dans `main` (merge `7f081c3`, 2026-10-16) ; la PR #29 (mission 7) aussi (merge `e79f3cf`, production redéployée par Vercel, non vérifié) ; les paragraphes
 > « PR #28 ouverte » plus bas sont périmés. Branche de travail actuelle : `claude/laughing-meitner-p9o3si`.
 
@@ -212,6 +212,19 @@ vers `/programme`, `/entrainement`, `/preparation`, `/revision`, `/anki`, `/eche
 l'élève, en mode sombre, entre 1024 et 1280 px.
 
 **Mission 7b (2026-10-19) — accueil mobile.** Salutation courte, bandeau de la semaine, Next Move, reste de la journée, puis « Progression du jour » (remplace `TodayHero`, désormais sans appelant dans `components/home/hero.tsx`). Horloge, date longue et citation restent à partir de `lg`. Barre d'onglets du bas inchangée (4 destinations ; Révisions, Anki, Échéances restent atteignables par les cartes de l'accueil). Commit `22b7729`. Vérifié : 86 fichiers de tests, 1404 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; capture réelle à 390 px. Non vérifié : sur iPhone, en mode sombre.
+
+**Mission 8 (2026-10-19) — sobriété visuelle (demande de l'élève : « sobre, efficace, pas chargé, couleurs laides »).** Décidé avec lui :
+fond blanc cassé + noir, sans accent coloré ; accueil, vitrine et couleurs de toutes les pages. Il veut AUSSI garder le liquid glass, des
+animations et des images : conservés (verre, `reveal`, `floaty`), mais neutres. Palette `aurora` (id conservé, aucune migration) devient
+« Sobre » (graphite, `lib/theme.ts`) ; fond `#faf9f6`, ombres neutres, halos à 6–10 %. Les autres palettes colorées restent choisissables
+dans Réglages. Accueil : Next Move (une seule raison visible, le reste dans « Détails », dessin de la matière en filigrane), le reste de
+la journée, progression du jour, échéances, check-in du soir (conditionnel), rappel de sauvegarde. RETIRÉS de l'accueil, toujours
+disponibles sur leurs pages : gestes rapides, minimum du soir, cartes par matière, « Noter du temps », « À reprendre », courbe, bannière
+de révisions, « À ne pas oublier », plans « si… alors… », série et semaine, citation, salutation d'encouragement. Composants conservés
+mais sans appelant sur l'accueil (`components/home/cards.tsx` en partie, `hero.tsx`, `evening-card.tsx`, `intentions-card.tsx`).
+Attention : « Noter du temps » n'est plus sur l'accueil (reste via le chrono). Vérifié : 86 fichiers de tests, 1404 réussis + 1 échec
+attendu antérieur, `tsc`, lint, build ; captures à 1536 px (accueil, vitrine). Non vérifié : mobile après cette mission, mode sombre,
+iPhone. Commit `49d8961`.
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
