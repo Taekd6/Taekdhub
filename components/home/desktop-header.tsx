@@ -10,10 +10,10 @@ import { formatSpan } from "@/lib/utils";
 
 /**
  * L'ACCUEIL « TABLEAU DE BORD » — salutation, horloge, bandeau de la
- * semaine, progression du jour, citation. Aucune pièce ne lit de données :
+ * semaine, progression du jour. Aucune pièce ne lit de données :
  * tout arrive calculé du seul `usePrepahubData()` de
  * components/dashboard-overview.tsx. Sur téléphone : salutation courte,
- * semaine et progression ; l'horloge, la date longue et la citation
+ * semaine et progression ; l'horloge et la date longue
  * n'apparaissent qu'à partir de `lg`.
  */
 
@@ -33,14 +33,7 @@ function useNow(): Date | null {
   return now;
 }
 
-/** Une phrase qui dit ce qui est vrai : « mieux qu'hier » seulement si c'est le cas. */
-function subtitle(todayMinutes: number, yesterdayMinutes: number): string {
-  if (todayMinutes === 0) return "Une séance à la fois.";
-  if (todayMinutes > yesterdayMinutes) return "Aujourd’hui, un peu mieux qu’hier.";
-  return "Tu avances, à ton rythme.";
-}
-
-export function HomeGreeting({ todayMinutes, yesterdayMinutes, className }: { todayMinutes: number; yesterdayMinutes: number; className?: string }) {
+export function HomeGreeting({ className }: { className?: string }) {
   const now = useNow();
   const evening = now ? now.getHours() >= 18 : false;
   return (
@@ -48,8 +41,6 @@ export function HomeGreeting({ todayMinutes, yesterdayMinutes, className }: { to
       <div className="min-w-0">
         <p className="hidden text-sm font-medium text-muted first-letter:uppercase lg:block">{longDate.format(now ?? new Date())}</p>
         <h1 className="font-serif text-4xl lg:mt-1 lg:text-6xl font-semibold tracking-tight text-ink">{evening ? "Bonsoir" : "Bonjour"}</h1>
-        <p className="mt-1 font-serif text-lg text-muted lg:mt-2 lg:text-xl">{subtitle(todayMinutes, yesterdayMinutes)}</p>
-        <p className="mt-1 hidden font-serif text-lg italic text-subtle lg:block">« La régularité transforme les efforts en résultats. »</p>
       </div>
       <div className="hidden shrink-0 text-right lg:block" aria-hidden={now === null}>
         <p className="font-serif text-7xl font-light leading-none tracking-tight text-ink tabular" suppressHydrationWarning>
@@ -155,15 +146,5 @@ export function DayProgress({
         </>
       )}
     </section>
-  );
-}
-
-/** La phrase de la maquette, signée de l'application. */
-export function QuoteCard({ className }: { className?: string }) {
-  return (
-    <figure className={cn("surface p-5", className)}>
-      <blockquote className="font-serif text-xl leading-snug text-ink">Discipline aujourd’hui, liberté demain.</blockquote>
-      <figcaption className="mt-3 text-sm text-muted">— TaekdHub</figcaption>
-    </figure>
   );
 }

@@ -76,7 +76,7 @@
  * et les anciens `--accent-*` remappés : posés au démarrage par le script
  * anti-flash (app/layout.tsx), puis par `ThemeSync`, depuis
  * lib/theme.ts#paletteVariables. Les valeurs ci-dessous ne sont que le
- * repli « Aurora » d'une page lue sans JavaScript.
+ * repli « Sobre » d'une page lue sans JavaScript.
  */
 
 @layer base {
@@ -88,31 +88,31 @@
        Partout ailleurs, Inter (next/font, app/layout.tsx). */
     --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", var(--font-inter), "Helvetica Neue", system-ui, sans-serif;
 
-    /* ── PALETTE (repli Aurora — voir lib/theme.ts) ─────────────── */
-    --g1: #7c5cff;
-    --g2: #22d3ee;
-    --g1-rgb: 124 92 255;
-    --g2-rgb: 34 211 238;
-    --btn-g1: #6d28d9;
-    --btn-g2: #2563eb;
-    --card-1a: #6d28d9;
-    --card-1b: #2563eb;
-    --card-2a: #db2777;
-    --card-2b: #7c3aed;
-    --card-3a: #0891b2;
-    --card-3b: #4f46e5;
-    --card-4a: #9333ea;
-    --card-4b: #ec4899;
+    /* ── PALETTE (repli « Sobre » — voir lib/theme.ts) ─────────────── */
+    --g1: #2c2c2e;
+    --g2: #8e8e93;
+    --g1-rgb: 44 44 46;
+    --g2-rgb: 142 142 147;
+    --btn-g1: #1d1d1f;
+    --btn-g2: #3a3a3c;
+    --card-1a: #1d1d1f;
+    --card-1b: #3a3a3c;
+    --card-2a: #2c2c2e;
+    --card-2b: #48484a;
+    --card-3a: #3a3a3c;
+    --card-3b: #636366;
+    --card-4a: #1d1d1f;
+    --card-4b: #48484a;
     --card-grad-1: linear-gradient(135deg, var(--card-1a), var(--card-1b));
     --card-grad-2: linear-gradient(135deg, var(--card-2a), var(--card-2b));
     --card-grad-3: linear-gradient(135deg, var(--card-3a), var(--card-3b));
     --card-grad-4: linear-gradient(135deg, var(--card-4a), var(--card-4b));
-    --review-a: #f97316;
-    --review-b: #ec4899;
+    --review-a: #3a3a3c;
+    --review-b: #636366;
     --review-grad: linear-gradient(135deg, var(--review-a), var(--review-b));
-    --dl-1: #7c3aed;
-    --dl-2: #2563eb;
-    --dl-3: #0891b2;
+    --dl-1: #3a3a3c;
+    --dl-2: #48484a;
+    --dl-3: #636366;
 
     /* ── ACCENT (anciens noms, remappés sur la palette) ─────────────
          `--accent-rgb`            c1, la couleur de marque brute ;
@@ -120,11 +120,11 @@
          `--accent-ink-dark-rgb`   c2, l'encre en SOMBRE (la maquette « D ») ;
          `--accent-solid-base-rgb` première teinte du dégradé des boutons ;
          `--accent-fg-rgb`         noir ou blanc, lisible sur c1 brut. */
-    --accent-rgb: 124 92 255;
-    --accent-ink-base-rgb: 91 63 214;
-    --accent-ink-dark-rgb: 34 211 238;
+    --accent-rgb: 44 44 46;
+    --accent-ink-base-rgb: 29 29 31;
+    --accent-ink-dark-rgb: 142 142 147;
     --accent-fg-rgb: 255 255 255;
-    --accent-solid-base-rgb: 109 40 217;
+    --accent-solid-base-rgb: 29 29 31;
     --accent-solid-rgb: var(--accent-solid-base-rgb);
     --accent-solid-fg-rgb: 255 255 255;
     --accent-ink-rgb: var(--accent-ink-base-rgb);
@@ -135,11 +135,11 @@
        Un gris très légèrement bleuté, comme la maquette : le blanc des
        cartes s'en détache sans qu'aucun filet soit nécessaire. */
     /* Les gris d'Apple : fond #f5f5f7, encre #1d1d1f. */
-    --canvas-rgb: 245 245 247;
+    --canvas-rgb: 250 249 246;
     --panel-rgb: 255 255 255;
     --elevated-rgb: 255 255 255;
-    --line-rgb: 229 229 234;
-    --ink-rgb: 29 29 31;
+    --line-rgb: 230 228 222;
+    --ink-rgb: 26 26 26;
     /* #6e6e73, le gris secondaire d'Apple : 5,0:1 sur blanc, 4,6:1 sur le fond — AA. */
     --muted-rgb: 110 110 115;
     --subtle-rgb: 110 110 115;
@@ -154,25 +154,25 @@
     --surface-blur: blur(24px) saturate(180%);
     --surface-border: rgb(255 255 255 / 0.7);
     --surface-border-hover: rgb(255 255 255 / 0.95);
-    --surface-lift-rest: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(30 30 60 / 0.04), 0 12px 32px -14px rgb(30 30 60 / 0.18);
-    --surface-lift-up: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 2px 4px rgb(30 30 60 / 0.05), 0 26px 50px -18px rgb(30 30 60 / 0.28);
+    --surface-lift-rest: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(20 20 20 / 0.04), 0 12px 32px -14px rgb(20 20 20 / 0.18);
+    --surface-lift-up: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 2px 4px rgb(20 20 20 / 0.05), 0 26px 50px -18px rgb(20 20 20 / 0.28);
     --surface-shadow: var(--surface-lift-rest);
-    --shadow-surface: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 2px 6px rgb(30 30 60 / 0.06), 0 30px 64px -12px rgb(30 30 60 / 0.3);
+    --shadow-surface: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 2px 6px rgb(20 20 20 / 0.06), 0 30px 64px -12px rgb(20 20 20 / 0.3);
     /* Bouton rond (`ActionButtons`) : une goutte de verre. */
     --action-bg: rgb(255 255 255 / 0.72);
-    --action-lift: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 8px 20px -8px rgb(30 30 60 / 0.22);
+    --action-lift: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 8px 20px -8px rgb(20 20 20 / 0.22);
     /* Verre des barres flottantes (navigation, pastille de date) : plus clair
        et plus flou que les tuiles, il porte un liseré complet. */
     --glass-bg: rgb(255 255 255 / 0.72);
-    --glass-edge: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 0 0 1px rgb(255 255 255 / 0.5), 0 10px 30px -10px rgb(30 30 60 / 0.22);
+    --glass-edge: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 0 0 1px rgb(255 255 255 / 0.5), 0 10px 30px -10px rgb(20 20 20 / 0.22);
     /* Intensité des halos du fond — plus forte qu'en D2 : c'est la couleur que
        le verre laisse passer. */
-    --halo-a: 0.3;
-    --halo-b: 0.26;
-    --halo-c: 0.18;
+    --halo-a: 0.1;
+    --halo-b: 0.08;
+    --halo-c: 0.06;
     --chip-on-bg: rgb(255 255 255);
-    --chip-on-ring: rgb(20 20 60 / 0.05);
-    --chip-on-shadow: 0 2px 8px rgb(20 20 60 / 0.12);
+    --chip-on-ring: rgb(20 20 20 / 0.05);
+    --chip-on-shadow: 0 2px 8px rgb(20 20 20 / 0.12);
 
     /* Échelle « zinc » — mêmes noms de classes qu'avant (text-zinc-400,
        bg-zinc-800…), valeurs INVERSÉES en clair : 50 est l'encre, 950 le
@@ -1287,7 +1287,7 @@
       radial-gradient(120% 90% at 100% 0%, rgb(var(--g1-rgb) / 0.45), transparent 55%),
       radial-gradient(90% 80% at 0% 100%, rgb(var(--g2-rgb) / 0.3), transparent 60%),
       #1d1d1f;
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 30px 60px -30px rgb(30 30 60 / 0.5);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 30px 60px -30px rgb(20 20 20 / 0.5);
   }
 
   /* BANNIÈRE D'ALERTE (components/alerts/alert-center.tsx) — elle descend

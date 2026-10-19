@@ -58,20 +58,27 @@ export interface Palette {
 
 export const PALETTES: Palette[] = [
   {
+    /*
+     * « SOBRE » (octobre 2026) : l'élève trouve les dégradés colorés laids et
+     * l'écran chargé. La palette par défaut devient un graphite sans aucune
+     * teinte. L'identifiant reste `aurora` : les préférences déjà enregistrées
+     * (et le script anti-flash) le connaissent, aucune migration n'est donc
+     * nécessaire — seules ses valeurs et son nom ont changé.
+     */
     id: "aurora",
-    label: "Aurora",
-    c1: "#7c5cff",
-    c2: "#22d3ee",
-    ink: "#5b3fd6",
-    solid: ["#6d28d9", "#2563eb"],
+    label: "Sobre",
+    c1: "#2c2c2e",
+    c2: "#8e8e93",
+    ink: "#1d1d1f",
+    solid: ["#1d1d1f", "#3a3a3c"],
     cards: [
-      ["#6d28d9", "#2563eb"],
-      ["#db2777", "#7c3aed"],
-      ["#0891b2", "#4f46e5"],
-      ["#9333ea", "#ec4899"],
+      ["#1d1d1f", "#3a3a3c"],
+      ["#2c2c2e", "#48484a"],
+      ["#3a3a3c", "#636366"],
+      ["#1d1d1f", "#48484a"],
     ],
-    review: ["#f97316", "#ec4899"],
-    dl: ["#7c3aed", "#2563eb", "#0891b2"],
+    review: ["#3a3a3c", "#636366"],
+    dl: ["#3a3a3c", "#48484a", "#636366"],
   },
   {
     id: "sunset",
