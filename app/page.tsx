@@ -114,7 +114,7 @@ export default function Home() {
           Pour la prépa scientifique
         </p>
         <h1 className="reveal mx-auto mt-4 max-w-[14ch] lg:max-w-[20ch] text-[clamp(2.75rem,1.4rem+6vw,5.75rem)] font-bold leading-[1.02] tracking-[-0.035em] [text-wrap:balance]" style={{ "--i": 1 } as React.CSSProperties}>
-          Chaque heure compte. <span className="text-grad">Maintenant, elle se voit.</span>
+          Chaque heure compte. <span className="text-muted">Maintenant, elle se voit.</span>
         </h1>
         <p className="reveal t-lede mx-auto mt-6 max-w-[40ch]" style={{ "--i": 2 } as React.CSSProperties}>
           Ton temps, tes échéances, ton cours et tes exercices au même endroit, et une seule question à la fois : qu&apos;est-ce que je fais maintenant ?
@@ -151,13 +151,6 @@ export default function Home() {
             </article>
           ))}
         </div>
-      </section>
-
-      {/* ── La phrase ── */}
-      <section className="mx-auto max-w-[60rem] px-6 py-24 text-center">
-        <p className="reveal text-[clamp(1.75rem,1.1rem+3vw,3.5rem)] font-bold leading-[1.1] tracking-[-0.03em] [text-wrap:balance]">
-          Pas une banque d&apos;exercices. <span className="text-muted">Le carnet de bord de ton travail, qui sait quoi faire ensuite.</span>
-        </p>
       </section>
 
       {/* ── La méthode ── */}

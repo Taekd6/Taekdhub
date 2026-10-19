@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Check, ChevronDown, Moon, Shuffle, Target } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { CopyRequest } from "@/components/exercises/copy-request";
+import { SubjectIllustration } from "@/components/ui/illustrations";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { cn } from "@/lib/cn";
 import { MOVE_KIND_LABEL, computeNextMove, topReasons, type MoveCandidate, type NextMoveInput, type SessionStep } from "@/lib/next-move/engine";
@@ -181,7 +182,11 @@ export function NextMoveCard({
     <section aria-labelledby="next-move-titre" className={cn("surface reveal p-4 sm:p-5", className)} style={{ "--i": 1 } as CSSProperties} data-next-move>
       {/* ── LE MOUVEMENT ── */}
       {shown ? (
-        <div className="grad-card tone-brand sheen p-5 sm:p-6">
+        <div className="grad-card tone-brand sheen relative p-5 sm:p-6">
+          {/* Le dessin de la matière : décoratif, en filigrane. */}
+          {shown.subject && (
+            <SubjectIllustration subject={shown.subject} size={96} strokeWidth={1.25} className="floaty pointer-events-none absolute right-4 top-4 opacity-25 sm:right-6 sm:top-6 sm:opacity-30" />
+          )}
           <p className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold opacity-90">
             <Target size={14} aria-hidden /> {inProgress ? "En cours" : calm ? "Rien ne presse — si tu veux avancer" : showAlternative ? "Autre idée" : "Ton prochain mouvement"}
           </p>
@@ -257,30 +262,14 @@ export function NextMoveCard({
           </div>
         )}
 
-        {/* ── POURQUOI ── */}
+        {/* ── POURQUOI — la raison principale ; le reste est dans « Détails ». ── */}
         {shown && reasons.length > 0 && (
           <div>
             <h3 className="t-label">Pourquoi ?</h3>
-            <ul className="mt-1.5 space-y-1">
-              {reasons.map((reason) => (
-                <li key={reason} className="flex gap-2 text-[0.9375rem] font-semibold text-ink">
-                  <span aria-hidden className="mt-[0.6rem] h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                  <span className="min-w-0">{reason}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="t-meta mt-2 text-[0.8125rem]">{shown.instruction}</p>
-            {shown.request && <CopyRequest text={shown.request} className="mt-2" />}
-            <dl className="mt-3 grid gap-1.5 text-[0.8125rem]">
-              <div className="flex gap-2">
-                <dt className="shrink-0 font-semibold text-subtle">Corrige :</dt>
-                <dd className="min-w-0 font-semibold text-ink">{shown.problem}</dd>
-              </div>
-              <div className="flex gap-2">
-                <dt className="shrink-0 font-semibold text-subtle">Terminé quand :</dt>
-                <dd className="min-w-0 font-semibold text-ink">{shown.doneWhen}</dd>
-              </div>
-            </dl>
+            <p className="mt-1.5 flex gap-2 text-[0.9375rem] font-semibold text-ink">
+              <span aria-hidden className="mt-[0.6rem] h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+              <span className="min-w-0">{reasons[0]}</span>
+            </p>
           </div>
         )}
 
@@ -337,7 +326,29 @@ export function NextMoveCard({
           <div id="next-move-details" className="mt-3 space-y-4 border-t border-line pt-4">
             {shown && (
               <div>
-                <h3 className="t-label">Le calcul, point par point</h3>
+                {reasons.length > 1 && (
+                  <ul className="mb-3 space-y-1">
+                    {reasons.slice(1).map((reason) => (
+                      <li key={reason} className="flex gap-2 text-[0.9375rem] font-semibold text-ink">
+                        <span aria-hidden className="mt-[0.6rem] h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                        <span className="min-w-0">{reason}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="t-meta text-[0.8125rem]">{shown.instruction}</p>
+                {shown.request && <CopyRequest text={shown.request} className="mt-2" />}
+                <dl className="mt-3 grid gap-1.5 text-[0.8125rem]">
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 font-semibold text-subtle">Corrige :</dt>
+                    <dd className="min-w-0 font-semibold text-ink">{shown.problem}</dd>
+                  </div>
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 font-semibold text-subtle">Terminé quand :</dt>
+                    <dd className="min-w-0 font-semibold text-ink">{shown.doneWhen}</dd>
+                  </div>
+                </dl>
+                <h3 className="t-label mt-4">Le calcul, point par point</h3>
                 <ul className="mt-1.5 space-y-1">
                   {shown.terms.map((term) => (
                     <li key={`${term.id}-${term.reason}`} className="flex items-baseline justify-between gap-3 text-[0.875rem]">
