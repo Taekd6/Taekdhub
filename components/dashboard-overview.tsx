@@ -7,6 +7,7 @@ import { QuickLog } from "@/components/work/quick-log";
 import { ReviewCapture } from "@/components/review/review-capture";
 import { DailyCheckinCard } from "@/components/checkin/daily-checkin"; // check-in du soir
 import { HomeTopBar, TodayHero, WeekCurve } from "@/components/home/hero";
+import { DayProgress, DesktopGreeting, QuoteCard, WeekStrip } from "@/components/home/desktop-header";
 import { IntentionsCard } from "@/components/home/intentions-card";
 import { EveningCard } from "@/components/home/evening-card";
 import { effectiveDailyGoal } from "@/lib/evening-minimums";
@@ -94,6 +95,12 @@ export function DashboardOverview() {
     return {
       objective: computeDailyObjective(sessions, effectiveDailyGoal(preferences, now), now),
       yesterdayMinutes: Math.round(totalSeconds(sessions.filter((session) => dayKey(session.started_at) === yesterdayKey)) / 60),
+      todayBySubject: allSubjects
+        .map((subject) => ({
+          subject,
+          minutes: Math.round(totalSeconds(sessions.filter((session) => session.subject === subject && dayKey(session.started_at) === dayKey(now))) / 60),
+        }))
+        .filter((entry) => entry.minutes > 0),
       weeklySummary: computeWeeklySummary(sessions, preferences.weeklyGoalMinutes, now),
       streak: computeStreak(sessions),
       week: weekDayStacks(sessions, now),
@@ -131,7 +138,7 @@ export function DashboardOverview() {
     );
   }
 
-  const { objective, yesterdayMinutes, weeklySummary, streak, contestDays, week } = model;
+  const { objective, yesterdayMinutes, todayBySubject, weeklySummary, streak, contestDays, week } = model;
   const upcomingDeadlines = workPlan.priorities.filter((priority) => priority.item.dueDate !== null).slice(0, 3);
 
   const subjectCards = allSubjects.map((subject) => ({
@@ -142,7 +149,11 @@ export function DashboardOverview() {
 
   return (
     <div className="mx-auto max-w-[68rem]">
-      <HomeTopBar name={preferences.displayName ?? ""} avatar={preferences.avatarDataUrl} contestDays={contestDays} className="mb-6 lg:mb-10" />
+      <HomeTopBar name={preferences.displayName ?? ""} avatar={preferences.avatarDataUrl} contestDays={contestDays} className="mb-6 lg:hidden" />
+      {/* Grand écran : salutation, horloge et semaine (maquette « tableau de bord »). */}
+      <DesktopGreeting todayMinutes={objective.workedMinutes} yesterdayMinutes={yesterdayMinutes} className="mb-6 hidden lg:flex" />
+
+      <WeekStrip week={week} className="mb-6 hidden lg:grid" />
 
       <div className="flex flex-col gap-[1.375rem] lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-10 lg:gap-y-0">
         {/* ── COLONNE « FAIRE » ─────────────────────────────────────── */}
@@ -151,7 +162,7 @@ export function DashboardOverview() {
             todayMinutes={objective.workedMinutes}
             yesterdayMinutes={yesterdayMinutes}
             goalMinutes={objective.goalMinutes}
-            className="order-1 pt-2 lg:order-none lg:pt-6"
+            className="order-1 pt-2 lg:hidden"
           />
           {/* ── NEXT MOVE — la réponse à « et maintenant ? », juste sous la journée. ── */}
           <NextMoveCard data={nextMoveData} history={nextMoves} saveHistory={saveNextMoves} ready={ready} className="order-1 lg:order-none" />
@@ -188,6 +199,7 @@ export function DashboardOverview() {
           {/* La courbe sort de la colonne jusqu'aux bords de l'écran sur
               téléphone, comme dans la maquette ; sur grand écran, elle se
               pose dans une tuile. */}
+          <DayProgress workedMinutes={objective.workedMinutes} goalMinutes={objective.goalMinutes} bySubject={todayBySubject} className="hidden lg:block" />
           <WeekCurve week={week} className="order-2 -mx-4 sm:-mx-6 lg:order-none lg:mx-0 lg:rounded-[1.625rem] lg:bg-[var(--surface-bg)] lg:px-2 lg:pb-4 lg:pt-6 lg:[box-shadow:var(--surface-shadow)]" />
           <ReviewBanner due={reviews.due.length} next={reviews.next} className="order-5 lg:order-none" />
           {/* ── MÉMOIRE DES CHAPITRES (FSRS) — « À ne pas oublier », juste après
@@ -204,6 +216,7 @@ export function DashboardOverview() {
             weekGoalMinutes={preferences.weeklyGoalMinutes}
             className="order-7 lg:order-none"
           />
+          <QuoteCard className="hidden lg:block" />
           {/* Le check-in du soir n'apparaît que le soir, tant qu'il n'est pas
               fait ; l'enveloppe disparaît quand il ne rend rien. */}
           <div className="reveal order-9 empty:hidden lg:order-none">

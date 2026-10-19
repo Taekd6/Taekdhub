@@ -26,7 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     // Compte et synchronisation (components/account/account-provider.tsx) : actif
     // sur toutes les pages, inerte quand Supabase n'est pas configuré.
     <AccountProvider>
-      <div className="min-h-screen">
+      <div className="min-h-screen lg:pl-[var(--sidebar-w)]">
         <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden print:hidden">
           <div className="halo halo-a" />
           <div className="halo halo-b" />
@@ -36,7 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <AppNav />
         {/* Alertes animées : échéances, verrou de cours, minimum du soir (lib/alerts.ts). */}
         <AlertCenter />
-        <main className="mx-auto w-full max-w-[var(--shell-max)] px-4 pb-32 pt-5 sm:px-6 sm:pt-10 lg:pb-24 lg:pt-12">
+        <main className="mx-auto w-full max-w-[var(--shell-max)] px-4 pb-32 pt-5 sm:px-6 sm:pt-10 lg:pb-24 lg:pt-10">
           <StorageAlert />
           {children}
         </main>

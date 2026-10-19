@@ -241,6 +241,8 @@
     --measure: 34rem;
     --measure-wide: 46rem;
     --shell-max: 1180px;
+    /* Colonne latérale (grand écran) : components/app-nav.tsx, réservée par app-shell.tsx. */
+    --sidebar-w: 15rem;
     --nav-h: 3.5rem;
     /* Hauteur de la barre d'onglets mobile (hors marge de sécurité) — réutilisée
        par ce qui doit se poser juste au-dessus (barres d'actions collantes). Le
