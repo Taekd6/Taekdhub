@@ -1,8 +1,9 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-14, commit de code `0401692`
-> (PR #28 : tête observée `504b1ae` avant cette mission, relue sur GitHub).
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-19, commit de code `41fb603`.
+> Écart constaté ce jour : la PR #28 est FUSIONNÉE dans `main` (merge `7f081c3`, 2026-10-16) ; les paragraphes
+> « PR #28 ouverte » plus bas sont périmés. Branche de travail actuelle : `claude/laughing-meitner-p9o3si`.
 
 ## Objectif général
 TaekdHub est l'outil de travail personnel d'un élève de prépa MP (PWA Next.js 15, React 19,
@@ -115,6 +116,7 @@ SSO de Vercel (information de l'élève ; la session n'a pas pu les joindre, `ve
 | 4 | Fraîcheur honnête pour Hermes : plan provisoire, séances anciennes, liste d'échéances non concluante. Commit `7209ad4` |
 | 5 | Programme de révision (`/revision`) et point d'entrée vers l'entraînement (`/entrainement`). Commit `e72480f` |
 | 6 | La suite après chaque séance (`lib/follow-up.ts`), exercice prêt, premier pas plus petit, audit Anki. Commit `0401692` |
+| 7 | Accueil « tableau de bord » sur grand écran (maquette de l'élève) : barre latérale, salutation, horloge, semaine, progression du jour, citation. Commit `41fb603` |
 
 Vérifications du dernier commit de code : 83 fichiers de tests, 1331 réussis + 1 échec attendu
 (`it.fails` antérieur), `tsc`, lint et build sans erreur. Contrôles propres à Hermes : chaînes
@@ -198,6 +200,16 @@ Non vérifié : sur un vrai compte (annales, synchronisation), sur l'appareil de
   note « Dur » dans Ma mémoire → proposition de fiche externe avec source et lien → « Remplacer » → début plus petit →
   lecteur → « Je ne sais pas par où commencer » (énoncé, indices, correction restent cachés dans la carte).
   Non vérifié : sur un vrai compte, sur l'appareil de l'élève, ni l'effet réel sur l'évitement (usage à observer).
+
+**Mission 7 (2026-10-19) — maquette de l'accueil.** Présentation seulement, aucun moteur ni donnée touchés. Dès `lg` : barre
+latérale fixe (`components/app-nav.tsx`, largeur `--sidebar-w`) qui remplace la barre haute ; accueil avec salutation (« Bonsoir » dès
+18 h), horloge, bandeau de la semaine, « Progression du jour » (anneau = temps / objectif, répartition par matière) et citation
+(`components/home/desktop-header.tsx`). Next Move tient lieu de « Prochaine séance », `DayAgendaCard` de « Ma journée ». Téléphone
+inchangé (barre d'onglets, héros « Revolut clair »). Non repris : recherche ⌘K, cloche, bascule de mode sombre (fonctions à construire ;
+le thème reste dans Réglages), semaine glissante de 9 jours (la semaine lundi → dimanche est affichée). Les liens de la barre pointent
+vers `/programme`, `/entrainement`, `/preparation`, `/revision`, `/anki`, `/echeances`, `/progress`. Vérifié : 86 fichiers de tests,
+1404 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; capture réelle sous Chromium à 1536 px. Non vérifié : sur l'appareil de
+l'élève, en mode sombre, entre 1024 et 1280 px.
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.

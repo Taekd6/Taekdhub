@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
-import { BarChart3, Clock3, History, Home, Layers, Settings, Timer } from "lucide-react";
+import { BarChart3, BookOpen, CalendarCheck, CalendarDays, Clock3, History, Home, Layers, ListChecks, Repeat, Settings, Timer, WalletCards } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -36,6 +36,22 @@ const DESTINATIONS = [
   { href: "/preparation", label: "Matières", short: "Matières", icon: Layers },
   { href: "/progress", label: "Progression", short: "Progrès", icon: BarChart3 },
   { href: "/history", label: "Séances", short: "Séances", icon: History },
+];
+
+/**
+ * LA COLONNE LATÉRALE (grand écran) : toutes les sections de la maquette
+ * « tableau de bord ». Dès `lg`, elle remplace la barre haute ; sur
+ * téléphone, rien ne change (barre d'onglets).
+ */
+const SIDEBAR = [
+  { href: "/dashboard", label: "Accueil", icon: Home },
+  { href: "/programme", label: "Planification", icon: CalendarDays },
+  { href: "/entrainement", label: "Exercices", icon: ListChecks },
+  { href: "/preparation", label: "Cours", icon: BookOpen },
+  { href: "/revision", label: "Révisions", icon: Repeat },
+  { href: "/anki", label: "Anki", icon: WalletCards },
+  { href: "/echeances", label: "Échéances", icon: CalendarCheck },
+  { href: "/progress", label: "Statistiques", icon: BarChart3 },
 ];
 
 const TOOLS = [
@@ -93,7 +109,7 @@ export function AppNav() {
           bords : elle flotte, le contenu défile dessous. `sticky` et non
           `fixed` : la page garde son flux normal, et la barre ne recouvre
           jamais une ancre atteinte au clavier. */}
-      <header className={cn("sticky top-0 z-40 px-3 pt-3 sm:px-4 print:hidden", onHome && "max-lg:hidden")}>
+      <header className={cn("sticky top-0 z-40 px-3 pt-3 sm:px-4 lg:hidden print:hidden", onHome && "max-lg:hidden")}>
         <div className="glass mx-auto flex h-14 max-w-[var(--shell-max)] items-center gap-2 rounded-full pl-3 pr-2 sm:pl-4">
           <Link
             href="/dashboard"
@@ -159,6 +175,8 @@ export function AppNav() {
         </div>
       </header>
 
+      <Sidebar />
+
       {/* ── BARRE D'ONGLETS MOBILE ─────────────────────────────────
           La barre d'onglets d'iOS 26 : une capsule de verre qui flotte à
           12 px des bords, au-dessus de la marge de sécurité des téléphones à
@@ -205,6 +223,42 @@ export function AppNav() {
         })}
       </nav>
     </>
+  );
+}
+
+/** Colonne fixe à gauche, visible dès `lg` : le cadre (app-shell.tsx) lui réserve sa largeur. */
+function Sidebar() {
+  const isActive = useActive();
+  const item = (href: string, label: string, Icon: typeof Home) => {
+    const active = isActive(href);
+    return (
+      <Link
+        key={href}
+        href={href}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "press flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-200",
+          active ? "bg-accent/10 text-accent" : "text-muted hover:bg-inset hover:text-ink"
+        )}
+      >
+        <Icon size={18} strokeWidth={active ? 2.2 : 1.9} aria-hidden />
+        {label}
+      </Link>
+    );
+  };
+  return (
+    <aside className="glass fixed inset-y-0 left-0 z-40 hidden w-[var(--sidebar-w)] flex-col px-3 pb-4 pt-5 lg:flex print:hidden">
+      <Link href="/dashboard" className="press mb-6 flex min-h-11 items-center rounded-lg px-2" aria-label="TaekdHub — accueil">
+        <Wordmark />
+      </Link>
+      <nav aria-label="Sections" className="flex flex-col gap-1">
+        {SIDEBAR.map(({ href, label, icon }) => item(href, label, icon))}
+      </nav>
+      <div className="mt-auto flex flex-col gap-1">
+        {item("/timer", "Chronomètre", Clock3)}
+        {item("/settings", "Paramètres", Settings)}
+      </div>
+    </aside>
   );
 }
 
