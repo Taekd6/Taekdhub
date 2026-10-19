@@ -9,3 +9,4 @@ tsconfig.tsbuildinfo
 
 # Copies locales de documents externes : jamais publiées
 referentiel/_cache/
+__pycache__/
