@@ -4,6 +4,7 @@
   python3 scripts/referentiel/referentiel.py check           # valide le schéma et les règles
   python3 scripts/referentiel/referentiel.py md              # régénère les tableaux Markdown (cartes.md)
   python3 scripts/referentiel/referentiel.py deck            # .apkg (nécessite `pip install genanki`)
+  python3 scripts/referentiel/referentiel.py index           # data/referentiel-index.json (outil MCP chercher_referentiel)
 
 Rien ne touche à une collection Anki : le paquet produit est un fichier à importer à la main.
 L'anglais est hors périmètre : tout chemin ou champ qui en porte le nom fait échouer `check`.
@@ -113,6 +114,28 @@ def cell(t):
 VEC_CSS = ".vec{position:relative;display:inline-block}.vec::after{content:'\\2192';position:absolute;left:50%;top:-.6em;transform:translateX(-50%);font-size:.7em;line-height:1}"
 
 
+def index():
+    """data/referentiel-index.json : index compact (lu côté serveur par l'outil MCP `chercher_referentiel`). Aucune
+    copie de cours : uniquement nos cartes (rédigées de notre main), leurs sources et leur niveau de validation."""
+    sources = {}
+    for path in [os.path.join(REF, "sources.json")] + sorted(glob.glob(os.path.join(REF, "sources", "*.json"))):
+        for src in json.load(open(path, encoding="utf-8"))["sources"]:
+            sources[src["id"]] = src
+    cards, used = [], set()
+    for path in files():
+        matiere = MATIERES.get(os.path.relpath(path, REF).split(os.sep)[0], "?")
+        for c in load(path):
+            ids = [] if c["validation"]["source"].startswith("aucune") else c["validation"]["source"].split(", ")
+            used.update(ids)
+            cards.append({"id": c["id"], "c": c["chapitre"], "m": matiere, "g": c["groupe"], "t": c["type"], "r": c["recto"], "v": c["verso"],
+                          "s": ids, "e": "confirmé" if c["validation"]["exigibilite"].startswith("confirmé") else "à confirmer"})
+    reg = {i: {"titre": sources[i].get("titre", ""), "auteur": sources[i].get("auteur", ""), "url": sources[i].get("url_candidate", ""), "type": sources[i].get("type", "")} for i in sorted(used)}
+    out = os.path.join(ROOT, "data", "referentiel-index.json")
+    with open(out, "w", encoding="utf-8") as f:
+        json.dump({"cartes": cards, "sources": reg}, f, ensure_ascii=False, separators=(",", ":"))
+    print("écrit", os.path.relpath(out, ROOT), len(cards), "cartes,", len(reg), "sources,", os.path.getsize(out) // 1024, "Ko")
+
+
 def deck():
     import genanki
     def sid(s):
@@ -138,4 +161,4 @@ def deck():
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
-    sys.exit({"check": check, "md": lambda: md() or 0, "deck": lambda: deck() or 0}[cmd]())
+    sys.exit({"check": check, "md": lambda: md() or 0, "deck": lambda: deck() or 0, "index": lambda: index() or 0}[cmd]())

@@ -1,5 +1,6 @@
 import { foldText, toSubject } from "@/lib/annales";
 import { PROGRAMME, PROGRAMME_BY_ID, type ProgrammeChapter } from "@/lib/programme-data";
+import { isReferentielDeck, referentielChapterId } from "@/lib/referentiel-decks";
 import type { AnkiDeckStat, AnkiSnapshot } from "@/lib/anki-snapshot";
 import type { Subject } from "@/lib/supabase/types";
 
@@ -10,6 +11,8 @@ import type { Subject } from "@/lib/supabase/types";
  *
  *   manuelle   choisie par l'élève (`Preferences.ankiDeckChapters`) — prime
  *              sur tout, y compris « aucun chapitre » ;
+ *   certaine   (paquets du référentiel, `TaekdHub::Référentiel::…`) le chapitre figure dans la table EXPLICITE de
+ *              lib/referentiel-decks.ts — sinon « non classé », jamais de rapprochement par nom ;
  *   certaine   le nom du paquet (dernier segment) est EXACTEMENT le titre
  *              ou un alias d'un chapitre (sans casse ni accents), dans la
  *              matière lue dans le chemin du paquet, et d'un seul chapitre ;
@@ -105,6 +108,12 @@ export function mapDecks(decks: string[], overrides: Record<string, string | nul
     // Un parent écarté par l'élève écarte toute sa branche : son choix n'est jamais contredit par une déduction.
     if (parent && parent.kind === "ignoré") {
       byName.set(deck, { ...base, kind: "ignoré", chapterId: null });
+      continue;
+    }
+    // Paquets du référentiel : table explicite uniquement (leur nom est un identifiant, pas un titre du programme).
+    if (isReferentielDeck(path)) {
+      const id = referentielChapterId(path);
+      byName.set(deck, id && PROGRAMME_BY_ID.has(id) ? { ...base, kind: "certaine", chapterId: id } : { ...base, kind: "non-classé", chapterId: null });
       continue;
     }
     // Le NOM DU PAQUET lui-même (dernier segment) est un titre ou un alias : certain.

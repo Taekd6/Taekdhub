@@ -25,7 +25,7 @@ describe("(8) aucun accès sans autorisation, et la mémoire pédagogique se lit
 
   it("les outils du pipeline débrief et démonstrations n'écrivent rien : aucune insertion, mise à jour ni mutation de collection", () => {
     const source = readFileSync(ROUTE, "utf8");
-    for (const tool of ["debrief_format", "get_debriefs", "get_recommandations", "restitution_format", "get_demonstrations", "get_contexte_revision"]) {
+    for (const tool of ["debrief_format", "get_debriefs", "get_recommandations", "restitution_format", "get_demonstrations", "get_contexte_revision", "chercher_referentiel"]) {
       const start = source.indexOf(`"${tool}"`);
       expect(start, `${tool} doit être enregistré`).toBeGreaterThan(-1);
       const next = source.indexOf("server.registerTool(", start);

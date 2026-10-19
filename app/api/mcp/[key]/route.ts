@@ -13,6 +13,7 @@ import { buildRevisionContext, MAX_HORIZON_DAYS, revisionInputFrom } from "@/lib
 import { normalizeAttempts } from "@/lib/attempts";
 import { normalizePreferences } from "@/lib/storage";
 import { evaluationHistory, pedagogyInputFrom, recurringDifficulties, resolveChapter, LAST_EVALUATIONS_DEFAULT, LAST_EVALUATIONS_MAX } from "@/lib/pedagogy";
+import { REFERENTIEL_LIMIT_DEFAULT, REFERENTIEL_LIMIT_MAX, searchReferentiel } from "@/lib/referentiel-search";
 import { addEcheances, deleteEcheance, describeEcheance, ECHEANCE_SUBJECTS, ECHEANCE_TYPES, ECHEANCES_MAX, listEcheances, updateEcheance } from "@/lib/mcp-echeances";
 
 /**
@@ -506,6 +507,27 @@ const mcp = createMcpHandler((server) => {
       const input = await readRevision(user_id).catch(failure);
       if ("ok" in input) return text(`Erreur : ${input.error}`);
       return text(JSON.stringify(buildRevisionContext(input, { type: args.type, subject: scope.subject, chapterId: scope.chapterId, examId: args.echeance ?? null, horizonDays: horizon, minutes: args.minutes ?? null })));
+    }
+  );
+
+  server.registerTool(
+    "chercher_referentiel",
+    {
+      title: "Chercher dans le référentiel de cours (cartes)",
+      description:
+        "LECTURE SEULE. Cherche dans le référentiel de cours de TaekdHub (3 423 cartes de maths, physique, chimie et informatique, rédigées de notre main) : définitions, théorèmes avec hypothèses, démonstrations, méthodes, pièges. À utiliser pour rappeler une notion, cibler les cartes d'une erreur ou d'un chapitre (`chapitre` = identifiant du programme, ex. m2-reduction), préparer une khôlle. Chaque résultat donne matière, chapitre, identifiant de carte, recto/verso, `exigibilite` (« confirmé » = figure dans le programme officiel lu ou un cours lu ; « à confirmer » sinon) et `sources` : uniquement les documents effectivement LUS à la production (titre, auteur, url publique), JAMAIS de page ni de section — pour une page, il faut rouvrir le document ; `sources` vide = vérifiée par raisonnement seulement. RÈGLES : si `total` vaut 0 ou si `avertissements` le dit, le référentiel ne couvre pas ce point : dis-le, n'invente ni carte ni source ; ne présente pas une carte « à confirmer » comme exigible ; ne prétends pas avoir consulté un document au-delà de ce que `sources` indique. Ces cartes ne sont pas l'état de révision de l'élève (voir get_contexte_revision).",
+      inputSchema: z.object({
+        q: z.string().max(200).optional().describe("mots-clés : « théorème spectral », « effet de peau »… (tous les mots d'abord ; sinon résultats partiels signalés)"),
+        ...SCOPE_FIELDS,
+        type: z.enum(["définition", "énoncé", "hypothèses", "piège", "contre-exemple", "exemple", "méthode", "formule", "démonstration", "ordre de grandeur", "interprétation", "dimension"]).optional().describe("sorte de carte"),
+        limite: z.number().int().min(1).max(REFERENTIEL_LIMIT_MAX).optional().describe(`nombre de cartes (défaut ${REFERENTIEL_LIMIT_DEFAULT})`),
+      }),
+    },
+    async (args) => {
+      const scope = scopeFrom(args);
+      if (!scope.ok) return text(`Erreur : ${scope.error}`);
+      const result = searchReferentiel({ q: args.q, matiere: args.matiere ?? null, chapterId: scope.chapterId, type: args.type ?? null, limit: args.limite });
+      return text(JSON.stringify(result));
     }
   );
 
