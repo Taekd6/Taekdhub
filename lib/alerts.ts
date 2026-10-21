@@ -1,5 +1,5 @@
 import { courseLocks, lockSentence, lockSessionHref } from "@/lib/course-lock";
-import { describeEveningMinimumConflict, eveningMinimumConflicts, eveningPlan } from "@/lib/evening-minimums";
+import { describeEveningMinimumConflict, eveningMinimumConflicts } from "@/lib/evening-minimums";
 import { dueReviewItems } from "@/lib/spaced-repetition";
 import { dayKey } from "@/lib/study";
 import { formatMinutesSpan } from "@/lib/utils";
@@ -58,8 +58,6 @@ export interface AlertInput {
   now: Date;
 }
 
-/** À partir de quelle heure le minimum du soir non atteint devient une alerte. */
-export const EVENING_ALERT_HOUR = 18;
 /** À partir de quelle heure « rien noté aujourd'hui » devient une alerte. */
 export const IDLE_ALERT_HOUR = 17;
 
@@ -101,22 +99,6 @@ function lockAlerts(input: AlertInput, today: string): AppAlert[] {
       href: lockSessionHref(lock),
       action: "Retrouver les fiches",
     }));
-}
-
-function eveningAlert(input: AlertInput, today: string): AppAlert | null {
-  if (input.now.getHours() < EVENING_ALERT_HOUR) return null;
-  const plan = eveningPlan(input.preferences, input.sessions, input.now);
-  const missing = plan.entries.filter((entry) => !entry.met);
-  if (missing.length === 0) return null;
-  const lines = missing.map((entry) => `${entry.subject} : ${formatMinutesSpan(entry.minMinutes - entry.doneMinutes)}`);
-  return {
-    id: `soir:${today}`,
-    level: "attention",
-    title: "Minimum du soir pas encore atteint",
-    body: `Il manque ${lines.join(", ")}.`,
-    href: `/timer?matiere=${encodeURIComponent(missing[0].subject)}`,
-    action: "Lancer le chrono",
-  };
 }
 
 function idleAlert(input: AlertInput, today: string): AppAlert | null {
@@ -175,7 +157,6 @@ export function computeAlerts(input: AlertInput): AppAlert[] {
   const alerts = [
     ...deadlineAlerts(input, today),
     ...lockAlerts(input, today),
-    eveningAlert(input, today),
     idleAlert(input, today),
     reviewAlert(input, today),
     incoherentMinimumAlert(input, today),

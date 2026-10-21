@@ -53,14 +53,10 @@ describe("computeAlerts — ce qui mérite d'interrompre", () => {
     expect(alert).toMatchObject({ level: "urgent", title: "Chapitre verrouillé : Réduction", href: `/revoir/session?subject=Math%C3%A9matiques&verrou=${encodeURIComponent(lockKey("Mathématiques", "Réduction"))}` });
   });
 
-  it("minimum du soir : seulement à partir de 18 h, et il dit ce qui manque", () => {
+  it("minimum du soir : plus de notification, même en fin de journée avec un minimum non atteint", () => {
     const preferences = normalizePreferences({ eveningMinimums: [{ Mathématiques: 60 }, {}, {}, {}, {}, {}, {}] });
     const sessions = [session("Mathématiques", 20, at(14))];
-    expect(computeAlerts(input({ preferences, sessions, now: at(17) }))).toEqual([]);
-    const [alert] = computeAlerts(input({ preferences, sessions, now: at(19) }));
-    expect(alert).toMatchObject({ level: "attention", id: "soir:2026-10-05" });
-    expect(alert.body).toBe("Il manque Mathématiques : 40 min.");
-    expect(computeAlerts(input({ preferences, sessions: [session("Mathématiques", 60, at(14))], now: at(19) }))).toEqual([]);
+    expect(computeAlerts(input({ preferences, sessions, now: at(19) }))).toEqual([]);
   });
 
   it("rien noté de la journée : à partir de 17 h, jamais pour un nouvel inscrit", () => {

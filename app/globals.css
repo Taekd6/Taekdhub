@@ -152,10 +152,11 @@
        reflet d'un pixel en haut, ombre douce et teintée en dessous. */
     --surface-bg: rgb(255 255 255 / 0.66);
     --surface-blur: blur(24px) saturate(180%);
-    --surface-border: rgb(255 255 255 / 0.7);
+    --surface-border: rgb(20 20 20 / 0.09);
     --surface-border-hover: rgb(255 255 255 / 0.95);
-    --surface-lift-rest: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(20 20 20 / 0.04), 0 12px 32px -14px rgb(20 20 20 / 0.18);
-    --surface-lift-up: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 2px 4px rgb(20 20 20 / 0.05), 0 26px 50px -18px rgb(20 20 20 / 0.28);
+    --surface-border-strong: rgb(20 20 20 / 0.16);
+    --surface-lift-rest: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(20 20 20 / 0.06), 0 12px 32px -14px rgb(20 20 20 / 0.2);
+    --surface-lift-up: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 2px 4px rgb(20 20 20 / 0.07), 0 26px 50px -18px rgb(20 20 20 / 0.28);
     --surface-shadow: var(--surface-lift-rest);
     --shadow-surface: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 2px 6px rgb(20 20 20 / 0.06), 0 30px 64px -12px rgb(20 20 20 / 0.3);
     /* Bouton rond (`ActionButtons`) : une goutte de verre. */
@@ -899,7 +900,7 @@
      s'allonge — la carte flotte, elle ne grossit pas. */
   .lift:hover {
     transform: translateY(-4px);
-    border-color: var(--surface-border-hover);
+    border-color: var(--surface-border-strong, var(--surface-border-hover));
     box-shadow: var(--surface-lift-up);
   }
 

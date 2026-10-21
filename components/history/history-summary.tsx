@@ -27,16 +27,16 @@ export function HistorySummary({ summary }: { summary: HistorySummaryData }) {
   // dégradé.
   return (
     <GradientCard tone="brand" tilt={false} className="reveal p-5 sm:p-6">
-      <dl className="flex items-end justify-between gap-4">
+      <dl>
         <div className="min-w-0">
           <dt className="text-[0.8125rem] font-semibold opacity-80">Temps total</dt>
-          <dd className="t-card-figure mt-1 whitespace-nowrap">
+          <dd className="t-card-figure mt-1 !text-[clamp(1.75rem,1.1rem+1.4vw,2.5rem)]">
             <CountUp value={Math.round(summary.totalSeconds / 60)} duration={1300} format={(minutes) => formatSpan(minutes * 60)} />
           </dd>
         </div>
-        <div className="shrink-0 text-right">
+        <div className="mt-3 flex items-baseline gap-2">
           <dt className="text-[0.8125rem] font-semibold opacity-80">Séances</dt>
-          <dd className="t-stat mt-1">
+          <dd className="tabular text-lg font-bold">
             <CountUp value={summary.sessionCount} />
           </dd>
         </div>

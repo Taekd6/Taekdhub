@@ -74,10 +74,10 @@ const unplaceableOf = (plan: ReturnType<typeof buildWeeklyPlan>, id: string) => 
 describe("SCÉNARIO — lundi 21 h, 3 h 10 de maths faites, préférences par défaut", () => {
   const scenario = input({ sessions: [session("Mathématiques", 190, monday(17))], now: monday(21) });
 
-  it("constat : le minimum du soir de physique n'est pas atteint, et l'alerte le dit", () => {
+  it("constat : le minimum du soir de physique n'est pas atteint, sans notification", () => {
     const physics = eveningPlan(DEFAULTS, scenario.sessions, scenario.now).entries.find((entry) => entry.subject === "Physique")!;
     expect(physics).toMatchObject({ doneMinutes: 0, met: false });
-    expect(computeAlerts(scenario).some((alert) => alert.id.startsWith("soir"))).toBe(true);
+    expect(computeAlerts(scenario).some((alert) => alert.id.startsWith("soir"))).toBe(false);
   });
 
   // P0-2 — Next Move s'arrêtait à la capacité DÉCLARÉE (190 min) pendant qu'un minimum restait à faire.
