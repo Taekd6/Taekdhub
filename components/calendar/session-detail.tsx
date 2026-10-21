@@ -15,6 +15,8 @@ import { FICHES, HOLIDAY_PROGRAM, dayLabel, ficheUrl, sessionById, sessionMinute
  * consigne de bilan : le résultat se note juste après, depuis la montre ou ici, pour que le bilan par
  * chapitre et le prochain programme reposent sur des faits.
  */
+const MOMENT_LABEL = { matin: "Bloc du matin", "apres-midi": "Bloc de l'après-midi", soir: "Bloc du soir", repos: "Repos" } as const;
+
 export function SessionDetail({ id }: { id: string }) {
   const session = sessionById(id);
   if (!session) {
@@ -59,7 +61,7 @@ export function SessionDetail({ id }: { id: string }) {
           {session.chapter && (
             <p className="flex flex-wrap gap-2">
               <Badge variant="accent">{session.chapter}</Badge>
-              <Badge>{session.kind === "matin" ? "Bloc du matin" : "Bloc de l'après-midi"}</Badge>
+              <Badge>{MOMENT_LABEL[session.kind]}</Badge>
             </p>
           )}
 

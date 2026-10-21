@@ -68,7 +68,7 @@ export function nextDay(day: string): string {
 
 /** Échappement d'un champ texte : barre oblique, point-virgule, virgule, saut de ligne. */
 export function escapeText(text: string): string {
-  return text.replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+  return text.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
 }
 
 const encoder = new TextEncoder();
@@ -123,6 +123,13 @@ export interface IcsCalendar {
   refreshHours?: number;
 }
 
+/** « dans 45 min », « dans 3 h », « dans 14 jours » : ce que dit l'alarme. */
+export function alarmLead(minutes: number): string {
+  if (minutes < 90) return `dans ${minutes} min`;
+  if (minutes < 2 * 1440) return `dans ${Math.round(minutes / 60)} h`;
+  return `dans ${Math.round(minutes / 1440)} jours`;
+}
+
 function alarmBlock(minutes: number, label: string): string[] {
   return [
     "BEGIN:VALARM",
@@ -147,7 +154,7 @@ function eventLines(event: IcsEvent, stamp: string): string[] {
   if (event.url) lines.push(`URL:${event.url}`);
   if (event.categories?.length) lines.push(`CATEGORIES:${event.categories.map(escapeText).join(",")}`);
   lines.push("STATUS:CONFIRMED", `TRANSP:${event.busy === false ? "TRANSPARENT" : "OPAQUE"}`, `SEQUENCE:${event.sequence ?? 0}`);
-  for (const minutes of event.alarms ?? []) lines.push(...alarmBlock(minutes, minutes === 0 ? event.summary : `${event.summary} dans ${minutes} min`));
+  for (const minutes of event.alarms ?? []) lines.push(...alarmBlock(minutes, minutes === 0 ? event.summary : `${event.summary} ${alarmLead(minutes)}`));
   lines.push("END:VEVENT");
   return lines;
 }

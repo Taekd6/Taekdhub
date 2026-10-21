@@ -1,5 +1,5 @@
 import { buildCalendar } from "@/lib/ics";
-import { HOLIDAY_PROGRAM, programToIcsEvents } from "@/lib/holiday-program";
+import { calendarEvents } from "@/lib/holiday-program";
 import { isMcpKeyValid } from "@/lib/mcp-auth";
 
 /**
@@ -35,8 +35,8 @@ export function handleCalendarFeed(segment: string | undefined, env: CalendarFee
     return new Response("Unauthorized", { status: 401, headers: { "cache-control": "no-store" } });
   }
   const body = buildCalendar(
-    { name: "TaekdHub — fin de vacances", description: "Séances de travail jusqu'à la rentrée, avec leurs fiches.", now: env.now(), refreshHours: 6 },
-    programToIcsEvents(env.baseUrl, HOLIDAY_PROGRAM)
+    { name: "TaekdHub", description: "Séances de travail, DS, colles et devoirs.", now: env.now(), refreshHours: 6 },
+    calendarEvents(env.baseUrl, env.now())
   );
   return new Response(body, {
     status: 200,

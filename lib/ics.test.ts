@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCalendar, escapeText, foldLine, formatUtc, nextDay, parisToUtc } from "@/lib/ics";
+import { alarmLead, buildCalendar, escapeText, foldLine, formatUtc, nextDay, parisToUtc } from "@/lib/ics";
 
 const NOW = new Date("2026-10-21T20:00:00Z");
 
@@ -32,12 +32,21 @@ describe("parisToUtc — le changement d'heure du dimanche 25 octobre 2026", () 
 
 describe("texte", () => {
   it("échappe ; , \\ et les sauts de ligne", () => {
-    expect(escapeText("a;b,c\\d\ne")).toBe("a\;b\\,c\\\\d\\ne");
+    expect(escapeText("a;b,c\\d\ne")).toBe("a\\;b\\,c\\\\d\\ne");
   });
 
   it("jour suivant, à travers un changement de mois", () => {
     expect(nextDay("2026-10-31")).toBe("2026-11-01");
     expect(nextDay("2026-10-25")).toBe("2026-10-26");
+  });
+});
+
+describe("alarmLead", () => {
+  it("minutes, heures, jours", () => {
+    expect(alarmLead(15)).toBe("dans 15 min");
+    expect(alarmLead(120)).toBe("dans 2 h");
+    expect(alarmLead(20160)).toBe("dans 14 jours");
+    expect(alarmLead(19620)).toBe("dans 14 jours"); // 14 jours moins 9 h : alarme de 9 h sur un événement de la journée
   });
 });
 

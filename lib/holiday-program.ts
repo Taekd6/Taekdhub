@@ -2,21 +2,25 @@ import { PARIS, type IcsEvent } from "@/lib/ics";
 import type { Subject } from "@/lib/supabase/types";
 
 /**
- * PROGRAMME DE FIN DE VACANCES — du jeudi 22 octobre au dimanche 1er novembre 2026 (rentrée : lundi 2 novembre).
+ * PROGRAMME DE FIN DE VACANCES — du jeudi 22 octobre au dimanche 1er novembre 2026 (rentrée : lundi 2 novembre),
+ * et ÉCHÉANCES (DS, colles, tests de vocabulaire, devoirs à rendre) jusqu'en janvier.
  *
- * UNE SÉANCE = un créneau daté, DEUX OU TROIS TEMPS (Anki, exercices, bilan) et, quand il y en a une,
- * SA FICHE (un PDF de `public/exercices/`). Le matin : un bloc de 90 min avec une fiche neuve. L'après-midi :
- * un bloc d'une heure pour RÉÉCRIRE PROPREMENT ce qui a été raté (le point faible repéré sur la feuille 1 est la
- * rédaction, pas le calcul). Deux jours de repos complet (dimanches 25 octobre et 1er novembre).
+ * UNE SÉANCE = un créneau daté, un seul sujet, des temps dans l'ordre et, quand il y en a une, SA FICHE
+ * (un PDF de `public/exercices/`). Quand il n'y a pas de fiche, la séance s'appuie sur les TD de l'élève (numéros
+ * d'exercices cités) : la fiche manquante est écrite la veille, d'après ce qui a été fait (voir la note de séance).
+ *
+ * Charge : environ 5 h de travail par jour, un jour de repos complet (dimanche 25 octobre), un dimanche léger
+ * (1er novembre). Le vocabulaire d'anglais est appris TOUS LES JOURS, par petits paquets (répétition espacée),
+ * pour que le test du 5 novembre ne se prépare pas la veille.
  *
  * C'est une donnée, pas un moteur : le plan n'est pas recalculé, il est ÉCRIT ici et modifié à la main (par Claude,
  * sur demande de l'élève). Une séance modifiée garde son `id` : les liens et le calendrier Apple se mettent à jour.
  *
  * Hypothèses (à corriger si elles sont fausses) : rentrée le lundi 2 novembre (vacances de la Toussaint 2026) ;
- * créneaux le matin (9 h 30 ou 10 h) et l'après-midi (15 h) ; l'élève est en première année.
+ * le DS de français à faire pendant les vacances dure 4 h ; heure du DS de physique du 2 novembre inconnue (4 h).
  */
 
-export type SessionKind = "matin" | "apres-midi" | "repos";
+export type SessionKind = "matin" | "apres-midi" | "soir" | "repos";
 
 export interface ProgramStep {
   label: string;
@@ -62,137 +66,239 @@ export const RENTREE = "2026-11-02";
 /** Alarme avant le début d'une séance, en minutes. */
 export const ALARM_MINUTES = 15;
 
-const ANKI = (minutes = 20): ProgramStep => ({
-  label: "Anki",
-  minutes,
-  detail: "Ton paquet « Techniques asymptotiques » (ou, à défaut, les cartes dues de maths). Réponds de tête avant de retourner la carte.",
-});
-const EXOS = (minutes: number, detail: string): ProgramStep => ({ label: "Exercices", minutes, detail });
-const BILAN = (minutes = 15): ProgramStep => ({
-  label: "Bilan",
-  minutes,
-  detail: "Relis avec la grille de rédaction, puis note le résultat (réussi, partiel ou échec), l'aide utilisée et la cause : depuis la montre ou dans TaekdHub.",
-});
-const REECRIRE = (minutes: number, detail: string): ProgramStep => ({ label: "Mise au propre", minutes, detail });
+const step = (label: string, minutes: number, detail: string): ProgramStep => ({ label, minutes, detail });
+const BILAN = (minutes = 15): ProgramStep =>
+  step("Bilan", minutes, "Relis avec la grille de rédaction, puis note le résultat (réussi, partiel ou échec), l'aide utilisée et la cause : depuis la montre ou dans TaekdHub.");
 
 const MATHS: Subject = "Mathématiques";
-const ASYMPT = "Analyse asymptotique";
+const PHYS: Subject = "Physique";
+const ANGLAIS: Subject = "Anglais";
+const FRANCAIS: Subject = "Français";
+
+const VOCAB_CHAPTER = "Vocabulaire — partie 10, « Concepts et relations abstraites » (p. 435-453)";
+const FICHE_LA_VEILLE = "Ta fiche d'exercices arrive la veille au soir, d'après ce que tu as fait : en attendant, travaille avec les exercices de ton TD cités ci-dessus.";
+
+/** Une séance de vocabulaire : apprendre le nouveau paquet, tester la veille (J+1) et d'il y a trois jours (J+3). */
+function vocab(date: string, pages: string, minutes = 25): ProgramSession {
+  return {
+    id: `${date}-soir`, date, start: "20:00", end: `20:${String(minutes).padStart(2, "0")}`, kind: "soir", title: `Vocabulaire : pages ${pages}`, subject: ANGLAIS, chapter: VOCAB_CHAPTER,
+    steps: [step("Apprendre", minutes - 10, `Pages ${pages} : lis les mots à voix haute, puis cache la colonne anglaise et rappelle-toi chaque mot de tête.`), step("Réviser", 10, "Teste-toi sur les pages de la veille, puis sur celles d'il y a trois jours : tes erreurs reviendront demain.")],
+    fiche: null,
+    note: "Chaque jour un peu : le test du 5 novembre (parties 435-453) se prépare maintenant, pas la veille. Le vocabulaire est entièrement en anglais.", version: 1,
+  };
+}
 
 export const HOLIDAY_PROGRAM: ProgramSession[] = [
+  // ── Jeudi 22 octobre ──────────────────────────────────────────────────────────────────────
   {
-    id: "2026-10-22-matin", date: "2026-10-22", start: "09:30", end: "11:00", kind: "matin", title: "Reprise des erreurs (1/2)", subject: MATHS, chapter: ASYMPT,
-    steps: [ANKI(), EXOS(55, "Fiche 1, exercices R1 à R3, sans indice et sans regarder ta copie de la feuille 1 : recommence à zéro."), BILAN()],
-    fiche: { key: "f1", exercises: "R1 à R3" },
-    note: "Ce sont tes trois questions les plus fausses de la feuille 1. Le but n'est pas de les réussir vite, c'est de les rédiger juste.", version: 1,
+    id: "2026-10-22-matin", date: "2026-10-22", start: "09:30", end: "11:30", kind: "matin", title: "Reprise des erreurs de tes copies", subject: MATHS, chapter: "Analyse (reprise de première année)",
+    steps: [step("Exercices", 95, "Fiche 1, exercices R1 à R6, sans indice et sans regarder ta copie de la feuille 1 : recommence à zéro."), BILAN(25)],
+    fiche: { key: "f1", exercises: "R1 à R6" },
+    note: "Ce sont tes questions les plus fausses de la feuille 1. Le but n'est pas de les réussir vite, c'est de les rédiger juste. Pour R4, pense à la comparaison à une intégrale.", version: 2,
   },
   {
-    id: "2026-10-22-apres-midi", date: "2026-10-22", start: "15:00", end: "16:00", kind: "apres-midi", title: "Reprise des erreurs (2/2)", subject: MATHS, chapter: ASYMPT,
-    steps: [EXOS(45, "Fiche 1, exercices R4 à R6 : la série de Bertrand, les intégrales I_n, le développement asymptotique de la suite des racines."), BILAN()],
-    fiche: { key: "f1", exercises: "R4 à R6" },
-    note: "Pour l'exercice R4, l'outil à chercher est la comparaison à une intégrale.", version: 1,
+    id: "2026-10-22-apres-midi", date: "2026-10-22", start: "14:30", end: "16:30", kind: "apres-midi", title: "Électronique : filtres et régimes transitoires", subject: PHYS, chapter: "Électronique et électricité",
+    steps: [step("Cours", 30, "Relis ton cours sur les filtres (fonction de transfert, diagramme de Bode, ordre 1 et 2) et sur les régimes transitoires."), step("Exercices", 75, "Trois exercices de ton TD ou d'annales, sans notes. Trace chaque diagramme de Bode asymptotique avant de calculer."), BILAN()],
+    fiche: null, note: `DS de physique du lundi 2 novembre : l'électronique y pèse lourd. ${FICHE_LA_VEILLE}`, version: 1,
   },
   {
-    id: "2026-10-23-matin", date: "2026-10-23", start: "09:30", end: "11:00", kind: "matin", title: "Équivalents et DL en rafale", subject: MATHS, chapter: ASYMPT,
-    steps: [ANKI(), EXOS(55, "Fiche 2 : douze développements limités puis huit limites. Avant chaque DL, écris l'ordre dont tu as besoin."), BILAN()],
-    fiche: { key: "f2", exercises: "Exercices 1 et 2" },
-    note: "Vitesse et exactitude : chaque coefficient relu une fois.", version: 1,
+    id: "2026-10-22-fin-apres-midi", date: "2026-10-22", start: "16:45", end: "17:30", kind: "apres-midi", title: "DM de physique (1/3)", subject: PHYS, chapter: "DM à rendre lundi 2 novembre",
+    steps: [step("Lecture et brouillon", 15, "Lis tout le sujet, repère les trois questions que tu sais faire tout de suite."), step("Rédaction", 30, "Rédige proprement la première partie, avec les schémas.")],
+    fiche: null, note: "Le DM est à rendre lundi : trois séances, pas une nuit blanche le dimanche.", version: 1,
+  },
+  vocab("2026-10-22", "435-436"),
+  // ── Vendredi 23 octobre ───────────────────────────────────────────────────────────────────
+  {
+    id: "2026-10-23-matin", date: "2026-10-23", start: "09:30", end: "11:30", kind: "matin", title: "Réduction : exercices de niveau concours", subject: MATHS, chapter: "Réduction des endomorphismes et des matrices",
+    steps: [step("Exercices", 95, "TD « Réduction », exercices 11, 12 et 13 (CCINP) : sans notes, une copie rédigée par exercice."), BILAN(25)],
+    fiche: null, note: `Les exercices 4 à 10, 17, 19 et 22 de ce TD sont ceux que tu as déjà cochés. ${FICHE_LA_VEILLE}`, version: 1,
   },
   {
-    id: "2026-10-23-apres-midi", date: "2026-10-23", start: "15:00", end: "16:00", kind: "apres-midi", title: "Mise au propre : DL et limites", subject: MATHS, chapter: ASYMPT,
-    steps: [REECRIRE(45, "Choisis les deux calculs les plus ratés de la fiche 2 et rédige-les proprement, comme sur une copie."), BILAN()],
-    fiche: { key: "grille", exercises: "relue à chaque question" },
-    note: "Une réponse juste mal rédigée perd des points : écris les ordres, les hypothèses et la flèche des limites.", version: 1,
+    id: "2026-10-23-apres-midi", date: "2026-10-23", start: "14:30", end: "16:30", kind: "apres-midi", title: "Thermodynamique : premier et deuxième principe, système ouvert", subject: PHYS, chapter: "Thermodynamique",
+    steps: [step("Cours", 30, "Relis les bilans d'énergie et d'entropie pour un système ouvert en régime stationnaire."), step("Exercices", 75, "Trois exercices de ton TD de thermo (cycles, détente, turbine ou compresseur) : écris chaque bilan avant d'appliquer les formules."), BILAN()],
+    fiche: null, note: `Tu es au deuxième principe pour un système ouvert : c'est le cœur du DS de lundi. ${FICHE_LA_VEILLE}`, version: 1,
   },
   {
-    id: "2026-10-24-matin", date: "2026-10-24", start: "10:00", end: "11:30", kind: "matin", title: "Suites implicites et développements asymptotiques", subject: MATHS, chapter: ASYMPT,
-    steps: [ANKI(), EXOS(55, "Fiche 3 : la suite e^x = n − x, les racines de tan x = x, la réciproque d'une fonction."), BILAN()],
-    fiche: { key: "f3", exercises: "Exercices 1 à 3" },
-    note: "C'est le cœur du chapitre pour les concours : la méthode « équivalent, réinjection, terme suivant ».", version: 1,
+    id: "2026-10-23-fin-apres-midi", date: "2026-10-23", start: "16:45", end: "17:30", kind: "apres-midi", title: "DM de physique (2/3)", subject: PHYS, chapter: "DM à rendre lundi 2 novembre",
+    steps: [step("Rédaction", 45, "Rédige proprement la deuxième partie, avec les schémas et les applications numériques.")],
+    fiche: null, note: "Si une question te bloque plus de dix minutes, note-la et passe : on y revient mercredi.", version: 1,
+  },
+  vocab("2026-10-23", "437-438"),
+  // ── Samedi 24 octobre ─────────────────────────────────────────────────────────────────────
+  {
+    id: "2026-10-24-matin", date: "2026-10-24", start: "09:00", end: "13:00", kind: "matin", title: "DS de français en conditions", subject: FRANCAIS, chapter: "DS à rendre lundi 2 novembre",
+    steps: [step("Épreuve", 240, "Quatre heures d'affilée, sans notes ni téléphone : fais-le comme le vrai devoir, copie rédigée au propre.")],
+    fiche: null, note: "La durée de quatre heures est une hypothèse : corrige-la si le sujet en annonce une autre.", version: 1,
   },
   {
-    id: "2026-10-24-apres-midi", date: "2026-10-24", start: "15:00", end: "16:00", kind: "apres-midi", title: "Mise au propre : suites implicites", subject: MATHS, chapter: ASYMPT,
-    steps: [REECRIRE(45, "Rédige l'exercice 2 de la fiche 3 (tan x = x) comme au concours : existence, unicité, limite, équivalent, deuxième terme."), BILAN()],
-    fiche: { key: "grille", exercises: "relue à chaque question" },
-    note: "Chaque étape d'une suite implicite se justifie : monotonie, bijection, passage à la limite avec sa flèche.", version: 1,
+    id: "2026-10-24-anglais", date: "2026-10-24", start: "18:00", end: "18:30", kind: "soir", title: "Intervention d'anglais du 5 novembre", subject: ANGLAIS, chapter: "Oral",
+    steps: [step("Préparer", 30, "Écris l'introduction de ton intervention (deux minutes au plus), puis dis-la à voix haute en te chronométrant.")],
+    fiche: null, note: "Une petite intervention : l'essentiel est d'être fluide et dans le temps.", version: 1,
   },
+  vocab("2026-10-24", "439-440"),
+  // ── Dimanche 25 octobre ───────────────────────────────────────────────────────────────────
   {
     id: "2026-10-25-repos", date: "2026-10-25", start: null, end: null, kind: "repos", title: "Repos complet", subject: null, chapter: "",
-    steps: [],
-    fiche: null,
-    note: "Pas de travail. L'heure change cette nuit (on recule d'une heure) : dors. Un jour de repos fait partie du programme.", version: 1,
+    steps: [], fiche: null,
+    note: "Pas de travail, sauf quinze minutes de vocabulaire ce soir. L'heure change cette nuit (on recule d'une heure) : dors. Un jour de repos fait partie du programme.", version: 2,
+  },
+  { ...vocab("2026-10-25", "441-442", 15), title: "Vocabulaire : quinze minutes", steps: [step("Réviser", 15, "Reprends seulement les pages 435 à 440 : cache la colonne anglaise et rappelle-toi chaque mot. Rien de nouveau aujourd'hui.")] },
+  // ── Lundi 26 octobre ──────────────────────────────────────────────────────────────────────
+  {
+    id: "2026-10-26-matin", date: "2026-10-26", start: "09:30", end: "11:30", kind: "matin", title: "Séries numériques : exercices de niveau concours", subject: MATHS, chapter: "Séries",
+    steps: [step("Exercices", 95, "TD « Séries », exercices 1 (CCINP), 3 et 4 : sans notes, une copie rédigée par exercice."), BILAN(25)],
+    fiche: null, note: `Séries entières et séries de fonctions arrivent ensuite : la solidité sur les séries numériques est leur base. ${FICHE_LA_VEILLE}`, version: 1,
   },
   {
-    id: "2026-10-26-matin", date: "2026-10-26", start: "09:30", end: "11:00", kind: "matin", title: "Étude de fonctions et asymptotes", subject: MATHS, chapter: ASYMPT,
-    steps: [ANKI(), EXOS(55, "Fiche 4 : comportements locaux, puis l'étude complète de la fonction (x²−1) ln |(1+x)/(1−x)|. Règle, repères et courbe soignée."), BILAN()],
-    fiche: { key: "f4", exercises: "Exercices 1 à 3" },
-    note: "Le développement asymptotique donne l'asymptote et la position : ne trace la courbe qu'après.", version: 1,
+    id: "2026-10-26-apres-midi", date: "2026-10-26", start: "14:30", end: "16:30", kind: "apres-midi", title: "Thermodynamique : exercices", subject: PHYS, chapter: "Thermodynamique",
+    steps: [step("Exercices", 105, "Trois exercices d'annales sur les systèmes ouverts et les machines, chronométrés."), BILAN()],
+    fiche: null, note: FICHE_LA_VEILLE, version: 1,
   },
   {
-    id: "2026-10-26-apres-midi", date: "2026-10-26", start: "15:00", end: "16:00", kind: "apres-midi", title: "Mise au propre : étude de fonction et courbe", subject: MATHS, chapter: ASYMPT,
-    steps: [REECRIRE(45, "Rédige proprement l'exercice 3 de la fiche 4 (la fonction (x²+1) arctan x / x), avec son tableau de variations et sa courbe."), BILAN()],
-    fiche: { key: "grille", exercises: "relue à chaque question" },
-    note: "Ordre d'une copie : domaine, parité, limites, dérivée, signe, tableau, tangentes et asymptotes, courbe.", version: 1,
+    id: "2026-10-26-fin-apres-midi", date: "2026-10-26", start: "16:45", end: "17:30", kind: "apres-midi", title: "DM de maths (1/3)", subject: MATHS, chapter: "DM à rendre lundi 2 novembre",
+    steps: [step("Lecture et brouillon", 15, "Lis tout le sujet, repère les questions faciles et celles qui demandent une idée."), step("Rédaction", 30, "Rédige proprement la première partie.")],
+    fiche: null, note: "Rédige comme sur une copie de concours : hypothèses, théorème utilisé, conclusion.", version: 1,
+  },
+  vocab("2026-10-26", "441-442"),
+  // ── Mardi 27 octobre ──────────────────────────────────────────────────────────────────────
+  {
+    id: "2026-10-27-matin", date: "2026-10-27", start: "09:30", end: "11:30", kind: "matin", title: "Espaces vectoriels normés : normes et suites", subject: MATHS, chapter: "Suites et espaces vectoriels normés",
+    steps: [step("Exercices", 95, "TD « Suites – Espaces vectoriels normés », exercices 1 à 4 (normes, boules, norme intégrale) : sans notes."), BILAN(25)],
+    fiche: null, note: `Dans chaque exercice sur une norme, vérifie les trois axiomes séparément : l'inégalité triangulaire est celle qu'on oublie de justifier. ${FICHE_LA_VEILLE}`, version: 1,
   },
   {
-    id: "2026-10-27-matin", date: "2026-10-27", start: "09:30", end: "11:00", kind: "matin", title: "Compléments : équivalents de suites, suites adjacentes", subject: MATHS, chapter: ASYMPT,
-    steps: [ANKI(), EXOS(55, "Fiche 5 : sept équivalents de suites, la suite avec u_n + u_{n+1} ∼ 1/n, des suites adjacentes, la suite des radicaux emboîtés."), BILAN()],
-    fiche: { key: "f5", exercises: "Exercices 1 à 4" },
-    note: "Plusieurs exercices courts : tiens le chrono, passe à la suite si tu bloques plus de dix minutes.", version: 1,
+    id: "2026-10-27-apres-midi", date: "2026-10-27", start: "14:30", end: "16:30", kind: "apres-midi", title: "Électronique : sujet type DS", subject: PHYS, chapter: "Électronique et électricité",
+    steps: [step("Exercices", 105, "Un sujet complet d'annales d'électronique (filtres, transitoires, ALI), en 1 h 45 sans notes."), BILAN()],
+    fiche: null, note: FICHE_LA_VEILLE, version: 1,
   },
   {
-    id: "2026-10-27-apres-midi", date: "2026-10-27", start: "15:00", end: "16:00", kind: "apres-midi", title: "Mise au propre : suites", subject: MATHS, chapter: ASYMPT,
-    steps: [REECRIRE(45, "Rédige l'exercice 2 de la fiche 5 (u_n décroissante et u_n + u_{n+1} ∼ 1/n) : limite, équivalent, et ce qui change sans la décroissance."), BILAN()],
-    fiche: { key: "grille", exercises: "relue à chaque question" },
-    note: "Dans cet exercice, c'est l'hypothèse de décroissance qui sert : dis où elle intervient.", version: 1,
+    id: "2026-10-27-fin-apres-midi", date: "2026-10-27", start: "16:45", end: "17:30", kind: "apres-midi", title: "DM de maths (2/3)", subject: MATHS, chapter: "DM à rendre lundi 2 novembre",
+    steps: [step("Rédaction", 45, "Rédige proprement la deuxième partie.")],
+    fiche: null, note: "Garde mercredi pour les questions qui te résistent encore.", version: 1,
+  },
+  vocab("2026-10-27", "443-444"),
+  // ── Mercredi 28 octobre ───────────────────────────────────────────────────────────────────
+  {
+    id: "2026-10-28-matin", date: "2026-10-28", start: "09:30", end: "11:30", kind: "matin", title: "DM de maths : finition", subject: MATHS, chapter: "DM à rendre lundi 2 novembre",
+    steps: [step("Questions restantes", 90, "Les questions qui te résistaient : essaie chacune vingt minutes, puis note précisément ce qui te manque."), step("Relecture", 30, "Relis l'ensemble : chaque réponse est justifiée, chaque notation définie.")],
+    fiche: null, note: "Le DM sera relu une dernière fois vendredi.", version: 1,
   },
   {
-    id: "2026-10-28-matin", date: "2026-10-28", start: "09:30", end: "11:00", kind: "matin", title: "Reprise ciblée", subject: MATHS, chapter: ASYMPT,
-    steps: [ANKI(), EXOS(55, "Reprends dans les tableaux de suivi des fiches 2 à 5 les trois questions les moins réussies et refais-les sans indice."), BILAN()],
-    fiche: null,
-    note: "Pas de fiche neuve : ce créneau sert à réparer ce qui a vraiment coincé cette semaine.", version: 1,
+    id: "2026-10-28-apres-midi", date: "2026-10-28", start: "14:30", end: "16:00", kind: "apres-midi", title: "DM de physique : finition", subject: PHYS, chapter: "DM à rendre lundi 2 novembre",
+    steps: [step("Questions restantes", 60, "Les questions notées jeudi et vendredi : essaie chacune vingt minutes."), step("Relecture", 30, "Unités, chiffres significatifs, schémas : relis tout.")],
+    fiche: null, note: "Dimanche, plus rien à faire sur ce DM.", version: 1,
   },
   {
-    id: "2026-10-28-apres-midi", date: "2026-10-28", start: "15:00", end: "16:00", kind: "apres-midi", title: "Cours et cartes", subject: MATHS, chapter: ASYMPT,
-    steps: [{ label: "Cours", minutes: 30, detail: "Relis ton cours d'analyse asymptotique avec ses démonstrations de base (équivalents, DL usuels, comparaison)." }, ANKI(30)],
-    fiche: null,
-    note: "Prépare le problème de demain : les DL usuels et les règles sur les équivalents doivent être sus par cœur.", version: 1,
+    id: "2026-10-28-anglais", date: "2026-10-28", start: "17:00", end: "17:30", kind: "soir", title: "Intervention d'anglais : répétition", subject: ANGLAIS, chapter: "Oral",
+    steps: [step("Répéter", 30, "Dis ton intervention à voix haute, chronométrée, sans lire ton papier.")],
+    fiche: null, note: "Deuxième passage : tu dois pouvoir la dire sans notes.", version: 1,
+  },
+  vocab("2026-10-28", "445-446"),
+  // ── Jeudi 29 octobre ──────────────────────────────────────────────────────────────────────
+  {
+    id: "2026-10-29-matin", date: "2026-10-29", start: "09:00", end: "13:00", kind: "matin", title: "DS blanc de physique en conditions", subject: PHYS, chapter: "Électronique, thermodynamique, électrostatique",
+    steps: [step("Épreuve", 240, "Quatre heures, sans notes ni téléphone : électronique, thermo (système ouvert) et une partie d'électrostatique. Copie rédigée au propre.")],
+    fiche: null, note: `C'est la répétition du DS de lundi, à la même durée. ${FICHE_LA_VEILLE}`, version: 1,
   },
   {
-    id: "2026-10-29-matin", date: "2026-10-29", start: "09:30", end: "11:30", kind: "matin", title: "Problème de synthèse (conditions de DS)", subject: MATHS, chapter: ASYMPT,
-    steps: [EXOS(105, "Fiche 6 : étude complète d'une fonction puis suites implicites. Deux heures en tout, sans cours ni notes, copie rédigée au propre."), BILAN()],
-    fiche: { key: "f6", exercises: "Problème, parties 1 et 2" },
-    note: "Comme un devoir surveillé : gère ton temps, passe à la question suivante si tu bloques, reviens-y à la fin.", version: 1,
+    id: "2026-10-29-apres-midi", date: "2026-10-29", start: "15:00", end: "16:00", kind: "apres-midi", title: "Réduction, puis premier contact avec les séries entières", subject: MATHS, chapter: "Réduction et séries entières",
+    steps: [step("Réduction", 35, "TD « Réduction », exercice 16 ou 21 au choix, une question rédigée proprement."), step("Séries entières", 25, "Lis la définition du rayon de convergence et le lemme d'Abel, sans exercice : on reprend dès que ton cours démarre.")],
+    fiche: null, note: "Le but n'est pas d'avancer vite, c'est d'arriver au cours de séries entières en terrain connu.", version: 1,
+  },
+  vocab("2026-10-29", "447-448"),
+  // ── Vendredi 30 octobre ───────────────────────────────────────────────────────────────────
+  {
+    id: "2026-10-30-matin", date: "2026-10-30", start: "09:30", end: "11:30", kind: "matin", title: "Préparer la colle de maths du 3 novembre", subject: MATHS, chapter: "Programme de colle (à confirmer)",
+    steps: [step("Cours", 40, "Relis le cours du programme de colle et les démonstrations à savoir refaire."), step("Exercices", 65, "Deux exercices types de colle, chacun dit à voix haute en cinq minutes au tableau (ou devant un mur)."), BILAN(15)],
+    fiche: null, note: "Le programme de colle se lit dans ton cahier de prépa : envoie-le-moi pour que je cale les exercices dessus.", version: 1,
   },
   {
-    id: "2026-10-29-apres-midi", date: "2026-10-29", start: "15:00", end: "16:00", kind: "apres-midi", title: "Auto-correction du problème", subject: MATHS, chapter: ASYMPT,
-    steps: [REECRIRE(45, "Relis ta copie avec la grille de rédaction, repère cinq points à corriger et réécris proprement deux questions."), BILAN()],
-    fiche: { key: "grille", exercises: "relue à chaque question" },
-    note: "Demain, tu m'envoies la copie : je la corrige ligne par ligne (justifié, admis ou faux).", version: 1,
+    id: "2026-10-30-apres-midi", date: "2026-10-30", start: "14:30", end: "16:30", kind: "apres-midi", title: "Correction du blanc et points faibles", subject: PHYS, chapter: "Électronique, thermodynamique, électrostatique",
+    steps: [step("Correction", 60, "Corrige ton DS blanc avec le corrigé : repère les points perdus, ligne par ligne."), step("Reprise", 45, "Refais proprement les deux questions les plus ratées."), BILAN(15)],
+    fiche: null, note: "Envoie-moi ta copie du blanc : je la corrige avec toi, comme pour les maths.", version: 1,
   },
   {
-    id: "2026-10-30-matin", date: "2026-10-30", start: "09:30", end: "11:00", kind: "matin", title: "Correction du problème", subject: MATHS, chapter: ASYMPT,
-    steps: [{ label: "Correction", minutes: 60, detail: "Envoie ta copie du problème à Claude : correction ligne par ligne, points de méthode, pièges." }, ANKI(), BILAN(10)],
-    fiche: null,
-    note: "Le résultat de cette correction alimente ton historique d'exercices et le bilan par chapitre.", version: 1,
+    id: "2026-10-30-fin-apres-midi", date: "2026-10-30", start: "16:45", end: "17:15", kind: "apres-midi", title: "Relecture finale des deux DM", subject: MATHS, chapter: "DM à rendre lundi 2 novembre",
+    steps: [step("Relecture", 30, "Relis les deux DM une dernière fois, dans la pochette où tu les rendras lundi.")],
+    fiche: null, note: "Ensuite, plus aucune retouche : un DM rendu vaut mieux qu'un DM parfait.", version: 1,
+  },
+  vocab("2026-10-30", "449-450"),
+  // ── Samedi 31 octobre ─────────────────────────────────────────────────────────────────────
+  {
+    id: "2026-10-31-matin", date: "2026-10-31", start: "10:00", end: "10:45", kind: "matin", title: "Intervention d'anglais : dernière répétition", subject: ANGLAIS, chapter: "Oral",
+    steps: [step("Répéter", 45, "Dis ton intervention deux fois, chronométrée, puis prépare deux réponses aux questions qu'on pourrait te poser.")],
+    fiche: null, note: "Après ça, tu n'y touches plus avant jeudi.", version: 1,
   },
   {
-    id: "2026-10-30-apres-midi", date: "2026-10-30", start: "15:00", end: "15:45", kind: "apres-midi", title: "Anki et grille", subject: MATHS, chapter: ASYMPT,
-    steps: [ANKI(30), { label: "Grille", minutes: 15, detail: "Relis la grille de rédaction et coche les points que tu as encore ratés cette semaine." }],
-    fiche: { key: "grille", exercises: "relue en entier" },
-    note: "Court et léger : on garde de l'énergie pour la rentrée.", version: 1,
+    id: "2026-10-31-apres-midi", date: "2026-10-31", start: "14:30", end: "16:30", kind: "apres-midi", title: "Électrostatique et électronique : fiche de synthèse", subject: PHYS, chapter: "Électrostatique, électronique",
+    steps: [step("Questions variées", 70, "Vingt questions courtes sur l'électrostatique (champ, potentiel, théorème de Gauss, conducteurs), réponse de tête avant de vérifier."), step("Fiche", 40, "Écris sur une page les formules et les méthodes à connaître, sans regarder ton cours."), BILAN(10)],
+    fiche: null, note: "Ton professeur pose beaucoup de petites questions sur plein de sujets : la rapidité de rappel compte plus que la profondeur.", version: 1,
   },
-  {
-    id: "2026-10-31-matin", date: "2026-10-31", start: "10:00", end: "11:00", kind: "matin", title: "Bilan de la semaine", subject: MATHS, chapter: ASYMPT,
-    steps: [{ label: "Bilan", minutes: 40, detail: "Rassemble les tableaux de suivi : qu'est-ce qui a coincé, qu'est-ce qui est acquis ? Envoie-moi le résultat." }, ANKI()],
-    fiche: null,
-    note: "On prépare la rentrée : les fiches suivantes se bâtissent sur ce qui a coincé, pas sur ce qui est facile.", version: 1,
-  },
+  vocab("2026-10-31", "451-453"),
+  // ── Dimanche 1er novembre ─────────────────────────────────────────────────────────────────
   {
     id: "2026-11-01-repos", date: "2026-11-01", start: null, end: null, kind: "repos", title: "Repos avant la rentrée", subject: null, chapter: "",
-    steps: [],
-    fiche: null,
-    note: "Pas de travail. Prépare simplement ton sac et ton emploi du temps de lundi.", version: 1,
+    steps: [], fiche: null,
+    note: "Pas de travail, sauf dix minutes de vocabulaire ce soir. Prépare ton sac et ton emploi du temps de lundi : DS de physique, DM et DS de français à rendre.", version: 2,
   },
+  { ...vocab("2026-11-01", "435-453", 15), title: "Vocabulaire : relecture", start: "20:00", end: "20:15", steps: [step("Réviser", 15, "Relis rapidement les pages 435 à 453, puis teste-toi sur dix mots au hasard. Rien de nouveau.")] },
+];
+
+/**
+ * LES ÉCHÉANCES — DS, colles, tests de vocabulaire, devoirs à rendre. Un événement par échéance dans Calendrier Apple,
+ * avec des alarmes lointaines (14, 7, 3 et 1 jour) : c'est l'alerte « attention, ça approche », jamais plus.
+ *
+ * Sources : « Calendrier des DS 2026-2027 » (version du 31 août 2026), planning de colles du groupe G9, feuille d'anglais
+ * de l'année. Les semaines de colle SC1 à SC5 sont passées ; SC10 n'est pas reprise (les deux colles tombent à la même heure :
+ * lecture à confirmer).
+ */
+export type DeadlineKind = "ds" | "colle" | "devoir" | "oral" | "vocab";
+
+export interface Deadline {
+  id: string;
+  date: string;
+  /** Absents pour un événement sur la journée (heure inconnue). */
+  start: string | null;
+  end: string | null;
+  kind: DeadlineKind;
+  title: string;
+  subject: Subject;
+  place: string;
+  note: string;
+  /** Alarmes éloignées, en jours avant l'échéance. */
+  alarmDays: number[];
+  version: number;
+}
+
+const FAR = [14, 7, 3, 1];
+const NEAR = [7, 3, 1];
+
+export const DEADLINES: Deadline[] = [
+  { id: "2026-11-02-ds-physique", date: "2026-11-02", start: null, end: null, kind: "ds", title: "DS de physique-chimie (4 h)", subject: PHYS, place: "", note: "Surtout électronique et thermodynamique ; l'électrostatique peut tomber en questions variées. Heure à préciser.", alarmDays: FAR, version: 1 },
+  { id: "2026-11-02-dm-maths", date: "2026-11-02", start: null, end: null, kind: "devoir", title: "DM de maths à rendre", subject: MATHS, place: "", note: "Trois séances prévues : 26, 27 et 28 octobre.", alarmDays: NEAR, version: 1 },
+  { id: "2026-11-02-dm-physique", date: "2026-11-02", start: null, end: null, kind: "devoir", title: "DM de physique à rendre", subject: PHYS, place: "", note: "Trois séances prévues : 22, 23 et 28 octobre.", alarmDays: NEAR, version: 1 },
+  { id: "2026-11-02-ds-francais", date: "2026-11-02", start: null, end: null, kind: "devoir", title: "DS de français à rendre", subject: FRANCAIS, place: "", note: "À faire en conditions pendant les vacances : samedi 24 octobre.", alarmDays: NEAR, version: 1 },
+  { id: "2026-11-03-colle-maths", date: "2026-11-03", start: "13:00", end: "14:00", kind: "colle", title: "Colle de maths", subject: MATHS, place: "D11", note: "Semaine de colle SC6, groupe G9. Programme à lire dans le cahier de prépa.", alarmDays: NEAR, version: 1 },
+  { id: "2026-11-05-intervention-anglais", date: "2026-11-05", start: "17:00", end: "18:00", kind: "oral", title: "Anglais : petite intervention", subject: ANGLAIS, place: "D1-24", note: "Semaine de colle SC6 (Mme Ouhadia, ligne en italique).", alarmDays: NEAR, version: 1 },
+  { id: "2026-11-05-test-vocab", date: "2026-11-05", start: null, end: null, kind: "vocab", title: "Test de vocabulaire d'anglais : partie 10 (p. 435-453)", subject: ANGLAIS, place: "", note: "« Concepts et relations abstraites », Le mot et l'idée 2. Le vocabulaire est en anglais.", alarmDays: FAR, version: 1 },
+  { id: "2026-11-10-colle-physique", date: "2026-11-10", start: "12:00", end: "13:00", kind: "colle", title: "Colle de physique", subject: PHYS, place: "F2-21", note: "Semaine de colle SC7 (M Poncet), groupe G9. Le mercredi 11 novembre est férié.", alarmDays: NEAR, version: 1 },
+  { id: "2026-11-13-colle-maths", date: "2026-11-13", start: "13:00", end: "14:00", kind: "colle", title: "Colle de maths", subject: MATHS, place: "B2-31", note: "Semaine de colle SC7, groupe G9.", alarmDays: NEAR, version: 1 },
+  { id: "2026-11-16-ds-maths", date: "2026-11-16", start: null, end: null, kind: "ds", title: "DS de maths", subject: MATHS, place: "", note: "Calendrier des DS, SA10.", alarmDays: FAR, version: 1 },
+  { id: "2026-11-17-colle-maths", date: "2026-11-17", start: "12:00", end: "13:00", kind: "colle", title: "Colle de maths", subject: MATHS, place: "F1-08", note: "Semaine de colle SC8, groupe G9.", alarmDays: NEAR, version: 1 },
+  { id: "2026-11-18-colle-anglais", date: "2026-11-18", start: "16:00", end: "17:00", kind: "colle", title: "Colle d'anglais", subject: ANGLAIS, place: "B2-25", note: "Semaine de colle SC8 (Mme Charderon), groupe G9.", alarmDays: NEAR, version: 1 },
+  { id: "2026-11-19-ds-anglais", date: "2026-11-19", start: "08:00", end: "09:30", kind: "ds", title: "DS d'anglais (format Mines-Ponts)", subject: ANGLAIS, place: "", note: "Jeudi 19 novembre, de 8 h à 9 h 30.", alarmDays: FAR, version: 1 },
+  { id: "2026-11-23-ds-physique", date: "2026-11-23", start: null, end: null, kind: "ds", title: "DS de physique-chimie", subject: PHYS, place: "", note: "Calendrier des DS, SA11.", alarmDays: FAR, version: 1 },
+  { id: "2026-11-26-colle-anglais", date: "2026-11-26", start: "17:00", end: "18:00", kind: "colle", title: "Colle d'anglais", subject: ANGLAIS, place: "B3-21", note: "Semaine de colle SC9 (Mme Courtinat), groupe G9.", alarmDays: NEAR, version: 1 },
+  { id: "2026-11-27-colle-maths", date: "2026-11-27", start: "16:00", end: "17:00", kind: "colle", title: "Colle de maths", subject: MATHS, place: "B3-32", note: "Semaine de colle SC9, groupe G9.", alarmDays: NEAR, version: 1 },
+  { id: "2026-11-30-ds-francais", date: "2026-11-30", start: null, end: null, kind: "ds", title: "DS de français-philosophie", subject: FRANCAIS, place: "", note: "Calendrier des DS, SA12.", alarmDays: FAR, version: 1 },
+  { id: "2026-12-07-ds-maths", date: "2026-12-07", start: null, end: null, kind: "ds", title: "DS de maths", subject: MATHS, place: "", note: "Calendrier des DS, SA13.", alarmDays: FAR, version: 1 },
+  { id: "2026-12-14-ds-info", date: "2026-12-14", start: null, end: null, kind: "ds", title: "DS d'informatique", subject: "Informatique Spé", place: "", note: "Calendrier des DS, SA14.", alarmDays: FAR, version: 1 },
+  { id: "2026-12-17-ds-anglais", date: "2026-12-17", start: "08:00", end: "12:00", kind: "ds", title: "DS d'anglais (format Centrale)", subject: ANGLAIS, place: "", note: "Jeudi 17 décembre, de 8 h à 12 h (pas d'anglais en cours le 10 décembre : maths).", alarmDays: FAR, version: 1 },
+  { id: "2027-01-07-test-vocab", date: "2027-01-07", start: null, end: null, kind: "vocab", title: "Test de vocabulaire d'anglais : partie 3 (p. 129-175)", subject: ANGLAIS, place: "", note: "« La psychologie de l'homme », Le mot et l'idée 2.", alarmDays: FAR, version: 1 },
+  { id: "2027-01-11-ds-physique", date: "2027-01-11", start: null, end: null, kind: "ds", title: "DS de physique-chimie", subject: PHYS, place: "", note: "Calendrier des DS, SA16.", alarmDays: FAR, version: 1 },
+  { id: "2027-01-18-ds-francais", date: "2027-01-18", start: null, end: null, kind: "ds", title: "DS de français-philosophie", subject: FRANCAIS, place: "", note: "Calendrier des DS, SA17.", alarmDays: FAR, version: 1 },
+  { id: "2027-01-21-ds-anglais", date: "2027-01-21", start: "08:00", end: "09:30", kind: "ds", title: "DS d'anglais (format Mines-Ponts)", subject: ANGLAIS, place: "", note: "Jeudi 21 janvier, de 8 h à 9 h 30.", alarmDays: FAR, version: 1 },
+  { id: "2027-01-25-ds-maths", date: "2027-01-25", start: null, end: null, kind: "ds", title: "DS de maths", subject: MATHS, place: "", note: "Calendrier des DS, SA18.", alarmDays: FAR, version: 1 },
 ];
 
 export function sessionById(id: string, program: readonly ProgramSession[] = HOLIDAY_PROGRAM): ProgramSession | null {
@@ -217,10 +323,12 @@ export interface ProgramStats {
 }
 
 export function programStats(program: readonly ProgramSession[] = HOLIDAY_PROGRAM): ProgramStats {
-  const workDays = new Set(program.filter((session) => session.kind !== "repos").map((session) => session.date));
+  const minutesByDay = new Map<string, number>();
+  for (const session of program) minutesByDay.set(session.date, (minutesByDay.get(session.date) ?? 0) + sessionMinutes(session));
   return {
     workMinutes: program.reduce((sum, session) => sum + sessionMinutes(session), 0),
-    workDays: workDays.size,
+    // Un jour de travail : au moins une heure. Un dimanche de repos garde quinze minutes de vocabulaire, c'est tout.
+    workDays: [...minutesByDay.values()].filter((minutes) => minutes >= 60).length,
     restDays: program.filter((session) => session.kind === "repos").length,
     sessions: program.filter((session) => session.kind !== "repos").length,
   };
@@ -261,6 +369,12 @@ export function nextSession(nowParis: string, program: readonly ProgramSession[]
   return timed.find((session) => `${session.date}T${session.end}` > nowParis) ?? null;
 }
 
+const SUBJECT_ICON: Partial<Record<Subject, string>> = { Mathématiques: "📐", Physique: "⚡️", Anglais: "🇬🇧", Français: "📖", Chimie: "🧪" };
+const SUBJECT_SHORT: Partial<Record<Subject, string>> = { Mathématiques: "Maths", Physique: "Physique", Anglais: "Anglais", Français: "Français", Chimie: "Chimie" };
+
+const subjectIcon = (subject: Subject | null): string => (subject && SUBJECT_ICON[subject]) || "✍️";
+const subjectShort = (subject: Subject | null): string => (subject && SUBJECT_SHORT[subject]) || subject || "Travail";
+
 /** Les événements du calendrier Apple : une séance = un événement avec son alarme, un repos = un événement sur la journée. */
 export function programToIcsEvents(baseUrl: string, program: readonly ProgramSession[] = HOLIDAY_PROGRAM): IcsEvent[] {
   return program.map((session): IcsEvent => {
@@ -277,15 +391,48 @@ export function programToIcsEvents(baseUrl: string, program: readonly ProgramSes
     lines.push("", session.note, "", `Ouvrir la séance : ${url}`);
     return {
       uid: `${session.id}@taekdhub`,
-      summary: `${session.kind === "matin" ? "📐" : "✍️"} Maths · ${session.title}`,
+      summary: `${subjectIcon(session.subject)} ${subjectShort(session.subject)} · ${session.title}`,
       description: lines.join("\n"),
       url,
       start: `${session.date}T${session.start}`,
       end: `${session.date}T${session.end}`,
       alarms: [ALARM_MINUTES],
-      categories: ["Maths", "Fin de vacances"],
+      categories: [subjectShort(session.subject), "Séance"],
       busy: true,
       sequence: session.version,
     };
   });
+}
+
+const DEADLINE_ICON: Record<DeadlineKind, string> = { ds: "🚨", colle: "🗣️", devoir: "📥", oral: "🎤", vocab: "🔤" };
+/** Un événement sur la journée sonne à 9 h ce jour-là ; une colle ou un oral horaire sonne aussi une heure avant. */
+const ALL_DAY_ALARM_HOUR = 9;
+
+/** Minutes avant le début de l'événement pour sonner `days` jours plus tôt (à 9 h pour un événement sur la journée). */
+export function deadlineAlarmMinutes(days: number, allDay: boolean): number {
+  return days * 1440 - (allDay ? ALL_DAY_ALARM_HOUR * 60 : 0);
+}
+
+/** L'instant (heure de Paris, « AAAA-MM-JJTHH:mm ») où sonne une alarme de `minutes` avant l'événement. */
+function alarmFiresAt(deadline: Deadline, minutes: number): string {
+  const startMs = Date.parse(`${deadline.date}T${deadline.start ?? "00:00"}:00Z`);
+  return new Date(startMs - minutes * 60_000).toISOString().slice(0, 16);
+}
+
+/** Les échéances : alarmes lointaines (14, 7, 3, 1 jour), sauf celles déjà passées à `nowParis` (« AAAA-MM-JJTHH:mm »). */
+export function deadlinesToIcsEvents(baseUrl: string, nowParis: string, deadlines: readonly Deadline[] = DEADLINES): IcsEvent[] {
+  return deadlines.map((deadline): IcsEvent => {
+    const allDay = !deadline.start || !deadline.end;
+    const alarms = deadline.alarmDays.map((days) => deadlineAlarmMinutes(days, allDay));
+    if (!allDay && deadline.kind !== "devoir" && deadline.kind !== "ds") alarms.push(60);
+    const future = alarms.filter((minutes) => alarmFiresAt(deadline, minutes) > nowParis).sort((a, b) => b - a);
+    const lines = [...(deadline.place ? [`Salle ${deadline.place}`] : []), deadline.note, "", `Le programme : ${baseUrl}/calendrier`];
+    const base = { uid: `${deadline.id}@taekdhub`, summary: `${DEADLINE_ICON[deadline.kind]} ${deadline.title}${deadline.place ? ` (${deadline.place})` : ""}`, description: lines.join("\n"), url: `${baseUrl}/calendrier`, alarms: future, categories: [subjectShort(deadline.subject), "Échéance"], busy: !allDay, sequence: deadline.version };
+    return allDay ? { ...base, allDay: deadline.date } : { ...base, start: `${deadline.date}T${deadline.start}`, end: `${deadline.date}T${deadline.end}` };
+  });
+}
+
+/** Tout le calendrier : les séances puis les échéances. */
+export function calendarEvents(baseUrl: string, now: Date): IcsEvent[] {
+  return [...programToIcsEvents(baseUrl), ...deadlinesToIcsEvents(baseUrl, parisClock(now))];
 }

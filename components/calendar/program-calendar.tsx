@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { PageHero } from "@/components/ui/page-hero";
 import { cn } from "@/lib/cn";
-import { FICHES, RENTREE, dayLabel, hoursLabel, nextSession, parisClock, programDays, programStats, sessionMinutes } from "@/lib/holiday-program";
+import { DEADLINES, FICHES, RENTREE, dayLabel, hoursLabel, nextSession, parisClock, programDays, programStats, sessionMinutes } from "@/lib/holiday-program";
 
 /**
  * CALENDRIER — le programme de fin de vacances, jour par jour (lib/holiday-program.ts).
@@ -20,6 +20,11 @@ import { FICHES, RENTREE, dayLabel, hoursLabel, nextSession, parisClock, program
 /** « jeudi 22 octobre » → « Jeudi 22 octobre » (CSS capitalize mettrait une majuscule à chaque mot). */
 function upperFirst(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** Jours entre deux « AAAA-MM-JJ ». */
+function daysUntil(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000);
 }
 
 export function ProgramCalendar() {
@@ -100,6 +105,28 @@ export function ProgramCalendar() {
           );
         })}
       </ol>
+
+      <section aria-labelledby="calendrier-echeances" className="surface p-4 sm:p-5">
+        <h2 id="calendrier-echeances" className="t-label inline-flex items-center gap-1.5">
+          <CalendarClock size={14} aria-hidden /> Les échéances
+        </h2>
+        <p className="t-meta mt-1">DS, colles, devoirs et tests de vocabulaire. Chacun sonne 14, 7, 3 puis 1 jour avant (7, 3 et 1 pour une colle ou un devoir) : rien de plus.</p>
+        <ul className="mt-3 divide-y divide-line">
+          {DEADLINES.filter((deadline) => !today || deadline.date >= today).map((deadline) => (
+            <li key={deadline.id} className="flex items-start gap-3 py-3">
+              <span className="w-[4.25rem] shrink-0 text-[0.875rem] font-semibold tabular-nums text-muted">{today ? `J-${daysUntil(today, deadline.date)}` : ""}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[0.9375rem] font-semibold text-ink">{deadline.title}</span>
+                <span className="t-meta block text-2xs">
+                  {upperFirst(dayLabel(deadline.date))}
+                  {deadline.start ? ` · ${deadline.start}–${deadline.end}` : ""}
+                  {deadline.place ? ` · salle ${deadline.place}` : ""}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <section aria-labelledby="calendrier-apple" className="surface p-5 sm:p-6">
         <h2 id="calendrier-apple" className="t-label inline-flex items-center gap-1.5">
