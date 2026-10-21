@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `678704e`.
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `d1a11e6`.
 > Les PR #28 à #31 sont FUSIONNÉES dans `main` ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
 > Branche de travail actuelle : `claude/exciting-franklin-hiekk8`.
 
@@ -239,6 +239,19 @@ Chromium à 1280 px (onglet Exercices, avec tentatives de test ; accueil sombre)
 (1280 px, états vides de l'onglet Exercices). Non vérifié : iPhone réel, pages autres que l'écran de bienvenue et `/progress`. ATTENTION : un appareil qui a déjà enregistré `themeMode: "light"` reste en clair
 (Réglages > apparence). L'historique des rejets (Papier, Nuit, Apple, Revolut sombre « le noir ça rend pas envie », Revolut clair, Sobre)
 est dans `lib/theme.ts` : l'élève a choisi le sombre cette fois, à confirmer à l'usage. Hermes (agent qui prompte) : reporté, non commencé.
+
+**Mission 10 (2026-10-21) — prêt pour plusieurs comptes (l'objectif est une ouverture publique ; pour l'instant le site reste privé).**
+Audit : RLS présente sur toutes les tables utilisateur ; toutes reliées à `auth.users` en `on delete cascade`. Livré SANS migration :
+`POST /api/account/delete` (`app/api/account/delete/route.ts` : jeton de session vérifié, supprime seulement le compte du jeton,
+confirmation écrite « SUPPRIMER » exigée, 503 si le serveur n'est pas configuré) ; dans Réglages > Compte, « Supprimer mon compte » ;
+case de consentement à la création d'un compte ; page `/confidentialite` (PROJET : à faire relire, éditeur, contact et durées légales
+à compléter ; l'engagement « aucune revente » est à confirmer). Les données de l'appareil ne sont pas touchées par la suppression
+(« Déconnecter et effacer cet appareil » reste à part). Vérifié : 88 fichiers de tests, 1418 réussis + 1 échec attendu antérieur, `tsc`,
+lint, build ; capture de `/confidentialite`. Non vérifié : suppression réelle sur un compte (aucun appel fait à la vraie base), le formulaire
+de compte (Supabase non configuré sur la session). NON FAIT, décision requise : (1) connecteur MCP de Claude mono-élève (`ownerId()` : un seul
+compte ou `MCP_USER_ID`) ; plusieurs comptes demandent un secret par compte, donc une table et une migration ; (2) l'export serveur
+(l'export actuel est la sauvegarde locale, identique aux données synchronisées) ; (3) synchronisation des fiches d'exercice (collection,
+migration) ; (4) droits des annales ; (5) IA payante côté serveur (contredit « aucun agent LLM dans le dépôt », coût par utilisateur).
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
