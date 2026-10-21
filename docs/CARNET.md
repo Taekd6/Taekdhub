@@ -2,7 +2,7 @@
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
 > le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `a2387b8`.
-> Les PR #28 à #32 sont FUSIONNÉES dans `main` (PR #32 : merge `718084b`, production Vercel « Ready ») ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
+> Les PR #28 à #32 sont FUSIONNÉES dans `main` (PR #32 : merge `718084b`, production Vercel « Ready ») .
 > Branche de travail actuelle : `claude/exciting-franklin-hiekk8`.
 
 ## Objectif général
@@ -98,22 +98,13 @@ ni outils.
 - Les docs `AUDIT.md` et `ROADMAP.md` sont partiellement périmées : se fier au code.
 
 ## État actuel
-Branche `claude/loving-maxwell-oqm045`, dernier commit de code `0401692`, `main` = `1d75edd`.
-
-**PR #28** (`Taekd6/Taekdhub`, créée par l'élève le 2026-10-14) : ouverte, non brouillon, non
-fusionnée, `mergeable_state` propre, base `main` (`1d75edd`). Relue avant la mission 4 : tête
-`504b1ae` (= HEAD local), 10 commits, 24 fichiers, +3094 / −13 ; la mission 4 ajoute deux commits.
-L'ancienne mention « tête `5486d88`, 5 commits » était périmée : ce carnet retardait de cinq commits.
-Les contrôles GitHub n'ont pas été relus après les derniers pushs (outil de lecture des contrôles non
-utilisé). Ni fusion ni déploiement en production sans accord.
-
-**Deux projets Vercel** déploient ce dépôt, Previews prêts (« Ready ») sur les deux :
-- `taekdhub` : `https://taekdhub-git-claude-loving-maxwell-oqm045-taekd.vercel.app`
-- `taekdhub-vcrx` : `https://taekdhub-vcrx-git-claude-loving-maxwell-oqm045-taekd.vercel.app`
-
-Le README place la production sur `taekdhub.vercel.app` : `taekdhub` est probablement le projet
-principal et `taekdhub-vcrx` un doublon (inférence, non vérifiée). Les Previews sont protégés par le
-SSO de Vercel (information de l'élève ; la session n'a pas pu les joindre, `vercel.app` y est bloqué).
+(Mis à jour le 2026-10-21.) **Production** : Vercel, projet `taekdhub` (le projet `taekdhub-vcrx` semble un doublon, inférence non vérifiée), commit `718084b` = merge de la PR #32
+(« Ready »). Elle contient : palette Minuit et thème sombre par défaut, onglet Exercices de `/progress`, suppression de compte, page de confidentialité, capture rapide `POST /api/capture`.
+**Branche de travail** `claude/exciting-franklin-hiekk8` : 12 commits d'avance sur `main` (fusion à blanc propre, 17 fichiers, +709 / −17), PAS en production : « Mes données », « As-tu avancé ? » (Anki),
+correctif de contraste des cartes, correctif du moteur sur le sommeil, rattachement « asymptotique », feuille d'exercices, carnet. PR et fusion : accord explicite requis.
+Variables Vercel créées par l'élève : `CAPTURE_TOKEN`, `MCP_USER_ID` (Production). Un seul compte Supabase ; RLS active sur les 3 tables ; inscriptions et protection des mots de passe compromis : réglages de l'élève,
+non vérifiés. Hermes : branché en lecture seule (voir ci-dessous), jamais encore validé par un vrai appel après la mission 4.
+Les anciens paragraphes sur la PR #28 et les deux Previews ont été retirés : la PR #28 est fusionnée depuis le 2026-10-16.
 
 | Mission | Résultat |
 |---|---|
@@ -129,6 +120,16 @@ SSO de Vercel (information de l'élève ; la session n'a pas pu les joindre, `ve
 | 5 | Programme de révision (`/revision`) et point d'entrée vers l'entraînement (`/entrainement`). Commit `e72480f` |
 | 6 | La suite après chaque séance (`lib/follow-up.ts`), exercice prêt, premier pas plus petit, audit Anki. Commit `0401692` |
 | 7 | Accueil « tableau de bord » sur grand écran (maquette de l'élève) : barre latérale, salutation, horloge, semaine, progression du jour, citation. Commit `41fb603` |
+| 7b | Accueil mobile. Commit `22b7729` |
+| 8 | Sobriété visuelle (graphite). Commit `49d8961` ; jugée terne, remplacée par la mission 9 |
+| 9 | « Minuit » (indigo/cyan, sombre par défaut) et onglet Exercices de `/progress` |
+| 10 | Suppression de compte, confidentialité, consentement (sans migration) |
+| 11 | Capture rapide depuis l'Apple Watch (`/api/capture`, écriture seule). Commit `b091460` |
+| 12 | « Mes données » (séances, exercices, relevé Anki) dans Réglages. Commit `7213c06` |
+| 13 | Anki : cartes apprises et « as-tu avancé ? ». Commit `f79dd9b` |
+| 14 | Contraste des cartes `tone-brand` et sommeil du check-in. Commits `a10b3f6`, `18b38b9` |
+| 15 | Paquet de ChatGPT audité, feuille d'exercices (v3, 1re année), bilan des copies |
+| 16 | `exercise_logs` lisible (401 non reproduit), rattachement « asymptotique ». Commit `a2387b8` |
 
 Vérifications du dernier commit de code : 83 fichiers de tests, 1331 réussis + 1 échec attendu
 (`it.fails` antérieur), `tsc`, lint et build sans erreur. Contrôles propres à Hermes : chaînes
@@ -368,17 +369,14 @@ NON fait : PR des missions 13 à 16 (la branche a 7 commits de plus que `main` ;
 - `exercise_logs` : migration 0009 à exécuter avant 0007 et 0008 sur une base neuve.
 
 ## Prochaine tâche envisagée
-Aucune lancée. Candidats, chacun à proposer avec son périmètre, accord requis :
-1. Essai réel pendant quelques jours : séance → bilan → « Et maintenant ? » → exercice. Noter ce qui bloque encore
-   (trop de clics ? fiche manquante ? mauvais niveau ?). C'est ce qui dira s'il faut un catalogue ou un autre geste.
-2. Alimenter la banque de fiches sans effort : catalogue de ressources externes vérifiées (source, lien, chapitre,
-   compétence) ou import depuis un fichier ; ou synchroniser les fiches (collection, migration : accord explicite).
-3. Rendre le relevé Anki moins manuel (rappel d'import au démarrage sur ordinateur, ou saisie des cartes dues en
-   deux taps après une séance) — seulement si l'essai montre que le défaut de fraîcheur gêne vraiment.
-4. Reprendre les anciens écrans que le programme recoupe (carte « À ne pas oublier », bannière de cartes, liste du
-   jour) une fois l'usage confirmé : n'en retirer aucun avant.
-5. Bilan des 14 jours, puis ajuster plages, classification ou placement ; phase 2 : une règle de récupération.
-6. Hermes (reporté sur demande de l'élève) : production à redéployer après accord, jeton et contournement à révoquer.
+Aucune lancée. À l'élève de soumettre ses idées (annoncé le 2026-10-21). Candidats, chacun à proposer avec son périmètre, accord requis :
+1. Faire passer la branche en production (PR groupée, après relecture) ; essai réel de la capture par la montre ; validation d'Hermes (prompt 1 donné) ; révoquer le jeton et le contournement de test d'Hermes.
+2. Feuille 2 (rédaction et rigueur : hypothèses, rang, ordre des DL), à partir des erreurs de la feuille 1 ; cartes Anki « pièges de rédaction » ; reprise des questions faussées (Ex. 5, 4, 1) sans indice d'abord.
+3. Retour de ChatGPT sur le paquet Anki (rapport, contrôle, .apkg) à faire vérifier par Claude AVANT l'import ; « modifier de petites choses sur les cartes Anki » : écrire dans Anki demande un périmètre précis.
+4. Décisions du moteur (changent les conseils) : fatigue définie de 3 façons ; deux budgets du jour.
+5. Import de fiches d'exercice depuis un fichier JSON (sans migration), puis synchronisation des fiches (collection : migration, accord explicite). Catalogue statique d'exercices (contenu produit hors ligne, relu).
+6. Ouverture publique (reportée, site privé pour l'instant) : connecteur à un secret par compte (migration), droits des annales, politique de confidentialité à faire relire ; aucune IA payante côté serveur (décision « coût IA zéro »).
+7. Bilan des 14 jours, puis ajuster plages, classification ou placement ; phase 2 : une règle de récupération.
 
 ## Limites d'intervention
 - Avant toute reprise : lire ce carnet, vérifier branche, HEAD et arbre ; signaler tout écart.
@@ -386,8 +384,7 @@ Aucune lancée. Candidats, chacun à proposer avec son périmètre, accord requi
 - Après accord : implémenter, vérifier (`pnpm test`, `pnpm exec tsc --noEmit`, `pnpm lint`,
   `pnpm build`), puis deux commits : un pour le code, un pour la mise à jour de ce carnet
   (résultat et hash du commit de code).
-- Ni nouvelle pull request, ni fusion, ni déploiement sans accord explicite. La PR #28 existe : ne
-  pas la fusionner ni déployer en production sans accord explicite.
+- Ni nouvelle pull request, ni fusion, ni déploiement sans accord explicite (la branche de travail a 12 commits d'avance sur `main` : PR groupée à valider).
 - Ne modifier ni réglage ni variable Vercel, ne créer aucun jeton, ne toucher à aucune configuration
   d'Hermes : ces actions sont faites par l'élève.
 - Travailler sur la branche désignée ; ne jamais pousser sur `main`.
