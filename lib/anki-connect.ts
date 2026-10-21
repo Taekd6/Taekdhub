@@ -79,13 +79,19 @@ export function ownDeckQuery(deck: string): string {
 }
 
 /** Les mesures relevées par paquet, et la requête qui donne chacune. */
-const MEASURES: { field: Exclude<keyof AnkiDeckStat, "name">; filter: string }[] = [
+const MEASURES: { field: Exclude<keyof AnkiDeckStat, "name">; filter: string; optional?: boolean }[] = [
   { field: "total", filter: "" },
   { field: "due", filter: "is:due" },
   { field: "reviewed30", filter: "rated:30" },
   { field: "failed30", filter: "rated:30:1" },
   { field: "mature", filter: "prop:ivl>=21" },
   { field: "lapsing", filter: "prop:lapses>=4" },
+  // Activité récente (facultative : un Anki ancien ne connaît pas `introduced:` — le champ reste alors absent).
+  { field: "reviewed7", filter: "rated:7", optional: true },
+  { field: "failed7", filter: "rated:7:1", optional: true },
+  { field: "introduced7", filter: "introduced:7", optional: true },
+  { field: "reviewedToday", filter: "rated:1", optional: true },
+  { field: "introducedToday", filter: "introduced:1", optional: true },
 ];
 
 const BATCH = 120;
@@ -132,7 +138,13 @@ export async function readAnkiSnapshot(transport: AnkiTransport, now: Date, onPr
     const results = await transport("multi", { actions: batch.map((action) => ({ action: "findCards", params: { query: action.query } })) });
     if (!Array.isArray(results) || results.length !== batch.length) throw new AnkiConnectError("Réponse incomplète d'AnkiConnect.", "réponse");
     batch.forEach((action, index) => {
-      stats[action.deck][MEASURES[action.measure].field] = asNumberArrayLength(unwrapMulti(results[index]));
+      const measure = MEASURES[action.measure];
+      try {
+        stats[action.deck][measure.field] = asNumberArrayLength(unwrapMulti(results[index]));
+      } catch (cause) {
+        // Une mesure facultative que cet Anki ne comprend pas reste absente ; les autres échecs remontent.
+        if (!(measure.optional && cause instanceof AnkiConnectError)) throw cause;
+      }
     });
     onProgress?.({ done: Math.min(actions.length, start + BATCH), total: actions.length });
   }

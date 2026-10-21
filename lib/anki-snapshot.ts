@@ -42,6 +42,21 @@ export interface AnkiDeckStat {
   mature: number;
   /** Cartes oubliées au moins 4 fois depuis leur création. */
   lapsing: number;
+  /**
+   * ACTIVITÉ RÉCENTE — facultative : absente des relevés faits avant son ajout, et d'un Anki trop
+   * ancien pour la requête `introduced:` (le champ reste alors absent, jamais 0 : « pas mesuré »
+   * n'est pas « rien fait »).
+   *   reviewed7          cartes répondues au moins une fois sur 7 jours ;
+   *   failed7            parmi elles, celles où « À revoir » a été pressé ;
+   *   introduced7        cartes NOUVELLES vues pour la première fois sur 7 jours (= apprises) ;
+   *   reviewedToday      cartes répondues aujourd'hui (jour Anki) ;
+   *   introducedToday    cartes nouvelles vues aujourd'hui.
+   */
+  reviewed7?: number;
+  failed7?: number;
+  introduced7?: number;
+  reviewedToday?: number;
+  introducedToday?: number;
 }
 
 export interface AnkiSnapshot {
@@ -87,7 +102,18 @@ export function normalizeDeckStat(raw: unknown): AnkiDeckStat | null {
     failed30: Math.min(count(raw.failed30), reviewed30),
     mature: count(raw.mature),
     lapsing: count(raw.lapsing),
+    ...optionalCount(raw, "reviewed7"),
+    ...(optionalCount(raw, "failed7").failed7 !== undefined ? { failed7: Math.min(optionalCount(raw, "failed7").failed7!, optionalCount(raw, "reviewed7").reviewed7 ?? Infinity) } : {}),
+    ...optionalCount(raw, "introduced7"),
+    ...optionalCount(raw, "reviewedToday"),
+    ...optionalCount(raw, "introducedToday"),
   };
+}
+
+/** Un compteur FACULTATIF : présent seulement s'il a été relevé (un nombre valide, 0 compris). */
+function optionalCount<K extends string>(raw: Record<string, unknown>, key: K): { [P in K]?: number } {
+  const value = raw[key];
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? ({ [key]: Math.round(value) } as { [P in K]?: number }) : {};
 }
 
 export function normalizeAnkiSnapshot(raw: unknown): AnkiSnapshot | null {

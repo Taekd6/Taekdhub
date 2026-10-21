@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Clipboard, Download, RefreshCw, Upload } from "lucide-react";
 import { ChapterSelect } from "@/components/exercises/chapter-select";
 import { AnkiCardExport } from "@/components/anki/anki-card-export";
+import { AnkiProgressSection } from "@/components/anki/anki-progress-section";
 import { CourseCards } from "@/components/anki/course-cards";
 import { AnkiLink } from "@/components/memory/anki-link";
 import { Badge } from "@/components/ui/badge";
@@ -271,6 +272,7 @@ export function AnkiOverview() {
 
       {full ? (
         <>
+          <AnkiProgressSection snapshots={ankiSnapshots} overrides={preferences.ankiDeckChapters} />
           {bars.length > 0 && (
             <Section variant="panel" title="Volume de révisions" description={`Cartes révisées par jour, toutes confondues — d'après le relevé du ${shortDay.format(new Date(full.takenAt))}.`}>
               <VolumeBars bars={bars} ariaLabel="Cartes révisées par jour sur les 30 derniers jours" formatValue={(value) => `${Math.round(value)}`} />

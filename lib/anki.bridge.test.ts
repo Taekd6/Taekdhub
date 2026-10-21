@@ -44,7 +44,7 @@ describe("AnkiConnect — lecture seule", () => {
     });
     const snapshot = await readAnkiSnapshot(transport, NOW);
     expect(snapshot).toMatchObject({ id: "anki:2026-10-02", source: "ankiconnect" });
-    expect(snapshot.decks).toEqual([{ name: "MP::Maths::Réduction", total: 120, due: 14, reviewed30: 80, failed30: 20, mature: 60, lapsing: 3 }]);
+    expect(snapshot.decks).toEqual([{ name: "MP::Maths::Réduction", total: 120, due: 14, reviewed30: 80, failed30: 20, mature: 60, lapsing: 3, reviewed7: 0, failed7: 0, introduced7: 0, reviewedToday: 0, introducedToday: 0 }]);
     expect(snapshot.reviewsByDay).toEqual([{ day: "2026-10-01", count: 120 }, { day: "2026-10-02", count: 80 }]);
     // Aucune action d'écriture.
     expect([...new Set(calls)].sort()).toEqual(["deckNames", "getNumCardsReviewedByDay", "multi", "requestPermission"]);
