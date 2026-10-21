@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `18b38b9`.
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `a2387b8`.
 > Les PR #28 à #32 sont FUSIONNÉES dans `main` (PR #32 : merge `718084b`, production Vercel « Ready ») ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
 > Branche de travail actuelle : `claude/exciting-franklin-hiekk8`.
 
@@ -344,6 +344,14 @@ ce n'est PAS un problème de calcul ni d'outils (DL, équivalents, découpage Re
 multiplie par n (Ex. 4) ; (5) passage à la limite écrit sans limite (Ex. 7) ; (6) ln n = o(n) insuffisant (il faut o(n^ε)) ; (7) étourderies de recopie (t+1 pour t-1) et coefficient du DL de √(1+u). Points forts : il
 repère lui-même ses zones d'ombre (annotations rouges toutes fondées), propose des constructions propres. À faire ensuite : reprendre les questions faussées, sans indice d'abord ; feuille 2 centrée sur
 la rédaction (hypothèses, rang, ordre des DL) ; cartes Anki « pièges de rédaction ». Les « indications » CCINP retirées de la feuille ont privé l'élève de l'outil série-intégrale (Ex. 3, 1b) : c'est un manque d'outil, pas de travail.
+
+**Mission 16 (2026-10-21) — la lecture des exercices corrigés par Claude, et le rattachement au programme.** (a) Anomalie « `exercise_logs` : 401 depuis le Preview » : NON REPRODUITE.
+Droits vérifiés (SELECT pour `authenticated`, tout pour `service_role`, politiques « propriétaire » en lecture et suppression) ; journaux de l'API : la lecture `/rest/v1/exercise_logs` répond 200 ;
+colonne `aide` présente. À considérer comme résolue jusqu'à nouvelle observation. Rappel : ces lignes ne sont écrites que par Claude (skill `exo-annales-mp`, `execute_sql` : pas de route d'écriture dans l'application),
+et ne sont visibles du navigateur que si `user_id` est renseigné (les 7 lignes du 21 octobre le sont). (b) Défaut corrigé : le chapitre d'une annale ou d'un paquet Anki est rattaché au programme par mots-clés
+(`bestProgrammeMatch`) ; « Techniques asymptotiques » (nom du paquet de ChatGPT et de la feuille) ne correspondait à rien (`null`), alors que « analyse asymptotique » donne `m1-asymptotique`. Mot-clé « asymptotique »
+ajouté au chapitre, tests (ne vole pas d'autre chapitre ; « Séries entières » et « Séries numériques » inchangés). Vérifié : 91 fichiers de tests, 1473 réussis + 1 échec attendu antérieur, `tsc`, lint.
+NON fait : PR des missions 13 à 16 (la branche a 7 commits de plus que `main` ; PR et fusion demandent l'accord explicite de l'élève).
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
