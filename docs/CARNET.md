@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `f79dd9b`.
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `18b38b9`.
 > Les PR #28 à #32 sont FUSIONNÉES dans `main` (PR #32 : merge `718084b`, production Vercel « Ready ») ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
 > Branche de travail actuelle : `claude/exciting-franklin-hiekk8`.
 
@@ -303,6 +303,18 @@ réussis + 1 échec attendu antérieur, `tsc`, lint, build ; mutation sur la bor
 un vrai Anki (la requête `introduced:` et `rated:7:1` n'ont été testées que contre un Anki simulé), l'effet sur l'appareil de l'élève. Limite
 assumée : le relevé reste manuel et sur ordinateur (Anki ouvert) ; il ne bouge pas quand l'élève fait ses cartes.
 
+**Mission 14 (2026-10-21) — revue du thème sombre et premier défaut du moteur (mandat de l'élève : « fais tout ce que toi ou ChatGPT peut gérer »).**
+(a) Revue visuelle de 10 pages en sombre, bureau et mobile (captures) : une seule anomalie réelle, MESURÉE sur les pixels : la carte « Maintenant »
+(et toutes les `tone-brand` : bilan d'historique, échéances, briefing, erreurs) portait du texte blanc sur le dégradé CLAIR indigo/cyan, contraste
+1,9 à 2,9:1 (défaut introduit par la palette Minuit). Corrigé : `.tone-brand` reprend les teintes profondes des boutons (testées ≥ 4,5:1), 2e teinte de
+Minuit en bleu-vert profond ; re-mesuré 5 à 7,8:1 (hors reflet animé) ; test de garde dans `lib/theme.test.ts`. Commit `a10b3f6`.
+(b) Moteur (`lib/next-move/engine.ts#latestCheckin`) : `sleepHours` d'un check-in daté J décrit la nuit PRÉCÉDANT J ; le matin, on reprenait celui
+d'HIER, donc le sommeil de l'avant-veille. Désormais le check-in d'hier ne garde que son énergie ; le sommeil et « fatigue forte » (énergie ≤ 2 ET
+sommeil < 6 h) ne viennent que du check-in d'AUJOURD'HUI. 4 tests, mutation vérifiée, snapshots inchangés. Commit `18b38b9`. Effet visible : moins de
+« séance courte » le matin après un soir de fatigue ; Hermes n'est pas concerné (il ne lit aucun check-in).
+NON fait, volontairement (changent le classement des conseils, à décider avec l'élève plutôt qu'à corriger seul) : fatigue définie de 3 façons ;
+deux budgets du jour (capacité déclarée / planifiable). Vérifié : 91 fichiers de tests, 1473 réussis + 1 échec attendu antérieur, `tsc`, lint, build.
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
 - Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un
@@ -314,7 +326,7 @@ assumée : le relevé reste manuel et sur ordinateur (Anki ouvert) ; il ne bouge
   pas dans Hermes ni dans le connecteur de Claude. L'ordre des tâches du programme est celui du plan (palier,
   poids), sans les plages de performance ; le placement horaire reste sur l'accueil.
 - Deux budgets du jour (capacité déclarée, capacité planifiable).
-- Le matin, le moteur lit le sommeil de la nuit d'avant la veille.
+- (CORRIGÉE mission 14) Le matin, le moteur lisait le sommeil de la nuit d'avant la veille.
 - `exercise_logs` : migration 0009 à exécuter avant 0007 et 0008 sur une base neuve.
 
 ## Prochaine tâche envisagée
