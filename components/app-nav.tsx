@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
-import { BarChart3, BookOpen, CalendarCheck, CalendarClock, CalendarDays, Clock3, History, Home, Layers, ListChecks, Repeat, Settings, Timer, WalletCards } from "lucide-react";
+import { CalendarDays, Clock3, Settings, Timer } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -32,10 +32,7 @@ import { cn } from "@/lib/cn";
  * portée de pouce sur toutes les pages.
  */
 const DESTINATIONS = [
-  { href: "/dashboard", label: "Aujourd'hui", short: "Aujourd'hui", icon: Home },
-  { href: "/preparation", label: "Matières", short: "Matières", icon: Layers },
-  { href: "/progress", label: "Progression", short: "Progrès", icon: BarChart3 },
-  { href: "/history", label: "Séances", short: "Séances", icon: History },
+  { href: "/dashboard", label: "Planning", short: "Planning", icon: CalendarDays },
 ];
 
 /**
@@ -43,17 +40,7 @@ const DESTINATIONS = [
  * « tableau de bord ». Dès `lg`, elle remplace la barre haute ; sur
  * téléphone, rien ne change (barre d'onglets).
  */
-const SIDEBAR = [
-  { href: "/dashboard", label: "Accueil", icon: Home },
-  { href: "/programme", label: "Planification", icon: CalendarDays },
-  { href: "/calendrier", label: "Calendrier", icon: CalendarClock },
-  { href: "/entrainement", label: "Exercices", icon: ListChecks },
-  { href: "/preparation", label: "Cours", icon: BookOpen },
-  { href: "/revision", label: "Révisions", icon: Repeat },
-  { href: "/anki", label: "Anki", icon: WalletCards },
-  { href: "/echeances", label: "Échéances", icon: CalendarCheck },
-  { href: "/progress", label: "Statistiques", icon: BarChart3 },
-];
+const SIDEBAR = [{ href: "/dashboard", label: "Planning", icon: CalendarDays }];
 
 const TOOLS = [
   { href: "/timer", label: "Chronomètre", icon: Clock3 },
@@ -186,9 +173,9 @@ export function AppNav() {
           posé sur une pastille teintée, comme dans les apps d'Apple. */}
       <nav
         aria-label="Sections"
-        className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-[2rem] px-1.5 py-1 lg:hidden print:hidden"
+        className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-2 rounded-[2rem] px-1.5 py-1 lg:hidden print:hidden"
       >
-        {[...DESTINATIONS.slice(0, 2), null, ...DESTINATIONS.slice(2)].map((destination) => {
+        {[...DESTINATIONS, null].map((destination) => {
           if (!destination) {
             const active = isActive("/timer");
             return (
@@ -230,7 +217,7 @@ export function AppNav() {
 /** Colonne fixe à gauche, visible dès `lg` : le cadre (app-shell.tsx) lui réserve sa largeur. */
 function Sidebar() {
   const isActive = useActive();
-  const item = (href: string, label: string, Icon: typeof Home) => {
+  const item = (href: string, label: string, Icon: typeof CalendarDays) => {
     const active = isActive(href);
     return (
       <Link
