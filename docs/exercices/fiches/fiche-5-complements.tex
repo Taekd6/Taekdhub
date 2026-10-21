@@ -1,0 +1,68 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.2cm,top=2cm,bottom=2.2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+\setlist[enumerate,1]{label=\arabic*.,leftmargin=*,itemsep=0.6em}
+\setlist[enumerate,2]{label=(\alph*),leftmargin=1.8em,itemsep=0.3em}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\sh}{\operatorname{sh}}
+\newcommand{\ch}{\operatorname{ch}}
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\dd}{\,\mathrm{d}}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{Fiche 5 — Compléments}
+\fancyhead[R]{sans indice, sans corrigé}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\exo}[3]{\vspace{1.1em}\noindent\textbf{\large #1}\hfill\textit{#2 \,·\, #3}\par\smallskip}
+\begin{document}
+\begin{center}
+{\LARGE\bfseries Fiche 5 — Compléments}\\[0.3em]
+{\large mardi 27 octobre · matin, 90 min}
+\end{center}
+
+\noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\small Chronomètre lancé, sans cours ni notes, rédaction complète sur copie comme un oral ou un DS : hypothèses vérifiées, « à partir d'un certain rang », limites écrites avec leur flèche, aucun « $\sim$ » utilisé comme une égalité. Quand une question est finie, relis-la avec la \textbf{grille de rédaction}. Envoie-moi ta copie pour une correction ligne par ligne.}}
+
+
+\exo{Exercice 1 — Équivalents de suites}{MPSI Camille Jullian 2023, ex. 1}{20 min}
+\noindent Déterminer un équivalent simple de chacune des suites suivantes :
+\begin{enumerate}[itemsep=0.4em]
+\item $u_n=\dfrac{n^2+\ee^{-2n}+\sqrt{n^5}}{\ln(2n)+2n-3}$
+\item $u_n=(n+3\ln(n))\ee^{-(n+1)}$
+\item $u_n=\dfrac{\ln(n^2+1)}{n^2+1}$
+\item $u_n=\ln\left(\dfrac{n^2+1}{n^2+2}\right)$
+\item $u_n=\sqrt{n^2+n+1}-\sqrt{n^2-n+1}$
+\item $u_n=\displaystyle\sum_{k=0}^{n}k!$
+\item $u_n=\dfrac{n^{\sqrt{n+1}}}{(n+1)^{\sqrt{n}}}$
+\end{enumerate}
+
+\exo{Exercice 2}{MPSI Camille Jullian 2023, ex. 2}{20 min}
+\noindent Soit $(u_n)$ une suite décroissante vérifiant $u_n+u_{n+1}\sim\dfrac1n$. Montrer que la suite converge nécessairement vers $0$ et en donner un équivalent simple. Le résultat reste-t-il vrai si la suite n'est pas supposée décroissante ?
+
+\exo{Exercice 3}{MPSI Camille Jullian 2023, ex. 10}{20 min}
+\noindent Montrer que les suites $(u_n)$ et $(v_n)$ définies par $u_n=n-\displaystyle\sum_{k=1}^{n}\cos\left(\dfrac1k\right)$ et $v_n=u_n+\sin\left(\dfrac1n\right)$ sont adjacentes (au moins à partir d'un certain rang).
+
+\exo{Exercice 4}{MPSI Camille Jullian 2023, ex. 3}{30 min}
+\noindent On considère la suite $(u_n)$ définie pour $n\geqslant 1$ par $u_n=\sqrt{n+\sqrt{n-1+\sqrt{n-2+\cdots+\sqrt{2+\sqrt{1}}}}}$.
+\begin{enumerate}
+\item Montrer que $(u_n)$ diverge vers $+\infty$.
+\item Déterminer une relation simple entre $u_{n+1}$ et $u_n$.
+\item Prouver par récurrence que $u_n\leqslant n$ puis que $u_n=o(n)$.
+\item Déterminer un équivalent simple de $u_n$.
+\item Déterminer $\displaystyle\lim_{n\to+\infty}u_n-\sqrt n$.
+\end{enumerate}
+
+\vfill
+\begin{small}
+\noindent\textbf{Sources.} MPSI : « Feuille d'exercices n$^{\circ}$17 : Analyse asymptotique », MPSI, lycée Camille Jullian, 14 mars 2023 (publiée sur normalesup.org/\textasciitilde glafon) ; les parenthèses d'indice des énoncés d'origine ont été retirées volontairement. Aucun énoncé n'a été réécrit.
+\end{small}
+\end{document}

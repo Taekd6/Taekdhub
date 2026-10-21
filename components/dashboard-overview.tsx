@@ -7,6 +7,7 @@ import { HomeTopBar } from "@/components/home/hero";
 import { DayProgress, HomeGreeting, WeekStrip } from "@/components/home/desktop-header";
 import { NextMoveCard } from "@/components/next-move/next-move-card"; // Next Move
 import { DayAgendaCard } from "@/components/home/day-agenda-card";
+import { ProgramNextCard } from "@/components/calendar/program-next-card";
 import { useAnnales } from "@/hooks/use-annales";
 import { useKholleHistory } from "@/hooks/use-kholle-history";
 import { DeadlinesCard } from "@/components/home/cards";
@@ -100,6 +101,7 @@ export function DashboardOverview() {
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-8 lg:gap-y-0">
         {/* ── COLONNE « FAIRE » : la prochaine séance, puis la journée ── */}
         <div className="contents lg:col-span-7 lg:flex lg:flex-col lg:gap-6">
+          <ProgramNextCard className="order-1 lg:order-none" />
           <NextMoveCard data={nextMoveData} history={nextMoves} saveHistory={saveNextMoves} ready={ready} className="order-1 lg:order-none" />
           <DayAgendaCard data={nextMoveData} history={nextMoves} saveWorkItems={saveWorkItems} ready={ready} className="order-1 lg:order-none" />
         </div>

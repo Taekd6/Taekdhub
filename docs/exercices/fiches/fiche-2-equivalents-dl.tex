@@ -1,0 +1,70 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.2cm,top=2cm,bottom=2.2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+\setlist[enumerate,1]{label=\arabic*.,leftmargin=*,itemsep=0.6em}
+\setlist[enumerate,2]{label=(\alph*),leftmargin=1.8em,itemsep=0.3em}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\sh}{\operatorname{sh}}
+\newcommand{\ch}{\operatorname{ch}}
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\dd}{\,\mathrm{d}}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{Fiche 2 — Équivalents et DL en rafale}
+\fancyhead[R]{sans indice, sans corrigé}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\exo}[3]{\vspace{1.1em}\noindent\textbf{\large #1}\hfill\textit{#2 \,·\, #3}\par\smallskip}
+\begin{document}
+\begin{center}
+{\LARGE\bfseries Fiche 2 — Équivalents et DL en rafale}\\[0.3em]
+{\large vendredi 23 octobre · matin, 90 min}
+\end{center}
+
+\noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\small Chronomètre lancé, sans cours ni notes, rédaction complète sur copie comme un oral ou un DS : hypothèses vérifiées, « à partir d'un certain rang », limites écrites avec leur flèche, aucun « $\sim$ » utilisé comme une égalité. Quand une question est finie, relis-la avec la \textbf{grille de rédaction}. Envoie-moi ta copie pour une correction ligne par ligne. Pour les DL : écris d'abord l'ordre nécessaire, puis le calcul, puis relis les coefficients.}}
+
+
+\exo{Exercice 1 — Développements limités}{MPSI Camille Jullian 2023, ex. 6 (sélection)}{45 min}
+\noindent Calculer les développements limités suivants (on utilisera la notation $DL_n(a)$ pour indiquer le développement limité à l'ordre $n$ au point $a$) :
+\begin{enumerate}[label=\arabic*.,itemsep=0.45em,leftmargin=*]
+\item $DL_4(0)$, $f(x)=\dfrac{1}{\sqrt{1-x}}$
+\item $DL_2(0)$, $f(x)=\sqrt{3+\cos(x)}$
+\item $DL_3(0)$, $f(x)=\sqrt{\cos(x)}-\cos(\sqrt{x})$
+\item $DL_4(0)$, $f(x)=(1+\sin(x))^x$
+\item $DL_3(0)$, $f(x)=\dfrac{1}{\sin(x)}-\dfrac{1}{\sh(x)}$
+\item $DL_4(0)$, $f(x)=\ln(1+\ee^x)$
+\item $DL_5(0)$, $f(x)=\ee^{\sin(x)}$
+\item $DL_3(0)$, $f(x)=\ln(\cos(3x))$
+\item $DL_2(0)$, $f(x)=\dfrac{\ln(1+x)}{\ee^x-1}$
+\item $DL_2(2)$, $f(x)=x^x$
+\item $DL_3(0)$, $f(x)=\ln(2\ee^x+\ee^{-x})$
+\item $DL_2(0)$, $f(x)=\arcsin\!\left(\dfrac{x+1}{x+2}\right)$
+\end{enumerate}
+
+\exo{Exercice 2 — Limites}{MPSI Camille Jullian 2023, ex. 8 (sélection)}{45 min}
+\noindent Calculer (à l'aide de développements limités ou non) les limites suivantes.
+\begin{enumerate}[label=\arabic*.,itemsep=0.45em,leftmargin=*]
+\item $\displaystyle\lim_{x\to+\infty}x-x^2\ln\!\left(1+\dfrac1x\right)$
+\item $\displaystyle\lim_{x\to 0}\left(\dfrac{\tan(x)}{x}\right)^{\frac{1}{x^2}}$
+\item $\displaystyle\lim_{x\to 2}\dfrac{\sqrt{2x^2+1}-\sqrt{x^2+x+3}}{x^2-3x+2}$
+\item $\displaystyle\lim_{x\to+\infty}\sqrt{x^2+3x+2}-x$
+\item $\displaystyle\lim_{x\to 0}\dfrac{\ee^x-x-\cos(x)}{x^2}$
+\item $\displaystyle\lim_{x\to+\infty}\dfrac{\sh(\ch(x))}{\ch(\sh(x))}$
+\item $\displaystyle\lim_{x\to 0}\dfrac{1}{x^3}-\dfrac{1}{\sin^3(x)}$
+\item $\displaystyle\lim_{x\to+\infty}\left(\ch\!\left(\dfrac1x\right)\right)^{x^2}$
+\end{enumerate}
+
+\vfill
+\begin{small}
+\noindent\textbf{Sources.} MPSI : « Feuille d'exercices n$^{\circ}$17 : Analyse asymptotique », MPSI, lycée Camille Jullian, 14 mars 2023 (publiée sur normalesup.org/\textasciitilde glafon) ; les parenthèses d'indice des énoncés d'origine ont été retirées volontairement. Aucun énoncé n'a été réécrit.
+\end{small}
+\end{document}

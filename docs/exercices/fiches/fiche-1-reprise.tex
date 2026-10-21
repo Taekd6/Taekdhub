@@ -1,0 +1,88 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.2cm,top=2cm,bottom=2.2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+\setlist[enumerate,1]{label=\arabic*.,leftmargin=*,itemsep=0.6em}
+\setlist[enumerate,2]{label=(\alph*),leftmargin=1.8em,itemsep=0.3em}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\sh}{\operatorname{sh}}
+\newcommand{\ch}{\operatorname{ch}}
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\dd}{\,\mathrm{d}}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{Fiche 1 — Reprise des erreurs}
+\fancyhead[R]{sans indice, sans corrigé}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\exo}[3]{\vspace{1.1em}\noindent\textbf{\large #1}\hfill\textit{#2 \,·\, #3}\par\smallskip}
+\begin{document}
+\begin{center}
+{\LARGE\bfseries Fiche 1 — Reprise des erreurs}\\[0.3em]
+{\large jeudi 22 octobre · matin : exercices R1 à R3 · après-midi : R4 à R6}
+\end{center}
+
+\noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\small Chronomètre lancé, sans cours ni notes, rédaction complète sur copie comme un oral ou un DS : hypothèses vérifiées, « à partir d'un certain rang », limites écrites avec leur flèche, aucun « $\sim$ » utilisé comme une égalité. Quand une question est finie, relis-la avec la \textbf{grille de rédaction}. Envoie-moi ta copie pour une correction ligne par ligne.}}
+
+
+\noindent\textbf{Matin (90 min) --- exercices R1 à R3.}
+
+\exo{R1}{CCINP, banque 2022, exercice 1, question 1}{15 min}
+\noindent On considère deux suites numériques $(u_n)_{n\in\N}$ et $(v_n)_{n\in\N}$ telles que $(v_n)_{n\in\N}$ est non nulle à partir d'un certain rang et $u_n \underset{+\infty}{\sim} v_n$.\\
+Démontrer que $u_n$ et $v_n$ sont de même signe à partir d'un certain rang.
+
+\exo{R2}{CCINP, banque 2022, exercice 56}{25 min}
+\noindent On considère la fonction $H$ définie sur $]1;+\infty[$ par $H(x)=\displaystyle\int_x^{x^2}\dfrac{\dd t}{\ln t}$.
+\begin{enumerate}
+\item Montrer que $H$ est $\mathcal{C}^1$ sur $]1;+\infty[$ et calculer sa dérivée.
+\item Montrer que la fonction $u$ définie par $u(x)=\dfrac{1}{\ln x}-\dfrac{1}{x-1}$ admet une limite finie en $x=1$.
+\item En utilisant la fonction $u$ de la question 2., calculer la limite en $1^+$ de la fonction $H$.
+\end{enumerate}
+
+\exo{R3}{CCINP, banque 2022, exercice 46}{25 min}
+\noindent On considère la série $\displaystyle\sum_{n\geqslant 1}\cos\!\left(\pi\sqrt{n^2+n+1}\right)$.
+\begin{enumerate}
+\item Prouver que, au voisinage de $+\infty$, $\;\pi\sqrt{n^2+n+1}=n\pi+\dfrac{\pi}{2}+\alpha\dfrac{\pi}{n}+O\!\left(\dfrac1{n^2}\right)\;$ où $\alpha$ est un réel que l'on déterminera.
+\item En déduire que $\displaystyle\sum_{n\geqslant 1}\cos\!\left(\pi\sqrt{n^2+n+1}\right)$ converge.
+\item $\displaystyle\sum_{n\geqslant 1}\cos\!\left(\pi\sqrt{n^2+n+1}\right)$ converge-t-elle absolument ?
+\end{enumerate}
+
+\newpage
+\noindent\textbf{Après-midi (60 min) --- exercices R4 à R6.}
+
+\exo{R4}{CCINP, banque 2022, exercice 5}{25 min}
+\begin{enumerate}
+\item On considère la série de terme général $u_n=\dfrac{1}{n(\ln n)^{\alpha}}$ où $n\geqslant 2$ et $\alpha\in\R$.
+ \begin{enumerate}
+ \item \textbf{Cas $\alpha\leqslant 0$} \quad En utilisant une minoration très simple de $u_n$, démontrer que la série diverge.
+ \item \textbf{Cas $\alpha>0$} \quad Étudier la nature de la série.
+ \end{enumerate}
+\item Déterminer la nature de la série $\displaystyle\sum_{n\geqslant 2}\dfrac{\left(\ee-\left(1+\dfrac1n\right)^{n}\right)\ee^{\frac1n}}{\big(\ln(n^2+n)\big)^2}$.
+\end{enumerate}
+
+\exo{R5}{MPSI Camille Jullian 2023, ex. 11, questions 2 à 4}{20 min}
+\noindent Pour tout entier naturel $n$, on note $I_n=\displaystyle\int_0^{\pi/4}\tan^n(x)\dd x$.
+\begin{enumerate}
+\setcounter{enumi}{1}
+\item Simplifier l'expression de $I_n+I_{n+2}$. En déduire la convergence et la limite de $(I_n)$.
+\item À l'aide d'une IPP, montrer que $\forall n\geqslant 1$, $\displaystyle\int_0^{\pi/4}\cos(2x)\tan^n(x)\dd x=\dfrac12-nI_n$.
+\item En déduire un équivalent simple de $I_n$.
+\end{enumerate}
+
+\exo{R6}{MPSI Camille Jullian 2023, ex. 5, question 5 (seconde partie)}{15 min}
+\noindent On considère, pour tout entier naturel $n$, la fonction $f_n : x\mapsto x^3+nx+n$, et $u_n$ l'unique solution de $f_n(x)=0$ sur $\R$. On admet que $u_n\to-1$ et que $u_n+1\sim\dfrac1n$.\\
+Montrer que $u_n=-1+\dfrac1n-\dfrac{3}{n^2}+o\!\left(\dfrac1{n^2}\right)$.
+
+\vfill
+\begin{small}
+\noindent\textbf{Sources.} Exercices CCINP : banque publique d'exercices de mathématiques de l'épreuve orale du CCINP, filière MP, session 2022 (concours-commun-inp.fr), licence CC BY-NC-SA 3.0 FR ; les indications des énoncés d'origine ont été retirées volontairement. Exercices MPSI : « Feuille d'exercices n$^{\circ}$17 : Analyse asymptotique », MPSI, lycée Camille Jullian, 14 mars 2023 (publiée sur normalesup.org/\textasciitilde glafon) ; les parenthèses d'indice des énoncés d'origine ont été retirées volontairement. Aucun énoncé n'a été réécrit.
+\end{small}
+\end{document}

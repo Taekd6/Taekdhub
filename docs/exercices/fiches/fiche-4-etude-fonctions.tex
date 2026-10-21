@@ -1,0 +1,82 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.2cm,top=2cm,bottom=2.2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+\setlist[enumerate,1]{label=\arabic*.,leftmargin=*,itemsep=0.6em}
+\setlist[enumerate,2]{label=(\alph*),leftmargin=1.8em,itemsep=0.3em}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\sh}{\operatorname{sh}}
+\newcommand{\ch}{\operatorname{ch}}
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\dd}{\,\mathrm{d}}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{Fiche 4 — Étude locale et globale de fonctions}
+\fancyhead[R]{sans indice, sans corrigé}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\exo}[3]{\vspace{1.1em}\noindent\textbf{\large #1}\hfill\textit{#2 \,·\, #3}\par\smallskip}
+\begin{document}
+\begin{center}
+{\LARGE\bfseries Fiche 4 — Étude locale et globale de fonctions}\\[0.3em]
+{\large lundi 26 octobre · matin, 90 min}
+\end{center}
+
+\noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\small Chronomètre lancé, sans cours ni notes, rédaction complète sur copie comme un oral ou un DS : hypothèses vérifiées, « à partir d'un certain rang », limites écrites avec leur flèche, aucun « $\sim$ » utilisé comme une égalité. Quand une question est finie, relis-la avec la \textbf{grille de rédaction}. Envoie-moi ta copie pour une correction ligne par ligne. Une courbe soignée est demandée : règle, repères, tangentes et asymptotes tracées.}}
+
+
+\exo{Exercice 1 — Comportements locaux}{MPSI Camille Jullian 2023, ex. 9 (questions 1 à 6)}{25 min}
+\noindent Étudier le comportement des fonctions suivantes (existence d'asymptote ou de tangente et position relative) à l'endroit indiqué :
+\begin{enumerate}[itemsep=0.4em]
+\item $f(x)=\ln(1+x+x^2)$ au voisinage de $0$.
+\item $f(x)=\dfrac{x}{\ee^x-1}$ au voisinage de $0$.
+\item $f(x)=2\sqrt{x}-\sqrt{x+1}-\sqrt{x-1}$ en $+\infty$.
+\item $f(x)=\dfrac{x}{1+\ee^{\frac1x}}$ en $+\infty$.
+\item $f(x)=x^2\arctan\!\left(\dfrac{1}{1+x}\right)$ en $+\infty$.
+\item $f(x)=\dfrac{\arctan(x)}{\sin^3(x)}-\dfrac{1}{x^2}$ au voisinage de $0$.
+\end{enumerate}
+
+\exo{Exercice 2}{MPSI Camille Jullian 2023, ex. 13}{40 min}
+\noindent On souhaite dans cet exercice étudier la fonction $f : x\mapsto(x^2-1)\ln\left|\dfrac{1+x}{1-x}\right|$. On notera $\mathcal{C}$ la courbe représentative de la fonction $f$.
+\begin{enumerate}
+\item Déterminer rigoureusement l'ensemble de définition de la fonction $f$. Étudier la parité de $f$.
+\item Calculer un développement limité à l'ordre 4 en $0$ de $f(x)$. En déduire en particulier l'équation de la tangente en $\mathcal{C}$ à l'origine, ainsi que la position relative de $\mathcal{C}$ et de cette tangente au voisinage de $0$.
+\item Étude locale au voisinage de $+\infty$.
+ \begin{enumerate}
+ \item Calculer un développement limité à l'ordre 3 en $0$ de $(1-X^2)\ln\left(1+\dfrac{2X}{1-X}\right)$.
+ \item En déduire un développement asymptotique de $f$ à l'ordre $\dfrac1x$ quand $x$ tend vers $+\infty$.
+ \item La courbe $\mathcal{C}$ admet-elle une asymptote en $+\infty$ ? Si oui, préciser la position relative de $\mathcal{C}$ et de cette asymptote.
+ \item Que se passe-t-il en $-\infty$ ?
+ \end{enumerate}
+\item La fonction $f$ est-elle prolongeable par continuité en $1$ ? Si oui, étudier sa dérivabilité à cet endroit.
+\item Calculer la dérivée $f'$ de la fonction $f$ et l'exprimer en fonction de $g(x)=\ln\left|\dfrac{1+x}{1-x}\right|-\dfrac1x$.
+\item Étudier les variations et le signe de $g$ sur les intervalles $]0,1[$ et $]1,+\infty[$. On prouvera en particulier que $g$ s'annule en une seule valeur $\alpha$ vérifiant $\dfrac12<\alpha<\dfrac34$. En déduire le tableau de variations complet de $f$.
+\item Tracer une allure soignée de la courbe $\mathcal{C}$ (on donne $\alpha\simeq 0.65$ et $f(\alpha)\simeq-0.9$).
+\end{enumerate}
+
+\exo{Exercice 3}{MPSI Camille Jullian 2023, ex. 14}{25 min}
+\noindent On souhaite étudier la fonction $f : x\mapsto\dfrac{(x^2+1)\arctan(x)}{x}$. On notera $\mathcal{C}_f$ sa courbe représentative.
+\begin{enumerate}
+\item Étudier la parité de la fonction $f$.
+\item Calculer le développement limité à l'ordre 3 en $0$ de $f(x)$.
+\item En déduire que $f$ est prolongeable par continuité et dérivable en $0$. Donner l'équation de sa tangente en $0$, et la position relative de $\mathcal{C}_f$ et de cette tangente au voisinage de $0$.
+\item Montrer que, $\forall x>0$, $\arctan(x)+\arctan\left(\dfrac1x\right)=\dfrac\pi2$.
+\item Montrer que $\mathcal{C}_f$ admet une asymptote en $+\infty$, donner son équation ainsi que sa position relative par rapport à $\mathcal{C}_f$. Que se passe-t-il en $-\infty$ ?
+\item On pose $h(x)=\arctan(x)+\dfrac{x}{x^2-1}$. Étudier les variations de la fonction $h$ sur $\R^{+*}$.
+\item En déduire les variations de $f$.
+\item Tracer une allure de la courbe $\mathcal{C}_f$.
+\end{enumerate}
+
+\vfill
+\begin{small}
+\noindent\textbf{Sources.} MPSI : « Feuille d'exercices n$^{\circ}$17 : Analyse asymptotique », MPSI, lycée Camille Jullian, 14 mars 2023 (publiée sur normalesup.org/\textasciitilde glafon) ; les parenthèses d'indice des énoncés d'origine ont été retirées volontairement. Aucun énoncé n'a été réécrit.
+\end{small}
+\end{document}

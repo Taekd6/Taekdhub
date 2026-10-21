@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
-import { BarChart3, BookOpen, CalendarCheck, CalendarDays, Clock3, History, Home, Layers, ListChecks, Repeat, Settings, Timer, WalletCards } from "lucide-react";
+import { BarChart3, BookOpen, CalendarCheck, CalendarClock, CalendarDays, Clock3, History, Home, Layers, ListChecks, Repeat, Settings, Timer, WalletCards } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -46,6 +46,7 @@ const DESTINATIONS = [
 const SIDEBAR = [
   { href: "/dashboard", label: "Accueil", icon: Home },
   { href: "/programme", label: "Planification", icon: CalendarDays },
+  { href: "/calendrier", label: "Calendrier", icon: CalendarClock },
   { href: "/entrainement", label: "Exercices", icon: ListChecks },
   { href: "/preparation", label: "Cours", icon: BookOpen },
   { href: "/revision", label: "Révisions", icon: Repeat },

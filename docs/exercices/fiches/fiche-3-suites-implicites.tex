@@ -1,0 +1,60 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.2cm,top=2cm,bottom=2.2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+\setlist[enumerate,1]{label=\arabic*.,leftmargin=*,itemsep=0.6em}
+\setlist[enumerate,2]{label=(\alph*),leftmargin=1.8em,itemsep=0.3em}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\sh}{\operatorname{sh}}
+\newcommand{\ch}{\operatorname{ch}}
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\dd}{\,\mathrm{d}}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{Fiche 3 — Suites implicites et développements asymptotiques}
+\fancyhead[R]{sans indice, sans corrigé}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\exo}[3]{\vspace{1.1em}\noindent\textbf{\large #1}\hfill\textit{#2 \,·\, #3}\par\smallskip}
+\begin{document}
+\begin{center}
+{\LARGE\bfseries Fiche 3 — Suites implicites et développements asymptotiques}\\[0.3em]
+{\large samedi 24 octobre · matin, 90 min}
+\end{center}
+
+\noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\small Chronomètre lancé, sans cours ni notes, rédaction complète sur copie comme un oral ou un DS : hypothèses vérifiées, « à partir d'un certain rang », limites écrites avec leur flèche, aucun « $\sim$ » utilisé comme une égalité. Quand une question est finie, relis-la avec la \textbf{grille de rédaction}. Envoie-moi ta copie pour une correction ligne par ligne.}}
+
+
+\exo{Exercice 1}{MPSI Camille Jullian 2023, ex. 15}{25 min}
+\noindent Pour tout entier naturel $n\geqslant 1$, on note $u_n$ l'unique solution sur $[0,+\infty[$ de l'équation $\ee^x=n-x$.
+\begin{enumerate}
+\item Montrer que la suite $(u_n)$ est correctement définie.
+\item Déterminer la monotonie de la suite $(u_n)$, puis sa limite éventuelle.
+\item Montrer que $u_n\sim\ln(n)$.
+\item Montrer que $u_n=\ln(n)+\ln\!\left(1-\dfrac{u_n}{n}\right)$, en déduire un développement asymptotique de $u_n$ à la précision $\dfrac{\ln(n)}{n^2}$.
+\end{enumerate}
+
+\exo{Exercice 2}{MPSI Camille Jullian 2023, ex. 12}{35 min}
+\begin{enumerate}
+\item Montrer que l'équation $\tan(x)=x$ admet une unique solution sur l'intervalle $\left]n\pi-\dfrac\pi2,n\pi+\dfrac\pi2\right[$, qu'on notera désormais $u_n$ (on supposera $n\in\N$ pour la suite).
+\item Quelle est la limite de la suite $(u_n)$ ? Donner un équivalent simple de $u_n$.
+\item Montrer que $\arctan(u_n)=u_n-n\pi$, et en déduire un deuxième terme du développement asymptotique de $u_n$ quand $n$ tend vers $+\infty$.
+\item Continuer les calculs jusqu'à obtenir un développement asymptotique de $u_n$ à la précision $\dfrac1{n^3}$.
+\end{enumerate}
+
+\exo{Exercice 3}{MPSI Camille Jullian 2023, ex. 7}{30 min}
+\noindent On note $f$ la fonction définie sur $]-1,1[$ par $f(x)=\dfrac{1}{x-1}+\dfrac{1}{x+1}+\dfrac{1}{x+2}$. Montrer que $f$ est bijective et calculer un développement asymptotique à l'ordre $\dfrac{1}{x^2}$ au voisinage de $+\infty$ de sa réciproque $g$.
+
+\vfill
+\begin{small}
+\noindent\textbf{Sources.} MPSI : « Feuille d'exercices n$^{\circ}$17 : Analyse asymptotique », MPSI, lycée Camille Jullian, 14 mars 2023 (publiée sur normalesup.org/\textasciitilde glafon) ; les parenthèses d'indice des énoncés d'origine ont été retirées volontairement. Aucun énoncé n'a été réécrit.
+\end{small}
+\end{document}

@@ -1,0 +1,68 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.2cm,top=2cm,bottom=2.2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+\setlist[enumerate,1]{label=\arabic*.,leftmargin=*,itemsep=0.6em}
+\setlist[enumerate,2]{label=(\alph*),leftmargin=1.8em,itemsep=0.3em}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\sh}{\operatorname{sh}}
+\newcommand{\ch}{\operatorname{ch}}
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\dd}{\,\mathrm{d}}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{Fiche 6 — Problème de synthèse}
+\fancyhead[R]{sans indice, sans corrigé}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\exo}[3]{\vspace{1.1em}\noindent\textbf{\large #1}\hfill\textit{#2 \,·\, #3}\par\smallskip}
+\begin{document}
+\begin{center}
+{\LARGE\bfseries Fiche 6 — Problème de synthèse}\\[0.3em]
+{\large jeudi 29 octobre · matin, 2 h (conditions de DS)}
+\end{center}
+
+\noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\small Comme un devoir surveillé : \textbf{2 heures}, sans cours ni notes, une copie rédigée au propre, courbe soignée. Gère ton temps : si une question bloque, passe à la suivante et reviens-y. La partie 2 utilise les résultats de la partie 1. Envoie-moi ta copie.}}
+
+
+\noindent\textbf{Problème} \hfill\textit{MPSI Camille Jullian 2023, « Problème 1 »}\par\medskip
+\noindent On s'intéresse dans tout cet exercice à la fonction $g : x\mapsto \ee^{\frac1x}\sqrt{1+x+x^2}$.
+\begin{enumerate}
+\item Étude de la fonction $g$.
+ \begin{enumerate}
+ \item Déterminer le domaine de définition de $g$.
+ \item Calculer la dérivée de $g$ et prouver que $g'(x)=\dfrac{\ee^{\frac1x}}{2x^2\sqrt{1+x+x^2}}\,(2x^3-x^2-2x-2)$.
+ \item Sans chercher à résoudre d'équation du troisième degré, montrer que $g'$ s'annule une seule fois sur $\R$, en une valeur $\alpha$ vérifiant $1<\alpha<2$.
+ \item Déterminer les limites de $g$ aux bornes de son ensemble de définition.
+ \item La fonction $g$ prolongée à gauche en $0$ admet-elle une demi-tangente à gauche en $0$ (si oui, déterminer sa pente) ?
+ \item Donner un équivalent simple de $g(x)$ lorsque $x$ tend vers $+\infty$.
+ \item Effectuer un développement asymptotique de $g$ à l'ordre $\dfrac1{x^2}$ quand $x$ tend vers $+\infty$. En déduire la présence d'une asymptote oblique dont on donnera l'équation, ainsi que la position relative de la courbe de $g$ et de cette asymptote au voisinage de $+\infty$.
+ \item La même droite est-elle asymptote quand $x$ tend vers $-\infty$ ? Sinon, que se passe-t-il de ce côté-là ?
+ \item Tracer une allure soignée de la courbe représentative de $g$. On donne $\alpha\simeq 1{,}55$ et $g(\alpha)\simeq 4{,}2$.
+ \end{enumerate}
+\item Un peu de suites implicites.
+ \begin{enumerate}
+ \item Justifier que, $\forall n\geqslant 5$, l'équation $g(x)=n$ admet deux solutions distinctes $u_n$ et $v_n$ sur $\R^{+*}$ vérifiant $u_n<\alpha$ et $v_n>\alpha$.
+ \item Montrer que les deux suites $(u_n)$ et $(v_n)$ sont monotones et prouver rigoureusement que $\displaystyle\lim_{n\to+\infty}u_n=0$ et $\displaystyle\lim_{n\to+\infty}v_n=+\infty$.
+ \item En partant de l'équation $g(u_n)=n$, montrer que $\ln(n)\,u_n=1+\dfrac{u_n}{2}\ln(1+u_n+u_n^2)$. En déduire un équivalent simple de $u_n$.
+ \item Montrer que $u_n=\dfrac{1}{\ln(n)}+\dfrac{1}{2\ln^3(n)}+o\!\left(\dfrac{1}{\ln^3(n)}\right)$ (attention à la rédaction !).
+ \item Utiliser l'expression précédente pour obtenir le terme suivant du développement asymptotique de la suite $(u_n)$.
+ \item Donner un équivalent simple de $v_n$ quand $n$ tend vers $+\infty$.
+ \item Montrer que $v_n=n\,\ee^{-\frac{1}{v_n}}\left(1+\dfrac{1}{v_n}+\dfrac{1}{v_n^2}\right)^{-\frac12}$, et en déduire la limite de $v_n-n$ quand $n$ tend vers $+\infty$.
+ \item Calculer un développement asymptotique de $v_n$ sous la forme $v_n=n+a+\dfrac bn+\dfrac c{n^2}+o\!\left(\dfrac1{n^2}\right)$.
+ \end{enumerate}
+\end{enumerate}
+
+\vfill
+\begin{small}
+\noindent\textbf{Sources.} MPSI : « Feuille d'exercices n$^{\circ}$17 : Analyse asymptotique », MPSI, lycée Camille Jullian, 14 mars 2023 (publiée sur normalesup.org/\textasciitilde glafon) ; les parenthèses d'indice des énoncés d'origine ont été retirées volontairement. Aucun énoncé n'a été réécrit.
+\end{small}
+\end{document}
