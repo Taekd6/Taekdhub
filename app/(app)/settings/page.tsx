@@ -4,6 +4,7 @@ import { AccountSection } from "@/components/account/account-section";
 import { BriefingSetting } from "@/components/briefing/briefing-setting";
 import { CapacityForm } from "@/components/work/capacity-form";
 import { PerformanceWindowsForm } from "@/components/work/performance-windows-form";
+import { CaptureGuide } from "@/components/capture-guide";
 import { DataBackup } from "@/components/data-backup";
 import { PageHero } from "@/components/ui/page-hero";
 import { PreferencesForm } from "@/components/preferences-form";
@@ -38,6 +39,7 @@ export default function SettingsPage() {
       {/* ── fin premier lancement ── */}
       {/* Compte et synchronisation — juste avant les sauvegardes, dont il est le prolongement. */}
       <AccountSection />
+      <CaptureGuide />
       <DataBackup />
     </div>
   );
