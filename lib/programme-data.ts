@@ -141,7 +141,7 @@ const MATHS_SUP: Entry[] = [
     "Énoncer et démontrer la formule de Taylor avec reste intégral.",
     "Démontrer l'inégalité de Cauchy-Schwarz pour les intégrales.",
   ]],
-  ["m1-asymptotique", "Analyse asymptotique", ["developpements limites", "dl", "equivalents", "negligeabilite"], [
+  ["m1-asymptotique", "Analyse asymptotique", ["developpements limites", "dl", "equivalents", "negligeabilite", "asymptotique"], [
     "Démontrer la formule de Taylor-Young (idée).",
     "Donner les DL en 0 de exp, ln(1+x), (1+x)^α, sin, cos à l'ordre n.",
     "Montrer que deux suites équivalentes ont même signe à partir d'un certain rang.",

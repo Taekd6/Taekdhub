@@ -40,6 +40,11 @@ describe("rapprochement des titres", () => {
   it("un seul chapitre par titre : le rapprochement le plus fort", () => {
     expect(bestProgrammeMatch("Mathématiques", "Séries entières")?.id).toBe("m2-series-entieres");
     expect(bestProgrammeMatch("Mathématiques", "Séries numériques")?.id).toBe("m1-series");
+    // Les intitulés d'un paquet Anki ou d'une annale parlent d'« asymptotique » : un seul chapitre, et sans en voler d'autres.
+    expect(bestProgrammeMatch("Mathématiques", "Techniques asymptotiques")?.id).toBe("m1-asymptotique");
+    expect(bestProgrammeMatch("Mathématiques", "01 - Techniques asymptotiques")?.id).toBe("m1-asymptotique");
+    expect(bestProgrammeMatch("Mathématiques", "Développements asymptotiques")?.id).toBe("m1-asymptotique");
+    expect(bestProgrammeMatch("Physique", "Techniques asymptotiques")).toBeNull();
     expect(bestProgrammeMatch("Physique", "Théorème de Gauss")?.id).toBe("p2-electrostatique");
     expect(bestProgrammeMatch("Mathématiques", "Chapitre inventé")).toBeNull();
   });
