@@ -90,6 +90,11 @@ ni outils.
   connecteur MCP (demande un secret par compte : migration, accord requis) ; (4) le contenu qui exigerait un modèle (exercices originaux) se
   produit HORS LIGNE, une fois, par l'élève, puis se livre comme contenu statique relu : un coût unique, pas un coût par utilisateur
   (droits et qualité à vérifier). Le connecteur de Claude et Hermes restent des accès personnels de l'élève.
+- NIVEAU DE L'ÉLÈVE (2026-10-21) : il est en PREMIÈRE année (sup), pas en MP2. Ne jamais supposer le programme de deuxième année : séries entières,
+  séries de fonctions, intégrales à paramètre, convergence dominée, intégrales généralisées, probabilités (MP), réduction approfondie… Les sources
+  « MP » (banque d'oraux CCINP, Mines, Centrale) ne se prennent qu'exercice par exercice, après vérification des outils requis. Demander l'avancement
+  du cours AVANT de choisir une source ; prévoir des parties facultatives pour ce qui n'est pas sûr. (Il a déjà une partie « séries numériques » : à
+  confirmer chapitre par chapitre.)
 - Les docs `AUDIT.md` et `ROADMAP.md` sont partiellement périmées : se fier au code.
 
 ## État actuel
@@ -324,17 +329,13 @@ TYPE de carte au lieu de par chapitre (TaekdHub lit les paquets : pas de bilan p
 ChatGPT produit, Claude VÉRIFIE (rapport + contrôle + .apkg à renvoyer), ChatGPT ne travaille que sur les maths. Avertissements donnés : sauvegarder la
 collection Anki avant d'importer, GUID stables, 30 nouvelles cartes par jour. Gemini = tuteur (indices un à un, correction seulement à la demande,
 fin d'exercice par « Matière · résultat · aide · cause »), prompt fourni.
-(b) Feuille `docs/exercices/techniques-asymptotiques-feuille-1.pdf` (+ `.tex`) : 9 exercices RÉELS, sans indice ni corrigé. VERSION CORRIGÉE le même jour sur remarque de l'élève
-(« pas encore fait séries entières ni séries de fonctions ») : la 1re version contenait CCINP 51 et un extrait Mines 2019 (séries entières) et CCINP 50
-(intégrale à paramètre, convergence dominée) : RETIRÉS. Version actuelle : exercices 1 à 5 de la banque publique d'oraux CCINP MP 2022 (n° 1, 7, 5, 46, 56 ;
-CC BY-NC-SA 3.0 FR ; « indications » d'origine retirées) et 4 exercices de la feuille « Analyse asymptotique » MPSI du lycée Camille Jullian (14 mars 2023,
-ex. 11, 5, 15, 2 ; Q6 de l'ex. 5 omise) ; énoncés vérifiés numériquement (identité de l'ex. 11, DA de l'ex. 5, équation de l'ex. 15). LEÇON : demander
-l'avancement du cours AVANT de choisir une source ; l'ex. 3 (Bertrand par série-intégrale) suppose les intégrales généralisées vues ; énoncés relus sur les pages en image,
-aucun réécrit ; durée indicative A 1 h 05, B 1 h 10, C 50 min (facultative) ; tableau de suivi « résultat · aide · cause » pour le raccourci
-de la montre. LaTeX installé dans la session (`texlive`, via apt). Limites : la feuille ne couvre que les équivalents/DL/séries/intégrales du
-CCINP et un extrait Mines ; pas de suites implicites/récurrentes ni de développement asymptotique à plusieurs termes (à ajouter dans la feuille 2) ;
-l'historique `exercise_logs` ne contient que 4 lignes (réduction, 1er octobre) : impossible de cibler les points faibles par les données. Non fait :
-import de fiches JSON dans TaekdHub (fonction à construire, sans migration).
+(b) Feuille `docs/exercices/techniques-asymptotiques-feuille-1.pdf` (+ `.tex`) : 10 exercices RÉELS, sans indice ni corrigé, VERSION 3 le même jour après deux remarques de
+l'élève (« pas encore fait séries entières ni séries de fonctions », puis « c'est la 1re année »). V1 contenait CCINP 51 et un extrait Mines 2019 (séries entières) et CCINP 50
+(intégrale à paramètre) ; V2 supposait encore les séries numériques et les intégrales généralisées (programme de 2e année) et un « niveau Mines ». V3 (actuelle) : cœur sûr en
+1re année = A (équivalents/DL : CCINP 1, MPSI Camille Jullian 2023 ex. 4 q. 1-6) + B (CCINP 56, MPSI ex. 11, 5, 15) ≈ 2 h 15 ; C facultatif (MPSI ex. 2) ; D « séries numériques, seulement si
+déjà vues » (CCINP 46, 7, 5). Énoncés relus sur les pages en image et vérifiés numériquement (identité de l'ex. 11, DA de l'ex. 5, équation de l'ex. 15) ; « indications » CCINP retirées ;
+aucun énoncé réécrit ; tableau de suivi « résultat · aide · cause ». LaTeX installé dans la session (texlive, apt). Limites : ni suites récurrentes ni DA à plusieurs termes d'ordre élevé ; l'historique
+`exercise_logs` ne contient que 4 lignes (réduction, 1er octobre) : pas de ciblage par les données. Non fait : import de fiches JSON dans TaekdHub (fonction à construire, sans migration).
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
