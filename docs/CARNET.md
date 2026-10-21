@@ -324,10 +324,13 @@ TYPE de carte au lieu de par chapitre (TaekdHub lit les paquets : pas de bilan p
 ChatGPT produit, Claude VÉRIFIE (rapport + contrôle + .apkg à renvoyer), ChatGPT ne travaille que sur les maths. Avertissements donnés : sauvegarder la
 collection Anki avant d'importer, GUID stables, 30 nouvelles cartes par jour. Gemini = tuteur (indices un à un, correction seulement à la demande,
 fin d'exercice par « Matière · résultat · aide · cause »), prompt fourni.
-(b) Feuille `docs/exercices/techniques-asymptotiques-feuille-1.pdf` (+ `.tex`) : 8 exercices RÉELS, sans indice ni corrigé : 7 de la banque publique
-d'oraux CCINP MP session 2022 (exercices 1, 7, 5, 46, 50, 56, 51 ; CC BY-NC-SA 3.0 FR ; les « indications » d'origine retirées volontairement) et
-un extrait (Q1, Q3, Q4, Q2 admise) de l'épreuve Mathématiques I MP 2019 (épreuve commune, dont Mines-Télécom) ; énoncés relus sur les pages en image,
-aucun réécrit ; durée indicative A 1 h 05, B 1 h 05, C 50 min (facultative) ; tableau de suivi « résultat · aide · cause » pour le raccourci
+(b) Feuille `docs/exercices/techniques-asymptotiques-feuille-1.pdf` (+ `.tex`) : 9 exercices RÉELS, sans indice ni corrigé. VERSION CORRIGÉE le même jour sur remarque de l'élève
+(« pas encore fait séries entières ni séries de fonctions ») : la 1re version contenait CCINP 51 et un extrait Mines 2019 (séries entières) et CCINP 50
+(intégrale à paramètre, convergence dominée) : RETIRÉS. Version actuelle : exercices 1 à 5 de la banque publique d'oraux CCINP MP 2022 (n° 1, 7, 5, 46, 56 ;
+CC BY-NC-SA 3.0 FR ; « indications » d'origine retirées) et 4 exercices de la feuille « Analyse asymptotique » MPSI du lycée Camille Jullian (14 mars 2023,
+ex. 11, 5, 15, 2 ; Q6 de l'ex. 5 omise) ; énoncés vérifiés numériquement (identité de l'ex. 11, DA de l'ex. 5, équation de l'ex. 15). LEÇON : demander
+l'avancement du cours AVANT de choisir une source ; l'ex. 3 (Bertrand par série-intégrale) suppose les intégrales généralisées vues ; énoncés relus sur les pages en image,
+aucun réécrit ; durée indicative A 1 h 05, B 1 h 10, C 50 min (facultative) ; tableau de suivi « résultat · aide · cause » pour le raccourci
 de la montre. LaTeX installé dans la session (`texlive`, via apt). Limites : la feuille ne couvre que les équivalents/DL/séries/intégrales du
 CCINP et un extrait Mines ; pas de suites implicites/récurrentes ni de développement asymptotique à plusieurs termes (à ajouter dans la feuille 2) ;
 l'historique `exercise_logs` ne contient que 4 lignes (réduction, 1er octobre) : impossible de cibler les points faibles par les données. Non fait :

@@ -34,7 +34,7 @@ MP --- feuille d'exercices r\'eels, \textbf{sans indice ni corrig\'e}
 \noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\small
 \textbf{Mode d'emploi.} Chronom\`etre lanc\'e, sans cours ni notes, r\'edaction compl\`ete sur copie comme \`a l'oral~: hypoth\`eses
 v\'erifi\'ees, \'equivalents justifi\'es, conclusions \'ecrites. Une partie \`a la fois. \textbf{Dur\'ee indicative~: A $\approx$ 1\,h\,05 ;
-B $\approx$ 1\,h\,05 ; C $\approx$ 50\,min.} La partie C est facultative si tu veux all\'eger. \`A la fin, remplis le tableau de suivi (derni\`ere page).}}
+B $\approx$ 1\,h\,10 ; C $\approx$ 50\,min.} La partie C est facultative si tu veux all\'eger. \`A la fin, remplis le tableau de suivi (derni\`ere page).}}
 
 \vspace{0.8em}
 \noindent\textbf{Partie A --- Les fondations (oral CCINP, \(\approx\) 1\,h\,05)}
@@ -73,17 +73,9 @@ Montrer que : $u_n \underset{+\infty}{\sim} v_n \Longrightarrow \sum u_n$ et $\s
 \end{enumerate}
 
 \newpage
-\noindent\textbf{Partie B --- Approfondissement (oral CCINP, \(\approx\) 1\,h\,05)}
+\noindent\textbf{Partie B --- Approfondissement (\(\approx\) 1\,h\,10)}
 
-\exo{5}{CCINP, banque 2022, exercice 50}{20 min}
-\noindent On consid\`ere la fonction $F : x\mapsto \displaystyle\int_0^{+\infty}\dfrac{\ee^{-2t}}{x+t}\dd t$.
-\begin{enumerate}
-\item Prouver que $F$ est d\'efinie et continue sur $]0;+\infty[$.
-\item Prouver que $x\longmapsto xF(x)$ admet une limite en $+\infty$ et d\'eterminer la valeur de cette limite.
-\item D\'eterminer un \'equivalent, au voisinage de $+\infty$, de $F(x)$.
-\end{enumerate}
-
-\exo{6}{CCINP, banque 2022, exercice 56}{20 min}
+\exo{5}{CCINP, banque 2022, exercice 56}{20 min}
 \noindent On consid\`ere la fonction $H$ d\'efinie sur $]1;+\infty[$ par $H(x)=\displaystyle\int_x^{x^2}\dfrac{\dd t}{\ln t}$.
 \begin{enumerate}
 \item Montrer que $H$ est $\mathcal{C}^1$ sur $]1;+\infty[$ et calculer sa d\'eriv\'ee.
@@ -91,39 +83,39 @@ Montrer que : $u_n \underset{+\infty}{\sim} v_n \Longrightarrow \sum u_n$ et $\s
 \item En utilisant la fonction $u$ de la question 2., calculer la limite en $1^+$ de la fonction $H$.
 \end{enumerate}
 
-\exo{7}{CCINP, banque 2022, exercice 51}{25 min}
+\exo{6}{MPSI Camille Jullian 2023, ex. 11}{25 min}
+\noindent Pour tout entier naturel $n$, on note $I_n=\displaystyle\int_0^{\pi/4}\tan^n(x)\dd x$.
 \begin{enumerate}
-\item Montrer que la s\'erie $\displaystyle\sum\dfrac{(2n)!}{(n!)^2\,2^{4n}\,(2n+1)}$ converge.\\
-On se propose de calculer la somme de cette s\'erie.
-\item Donner le d\'eveloppement en s\'erie enti\`ere en $0$ de $t\longmapsto\dfrac{1}{\sqrt{1-t}}$ en pr\'ecisant le rayon de convergence.\\
-\textbf{Remarque} : dans l'expression du d\'eveloppement, on utilisera la notation factorielle.
-\item En d\'eduire le d\'eveloppement en s\'erie enti\`ere en $0$ de $x\longmapsto\operatorname{Arcsin}x$ ainsi que son rayon de convergence.
-\item En d\'eduire la valeur de $\displaystyle\sum_{n=0}^{+\infty}\dfrac{(2n)!}{(n!)^2\,2^{4n}\,(2n+1)}$.
+\item Calculer $I_0$, $I_1$ et $I_2$.
+\item Simplifier l'expression de $I_n+I_{n+2}$. En d\'eduire la convergence et la limite de $(I_n)$.
+\item \`A l'aide d'une IPP, montrer que $\forall n\geqslant 1$, $\displaystyle\int_0^{\pi/4}\cos(2x)\tan^n(x)\dd x=\dfrac12-nI_n$.
+\item En d\'eduire un \'equivalent simple de $I_n$.
+\end{enumerate}
+
+\exo{7}{MPSI Camille Jullian 2023, ex. 5}{25 min}
+\noindent On consid\`ere, pour tout entier naturel $n$, la fonction $f_n : x\mapsto x^3+nx+n$.
+\begin{enumerate}
+\item Montrer que l'\'equation $f_n(x)=0$ poss\`ede toujours une unique solution $u_n$ sur $\R$.
+\item Montrer que $-1\leqslant u_n\leqslant 0$.
+\item D\'eterminer la monotonie de la suite $(u_n)$.
+\item Prouver que $\displaystyle\lim_{n\to+\infty}u_n=-1$.
+\item Montrer que $u_n+1\sim\dfrac1n$, puis que $u_n=-1+\dfrac1n-\dfrac{3}{n^2}+o\!\left(\dfrac1{n^2}\right)$.
 \end{enumerate}
 
 \newpage
-\noindent\textbf{Partie C --- Niveau \'ecrit (Mines-T\'el\'ecom, Mines-Ponts\ldots, \(\approx\) 50\,min, facultative)}
+\noindent\textbf{Partie C --- Niveau soutenu : suites d\'efinies implicitement et \'equivalents (\(\approx\) 50\,min, facultative)}
 
-\exo{8}{Concours 2019, Math\'ematiques I, MP --- extrait}{50 min}
-\noindent\textit{Comportement asymptotique de sommes de s\'eries enti\`eres.} Soit $p$ un entier naturel non nul et $r$ un nombre r\'eel. On consid\`ere la fonction d\'efinie sur $\C$ par la s\'erie enti\`ere
-\[
-S_{r,p}(z)=\sum_{n=1}^{+\infty}\frac{(pn)^r}{(pn)!}\,z^{pn}.
-\]
+\exo{8}{MPSI Camille Jullian 2023, ex. 15}{25 min}
+\noindent Pour tout entier naturel $n\geqslant 1$, on note $u_n$ l'unique solution sur $[0,+\infty[$ de l'\'equation $\ee^x=n-x$.
 \begin{enumerate}
-\item[\textbf{1.}] \textbf{Question pr\'eliminaire} (Q1 du sujet). Justifier que la s\'erie enti\`ere $\displaystyle\sum_{n\geqslant 1}\frac{(pn)^r}{(pn)!}\,z^n$ a pour rayon de convergence $+\infty$. Qu'en est-il de la s\'erie enti\`ere $\displaystyle\sum_{n\geqslant 1}\frac{(pn)^r}{(pn)!}\,z^{pn}$ ?
+\item Montrer que la suite $(u_n)$ est correctement d\'efinie.
+\item D\'eterminer la monotonie de la suite $(u_n)$, puis sa limite \'eventuelle.
+\item Montrer que $u_n\sim\ln(n)$.
+\item Montrer que $u_n=\ln(n)+\ln\!\left(1-\dfrac{u_n}{n}\right)$, en d\'eduire un d\'eveloppement asymptotique de $u_n$ \`a la pr\'ecision $\dfrac{\ln(n)}{n^2}$.
 \end{enumerate}
-\noindent On suppose d\'esormais $r>0$. Pour tous $n\in\N$ et $x\in\R_+^*$, on pose
-\[
-u_n(x)=\frac{n^r}{n!}\,x^n,\qquad\text{et}\qquad \varphi_x : t\in[1,+\infty[\;\longmapsto\; t^{1-r}(t-1)^r-x.
-\]
-\noindent\textbf{R\'esultats admis} (\'etablis \`a la question~2 du sujet)~: pour tout $x>0$, $\varphi_x$ s'annule en un unique \'el\'ement de $[1,+\infty[$, not\'e $t_x$~; la suite finie $\big(u_n(x)\big)_{0\leqslant n\leqslant\lfloor t_x\rfloor}$ est croissante et la suite infinie $\big(u_n(x)\big)_{n\geqslant\lfloor t_x\rfloor}$ est d\'ecroissante, o\`u $\lfloor x\rfloor$ d\'esigne la partie enti\`ere du nombre r\'eel $x$.
-\begin{enumerate}
-\item[\textbf{2.}] (Q3 du sujet) Pour tout $\alpha\in\R$, d\'eterminer la limite de $\varphi_x(x+\alpha)$ quand $x$ tend vers $+\infty$. En d\'eduire que $t_x-x-r$ tend vers z\'ero lorsque $x\to+\infty$. (On pourra s'aider de la d\'efinition d'une limite.)
-\item[\textbf{3.}] (Q4 du sujet) Montrer que pour tout entier relatif $k$, $u_{\lfloor x\rfloor+k}(x)\sim u_{\lfloor x\rfloor}(x)$ lorsque $x\to+\infty$. En d\'eduire que pour tout $n\in\N$ et pour tout $x$ au voisinage de $+\infty$,
-\[
-\sum_{i=\lfloor x\rfloor-n}^{\lfloor x\rfloor}u_i(x)\;\geqslant\; n\,u_{\lfloor x\rfloor}(x).
-\]
-\end{enumerate}
+
+\exo{9}{MPSI Camille Jullian 2023, ex. 2}{25 min}
+\noindent Soit $(u_n)$ une suite d\'ecroissante v\'erifiant $u_n+u_{n+1}\sim\dfrac1n$. Montrer que la suite converge n\'ecessairement vers $0$ et en donner un \'equivalent simple. Le r\'esultat reste-t-il vrai si la suite n'est pas suppos\'ee d\'ecroissante ?
 
 \newpage
 \section*{Tableau de suivi}
@@ -142,13 +134,14 @@ u_n(x)=\frac{n^r}{n!}\,x^n,\qquad\text{et}\qquad \varphi_x : t\in[1,+\infty[\;\l
 6 & & & & \\\hline
 7 & & & & \\\hline
 8 & & & & \\\hline
+9 & & & & \\\hline
 \end{tabular}
 
 \vfill
 \begin{small}
-\noindent\textbf{Sources.} Exercices 1 \`a 7 : banque publique d'exercices de math\'ematiques de l'\'epreuve orale du CCINP, fili\`ere MP, session 2022
-(concours-commun-inp.fr), licence CC BY-NC-SA 3.0 FR~; les \emph{indications} figurant dans les \'enonc\'es d'origine ont \'et\'e retir\'ees volontairement (num\'erotation conserv\'ee).
-Exercice 8 : concours 2019, \'epreuve de math\'ematiques I, fili\`ere MP (Mines-T\'el\'ecom, Mines-Ponts, Centrale-Sup\'elec cycle international\ldots), extrait des parties pr\'eliminaire et A
-(num\'erotation d'origine indiqu\'ee), \'enonc\'e disponible sur doc-solus.fr. Aucun \'enonc\'e n'a \'et\'e r\'e\'ecrit.
+\noindent\textbf{Sources.} Exercices 1 \`a 5 : banque publique d'exercices de math\'ematiques de l'\'epreuve orale du CCINP, fili\`ere MP, session 2022
+(concours-commun-inp.fr), licence CC BY-NC-SA 3.0 FR~; les \emph{indications} des \'enonc\'es d'origine ont \'et\'e retir\'ees volontairement (num\'erotation conserv\'ee).
+Exercices 6 \`a 9 : \og Feuille d'exercices n$^{\circ}$17 : Analyse asymptotique \fg, MPSI, lyc\'ee Camille Jullian, 14 mars 2023 (publi\'ee sur normalesup.org/\textasciitilde glafon), exercices 11, 5, 15 et 2 ;
+pour l'exercice 7, la question 6 (un d\'eveloppement \`a un ordre plus \'elev\'e) a \'et\'e laiss\'ee de c\^ot\'e. Aucun \'enonc\'e n'a \'et\'e r\'e\'ecrit.
 \end{small}
 \end{document}
