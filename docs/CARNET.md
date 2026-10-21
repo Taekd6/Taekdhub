@@ -2,7 +2,7 @@
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
 > le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `7213c06`.
-> Les PR #28 à #31 sont FUSIONNÉES dans `main` ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
+> Les PR #28 à #32 sont FUSIONNÉES dans `main` (PR #32 : merge `718084b`, production Vercel « Ready ») ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
 > Branche de travail actuelle : `claude/exciting-franklin-hiekk8`.
 
 ## Objectif général
@@ -285,7 +285,7 @@ dans l'application), pas de lire quoi que ce soit.
 chrono, les exercices, Anki). Seuils écrits : séance « ancienne » au-delà de 2 jours, exercice au-delà de 7 jours, Anki au-delà de 24 h (le
 seuil du moteur, `ANKI_DUE_STALE_HOURS`) ; « vide » sans aucune donnée. Aucun score. Vérifié : 90 fichiers de tests, 1454 réussis + 1 échec
 attendu antérieur, `tsc`, lint, build ; capture réelle (séance de test vieille de 5 jours). PR #32 : contrôles GitHub verts, mergeable
-propre ; l'élève a créé `CAPTURE_TOKEN` et `MCP_USER_ID` (Production) ; fusion NON faite (accord explicite requis). Pas fait : appel réel
+propre ; l'élève a créé `CAPTURE_TOKEN` et `MCP_USER_ID` (Production) ; PR #32 FUSIONNÉE le 2026-10-21 sur accord explicite de l'élève (« fusionne toi ») après contrôles verts sur la dernière tête ; déploiement de production `Ready` (commit `718084b`), appels réels de la route non testés. Pas fait : appel réel
 d'Hermes (hors de portée de Claude : l'agent est chez l'élève), révocation du jeton et du contournement de test (à faire par l'élève),
 rappel d'import Anki au démarrage (AnkiConnect n'existe que sur ordinateur, Anki ouvert : rien à automatiser côté navigateur sans
 l'élève présent).
