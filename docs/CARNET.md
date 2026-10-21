@@ -1,9 +1,9 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-19, commit de code `49d8961`.
-> Écart constaté ce jour : la PR #28 est FUSIONNÉE dans `main` (merge `7f081c3`, 2026-10-16) ; la PR #29 (mission 7) aussi (merge `e79f3cf`, production redéployée par Vercel, non vérifié) ; les paragraphes
-> « PR #28 ouverte » plus bas sont périmés. Branche de travail actuelle : `claude/laughing-meitner-p9o3si`.
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `678704e`.
+> Les PR #28 à #31 sont FUSIONNÉES dans `main` ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
+> Branche de travail actuelle : `claude/exciting-franklin-hiekk8`.
 
 ## Objectif général
 TaekdHub est l'outil de travail personnel d'un élève de prépa MP (PWA Next.js 15, React 19,
@@ -225,6 +225,20 @@ mais sans appelant sur l'accueil (`components/home/cards.tsx` en partie, `hero.t
 Attention : « Noter du temps » n'est plus sur l'accueil (reste via le chrono). Vérifié : 86 fichiers de tests, 1404 réussis + 1 échec
 attendu antérieur, `tsc`, lint, build ; captures à 1536 px (accueil, vitrine). Non vérifié : mobile après cette mission, mode sombre,
 iPhone. Commit `49d8961`.
+
+**Mission 9 (2026-10-21) — « Minuit » et graphiques d'exercices (demande de l'élève : version premium, sombre, plus de couleurs ;
+la sobriété de la mission 8 est jugée terne).** Palette `aurora` (id inchangé) devient « Minuit » : indigo `#818cf8` → cyan `#22d3ee`,
+boutons et cartes en indigo/violet/cyan profonds ; thème SOMBRE par défaut (`DEFAULT_THEME_MODE`, script anti-flash), fond bleu-nuit
+`8 9 20`, tuiles `19 21 38`. Les paliers de gris par matière sont CONSERVÉS (`lib/subject-colors.test.ts` : l'élève avait rejeté les
+couleurs par matière avec la palette « Nuit ») : à rouvrir seulement sur demande. Nouvel onglet « Exercices » de `/progress`
+(`components/progress/exercise-results.tsx`, `lib/analytics/attempt-trend.ts`) : tentatives des 6 dernières semaines empilées par résultat,
+et part réussie SANS aide par semaine (`null`, donc courbe interrompue, sous 3 tentatives) ; aucun lien de cause affirmé. Aucun moteur,
+collection ni route modifié ; Hermes inchangé. Constat : `/progress` avait déjà des graphiques du temps (barres, courbes, matières) ; seul le
+côté exercices n'en avait pas. Vérifié : 87 fichiers de tests, 1409 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; captures
+Chromium à 1280 px (onglet Exercices, avec tentatives de test ; accueil sombre). Non vérifié : mobile, iPhone, mode clair avec la nouvelle
+palette, pages autres que l'accueil et `/progress`. ATTENTION : un appareil qui a déjà enregistré `themeMode: "light"` reste en clair
+(Réglages > apparence). L'historique des rejets (Papier, Nuit, Apple, Revolut sombre « le noir ça rend pas envie », Revolut clair, Sobre)
+est dans `lib/theme.ts` : l'élève a choisi le sombre cette fois, à confirmer à l'usage. Hermes (agent qui prompte) : reporté, non commencé.
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
