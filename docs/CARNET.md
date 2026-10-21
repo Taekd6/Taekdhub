@@ -235,8 +235,8 @@ couleurs par matière avec la palette « Nuit ») : à rouvrir seulement sur dem
 et part réussie SANS aide par semaine (`null`, donc courbe interrompue, sous 3 tentatives) ; aucun lien de cause affirmé. Aucun moteur,
 collection ni route modifié ; Hermes inchangé. Constat : `/progress` avait déjà des graphiques du temps (barres, courbes, matières) ; seul le
 côté exercices n'en avait pas. Vérifié : 87 fichiers de tests, 1409 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; captures
-Chromium à 1280 px (onglet Exercices, avec tentatives de test ; accueil sombre). Non vérifié : mobile, iPhone, mode clair avec la nouvelle
-palette, pages autres que l'accueil et `/progress`. ATTENTION : un appareil qui a déjà enregistré `themeMode: "light"` reste en clair
+Chromium à 1280 px (onglet Exercices, avec tentatives de test ; accueil sombre). Vérifié ensuite par captures : mobile 390 px (sombre) et mode clair
+(1280 px, états vides de l'onglet Exercices). Non vérifié : iPhone réel, pages autres que l'écran de bienvenue et `/progress`. ATTENTION : un appareil qui a déjà enregistré `themeMode: "light"` reste en clair
 (Réglages > apparence). L'historique des rejets (Papier, Nuit, Apple, Revolut sombre « le noir ça rend pas envie », Revolut clair, Sobre)
 est dans `lib/theme.ts` : l'élève a choisi le sombre cette fois, à confirmer à l'usage. Hermes (agent qui prompte) : reporté, non commencé.
 
