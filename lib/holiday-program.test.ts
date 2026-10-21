@@ -60,13 +60,13 @@ describe("le programme de fin de vacances", () => {
     for (const session of HOLIDAY_PROGRAM) if (session.fiche) expect(FICHES[session.fiche.key], session.id).toBeDefined();
   });
 
-  it("charge raisonnable : jamais plus de 5 h 40 par jour, et le total est celui annoncé", () => {
-    for (const day of programDays()) expect(day.sessions.reduce((sum, session) => sum + sessionMinutes(session), 0), day.date).toBeLessThanOrEqual(340);
+  it("charge raisonnable : jamais plus de 6 h par jour, et le total est celui annoncé", () => {
+    for (const day of programDays()) expect(day.sessions.reduce((sum, session) => sum + sessionMinutes(session), 0), day.date).toBeLessThanOrEqual(360);
     const stats = programStats();
     expect(stats.restDays).toBe(2);
     expect(stats.workDays).toBe(9);
-    expect(stats.workMinutes).toBe(2640);
-    expect(hoursLabel(stats.workMinutes)).toBe("44 h");
+    expect(stats.workMinutes).toBe(2805);
+    expect(hoursLabel(stats.workMinutes)).toBe("46 h 45");
   });
 
   it("parisClock : l'heure de Paris, avant et après le changement d'heure", () => {
@@ -80,7 +80,8 @@ describe("le programme de fin de vacances", () => {
     expect(sessionById("inconnue")).toBeNull();
     expect(nextSession("2026-10-21T22:00")?.id).toBe("2026-10-22-matin");
     expect(nextSession("2026-10-22T10:00")?.id).toBe("2026-10-22-matin"); // en cours
-    expect(nextSession("2026-10-22T11:30")?.id).toBe("2026-10-22-apres-midi");
+    expect(nextSession("2026-10-22T11:30")?.id).toBe("2026-10-22-anki");
+    expect(nextSession("2026-10-22T12:45")?.id).toBe("2026-10-22-apres-midi");
     expect(nextSession("2026-10-25T09:00")?.id).toBe("2026-10-25-soir"); // le repos n'est pas une séance
     expect(nextSession("2026-10-25T21:00")?.id).toBe("2026-10-26-matin");
     expect(nextSession("2026-11-01T20:30")).toBeNull();

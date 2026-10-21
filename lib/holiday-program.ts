@@ -88,7 +88,17 @@ function vocab(date: string, pages: string, minutes = 25): ProgramSession {
   };
 }
 
-export const HOLIDAY_PROGRAM: ProgramSession[] = [
+/** Une séance Anki : les cartes dues, de tête, sans regarder la réponse avant d'avoir répondu. */
+function anki(date: string, start: string, end: string): ProgramSession {
+  return {
+    id: `${date}-anki`, date, start, end, kind: "apres-midi", title: "Anki : cartes dues", subject: MATHS, chapter: "Mémorisation (maths, puis physique)",
+    steps: [step("Cartes dues", 30, "Ton paquet de maths (celui de ChatGPT, une fois relu), puis les cartes de physique s'il en reste. Réponds de tête avant de retourner la carte ; note « à revoir » si tu hésites plus de cinq secondes.")],
+    fiche: null,
+    note: "Trente minutes pendant une pause : c'est la méthode qui retient le plus par minute passée. Ne rattrape pas un retard d'un coup : fais seulement les cartes du jour.", version: 1,
+  };
+}
+
+const PROGRAM_SOURCE: ProgramSession[] = [
   // ── Jeudi 22 octobre ──────────────────────────────────────────────────────────────────────
   {
     id: "2026-10-22-matin", date: "2026-10-22", start: "09:30", end: "11:30", kind: "matin", title: "Reprise des erreurs de tes copies", subject: MATHS, chapter: "Analyse (reprise de première année)",
@@ -129,11 +139,6 @@ export const HOLIDAY_PROGRAM: ProgramSession[] = [
     id: "2026-10-24-matin", date: "2026-10-24", start: "09:00", end: "13:00", kind: "matin", title: "DS de français en conditions", subject: FRANCAIS, chapter: "DS à rendre lundi 2 novembre",
     steps: [step("Épreuve", 240, "Quatre heures d'affilée, sans notes ni téléphone : fais-le comme le vrai devoir, copie rédigée au propre.")],
     fiche: null, note: "La durée de quatre heures est une hypothèse : corrige-la si le sujet en annonce une autre.", version: 1,
-  },
-  {
-    id: "2026-10-24-anglais", date: "2026-10-24", start: "18:00", end: "18:30", kind: "soir", title: "Intervention d'anglais du 5 novembre", subject: ANGLAIS, chapter: "Oral",
-    steps: [step("Préparer", 30, "Écris l'introduction de ton intervention (deux minutes au plus), puis dis-la à voix haute en te chronométrant.")],
-    fiche: null, note: "Une petite intervention : l'essentiel est d'être fluide et dans le temps.", version: 1,
   },
   vocab("2026-10-24", "439-440"),
   // ── Dimanche 25 octobre ───────────────────────────────────────────────────────────────────
@@ -188,11 +193,6 @@ export const HOLIDAY_PROGRAM: ProgramSession[] = [
     steps: [step("Questions restantes", 60, "Les questions notées jeudi et vendredi : essaie chacune vingt minutes."), step("Relecture", 30, "Unités, chiffres significatifs, schémas : relis tout.")],
     fiche: null, note: "Dimanche, plus rien à faire sur ce DM.", version: 1,
   },
-  {
-    id: "2026-10-28-anglais", date: "2026-10-28", start: "17:00", end: "17:30", kind: "soir", title: "Intervention d'anglais : répétition", subject: ANGLAIS, chapter: "Oral",
-    steps: [step("Répéter", 30, "Dis ton intervention à voix haute, chronométrée, sans lire ton papier.")],
-    fiche: null, note: "Deuxième passage : tu dois pouvoir la dire sans notes.", version: 1,
-  },
   vocab("2026-10-28", "445-446"),
   // ── Jeudi 29 octobre ──────────────────────────────────────────────────────────────────────
   {
@@ -225,11 +225,6 @@ export const HOLIDAY_PROGRAM: ProgramSession[] = [
   vocab("2026-10-30", "449-450"),
   // ── Samedi 31 octobre ─────────────────────────────────────────────────────────────────────
   {
-    id: "2026-10-31-matin", date: "2026-10-31", start: "10:00", end: "10:45", kind: "matin", title: "Intervention d'anglais : dernière répétition", subject: ANGLAIS, chapter: "Oral",
-    steps: [step("Répéter", 45, "Dis ton intervention deux fois, chronométrée, puis prépare deux réponses aux questions qu'on pourrait te poser.")],
-    fiche: null, note: "Après ça, tu n'y touches plus avant jeudi.", version: 1,
-  },
-  {
     id: "2026-10-31-apres-midi", date: "2026-10-31", start: "14:30", end: "16:30", kind: "apres-midi", title: "Électrostatique et électronique : fiche de synthèse", subject: PHYS, chapter: "Électrostatique, électronique",
     steps: [step("Questions variées", 70, "Vingt questions courtes sur l'électrostatique (champ, potentiel, théorème de Gauss, conducteurs), réponse de tête avant de vérifier."), step("Fiche", 40, "Écris sur une page les formules et les méthodes à connaître, sans regarder ton cours."), BILAN(10)],
     fiche: null, note: "Ton professeur pose beaucoup de petites questions sur plein de sujets : la rapidité de rappel compte plus que la profondeur.", version: 1,
@@ -242,7 +237,20 @@ export const HOLIDAY_PROGRAM: ProgramSession[] = [
     note: "Pas de travail, sauf dix minutes de vocabulaire ce soir. Prépare ton sac et ton emploi du temps de lundi : DS de physique, DM et DS de français à rendre.", version: 2,
   },
   { ...vocab("2026-11-01", "435-453", 15), title: "Vocabulaire : relecture", start: "20:00", end: "20:15", steps: [step("Réviser", 15, "Relis rapidement les pages 435 à 453, puis teste-toi sur dix mots au hasard. Rien de nouveau.")] },
+  // ── Anki, chaque jour de travail, pendant une pause ──────────────────────────────────────
+  anki("2026-10-22", "12:15", "12:45"),
+  anki("2026-10-23", "12:15", "12:45"),
+  anki("2026-10-24", "13:30", "14:00"),
+  anki("2026-10-26", "12:15", "12:45"),
+  anki("2026-10-27", "12:15", "12:45"),
+  anki("2026-10-28", "12:15", "12:45"),
+  anki("2026-10-29", "13:30", "14:00"),
+  anki("2026-10-30", "12:15", "12:45"),
+  anki("2026-10-31", "12:15", "12:45"),
 ];
+
+/** Dans l'ordre du temps : c'est l'ordre des séances « précédente » et « suivante » de la page d'une séance. */
+export const HOLIDAY_PROGRAM: ProgramSession[] = [...PROGRAM_SOURCE].sort((a, b) => `${a.date}T${a.start ?? "00:00"}`.localeCompare(`${b.date}T${b.start ?? "00:00"}`) || a.id.localeCompare(b.id));
 
 /**
  * LES ÉCHÉANCES — DS, colles, tests de vocabulaire, devoirs à rendre. Un événement par échéance dans Calendrier Apple,
@@ -279,8 +287,7 @@ export const DEADLINES: Deadline[] = [
   { id: "2026-11-02-dm-physique", date: "2026-11-02", start: null, end: null, kind: "devoir", title: "DM de physique à rendre", subject: PHYS, place: "", note: "Trois séances prévues : 22, 23 et 28 octobre.", alarmDays: NEAR, version: 1 },
   { id: "2026-11-02-ds-francais", date: "2026-11-02", start: null, end: null, kind: "devoir", title: "DS de français à rendre", subject: FRANCAIS, place: "", note: "À faire en conditions pendant les vacances : samedi 24 octobre.", alarmDays: NEAR, version: 1 },
   { id: "2026-11-03-colle-maths", date: "2026-11-03", start: "13:00", end: "14:00", kind: "colle", title: "Colle de maths", subject: MATHS, place: "D11", note: "Semaine de colle SC6, groupe G9. Programme à lire dans le cahier de prépa.", alarmDays: NEAR, version: 1 },
-  { id: "2026-11-05-intervention-anglais", date: "2026-11-05", start: "17:00", end: "18:00", kind: "oral", title: "Anglais : petite intervention", subject: ANGLAIS, place: "D1-24", note: "Semaine de colle SC6 (Mme Ouhadia, ligne en italique).", alarmDays: NEAR, version: 1 },
-  { id: "2026-11-05-test-vocab", date: "2026-11-05", start: null, end: null, kind: "vocab", title: "Test de vocabulaire d'anglais : partie 10 (p. 435-453)", subject: ANGLAIS, place: "", note: "« Concepts et relations abstraites », Le mot et l'idée 2. Le vocabulaire est en anglais.", alarmDays: FAR, version: 1 },
+    { id: "2026-11-05-test-vocab", date: "2026-11-05", start: null, end: null, kind: "vocab", title: "Test de vocabulaire d'anglais : partie 10 (p. 435-453)", subject: ANGLAIS, place: "", note: "« Concepts et relations abstraites », Le mot et l'idée 2. Le vocabulaire est en anglais.", alarmDays: FAR, version: 1 },
   { id: "2026-11-10-colle-physique", date: "2026-11-10", start: "12:00", end: "13:00", kind: "colle", title: "Colle de physique", subject: PHYS, place: "F2-21", note: "Semaine de colle SC7 (M Poncet), groupe G9. Le mercredi 11 novembre est férié.", alarmDays: NEAR, version: 1 },
   { id: "2026-11-13-colle-maths", date: "2026-11-13", start: "13:00", end: "14:00", kind: "colle", title: "Colle de maths", subject: MATHS, place: "B2-31", note: "Semaine de colle SC7, groupe G9.", alarmDays: NEAR, version: 1 },
   { id: "2026-11-16-ds-maths", date: "2026-11-16", start: null, end: null, kind: "ds", title: "DS de maths", subject: MATHS, place: "", note: "Calendrier des DS, SA10.", alarmDays: FAR, version: 1 },
