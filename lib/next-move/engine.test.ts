@@ -11,6 +11,7 @@ import {
   autoMinutes,
   composeSession,
   computeNextMove,
+  dayLoad,
   rankCandidates,
   topReasons,
   type MoveCandidate,
@@ -371,6 +372,38 @@ describe("énergie et heure", () => {
     const ranked = rankCandidates(input({ workItems: [dm], chapterMemory: memory, checkins: [checkin(2)] }));
     expect(termIds(ranked.find((candidate) => candidate.kind === "échéance")!)).toContain("fatigue-long");
     expect(termIds(ranked.find((candidate) => candidate.kind === "rappel")!)).toContain("fatigue-court");
+  });
+
+  describe("le sommeil d'un check-in ne vaut que pour la nuit qu'il décrit", () => {
+    // « maintenant » du jeu de test : le 24 septembre (voir `input`). Un check-in daté du 23 date d'HIER.
+    const dm = () => workItem({ dueDate: "2026-09-28" });
+    const memory = () => [chapter("Physique", "Électrostatique", "2026-09-10")];
+    const fatigue = (checkins: DailyCheckin[]) =>
+      rankCandidates(input({ workItems: [dm()], chapterMemory: memory(), checkins }))
+        .flatMap((candidate) => candidate.terms)
+        .filter((term) => term.id === "fatigue-long" || term.id === "fatigue-court");
+
+    it("un sommeil court daté d'HIER (donc l'avant-veille) n'est plus pris pour la nuit dernière", () => {
+      expect(fatigue([{ ...checkin(4, 4.5) }])).toEqual([]);
+    });
+
+    it("le même sommeil court, daté d'AUJOURD'HUI, compte : c'est la nuit dernière", () => {
+      const terms = fatigue([{ ...checkin(4, 4.5), date: "2026-09-24" }]);
+      expect(terms.length).toBeGreaterThan(0);
+      expect(terms.every((term) => term.reason.includes("4,5 h de sommeil"))).toBe(true);
+    });
+
+    it("l'énergie basse d'hier garde son effet, sans parler de sommeil", () => {
+      const terms = fatigue([checkin(2, 4.5)]);
+      expect(terms.length).toBeGreaterThan(0);
+      expect(terms.every((term) => term.reason.startsWith("Énergie basse"))).toBe(true);
+    });
+
+    it("« fatigue forte » (énergie ≤ 2 ET sommeil < 6 h) exige un sommeil d'AUJOURD'HUI", () => {
+      const state = (date: string) => dayLoad({ sessions: [], preferences: input({}).preferences, checkins: [{ ...checkin(2, 5), date }], now: input({}).now }).tired;
+      expect(state("2026-09-23")).toBe(false);
+      expect(state("2026-09-24")).toBe(true);
+    });
   });
 
   it("tard le soir, la durée par défaut est plus courte", () => {

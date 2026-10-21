@@ -1010,10 +1010,22 @@ function blockCandidates(input: NextMoveInput, contexts: Map<Subject, SubjectCon
 
 /* ── Modulateurs ──────────────────────────────────────────────────── */
 
-function latestCheckin(checkins: DailyCheckin[], now: Date): DailyCheckin | null {
+/**
+ * Le dernier signal de forme connu, et ce qu'il PEUT dire.
+ *
+ * `sleepHours` d'un check-in daté J décrit la nuit PRÉCÉDANT J (lib/storage.ts#DailyCheckin).
+ * Celui d'AUJOURD'HUI parle donc de la nuit dernière : on l'utilise en entier. Celui d'HIER
+ * parle de l'avant-veille au soir : son sommeil ne dit RIEN de la nuit dernière (le matin, s'en
+ * servir, c'était lire le sommeil de l'avant-veille) ; seule son énergie, ressentie hier, reste
+ * un indice, et `sleepHours` vaut alors `null`.
+ */
+function latestCheckin(checkins: DailyCheckin[], now: Date): { energy: number; sleepHours: number | null } | null {
   const today = dayKey(now);
   const yesterday = dayKey(new Date(now.getTime() - DAY));
-  return checkins.find((entry) => entry.date === today) ?? checkins.find((entry) => entry.date === yesterday) ?? null;
+  const todays = checkins.find((entry) => entry.date === today);
+  if (todays) return { energy: todays.energy, sleepHours: todays.sleepHours };
+  const yesterdays = checkins.find((entry) => entry.date === yesterday);
+  return yesterdays ? { energy: yesterdays.energy, sleepHours: null } : null;
 }
 
 const SHORT_KINDS: ReadonlySet<MoveKind> = new Set(["cartes", "rappel", "anki"]);
@@ -1045,8 +1057,9 @@ function applyModifiers(candidate: MoveCandidate, input: NextMoveInput, contexts
   }
 
   const checkin = latestCheckin(input.checkins, now);
-  if (checkin && (checkin.energy <= 2 || checkin.sleepHours < 6)) {
-    const why = checkin.energy <= 2 ? "Énergie basse au dernier check-in" : `${formatAverage(checkin.sleepHours)} h de sommeil au dernier check-in`;
+  const shortSleep = checkin !== null && checkin.sleepHours !== null && checkin.sleepHours < 6;
+  if (checkin && (checkin.energy <= 2 || shortSleep)) {
+    const why = checkin.energy <= 2 ? "Énergie basse au dernier check-in" : `${formatAverage(checkin.sleepHours ?? 0)} h de sommeil au dernier check-in`;
     if (LONG_KINDS.has(candidate.kind)) candidate.terms.push({ id: "fatigue-long", points: LOW_ENERGY_LONG_PENALTY, reason: `${why} : un long bloc passe moins bien` });
     if (SHORT_KINDS.has(candidate.kind)) candidate.terms.push({ id: "fatigue-court", points: LOW_ENERGY_SHORT_BONUS, reason: `${why} : un format court convient` });
   }
@@ -1389,7 +1402,7 @@ export function dayLoad(input: Pick<NextMoveInput, "sessions" | "preferences" | 
   const minutes = Math.round(input.sessions.filter((session) => dayKey(session.started_at) === today).reduce((sum, session) => sum + session.duration_seconds, 0) / 60);
   const capacity = input.preferences.capacityByWeekday[(input.now.getDay() + 6) % 7] ?? 0;
   const checkin = latestCheckin(input.checkins, input.now);
-  const tired = Boolean(checkin && checkin.energy <= 2 && checkin.sleepHours < 6);
+  const tired = Boolean(checkin && checkin.energy <= 2 && checkin.sleepHours !== null && checkin.sleepHours < 6);
   const eveningDone = eveningPlan(input.preferences, input.sessions, input.now).entries.every((entry) => entry.met);
   const enough = capacity > 0 && eveningDone && (minutes >= capacity || (tired && minutes >= capacity / 2));
   const reason = enough
