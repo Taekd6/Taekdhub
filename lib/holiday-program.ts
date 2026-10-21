@@ -9,7 +9,7 @@ import type { Subject } from "@/lib/supabase/types";
  * (un PDF de `public/exercices/`). Quand il n'y a pas de fiche, la séance s'appuie sur les TD de l'élève (numéros
  * d'exercices cités) : la fiche manquante est écrite la veille, d'après ce qui a été fait (voir la note de séance).
  *
- * Charge : environ 5 h de travail par jour, un jour de repos complet (dimanche 25 octobre), un dimanche léger
+ * Charge : au moins 5 h de maths ou de physique par jour de travail (voulu par l'élève), PLUS l'anglais, le français et l'informatique, un jour de repos complet (dimanche 25 octobre), un dimanche léger
  * (1er novembre). Le vocabulaire d'anglais est appris TOUS LES JOURS, par petits paquets (répétition espacée),
  * pour que le test du 5 novembre ne se prépare pas la veille.
  *
@@ -74,6 +74,7 @@ const MATHS: Subject = "Mathématiques";
 const PHYS: Subject = "Physique";
 const ANGLAIS: Subject = "Anglais";
 const FRANCAIS: Subject = "Français";
+const INFO: Subject = "Informatique Spé";
 
 const VOCAB_CHAPTER = "Vocabulaire — partie 10, « Concepts et relations abstraites » (p. 435-453)";
 const FICHE_LA_VEILLE = "Ta fiche d'exercices arrive la veille au soir, d'après ce que tu as fait : en attendant, travaille avec les exercices de ton TD cités ci-dessus.";
@@ -112,8 +113,8 @@ const PROGRAM_SOURCE: ProgramSession[] = [
     fiche: null, note: `DS de physique du lundi 2 novembre : l'électronique y pèse lourd. ${FICHE_LA_VEILLE}`, version: 1,
   },
   {
-    id: "2026-10-22-fin-apres-midi", date: "2026-10-22", start: "16:45", end: "17:30", kind: "apres-midi", title: "DM de physique (1/3)", subject: PHYS, chapter: "DM à rendre lundi 2 novembre",
-    steps: [step("Lecture et brouillon", 15, "Lis tout le sujet, repère les trois questions que tu sais faire tout de suite."), step("Rédaction", 30, "Rédige proprement la première partie, avec les schémas.")],
+    id: "2026-10-22-fin-apres-midi", date: "2026-10-22", start: "16:45", end: "17:45", kind: "apres-midi", title: "DM de physique (1/3)", subject: PHYS, chapter: "DM à rendre lundi 2 novembre",
+    steps: [step("Lecture et brouillon", 15, "Lis tout le sujet, repère les trois questions que tu sais faire tout de suite."), step("Rédaction", 45, "Rédige proprement la première partie, avec les schémas.")],
     fiche: null, note: "Le DM est à rendre lundi : trois séances, pas une nuit blanche le dimanche.", version: 1,
   },
   vocab("2026-10-22", "435-436"),
@@ -129,8 +130,8 @@ const PROGRAM_SOURCE: ProgramSession[] = [
     fiche: null, note: `Tu es au deuxième principe pour un système ouvert : c'est le cœur du DS de lundi. ${FICHE_LA_VEILLE}`, version: 1,
   },
   {
-    id: "2026-10-23-fin-apres-midi", date: "2026-10-23", start: "16:45", end: "17:30", kind: "apres-midi", title: "DM de physique (2/3)", subject: PHYS, chapter: "DM à rendre lundi 2 novembre",
-    steps: [step("Rédaction", 45, "Rédige proprement la deuxième partie, avec les schémas et les applications numériques.")],
+    id: "2026-10-23-fin-apres-midi", date: "2026-10-23", start: "16:45", end: "17:45", kind: "apres-midi", title: "DM de physique (2/3)", subject: PHYS, chapter: "DM à rendre lundi 2 novembre",
+    steps: [step("Rédaction", 60, "Rédige proprement la deuxième partie, avec les schémas et les applications numériques.")],
     fiche: null, note: "Si une question te bloque plus de dix minutes, note-la et passe : on y revient mercredi.", version: 1,
   },
   vocab("2026-10-23", "437-438"),
@@ -160,8 +161,8 @@ const PROGRAM_SOURCE: ProgramSession[] = [
     fiche: null, note: FICHE_LA_VEILLE, version: 1,
   },
   {
-    id: "2026-10-26-fin-apres-midi", date: "2026-10-26", start: "16:45", end: "17:30", kind: "apres-midi", title: "DM de maths (1/3)", subject: MATHS, chapter: "DM à rendre lundi 2 novembre",
-    steps: [step("Lecture et brouillon", 15, "Lis tout le sujet, repère les questions faciles et celles qui demandent une idée."), step("Rédaction", 30, "Rédige proprement la première partie.")],
+    id: "2026-10-26-fin-apres-midi", date: "2026-10-26", start: "16:45", end: "17:45", kind: "apres-midi", title: "DM de maths (1/3)", subject: MATHS, chapter: "DM à rendre lundi 2 novembre",
+    steps: [step("Lecture et brouillon", 15, "Lis tout le sujet, repère les questions faciles et celles qui demandent une idée."), step("Rédaction", 45, "Rédige proprement la première partie.")],
     fiche: null, note: "Rédige comme sur une copie de concours : hypothèses, théorème utilisé, conclusion.", version: 1,
   },
   vocab("2026-10-26", "441-442"),
@@ -177,8 +178,8 @@ const PROGRAM_SOURCE: ProgramSession[] = [
     fiche: null, note: FICHE_LA_VEILLE, version: 1,
   },
   {
-    id: "2026-10-27-fin-apres-midi", date: "2026-10-27", start: "16:45", end: "17:30", kind: "apres-midi", title: "DM de maths (2/3)", subject: MATHS, chapter: "DM à rendre lundi 2 novembre",
-    steps: [step("Rédaction", 45, "Rédige proprement la deuxième partie.")],
+    id: "2026-10-27-fin-apres-midi", date: "2026-10-27", start: "16:45", end: "17:45", kind: "apres-midi", title: "DM de maths (2/3)", subject: MATHS, chapter: "DM à rendre lundi 2 novembre",
+    steps: [step("Rédaction", 60, "Rédige proprement la deuxième partie.")],
     fiche: null, note: "Garde mercredi pour les questions qui te résistent encore.", version: 1,
   },
   vocab("2026-10-27", "443-444"),
@@ -189,8 +190,8 @@ const PROGRAM_SOURCE: ProgramSession[] = [
     fiche: null, note: "Le DM sera relu une dernière fois vendredi.", version: 1,
   },
   {
-    id: "2026-10-28-apres-midi", date: "2026-10-28", start: "14:30", end: "16:00", kind: "apres-midi", title: "DM de physique : finition", subject: PHYS, chapter: "DM à rendre lundi 2 novembre",
-    steps: [step("Questions restantes", 60, "Les questions notées jeudi et vendredi : essaie chacune vingt minutes."), step("Relecture", 30, "Unités, chiffres significatifs, schémas : relis tout.")],
+    id: "2026-10-28-apres-midi", date: "2026-10-28", start: "14:30", end: "16:30", kind: "apres-midi", title: "DM de physique : finition", subject: PHYS, chapter: "DM à rendre lundi 2 novembre",
+    steps: [step("Questions restantes", 90, "Les questions notées jeudi et vendredi : essaie chacune vingt minutes."), step("Relecture", 30, "Unités, chiffres significatifs, schémas : relis tout.")],
     fiche: null, note: "Dimanche, plus rien à faire sur ce DM.", version: 1,
   },
   vocab("2026-10-28", "445-446"),
@@ -218,8 +219,8 @@ const PROGRAM_SOURCE: ProgramSession[] = [
     fiche: null, note: "Envoie-moi ta copie du blanc : je la corrige avec toi, comme pour les maths.", version: 1,
   },
   {
-    id: "2026-10-30-fin-apres-midi", date: "2026-10-30", start: "16:45", end: "17:15", kind: "apres-midi", title: "Relecture finale des deux DM", subject: MATHS, chapter: "DM à rendre lundi 2 novembre",
-    steps: [step("Relecture", 30, "Relis les deux DM une dernière fois, dans la pochette où tu les rendras lundi.")],
+    id: "2026-10-30-fin-apres-midi", date: "2026-10-30", start: "16:45", end: "17:45", kind: "apres-midi", title: "Relecture finale des deux DM et un exercice à refaire", subject: MATHS, chapter: "DM à rendre lundi 2 novembre",
+    steps: [step("Relecture", 30, "Relis les deux DM une dernière fois, dans la pochette où tu les rendras lundi."), step("Exercice à refaire", 30, "Reprends l'exercice de la semaine que tu as le moins bien rédigé et refais-le sans ta copie.")],
     fiche: null, note: "Ensuite, plus aucune retouche : un DM rendu vaut mieux qu'un DM parfait.", version: 1,
   },
   vocab("2026-10-30", "449-450"),
@@ -237,6 +238,56 @@ const PROGRAM_SOURCE: ProgramSession[] = [
     note: "Pas de travail, sauf dix minutes de vocabulaire ce soir. Prépare ton sac et ton emploi du temps de lundi : DS de physique, DM et DS de français à rendre.", version: 2,
   },
   { ...vocab("2026-11-01", "435-453", 15), title: "Vocabulaire : relecture", start: "20:00", end: "20:15", steps: [step("Réviser", 15, "Relis rapidement les pages 435 à 453, puis teste-toi sur dix mots au hasard. Rien de nouveau.")] },
+  {
+    id: "2026-10-24-phys", date: "2026-10-24", start: "14:30", end: "16:30", kind: "apres-midi", title: "Électrostatique : questions variées", subject: PHYS, chapter: "Électrostatique",
+    steps: [step("Questions variées", 105, "Une vingtaine de questions courtes (champ, potentiel, théorème de Gauss, conducteurs), réponse de tête avant de vérifier."), step("Bilan", 15, "Note ce que tu as hésité à répondre : c'est ce qui reviendra demain.")],
+    fiche: null, note: "Ton professeur pose beaucoup de petites questions sur plein de sujets : la rapidité de rappel compte autant que la profondeur.", version: 1,
+  },
+  {
+    id: "2026-10-24-anglais", date: "2026-10-24", start: "17:00", end: "17:45", kind: "soir", title: "Anglais : compréhension et expression", subject: ANGLAIS, chapter: "Anglais écrit",
+    steps: [step("Lecture", 20, "Lis un article de presse en anglais (une page)."), step("Résumé", 25, "Résume-le en cent mots, puis note dix mots utiles à ajouter à ton vocabulaire.")],
+    fiche: null, note: "Prépare les DS d'anglais (19 novembre, 17 décembre) : lire vite, résumer juste, écrire dans un anglais précis.", version: 1,
+  },
+  {
+    id: "2026-10-26-francais", date: "2026-10-26", start: "18:00", end: "19:00", kind: "soir", title: "Français-philo : lecture et fiche", subject: FRANCAIS, chapter: "Programme de français-philosophie (à préciser)",
+    steps: [step("Lecture", 40, "Avance dans l'œuvre ou les textes au programme du DS du 30 novembre."), step("Fiche", 20, "Note trois citations et l'idée que chacune illustre.")],
+    fiche: null, note: "Le programme exact est à me préciser : en attendant, ce créneau est réservé à la lecture.", version: 1,
+  },
+  {
+    id: "2026-10-27-info", date: "2026-10-27", start: "18:00", end: "19:30", kind: "soir", title: "Informatique : exercices", subject: INFO, chapter: "Informatique",
+    steps: [step("Exercices", 75, "Un exercice de ton TD d'informatique ou d'annales (algorithmique, SQL) : écris le code sur papier d'abord, puis teste-le."), step("Bilan", 15, "Note ce qui a bloqué : syntaxe, idée ou complexité.")],
+    fiche: null, note: "Le contenu exact est à préciser : en attendant, ce créneau est réservé à l'informatique que tu avances de ton côté.", version: 1,
+  },
+  {
+    id: "2026-10-28-phys", date: "2026-10-28", start: "16:45", end: "17:45", kind: "apres-midi", title: "Thermodynamique : un sujet d'annales", subject: PHYS, chapter: "Thermodynamique",
+    steps: [step("Sujet", 50, "Un sujet complet d'annales sur les systèmes ouverts, chronométré."), step("Bilan", 10, "Compare avec le corrigé : écris où tu as perdu des points.")],
+    fiche: null, note: "Entraîne-toi à écrire le bilan avant d'appliquer les formules.", version: 1,
+  },
+  {
+    id: "2026-10-28-anglais", date: "2026-10-28", start: "18:00", end: "18:45", kind: "soir", title: "Anglais : compréhension et expression", subject: ANGLAIS, chapter: "Anglais écrit",
+    steps: [step("Lecture", 20, "Lis un article de presse en anglais (une page)."), step("Résumé", 25, "Résume-le en cent mots, puis note dix mots utiles.")],
+    fiche: null, note: "Même exercice que samedi : lire vite, résumer juste.", version: 1,
+  },
+  {
+    id: "2026-10-29-info", date: "2026-10-29", start: "16:15", end: "17:45", kind: "apres-midi", title: "Informatique : exercices", subject: INFO, chapter: "Informatique",
+    steps: [step("Exercices", 75, "Un exercice de ton TD d'informatique ou d'annales : écris le code sur papier d'abord."), step("Bilan", 15, "Note ce qui a bloqué.")],
+    fiche: null, note: "Le contenu exact est à préciser.", version: 1,
+  },
+  {
+    id: "2026-10-30-francais", date: "2026-10-30", start: "18:00", end: "19:00", kind: "soir", title: "Français-philo : lecture et fiche", subject: FRANCAIS, chapter: "Programme de français-philosophie (à préciser)",
+    steps: [step("Lecture", 40, "Avance dans l'œuvre ou les textes au programme du DS du 30 novembre."), step("Fiche", 20, "Note trois citations et l'idée que chacune illustre.")],
+    fiche: null, note: "Le programme exact est à me préciser.", version: 1,
+  },
+  {
+    id: "2026-10-31-matin", date: "2026-10-31", start: "10:00", end: "12:00", kind: "matin", title: "Maths : dernier passage sur tes erreurs", subject: MATHS, chapter: "Reprise de la semaine",
+    steps: [step("Exercices", 100, "Refais, sans notes, les trois exercices de maths de la semaine que tu as le moins bien rédigés."), step("Bilan", 20, "Relis avec la grille de rédaction et note ce qui reste fragile.")],
+    fiche: null, note: "Dernière séance de maths avant la rentrée : on consolide, on n'ouvre rien de nouveau.", version: 1,
+  },
+  {
+    id: "2026-10-31-info", date: "2026-10-31", start: "17:00", end: "18:30", kind: "apres-midi", title: "Informatique : exercices", subject: INFO, chapter: "Informatique",
+    steps: [step("Exercices", 75, "Un exercice de ton TD d'informatique ou d'annales : écris le code sur papier d'abord."), step("Bilan", 15, "Note ce qui a bloqué.")],
+    fiche: null, note: "Le contenu exact est à préciser.", version: 1,
+  },
   // ── Anki, chaque jour de travail, pendant une pause ──────────────────────────────────────
   anki("2026-10-22", "12:15", "12:45"),
   anki("2026-10-23", "12:15", "12:45"),
@@ -376,8 +427,8 @@ export function nextSession(nowParis: string, program: readonly ProgramSession[]
   return timed.find((session) => `${session.date}T${session.end}` > nowParis) ?? null;
 }
 
-const SUBJECT_ICON: Partial<Record<Subject, string>> = { Mathématiques: "📐", Physique: "⚡️", Anglais: "🇬🇧", Français: "📖", Chimie: "🧪" };
-const SUBJECT_SHORT: Partial<Record<Subject, string>> = { Mathématiques: "Maths", Physique: "Physique", Anglais: "Anglais", Français: "Français", Chimie: "Chimie" };
+const SUBJECT_ICON: Partial<Record<Subject, string>> = { Mathématiques: "📐", Physique: "⚡️", Anglais: "🇬🇧", Français: "📖", Chimie: "🧪", "Informatique Spé": "💻" };
+const SUBJECT_SHORT: Partial<Record<Subject, string>> = { Mathématiques: "Maths", Physique: "Physique", Anglais: "Anglais", Français: "Français", Chimie: "Chimie", "Informatique Spé": "Info" };
 
 const subjectIcon = (subject: Subject | null): string => (subject && SUBJECT_ICON[subject]) || "✍️";
 const subjectShort = (subject: Subject | null): string => (subject && SUBJECT_SHORT[subject]) || subject || "Travail";

@@ -60,13 +60,22 @@ describe("le programme de fin de vacances", () => {
     for (const session of HOLIDAY_PROGRAM) if (session.fiche) expect(FICHES[session.fiche.key], session.id).toBeDefined();
   });
 
-  it("charge raisonnable : jamais plus de 6 h par jour, et le total est celui annoncé", () => {
-    for (const day of programDays()) expect(day.sessions.reduce((sum, session) => sum + sessionMinutes(session), 0), day.date).toBeLessThanOrEqual(360);
+  it("charge raisonnable : jamais plus de 8 h par jour, et le total est celui annoncé", () => {
+    for (const day of programDays()) expect(day.sessions.reduce((sum, session) => sum + sessionMinutes(session), 0), day.date).toBeLessThanOrEqual(480);
     const stats = programStats();
     expect(stats.restDays).toBe(2);
     expect(stats.workDays).toBe(9);
-    expect(stats.workMinutes).toBe(2805);
-    expect(hoursLabel(stats.workMinutes)).toBe("46 h 45");
+    expect(stats.workMinutes).toBe(3705);
+    expect(hoursLabel(stats.workMinutes)).toBe("61 h 45");
+  });
+
+  it("au moins 5 h de maths ou de physique les jours de travail (hors Anki), 2 h le jour du DS de français", () => {
+    const mathsPhysics = (date: string) =>
+      HOLIDAY_PROGRAM.filter((session) => session.date === date && (session.subject === "Mathématiques" || session.subject === "Physique") && !session.id.endsWith("-anki")).reduce((sum, session) => sum + sessionMinutes(session), 0);
+    for (const date of ["2026-10-22", "2026-10-23", "2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30"]) expect(mathsPhysics(date), date).toBeGreaterThanOrEqual(300);
+    expect(mathsPhysics("2026-10-24")).toBe(120); // le matin est pris par le DS de français
+    expect(mathsPhysics("2026-10-31")).toBe(240);
+    expect(HOLIDAY_PROGRAM.filter((session) => session.subject === "Informatique Spé" || session.subject === "Français").length).toBeGreaterThanOrEqual(5);
   });
 
   it("parisClock : l'heure de Paris, avant et après le changement d'heure", () => {
