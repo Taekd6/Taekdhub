@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `7213c06`.
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `f79dd9b`.
 > Les PR #28 à #32 sont FUSIONNÉES dans `main` (PR #32 : merge `718084b`, production Vercel « Ready ») ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
 > Branche de travail actuelle : `claude/exciting-franklin-hiekk8`.
 
@@ -289,6 +289,19 @@ propre ; l'élève a créé `CAPTURE_TOKEN` et `MCP_USER_ID` (Production) ; PR #
 d'Hermes (hors de portée de Claude : l'agent est chez l'élève), révocation du jeton et du contournement de test (à faire par l'élève),
 rappel d'import Anki au démarrage (AnkiConnect n'existe que sur ordinateur, Anki ouvert : rien à automatiser côté navigateur sans
 l'élève présent).
+
+**Mission 13 (2026-10-21) — Anki : cartes apprises et « as-tu avancé ? » (demande de l'élève : qu'Anki soit connecté pour que TaekdHub voie
+quelles cartes sont apprises et dise si l'élève a bien avancé ; modifier des cartes Anki viendra APRÈS, non commencé).** Le relevé
+AnkiConnect (lecture seule, aucune écriture) ajoute par paquet, en champs FACULTATIFS de `AnkiDeckStat` (donc aucune migration, la collection
+`ankiSnapshots` existe) : `reviewed7`, `failed7`, `introduced7` (cartes nouvelles vues = apprises), `reviewedToday`, `introducedToday`. Absents
+d'un relevé antérieur ou d'un Anki sans la requête `introduced:` : jamais remplacés par 0. `lib/anki-progress.ts` : par paquet un mot
+(solide ≥ 80 % de cartes sans « À revoir », correct, fragile < 70 %, « trop peu pour juger » sous 10 cartes révisées, « rien cette semaine »),
+totaux, variation des cartes mûres (intervalle ≥ 21 jours) sur les paquets communs au plus ancien relevé d'un autre jour, une phrase qui cite
+les chiffres, drapeau « relevé de plus de 24 h ». SEUILS PROVISOIRES, dits à l'écran ; ce n'est pas la rétention d'Anki (part des cartes
+révisées sans « À revoir ») ; AUCUNE note globale. Section « As-tu avancé ? » en tête de `/anki`. Vérifié : 91 fichiers de tests, 1468
+réussis + 1 échec attendu antérieur, `tsc`, lint, build ; mutation sur la borne des 80 % détectée ; capture réelle avec un faux relevé. NON vérifié :
+un vrai Anki (la requête `introduced:` et `rated:7:1` n'ont été testées que contre un Anki simulé), l'effet sur l'appareil de l'élève. Limite
+assumée : le relevé reste manuel et sur ordinateur (Anki ouvert) ; il ne bouge pas quand l'élève fait ses cartes.
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
