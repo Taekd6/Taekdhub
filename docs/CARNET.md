@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `b091460`.
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `7213c06`.
 > Les PR #28 à #31 sont FUSIONNÉES dans `main` ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
 > Branche de travail actuelle : `claude/exciting-franklin-hiekk8`.
 
@@ -279,6 +279,16 @@ Claude) : créer `CAPTURE_TOKEN` et `MCP_USER_ID`, redéployer, fabriquer le rac
 code : Hermes (valider un vrai appel `get_today`, révoquer le jeton et le contournement de test), rappel d'import Anki, écran « état de
 mes données ». Limites assumées : pas de limitation de débit ; un jeton volé permettrait d'ajouter des lignes parasites (supprimables
 dans l'application), pas de lire quoi que ce soit.
+
+**Mission 12 (2026-10-21) — « Mes données » (usage personnel).** Section dans Réglages (sous l'apparence), `lib/data-health.ts` +
+`components/data-health.tsx` : trois lignes (séances, résultats d'exercice, relevé Anki), chacune un FAIT (date) et un GESTE (lien vers le
+chrono, les exercices, Anki). Seuils écrits : séance « ancienne » au-delà de 2 jours, exercice au-delà de 7 jours, Anki au-delà de 24 h (le
+seuil du moteur, `ANKI_DUE_STALE_HOURS`) ; « vide » sans aucune donnée. Aucun score. Vérifié : 90 fichiers de tests, 1454 réussis + 1 échec
+attendu antérieur, `tsc`, lint, build ; capture réelle (séance de test vieille de 5 jours). PR #32 : contrôles GitHub verts, mergeable
+propre ; l'élève a créé `CAPTURE_TOKEN` et `MCP_USER_ID` (Production) ; fusion NON faite (accord explicite requis). Pas fait : appel réel
+d'Hermes (hors de portée de Claude : l'agent est chez l'élève), révocation du jeton et du contournement de test (à faire par l'élève),
+rappel d'import Anki au démarrage (AnkiConnect n'existe que sur ordinateur, Anki ouvert : rien à automatiser côté navigateur sans
+l'élève présent).
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
