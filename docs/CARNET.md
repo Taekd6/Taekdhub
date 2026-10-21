@@ -395,14 +395,24 @@ Vérifié : 94 fichiers de tests, 1519 réussis + 1 échec attendu antérieur, `
 - `exercise_logs` : migration 0009 à exécuter avant 0007 et 0008 sur une base neuve.
 
 ## Prochaine tâche envisagée
-Aucune lancée. À l'élève de soumettre ses idées (annoncé le 2026-10-21). Candidats, chacun à proposer avec son périmètre, accord requis :
-1. Faire passer la branche en production (PR groupée, après relecture) ; essai réel de la capture par la montre ; validation d'Hermes (prompt 1 donné) ; révoquer le jeton et le contournement de test d'Hermes.
-2. Feuille 2 (rédaction et rigueur : hypothèses, rang, ordre des DL), à partir des erreurs de la feuille 1 ; cartes Anki « pièges de rédaction » ; reprise des questions faussées (Ex. 5, 4, 1) sans indice d'abord.
-3. Retour de ChatGPT sur le paquet Anki (rapport, contrôle, .apkg) à faire vérifier par Claude AVANT l'import ; « modifier de petites choses sur les cartes Anki » : écrire dans Anki demande un périmètre précis.
-4. Décisions du moteur (changent les conseils) : fatigue définie de 3 façons ; deux budgets du jour.
-5. Import de fiches d'exercice depuis un fichier JSON (sans migration), puis synchronisation des fiches (collection : migration, accord explicite). Catalogue statique d'exercices (contenu produit hors ligne, relu).
-6. Ouverture publique (reportée, site privé pour l'instant) : connecteur à un secret par compte (migration), droits des annales, politique de confidentialité à faire relire ; aucune IA payante côté serveur (décision « coût IA zéro »).
-7. Bilan des 14 jours, puis ajuster plages, classification ou placement ; phase 2 : une règle de récupération.
+**REPRISE DE SESSION (2026-10-21, soir).** L'élève passe sur une session locale (son PC Windows) pour que Claude lise ses fichiers. Lire d'abord ce qui suit, puis proposer et attendre l'accord. État : branche `claude/exciting-franklin-hiekk8`, aucune PR ouverte, rien de la mission 17 ni 18 en production.
+
+*Préférences de l'élève, à respecter :* il veut APPRENDRE (pas de solutions toutes faites) ; les fiches d'exercices n'ont NI indice NI corrigé ; il est en MP (2e année) ; il ne veut pas être dérangé pendant qu'il code (« fais ce que tu as à faire ») ; il délègue les choix de planning mais décide de la charge (a demandé au moins 5 h de maths ou de physique par jour) ; pas de notifications en excès (plafond : alertes d'échéance et alarme de séance).
+
+*En attente de l'accord EXPLICITE de l'élève (jamais fait sans lui) :* (1) PR et fusion de la branche en production (nécessaire pour que `/seance/<id>`, `/exercices/*.pdf`, `/calendrier` et `/api/calendar/<CALENDAR_TOKEN>.ics` existent sur l'iPhone ; il doit aussi créer `CALENDAR_TOKEN` dans Vercel, Production, ≥ 32 caractères, jamais partagé) ; (2) déplacer le programme (`lib/holiday-program.ts`, aujourd'hui du code) dans Supabase, plus le stockage des PDF, pour ajouter une séance ou une fiche SANS redéployer — modification de sa base, accord requis ; (3) brancher Hermes : il se programme tout seul (chaque soir il lit ce qui a été fait et dépose un « constat » : prévu, fait, bien ou mal, erreurs, échéances proches), une tâche planifiée lance Claude, qui écrit la fiche du lendemain (PDF) et la range dans le créneau ; le format du constat et le prompt d'Hermes restent À DÉFINIR ENSEMBLE.
+
+*À faire dès que les fichiers sont lisibles :* relire les CARTES ANKI de ChatGPT (dossier de l'élève : `C:\Users\elkha\Documents\Codex\2026-10-21\referenced-chatgpt-conversation-this-is-an\outputs`) AVANT import, signaler les erreurs de maths, ne rien importer à sa place ; il doit sauvegarder sa collection Anki d'abord.
+
+*Données à compléter (hypothèses du programme) :* programme de la colle de maths du 3 novembre (cahier de prépa) ; heure du DS de physique-chimie du 2 novembre (4 h) et durée du DS de français (4 h supposées) ; programme du DS de français-philo du 30 novembre ; contenu des séances d'informatique ; SC10 non reprise (lecture du tableau de colles à vérifier) ; ligne « Mme Ouhadia » du 5 novembre : l'élève dit d'OUBLIER l'intervention d'anglais (retirée). Cahier de prépa : flux RSS introuvable par l'élève, Gmail non connecté (erreur d'authentification) : il colle ou envoie les documents.
+
+*Côté élève, encore ouvert :* ajouter le dernier `.ics` à l'iPhone (supprimer l'ancien calendrier d'abord, sinon doublons) ; essai réel de la capture par la montre (`/api/capture`) ; validation d'Hermes (prompt 1 donné), puis révoquer le jeton et le contournement de test ; essai d'Apple Rappels (ne lit pas un .ics : à tester avec UN événement) et des alarmes d'un calendrier à abonnement.
+
+*Autres candidats (rappel) :*
+1. Feuille 2 de rédaction et rigueur ; cartes Anki « pièges de rédaction » ; reprise des questions faussées sans indice d'abord.
+2. Décisions du moteur (changent les conseils) : fatigue définie de 3 façons ; deux budgets du jour.
+3. Import de fiches d'exercice depuis un fichier JSON (sans migration), puis synchronisation (migration, accord explicite).
+4. Ouverture publique (reportée, site privé pour l'instant) : connecteur à un secret par compte (migration), droits des annales, politique de confidentialité à faire relire ; aucune IA payante côté serveur (« coût IA zéro »).
+5. Bilan des 14 jours, puis ajuster plages, classification ou placement ; phase 2 : une règle de récupération.
 
 ## Limites d'intervention
 - Avant toute reprise : lire ce carnet, vérifier branche, HEAD et arbre ; signaler tout écart.
