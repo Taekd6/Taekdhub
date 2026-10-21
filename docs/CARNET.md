@@ -374,6 +374,9 @@ alarmes à 14, 7, 3 et 1 jour (7, 3 et 1 pour une colle ou un devoir), 9 h pour 
 HYPOTHÈSES à confirmer : DS de physique du 2 novembre de 4 h (heure inconnue) ; DS de français de 4 h ; programme de la colle de maths du 3 novembre (cahier de prépa) ; SC10 non reprise (colles de maths et de physique à la même heure le mardi 1er décembre : lecture du tableau à vérifier) ; la ligne « Mme Ouhadia » du 5 novembre est l'intervention d'anglais.
 NON fait : Apple Rappels (ne lit pas un .ics ; test à faire avec un seul événement), alarmes des calendriers à abonnement non vérifiées sur iPhone, programme dans Supabase (tâche suivante), prompt d'Hermès, cahier de prépa (flux RSS : adresse introuvable par l'élève), PR et fusion (accord explicite requis).
 
+**Mission 18 (suite, 2026-10-21) — code `ce759a1`.** À la demande de l'élève : l'intervention d'anglais du 5 novembre est SUPPRIMÉE du programme (trois séances de préparation et l'échéance) ; un créneau Anki de 30 min est ajouté chaque jour de travail, pendant une pause (12 h 15, ou 13 h 30 les jours de DS de 4 h) — 9 séances, total 46 h 45, jamais plus de 6 h par jour. Le test de vocabulaire du 5 novembre reste. Les séances sont triées par date dans `HOLIDAY_PROGRAM`
+(ordre « précédente / suivante » de la page d'une séance). Vérifié : 94 fichiers de tests, 1518 réussis + 1 échec attendu antérieur, `tsc`, lint, build. À FAIRE (accord de l'élève) : cartes Anki de ChatGPT à relire AVANT import (sauvegarde de la collection d'abord) ; PR et fusion ; programme dans Supabase ; prompt d'Hermès.
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
 - Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un
