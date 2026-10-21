@@ -59,10 +59,8 @@ describe("computeAlerts — ce qui mérite d'interrompre", () => {
     expect(computeAlerts(input({ preferences, sessions, now: at(19) }))).toEqual([]);
   });
 
-  it("rien noté de la journée : à partir de 17 h, jamais pour un nouvel inscrit", () => {
-    expect(computeAlerts(input({ now: at(16) }))).toEqual([]);
-    expect(computeAlerts(input({ now: at(17) }))[0].id).toBe("rien:2026-10-05");
-    expect(computeAlerts(input({ sessions: [], now: at(20) }))).toEqual([]);
+  it("rien noté de la journée : plus de notification, même en fin de journée", () => {
+    expect(computeAlerts(input({ now: at(20) }))).toEqual([]);
   });
 
   it("fiches dues : une info, sans compter celles du verrou ; les urgences passent devant", () => {

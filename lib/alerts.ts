@@ -58,9 +58,6 @@ export interface AlertInput {
   now: Date;
 }
 
-/** À partir de quelle heure « rien noté aujourd'hui » devient une alerte. */
-export const IDLE_ALERT_HOUR = 17;
-
 const LEVEL_RANK: Record<AlertLevel, number> = { urgent: 0, attention: 1, info: 2 };
 
 function plural(count: number, word: string): string {
@@ -99,21 +96,6 @@ function lockAlerts(input: AlertInput, today: string): AppAlert[] {
       href: lockSessionHref(lock),
       action: "Retrouver les fiches",
     }));
-}
-
-function idleAlert(input: AlertInput, today: string): AppAlert | null {
-  if (input.now.getHours() < IDLE_ALERT_HOUR) return null;
-  // Un nouvel inscrit sans aucune séance n'a pas « oublié » : il n'a pas encore commencé.
-  if (input.sessions.length === 0) return null;
-  if (input.sessions.some((session) => dayKey(session.started_at) === today)) return null;
-  return {
-    id: `rien:${today}`,
-    level: "attention",
-    title: "Rien de noté aujourd'hui",
-    body: "Même 25 minutes comptent. Lance le chrono, ou note le temps déjà fait.",
-    href: "/dashboard",
-    action: "Voir quoi faire",
-  };
 }
 
 /**
@@ -157,7 +139,6 @@ export function computeAlerts(input: AlertInput): AppAlert[] {
   const alerts = [
     ...deadlineAlerts(input, today),
     ...lockAlerts(input, today),
-    idleAlert(input, today),
     reviewAlert(input, today),
     incoherentMinimumAlert(input, today),
   ].filter((alert): alert is AppAlert => alert !== null);
