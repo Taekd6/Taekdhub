@@ -364,6 +364,16 @@ carte « prochaine séance » sur l'accueil (si aujourd'hui ou demain). (e) Six 
 (contournement du premier lancement : `onboardingCompletedAt` dans `prepahub:preferences`, et du point du jour : `prepahub:briefing:seen`). Fichier importable à la main : `taekdhub-fin-de-vacances.ics` (19 événements, 17 alarmes).
 NON fait : PR et fusion (accord explicite de l'élève requis) ; sans déploiement, les liens des événements (`/seance/<id>`, `/exercices/*.pdf`) n'existent pas en production ; `CALENDAR_TOKEN` à créer par l'élève (Vercel, Production), jamais partagé.
 
+**Mission 18 (2026-10-21) — le programme refait sur le socle de l'année, et les échéances.** Code `1e4d8dc`.
+L'élève (MP, groupe G9) a corrigé le cadrage : le travail porte sur ce qui a été fait CETTE année (algèbre linéaire, réduction, evn, suites dans les evn, séries ; physique : électrostatique, électronique et filtres, thermodynamique jusqu'au 2e principe pour un système ouvert),
+avec anticipation des séries entières et de fonctions, au niveau des TD (Centrale, Mines-Ponts, CCINP) ; les fiches de première année ne servent plus qu'aux points faibles. (a) `lib/holiday-program.ts` : 35 séances sur 11 jours (44 h, jamais plus de 5 h 40 par jour), maths le matin, physique l'après-midi,
+DM (maths et physique) en trois séances, DS de français en conditions le 24, DS blanc de physique de 4 h le 29, vocabulaire d'anglais TOUS LES JOURS (partie 10, p. 435-453, test du 5 novembre, avec révisions à J+1 et J+3), un dimanche de repos (25) et un dimanche léger (1er).
+Les séances de maths citent les exercices des TD de l'élève ; une séance sans fiche reçoit la sienne LA VEILLE (circuit prévu avec Hermès, pas encore branché). (b) 25 ÉCHÉANCES (`DEADLINES`) : DS, colles G9 (SC6 à SC9), tests de vocabulaire, devoirs du lundi 2 novembre, jusqu'au 25 janvier ;
+alarmes à 14, 7, 3 et 1 jour (7, 3 et 1 pour une colle ou un devoir), 9 h pour un événement sur la journée, plus 60 min avant une colle ou un oral ; aucune alarme déjà passée n'est écrite. Plafond voulu par l'élève : pas d'autre notification. (c) Défaut corrigé dans `lib/ics.ts` : le « ; » n'était pas échappé
+(`"\;"` en JavaScript vaut « ; ») ; le test passait à tort. (d) Page `/calendrier` : section « Les échéances » avec J-n. Vérifié : 94 fichiers de tests, 1518 réussis + 1 échec attendu antérieur, `tsc`, lint, build, captures, mutation (alarme sans décalage de 9 h : détectée).
+HYPOTHÈSES à confirmer : DS de physique du 2 novembre de 4 h (heure inconnue) ; DS de français de 4 h ; programme de la colle de maths du 3 novembre (cahier de prépa) ; SC10 non reprise (colles de maths et de physique à la même heure le mardi 1er décembre : lecture du tableau à vérifier) ; la ligne « Mme Ouhadia » du 5 novembre est l'intervention d'anglais.
+NON fait : Apple Rappels (ne lit pas un .ics ; test à faire avec un seul événement), alarmes des calendriers à abonnement non vérifiées sur iPhone, programme dans Supabase (tâche suivante), prompt d'Hermès, cahier de prépa (flux RSS : adresse introuvable par l'élève), PR et fusion (accord explicite requis).
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
 - Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un
