@@ -83,6 +83,13 @@ ni outils.
   elle est reportée à demain avec un début plus petit), lecteur d'exercice (« Je ne sais pas par où commencer »,
   qui ne révèle rien et ne compte pas comme une aide). Trois taps « terminé / partiel / j'ai bloqué » quand aucun
   exercice n'est noté ; après un rappel de cours, ils notent aussi le rappel dans Ma mémoire (Bien / Dur / Oublié).
+- COÛT IA ZÉRO (décision de l'élève, 2026-10-21) : l'objectif est une ouverture publique, mais l'élève ne dépense rien en IA et il est
+  le seul à disposer de son compte Claude : aucune fonction publique ne peut dépendre de celui-ci, ni être en libre service. Conséquences :
+  (1) le produit public = les moteurs déterministes, sans appel à un modèle ; (2) pas de route serveur qui appelle une API de modèle ;
+  (3) l'IA reste FACULTATIVE et au compte de chacun : demandes prêtes à copier vers l'assistant de l'élève (déjà en place), ou son propre
+  connecteur MCP (demande un secret par compte : migration, accord requis) ; (4) le contenu qui exigerait un modèle (exercices originaux) se
+  produit HORS LIGNE, une fois, par l'élève, puis se livre comme contenu statique relu : un coût unique, pas un coût par utilisateur
+  (droits et qualité à vérifier). Le connecteur de Claude et Hermes restent des accès personnels de l'élève.
 - Les docs `AUDIT.md` et `ROADMAP.md` sont partiellement périmées : se fier au code.
 
 ## État actuel
