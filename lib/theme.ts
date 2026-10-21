@@ -59,26 +59,26 @@ export interface Palette {
 export const PALETTES: Palette[] = [
   {
     /*
-     * « SOBRE » (octobre 2026) : l'élève trouve les dégradés colorés laids et
-     * l'écran chargé. La palette par défaut devient un graphite sans aucune
-     * teinte. L'identifiant reste `aurora` : les préférences déjà enregistrées
+     * « MINUIT » (octobre 2026) : le graphite « Sobre » a été jugé terne par
+     * l'élève, qui veut un sombre premium avec de vraies couleurs : indigo vers
+     * cyan, sur fond bleu-nuit. L'identifiant reste `aurora` : les préférences déjà enregistrées
      * (et le script anti-flash) le connaissent, aucune migration n'est donc
      * nécessaire — seules ses valeurs et son nom ont changé.
      */
     id: "aurora",
-    label: "Sobre",
-    c1: "#2c2c2e",
-    c2: "#8e8e93",
-    ink: "#1d1d1f",
-    solid: ["#1d1d1f", "#3a3a3c"],
+    label: "Minuit",
+    c1: "#818cf8",
+    c2: "#22d3ee",
+    ink: "#4338ca",
+    solid: ["#4338ca", "#6d28d9"],
     cards: [
-      ["#1d1d1f", "#3a3a3c"],
-      ["#2c2c2e", "#48484a"],
-      ["#3a3a3c", "#636366"],
-      ["#1d1d1f", "#48484a"],
+      ["#4338ca", "#0891b2"],
+      ["#6d28d9", "#4f46e5"],
+      ["#0e7490", "#4338ca"],
+      ["#5b21b6", "#0284c7"],
     ],
-    review: ["#3a3a3c", "#636366"],
-    dl: ["#3a3a3c", "#48484a", "#636366"],
+    review: ["#6d28d9", "#0891b2"],
+    dl: ["#4338ca", "#0e7490", "#6d28d9"],
   },
   {
     id: "sunset",
@@ -351,7 +351,7 @@ export function applyPalette(id: PaletteId, root: HTMLElement = document.documen
 /**
  * Mode d'apparence — indépendant de la palette.
  *
- * CLAIR PAR DÉFAUT depuis la refonte « Revolut clair » : app/globals.css
+ * SOMBRE PAR DÉFAUT depuis la refonte « Minuit » (le clair reste un choix de Réglages) : app/globals.css
  * pose les neutres CLAIRS sur `:root` nu, et le sombre n'existe que sous
  * `data-theme="dark"` (ou `data-theme="system"` quand le système est
  * sombre). "system" est donc toujours ÉCRIT dans l'attribut : son absence
@@ -359,7 +359,7 @@ export function applyPalette(id: PaletteId, root: HTMLElement = document.documen
  */
 export type ThemeMode = "light" | "dark" | "system";
 export const THEME_MODES: ThemeMode[] = ["light", "dark", "system"];
-export const DEFAULT_THEME_MODE: ThemeMode = "light";
+export const DEFAULT_THEME_MODE: ThemeMode = "dark";
 
 /** Pose `data-theme` sur `root` — toujours, y compris "system". */
 export function applyThemeMode(mode: ThemeMode, root: HTMLElement = document.documentElement): void {

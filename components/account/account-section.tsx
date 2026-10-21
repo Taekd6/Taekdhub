@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useAccount, type AccountStatus } from "@/components/account/account-provider";
 import { Button } from "@/components/ui/button";
 import { Group, Row } from "@/components/ui/grouped";
 import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/ui/state";
 import { cn } from "@/lib/cn";
+import { supabase } from "@/lib/supabase/client";
 
 const STATUS_LABEL: Record<AccountStatus, string> = {
   désactivé: "Non disponible",
@@ -68,6 +70,11 @@ export function AccountSection() {
   const [, setTick] = useState(0);
   // Effacer l'appareil est irréversible (hors compte) : deux clics, jamais un.
   const [confirmWipe, setConfirmWipe] = useState(false);
+  // Créer un compte demande d'avoir lu la page de confidentialité (données de santé déclarées).
+  const [consent, setConsent] = useState(false);
+  // Supprimer le compte : on écrit « SUPPRIMER », comme la route le demande.
+  const [deleteText, setDeleteText] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   // « il y a 4 min » doit vieillir tout seul.
   useEffect(() => {
@@ -139,6 +146,30 @@ export function AccountSection() {
     setBusy(false);
   }
 
+  async function deleteAccount() {
+    if (!supabase) return;
+    setDeleting(true);
+    setMessage(null);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("session");
+      const response = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+        body: JSON.stringify({ confirmation: deleteText.trim() }),
+      });
+      if (!response.ok) throw new Error(String(response.status));
+      setDeleteText("");
+      await account.signOut({ wipe: false });
+      setMessage({ tone: "info", text: "Compte supprimé : toutes les copies en ligne sont effacées. Les données de cet appareil sont restées ici." });
+    } catch {
+      setMessage({ tone: "danger", text: "La suppression n'a pas abouti. Vérifie ta connexion et réessaie." });
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const { user, status } = account;
 
   if (!user) {
@@ -174,6 +205,18 @@ export function AccountSection() {
                 />
               </label>
             </div>
+            {mode === "création" && (
+              <label className="flex items-start gap-2 text-[0.8125rem] text-muted">
+                <input type="checkbox" className="mt-0.5" required checked={consent} onChange={(event) => setConsent(event.target.checked)} />
+                <span>
+                  J&apos;ai lu la{" "}
+                  <Link href="/confidentialite" className="font-semibold text-accent underline-offset-2 hover:underline">
+                    page de confidentialité
+                  </Link>{" "}
+                  et j&apos;accepte que mes données soient enregistrées dans mon compte.
+                </span>
+              </label>
+            )}
             {message && <Notice tone={message.tone}>{message.text}</Notice>}
             <div className="flex flex-wrap items-center gap-2">
               <Button type="submit" size="sm" disabled={busy}>
@@ -247,6 +290,28 @@ export function AccountSection() {
             Déconnecter et effacer cet appareil
           </Button>
         )}
+      </Row>
+      <Row
+        label="Supprimer mon compte"
+        hint={
+          <>
+            Efface toutes les copies en ligne, définitivement. Exporte d&apos;abord une sauvegarde si besoin.{" "}
+            <Link href="/confidentialite" className="font-semibold text-accent underline-offset-2 hover:underline">
+              Confidentialité
+            </Link>
+          </>
+        }
+        stack
+      >
+        <Input
+          aria-label="Écris SUPPRIMER pour confirmer"
+          placeholder="Écris SUPPRIMER"
+          value={deleteText}
+          onChange={(event) => setDeleteText(event.target.value)}
+        />
+        <Button variant="danger" size="sm" disabled={deleting || deleteText.trim() !== "SUPPRIMER"} onClick={() => void deleteAccount()}>
+          Supprimer mon compte
+        </Button>
       </Row>
       {message && (
         <div className="py-3 pr-4 sm:pr-5">

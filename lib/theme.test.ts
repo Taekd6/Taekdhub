@@ -42,7 +42,7 @@ const CANVAS: [number, number, number] = [250, 249, 246];
 
 describe("applyThemeMode", () => {
   it("le clair est le défaut du produit", () => {
-    expect(DEFAULT_THEME_MODE).toBe("light");
+    expect(DEFAULT_THEME_MODE).toBe("dark");
   });
 
   it("pose data-theme tel quel, y compris \"system\"", () => {
@@ -55,13 +55,13 @@ describe("applyThemeMode", () => {
 });
 
 describe("palettes — les valeurs de la maquette validée", () => {
-  it("huit palettes — les quatre de la maquette, puis Forêt, Framboise, Braise, Lavande —, « Sobre » (id aurora) par défaut", () => {
+  it("huit palettes — les quatre de la maquette, puis Forêt, Framboise, Braise, Lavande —, « Minuit » (id aurora) par défaut", () => {
     expect(PALETTES.map((palette) => palette.id)).toEqual(["aurora", "sunset", "ocean", "neon", "foret", "framboise", "braise", "lavande"]);
-    expect(PALETTES.map((palette) => palette.label)).toEqual(["Sobre", "Sunset", "Océan", "Néon", "Forêt", "Framboise", "Braise", "Lavande"]);
+    expect(PALETTES.map((palette) => palette.label)).toEqual(["Minuit", "Sunset", "Océan", "Néon", "Forêt", "Framboise", "Braise", "Lavande"]);
     expect(DEFAULT_PALETTE).toBe("aurora");
     const aurora = paletteById("aurora");
-    expect([aurora.c1, aurora.c2, aurora.ink]).toEqual(["#2c2c2e", "#8e8e93", "#1d1d1f"]);
-    expect(aurora.review).toEqual(["#3a3a3c", "#636366"]);
+    expect([aurora.c1, aurora.c2, aurora.ink]).toEqual(["#818cf8", "#22d3ee", "#4338ca"]);
+    expect(aurora.review).toEqual(["#6d28d9", "#0891b2"]);
   });
 
   it("chaque palette a quatre paires de cartes et trois pastilles d'échéance, en hex valides", () => {
@@ -77,7 +77,7 @@ describe("palettes — les valeurs de la maquette validée", () => {
     for (const id of ["foret", "framboise", "braise", "lavande"]) expect(resolvePaletteId({ palette: id })).toBe(id);
   });
 
-  it("un identifiant inconnu retombe sur la palette par défaut (aurora, « Sobre »)", () => {
+  it("un identifiant inconnu retombe sur la palette par défaut (aurora, « Minuit »)", () => {
     expect(paletteById("arc-en-ciel").id).toBe("aurora");
     expect(paletteById(undefined).id).toBe("aurora");
   });
@@ -118,14 +118,14 @@ describe("contraste — la couleur ne sacrifie jamais la lecture", () => {
 describe("variables CSS d'une palette", () => {
   it("expose le dégradé, l'encre, les cartes cyclées et les dégradés de révision", () => {
     const vars = paletteVariables(paletteById("aurora"));
-    expect(vars["--g1"]).toBe("#2c2c2e");
-    expect(vars["--g2"]).toBe("#8e8e93");
-    expect(vars["--g1-rgb"]).toBe("44 44 46");
-    expect(vars["--accent-ink-base-rgb"]).toBe("29 29 31");
-    expect(vars["--card-grad-1"]).toBe("linear-gradient(135deg, #1d1d1f, #3a3a3c)");
-    expect(vars["--card-grad-4"]).toBe("linear-gradient(135deg, #1d1d1f, #48484a)");
-    expect(vars["--review-grad"]).toBe("linear-gradient(135deg, #3a3a3c, #636366)");
-    expect(vars["--dl-3"]).toBe("#636366");
+    expect(vars["--g1"]).toBe("#818cf8");
+    expect(vars["--g2"]).toBe("#22d3ee");
+    expect(vars["--g1-rgb"]).toBe("129 140 248");
+    expect(vars["--accent-ink-base-rgb"]).toBe("67 56 202");
+    expect(vars["--card-grad-1"]).toBe("linear-gradient(135deg, #4338ca, #0891b2)");
+    expect(vars["--card-grad-4"]).toBe("linear-gradient(135deg, #5b21b6, #0284c7)");
+    expect(vars["--review-grad"]).toBe("linear-gradient(135deg, #6d28d9, #0891b2)");
+    expect(vars["--dl-3"]).toBe("#6d28d9");
   });
 
   it("toutes les palettes publient exactement les mêmes noms de variables", () => {

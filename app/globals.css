@@ -89,30 +89,30 @@
     --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", var(--font-inter), "Helvetica Neue", system-ui, sans-serif;
 
     /* ── PALETTE (repli « Sobre » — voir lib/theme.ts) ─────────────── */
-    --g1: #2c2c2e;
-    --g2: #8e8e93;
-    --g1-rgb: 44 44 46;
-    --g2-rgb: 142 142 147;
-    --btn-g1: #1d1d1f;
-    --btn-g2: #3a3a3c;
-    --card-1a: #1d1d1f;
-    --card-1b: #3a3a3c;
-    --card-2a: #2c2c2e;
-    --card-2b: #48484a;
-    --card-3a: #3a3a3c;
-    --card-3b: #636366;
-    --card-4a: #1d1d1f;
-    --card-4b: #48484a;
+    --g1: #818cf8;
+    --g2: #22d3ee;
+    --g1-rgb: 129 140 248;
+    --g2-rgb: 34 211 238;
+    --btn-g1: #4338ca;
+    --btn-g2: #6d28d9;
+    --card-1a: #4338ca;
+    --card-1b: #0891b2;
+    --card-2a: #6d28d9;
+    --card-2b: #4f46e5;
+    --card-3a: #0e7490;
+    --card-3b: #4338ca;
+    --card-4a: #5b21b6;
+    --card-4b: #0284c7;
     --card-grad-1: linear-gradient(135deg, var(--card-1a), var(--card-1b));
     --card-grad-2: linear-gradient(135deg, var(--card-2a), var(--card-2b));
     --card-grad-3: linear-gradient(135deg, var(--card-3a), var(--card-3b));
     --card-grad-4: linear-gradient(135deg, var(--card-4a), var(--card-4b));
-    --review-a: #3a3a3c;
-    --review-b: #636366;
+    --review-a: #6d28d9;
+    --review-b: #0891b2;
     --review-grad: linear-gradient(135deg, var(--review-a), var(--review-b));
-    --dl-1: #3a3a3c;
-    --dl-2: #48484a;
-    --dl-3: #636366;
+    --dl-1: #4338ca;
+    --dl-2: #0e7490;
+    --dl-3: #6d28d9;
 
     /* ── ACCENT (anciens noms, remappés sur la palette) ─────────────
          `--accent-rgb`            c1, la couleur de marque brute ;
@@ -120,11 +120,11 @@
          `--accent-ink-dark-rgb`   c2, l'encre en SOMBRE (la maquette « D ») ;
          `--accent-solid-base-rgb` première teinte du dégradé des boutons ;
          `--accent-fg-rgb`         noir ou blanc, lisible sur c1 brut. */
-    --accent-rgb: 44 44 46;
-    --accent-ink-base-rgb: 29 29 31;
-    --accent-ink-dark-rgb: 142 142 147;
-    --accent-fg-rgb: 255 255 255;
-    --accent-solid-base-rgb: 29 29 31;
+    --accent-rgb: 129 140 248;
+    --accent-ink-base-rgb: 67 56 202;
+    --accent-ink-dark-rgb: 34 211 238;
+    --accent-fg-rgb: 0 0 0;
+    --accent-solid-base-rgb: 67 56 202;
     --accent-solid-rgb: var(--accent-solid-base-rgb);
     --accent-solid-fg-rgb: 255 255 255;
     --accent-ink-rgb: var(--accent-ink-base-rgb);
@@ -272,10 +272,10 @@
   :root[data-theme="dark"] {
     color-scheme: dark;
     --accent-ink-rgb: var(--accent-ink-dark-rgb);
-    --canvas-rgb: 10 10 12;
-    --panel-rgb: 28 28 30;
-    --elevated-rgb: 44 44 46;
-    --line-rgb: 56 56 58;
+    --canvas-rgb: 8 9 20;
+    --panel-rgb: 19 21 38;
+    --elevated-rgb: 31 34 58;
+    --line-rgb: 45 49 78;
     --ink-rgb: 245 245 247;
     --muted-rgb: 152 152 157;
     --subtle-rgb: 142 142 147;
@@ -335,10 +335,10 @@
     :root[data-theme="system"] {
       color-scheme: dark;
       --accent-ink-rgb: var(--accent-ink-dark-rgb);
-      --canvas-rgb: 10 10 12;
-      --panel-rgb: 28 28 30;
-      --elevated-rgb: 44 44 46;
-      --line-rgb: 56 56 58;
+      --canvas-rgb: 8 9 20;
+      --panel-rgb: 19 21 38;
+      --elevated-rgb: 31 34 58;
+      --line-rgb: 45 49 78;
       --ink-rgb: 245 245 247;
       --muted-rgb: 152 152 157;
       --subtle-rgb: 142 142 147;

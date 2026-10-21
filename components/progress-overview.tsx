@@ -19,6 +19,7 @@ import { SubjectTargetsSection } from "@/components/progress/subject-targets-sec
 import { SubjectEvolution } from "@/components/progress/subject-evolution";
 import { GradesSection } from "@/components/progress/grades-section";
 import { SleepSection } from "@/components/progress/sleep-section"; // check-in du soir
+import { ExerciseResults } from "@/components/progress/exercise-results";
 import { WorkAndResults } from "@/components/progress/work-and-results";
 import { WeeklyLearningSection } from "@/components/progress/weekly-learning";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -33,7 +34,7 @@ import { formatMinutesSpan, formatSpan } from "@/lib/utils";
 import type { WorkSession } from "@/lib/supabase/types";
 
 /** Les ancres des onglets — `#notes` ouvre les notes, depuis l'accueil notamment. */
-const TAB_IDS = ["temps", "notes", "regularite", "sommeil", "bilan"];
+const TAB_IDS = ["temps", "exercices", "notes", "regularite", "sommeil", "bilan"];
 
 /**
  * ÉCRAN PROGRESSION.
@@ -202,6 +203,11 @@ export function ProgressOverview() {
                   <SubjectEvolution sessions={sessions} />
                 </div>
               ),
+            },
+            {
+              id: "exercices",
+              label: "Exercices",
+              content: <ExerciseResults attempts={attempts} />,
             },
             {
               id: "notes",
