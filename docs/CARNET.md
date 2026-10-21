@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `d1a11e6`.
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `b091460`.
 > Les PR #28 à #31 sont FUSIONNÉES dans `main` ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
 > Branche de travail actuelle : `claude/exciting-franklin-hiekk8`.
 
@@ -259,6 +259,26 @@ de compte (Supabase non configuré sur la session). NON FAIT, décision requise 
 compte ou `MCP_USER_ID`) ; plusieurs comptes demandent un secret par compte, donc une table et une migration ; (2) l'export serveur
 (l'export actuel est la sauvegarde locale, identique aux données synchronisées) ; (3) synchronisation des fiches d'exercice (collection,
 migration) ; (4) droits des annales ; (5) IA payante côté serveur (contredit « aucun agent LLM dans le dépôt », coût par utilisateur).
+
+**Mission 11 (2026-10-21) — capture rapide depuis l'Apple Watch (accord de l'élève ; usage PERSONNEL : sécuriser son compte et le rendre
+100 % effectif).** Audit de la vraie base (lecture seule) : un compte, RLS active sur les 3 tables (`exercise_logs`, `push_subscriptions`,
+`user_collections`), un seul avertissement Supabase (protection contre les mots de passe compromis désactivée : réglage de l'élève) ; la
+production est à jour (PR #31, déduction : non testée en vrai). Constat qui motive la mission : `sessions` écrites jusqu'au 16 octobre,
+`attempts`, `errors` et `dayPlans` VIDES (aucun résultat d'exercice jamais reçu), `ankiSnapshots` un seul relevé (4 octobre) : l'évaluation
+n'a pas de données. Livré : `POST /api/capture` (`app/api/capture/route.ts`, `lib/capture-handler.ts`, `lib/capture.ts`), ÉCRITURE SEULE :
+ajoute une séance (saisie rapide) ou une tentative, ne lit rien, ne modifie ni ne supprime rien. Jeton `CAPTURE_TOKEN` dans
+`Authorization: Bearer` (jamais l'URL ; ≥ 32 caractères), distinct de `MCP_SECRET` et `MCP_HERMES_TOKEN` ; fermé aussi sans `MCP_USER_ID`
+(ici on ne devine pas le compte). Listes fermées, durées 1–240 min, aucun texte libre, corps ≤ 2 Ko ; idempotent par `id` de requête
+(relance du raccourci sans doublon) ; même règle de révision que les appareils (aucun écrasement). Réponse : `{ enregistre, doublon }`.
+Mode d'emploi du raccourci dans Réglages (`components/capture-guide.tsx`). Vérifié : 89 fichiers de tests, 1448 réussis + 1 échec attendu
+antérieur, `tsc`, lint, build ; 30 tests de la capture, deux mutations volontaires (authentification retirée, idempotence cassée) détectées ;
+appels HTTP réels (sans jeton, faux jeton, jeton en URL : 401 ; valeur hors liste : 400 ; base injoignable : 500 sans fuite ; GET : 405).
+NON vérifié : un appel réel vers la vraie base, le raccourci sur une vraie Apple Watch. Reste À FAIRE PAR L'ÉLÈVE (Vercel, jamais par
+Claude) : créer `CAPTURE_TOKEN` et `MCP_USER_ID`, redéployer, fabriquer le raccourci ; désactiver les inscriptions Supabase (ou fixer
+`MCP_USER_ID`, ce qui sert aussi le connecteur de Claude) ; activer la protection des mots de passe compromis. Reste à faire côté
+code : Hermes (valider un vrai appel `get_today`, révoquer le jeton et le contournement de test), rappel d'import Anki, écran « état de
+mes données ». Limites assumées : pas de limitation de débit ; un jeton volé permettrait d'ajouter des lignes parasites (supprimables
+dans l'application), pas de lire quoi que ce soit.
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
