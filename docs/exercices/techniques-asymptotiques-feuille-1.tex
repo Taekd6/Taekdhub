@@ -1,0 +1,154 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.2cm,top=2cm,bottom=2.2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+\setlist[enumerate,1]{label=\arabic*.,leftmargin=*,itemsep=0.6em}
+\setlist[enumerate,2]{label=(\alph*),leftmargin=1.6em,itemsep=0.3em}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\sh}{\operatorname{sh}}
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\dd}{\,\mathrm{d}}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{Techniques asymptotiques --- feuille 1}
+\fancyhead[R]{sans indice, sans corrig\'e}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\exo}[3]{\vspace{1.2em}\noindent\textbf{\large Exercice #1}\hfill\textit{#2 \,·\, #3}\par\smallskip}
+
+\begin{document}
+\begin{center}
+{\LARGE\bfseries Techniques asymptotiques}\\[0.3em]
+{\large \'Equivalents, d\'eveloppements limit\'es, s\'eries, comparaison}\\[0.5em]
+MP --- feuille d'exercices r\'eels, \textbf{sans indice ni corrig\'e}
+\end{center}
+
+\noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\small
+\textbf{Mode d'emploi.} Chronom\`etre lanc\'e, sans cours ni notes, r\'edaction compl\`ete sur copie comme \`a l'oral~: hypoth\`eses
+v\'erifi\'ees, \'equivalents justifi\'es, conclusions \'ecrites. Une partie \`a la fois. \textbf{Dur\'ee indicative~: A $\approx$ 1\,h\,05 ;
+B $\approx$ 1\,h\,05 ; C $\approx$ 50\,min.} La partie C est facultative si tu veux all\'eger. \`A la fin, remplis le tableau de suivi (derni\`ere page).}}
+
+\vspace{0.8em}
+\noindent\textbf{Partie A --- Les fondations (oral CCINP, \(\approx\) 1\,h\,05)}
+
+\exo{1}{CCINP, banque 2022, exercice 1}{10 min}
+\begin{enumerate}
+\item On consid\`ere deux suites num\'eriques $(u_n)_{n\in\N}$ et $(v_n)_{n\in\N}$ telles que $(v_n)_{n\in\N}$ est non nulle \`a partir d'un certain rang et $u_n \underset{+\infty}{\sim} v_n$.\\
+D\'emontrer que $u_n$ et $v_n$ sont de m\^eme signe \`a partir d'un certain rang.
+\item D\'eterminer le signe, au voisinage de l'infini, de : $u_n=\sh\!\left(\dfrac1n\right)-\tan\!\left(\dfrac1n\right)$.
+\end{enumerate}
+
+\exo{2}{CCINP, banque 2022, exercice 7}{15 min}
+\begin{enumerate}
+\item Soient $(u_n)_{n\in\N}$ et $(v_n)_{n\in\N}$ deux suites de nombres r\'eels positifs. On suppose que $(u_n)_{n\in\N}$ et $(v_n)_{n\in\N}$ sont non nulles \`a partir d'un certain rang.\\
+Montrer que : $u_n \underset{+\infty}{\sim} v_n \Longrightarrow \sum u_n$ et $\sum v_n$ sont de m\^eme nature.
+\item \'Etudier la convergence de la s\'erie $\displaystyle\sum_{n\geqslant 2}\dfrac{\big((-1)^n+\mathrm{i}\big)\ln n\,\sin\!\left(\dfrac1n\right)}{\sqrt{n+3}-1}$.\\
+\textbf{Remarque} : $\mathrm{i}$ d\'esigne le nombre complexe de carr\'e $-1$.
+\end{enumerate}
+
+\exo{3}{CCINP, banque 2022, exercice 5}{20 min}
+\begin{enumerate}
+\item On consid\`ere la s\'erie de terme g\'en\'eral $u_n=\dfrac{1}{n(\ln n)^{\alpha}}$ o\`u $n\geqslant 2$ et $\alpha\in\R$.
+ \begin{enumerate}
+ \item \textbf{Cas $\alpha\leqslant 0$} \quad En utilisant une minoration tr\`es simple de $u_n$, d\'emontrer que la s\'erie diverge.
+ \item \textbf{Cas $\alpha>0$} \quad \'Etudier la nature de la s\'erie.
+ \end{enumerate}
+\item D\'eterminer la nature de la s\'erie $\displaystyle\sum_{n\geqslant 2}\dfrac{\left(\ee-\left(1+\dfrac1n\right)^{n}\right)\ee^{\frac1n}}{\big(\ln(n^2+n)\big)^2}$.
+\end{enumerate}
+
+\exo{4}{CCINP, banque 2022, exercice 46}{20 min}
+\noindent On consid\`ere la s\'erie $\displaystyle\sum_{n\geqslant 1}\cos\!\left(\pi\sqrt{n^2+n+1}\right)$.
+\begin{enumerate}
+\item Prouver que, au voisinage de $+\infty$, $\;\pi\sqrt{n^2+n+1}=n\pi+\dfrac{\pi}{2}+\alpha\dfrac{\pi}{n}+O\!\left(\dfrac1{n^2}\right)\;$ o\`u $\alpha$ est un r\'eel que l'on d\'eterminera.
+\item En d\'eduire que $\displaystyle\sum_{n\geqslant 1}\cos\!\left(\pi\sqrt{n^2+n+1}\right)$ converge.
+\item $\displaystyle\sum_{n\geqslant 1}\cos\!\left(\pi\sqrt{n^2+n+1}\right)$ converge-t-elle absolument ?
+\end{enumerate}
+
+\newpage
+\noindent\textbf{Partie B --- Approfondissement (oral CCINP, \(\approx\) 1\,h\,05)}
+
+\exo{5}{CCINP, banque 2022, exercice 50}{20 min}
+\noindent On consid\`ere la fonction $F : x\mapsto \displaystyle\int_0^{+\infty}\dfrac{\ee^{-2t}}{x+t}\dd t$.
+\begin{enumerate}
+\item Prouver que $F$ est d\'efinie et continue sur $]0;+\infty[$.
+\item Prouver que $x\longmapsto xF(x)$ admet une limite en $+\infty$ et d\'eterminer la valeur de cette limite.
+\item D\'eterminer un \'equivalent, au voisinage de $+\infty$, de $F(x)$.
+\end{enumerate}
+
+\exo{6}{CCINP, banque 2022, exercice 56}{20 min}
+\noindent On consid\`ere la fonction $H$ d\'efinie sur $]1;+\infty[$ par $H(x)=\displaystyle\int_x^{x^2}\dfrac{\dd t}{\ln t}$.
+\begin{enumerate}
+\item Montrer que $H$ est $\mathcal{C}^1$ sur $]1;+\infty[$ et calculer sa d\'eriv\'ee.
+\item Montrer que la fonction $u$ d\'efinie par $u(x)=\dfrac{1}{\ln x}-\dfrac{1}{x-1}$ admet une limite finie en $x=1$.
+\item En utilisant la fonction $u$ de la question 2., calculer la limite en $1^+$ de la fonction $H$.
+\end{enumerate}
+
+\exo{7}{CCINP, banque 2022, exercice 51}{25 min}
+\begin{enumerate}
+\item Montrer que la s\'erie $\displaystyle\sum\dfrac{(2n)!}{(n!)^2\,2^{4n}\,(2n+1)}$ converge.\\
+On se propose de calculer la somme de cette s\'erie.
+\item Donner le d\'eveloppement en s\'erie enti\`ere en $0$ de $t\longmapsto\dfrac{1}{\sqrt{1-t}}$ en pr\'ecisant le rayon de convergence.\\
+\textbf{Remarque} : dans l'expression du d\'eveloppement, on utilisera la notation factorielle.
+\item En d\'eduire le d\'eveloppement en s\'erie enti\`ere en $0$ de $x\longmapsto\operatorname{Arcsin}x$ ainsi que son rayon de convergence.
+\item En d\'eduire la valeur de $\displaystyle\sum_{n=0}^{+\infty}\dfrac{(2n)!}{(n!)^2\,2^{4n}\,(2n+1)}$.
+\end{enumerate}
+
+\newpage
+\noindent\textbf{Partie C --- Niveau \'ecrit (Mines-T\'el\'ecom, Mines-Ponts\ldots, \(\approx\) 50\,min, facultative)}
+
+\exo{8}{Concours 2019, Math\'ematiques I, MP --- extrait}{50 min}
+\noindent\textit{Comportement asymptotique de sommes de s\'eries enti\`eres.} Soit $p$ un entier naturel non nul et $r$ un nombre r\'eel. On consid\`ere la fonction d\'efinie sur $\C$ par la s\'erie enti\`ere
+\[
+S_{r,p}(z)=\sum_{n=1}^{+\infty}\frac{(pn)^r}{(pn)!}\,z^{pn}.
+\]
+\begin{enumerate}
+\item[\textbf{1.}] \textbf{Question pr\'eliminaire} (Q1 du sujet). Justifier que la s\'erie enti\`ere $\displaystyle\sum_{n\geqslant 1}\frac{(pn)^r}{(pn)!}\,z^n$ a pour rayon de convergence $+\infty$. Qu'en est-il de la s\'erie enti\`ere $\displaystyle\sum_{n\geqslant 1}\frac{(pn)^r}{(pn)!}\,z^{pn}$ ?
+\end{enumerate}
+\noindent On suppose d\'esormais $r>0$. Pour tous $n\in\N$ et $x\in\R_+^*$, on pose
+\[
+u_n(x)=\frac{n^r}{n!}\,x^n,\qquad\text{et}\qquad \varphi_x : t\in[1,+\infty[\;\longmapsto\; t^{1-r}(t-1)^r-x.
+\]
+\noindent\textbf{R\'esultats admis} (\'etablis \`a la question~2 du sujet)~: pour tout $x>0$, $\varphi_x$ s'annule en un unique \'el\'ement de $[1,+\infty[$, not\'e $t_x$~; la suite finie $\big(u_n(x)\big)_{0\leqslant n\leqslant\lfloor t_x\rfloor}$ est croissante et la suite infinie $\big(u_n(x)\big)_{n\geqslant\lfloor t_x\rfloor}$ est d\'ecroissante, o\`u $\lfloor x\rfloor$ d\'esigne la partie enti\`ere du nombre r\'eel $x$.
+\begin{enumerate}
+\item[\textbf{2.}] (Q3 du sujet) Pour tout $\alpha\in\R$, d\'eterminer la limite de $\varphi_x(x+\alpha)$ quand $x$ tend vers $+\infty$. En d\'eduire que $t_x-x-r$ tend vers z\'ero lorsque $x\to+\infty$. (On pourra s'aider de la d\'efinition d'une limite.)
+\item[\textbf{3.}] (Q4 du sujet) Montrer que pour tout entier relatif $k$, $u_{\lfloor x\rfloor+k}(x)\sim u_{\lfloor x\rfloor}(x)$ lorsque $x\to+\infty$. En d\'eduire que pour tout $n\in\N$ et pour tout $x$ au voisinage de $+\infty$,
+\[
+\sum_{i=\lfloor x\rfloor-n}^{\lfloor x\rfloor}u_i(x)\;\geqslant\; n\,u_{\lfloor x\rfloor}(x).
+\]
+\end{enumerate}
+
+\newpage
+\section*{Tableau de suivi}
+\noindent Remplis-le apr\`es chaque exercice, \`a chaud. Le \emph{r\'esultat} est honn\^ete : \textbf{r\'eussi} (complet et rigoureux, sans aide), \textbf{partiel}, ou \textbf{\'echec}. L'\emph{aide} est \textbf{sans}, \textbf{indices} ou \textbf{correction}. La \emph{cause} d'un \'echec~: cours, m\'ethode, calcul, compr\'ehension, d\'emarrage, temps, r\'edaction.
+
+\vspace{0.8em}
+\renewcommand{\arraystretch}{2.1}
+\noindent\begin{tabular}{|>{\centering\arraybackslash}p{1.1cm}|p{2.6cm}|p{2.6cm}|p{2.6cm}|p{4.4cm}|}
+\hline
+\textbf{Ex.} & \textbf{Temps r\'eel} & \textbf{R\'esultat} & \textbf{Aide} & \textbf{Cause / ce qui a bloqu\'e}\\\hline
+1 & & & & \\\hline
+2 & & & & \\\hline
+3 & & & & \\\hline
+4 & & & & \\\hline
+5 & & & & \\\hline
+6 & & & & \\\hline
+7 & & & & \\\hline
+8 & & & & \\\hline
+\end{tabular}
+
+\vfill
+\begin{small}
+\noindent\textbf{Sources.} Exercices 1 \`a 7 : banque publique d'exercices de math\'ematiques de l'\'epreuve orale du CCINP, fili\`ere MP, session 2022
+(concours-commun-inp.fr), licence CC BY-NC-SA 3.0 FR~; les \emph{indications} figurant dans les \'enonc\'es d'origine ont \'et\'e retir\'ees volontairement (num\'erotation conserv\'ee).
+Exercice 8 : concours 2019, \'epreuve de math\'ematiques I, fili\`ere MP (Mines-T\'el\'ecom, Mines-Ponts, Centrale-Sup\'elec cycle international\ldots), extrait des parties pr\'eliminaire et A
+(num\'erotation d'origine indiqu\'ee), \'enonc\'e disponible sur doc-solus.fr. Aucun \'enonc\'e n'a \'et\'e r\'e\'ecrit.
+\end{small}
+\end{document}

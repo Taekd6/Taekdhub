@@ -315,6 +315,24 @@ sommeil < 6 h) ne viennent que du check-in d'AUJOURD'HUI. 4 tests, mutation vér
 NON fait, volontairement (changent le classement des conseils, à décider avec l'élève plutôt qu'à corriger seul) : fatigue définie de 3 façons ;
 deux budgets du jour (capacité déclarée / planifiable). Vérifié : 91 fichiers de tests, 1473 réussis + 1 échec attendu antérieur, `tsc`, lint, build.
 
+**Mission 15 (2026-10-21) — environnement de travail : paquet Anki de ChatGPT, feuille d'exercices (mandat de l'élève).**
+(a) Audit du `.apkg` de ChatGPT (« Maths MP - Techniques asymptotiques », 130 cartes toutes NOUVELLES, type « Prépa MP v3 - Atomique »,
+champs Contexte/Etiquette/Question/Reponse/Complement) : les 130 cartes ont été relues une par une, UNE seule erreur mathématique (carte
+`u_{n+1}=sin u_n`, `u_0∈]0,π]` à corriger en `]0,π[`). Défauts de structure : champ de tri (Contexte) à 10 valeurs pour 130 notes ; sous-paquets par
+TYPE de carte au lieu de par chapitre (TaekdHub lit les paquets : pas de bilan par chapitre) ; étiquettes qui soufflent la réponse (contre-exemples) ;
+6 redondances contre-exemple/piège ; paquets vides. Prompt de correction et prompt « travail autonome sur tout le paquet » donnés à l'élève ;
+ChatGPT produit, Claude VÉRIFIE (rapport + contrôle + .apkg à renvoyer), ChatGPT ne travaille que sur les maths. Avertissements donnés : sauvegarder la
+collection Anki avant d'importer, GUID stables, 30 nouvelles cartes par jour. Gemini = tuteur (indices un à un, correction seulement à la demande,
+fin d'exercice par « Matière · résultat · aide · cause »), prompt fourni.
+(b) Feuille `docs/exercices/techniques-asymptotiques-feuille-1.pdf` (+ `.tex`) : 8 exercices RÉELS, sans indice ni corrigé : 7 de la banque publique
+d'oraux CCINP MP session 2022 (exercices 1, 7, 5, 46, 50, 56, 51 ; CC BY-NC-SA 3.0 FR ; les « indications » d'origine retirées volontairement) et
+un extrait (Q1, Q3, Q4, Q2 admise) de l'épreuve Mathématiques I MP 2019 (épreuve commune, dont Mines-Télécom) ; énoncés relus sur les pages en image,
+aucun réécrit ; durée indicative A 1 h 05, B 1 h 05, C 50 min (facultative) ; tableau de suivi « résultat · aide · cause » pour le raccourci
+de la montre. LaTeX installé dans la session (`texlive`, via apt). Limites : la feuille ne couvre que les équivalents/DL/séries/intégrales du
+CCINP et un extrait Mines ; pas de suites implicites/récurrentes ni de développement asymptotique à plusieurs termes (à ajouter dans la feuille 2) ;
+l'historique `exercise_logs` ne contient que 4 lignes (réduction, 1er octobre) : impossible de cibler les points faibles par les données. Non fait :
+import de fiches JSON dans TaekdHub (fonction à construire, sans migration).
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
 - Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un
