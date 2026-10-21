@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   accentForeground,
@@ -149,5 +150,15 @@ describe("resolvePaletteId — autonome, recopiée dans le script anti-flash", (
     expect(revived({ accent: "#ff375f" })).toBe("sunset");
     expect(revived({ accent: "#0a84ff", subjectPalette: "ocean" })).toBe("ocean");
     expect(revived(null)).toBe("aurora");
+  });
+});
+
+describe("cartes qui portent du texte — la lecture avant la couleur", () => {
+  it("`.tone-brand` utilise les teintes PROFONDES des boutons (testées à 4,5:1), jamais le dégradé clair c1 → c2", () => {
+    const css = readFileSync("app/globals.css", "utf8");
+    const block = css.slice(css.indexOf(".tone-brand {"), css.indexOf("}", css.indexOf(".tone-brand {")));
+    expect(block).toContain("--gc1: var(--btn-g1)");
+    expect(block).toContain("--gc2: var(--btn-g2)");
+    expect(block).not.toMatch(/var\(--g[12]\)/);
   });
 });

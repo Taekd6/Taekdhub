@@ -94,7 +94,7 @@
     --g1-rgb: 129 140 248;
     --g2-rgb: 34 211 238;
     --btn-g1: #4338ca;
-    --btn-g2: #6d28d9;
+    --btn-g2: #0e7490;
     --card-1a: #4338ca;
     --card-1b: #0891b2;
     --card-2a: #6d28d9;
@@ -1438,8 +1438,10 @@
   --gc2: var(--review-b);
 }
 .tone-brand {
-  --gc1: var(--g1);
-  --gc2: var(--g2);
+  /* Teintes PROFONDES (celles des boutons à texte, contraste blanc ≥ 4,5:1 testé dans lib/theme.test.ts) :
+     cette carte porte du texte courant. Le dégradé clair c1 → c2 ne sert qu'aux icônes (`.grad-brand`). */
+  --gc1: var(--btn-g1);
+  --gc2: var(--btn-g2);
 }
 
 

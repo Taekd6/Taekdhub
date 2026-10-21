@@ -70,7 +70,7 @@ export const PALETTES: Palette[] = [
     c1: "#818cf8",
     c2: "#22d3ee",
     ink: "#4338ca",
-    solid: ["#4338ca", "#6d28d9"],
+    solid: ["#4338ca", "#0e7490"],
     cards: [
       ["#4338ca", "#0891b2"],
       ["#6d28d9", "#4f46e5"],
