@@ -354,6 +354,16 @@ et ne sont visibles du navigateur que si `user_id` est renseigné (les 7 lignes 
 ajouté au chapitre, tests (ne vole pas d'autre chapitre ; « Séries entières » et « Séries numériques » inchangés). Vérifié : 91 fichiers de tests, 1473 réussis + 1 échec attendu antérieur, `tsc`, lint.
 NON fait : PR des missions 13 à 16 (la branche a 7 commits de plus que `main` ; PR et fusion demandent l'accord explicite de l'élève).
 
+**Mission 17 (2026-10-21) — le calendrier de fin de vacances, relié à l'agenda Apple.** Code `4b03413` (+ `3da002c`, majuscule des jours).
+(a) Programme statique `lib/holiday-program.ts` (22 octobre → 1er novembre : 17 séances, 21 h 15, 9 jours de travail, 2 jours de repos complet, jamais plus de 3 h 30 par jour ; problème de 2 h en conditions le 29, correction avec Claude le 30, bilan le 31) :
+des DONNÉES, pas une collection, donc aucune migration. (b) `lib/ics.ts` : fichier iCalendar (heures en UTC, UID stable, alarme 15 min avant, pliage à 75 octets) ; le passage à l'heure d'hiver du 25 octobre
+(UTC+2 → UTC+1) est testé (une séance à 09:30 est à 07:30Z avant, 08:30Z après). (c) Flux d'abonnement `GET /api/calendar/<CALENDAR_TOKEN>.ics` (`lib/calendar-feed.ts`) : FERMÉ tant que `CALENDAR_TOKEN` (≥ 32 caractères) n'est pas posé
+dans Vercel, lecture seule, sens unique TaekdHub → Calendrier Apple. (d) Pages `/calendrier` et `/seance/[id]` (étapes, fiche PDF, grille de rédaction, chrono, Anki), entrée « Calendrier » dans la barre latérale,
+carte « prochaine séance » sur l'accueil (si aujourd'hui ou demain). (e) Six fiches + une grille de rédaction (10 règles tirées de ses propres erreurs) en PDF dans `public/exercices/`, sources LaTeX et `build.py` dans `docs/exercices/fiches/` ;
+énoncés réels (feuille MPSI Camille Jullian, banque CCINP), sans indice ni corrigé. Vérifié : 94 fichiers de tests, 1512 réussis + 1 échec attendu antérieur, `tsc`, lint, build, captures bureau et mobile, carte d'accueil
+(contournement du premier lancement : `onboardingCompletedAt` dans `prepahub:preferences`, et du point du jour : `prepahub:briefing:seen`). Fichier importable à la main : `taekdhub-fin-de-vacances.ics` (19 événements, 17 alarmes).
+NON fait : PR et fusion (accord explicite de l'élève requis) ; sans déploiement, les liens des événements (`/seance/<id>`, `/exercices/*.pdf`) n'existent pas en production ; `CALENDAR_TOKEN` à créer par l'élève (Vercel, Production), jamais partagé.
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
 - Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un
