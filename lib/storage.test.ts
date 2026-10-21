@@ -144,9 +144,9 @@ describe("export → JSON → import — round-trip complet (Phase 7)", () => {
  * valeur incohérente à `applyThemeMode` (lib/theme.ts).
  */
 describe("normalizePreferences — thème et rétrocompatibilité", () => {
-  it("une préférence vide retombe entièrement sur les défauts (dont themeMode: \"light\", défaut « Revolut clair »)", () => {
+  it("une préférence vide retombe entièrement sur les défauts (dont themeMode: \"dark\", défaut « Minuit »)", () => {
     const prefs = normalizePreferences({});
-    expect(prefs.themeMode).toBe("light");
+    expect(prefs.themeMode).toBe("dark");
     expect(prefs.weeklyGoalMinutes).toBe(300);
     expect(prefs.palette).toBe("aurora");
   });
@@ -156,10 +156,10 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     expect(normalizePreferences({ themeMode: "dark" }).themeMode).toBe("dark");
   });
 
-  it("retombe sur le défaut (clair) pour un themeMode invalide ou corrompu", () => {
-    expect(normalizePreferences({ themeMode: "bleu" }).themeMode).toBe("light");
-    expect(normalizePreferences({ themeMode: 42 }).themeMode).toBe("light");
-    expect(normalizePreferences({ themeMode: null }).themeMode).toBe("light");
+  it("retombe sur le défaut (sombre) pour un themeMode invalide ou corrompu", () => {
+    expect(normalizePreferences({ themeMode: "bleu" }).themeMode).toBe("dark");
+    expect(normalizePreferences({ themeMode: 42 }).themeMode).toBe("dark");
+    expect(normalizePreferences({ themeMode: null }).themeMode).toBe("dark");
   });
 
   it("conserve un choix explicite \"system\"", () => {
@@ -174,7 +174,7 @@ describe("normalizePreferences — thème et rétrocompatibilité", () => {
     // Un indigo choisi à l'époque « Apple » devient Aurora (famille bleu-violet).
     expect(prefs.palette).toBe("aurora");
     expect(prefs).not.toHaveProperty("accent");
-    expect(prefs.themeMode).toBe("light");
+    expect(prefs.themeMode).toBe("dark");
     expect(prefs.weeklyGoalMinutes).toBe(300);
   });
 });

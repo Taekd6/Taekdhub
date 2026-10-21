@@ -27,8 +27,7 @@ import "./globals.css";
  *
  * Mode : "light" / "dark" / "system" est écrit tel quel dans `data-theme`
  * (lib/theme.ts#applyThemeMode) ; une préférence absente ou invalide pose
- * "light", le défaut du produit — que app/globals.css applique d'ailleurs
- * aussi sans attribut.
+ * "dark", le défaut du produit depuis la refonte « Minuit ».
  *
  * ENTRÉES AU DÉFILEMENT — `data-reveal="armed"` fige les animations
  * d'entrée (`.reveal`, `.grow-*`, `.ring-*`, `.area-fade`) sur leur première
@@ -45,7 +44,7 @@ const PALETTE_TABLE = Object.fromEntries(PALETTES.map((palette) => [palette.id, 
 const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement,st=d.style;var raw=localStorage.getItem('prepahub:preferences');var prefs={};if(raw){try{prefs=JSON.parse(raw)||{};}catch(e){prefs={};}}
 var resolve=(${resolvePaletteId.toString()});var table=${JSON.stringify(PALETTE_TABLE)};var pid=resolve(prefs);var vars=table[pid];
 if(vars){for(var k in vars){st.setProperty(k,vars[k]);}d.setAttribute('data-palette',pid);}
-var mode=prefs.themeMode;d.setAttribute('data-theme',(mode==='light'||mode==='dark'||mode==='system')?mode:'light');
+var mode=prefs.themeMode;d.setAttribute('data-theme',(mode==='light'||mode==='dark'||mode==='system')?mode:'dark');
 }catch(e){}
 try{var r=document.documentElement;if('IntersectionObserver' in window&&!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)){r.setAttribute('data-reveal','armed');setTimeout(function(){if(!window.__revealLive)r.removeAttribute('data-reveal');},4000);}}catch(e){}})();`;
 
