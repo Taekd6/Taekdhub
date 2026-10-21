@@ -337,6 +337,14 @@ déjà vues » (CCINP 46, 7, 5). Énoncés relus sur les pages en image et véri
 aucun énoncé réécrit ; tableau de suivi « résultat · aide · cause ». LaTeX installé dans la session (texlive, apt). Limites : ni suites récurrentes ni DA à plusieurs termes d'ordre élevé ; l'historique
 `exercise_logs` ne contient que 4 lignes (réduction, 1er octobre) : pas de ciblage par les données. Non fait : import de fiches JSON dans TaekdHub (fonction à construire, sans migration).
 
+**Bilan de la feuille 1 (2026-10-21, copies manuscrites de l'élève, 7 exercices).** Enregistré dans `exercise_logs` (7 lignes, chapitre « analyse asymptotique », 6 « partiel » + 1 « échec »,
+aide « sans », temps réel inconnu). Constats (corrigés par calcul numérique : H(1,001) = 0,694 donc lim H = ln 2 et non 1/2 ; H'(x) = (x-1)/ln x ; α = 3/8 et non -1/4) :
+ce n'est PAS un problème de calcul ni d'outils (DL, équivalents, découpage Re/Im, monotonie par f_{n+1} = f_n + x + 1 : bien menés), mais de JUSTIFICATION et de rigueur : (1) négation de quantificateurs
+(Ex. 1) ; (2) Chasles avec une borne où l'intégrande n'existe pas (Ex. 5) ; (3) « ∼ » utilisé comme une égalité (différence d'équivalents, Ex. 3 ; équivalent d'une somme, Ex. 2) ; (4) ordre de troncature quand on
+multiplie par n (Ex. 4) ; (5) passage à la limite écrit sans limite (Ex. 7) ; (6) ln n = o(n) insuffisant (il faut o(n^ε)) ; (7) étourderies de recopie (t+1 pour t-1) et coefficient du DL de √(1+u). Points forts : il
+repère lui-même ses zones d'ombre (annotations rouges toutes fondées), propose des constructions propres. À faire ensuite : reprendre les questions faussées, sans indice d'abord ; feuille 2 centrée sur
+la rédaction (hypothèses, rang, ordre des DL) ; cartes Anki « pièges de rédaction ». Les « indications » CCINP retirées de la feuille ont privé l'élève de l'outil série-intégrale (Ex. 3, 1b) : c'est un manque d'outil, pas de travail.
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
 - Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un
