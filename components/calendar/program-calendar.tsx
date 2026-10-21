@@ -17,6 +17,11 @@ import { FICHES, RENTREE, dayLabel, hoursLabel, nextSession, parisClock, program
  * c'est ce qui prévient sur l'iPhone et sur la montre. Ici, rien n'est modifiable : le programme est écrit,
  * et modifié par Claude à ta demande.
  */
+/** « jeudi 22 octobre » → « Jeudi 22 octobre » (CSS capitalize mettrait une majuscule à chaque mot). */
+function upperFirst(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 export function ProgramCalendar() {
   // L'heure n'existe qu'après le montage : le rendu serveur et le premier rendu client sont identiques.
   const [now, setNow] = useState<string | null>(null);
@@ -64,8 +69,8 @@ export function ProgramCalendar() {
           return (
             <li key={day.date}>
               <section aria-labelledby={`jour-${day.date}`} className={cn("surface p-4 sm:p-5", isToday && "ring-1 ring-accent/50")}>
-                <h2 id={`jour-${day.date}`} className="flex flex-wrap items-center gap-2 t-subhead capitalize text-ink">
-                  {dayLabel(day.date)}
+                <h2 id={`jour-${day.date}`} className="flex flex-wrap items-center gap-2 t-subhead text-ink">
+                  {upperFirst(dayLabel(day.date))}
                   {isToday && <Badge variant="accent">aujourd&apos;hui</Badge>}
                 </h2>
                 <ul className="mt-3 divide-y divide-line">
