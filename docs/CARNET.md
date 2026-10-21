@@ -401,6 +401,16 @@ Vérifié : 94 fichiers de tests, 1519 réussis + 1 échec attendu antérieur, `
 - `exercise_logs` : migration 0009 à exécuter avant 0007 et 0008 sur une base neuve.
 
 ## Prochaine tâche envisagée
+**À FAIRE — liste de l'élève (2026-10-21, soir), à valider point par point avec lui.** Principe posé par l'élève : ne PAS enregistrer le temps de travail ; ce qui compte est d'avancer et de respecter ce qui est prévu (15 h faites en 5 h valent mieux), pas de « 2 h de maths sans avancer ».
+1. Demain jeudi 22 (matin et après-midi de travail) : vérifier que les séances du programme et leurs fiches sont prêtes (reprise des erreurs, électronique, DM de physique, Anki, vocabulaire). Urgent.
+2. PR de la branche : c'est à Claude de la créer (jamais de fusion sans l'élève). Bloqué : `gh` absent et GitHub non connecté dans le navigateur de Claude ; l'élève doit se connecter une fois, ou installer `gh`. Pour que le planning existe sur l'iPhone, fusion + déploiement Vercel.
+3. Chrono : plus aucun enregistrement de séance ; au plus un minuteur pour un sujet en temps limité (DS, colle), ou retrait du menu. À trancher. Idée à valider : remplacer le temps par un RÉSULTAT par tâche (fait / partiel / bloqué + cause).
+4. Hermès : définir avec l'élève le format du constat (sur les tâches cochées et leur résultat, pas sur le temps) et son prompt ; l'élève fait lui-même la configuration d'Hermès.
+5. Écrans des matières (hubs) : des éléments s'affichent mal ; captures de l'élève attendues.
+6. Planning : synchronisation entre PC et téléphone et inclusion dans la sauvegarde (touche Supabase : accord explicite).
+7. Étape 3 de la refonte : suppression du code mort (suivi du temps, statistiques, Next Move) et adaptation d'Hermès et du connecteur de Claude.
+8. Anki : l'élève importe `chapitre_01_corrige_v2.apkg` et `docs/anki/pieges-redaction.tsv` après sauvegarde ; il enverra les autres chapitres un par un pour relecture.
+9. La fatigue : caduque, le moteur disparaît avec l'étape 3.
 **REPRISE DE SESSION (2026-10-21, soir).** L'élève passe sur une session locale (son PC Windows) pour que Claude lise ses fichiers. Lire d'abord ce qui suit, puis proposer et attendre l'accord. État : branche `claude/exciting-franklin-hiekk8`, aucune PR ouverte, rien de la mission 17 ni 18 en production.
 
 *Préférences de l'élève, à respecter :* il veut APPRENDRE (pas de solutions toutes faites) ; les fiches d'exercices n'ont NI indice NI corrigé ; il est en MP (2e année) ; il ne veut pas être dérangé pendant qu'il code (« fais ce que tu as à faire ») ; il délègue les choix de planning mais décide de la charge (a demandé au moins 5 h de maths ou de physique par jour) ; pas de notifications en excès (plafond : alertes d'échéance et alarme de séance).
