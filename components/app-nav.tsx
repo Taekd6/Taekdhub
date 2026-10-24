@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
-import { BarChart3, BookOpen, CalendarCheck, CalendarDays, Clock3, History, Home, Languages, Layers, ListChecks, Repeat, Settings, Timer, WalletCards } from "lucide-react";
+import { BarChart3, BookOpen, CalendarCheck, CalendarDays, Clock3, History, Home, Languages, Layers, Library, ListChecks, Repeat, Settings, Timer, WalletCards } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -49,6 +49,7 @@ const SIDEBAR = [
   { href: "/entrainement", label: "Exercices", icon: ListChecks },
   { href: "/preparation", label: "Cours", icon: BookOpen },
   { href: "/revision", label: "Révisions", icon: Repeat },
+  { href: "/chapitres", label: "Mes chapitres", icon: Library },
   { href: "/erreurs-anglais", label: "Erreurs d'anglais", icon: Languages },
   { href: "/anki", label: "Anki", icon: WalletCards },
   { href: "/echeances", label: "Échéances", icon: CalendarCheck },
