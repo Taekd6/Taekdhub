@@ -358,6 +358,7 @@ rangé / méthodes / erreurs / cartes ; chaque ligne ouvre `/chapitre/<id>`. Lie
 Commit de code `0c2baab`. Vérifié : 95 fichiers de tests, 1513 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; navigateur réel à 820 px (clair et
 sombre, filtres, lien vers le chapitre, lien dans Matières). Physique et chimie fonctionnent avec les mêmes outils et le même format d'erreur
 (`description` / `fix` / `type`) ; seules les cartes Anki n'existent que pour les maths.
+- **Cours rangés (écrits directement en base, révision `chapterNotes` 8)** : Réduction (`m2-reduction`, 64 215 caractères) et Séries (`m2-series-compl`, 42 948 caractères, chapitre 5 « Séries » du polycopié, en espace vectoriel normé : il ne traite pas des familles sommables, que le titre du programme « Séries numériques et familles sommables » inclut). Les ★ du cours de Séries reprennent les ampoules du polycopié (« important en pratique »). Pour ce PDF le texte était lisible en image, page par page.
 - **Diagnostic du connecteur** : un serveur local construit depuis `main` liste bien 13 outils, dont `get_chapter`, `save_course`, `add_methods`, `add_errors` ;
   les deux projets Vercel (`taekdhub`, `taekdhub-vcrx`) ont déployé `main` (`74a6d7c`) en production. Si claude.ai ne voit pas les nouveaux outils, la cause est
   côté claude.ai : liste d'outils gardée en mémoire par le connecteur (le retirer et le rajouter, puis nouvelle conversation) ou URL du connecteur qui pointe sur
