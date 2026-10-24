@@ -302,6 +302,7 @@ app/(app)/history         Séances : journal des séances
 app/(app)/echeances       Échéances et planning (atteint depuis l'accueil)
 app/(app)/revoir          Carnet « À revoir » (+ /revoir/session : révisions espacées)
 app/(app)/erreurs         Carnet d'erreurs
+app/(app)/erreurs-anglais Mes erreurs d'anglais (thème CCMP), lues dans data/erreurs-anglais.json
 app/(app)/timer           Chronomètre
 app/(app)/settings        Réglages, sauvegarde et restauration
 app/(app)/annales         Annales corrigées avec Claude (lues dans Supabase)
