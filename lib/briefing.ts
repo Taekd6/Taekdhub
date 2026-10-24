@@ -8,7 +8,6 @@ import { formatClock, intentionsForToday } from "@/lib/intentions";
 import { computeNextMove, type NextMoveInput, type NextMovePlan } from "@/lib/next-move/engine";
 import { resolveOutcomes } from "@/lib/next-move/history";
 import { daysBetween, dueReviewItems, effectiveSchedule } from "@/lib/spaced-repetition";
-import { computeSubjectTargets } from "@/lib/subject-targets";
 import { dayKey } from "@/lib/study";
 import { formatMinutesSpan } from "@/lib/utils";
 import { activeWorkItems, daysUntilDue, remainingMinutes, WORK_ITEM_KIND_META } from "@/lib/work-items";
@@ -170,7 +169,7 @@ function urgentItems(input: BriefingInput): BriefingItem[] {
 /* ── 3. Ce que tu repousses ───────────────────────────────────────── */
 
 function postponedItems(input: BriefingInput, urgentIds: Set<string>): BriefingItem[] {
-  const { workItems, history, reviewItems, preferences, sessions, now, chapterMemory, errors, grades } = input;
+  const { workItems, history, reviewItems, now, chapterMemory, errors, grades } = input;
   const today = dayKey(now);
   const out: Array<{ rank: number; item: BriefingItem }> = [];
 
@@ -209,12 +208,7 @@ function postponedItems(input: BriefingInput, urgentIds: Set<string>): BriefingI
     out.push({ rank: 13, item: { id: "cartes-en-retard", tone: "repoussé", subject: null, title: `${plural(late.length, "carte")} en retard de révision`, detail: `La plus ancienne attend depuis ${oldest} j`, href: "/revoir/session" } });
   }
 
-  // Objectifs de la semaine qui décrochent.
-  for (const target of computeSubjectTargets(sessions, preferences.weeklySubjectTargets, now, preferences.capacityByWeekday)) {
-    const lag = target.expectedMinutes - target.doneMinutes;
-    if (target.pace !== "en retard" || lag < WEEKLY_LAG_MIN) continue;
-    out.push({ rank: 14, item: { id: `semaine:${target.subject}`, tone: "repoussé", subject: target.subject, title: `${target.subject} en retard sur la semaine`, detail: `${formatMinutesSpan(target.doneMinutes)} faites, ${formatMinutesSpan(target.expectedMinutes)} attendues à ce stade`, href: `/timer?matiere=${encodeURIComponent(target.subject)}` } });
-  }
+  // Objectifs de la semaine qui décrochent : RETIRÉ à la demande de l'élève (2026-10-24), qui ne veut pas de suivi de son temps.
 
   // À surveiller, en dernier : ce qui s'efface doucement.
   for (const { chapter, retrievability } of atRisk(chapterMemory, today, FADING_THRESHOLD).slice(0, 1)) {

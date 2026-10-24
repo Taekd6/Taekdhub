@@ -36,20 +36,15 @@ export function HomeTopBar({ name, avatar = null, contestDays, className }: { na
         {/* La photo de profil (Réglages → Photo), sinon l'initiale. */}
         {avatar ? <Image src={avatar} alt="" width={38} height={38} unoptimized className="h-full w-full object-cover" /> : initial}
       </Link>
-      {/* La date ouvre « Le point » du jour (app/(app)/point). */}
-      <Link
-        href="/point"
-        aria-label={`${date} — voir le point du jour`}
-        className="glass bounce-press flex h-[2.375rem] min-w-0 flex-1 items-center gap-2 rounded-full px-3.5 text-sm font-semibold text-muted hover:text-ink"
-      >
+      {/* La date n'ouvre plus « Le point » (2026-10-24 : l'accueil ne propose rien) ; l'écran reste sur /point. */}
+      <div className="glass flex h-[2.375rem] min-w-0 flex-1 items-center gap-2 rounded-full px-3.5 text-sm font-semibold text-muted">
         <span className="min-w-0 flex-1 truncate first-letter:uppercase">{date}</span>
         {contestDays !== null && (
           <span className="shrink-0 font-semibold text-accent" title="Jours avant le concours">
             J−{contestDays}
           </span>
         )}
-        <span className="shrink-0 text-[0.8125rem] font-semibold text-ink">Le point ›</span>
-      </Link>
+      </div>
       <Link
         href="/settings"
         aria-label="Réglages"

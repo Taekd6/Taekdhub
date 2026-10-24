@@ -16,6 +16,8 @@ import type { PdfDocumentModel } from "@/lib/chapter-pdf";
 export function PdfButton({ label, fileName, build }: { label: string; fileName: string; build: () => PdfDocumentModel }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Le PDF qui vient d'être fabriqué : sur iPad, Safari ignore parfois l'attribut `download` d'un lien interne et ne montre rien ; ce lien permet alors de l'ouvrir dans un onglet.
+  const [opened, setOpened] = useState<string | null>(null);
 
   async function download() {
     setBusy(true);
@@ -24,13 +26,16 @@ export function PdfButton({ label, fileName, build }: { label: string; fileName:
       const [{ renderPdf }, regular, bold] = await Promise.all([import("@/lib/chapter-pdf-render"), loadFont("DejaVuSans.ttf"), loadFont("DejaVuSans-Bold.ttf")]);
       const bytes = await renderPdf(build(), { regular, bold });
       const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
+      setOpened((previous) => {
+        if (previous) URL.revokeObjectURL(previous);
+        return url;
+      });
       const link = document.createElement("a");
       link.href = url;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch {
       setError("Le PDF n'a pas pu être créé. Vérifie ta connexion et réessaie.");
     } finally {
@@ -44,6 +49,11 @@ export function PdfButton({ label, fileName, build }: { label: string; fileName:
         {busy ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <Download size={16} aria-hidden />}
         {label}
       </Button>
+      {opened && !error && (
+        <a href={opened} target="_blank" rel="noopener" className="t-meta text-accent underline-offset-[3px] hover:underline">
+          Rien ne s&apos;est téléchargé ? Ouvrir le PDF
+        </a>
+      )}
       {error && (
         <p role="alert" className="t-meta text-rose-300">
           {error}

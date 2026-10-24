@@ -1,9 +1,9 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-24, commit de code `b1c37c0`.
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-24, commit de code `b1c37c0` (fusionné dans `main` : `74a6d7c`).
 > Les PR #28 à #31 sont FUSIONNÉES dans `main` ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
-> Branche de travail actuelle : `claude/modest-curie-3879r2`. La PR #32 est fusionnée dans `main` (`718084b`). La PR #33 (missions 13 et 14) est ouverte, non fusionnée.
+> Branche de travail actuelle : `claude/modest-curie-3879r2`. La PR #32 est fusionnée dans `main` (`718084b`). La PR #33 (missions 13 et 14) est FUSIONNÉE (`74a6d7c`) et déployée en production (déploiement `dpl_73ewod7zcU48zdTeHEyF3vjSPVJK`, READY).
 
 ## Objectif général
 TaekdHub est l'outil de travail personnel d'un élève de prépa MP (PWA Next.js 15, React 19,
@@ -344,6 +344,35 @@ Anki du chapitre de `data/course-cards.json`, lien vers `/anki` et le `.apkg`). 
   erreur → `add_errors`, avant un exercice → `get_chapter`) : non fait, à créer une fois le pilote validé.
 - Restent à décider : un format d'erreur propre à la physique-chimie (les erreurs de maths utilisent `description` / `fix` / `type`) ; les cours
   des autres matières ; la suppression des cours du prof avant toute ouverture publique ou commerciale (décision de l'élève : « on les enlèvera »).
+
+**Mise en service de la mission 14 (2026-10-24, sur demande explicite de l'élève : « fusionne, et permets à Claude de bosser dans TaekdHub »).**
+- Migration `0011_chapter_notes` APPLIQUÉE par Claude sur la base (projet Supabase unique, via l'outil Supabase), contrainte `user_collections_known` relue ensuite : `chapterNotes` y figure. Le carnet disait « à appliquer par l'élève » : l'élève l'a autorisé.
+- PR #33 fusionnée (merge commit `74a6d7c`), déploiement de production READY sur `taekdhub.vercel.app`. Aucune variable ni réglage Vercel touchés.
+- **Cours de Réduction rangé** (chapitre `m2-reduction`, 64 215 caractères, parties I à VI, 4 morceaux) : écrit DIRECTEMENT dans `user_collections` (collection `chapterNotes`, révision 4) par SQL, avec la même forme que `save_course`, parce que les outils du connecteur ne sont pas appelables depuis une session de code. Retapé depuis le PDF du professeur (16 pages de 2 pages de cours) ; matrices en notation linéaire (lignes séparées par « ; ») ; les formules douteuses ont été confirmées avec la couche texte du PDF ou recalculées exactement (A^k de l'exemple 20, a_k/b_k/c_k de l'exemple 21 : vérifiés pour k = 1 à 4 et 1 à 6). Le PDF d'origine n'est pas conservé. Les méthodes et les erreurs de Réduction sont vides (aucun exercice fait).
+- NON vérifié : les quatre outils (`get_chapter`, `save_course`, `add_methods`, `add_errors`) contre la vraie base depuis une conversation claude.ai ; le secret du connecteur n'est pas connu de Claude. À faire par l'élève : dans claude.ai, rafraîchir ou reconnecter le connecteur TaekdHub pour qu'il liste les quatre nouveaux outils, puis demander à Claude de lire `get_chapter` sur « Réduction ».
+
+**Mission 15 (2026-10-24) — fonctionnel dès demain, physique comprise (demande de l'élève).** `/chapitres` (`lib/chapters-overview.ts`,
+`components/chapitre/chapters-list.tsx`) : tous les chapitres par matière (maths, physique, chimie) et année (spé, sup), avec pour chacun cours
+rangé / méthodes / erreurs / cartes ; chaque ligne ouvre `/chapitre/<id>`. Liens : colonne latérale (« Mes chapitres ») et rangée d'outils de
+« Matières » (seul chemin sur iPad en portrait). PDF : lien de secours « Ouvrir le PDF » si Safari ne télécharge rien. `robots.ts` exclut `/chapitre`.
+Commit de code `0c2baab`. Vérifié : 95 fichiers de tests, 1513 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; navigateur réel à 820 px (clair et
+sombre, filtres, lien vers le chapitre, lien dans Matières). Physique et chimie fonctionnent avec les mêmes outils et le même format d'erreur
+(`description` / `fix` / `type`) ; seules les cartes Anki n'existent que pour les maths.
+- **Cours rangés (écrits directement en base, révision `chapterNotes` 8)** : Réduction (`m2-reduction`, 64 215 caractères) et Séries (`m2-series-compl`, 42 948 caractères, chapitre 5 « Séries » du polycopié, en espace vectoriel normé : il ne traite pas des familles sommables, que le titre du programme « Séries numériques et familles sommables » inclut). Les ★ du cours de Séries reprennent les ampoules du polycopié (« important en pratique »). Pour ce PDF le texte était lisible en image, page par page.
+- **Diagnostic du connecteur** : un serveur local construit depuis `main` liste bien 13 outils, dont `get_chapter`, `save_course`, `add_methods`, `add_errors` ;
+  les deux projets Vercel (`taekdhub`, `taekdhub-vcrx`) ont déployé `main` (`74a6d7c`) en production. Si claude.ai ne voit pas les nouveaux outils, la cause est
+  côté claude.ai : liste d'outils gardée en mémoire par le connecteur (le retirer et le rajouter, puis nouvelle conversation) ou URL du connecteur qui pointe sur
+  un ancien déploiement (Preview) ou sur l'autre projet. Non vérifié : l'URL réellement configurée dans claude.ai (le secret n'est pas connu de Claude).
+
+**Mission 16 (2026-10-24) — fin des pop-ups et du suivi du temps sur l'accueil (demande explicite de l'élève : « supprime tout ce que je t'ai dit »).**
+- Retirés de l'accueil (`components/dashboard-overview.tsx`) : la carte « Progression du jour », le check-in du sommeil du soir. Les composants existent toujours (`components/home/desktop-header.tsx`, `components/checkin`), sans appelant sur l'accueil.
+- Carte « Ton prochain mouvement » : les raisons liées à l'objectif de la semaine, au minimum du soir et au sommeil ne sont plus AFFICHÉES (filtre d'affichage ; le moteur Next Move est inchangé), ni la ligne « Corrige » quand elle parle de l'objectif de la semaine.
+- « Le point » ne s'ouvre plus tout seul au lancement (`components/briefing/briefing-gate.tsx` ne redirige plus ; `/point` reste accessible). Les lignes « X en retard sur la semaine » ont été retirées du briefing (`lib/briefing.ts`, test mis à jour).
+- **Données (base, sur demande)** : les 4 exercices de Réduction du 1er octobre qui s'affichaient en boucle depuis un mois (Oraux CCP ex. 7, 12, 13, 14 ; 2 partiels, 2 échecs) ont été SUPPRIMÉS de `exercise_logs`. Leur contenu utile (erreurs et « à retenir ») a été transféré dans le carnet d'erreurs (`errors`, 4 entrées rattachées à `m2-reduction`, visibles dans l'onglet Erreurs du chapitre). Copie complète des 4 lignes d'origine : fichier de session `sauvegarde-exercise_logs-reduction.json` (non versionné ; à redemander si besoin de les remettre).
+- ATTENTION : il reste 10 autres lignes dans `exercise_logs`, toutes ratées ou partielles : Next Move pourra proposer l'une d'elles à « refaire sans aide » (même mécanisme). Pas de bouton « ne plus me le proposer » (défaut connu) ; non traité sans accord.
+- « Le reste de ta journée » (« Il me reste… avant 23 h ») est toujours affiché : l'élève n'en a pas parlé nommément.
+- **Suite (même jour, « c'est juste un outil d'organisation, je ne veux pas qu'il me propose »)** : l'accueil ne propose plus rien. Retirés : « Ton prochain mouvement » (Next Move) et « Le reste de ta journée ». À la place : « Mes chapitres » (`components/home/chapters-card.tsx`, `recentChapters` dans `lib/chapters-overview.ts`, testé) et les échéances. Les bannières d'alerte animées sont retirées de `components/app-shell.tsx` (`AlertCenter` n'est plus monté ; `lib/alerts.ts` et le composant sont conservés). NON touchés, à demander : `/revision` (programme de révision), la carte « Et maintenant ? » après le chronomètre et après une fiche d'exercice, les notifications iPhone (cron serveur, réglables dans Réglages), les écrans `/entrainement` et `/point` (accessibles seulement à la demande). Vérifié : 95 fichiers de tests, 1515 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; navigateur réel (accueil à 1440 px et 390 px, 21 h simulées) : aucun « prochain mouvement », « reste de ta journée », progression, check-in ni « en retard ».
+- **Un vrai outil d'organisation sur l'accueil (demande : « met ce qui me permet de m'organiser »)** : « À faire » (`components/home/todo-card.tsx`, `lib/todo-view.ts`, testé) = la liste de l'élève : il écrit une tâche (titre, date et matière facultatives), la coche, la supprime ; rangée En retard / Aujourd'hui / Demain / Cette semaine / Plus tard / Sans date. Ce sont les `workItems` de la page Échéances (kind « autre », 30 min par défaut non affichées) : une tâche ajoutée à l'accueil apparaît sur `/echeances` et inversement ; supprimer = statut « abandonné » (aucune ligne retirée). La carte « Échéances » de l'accueil est remplacée par « À faire » ; « Mes chapitres » passe dans la colonne de droite. La date de l'en-tête mobile n'ouvre plus « Le point ». Vérifié au navigateur (ordinateur et iPad 820 px, heure simulée) : ajout, groupes, cocher, supprimer, persistance après rechargement ; 96 fichiers de tests, 1523 réussis + 1 échec attendu antérieur, `tsc`, lint, build. Non vérifié : sur l'appareil de l'élève. Le planificateur de la page Échéances voit ces tâches (il les « case » dans les journées) ; rien n'est proposé sur l'accueil.
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.

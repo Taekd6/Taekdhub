@@ -88,7 +88,8 @@ export function NextMoveCard({
       ? Math.min(shown.idealMinutes, shown.maxMinutes, plan.availableMinutes)
       : (plan.steps.find((step) => step.candidate?.key === shown.key)?.minutes ?? shown.idealMinutes)
     : 0;
-  const reasons = shown ? topReasons(shown) : [];
+  // Sur demande de l'élève (2026-10-24), la carte ne parle plus de temps ni de sommeil : les raisons liées à l'objectif de la semaine, au minimum du soir ou au sommeil ne sont pas affichées (le moteur, lui, ne change pas).
+  const reasons = shown ? topReasons(shown).filter((reason) => !/objectif de la semaine|minimum du soir|attendues à ce stade|sommeil|fatigue/i.test(reason)) : [];
   const following = showAlternative ? [] : plan.steps.slice(1);
   const running = useMemo(() => activeMove(history, new Date(tick)), [history, tick]);
   // Le mouvement affiché est déjà commencé : la carte dit « en cours » au lieu de le reproposer.
@@ -339,10 +340,12 @@ export function NextMoveCard({
                 <p className="t-meta text-[0.8125rem]">{shown.instruction}</p>
                 {shown.request && <CopyRequest text={shown.request} className="mt-2" />}
                 <dl className="mt-3 grid gap-1.5 text-[0.8125rem]">
-                  <div className="flex gap-2">
-                    <dt className="shrink-0 font-semibold text-subtle">Corrige :</dt>
-                    <dd className="min-w-0 font-semibold text-ink">{shown.problem}</dd>
-                  </div>
+                  {!/objectif de la semaine|minimum du soir/i.test(shown.problem) && (
+                    <div className="flex gap-2">
+                      <dt className="shrink-0 font-semibold text-subtle">Corrige :</dt>
+                      <dd className="min-w-0 font-semibold text-ink">{shown.problem}</dd>
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <dt className="shrink-0 font-semibold text-subtle">Terminé quand :</dt>
                     <dd className="min-w-0 font-semibold text-ink">{shown.doneWhen}</dd>
