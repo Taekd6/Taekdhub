@@ -5,10 +5,9 @@ import { BackupReminder } from "@/components/backup-reminder";
 import { HomeTopBar } from "@/components/home/hero";
 import { HomeGreeting, WeekStrip } from "@/components/home/desktop-header";
 import { ChaptersCard } from "@/components/home/chapters-card";
-import { DeadlinesCard } from "@/components/home/cards";
+import { TodoCard } from "@/components/home/todo-card";
 import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { buildWeeklyPlan } from "@/lib/planning";
 import { weekDayStacks } from "@/lib/day-stack";
 
 /**
@@ -18,8 +17,10 @@ import { weekDayStacks } from "@/lib/day-stack";
  * Claude qui proposent exercices et colles. L'accueil ne garde donc que :
  *
  *   le bandeau   salutation (horloge dès `lg`) et la semaine ;
- *   ORGANISER    « Mes chapitres » (cours, méthodes, erreurs rangés) ;
- *   ÉCHÉANCES    les prochaines échéances datées ; le rappel de sauvegarde en bas.
+ *   À FAIRE      la liste de tâches de l'élève, rangée par échéance (il l'écrit,
+ *                la coche, la supprime) ;
+ *   CHAPITRES    « Mes chapitres » (cours, méthodes, erreurs rangés) ; le rappel
+ *                de sauvegarde en bas.
  *
  * Retirés de l'accueil (les composants sont conservés, sans appelant ici) :
  * « Ton prochain mouvement » (Next Move), « Le reste de ta journée », la
@@ -31,7 +32,7 @@ import { weekDayStacks } from "@/lib/day-stack";
  * l'état, et une seconde copie resterait figée après une saisie.
  */
 export function DashboardOverview() {
-  const { sessions, workItems, preferences, ready, errors, chapterNotes } = usePrepahubData();
+  const { sessions, workItems, saveWorkItems, preferences, ready, errors, chapterNotes } = usePrepahubData();
 
   const model = useMemo(() => {
     const now = new Date();
@@ -42,14 +43,6 @@ export function DashboardOverview() {
         : null,
     };
   }, [sessions, preferences]);
-
-  /*
-   * LE PLANNING, recalculé à chaque rendu depuis les travaux, les séances et
-   * la capacité déclarée — jamais stocké, donc jamais périmé (voir
-   * lib/planning.ts). L'accueil n'en garde que les trois échéances datées
-   * les plus prioritaires (même tri que /echeances).
-   */
-  const workPlan = useMemo(() => buildWeeklyPlan(workItems, sessions, preferences, new Date()), [workItems, sessions, preferences]);
 
   if (!ready) {
     return (
@@ -62,7 +55,6 @@ export function DashboardOverview() {
   }
 
   const { contestDays, week } = model;
-  const upcomingDeadlines = workPlan.priorities.filter((priority) => priority.item.dueDate !== null).slice(0, 3);
 
   return (
     <div className="mx-auto max-w-[68rem]">
@@ -72,14 +64,14 @@ export function DashboardOverview() {
       <WeekStrip week={week} className="mb-5 lg:mb-6" />
 
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-8 lg:gap-y-0">
-        {/* ── COLONNE « ORGANISER » : les chapitres rangés ── */}
+        {/* ── COLONNE « À FAIRE » : la liste de tâches de l'élève ── */}
         <div className="contents lg:col-span-7 lg:flex lg:flex-col lg:gap-6">
-          <ChaptersCard notes={chapterNotes} errors={errors} className="order-1 lg:order-none" />
+          <TodoCard workItems={workItems} saveWorkItems={saveWorkItems} className="order-1 lg:order-none" />
         </div>
 
-        {/* ── COLONNE « ÉCHÉANCES » ── */}
+        {/* ── COLONNE « CHAPITRES » : ce qui est rangé ── */}
         <div className="contents lg:col-span-5 lg:flex lg:flex-col lg:gap-6">
-          <DeadlinesCard deadlines={upcomingDeadlines} className="order-2 lg:order-none" />
+          <ChaptersCard notes={chapterNotes} errors={errors} className="order-2 lg:order-none" />
         </div>
       </div>
 
