@@ -2,9 +2,8 @@
 
 import { useMemo } from "react";
 import { BackupReminder } from "@/components/backup-reminder";
-import { DailyCheckinCard } from "@/components/checkin/daily-checkin"; // check-in du soir
 import { HomeTopBar } from "@/components/home/hero";
-import { DayProgress, HomeGreeting, WeekStrip } from "@/components/home/desktop-header";
+import { HomeGreeting, WeekStrip } from "@/components/home/desktop-header";
 import { NextMoveCard } from "@/components/next-move/next-move-card"; // Next Move
 import { DayAgendaCard } from "@/components/home/day-agenda-card";
 import { useAnnales } from "@/hooks/use-annales";
@@ -12,11 +11,8 @@ import { useKholleHistory } from "@/hooks/use-kholle-history";
 import { DeadlinesCard } from "@/components/home/cards";
 import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { effectiveDailyGoal } from "@/lib/evening-minimums";
-import { computeDailyObjective } from "@/lib/daily-objective";
 import { buildWeeklyPlan } from "@/lib/planning";
 import { weekDayStacks } from "@/lib/day-stack";
-import { dayKey, subjects as allSubjects, totalSeconds } from "@/lib/study";
 
 /**
  * ÉCRAN D'ACCUEIL — volontairement SOBRE (octobre 2026).
@@ -40,7 +36,7 @@ import { dayKey, subjects as allSubjects, totalSeconds } from "@/lib/study";
  * l'état, et une seconde copie resterait figée après une saisie.
  */
 export function DashboardOverview() {
-  const { sessions, workItems, reviewItems, preferences, ready, checkins, saveCheckins, chapterMemory, grades, errors, nextMoves, saveNextMoves, attempts, ankiSnapshots, saveWorkItems } = usePrepahubData();
+  const { sessions, workItems, reviewItems, preferences, ready, checkins, chapterMemory, grades, errors, nextMoves, saveNextMoves, attempts, ankiSnapshots, saveWorkItems } = usePrepahubData();
   const kholle = useKholleHistory();
 
   // Annales corrigées avec Claude (compte connecté seulement) — voir hooks/use-annales.ts.
@@ -55,13 +51,6 @@ export function DashboardOverview() {
   const model = useMemo(() => {
     const now = new Date();
     return {
-      objective: computeDailyObjective(sessions, effectiveDailyGoal(preferences, now), now),
-      todayBySubject: allSubjects
-        .map((subject) => ({
-          subject,
-          minutes: Math.round(totalSeconds(sessions.filter((session) => session.subject === subject && dayKey(session.started_at) === dayKey(now))) / 60),
-        }))
-        .filter((entry) => entry.minutes > 0),
       week: weekDayStacks(sessions, now),
       contestDays: preferences.contestDate
         ? Math.max(0, Math.ceil((new Date(preferences.contestDate).getTime() - now.getTime()) / 86400000))
@@ -87,7 +76,7 @@ export function DashboardOverview() {
     );
   }
 
-  const { objective, todayBySubject, contestDays, week } = model;
+  const { contestDays, week } = model;
   const upcomingDeadlines = workPlan.priorities.filter((priority) => priority.item.dueDate !== null).slice(0, 3);
 
   return (
@@ -104,14 +93,9 @@ export function DashboardOverview() {
           <DayAgendaCard data={nextMoveData} history={nextMoves} saveWorkItems={saveWorkItems} ready={ready} className="order-1 lg:order-none" />
         </div>
 
-        {/* ── COLONNE « SURVEILLER » : le jour, les échéances ── */}
+        {/* ── COLONNE « SURVEILLER » : les échéances. Sur demande de l'élève (2026-10-24), plus de « Progression du jour » ni de check-in du sommeil : il ne veut pas suivre son temps ni son sommeil. Les composants existent toujours (components/home/desktop-header.tsx, components/checkin). ── */}
         <div className="contents lg:col-span-5 lg:flex lg:flex-col lg:gap-6">
-          <DayProgress workedMinutes={objective.workedMinutes} goalMinutes={objective.goalMinutes} bySubject={todayBySubject} className="order-2 lg:order-none" />
-          <DeadlinesCard deadlines={upcomingDeadlines} className="order-3 lg:order-none" />
-          {/* Le check-in du soir n'apparaît que le soir, tant qu'il n'est pas fait ; l'enveloppe disparaît quand il ne rend rien. */}
-          <div className="reveal order-4 empty:hidden lg:order-none">
-            <DailyCheckinCard checkins={checkins} onSave={saveCheckins} ready={ready} />
-          </div>
+          <DeadlinesCard deadlines={upcomingDeadlines} className="order-2 lg:order-none" />
         </div>
       </div>
 

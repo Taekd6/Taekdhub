@@ -166,9 +166,9 @@ describe("ce que tu repousses", () => {
     expect(briefing.postponed[0]).toMatchObject({ id: "cartes-en-retard", title: "6 cartes en retard de révision" });
   });
 
-  it("un objectif de la semaine qui décroche", () => {
+  it("un objectif de la semaine qui décroche n'est plus signalé (retiré à la demande de l'élève : pas de suivi du temps)", () => {
     const briefing = buildBriefing(input({ preferences: prefs({ weeklySubjectTargets: { ...NO_TARGETS, Anglais: 300 } }) }));
-    expect(briefing.postponed.map((item) => item.id)).toContain("semaine:Anglais");
+    expect(briefing.postponed.map((item) => item.id)).not.toContain("semaine:Anglais");
   });
 
   it("à surveiller : un chapitre qui s'efface, des erreurs sans correction", () => {

@@ -364,6 +364,14 @@ sombre, filtres, lien vers le chapitre, lien dans Matières). Physique et chimie
   côté claude.ai : liste d'outils gardée en mémoire par le connecteur (le retirer et le rajouter, puis nouvelle conversation) ou URL du connecteur qui pointe sur
   un ancien déploiement (Preview) ou sur l'autre projet. Non vérifié : l'URL réellement configurée dans claude.ai (le secret n'est pas connu de Claude).
 
+**Mission 16 (2026-10-24) — fin des pop-ups et du suivi du temps sur l'accueil (demande explicite de l'élève : « supprime tout ce que je t'ai dit »).**
+- Retirés de l'accueil (`components/dashboard-overview.tsx`) : la carte « Progression du jour », le check-in du sommeil du soir. Les composants existent toujours (`components/home/desktop-header.tsx`, `components/checkin`), sans appelant sur l'accueil.
+- Carte « Ton prochain mouvement » : les raisons liées à l'objectif de la semaine, au minimum du soir et au sommeil ne sont plus AFFICHÉES (filtre d'affichage ; le moteur Next Move est inchangé), ni la ligne « Corrige » quand elle parle de l'objectif de la semaine.
+- « Le point » ne s'ouvre plus tout seul au lancement (`components/briefing/briefing-gate.tsx` ne redirige plus ; `/point` reste accessible). Les lignes « X en retard sur la semaine » ont été retirées du briefing (`lib/briefing.ts`, test mis à jour).
+- **Données (base, sur demande)** : les 4 exercices de Réduction du 1er octobre qui s'affichaient en boucle depuis un mois (Oraux CCP ex. 7, 12, 13, 14 ; 2 partiels, 2 échecs) ont été SUPPRIMÉS de `exercise_logs`. Leur contenu utile (erreurs et « à retenir ») a été transféré dans le carnet d'erreurs (`errors`, 4 entrées rattachées à `m2-reduction`, visibles dans l'onglet Erreurs du chapitre). Copie complète des 4 lignes d'origine : fichier de session `sauvegarde-exercise_logs-reduction.json` (non versionné ; à redemander si besoin de les remettre).
+- ATTENTION : il reste 10 autres lignes dans `exercise_logs`, toutes ratées ou partielles : Next Move pourra proposer l'une d'elles à « refaire sans aide » (même mécanisme). Pas de bouton « ne plus me le proposer » (défaut connu) ; non traité sans accord.
+- « Le reste de ta journée » (« Il me reste… avant 23 h ») est toujours affiché : l'élève n'en a pas parlé nommément.
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
 - Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un
