@@ -6,7 +6,9 @@ import { isMcpKeyValid } from "@/lib/mcp-auth";
 import { mutateCollection, type CollectionStore } from "@/lib/mcp-collections";
 import { addLockCards, courseLocks, lockFor, lockSentence, LOCK_CARDS_MAX, rateLockCards } from "@/lib/course-lock";
 import { toSubject } from "@/lib/annales";
-import { normalizeReviewItem, type ReviewItem } from "@/lib/storage";
+import { ERROR_SOURCES, ERROR_TYPES, normalizeErrorEntry, normalizeReviewItem, type ErrorEntry, type ErrorSource, type ErrorType, type ReviewItem } from "@/lib/storage";
+import { addMethodes, COURSE_CHUNK_MAX, findChapter, METHODS_PER_CALL_MAX, normalizeChapterNotes, notesFor, setCourse, STEPS_MAX, type ChapterNotes } from "@/lib/chapter-notes";
+import { addChapterErrors, describeChapter } from "@/lib/mcp-chapter-notes";
 import { addEcheances, deleteEcheance, describeEcheance, ECHEANCE_SUBJECTS, ECHEANCE_TYPES, ECHEANCES_MAX, listEcheances, updateEcheance } from "@/lib/mcp-echeances";
 
 /**
@@ -84,6 +86,18 @@ async function readReviewItems(user_id: string): Promise<ReviewItem[]> {
 function asReviewItems(raw: unknown): ReviewItem[] {
   return Array.isArray(raw) ? raw.map(normalizeReviewItem).filter((item): item is ReviewItem => item !== null) : [];
 }
+
+async function readChapterNotes(user_id: string): Promise<ChapterNotes[]> {
+  return normalizeChapterNotes((await collectionStore(user_id, "chapterNotes").read())?.items);
+}
+
+async function readErrors(user_id: string): Promise<ErrorEntry[]> {
+  const items = (await collectionStore(user_id, "errors").read())?.items;
+  return (Array.isArray(items) ? items : []).map(normalizeErrorEntry).filter((entry): entry is ErrorEntry => entry !== null);
+}
+
+const CHAPTER_FIELD = z.string().min(1).max(120).describe("le chapitre du programme : son titre (« Réduction des endomorphismes », « Réduction », « Séries entières ») ou son identifiant (m2-reduction)");
+const SUBJECT_HINT = z.string().max(40).optional().describe("maths / physique / chimie — seulement pour départager deux chapitres de même nom");
 
 const failure = (cause: unknown) => ({ ok: false as const, error: cause instanceof Error ? cause.message : "erreur inconnue" });
 
@@ -217,6 +231,131 @@ const mcp = createMcpHandler((server) => {
           .filter(Boolean)
           .join(" ")
       );
+    }
+  );
+
+  server.registerTool(
+    "get_chapter",
+    {
+      title: "Lire un chapitre (cours retapé, méthodes, erreurs)",
+      description:
+        "Ce que TaekdHub garde d'un chapitre : le COURS de l'élève (retapé depuis le PDF de son professeur), ses méthodes et les erreurs qu'il y a faites. À APPELER AVANT de proposer un exercice ou une colle sur ce chapitre : vérifie que la notion visée figure bien dans son cours et tiens compte de ses erreurs. Si aucun cours n'est rangé, dis-le et demande à l'élève ; ne suppose pas ce qu'il a vu.",
+      inputSchema: z.object({ chapitre: CHAPTER_FIELD, matiere: SUBJECT_HINT, avec_cours: z.boolean().optional().describe("true par défaut ; false pour ne lire que méthodes et erreurs") }),
+    },
+    async ({ chapitre, matiere, avec_cours }) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const found = findChapter(chapitre, matiere);
+      if (!found.ok) return text(`Erreur : ${found.error}`);
+      try {
+        const [notes, errors] = await Promise.all([readChapterNotes(user_id), readErrors(user_id)]);
+        return text(describeChapter(found.chapter, notesFor(notes, found.chapter.id), errors, avec_cours !== false));
+      } catch (cause) {
+        return text(`Erreur : ${failure(cause).error}`);
+      }
+    }
+  );
+
+  server.registerTool(
+    "save_course",
+    {
+      title: "Ranger le cours d'un chapitre",
+      description:
+        `Range dans TaekdHub le COURS d'un chapitre, RETAPÉ proprement à partir du PDF, de la photo ou du scan que l'élève t'a envoyé (le fichier d'origine n'est pas conservé). Retape fidèlement ce que dit le professeur — définitions, théorèmes AVEC leurs hypothèses, exemples, démonstrations clés — sans rien inventer ni « améliorer », et signale ce que tu n'as pas pu lire. Format : titres avec #, ##, ###, listes avec « - », paragraphes séparés par une ligne vide ; maths en texte Unicode lisible (⟺, ∈, ≤, ∑, ∫, ℝ), pas de LaTeX. ${COURSE_CHUNK_MAX} caractères au plus par appel : un long cours s'envoie en plusieurs fois, le premier avec mode « remplacer », les suivants avec « ajouter ». Dis ensuite à l'élève où le retrouver (page du chapitre, onglet Cours).`,
+      inputSchema: z.object({
+        chapitre: CHAPTER_FIELD,
+        matiere: SUBJECT_HINT,
+        texte: z.string().min(1).max(COURSE_CHUNK_MAX).describe("le cours retapé (ou la suite du cours)"),
+        mode: z.enum(["remplacer", "ajouter"]).describe("remplacer = écrase le cours rangé ; ajouter = colle ce texte à la suite"),
+      }),
+    },
+    async ({ chapitre, matiere, texte, mode }) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const found = findChapter(chapitre, matiere);
+      if (!found.ok) return text(`Erreur : ${found.error}`);
+      const outcome = await mutateCollection(collectionStore(user_id, "chapterNotes"), (current) => setCourse(normalizeChapterNotes(current), found.chapter.id, texte, mode, new Date())).catch(failure);
+      if (!outcome.ok) return text(`Erreur : ${outcome.error}`);
+      return text(`Cours rangé pour « ${found.chapter.title} » (${outcome.value.longueur} caractères au total). Visible sur la page du chapitre, onglet Cours.`);
+    }
+  );
+
+  server.registerTool(
+    "add_methods",
+    {
+      title: "Ranger des méthodes dans un chapitre",
+      description:
+        "Range dans la page d'un chapitre les MÉTHODES que tu viens de donner à l'élève, pour qu'il les retrouve (et les imprime en PDF). Une méthode = un titre court, « quand » l'utiliser (ce qui doit y faire penser : « Quand je vois… »), 1 à " +
+        STEPS_MAX +
+        " étapes courtes, et un piège si elle en a un. Une méthode du même titre REMPLACE l'ancienne : tu peux donc corriger. Maths en texte Unicode lisible, pas de LaTeX.",
+      inputSchema: z.object({
+        chapitre: CHAPTER_FIELD,
+        matiere: SUBJECT_HINT,
+        methodes: z
+          .array(
+            z.object({
+              titre: z.string().min(1).max(100).describe("ex : « Diagonaliser un endomorphisme »"),
+              quand: z.string().min(1).max(300).describe("ex : « On veut une base où u s'écrit simplement, ou calculer uⁿ »"),
+              etapes: z.array(z.string().min(1).max(300)).min(1).max(STEPS_MAX),
+              piege: z.string().max(300).optional().describe("ex : « Vérifier que χ_u est scindé avant de conclure »"),
+            })
+          )
+          .min(1)
+          .max(METHODS_PER_CALL_MAX),
+      }),
+    },
+    async ({ chapitre, matiere, methodes }) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const found = findChapter(chapitre, matiere);
+      if (!found.ok) return text(`Erreur : ${found.error}`);
+      const outcome = await mutateCollection(collectionStore(user_id, "chapterNotes"), (current) => addMethodes(normalizeChapterNotes(current), found.chapter.id, methodes, new Date())).catch(failure);
+      if (!outcome.ok) return text(`Erreur : ${outcome.error}`);
+      const { added, replaced, total } = outcome.value;
+      return text(`${added} méthode${added > 1 ? "s" : ""} ajoutée${added > 1 ? "s" : ""}${replaced ? `, ${replaced} remplacée${replaced > 1 ? "s" : ""}` : ""} dans « ${found.chapter.title} » (${total} au total). Page du chapitre, onglet Méthodes.`);
+    }
+  );
+
+  server.registerTool(
+    "add_errors",
+    {
+      title: "Noter des erreurs de l'élève sur un chapitre",
+      description:
+        "Note dans le carnet d'erreurs de l'élève, rattachées à un chapitre, les erreurs qu'il vient de faire (exercice, colle, DS…). Une erreur = UNE ligne de ce qui s'est mal passé (200 caractères au plus, concret : « a diagonalisé sans vérifier que χ_u est scindé ») et, si tu l'as, « à retenir » = ce qu'il fallait faire. Type : calcul, méthode, cours, lecture, rédaction ou temps. Elles apparaissent dans l'onglet Erreurs du chapitre (et en PDF). Une erreur déjà notée le même jour n'est pas dupliquée.",
+      inputSchema: z.object({
+        chapitre: CHAPTER_FIELD,
+        matiere: SUBJECT_HINT,
+        erreurs: z
+          .array(
+            z.object({
+              description: z.string().min(1).max(200),
+              a_retenir: z.string().max(200).optional(),
+              type: z.enum(ERROR_TYPES as unknown as [ErrorType, ...ErrorType[]]),
+              source: z.enum(ERROR_SOURCES as unknown as [ErrorSource, ...ErrorSource[]]).optional().describe("colle / DS / DM / exercice / concours blanc / autre — « exercice » par défaut"),
+              date: z.string().optional().describe("jour de l'exercice, AAAA-MM-JJ ; aujourd'hui par défaut"),
+            })
+          )
+          .min(1)
+          .max(12),
+      }),
+    },
+    async ({ chapitre, matiere, erreurs }) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const found = findChapter(chapitre, matiere);
+      if (!found.ok) return text(`Erreur : ${found.error}`);
+      const outcome = await mutateCollection(collectionStore(user_id, "errors"), (current) => {
+        const result = addChapterErrors(
+          current,
+          found.chapter,
+          erreurs.map((entry) => ({ description: entry.description, fix: entry.a_retenir, type: entry.type, source: entry.source ?? "exercice", date: entry.date })),
+          new Date()
+        );
+        return result.ok ? { ok: true, items: result.items, value: result.value } : result;
+      }).catch(failure);
+      if (!outcome.ok) return text(`Erreur : ${outcome.error}`);
+      const { added, skipped, total } = outcome.value;
+      return text(`${added} erreur${added > 1 ? "s" : ""} notée${added > 1 ? "s" : ""}${skipped ? `, ${skipped} déjà présente${skipped > 1 ? "s" : ""}` : ""} sur « ${found.chapter.title} » (${total} au total). Page du chapitre, onglet Erreurs.`);
     }
   );
 

@@ -5,6 +5,7 @@ import { normalizeSheets, type ExerciseSheet } from "@/lib/exercise-sheets";
 import { normalizeAvatar } from "@/lib/avatar";
 import { normalizePerformanceWindows, type PerformanceWindow } from "@/lib/performance-windows";
 import { normalizeAnkiSnapshots, type AnkiSnapshot } from "@/lib/anki-snapshot";
+import { normalizeChapterNotes, type ChapterNotes } from "@/lib/chapter-notes";
 import { SRS_LADDER } from "@/lib/spaced-repetition";
 import { FSRS_RATINGS, normalizeFsrsMemory, replayMemory, type FsrsMemory, type FsrsRating, type FsrsState } from "@/lib/fsrs";
 import { DEFAULT_PALETTE, DEFAULT_THEME_MODE, THEME_MODES, resolvePaletteId, type PaletteId, type ThemeMode } from "@/lib/theme";
@@ -29,6 +30,8 @@ const chapterMemoryKey = "prepahub:chapterMemory";
 /* ── Tentatives d'exercice (lib/attempts.ts) et relevés Anki (lib/anki-snapshot.ts) ── */
 const attemptsKey = "prepahub:attempts";
 const ankiSnapshotsKey = "prepahub:anki-snapshots";
+/* ── Cours retapé et méthodes par chapitre (lib/chapter-notes.ts), écrits par le connecteur de Claude. ── */
+const chapterNotesKey = "prepahub:chapter-notes";
 /* ── Fiches d'exercice (lib/exercise-sheets.ts) : LOCALES à l'appareil, hors de STORAGE_KEYS — aucune collection synchronisée de plus. ── */
 const exerciseSheetsKey = "prepahub:exercise-sheets";
 /* ── Next Move : historique des recommandations — voir `NextMoveRecord` ── */
@@ -1740,6 +1743,7 @@ export const STORAGE_KEYS = {
   nextMoves: nextMovesKey,
   attempts: attemptsKey,
   ankiSnapshots: ankiSnapshotsKey,
+  chapterNotes: chapterNotesKey,
 } as const;
 
 type WriteListener = (key: string) => void;
@@ -1956,6 +1960,10 @@ export const localData = {
   ankiSnapshots: (): AnkiSnapshot[] => (typeof window === "undefined" ? [] : normalizeAnkiSnapshots(readList(ankiSnapshotsKey))),
   /** REMPLACE — la liste déjà rangée par lib/anki-snapshot.ts#upsertSnapshot. */
   saveAnkiSnapshots: (items: AnkiSnapshot[]): boolean => writeKey(ankiSnapshotsKey, JSON.stringify(items)),
+  /* ── Cours et méthodes par chapitre ── */
+  chapterNotes: (): ChapterNotes[] => (typeof window === "undefined" ? [] : normalizeChapterNotes(readList(chapterNotesKey))),
+  /** REMPLACE — la liste complète, comme les autres collections. */
+  saveChapterNotes: (items: ChapterNotes[]): boolean => writeKey(chapterNotesKey, JSON.stringify(items)),
   /* ── Fiches d'exercice (énoncés collés ou ajoutés par l'élève) — locales, non synchronisées ── */
   exerciseSheets: (): ExerciseSheet[] => (typeof window === "undefined" ? [] : normalizeSheets(readList(exerciseSheetsKey))),
   /** REMPLACE — la liste déjà rangée par lib/exercise-sheets.ts#upsertSheet. */
@@ -2113,6 +2121,8 @@ export function restoreBackup(payload: BackupPayload): RestoreOutcome {
     // Tentatives d'exercice et relevés Anki : absents d'une sauvegarde antérieure ⇒ `[]`.
     ["les tentatives d'exercice", () => localData.saveAttempts(payload.attempts ?? [])],
     ["les relevés Anki", () => localData.saveAnkiSnapshots(payload.ankiSnapshots ?? [])],
+    // Cours et méthodes par chapitre : absents d'une sauvegarde antérieure ⇒ `[]`.
+    ["les cours et méthodes des chapitres", () => localData.saveChapterNotes(normalizeChapterNotes(payload.chapterNotes ?? []))],
     ["les fiches d'exercice", () => localData.saveExerciseSheets(normalizeSheets(payload.exerciseSheets ?? []))],
     ["le planning", () => localData.saveDayPlans(payload.dayPlans ?? [])],
     ["les bilans de semaine", () => localData.saveWeekSnapshots(payload.weekSnapshots ?? [])],
@@ -2167,6 +2177,8 @@ export function buildBackupPayload(now: Date = new Date()): BackupPayload {
     attempts: localData.attempts(),
     // Relevés Anki : reconstituables en partie depuis Anki, mais pas l'historique des jours passés.
     ankiSnapshots: localData.ankiSnapshots(),
+    // Cours retapés et méthodes : rangés par Claude depuis les PDF du professeur — longs à refaire.
+    chapterNotes: localData.chapterNotes(),
     // Fiches d'exercice : les énoncés collés par l'élève ne vivent QUE sur l'appareil (les tentatives, elles, se synchronisent).
     exerciseSheets: localData.exerciseSheets(),
   };
@@ -2237,6 +2249,8 @@ export interface BackupPayload {
   attempts?: ExerciseAttempt[];
   /** Optionnel, même raison — voir lib/anki-snapshot.ts. */
   ankiSnapshots?: AnkiSnapshot[];
+  /** Optionnel, même raison — voir lib/chapter-notes.ts. Revalidé à la restauration (`normalizeChapterNotes`). */
+  chapterNotes?: ChapterNotes[];
   /** Optionnel, même raison — voir lib/exercise-sheets.ts. Revalidé à la restauration (`normalizeSheets`). */
   exerciseSheets?: ExerciseSheet[];
 }
@@ -2305,6 +2319,7 @@ export function validateBackupPayload(data: unknown): data is BackupPayload {
   // Tentatives et relevés Anki : même règle, dès leur naissance.
   if (data.attempts !== undefined && !Array.isArray(data.attempts)) return false;
   if (data.ankiSnapshots !== undefined && !Array.isArray(data.ankiSnapshots)) return false;
+  if (data.chapterNotes !== undefined && !Array.isArray(data.chapterNotes)) return false;
   if (data.exerciseSheets !== undefined && !Array.isArray(data.exerciseSheets)) return false;
   return true;
 }

@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { COLLECTIONS, mergeCollection } from "@/lib/sync/collections";
 
 describe("collections synchronisées", () => {
-  it("la base accepte exactement les collections de l'application (migrations 0006 + 0008)", () => {
-    const sql = readFileSync("supabase/migrations/0008_attempts_anki_sync.sql", "utf8");
+  it("la base accepte exactement les collections de l'application (dernière migration : 0011)", () => {
+    const sql = readFileSync("supabase/migrations/0011_chapter_notes.sql", "utf8");
     const check = sql.slice(sql.lastIndexOf("add constraint user_collections_known"));
     const accepted = [...check.slice(0, check.indexOf(";")).matchAll(/'([A-Za-z]+)'/g)].map((match) => match[1]);
     expect(accepted.sort()).toEqual([...COLLECTIONS].sort());

@@ -540,7 +540,7 @@ describe("restoreBackup — une restauration partielle ne s'annonce jamais réus
     const outcome = withQuotaStorage({}, 1_000_000, () => restoreBackup(backup()));
     expect(outcome.ok).toBe(true);
     expect(outcome.failedAt).toBeNull();
-    expect(outcome.restored).toHaveLength(14);
+    expect(outcome.restored).toHaveLength(15);
   });
 
   it("les séances ne passent pas → RIEN n'est touché, et c'est dit", () => {

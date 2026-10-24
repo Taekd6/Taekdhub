@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Check, MessageCircleQuestion } from "lucide-react";
+import { BookOpen, Check, MessageCircleQuestion } from "lucide-react";
 import { Illustration } from "@/components/ui/illustrations";
 import { PageHero } from "@/components/ui/page-hero";
 import { Section } from "@/components/ui/section";
@@ -229,6 +229,9 @@ function ChapterTile({ entry, finding, onToggleSeen }: { entry: ChapterMastery; 
             {entry.declaredSeen && <Check size={12} aria-hidden />} Vu en cours
           </button>
         )}
+        <Link href={`/chapitre/${entry.chapter.id}`} className={cn(buttonVariants({ variant: "link", size: "sm" }), "min-h-8 px-0 text-2xs")}>
+          <BookOpen size={12} aria-hidden /> Page du chapitre
+        </Link>
         {entry.status !== "pas-vu" && entry.chapter.questions.length > 0 && (
           <Link href={`/kholle?chapitre=${encodeURIComponent(entry.chapter.id)}`} className={cn(buttonVariants({ variant: "link", size: "sm" }), "min-h-8 px-0 text-2xs")}>
             <MessageCircleQuestion size={12} aria-hidden /> M&apos;interroger

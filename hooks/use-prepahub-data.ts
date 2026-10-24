@@ -10,6 +10,7 @@ import { DATA_CHANGED_EVENT } from "@/lib/sync/events";
 import type { WorkSession } from "@/lib/supabase/types";
 import type { ExerciseAttempt } from "@/lib/attempts";
 import type { AnkiSnapshot } from "@/lib/anki-snapshot";
+import type { ChapterNotes } from "@/lib/chapter-notes";
 
 type DataState = {
   sessions: WorkSession[];
@@ -34,6 +35,8 @@ type DataState = {
   attempts: ExerciseAttempt[];
   /** Relevés Anki — voir lib/anki-snapshot.ts. */
   ankiSnapshots: AnkiSnapshot[];
+  /** Cours retapé et méthodes par chapitre — voir lib/chapter-notes.ts. */
+  chapterNotes: ChapterNotes[];
   lastBackupAt: string | null;
   preferences: Preferences;
   ready: boolean;
@@ -118,6 +121,7 @@ function readAll(): Omit<DataState, "ready" | "writeFailedAt"> {
     nextMoves: localData.nextMoves(),
     attempts: localData.attempts(),
     ankiSnapshots: localData.ankiSnapshots(),
+    chapterNotes: localData.chapterNotes(),
     weekSnapshots,
     lastBackupAt: localData.lastBackupAt(),
     preferences,
@@ -171,6 +175,7 @@ function emptyState(preferences: Preferences): DataState {
     nextMoves: [],
     attempts: [],
     ankiSnapshots: [],
+    chapterNotes: [],
     weekSnapshots: [],
     lastBackupAt: null,
     preferences,
@@ -314,6 +319,8 @@ const saveNextMoves = (nextMoves: NextMoveRecord[]) => void replace("nextMoves",
 /* ── Tentatives d'exercice et relevés Anki — renvoient si l'écriture est passée. ── */
 const saveAttempts = (attempts: ExerciseAttempt[]) => replace("attempts", attempts, localData.saveAttempts, localData.attempts);
 const saveAnkiSnapshots = (ankiSnapshots: AnkiSnapshot[]) => replace("ankiSnapshots", ankiSnapshots, localData.saveAnkiSnapshots, localData.ankiSnapshots);
+/* ── Cours et méthodes par chapitre ── */
+const saveChapterNotes = (chapterNotes: ChapterNotes[]) => replace("chapterNotes", chapterNotes, localData.saveChapterNotes, localData.chapterNotes);
 
 function savePreferences(preferences: Preferences): void {
   localData.savePreferences(preferences);
@@ -325,7 +332,7 @@ function refresh(): void {
   reload();
 }
 
-const actions = { refresh, saveSessions, removeSession, saveWorkItems, saveGrades, saveReviewItems, saveErrors, saveCheckins, saveChapterMemory, saveNextMoves, saveAttempts, saveAnkiSnapshots, savePreferences };
+const actions = { refresh, saveSessions, removeSession, saveWorkItems, saveGrades, saveReviewItems, saveErrors, saveCheckins, saveChapterMemory, saveNextMoves, saveAttempts, saveAnkiSnapshots, saveChapterNotes, savePreferences };
 
 /**
  * Les données de l'élève et leurs écritures. Même forme qu'avant le store :

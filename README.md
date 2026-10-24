@@ -60,6 +60,21 @@ Quand un exercice rate **à cause du cours** (définition, théorème et ses hyp
 
 Côté données : les fiches sont de simples entrées `reviewItems` avec trois champs facultatifs (`chapter`, `origin: "claude"`, `reason`), et le calendrier garde la dernière note (`srs.lastRating`). Il n'y a **aucune migration**. Le connecteur écrit dans la collection synchronisée avec la même règle de révision que les appareils (`lib/mcp-collections.ts`) : personne n'écrase personne.
 
+### Page d'un chapitre : cours retapé, méthodes, erreurs, cartes (`/chapitre/<id>`, `lib/chapter-notes.ts`)
+
+Chaque chapitre du programme a sa page, avec quatre onglets : **Cours** (le cours du professeur, **retapé** par Claude : le PDF d'origine n'est pas conservé), **Méthodes** (« Quand je vois… » → étapes → piège), **Erreurs** (celles du carnet rattachées au chapitre) et **Cartes** (les cartes Anki du chapitre, lien vers `/anki`). Les onglets Méthodes et Erreurs ont un bouton **Télécharger le PDF** : le fichier (`Reduction-des-endomorphismes-methodes.pdf`, même nom à chaque fois) est fabriqué dans le navigateur au clic (`lib/chapter-pdf.ts` + `lib/chapter-pdf-render.ts`, pdf-lib, police DejaVu Sans dans `public/fonts`), donc toujours à jour, et l'iPad l'enregistre dans Fichiers. Atteinte depuis « Page du chapitre » sur `/programme`.
+
+Rien ne se saisit dans l'application : le contenu arrive depuis la conversation, par quatre outils du connecteur MCP de Claude (jamais ceux d'Hermes) :
+
+| Outil | Rôle |
+|---|---|
+| `get_chapter` | lit cours, méthodes et erreurs d'un chapitre : à appeler **avant** de proposer un exercice, pour vérifier que la notion a été vue |
+| `save_course` | range le cours retapé (par morceaux de 30 000 caractères : `remplacer`, puis `ajouter`) |
+| `add_methods` | range des méthodes ; une méthode de même titre remplace l'ancienne |
+| `add_errors` | note des erreurs dans le carnet (`errors`), avec `programmeChapterId` ; sans doublon le même jour |
+
+Données : nouvelle collection synchronisée `chapterNotes` (une entrée par chapitre ; **migration `0011_chapter_notes.sql` à appliquer AVANT de déployer**). Les erreurs réutilisent la collection `errors` existante.
+
 ### Alertes et notifications iPhone (`lib/alerts.ts`)
 
 Une seule règle décide de ce qui mérite d'interrompre. Elle sert deux fois : pour la bannière animée de l'app (`components/alerts/alert-center.tsx`) et pour les notifications iPhone.
@@ -303,6 +318,7 @@ app/(app)/echeances       Échéances et planning (atteint depuis l'accueil)
 app/(app)/revoir          Carnet « À revoir » (+ /revoir/session : révisions espacées)
 app/(app)/erreurs         Carnet d'erreurs
 app/(app)/erreurs-anglais Mes erreurs d'anglais (thème CCMP), lues dans data/erreurs-anglais.json
+app/(app)/chapitre/[id]   Page d'un chapitre : cours retapé, méthodes, erreurs, cartes Anki, PDF
 app/(app)/timer           Chronomètre
 app/(app)/settings        Réglages, sauvegarde et restauration
 app/(app)/annales         Annales corrigées avec Claude (lues dans Supabase)
