@@ -351,6 +351,18 @@ Anki du chapitre de `data/course-cards.json`, lien vers `/anki` et le `.apkg`). 
 - **Cours de Réduction rangé** (chapitre `m2-reduction`, 64 215 caractères, parties I à VI, 4 morceaux) : écrit DIRECTEMENT dans `user_collections` (collection `chapterNotes`, révision 4) par SQL, avec la même forme que `save_course`, parce que les outils du connecteur ne sont pas appelables depuis une session de code. Retapé depuis le PDF du professeur (16 pages de 2 pages de cours) ; matrices en notation linéaire (lignes séparées par « ; ») ; les formules douteuses ont été confirmées avec la couche texte du PDF ou recalculées exactement (A^k de l'exemple 20, a_k/b_k/c_k de l'exemple 21 : vérifiés pour k = 1 à 4 et 1 à 6). Le PDF d'origine n'est pas conservé. Les méthodes et les erreurs de Réduction sont vides (aucun exercice fait).
 - NON vérifié : les quatre outils (`get_chapter`, `save_course`, `add_methods`, `add_errors`) contre la vraie base depuis une conversation claude.ai ; le secret du connecteur n'est pas connu de Claude. À faire par l'élève : dans claude.ai, rafraîchir ou reconnecter le connecteur TaekdHub pour qu'il liste les quatre nouveaux outils, puis demander à Claude de lire `get_chapter` sur « Réduction ».
 
+**Mission 15 (2026-10-24) — fonctionnel dès demain, physique comprise (demande de l'élève).** `/chapitres` (`lib/chapters-overview.ts`,
+`components/chapitre/chapters-list.tsx`) : tous les chapitres par matière (maths, physique, chimie) et année (spé, sup), avec pour chacun cours
+rangé / méthodes / erreurs / cartes ; chaque ligne ouvre `/chapitre/<id>`. Liens : colonne latérale (« Mes chapitres ») et rangée d'outils de
+« Matières » (seul chemin sur iPad en portrait). PDF : lien de secours « Ouvrir le PDF » si Safari ne télécharge rien. `robots.ts` exclut `/chapitre`.
+Commit de code `0c2baab`. Vérifié : 95 fichiers de tests, 1513 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; navigateur réel à 820 px (clair et
+sombre, filtres, lien vers le chapitre, lien dans Matières). Physique et chimie fonctionnent avec les mêmes outils et le même format d'erreur
+(`description` / `fix` / `type`) ; seules les cartes Anki n'existent que pour les maths.
+- **Diagnostic du connecteur** : un serveur local construit depuis `main` liste bien 13 outils, dont `get_chapter`, `save_course`, `add_methods`, `add_errors` ;
+  les deux projets Vercel (`taekdhub`, `taekdhub-vcrx`) ont déployé `main` (`74a6d7c`) en production. Si claude.ai ne voit pas les nouveaux outils, la cause est
+  côté claude.ai : liste d'outils gardée en mémoire par le connecteur (le retirer et le rajouter, puis nouvelle conversation) ou URL du connecteur qui pointe sur
+  un ancien déploiement (Preview) ou sur l'autre projet. Non vérifié : l'URL réellement configurée dans claude.ai (le secret n'est pas connu de Claude).
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
 - Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un
