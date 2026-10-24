@@ -2,7 +2,6 @@ import { AccountProvider } from "@/components/account/account-provider";
 import { AppNav } from "@/components/app-nav";
 import { StorageAlert } from "@/components/storage-alert";
 import { ActivityTracker } from "@/components/activity-tracker";
-import { AlertCenter } from "@/components/alerts/alert-center";
 
 /**
  * CADRE DE L'APPLICATION.
@@ -34,8 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <ActivityTracker />
         <AppNav />
-        {/* Alertes animées : échéances, verrou de cours, minimum du soir (lib/alerts.ts). */}
-        <AlertCenter />
+        {/* Plus de bannières d'alerte dans l'application (2026-10-24, à la demande de l'élève : TaekdHub est un outil d'organisation, il ne doit pas le relancer). `components/alerts/alert-center.tsx` et `lib/alerts.ts` sont conservés ; les notifications iPhone se règlent dans Réglages. */}
         <main className="mx-auto w-full max-w-[var(--shell-max)] px-4 pb-32 pt-5 sm:px-6 sm:pt-10 lg:pb-24 lg:pt-10">
           <StorageAlert />
           {children}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasContent, summarizeChapters } from "@/lib/chapters-overview";
+import { hasContent, recentChapters, summarizeChapters } from "@/lib/chapters-overview";
 import type { ChapterNotes } from "@/lib/chapter-notes";
 import { PROGRAMME } from "@/lib/programme-data";
 import type { ErrorEntry } from "@/lib/storage";
@@ -34,5 +34,25 @@ describe("summarizeChapters", () => {
   it("couvre aussi la physique et la chimie", () => {
     expect(summarizeChapters([], [], "Physique").length).toBeGreaterThan(0);
     expect(summarizeChapters([], [], "Chimie").length).toBeGreaterThan(0);
+  });
+});
+
+describe("recentChapters", () => {
+  const later = "2026-10-26T10:00:00.000Z";
+
+  it("ne garde que les chapitres qui ont du contenu, le plus récent d'abord, toutes matières", () => {
+    const list = recentChapters(
+      [{ id: "m2-reduction", cours: "# Cours", methodes: [], updatedAt: NOW }, { id: "p2-maxwell", cours: null, methodes: [], updatedAt: NOW }],
+      [{ ...error("e1", "p1-optique"), createdAt: later } as ErrorEntry],
+      10
+    );
+    expect(list.map((entry) => entry.chapter.id)).toEqual(["p1-optique", "m2-reduction"]);
+    expect(list[0]).toMatchObject({ hasCourse: false, erreurs: 1 });
+  });
+
+  it("respecte la limite et ne renvoie rien quand il n'y a rien", () => {
+    expect(recentChapters([], [], 5)).toEqual([]);
+    const many = ["m2-reduction", "m2-euclidiens", "m2-evn"].map((id) => ({ id, cours: "x", methodes: [], updatedAt: NOW }));
+    expect(recentChapters(many, [], 2)).toHaveLength(2);
   });
 });

@@ -43,3 +43,32 @@ export function summarizeChapters(notes: ChapterNotes[], errors: ErrorEntry[], s
     };
   });
 }
+
+export interface RecentChapter extends ChapterSummary {
+  /** Dernière modification connue (cours, méthodes ou dernière erreur), ISO. */
+  lastUpdate: string;
+}
+
+/**
+ * Les chapitres qui ont du contenu (cours, méthodes ou erreurs), le plus
+ * récemment modifié d'abord — pour l'accueil. Toutes matières confondues.
+ */
+export function recentChapters(notes: ChapterNotes[], errors: ErrorEntry[], limit: number): RecentChapter[] {
+  const out: RecentChapter[] = [];
+  for (const chapter of PROGRAMME) {
+    const entry = notesFor(notes, chapter.id);
+    const list = chapterErrors(errors, chapter.id);
+    const summary: ChapterSummary = {
+      chapter,
+      hasCourse: Boolean(entry?.cours),
+      courseLength: entry?.cours?.length ?? 0,
+      methodes: entry?.methodes.length ?? 0,
+      erreurs: list.length,
+      cartes: 0,
+    };
+    if (!hasContent(summary)) continue;
+    const stamps = [entry?.updatedAt ?? "", ...list.map((item) => item.createdAt)];
+    out.push({ ...summary, cartes: COURSE_CHAPTERS.find((c) => c.chapterId === chapter.id)?.cards.length ?? 0, lastUpdate: stamps.reduce((best, value) => (value > best ? value : best), "") });
+  }
+  return out.sort((a, b) => (a.lastUpdate < b.lastUpdate ? 1 : a.lastUpdate > b.lastUpdate ? -1 : 0)).slice(0, limit);
+}
