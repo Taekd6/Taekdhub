@@ -1,9 +1,9 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-24, commit de code `b1c37c0`.
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-24, commit de code `b1c37c0` (fusionné dans `main` : `74a6d7c`).
 > Les PR #28 à #31 sont FUSIONNÉES dans `main` ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
-> Branche de travail actuelle : `claude/modest-curie-3879r2`. La PR #32 est fusionnée dans `main` (`718084b`). La PR #33 (missions 13 et 14) est ouverte, non fusionnée.
+> Branche de travail actuelle : `claude/modest-curie-3879r2`. La PR #32 est fusionnée dans `main` (`718084b`). La PR #33 (missions 13 et 14) est FUSIONNÉE (`74a6d7c`) et déployée en production (déploiement `dpl_73ewod7zcU48zdTeHEyF3vjSPVJK`, READY).
 
 ## Objectif général
 TaekdHub est l'outil de travail personnel d'un élève de prépa MP (PWA Next.js 15, React 19,
@@ -344,6 +344,12 @@ Anki du chapitre de `data/course-cards.json`, lien vers `/anki` et le `.apkg`). 
   erreur → `add_errors`, avant un exercice → `get_chapter`) : non fait, à créer une fois le pilote validé.
 - Restent à décider : un format d'erreur propre à la physique-chimie (les erreurs de maths utilisent `description` / `fix` / `type`) ; les cours
   des autres matières ; la suppression des cours du prof avant toute ouverture publique ou commerciale (décision de l'élève : « on les enlèvera »).
+
+**Mise en service de la mission 14 (2026-10-24, sur demande explicite de l'élève : « fusionne, et permets à Claude de bosser dans TaekdHub »).**
+- Migration `0011_chapter_notes` APPLIQUÉE par Claude sur la base (projet Supabase unique, via l'outil Supabase), contrainte `user_collections_known` relue ensuite : `chapterNotes` y figure. Le carnet disait « à appliquer par l'élève » : l'élève l'a autorisé.
+- PR #33 fusionnée (merge commit `74a6d7c`), déploiement de production READY sur `taekdhub.vercel.app`. Aucune variable ni réglage Vercel touchés.
+- **Cours de Réduction rangé** (chapitre `m2-reduction`, 64 215 caractères, parties I à VI, 4 morceaux) : écrit DIRECTEMENT dans `user_collections` (collection `chapterNotes`, révision 4) par SQL, avec la même forme que `save_course`, parce que les outils du connecteur ne sont pas appelables depuis une session de code. Retapé depuis le PDF du professeur (16 pages de 2 pages de cours) ; matrices en notation linéaire (lignes séparées par « ; ») ; les formules douteuses ont été confirmées avec la couche texte du PDF ou recalculées exactement (A^k de l'exemple 20, a_k/b_k/c_k de l'exemple 21 : vérifiés pour k = 1 à 4 et 1 à 6). Le PDF d'origine n'est pas conservé. Les méthodes et les erreurs de Réduction sont vides (aucun exercice fait).
+- NON vérifié : les quatre outils (`get_chapter`, `save_course`, `add_methods`, `add_errors`) contre la vraie base depuis une conversation claude.ai ; le secret du connecteur n'est pas connu de Claude. À faire par l'élève : dans claude.ai, rafraîchir ou reconnecter le connecteur TaekdHub pour qu'il liste les quatre nouveaux outils, puis demander à Claude de lire `get_chapter` sur « Réduction ».
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
