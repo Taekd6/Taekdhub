@@ -1,9 +1,9 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-21, commit de code `7213c06`.
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-24, commit de code `b1c37c0`.
 > Les PR #28 à #31 sont FUSIONNÉES dans `main` ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
-> Branche de travail actuelle : `claude/exciting-franklin-hiekk8`.
+> Branche de travail actuelle : `claude/modest-curie-3879r2`. La PR #32 est fusionnée dans `main` (`718084b`). La PR #33 (missions 13 et 14) est ouverte, non fusionnée.
 
 ## Objectif général
 TaekdHub est l'outil de travail personnel d'un élève de prépa MP (PWA Next.js 15, React 19,
@@ -289,6 +289,61 @@ propre ; l'élève a créé `CAPTURE_TOKEN` et `MCP_USER_ID` (Production) ; fusi
 d'Hermes (hors de portée de Claude : l'agent est chez l'élève), révocation du jeton et du contournement de test (à faire par l'élève),
 rappel d'import Anki au démarrage (AnkiConnect n'existe que sur ordinateur, Anki ouvert : rien à automatiser côté navigateur sans
 l'élève présent).
+
+**Mission 13 (2026-10-24) — « Mes erreurs d'anglais » (thème, concours CCMP).** Nouvelle page `/erreurs-anglais`
+(`components/erreurs-anglais/erreurs-anglais.tsx`, logique pure `lib/erreurs-anglais.ts` + tests). Le contenu vient
+UNIQUEMENT de `data/erreurs-anglais.json` (`categories` : id, nom, regle ; `erreurs` : date, source, categorie = id,
+francais, faux, correct) : aucune erreur en dur, aucune collection, aucune migration, rien de stocké ni synchronisé.
+Pour enrichir : ajouter des lignes au JSON (le format ne change pas) ; `lib/erreurs-anglais.test.ts` vérifie le fichier
+(ids de catégorie uniques, chaque `categorie` existe, champs remplis, date AAAA-MM-JJ). Une `categorie` inconnue n'est pas
+écartée : groupe « Catégorie inconnue » en dernier. Page : groupes (nom, règle en encadré, nombre), plus récente d'abord ;
+carte = phrase, version fausse barrée en rouge, correction en vert (icônes ✗/✓ en plus de la couleur), source et date ;
+mode révision (interrupteur) : correction cachée, révélée au toucher de la carte, version fausse toujours visible ; filtre par
+catégorie ; « Mélanger » (révision seulement) = une seule pile au hasard sans groupes, la catégorie n'apparaît qu'avec la
+correction ; « Par catégorie » revient aux groupes. 18 px minimum partout (source et date comprises, donc pas « en petit »),
+cibles de 48 px, clair et sombre. Lien « Erreurs d'anglais » dans la colonne latérale (dès `lg`) et bouton depuis `/erreurs`
+(la barre d'onglets mobile reste à 4 destinations : iPad en portrait passe par `/erreurs`). Distinct du carnet d'erreurs
+`/erreurs` (saisi dans l'application, synchronisé).
+- PAS d'export Anki, volontairement (l'élève l'a écarté et la condition « si c'est simple » n'est pas remplie) : le `.apkg`
+  existant est fabriqué hors ligne par `scripts/build-course-deck.py` (genanki) ; un bouton qui le génère dans le navigateur
+  demanderait d'embarquer SQLite et un zip. Si on le veut plus tard : un script jumeau lisant ce JSON, comme pour les cartes de cours.
+- Idée de l'élève, non faite : répertorier aussi les erreurs des autres matières. Le format actuel (faux / correct) est pensé
+  pour un thème ; maths-physique-chimie demanderont un autre format (oubli de cours, piège, chapitre), à décider. Les fiches A5
+  « toujours avec moi » ne sont pas faites (les 117 cartes de maths sont déjà sur la page Anki).
+- Vérifié : 91 fichiers de tests, 1473 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; captures Chromium réelles
+  à 820 px (iPad portrait), clair et sombre, lecture / révision / mélange ; aucun texte sous 18 px mesuré dans `main`.
+  Non vérifié : sur un vrai iPad (toucher, Safari), à 1024 px et plus (colonne latérale).
+
+**Mission 14 (2026-10-24) — page d'un chapitre (demande de l'élève : travailler dans le chat claude.ai avec le connecteur ; cours du
+prof, méthodes et erreurs rangés par chapitre, avec des PDF).** Accord explicite de l'élève : nouvelle collection + migration SQL,
+bibliothèque PDF, texte retapé (pas le PDF du prof). Livré : `/chapitre/<id>` (`components/chapitre/chapter-page.tsx`, une page statique par
+chapitre de `lib/programme-data.ts`, 404 sinon), quatre onglets : **Cours** (retapé, `parseCourse` : `#`, listes `-`, paragraphes),
+**Méthodes** (quand → étapes → piège), **Erreurs** (celles de `errors` avec `programmeChapterId`, rien de dupliqué), **Cartes** (cartes
+Anki du chapitre de `data/course-cards.json`, lien vers `/anki` et le `.apkg`). Lien « Page du chapitre » sur `/programme`.
+- **Données** : nouvelle collection synchronisée `chapterNotes` (`lib/chapter-notes.ts`, une entrée par chapitre : `cours`, `methodes`),
+  branchée comme `ankiSnapshots` (storage, sync, hook, sauvegarde exportée/restaurée). **Migration `0011_chapter_notes.sql` : à appliquer
+  par l'élève AVANT de déployer** (sinon l'envoi de la collection est refusé par `user_collections_known` et les outils répondent en erreur).
+  Cours ≤ 30 000 caractères par appel, 150 000 par chapitre, 40 méthodes par chapitre. Les deux tests qui lisent la migration
+  (`lib/sync/collections.test.ts`) et le nombre d'étapes de restauration (`lib/storage.test.ts`, 14 → 15) ont été mis à jour.
+- **Connecteur de Claude** (`/api/mcp/<secret>` seulement, JAMAIS Hermes : le cours est du texte libre) : `get_chapter` (cours, méthodes,
+  erreurs ; dit explicitement quand aucun cours n'est rangé, pour ne pas supposer ce qui a été vu), `save_course` (`remplacer` puis
+  `ajouter` par morceaux), `add_methods` (même titre = remplace), `add_errors` (carnet `errors`, sans doublon le même jour, une ligne ≤ 200
+  caractères). Le chapitre se donne par titre, alias ou identifiant ; ambigu (sup/spé : « probabilités ») = erreur qui liste les identifiants,
+  jamais deviné.
+- **PDF** : « Télécharger le PDF » sur Méthodes et Erreurs ; fabriqués DANS LE NAVIGATEUR au clic (`lib/chapter-pdf.ts` décrit le document,
+  `lib/chapter-pdf-render.ts` le met en page avec pdf-lib + fontkit, chargés au clic seulement). Nom fixe (`Reduction-des-endomorphismes-methodes.pdf`),
+  toujours à jour. Police DejaVu Sans (et Bold) dans `public/fonts` avec sa licence, pour ⟺ ∑ χ 𝕂… ; un caractère absent de la police devient « ? ».
+  Pas de fichier stocké côté serveur : Safari ne peut pas ouvrir un lien protégé par le compte, et ce serait un stockage de plus.
+- Vérifié : 94 fichiers de tests, 1509 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; PDF réels relus (page A4, symboles de
+  maths, plusieurs pages, carte plus haute qu'une page) ; navigateur réel à 820 px, clair et sombre : onglets, états vides, 404, et les deux
+  téléchargements (noms de fichiers, PDF valides) ; parcours des outils avec un stockage en mémoire (cours → méthode → erreur → lecture).
+- NON vérifié : les quatre outils contre la vraie base (la migration n'est pas appliquée ici), le téléchargement sur un vrai iPad (Safari →
+  Fichiers), l'effet sur la lecture du cours par Claude en conversation réelle. Le PDF du prof n'est pas conservé : seul le texte retapé l'est.
+- À faire par l'élève : appliquer la migration 0011, puis (accord explicite) fusionner et déployer ; ensuite envoyer le PDF de Réduction dans la
+  conversation claude.ai. Idée de l'élève : un skill Claude qui décrit la routine (PDF reçu → `save_course`, méthode donnée → `add_methods`,
+  erreur → `add_errors`, avant un exercice → `get_chapter`) : non fait, à créer une fois le pilote validé.
+- Restent à décider : un format d'erreur propre à la physique-chimie (les erreurs de maths utilisent `description` / `fix` / `type`) ; les cours
+  des autres matières ; la suppression des cours du prof avant toute ouverture publique ou commerciale (décision de l'élève : « on les enlèvera »).
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.

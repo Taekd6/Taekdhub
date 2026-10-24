@@ -103,6 +103,11 @@ export function ErrorLog() {
         title="Carnet d'erreurs"
         lede="L'erreur, la bonne idée — et ce qui revient."
         illustration={<Illustration name="erreurs" size={56} />}
+        actions={
+          <Link href="/erreurs-anglais" className="inline-flex min-h-10 items-center rounded-full bg-inset px-4 text-sm font-semibold text-ink max-lg:min-h-11">
+            Mes erreurs d&apos;anglais
+          </Link>
+        }
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.38fr)] lg:gap-8">

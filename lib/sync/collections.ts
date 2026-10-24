@@ -54,6 +54,7 @@ export const COLLECTION_LABELS: Record<CollectionName, string> = {
   nextMoves: "recommandations",
   attempts: "tentatives d'exercice",
   ankiSnapshots: "relevés Anki",
+  chapterNotes: "cours et méthodes des chapitres",
 };
 
 type Item = Record<string, unknown>;
@@ -94,6 +95,8 @@ const STAMPS: Partial<Record<CollectionName, (item: Item) => string>> = {
   attempts: (item) => maxStamp(item.createdAt, item.updatedAt),
   // Un relevé Anki plus récent du même jour remplace l'autre (lib/anki-snapshot.ts#upsertSnapshot).
   ankiSnapshots: (item) => str(item.takenAt),
+  // Une entrée par chapitre (clé `id`) : la plus récemment modifiée l'emporte.
+  chapterNotes: (item) => str(item.updatedAt),
 };
 
 /** Collections dont la clé n'est pas `id`. */

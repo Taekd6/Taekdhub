@@ -1,0 +1,40 @@
+{
+  "eleve": "TAEKD",
+  "maj": "2026-10-24",
+  "categories": [
+    {"id": "pqp", "nom": "Plus-que-parfait (antériorité)", "regle": "avais/étais + participe => had + participe passé (3e colonne)."},
+    {"id": "cela-faisait", "nom": "Cela faisait... que + négation", "regle": "On compte depuis la dernière fois : It had been X since he had LAST done (pas de not)."},
+    {"id": "imparfait", "nom": "Imparfait : habitude ou action en cours", "regle": "Peut-on dire « était en train de » ? Oui => was + -ing. Non (habitude) => prétérit, used to, would."},
+    {"id": "question-indirecte", "nom": "Question indirecte", "regle": "Ordre affirmatif, pas de did, et recul des temps : where I had found."},
+    {"id": "did-base", "nom": "did / didn't + base verbale", "regle": "Après did, does, will, would, can : 1re colonne (base verbale)."},
+    {"id": "colonnes", "nom": "Prétérit ou participe passé", "regle": "have/has/had juste avant => 3e colonne (rung, hidden, known). Verbe seul au passé => 2e colonne (rang, hid, knew)."},
+    {"id": "present-perfect", "nom": "Present perfect", "regle": "depuis + présent => have lived since/for ; résultat visible au moment où l'on parle => You've grown."},
+    {"id": "deixis", "nom": "Repères dans un récit au passé", "regle": "this => that, here => there, today => that day."},
+    {"id": "adverbe", "nom": "Place de l'adverbe", "regle": "Après le premier auxiliaire : would probably never have come."},
+    {"id": "vocab", "nom": "Vocabulaire, faux amis, collocations", "regle": "Vérifier les faux amis et le mot naturel en contexte."}
+  ],
+  "erreurs": [
+    {"date": "2026-10-24", "source": "Fiche 1, phrase 1", "categorie": "cela-faisait", "francais": "Cela faisait deux mois qu'il n'avait pas parlé à son frère.", "faux": "It had been two months since he hadn't talked to his brother.", "correct": "It had been two months since he had last talked to his brother."},
+    {"date": "2026-10-24", "source": "Fiche 1, phrase 3", "categorie": "pqp", "francais": "Il me demanda où j'avais trouvé cette lettre.", "faux": "He asked me where I found this mail.", "correct": "He asked me where I had found that letter."},
+    {"date": "2026-10-24", "source": "Fiche 1, phrase 3", "categorie": "vocab", "francais": "une lettre", "faux": "a mail", "correct": "a letter (mail = le courrier, un e-mail)"},
+    {"date": "2026-10-24", "source": "Fiche 1, phrase 3", "categorie": "deixis", "francais": "cette lettre (récit au passé)", "faux": "this letter", "correct": "that letter"},
+    {"date": "2026-10-24", "source": "Fiche 1, phrase 5", "categorie": "vocab", "francais": "comme s'ils ne s'étaient jamais rencontrés", "faux": "like they'd never met", "correct": "as if they had never met"},
+    {"date": "2026-10-24", "source": "Fiche 1, phrase 6", "categorie": "imparfait", "francais": "Chaque dimanche, mon grand-père allait au marché.", "faux": "Every Sunday, my grandpa was going to the market.", "correct": "Every Sunday, my grandfather went / used to go to the market."},
+    {"date": "2026-10-24", "source": "Fiche 1, phrase 7", "categorie": "imparfait", "francais": "Il n'a pas compris pourquoi elle pleurait.", "faux": "He didn't understand why she cried.", "correct": "He didn't understand why she was crying."},
+    {"date": "2026-10-24", "source": "Fiche 1, phrase 9", "categorie": "present-perfect", "francais": "J'habite ici depuis 2019.", "faux": "I live here since 2019.", "correct": "I have lived here since 2019."},
+    {"date": "2026-10-24", "source": "Fiche 1, phrase 10", "categorie": "did-base", "francais": "Je voulais savoir combien de temps il était resté.", "faux": "I wanted to know how long did he stayed for.", "correct": "I wanted to know how long he had stayed."},
+    {"date": "2026-10-24", "source": "Mini-exercice 1, phrase 4", "categorie": "pqp", "francais": "Il savait que sa sœur avait menti.", "faux": "He knew that his sister lied.", "correct": "He knew that his sister had lied."},
+    {"date": "2026-10-24", "source": "Mini-exercice 1, phrase 5", "categorie": "vocab", "francais": "Le samedi, mon père se levait toujours tôt.", "faux": "On Saturday, my dad used to wake up earlier.", "correct": "On Saturdays, my father always got up early."},
+    {"date": "2026-10-24", "source": "Mini-exercice 1, phrase 6", "categorie": "colonnes", "francais": "Je ne savais pas où il avait caché les clés.", "faux": "I did'nt know where he had hid the keys.", "correct": "I didn't know where he had hidden the keys."},
+    {"date": "2026-10-24", "source": "Mini-exercice 1, phrase 8", "categorie": "colonnes", "francais": "comme s'ils s'étaient toujours connus", "faux": "as if they had always knew each other", "correct": "as if they had always known each other"},
+    {"date": "2026-10-24", "source": "Thème 2", "categorie": "cela-faisait", "francais": "Cela faisait trois ans que Thomas n'avait pas mis les pieds dans la librairie de son oncle.", "faux": "It had been three years since Thomas hadn't stepped in his uncle's library.", "correct": "It had been three years since Thomas had last set foot in his uncle's bookshop."},
+    {"date": "2026-10-24", "source": "Thème 2", "categorie": "vocab", "francais": "une librairie", "faux": "a library", "correct": "a bookshop (library = bibliothèque)"},
+    {"date": "2026-10-24", "source": "Thème 2", "categorie": "colonnes", "francais": "la cloche sonnait toujours", "faux": "the bell always rung", "correct": "the bell still rang"},
+    {"date": "2026-10-24", "source": "Thème 2", "categorie": "imparfait", "francais": "quand on ouvrait la porte", "faux": "when someone was opening the door", "correct": "whenever someone opened the door"},
+    {"date": "2026-10-24", "source": "Thème 2", "categorie": "present-perfect", "francais": "« Tu as grandi », finit-il par dire.", "faux": "\"You grew up\", he finally says.", "correct": "\"You've grown,\" he said at last."},
+    {"date": "2026-10-24", "source": "Thème 2", "categorie": "pqp", "francais": "Il ne savait pas pourquoi il était revenu", "faux": "Neither he knew why he came back", "correct": "He didn't know why he had come back"},
+    {"date": "2026-10-24", "source": "Thème 2", "categorie": "deixis", "francais": "ce qu'il avait espéré trouver (là)", "faux": "what he had hopped to find here", "correct": "what he had hoped to find there"},
+    {"date": "2026-10-24", "source": "Thème 2", "categorie": "colonnes", "francais": "Si sa mère ne lui avait pas parlé de...", "faux": "If his mother hadn't talk to him about...", "correct": "If his mother hadn't told him about..."},
+    {"date": "2026-10-24", "source": "Thème 2", "categorie": "adverbe", "francais": "il ne serait sans doute jamais venu", "faux": "he would have probably never come", "correct": "he would probably never have come"}
+  ]
+}
