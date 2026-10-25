@@ -47,6 +47,9 @@ const nextMovesKey = "prepahub:next-moves";
  * Absents d'une préférence enregistrée avant leur sprint respectif : retombent sur `defaults` via le
  * merge ci-dessous, comme tout champ ajouté après coup.
  */
+/** Nombre maximal de chapitres « en cours » : au-delà, ce ne serait plus un choix. */
+export const CURRENT_CHAPTERS_MAX = 3;
+
 export type Preferences = {
   displayName: string;
   /**
@@ -191,6 +194,16 @@ export type Preferences = {
    * préférence ou d'une sauvegarde antérieure ⇒ `null`.
    */
   performanceWindows: PerformanceWindow[] | null;
+  /**
+   * CHAPITRES EN COURS — ceux que le professeur traite en ce moment (au plus
+   * `CURRENT_CHAPTERS_MAX`), choisis par l'élève dans /chapitres. Ce sont les
+   * seuls chapitres que « Aujourd'hui » (lib/today-view.ts) met en avant : le
+   * cours avance, on ne revient pas à un exercice vieux de trois mois.
+   * Identifiants de lib/programme-data.ts ; `preferences` est déjà
+   * synchronisé, donc aucune migration. Absent d'une préférence ou d'une
+   * sauvegarde antérieure ⇒ `[]`.
+   */
+  currentChapterIds: string[];
   /*
    * `subjectPalette` / `subjectColors` (palette et surcharges de couleur par
    * matière, refonte « Nuit ») n'existent plus : les matières n'ont plus de
@@ -311,6 +324,7 @@ const defaults: Preferences = {
   retryDelaysDays: [2, 5, 12],
   weeklyFocus: null,
   performanceWindows: null,
+  currentChapterIds: [],
 };
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
@@ -1516,6 +1530,7 @@ export function normalizePreferences(raw: unknown): Preferences {
     retryDelaysDays: normalizeRetryDelays(item.retryDelaysDays),
     weeklyFocus: normalizeWeeklyFocus(item.weeklyFocus),
     performanceWindows: normalizePerformanceWindows(item.performanceWindows),
+    currentChapterIds: normalizeProgrammeIds(item.currentChapterIds).slice(0, CURRENT_CHAPTERS_MAX),
     // `accent`, `subjectPalette` et `subjectColors` ne sont pas recopiés :
     // lus (pour la migration ci-dessus), puis abandonnés.
   };
