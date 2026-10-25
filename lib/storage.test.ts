@@ -732,6 +732,7 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
         "capacityByWeekday",
         "colleChapters",
         "contestDate",
+        "currentChapterIds",
         "dailyGoalMinutes",
         "displayName",
         "eveningMinimums",
@@ -747,6 +748,18 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
         "weeklySubjectTargets",
       ]
     );
+  });
+});
+
+describe("normalizePreferences — chapitres en cours", () => {
+  it("garde les identifiants connus, sans doublon, 3 au plus", () => {
+    const prefs = normalizePreferences({ currentChapterIds: ["m2-reduction", "m2-reduction", "inconnu", 42, "m2-euclidiens", "m2-series-compl", "p1-optique"] });
+    expect(prefs.currentChapterIds).toEqual(["m2-reduction", "m2-euclidiens", "m2-series-compl"]);
+  });
+
+  it("est vide quand le champ est absent ou illisible (anciennes préférences et sauvegardes)", () => {
+    expect(normalizePreferences({}).currentChapterIds).toEqual([]);
+    expect(normalizePreferences({ currentChapterIds: "m2-reduction" }).currentChapterIds).toEqual([]);
   });
 });
 

@@ -1,9 +1,9 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-24, commit de code `b1c37c0` (fusionné dans `main` : `74a6d7c`).
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-25, commit de code `f9fe538` (mission 17, branche `claude/clever-meitner-elomfy` partie de `main` `65f5c06`, NON fusionné ni déployé).
 > Les PR #28 à #31 sont FUSIONNÉES dans `main` ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
-> Branche de travail actuelle : `claude/modest-curie-3879r2`. La PR #32 est fusionnée dans `main` (`718084b`). La PR #33 (missions 13 et 14) est FUSIONNÉE (`74a6d7c`) et déployée en production (déploiement `dpl_73ewod7zcU48zdTeHEyF3vjSPVJK`, READY).
+> Branche de travail actuelle : `claude/clever-meitner-elomfy` (la PR #34, accueil « À faire », est fusionnée dans `main` : `65f5c06`). La PR #32 est fusionnée dans `main` (`718084b`). La PR #33 (missions 13 et 14) est FUSIONNÉE (`74a6d7c`) et déployée en production (déploiement `dpl_73ewod7zcU48zdTeHEyF3vjSPVJK`, READY).
 
 ## Objectif général
 TaekdHub est l'outil de travail personnel d'un élève de prépa MP (PWA Next.js 15, React 19,
@@ -90,6 +90,11 @@ ni outils.
   connecteur MCP (demande un secret par compte : migration, accord requis) ; (4) le contenu qui exigerait un modèle (exercices originaux) se
   produit HORS LIGNE, une fois, par l'élève, puis se livre comme contenu statique relu : un coût unique, pas un coût par utilisateur
   (droits et qualité à vérifier). Le connecteur de Claude et Hermes restent des accès personnels de l'élève.
+- « Aujourd'hui » (2026-10-25, accord explicite de l'élève : revient sur « l'accueil ne propose rien », seulement dans ce cadre) : l'accueil
+  montre 3 à 5 lignes avec leur raison (`lib/today-view.ts`) : les échéances de l'élève (14 jours à venir, ou en retard de moins de 7
+  jours), puis les erreurs et le cours des chapitres « EN COURS » qu'il choisit lui-même (3 au plus, `Preferences.currentChapterIds`,
+  bouton dans `/chapitres`). Rien ne vient d'un chapitre qui n'est pas en cours : le cours avance, on ne revient pas à un exercice
+  vieux de trois mois. N'utilise PAS le moteur Next Move. Anki : ligne à part (cartes dues, âge du relevé), sans toucher à son planning.
 - Les docs `AUDIT.md` et `ROADMAP.md` sont partiellement périmées : se fier au code.
 
 ## État actuel
@@ -373,6 +378,27 @@ sombre, filtres, lien vers le chapitre, lien dans Matières). Physique et chimie
 - « Le reste de ta journée » (« Il me reste… avant 23 h ») est toujours affiché : l'élève n'en a pas parlé nommément.
 - **Suite (même jour, « c'est juste un outil d'organisation, je ne veux pas qu'il me propose »)** : l'accueil ne propose plus rien. Retirés : « Ton prochain mouvement » (Next Move) et « Le reste de ta journée ». À la place : « Mes chapitres » (`components/home/chapters-card.tsx`, `recentChapters` dans `lib/chapters-overview.ts`, testé) et les échéances. Les bannières d'alerte animées sont retirées de `components/app-shell.tsx` (`AlertCenter` n'est plus monté ; `lib/alerts.ts` et le composant sont conservés). NON touchés, à demander : `/revision` (programme de révision), la carte « Et maintenant ? » après le chronomètre et après une fiche d'exercice, les notifications iPhone (cron serveur, réglables dans Réglages), les écrans `/entrainement` et `/point` (accessibles seulement à la demande). Vérifié : 95 fichiers de tests, 1515 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; navigateur réel (accueil à 1440 px et 390 px, 21 h simulées) : aucun « prochain mouvement », « reste de ta journée », progression, check-in ni « en retard ».
 - **Un vrai outil d'organisation sur l'accueil (demande : « met ce qui me permet de m'organiser »)** : « À faire » (`components/home/todo-card.tsx`, `lib/todo-view.ts`, testé) = la liste de l'élève : il écrit une tâche (titre, date et matière facultatives), la coche, la supprime ; rangée En retard / Aujourd'hui / Demain / Cette semaine / Plus tard / Sans date. Ce sont les `workItems` de la page Échéances (kind « autre », 30 min par défaut non affichées) : une tâche ajoutée à l'accueil apparaît sur `/echeances` et inversement ; supprimer = statut « abandonné » (aucune ligne retirée). La carte « Échéances » de l'accueil est remplacée par « À faire » ; « Mes chapitres » passe dans la colonne de droite. La date de l'en-tête mobile n'ouvre plus « Le point ». Vérifié au navigateur (ordinateur et iPad 820 px, heure simulée) : ajout, groupes, cocher, supprimer, persistance après rechargement ; 96 fichiers de tests, 1523 réussis + 1 échec attendu antérieur, `tsc`, lint, build. Non vérifié : sur l'appareil de l'élève. Le planificateur de la page Échéances voit ces tâches (il les « case » dans les journées) ; rien n'est proposé sur l'accueil.
+
+**Incident « JWT issued at future » (2026-10-25) — aucune correction de code.** L'élève a vu cette erreur en appelant `get_today` depuis claude.ai.
+Le dépôt ne vérifie aucun JWT pour le connecteur (secret dans l'URL), ni pour Hermes ni pour la capture (jeton fixe en en-tête) ; les seuls
+`getUser(token)` sont dans `app/api/account/delete` et `app/api/push/test` (Supabase vérifie, pas d'option d'horloge). Constaté : la production
+(`65f5c06`) répond, les trois routes renvoient un 401 simple avec une fausse clé ; aucun message JWT dans les journaux Supabase (24 h). Journaux
+d'exécution Vercel illisibles (403). Le connecteur Taekdhub (Web, Personnalisé) était coché dans claude.ai et `get_today` a fini par répondre :
+l'erreur venait d'une couche extérieure (probable décalage d'horloge côté claude.ai, non prouvé) et s'est résorbée. Rien n'a été modifié.
+
+**Mission 17 (2026-10-25) — « Aujourd'hui » sur l'accueil (demande de l'élève : « ouvrir le site, savoir exactement quoi faire, être prêt pour mes
+échéances, sans décrocher du cours »).** Code : commit `f9fe538`. Nouveau bloc `components/home/today-card.tsx` au-dessus de « À faire » ; logique
+pure `lib/today-view.ts` (+ tests) ; champ `currentChapterIds` dans les préférences (liste blanche de `normalizePreferences`, aucun SQL, déjà
+synchronisé) ; bouton « En cours » par chapitre dans `/chapitres` (3 au plus, les autres boutons se désactivent). Règles : échéances d'abord
+(3 au plus, les plus proches, l'important avant à date égale), puis « Relire tes erreurs » (si le chapitre en cours en a) et « Revoir / Ranger le
+cours » ; 5 lignes au plus ; un travail en retard de plus de 7 jours n'est pas proposé (il reste dans « À faire »). Vérifié : 97 fichiers de tests,
+1537 réussis + 1 échec attendu antérieur, `tsc`, lint, build ; navigateur réel (390 px et 1280 px) avec données de test : DM vieux de 30 jours
+écarté, Anki ancien signalé, plafond de 3 chapitres enregistré et conservé au rechargement. NON vérifié : sur l'appareil de l'élève, avec ses
+vraies données, en mode sombre.
+- Limites assumées : une échéance n'est pas rattachée à un chapitre (aucun lien dans les données), donc « Aujourd'hui » ne dit pas quel exercice de TD
+  faire, seulement quelles tâches de l'élève sont proches ; « erreurs notées » ne dit pas si elles sont corrigées (pas de date de retest) ; les
+  exercices de fiches (locaux) et les annales ne sont pas dans ce bloc.
+- Livraison : À FUSIONNER ET DÉPLOYER SUR ACCORD EXPLICITE de l'élève (rien n'est poussé sur `main`).
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
