@@ -1544,6 +1544,139 @@
 }
 
 
+/* ═══════════════════════════════════════════════════════════════════
+   PALETTE « STUDIO » (mission 20) — d'après le gabarit Habit Tracker de
+   Square UI (github.com/ln-dev7/square-ui, licence ln-dev UI). Elle ne
+   change pas que l'accent : neutres chauds, tuiles pleines à filet fin,
+   aucun verre ni halo, rayons plus serrés, étiquettes en petites capitales.
+   Posée par `data-palette="studio"` (script anti-flash, app/layout.tsx).
+   ═══════════════════════════════════════════════════════════════════ */
+:root[data-palette="studio"] {
+    /* Neutres chauds : crème, encre brun-noir, filet sable. */
+    --canvas-rgb: 250 249 245;
+    --panel-rgb: 255 255 255;
+    --elevated-rgb: 255 255 255;
+    --line-rgb: 229 225 214;
+    --ink-rgb: 38 33 27;
+    --muted-rgb: 112 104 92;
+    --subtle-rgb: 120 112 99;
+    --hairline-rgb: 38 33 27;
+    --inset-rgb: 120 104 80;
+    --inset-alpha: 0.1;
+    /* Tuiles PLEINES : pas de verre, un filet d'un pixel, une ombre à peine posée. */
+    --surface-bg: rgb(255 255 255);
+    --surface-blur: none;
+    --surface-border: rgb(229 225 214);
+    --surface-border-hover: rgb(214 206 190);
+    --surface-lift-rest: 0 1px 2px rgb(38 33 27 / 0.05);
+    --surface-lift-up: 0 1px 2px rgb(38 33 27 / 0.06), 0 10px 24px -12px rgb(38 33 27 / 0.18);
+    --surface-shadow: var(--surface-lift-rest);
+    --action-bg: rgb(244 241 233);
+    --action-lift: inset 0 0 0 1px rgb(229 225 214);
+    --glass-bg: rgb(250 249 245 / 0.92);
+    --glass-edge: inset 0 0 0 1px rgb(229 225 214), 0 1px 2px rgb(38 33 27 / 0.05);
+    --chip-on-bg: rgb(255 255 255);
+    --chip-on-ring: rgb(229 225 214);
+    --chip-on-shadow: 0 1px 2px rgb(38 33 27 / 0.08);
+    --halo-a: 0;
+    --halo-b: 0;
+    --halo-c: 0;
+    --radius-tile: 1.125rem;
+    --radius-inner: 0.75rem;
+}
+:root[data-palette="studio"][data-theme="dark"] {
+    /* Le sombre de Studio : charbon chaud, jamais noir. */
+    --canvas-rgb: 31 30 28;
+    --panel-rgb: 39 38 35;
+    --elevated-rgb: 46 45 41;
+    --line-rgb: 62 60 55;
+    --ink-rgb: 240 236 228;
+    --muted-rgb: 176 170 158;
+    --subtle-rgb: 160 154 142;
+    --hairline-rgb: 255 250 240;
+    --inset-rgb: 255 245 225;
+    --inset-alpha: 0.07;
+    --surface-bg: rgb(39 38 35);
+    --surface-blur: none;
+    --surface-border: rgb(58 56 51);
+    --surface-border-hover: rgb(78 75 68);
+    --surface-lift-rest: 0 1px 2px rgb(0 0 0 / 0.25);
+    --surface-lift-up: 0 1px 2px rgb(0 0 0 / 0.3), 0 14px 28px -14px rgb(0 0 0 / 0.6);
+    --surface-shadow: var(--surface-lift-rest);
+    --action-bg: rgb(50 49 45);
+    --action-lift: inset 0 0 0 1px rgb(62 60 55);
+    --glass-bg: rgb(31 30 28 / 0.92);
+    --glass-edge: inset 0 0 0 1px rgb(58 56 51), 0 1px 2px rgb(0 0 0 / 0.3);
+    --chip-on-bg: rgb(64 62 57);
+    --chip-on-ring: transparent;
+    --chip-on-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    --accent-ink-rgb: 232 145 110;
+    --halo-a: 0;
+    --halo-b: 0;
+    --halo-c: 0;
+    --radius-tile: 1.125rem;
+    --radius-inner: 0.75rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="studio"][data-theme="system"] {
+    /* Le sombre de Studio : charbon chaud, jamais noir. */
+    --canvas-rgb: 31 30 28;
+    --panel-rgb: 39 38 35;
+    --elevated-rgb: 46 45 41;
+    --line-rgb: 62 60 55;
+    --ink-rgb: 240 236 228;
+    --muted-rgb: 176 170 158;
+    --subtle-rgb: 160 154 142;
+    --hairline-rgb: 255 250 240;
+    --inset-rgb: 255 245 225;
+    --inset-alpha: 0.07;
+    --surface-bg: rgb(39 38 35);
+    --surface-blur: none;
+    --surface-border: rgb(58 56 51);
+    --surface-border-hover: rgb(78 75 68);
+    --surface-lift-rest: 0 1px 2px rgb(0 0 0 / 0.25);
+    --surface-lift-up: 0 1px 2px rgb(0 0 0 / 0.3), 0 14px 28px -14px rgb(0 0 0 / 0.6);
+    --surface-shadow: var(--surface-lift-rest);
+    --action-bg: rgb(50 49 45);
+    --action-lift: inset 0 0 0 1px rgb(62 60 55);
+    --glass-bg: rgb(31 30 28 / 0.92);
+    --glass-edge: inset 0 0 0 1px rgb(58 56 51), 0 1px 2px rgb(0 0 0 / 0.3);
+    --chip-on-bg: rgb(64 62 57);
+    --chip-on-ring: transparent;
+    --chip-on-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    --accent-ink-rgb: 232 145 110;
+    --halo-a: 0;
+    --halo-b: 0;
+    --halo-c: 0;
+    --radius-tile: 1.125rem;
+    --radius-inner: 0.75rem;
+  }
+}
+:root[data-palette="studio"] .t-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+:root[data-palette="studio"] .surface,
+:root[data-palette="studio"] .glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-palette="studio"] .t-figure,
+:root[data-palette="studio"] .t-card-figure,
+:root[data-palette="studio"] .t-display {
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+:root[data-palette="studio"] .blk:not(.blk-tache) {
+  background: rgb(var(--k) / 0.12);
+}
+:root[data-palette="studio"] .blk-cours {
+  --k: 150 140 124;
+}
+
+
 /* IMPRESSION (le bilan, /bilan) — papier blanc, et tout ce qui entre en
    scène au défilement est montré d'emblée : une impression ne défile pas,
    les sections encore « en attente » sortiraient blanches. */
