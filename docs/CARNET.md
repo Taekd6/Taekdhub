@@ -517,3 +517,10 @@ Aucune lancée. Candidats, chacun à proposer avec son périmètre, accord requi
 - /semaine : bandeau dégradé animé (plage de dates, progression des tâches de la semaine, navigation).
 - Bandeau d'erreur agenda masqué quand la copie hors ligne suffit.
 - Tout respecte prefers-reduced-motion. Vérifié : vitest 1579 ok, tsc, eslint, captures 1440 et 390 px.
+
+## Mission 25 — chapitres en tuiles, projecteur, faisceau (2a0052a)
+- /chapitres : bandeau ciel (matière, chapitres épinglés, contenu, cartes Anki) et grille de tuiles numérotées ; jauge à 4 segments (cours, méthodes, erreurs, cartes) ; épingle « en cours » en bouton rond ; apparition en cascade.
+- Projecteur au survol de la souris (.spot, components/ui/spotlight.tsx, un seul écouteur) sur les widgets de l'accueil et les tuiles.
+- Faisceau de lumière autour de la bordure (.beam, CSS @property) : chapitres épinglés et widget « En ce moment » quand un cours a lieu.
+- Idées reprises de Magic UI (MIT) — MagicCard, BorderBeam — réécrites en CSS pur, aucune dépendance ajoutée. Coupé sous reduced-motion.
+- Vérifié : vitest 1579 ok, tsc, eslint, captures 1440 et 390 px.
