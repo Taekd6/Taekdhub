@@ -524,3 +524,8 @@ Aucune lancée. Candidats, chacun à proposer avec son périmètre, accord requi
 - Faisceau de lumière autour de la bordure (.beam, CSS @property) : chapitres épinglés et widget « En ce moment » quand un cours a lieu.
 - Idées reprises de Magic UI (MIT) — MagicCard, BorderBeam — réécrites en CSS pur, aucune dépendance ajoutée. Coupé sous reduced-motion.
 - Vérifié : vitest 1579 ok, tsc, eslint, captures 1440 et 390 px.
+
+## Mission 26 — vacances sans cours, réglages triés (701518a)
+- lib/vacances.ts : vacances et jours fériés 2026-2027 relevés dans l'agenda du Cahier de Prépa (mp-pascal). Ces jours-là, les cours de l'emploi du temps disparaissent (semaine, accueil) ; restent les tâches, le perso, les créneaux du soir (dès 18 h 30) et du dimanche, que l'élève pose lui-même pour réviser. Filtre appliqué dans hooks/use-calendar.ts. Tests : lib/vacances.test.ts (indépendants du fuseau).
+- Réglages : à l'écran, apparence, agendas, compte, Rappels ; le reste dans « Réglages avancés », replié. Rien de supprimé.
+- Vérifié : vitest 1581 ok, tsc, eslint, captures.
