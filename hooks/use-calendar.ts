@@ -1,5 +1,7 @@
 "use client";
 
+import { withoutSchoolOnOffDays } from "@/lib/vacances";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CalendarEvent, CalendarFeed } from "@/lib/calendar";
 
@@ -126,7 +128,7 @@ export function useCalendarEvents(feeds: CalendarFeed[], from: Date, to: Date): 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feedsKey, fromIso, toIso, tick]);
 
-  const events = useMemo(() => Object.values(byFeed).flat().sort((a, b) => a.start.localeCompare(b.start)), [byFeed]);
+  const events = useMemo(() => withoutSchoolOnOffDays(Object.values(byFeed).flat()).sort((a, b) => a.start.localeCompare(b.start)), [byFeed]);
   const refresh = useCallback(() => setTick((value) => value + 1), []);
   return { events, loading, errors, stale, refresh };
 }

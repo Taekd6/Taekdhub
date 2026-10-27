@@ -29,24 +29,36 @@ import { OnboardingRestartEntry } from "@/components/onboarding/restart-entry";
 export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-[44rem] space-y-10">
-      <PageHero title="Réglages" lede="Apparence, objectifs, temps, compte et sauvegardes." />
+      <PageHero title="Réglages" lede="L'essentiel : apparence, agendas, compte et Rappels." />
       <AvatarPicker />
       <ThemePicker />
-      <DataHealth />
       <CalendarSettings />
-      <PreferencesForm />
-      <BriefingSetting />
-      <PushSettings />
-      <CapacityForm />
-      <PerformanceWindowsForm />
-      {/* ── Premier lancement : rouvrir l'accueil guidé ── */}
-      <OnboardingRestartEntry />
-      {/* ── fin premier lancement ── */}
-      {/* Compte et synchronisation — juste avant les sauvegardes, dont il est le prolongement. */}
       <AccountSection />
       <RappelsGuide />
-      <CaptureGuide />
-      <DataBackup />
+      {/* ── Mission 26 (« beaucoup de données pour pas grand-chose ») : le reste
+          existe toujours, replié par défaut. Rien n'est supprimé. ── */}
+      <details className="group surface rounded-[var(--radius-tile)] p-5 sm:p-6">
+        <summary className="press flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+          <span>
+            <span className="t-subhead block font-bold">Réglages avancés</span>
+            <span className="t-meta">Objectifs, notifications, temps de travail, sauvegardes, guides</span>
+          </span>
+          <span aria-hidden className="text-muted transition-transform duration-300 group-open:rotate-90">›</span>
+        </summary>
+        <div className="mt-8 space-y-10">
+          <DataHealth />
+          <PreferencesForm />
+          <BriefingSetting />
+          <PushSettings />
+          <CapacityForm />
+          <PerformanceWindowsForm />
+          {/* ── Premier lancement : rouvrir l'accueil guidé ── */}
+          <OnboardingRestartEntry />
+          {/* ── fin premier lancement ── */}
+          <CaptureGuide />
+          <DataBackup />
+        </div>
+      </details>
     </div>
   );
 }
