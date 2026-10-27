@@ -439,6 +439,13 @@ Raccourci iOS de l'élève (hors dépôt) : synchro en place et vérifiée en ba
 Rappels, 7 h et 18 h ; à faire par l'élève : chercher les rappels dans TOUTES les listes (retirer le filtre « Liste est Taekdhub »).
 `CAPTURE_TOKEN` remplacé en production le 2026-10-27 (ancien jeton invalide) ; `MCP_USER_ID` non relu (valeur masquée), la synchro le valide.
 
+**Mission 20 (2026-10-27) — palette « Studio » (demande de l'élève : « applique des templates GitHub »).** Commit `1738ca6`. Source :
+gabarit Habit Tracker de Square UI (github.com/ln-dev7/square-ui, licence ln-dev UI : usage et modification autorisés). Nouvelle palette
+`studio` (lib/theme.ts) et bloc `[data-palette="studio"]` d'app/globals.css : neutres chauds (crème / charbon chaud), accent terre cuite,
+tuiles pleines à filet d'un pixel, verre et halos coupés, rayons 18 px, étiquettes en petites capitales, chiffres en 900. Aucune autre
+palette ni aucun composant touché. Posée comme palette de l'élève dans ses préférences (Supabase) sur sa demande ; « Minuit » reste
+choisissable dans Réglages. Vérifié : tests, lint, `tsc`, build ; captures 1280 px sombre et clair (accueil, semaine).
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
 - Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un
