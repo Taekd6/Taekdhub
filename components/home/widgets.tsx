@@ -256,7 +256,6 @@ export function WeekWidget({ columns, now, className }: { columns: DayColumn[]; 
           );
         })}
       </div>
-      <p className="t-meta mt-3">Barres : heures de cours en journée · points : tâches · rouge : DS ou khôlle</p>
     </Link>
   );
 }
