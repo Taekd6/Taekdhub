@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-27, commit de code `b34f989` (mission 18, branche `claude/mission-18-semaine` partie de `main` `b2b4bb7`, NON fusionnée ni déployée).
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-27, commit de code `b34f989` (mission 18, branche `claude/mission-18-semaine`, FUSIONNÉE dans `main` `2d74b8a` le 2026-10-27 sur accord explicite de l'élève ; déploiement Vercel automatique, non relu : accès Vercel refusé à la session).
 > Les PR #28 à #31 sont FUSIONNÉES dans `main` ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
 > Branche de travail actuelle : `claude/clever-meitner-elomfy` (la PR #34, accueil « À faire », est fusionnée dans `main` : `65f5c06`). La PR #32 est fusionnée dans `main` (`718084b`). La PR #33 (missions 13 et 14) est FUSIONNÉE (`74a6d7c`) et déployée en production (déploiement `dpl_73ewod7zcU48zdTeHEyF3vjSPVJK`, READY).
 
