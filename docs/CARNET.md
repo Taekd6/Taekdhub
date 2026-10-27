@@ -429,6 +429,16 @@ dans la session) ; captures Chromium à 390, 820 et 1280 px, sombre et clair ; p
 tâche, cocher dans « Ce soir » jusqu'à « Tout est prêt. ». Non vérifié : un vrai flux iCal Google (réseau fermé ; l'analyse est testée sur
 un extrait au format Google), le raccourci iOS sur l'iPhone de l'élève, `CAPTURE_TOKEN` présent en production.
 
+**Mission 19 (2026-10-27) — minimaliste (demande de l'élève : « les données dans le back end, pas dans ce que je vois »).** Commit `4908bdf`,
+branche `claude/mission-19-minimal`, NON fusionnée. Nouvelle répartition des rôles, posée par l'élève : RAPPELS d'Apple est SON outil (il range
+dans les listes qu'il veut, « Urgent »…, et coche) ; TAEKDHUB est celui de CLAUDE (Claude y entre le travail — mails des profs, conversations,
+Anki — et vérifie ce qui est coché). Navigation réduite à Aujourd'hui, Ma semaine, Mes chapitres, Réglages (barre du bas : 4 onglets, sans le
+disque du chrono) ; tous les autres écrans existent toujours à leur adresse. Accueil : les 4 widgets seuls (« Aujourd'hui », « À faire »,
+« Mes chapitres » et le rappel de sauvegarde n'y sont plus appelés). Semaine : grille seule. Aucune donnée, collection ni moteur touché.
+Raccourci iOS de l'élève (hors dépôt) : synchro en place et vérifiée en base (« Test Rappel » terminé) ; automatisations à la fermeture de
+Rappels, 7 h et 18 h ; à faire par l'élève : chercher les rappels dans TOUTES les listes (retirer le filtre « Liste est Taekdhub »).
+`CAPTURE_TOKEN` remplacé en production le 2026-10-27 (ancien jeton invalide) ; `MCP_USER_ID` non relu (valeur masquée), la synchro le valide.
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
 - Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un

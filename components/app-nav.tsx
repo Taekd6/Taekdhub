@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
-import { BarChart3, BookOpen, CalendarCheck, CalendarDays, Clock3, Home, Languages, Layers, Library, ListChecks, Repeat, Settings, Timer, WalletCards, CalendarRange } from "lucide-react";
+import { Home, Library, Settings, CalendarRange } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -33,34 +33,25 @@ import { cn } from "@/lib/cn";
  */
 const DESTINATIONS = [
   { href: "/dashboard", label: "Aujourd'hui", short: "Aujourd'hui", icon: Home },
-  { href: "/preparation", label: "Matières", short: "Matières", icon: Layers },
-  { href: "/progress", label: "Progression", short: "Progrès", icon: BarChart3 },
   { href: "/semaine", label: "Semaine", short: "Semaine", icon: CalendarRange },
+  { href: "/chapitres", label: "Chapitres", short: "Chapitres", icon: Library },
+  { href: "/settings", label: "Réglages", short: "Réglages", icon: Settings },
 ];
 
 /**
- * LA COLONNE LATÉRALE (grand écran) : toutes les sections de la maquette
- * « tableau de bord ». Dès `lg`, elle remplace la barre haute ; sur
- * téléphone, rien ne change (barre d'onglets).
+ * LA COLONNE LATÉRALE (grand écran) — MINIMALISTE (mission 19, demande de
+ * l'élève : « que ça reste dans le back end, pas dans ce que je vois »).
+ * Trois destinations : le reste (planification, révisions, Anki, échéances,
+ * statistiques, chrono…) existe toujours à son adresse, pour Claude et pour
+ * un lien direct, mais ne s'affiche plus dans la navigation.
  */
 const SIDEBAR = [
-  { href: "/dashboard", label: "Accueil", icon: Home },
+  { href: "/dashboard", label: "Aujourd'hui", icon: Home },
   { href: "/semaine", label: "Ma semaine", icon: CalendarRange },
-  { href: "/programme", label: "Planification", icon: CalendarDays },
-  { href: "/entrainement", label: "Exercices", icon: ListChecks },
-  { href: "/preparation", label: "Cours", icon: BookOpen },
-  { href: "/revision", label: "Révisions", icon: Repeat },
   { href: "/chapitres", label: "Mes chapitres", icon: Library },
-  { href: "/erreurs-anglais", label: "Erreurs d'anglais", icon: Languages },
-  { href: "/anki", label: "Anki", icon: WalletCards },
-  { href: "/echeances", label: "Échéances", icon: CalendarCheck },
-  { href: "/progress", label: "Statistiques", icon: BarChart3 },
 ];
 
-const TOOLS = [
-  { href: "/timer", label: "Chronomètre", icon: Clock3 },
-  { href: "/settings", label: "Réglages", icon: Settings },
-];
+const TOOLS = [{ href: "/settings", label: "Réglages", icon: Settings }];
 
 /** Une section est active si l'URL commence par son chemin — les écrans de détail (`/preparation?...`) gardent leur onglet allumé. */
 function useActive() {
@@ -183,30 +174,13 @@ export function AppNav() {
       {/* ── BARRE D'ONGLETS MOBILE ─────────────────────────────────
           La barre d'onglets d'iOS 26 : une capsule de verre qui flotte à
           12 px des bords, au-dessus de la marge de sécurité des téléphones à
-          encoche. Deux destinations, le CHRONO au centre (disque en dégradé
-          qui déborde de la capsule), deux destinations. L'onglet actif est
-          posé sur une pastille teintée, comme dans les apps d'Apple. */}
+          encoche. Quatre destinations, sans plus (mission 19 : minimaliste).
+          L'onglet actif est posé sur une pastille teintée. */}
       <nav
         aria-label="Sections"
-        className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-[2rem] px-1.5 py-1 lg:hidden print:hidden"
+        className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-4 rounded-[2rem] px-1.5 py-1 lg:hidden print:hidden"
       >
-        {[...DESTINATIONS.slice(0, 2), null, ...DESTINATIONS.slice(2)].map((destination) => {
-          if (!destination) {
-            const active = isActive("/timer");
-            return (
-              <Link
-                key="chrono"
-                href="/timer"
-                aria-label="Chronomètre"
-                aria-current={active ? "page" : undefined}
-                className="group flex min-h-[var(--tabbar-h)] items-start justify-center"
-              >
-                <span className="grad-brand -mt-4 grid h-14 w-14 place-items-center rounded-full ring-[3px] ring-white/70 transition-transform duration-[250ms] ease-[cubic-bezier(.34,1.56,.64,1)] [box-shadow:0_10px_24px_-8px_var(--g1)] group-active:scale-[.92] motion-reduce:transform-none">
-                  <Timer size={24} strokeWidth={2.3} aria-hidden />
-                </span>
-              </Link>
-            );
-          }
+        {DESTINATIONS.map((destination) => {
           const { href, short, icon: Icon } = destination;
           const active = isActive(href);
           return (
@@ -258,8 +232,7 @@ function Sidebar() {
         {SIDEBAR.map(({ href, label, icon }) => item(href, label, icon))}
       </nav>
       <div className="mt-auto flex flex-col gap-1">
-        {item("/timer", "Chronomètre", Clock3)}
-        {item("/settings", "Paramètres", Settings)}
+        {item("/settings", "Réglages", Settings)}
       </div>
     </aside>
   );

@@ -8,9 +8,8 @@ import { Skeleton } from "@/components/ui/state";
 import { cn } from "@/lib/cn";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { useCalendarEvents } from "@/hooks/use-calendar";
-import { addDays, buildWeek, hourRange, localDay, mondayOf, nextExam, type DayColumn } from "@/lib/week-agenda";
+import { addDays, buildWeek, hourRange, localDay, mondayOf, type DayColumn } from "@/lib/week-agenda";
 import { toggleWorkItemDone } from "@/lib/work-items";
-import type { WorkItem } from "@/lib/storage";
 import { TaskQuickAdd } from "@/components/week/task-quick-add";
 import { WeekTimeline } from "@/components/week/week-timeline";
 
@@ -47,8 +46,6 @@ export function WeekScreen() {
   const dayIndex = selected ?? (todayIndex >= 0 ? todayIndex : 0);
   const [slot, setSlot] = useState<{ day: string; time: string | null } | null>(null);
 
-  const stats = useMemo(() => summarize(columns, workItems), [columns, workItems]);
-  const exam = useMemo(() => nextExam(calendar.events, workItems, offset === 0 ? now : monday), [calendar.events, workItems, now, monday, offset]);
 
   const toggle = (id: string) => saveWorkItems(toggleWorkItemDone(workItems, id));
   const openSlot = (day: string, minute: number) => setSlot({ day, time: `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}` });
@@ -89,14 +86,6 @@ export function WeekScreen() {
           </Button>
         </div>
       </header>
-
-      {/* ── Chiffres de la semaine (style widget) ── */}
-      <div className="reveal mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4" style={{ "--i": 1 } as React.CSSProperties}>
-        <Figure label="Agenda (journée)" value={stats.classHours > 0 ? `${String(stats.classHours).replace(".", ",")} h` : "—"} hint={noFeeds ? "agenda non relié" : "cours et créneaux avant 18 h"} />
-        <Figure label="Tâches cochées" value={`${stats.done}/${stats.tasks}`} hint={stats.tasks === 0 ? "rien de posé" : stats.done === stats.tasks ? "tout est fait" : `${stats.tasks - stats.done} à faire`} />
-        <Figure label="Échéances" value={String(stats.dueThisWeek)} hint={stats.dueThisWeek === 0 ? "rien à rendre" : "à rendre cette semaine"} />
-        <Figure label="Prochaine épreuve" value={exam ? (exam.days === 0 ? "Auj." : `J-${exam.days}`) : "—"} hint={exam ? exam.title : "aucune en vue"} tone={exam && exam.days <= 3 ? "alert" : undefined} />
-      </div>
 
       {noFeeds && (
         <div className="surface reveal mb-5 flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
@@ -165,45 +154,6 @@ export function WeekScreen() {
 
 function dayHasExam(column: DayColumn) {
   return column.blocks.some((block) => (block.kind === "ds" || block.kind === "colle") && !/pr[ée]paration/i.test(block.title));
-}
-
-/**
- * Les chiffres de la semaine. « Cours » ne compte que la JOURNÉE (avant 18 h) :
- * le soir, l'agenda de l'élève porte aussi ses propres créneaux de travail,
- * qui ne sont pas des cours.
- */
-function summarize(columns: DayColumn[], workItems: WorkItem[]) {
-  let classMinutes = 0;
-  let tasks = 0;
-  let done = 0;
-  for (const column of columns) {
-    for (const block of column.blocks) {
-      if (block.kind === "tache") {
-        tasks += 1;
-        if (block.done) done += 1;
-      } else if (block.kind !== "perso" && block.startMin < 18 * 60) {
-        classMinutes += Math.min(block.endMin, 18 * 60) - block.startMin;
-      }
-    }
-    for (const item of column.untimed) {
-      tasks += 1;
-      if (item.status === "terminé") done += 1;
-    }
-  }
-  const first = columns[0]?.day ?? "";
-  const last = columns[columns.length - 1]?.day ?? "";
-  const dueThisWeek = workItems.filter((item) => (item.status === "à faire" || item.status === "en cours") && item.dueDate !== null && item.dueDate >= first && item.dueDate <= last).length;
-  return { classHours: Math.round(classMinutes / 30) / 2, tasks, done, dueThisWeek };
-}
-
-function Figure({ label, value, hint, tone }: { label: string; value: string; hint: string; tone?: "alert" }) {
-  return (
-    <div className="surface p-4">
-      <p className="t-label">{label}</p>
-      <p className={cn("t-figure t-figure-sm mt-1 leading-none", tone === "alert" && "text-rose-300")}>{value}</p>
-      <p className="t-meta mt-1 truncate">{hint}</p>
-    </div>
-  );
 }
 
 function Untimed({ column, onToggle, showDay = false }: { column: DayColumn; onToggle: (id: string) => void; showDay?: boolean }) {
