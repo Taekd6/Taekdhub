@@ -509,3 +509,11 @@ Aucune lancée. Candidats, chacun à proposer avec son périmètre, accord requi
   identifiant d'échéance sans accord explicite ; ne pas toucher au secret MCP de Claude.
 - Ne rien supprimer ni réécrire des changements de l'utilisateur.
 - Signaler les anomalies sans les corriger hors périmètre.
+
+## Mission 24 — finitions premium (ffc386f)
+- Transition douce entre les pages (app/(app)/template.tsx, .page-in).
+- Ciel de l'accueil : étoile filante la nuit, nuages le jour.
+- Confettis quand la dernière tâche du soir est cochée.
+- /semaine : bandeau dégradé animé (plage de dates, progression des tâches de la semaine, navigation).
+- Bandeau d'erreur agenda masqué quand la copie hors ligne suffit.
+- Tout respecte prefers-reduced-motion. Vérifié : vitest 1579 ok, tsc, eslint, captures 1440 et 390 px.
