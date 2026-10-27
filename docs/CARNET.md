@@ -458,6 +458,13 @@ Il porte la date, l'heure, « X/Y ce soir » et la prochaine épreuve. Widgets :
 avec un anneau, carte d'épreuve flottante, point vivant « En ce moment ». `prefers-reduced-motion` respecté. Vérifié : tests, lint, `tsc`,
 captures 390 et 1280 px, GIF du parcours (cocher jusqu'à « Tout est prêt. »).
 
+**Mission 23 (2026-10-27) — le contenu d'une séance (« je clique sur une séance de demain et je vois le contenu »).** Commit `7c8dd48`.
+`components/week/task-detail.tsx` : un tap sur une tâche (« Ce soir », la semaine) ouvre sa fiche : matière, type, quand (plan), pour quand
+(échéance, durée), CONTENU (`WorkItem.note`, lignes « - » en puces, liens cliquables), et « C'est fait » / « Demain » / « Rouvrir ». Dans la
+semaine, un tap sur une tâche l'OUVRE (il la cochait directement). `Dialog` passe par un portail. Les 9 tâches de l'élève ont reçu leur contenu
+(note) en base : exos du TD de séries, programme de colle, plan du rapport TIPE (consignes du prof), DS de physique, consignes de physique,
+oral d'anglais, colle de français. La note part aussi dans Rappels (champ notes).
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
 - Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un
