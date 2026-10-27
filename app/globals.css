@@ -1443,6 +1443,107 @@
 }
 
 
+/* ═══════════════════════════════════════════════════════════════════
+   MISSION 18 — LA SEMAINE ET LES WIDGETS
+   Un bloc d'agenda porte sa couleur dans `--k` (triplet RGB), posée par
+   sa nature : cours (ardoise), TD/TP (encre de palette), DS (rouge
+   système), khôlle (orange système), perso (gris). Les TÂCHES de l'élève
+   prennent le dégradé de marque : ce sont elles qu'on coche.
+   ═══════════════════════════════════════════════════════════════════ */
+.blk {
+  --k: 120 128 160;
+  background: linear-gradient(180deg, rgb(var(--k) / 0.2), rgb(var(--k) / 0.12));
+  box-shadow: inset 3px 0 0 rgb(var(--k));
+  color: rgb(var(--ink-rgb));
+  border-radius: 0.75rem;
+  transition: transform 0.25s var(--ease-out), filter 0.25s var(--ease-out);
+}
+.blk:hover {
+  filter: brightness(1.06);
+}
+.blk-td,
+.blk-tp {
+  --k: var(--accent-rgb);
+}
+.blk-ds {
+  --k: var(--rose-400-rgb);
+}
+.blk-colle {
+  --k: var(--amber-400-rgb);
+}
+.blk-perso {
+  --k: var(--subtle-rgb);
+}
+.blk-tache {
+  background: linear-gradient(135deg, var(--g1), var(--g2));
+  box-shadow: 0 8px 18px -10px var(--g1);
+  color: #fff;
+}
+.blk-done {
+  opacity: 0.5;
+  filter: saturate(0.4);
+}
+.blk-dot {
+  background: rgb(var(--k, var(--subtle-rgb)));
+}
+
+/* Le quadrillage des heures : un filet par heure, plus discret à la demie. */
+.hour-grid {
+  background-image: linear-gradient(to bottom, rgb(var(--hairline-rgb) / 0.08) 1px, transparent 1px);
+  background-size: 100% var(--hour-h, 3.25rem);
+}
+
+/* La ligne de l'heure qu'il est : rouge système, avec sa pastille. */
+.now-line {
+  height: 2px;
+  background: rgb(var(--rose-400-rgb));
+  box-shadow: 0 0 10px rgb(var(--rose-400-rgb) / 0.6);
+}
+.now-line::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: rgb(var(--rose-400-rgb));
+}
+
+/* Barre de charge de la mini-semaine (accueil). */
+.load-bar {
+  background: linear-gradient(180deg, var(--g2), var(--g1));
+  border-radius: 0.625rem 0.625rem 0.375rem 0.375rem;
+  transform-origin: bottom;
+  animation: growY 0.7s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+/* Case à cocher ronde de « Ce soir » : se remplit du dégradé quand c'est fait. */
+.tick {
+  border: 2px solid rgb(var(--hairline-rgb) / 0.22);
+  transition: background 0.25s var(--ease-out), border-color 0.25s var(--ease-out), transform 0.3s var(--ease-spring);
+}
+.tick:hover {
+  border-color: rgb(var(--accent-ink-rgb));
+}
+.tick-on {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--g1), var(--g2));
+  color: #fff;
+  transform: scale(1.04);
+}
+@media (prefers-reduced-motion: reduce) {
+  .load-bar {
+    animation: none;
+  }
+  .tick,
+  .blk {
+    transition: none;
+  }
+}
+
+
 /* IMPRESSION (le bilan, /bilan) — papier blanc, et tout ce qui entre en
    scène au défilement est montré d'emblée : une impression ne défile pas,
    les sections encore « en attente » sortiraient blanches. */

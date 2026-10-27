@@ -6,6 +6,7 @@ import { normalizeAvatar } from "@/lib/avatar";
 import { normalizePerformanceWindows, type PerformanceWindow } from "@/lib/performance-windows";
 import { normalizeAnkiSnapshots, type AnkiSnapshot } from "@/lib/anki-snapshot";
 import { normalizeChapterNotes, type ChapterNotes } from "@/lib/chapter-notes";
+import { normalizeCalendarFeeds, type CalendarFeed } from "@/lib/calendar";
 import { SRS_LADDER } from "@/lib/spaced-repetition";
 import { FSRS_RATINGS, normalizeFsrsMemory, replayMemory, type FsrsMemory, type FsrsRating, type FsrsState } from "@/lib/fsrs";
 import { DEFAULT_PALETTE, DEFAULT_THEME_MODE, THEME_MODES, resolvePaletteId, type PaletteId, type ThemeMode } from "@/lib/theme";
@@ -204,6 +205,12 @@ export type Preferences = {
    * sauvegarde antérieure ⇒ `[]`.
    */
   currentChapterIds: string[];
+  /**
+   * AGENDAS DE L'ÉLÈVE (mission 18) — adresses iCal secrètes (Google, iCloud)
+   * dont la vue semaine lit l'emploi du temps : voir lib/calendar.ts. Le
+   * contenu des agendas n'est jamais stocké, seulement l'adresse. Absent ⇒ `[]`.
+   */
+  calendarFeeds: CalendarFeed[];
   /*
    * `subjectPalette` / `subjectColors` (palette et surcharges de couleur par
    * matière, refonte « Nuit ») n'existent plus : les matières n'ont plus de
@@ -325,6 +332,7 @@ const defaults: Preferences = {
   weeklyFocus: null,
   performanceWindows: null,
   currentChapterIds: [],
+  calendarFeeds: [],
 };
 
 /** Temps investi durant la semaine figée, pour une matière — voir `WeekSnapshot`. */
@@ -1531,6 +1539,7 @@ export function normalizePreferences(raw: unknown): Preferences {
     weeklyFocus: normalizeWeeklyFocus(item.weeklyFocus),
     performanceWindows: normalizePerformanceWindows(item.performanceWindows),
     currentChapterIds: normalizeProgrammeIds(item.currentChapterIds).slice(0, CURRENT_CHAPTERS_MAX),
+    calendarFeeds: normalizeCalendarFeeds(item.calendarFeeds),
     // `accent`, `subjectPalette` et `subjectColors` ne sont pas recopiés :
     // lus (pour la migration ci-dessus), puis abandonnés.
   };

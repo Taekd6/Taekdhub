@@ -5,6 +5,8 @@ import { BriefingSetting } from "@/components/briefing/briefing-setting";
 import { CapacityForm } from "@/components/work/capacity-form";
 import { PerformanceWindowsForm } from "@/components/work/performance-windows-form";
 import { CaptureGuide } from "@/components/capture-guide";
+import { CalendarSettings } from "@/components/calendar/calendar-settings";
+import { RappelsGuide } from "@/components/rappels/rappels-guide";
 import { DataBackup } from "@/components/data-backup";
 import { DataHealth } from "@/components/data-health";
 import { PageHero } from "@/components/ui/page-hero";
@@ -31,6 +33,7 @@ export default function SettingsPage() {
       <AvatarPicker />
       <ThemePicker />
       <DataHealth />
+      <CalendarSettings />
       <PreferencesForm />
       <BriefingSetting />
       <PushSettings />
@@ -41,6 +44,7 @@ export default function SettingsPage() {
       {/* ── fin premier lancement ── */}
       {/* Compte et synchronisation — juste avant les sauvegardes, dont il est le prolongement. */}
       <AccountSection />
+      <RappelsGuide />
       <CaptureGuide />
       <DataBackup />
     </div>
