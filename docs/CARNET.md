@@ -446,6 +446,11 @@ tuiles pleines à filet d'un pixel, verre et halos coupés, rayons 18 px, étiqu
 palette ni aucun composant touché. Posée comme palette de l'élève dans ses préférences (Supabase) sur sa demande ; « Minuit » reste
 choisissable dans Réglages. Vérifié : tests, lint, `tsc`, build ; captures 1280 px sombre et clair (accueil, semaine).
 
+**Mission 21 (2026-10-27) — trois directions de couleur.** Commit `a500042`. L'élève n'aime pas « Studio » (« j'aime pas du tout les couleurs ») :
+sa palette repasse à « Minuit » dans ses préférences ; Studio reste choisissable. Ajout de « Finance » (marine + émeraude, esprit Finary), « Lime »
+(graphite + vert acide, esprit Linear) et « Glacier » (clair, bleu → violet, esprit Revolut), sans rien appliquer : planche de comparaison envoyée,
+choix de l'élève attendu. Recherche Hugging Face (Spaces « dashboard ui ») : rien d'exploitable (pages générées, sans licence claire).
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
 - Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un
