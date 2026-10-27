@@ -42,7 +42,7 @@
  * anti-flash qui les pose avant le premier rendu.
  */
 
-export type PaletteId = "aurora" | "sunset" | "ocean" | "neon" | "foret" | "framboise" | "braise" | "lavande";
+export type PaletteId = "aurora" | "sunset" | "ocean" | "neon" | "foret" | "framboise" | "braise" | "lavande" | "studio";
 
 export interface Palette {
   id: PaletteId;
@@ -198,6 +198,30 @@ export const PALETTES: Palette[] = [
     review: ["#8b5cf6", "#ec4899"],
     dl: ["#7c3aed", "#4f46e5", "#c026d3"],
   },
+  {
+    /*
+     * « STUDIO » (mission 20, 2026-10-27, demande de l'élève : « applique des
+     * templates GitHub, certains sont incroyables ») — d'après le gabarit
+     * Habit Tracker de Square UI (github.com/ln-dev7/square-ui, licence ln-dev
+     * UI : usage et modification autorisés). Un seul accent terre cuite, des
+     * neutres chauds, des tuiles PLEINES à filet fin (pas de verre ni de
+     * halos) : voir le bloc `[data-palette="studio"]` d'app/globals.css.
+     */
+    id: "studio",
+    label: "Studio",
+    c1: "#d97757",
+    c2: "#e8a07f",
+    ink: "#b4532f",
+    solid: ["#a8482a", "#b4532f"],
+    cards: [
+      ["#c4623f", "#d97757"],
+      ["#8f5a3c", "#c4623f"],
+      ["#7a6a55", "#a78b6b"],
+      ["#b4532f", "#d9894f"],
+    ],
+    review: ["#c4623f", "#d9894f"],
+    dl: ["#c4623f", "#8f5a3c", "#a78b6b"],
+  },
 ];
 
 export const PALETTE_IDS: PaletteId[] = PALETTES.map((palette) => palette.id);
@@ -229,7 +253,7 @@ export function paletteById(id: PaletteId | string | undefined): Palette {
  * syntaxe récente (`?.`, `??`, étalement).
  */
 export function resolvePaletteId(raw: unknown): PaletteId {
-  const ids = ["aurora", "sunset", "ocean", "neon", "foret", "framboise", "braise", "lavande"];
+  const ids = ["aurora", "sunset", "ocean", "neon", "foret", "framboise", "braise", "lavande", "studio"];
   const prefs = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   if (typeof prefs.palette === "string" && ids.indexOf(prefs.palette) >= 0) return prefs.palette as PaletteId;
   const accent = typeof prefs.accent === "string" ? prefs.accent.trim().toLowerCase() : "";
