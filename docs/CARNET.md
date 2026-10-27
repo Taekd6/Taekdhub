@@ -451,6 +451,13 @@ sa palette repasse à « Minuit » dans ses préférences ; Studio reste choisis
 (graphite + vert acide, esprit Linear) et « Glacier » (clair, bleu → violet, esprit Revolut), sans rien appliquer : planche de comparaison envoyée,
 choix de l'élève attendu. Recherche Hugging Face (Spaces « dashboard ui ») : rien d'exploitable (pages générées, sans licence claire).
 
+**Mission 22 (2026-10-27) — « premium » : animation et image (demande de l'élève : « pas premium, pas d'animation, pas d'image »).**
+Commit `9288421`. `components/home/sky-hero.tsx` remplace la salutation de l'accueil : un ciel qui suit l'heure (aube 6-9 h, jour 9-17 h,
+crépuscule 17-20 h, nuit), dégradés animés, étoiles, lune ou soleil, relief et grain, en CSS pur (aucun fichier image : léger, hors ligne).
+Il porte la date, l'heure, « X/Y ce soir » et la prochaine épreuve. Widgets : cascade d'entrée (`.reveal`), `CountUp`, coche qui rebondit
+avec un anneau, carte d'épreuve flottante, point vivant « En ce moment ». `prefers-reduced-motion` respecté. Vérifié : tests, lint, `tsc`,
+captures 390 et 1280 px, GIF du parcours (cocher jusqu'à « Tout est prêt. »).
+
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.
 - Les propositions de suite dépendent de fiches saisies par l'élève : sans fiche ni annale, il reste à demander un
