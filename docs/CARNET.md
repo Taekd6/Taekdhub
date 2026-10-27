@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-25, commit de code `f9fe538` (mission 17, branche `claude/clever-meitner-elomfy` partie de `main` `65f5c06`, NON fusionné ni déployé).
+> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-27, commit de code `b34f989` (mission 18, branche `claude/mission-18-semaine` partie de `main` `b2b4bb7`, NON fusionnée ni déployée).
 > Les PR #28 à #31 sont FUSIONNÉES dans `main` ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
 > Branche de travail actuelle : `claude/clever-meitner-elomfy` (la PR #34, accueil « À faire », est fusionnée dans `main` : `65f5c06`). La PR #32 est fusionnée dans `main` (`718084b`). La PR #33 (missions 13 et 14) est FUSIONNÉE (`74a6d7c`) et déployée en production (déploiement `dpl_73ewod7zcU48zdTeHEyF3vjSPVJK`, READY).
 
@@ -399,6 +399,35 @@ vraies données, en mode sombre.
   faire, seulement quelles tâches de l'élève sont proches ; « erreurs notées » ne dit pas si elles sont corrigées (pas de date de retest) ; les
   exercices de fiches (locaux) et les annales ne sont pas dans ce bloc.
 - Livraison : À FUSIONNER ET DÉPLOYER SUR ACCORD EXPLICITE de l'élève (rien n'est poussé sur `main`).
+
+**Mission 18 (2026-10-27) — « Ma semaine », widgets, agendas et Rappels (demande de l'élève : « exactement » l'app Khallot ; style
+widgets Revolut/Finary ; emploi du temps relié à son agenda ; cocher dans Rappels = coché dans TaekdHub).** Commit `b34f989`.
+- `/semaine` (`components/week/*`, `lib/week-agenda.ts`, testé) : grille lundi → dimanche, 7 colonnes dès `md` (iPad), un jour à la fois
+  sur téléphone (sélecteur de jours). Cours lus dans les agendas ; tâches (`WorkItem`, jour = `plan.day` sinon `dueDate`, heure =
+  `plan.time` sinon `dueTime`) en dégradé, cochables d'un tap ; créneau vide → `TaskQuickAdd` (tâche planifiée à ce jour et cette heure).
+  Couleurs PAR NATURE (cours, TD/TP, DS rouge, khôlle orange), jamais par matière (décision « Nuit » respectée). Chiffres en tête :
+  agenda en journée (avant 18 h : le soir, l'agenda de l'élève porte ses propres créneaux de travail), tâches cochées, échéances de la
+  semaine, prochaine épreuve. Entrée « Ma semaine » dans la barre latérale ; l'onglet « Séances » de la barre du bas devient « Semaine »
+  (`/history` reste accessible).
+- Accueil en widgets (`components/home/widgets.tsx`) : CE SOIR (planifié aujourd'hui, ou dû aujourd'hui/demain sans plan ailleurs ;
+  les cochées du jour restent barrées ; tout coché → « Tout est prêt. »), PROCHAINE ÉPREUVE (agenda + échéances, « Préparation au DS »
+  ignorée), EN CE MOMENT / ENSUITE, MA SEMAINE (barres). Le bandeau de la semaine (`WeekStrip`) n'est plus appelé sur l'accueil.
+- Agendas (`lib/calendar.ts`, `app/api/calendar`, `hooks/use-calendar.ts`, testé) : préférence `calendarFeeds` (synchronisée avec les
+  préférences, aucune migration) ; seule l'ADRESSE iCal est stockée, jamais le contenu (cache local `prepahub:calendar-cache`, 21 jours,
+  non synchronisé). Hôtes en liste fermée (Google, iCloud, Outlook), redirections refusées, adresse en POST (jamais dans une URL),
+  masquée à l'affichage. Réglage dans Réglages → « Mes agendas » (l'adresse est testée avant d'être enregistrée). `ical.js` ajouté.
+- Rappels d'Apple (`lib/rappels.ts`, `lib/rappels-handler.ts`, `app/api/rappels`, testé) : un site ne peut pas écrire dans Rappels ;
+  un raccourci iOS de l'élève fait le pont, UNE requête par passage (POST des URL cochées → coche ici, renvoie à créer et à cocher).
+  Lien rappel ⇄ tâche = URL `<site>/echeances?t=<id>` (+ repère `[t:<id>]` dans les notes). Même jeton que la capture
+  (`CAPTURE_TOKEN` + `MCP_USER_ID`). Guide pas à pas dans Réglages → « Synchro avec Rappels ». `toggleWorkItemDone` pose `updatedAt`
+  dans les deux sens (une tâche rouverte ne se recoche plus à la fusion). Le store serveur de la capture est extrait dans
+  `lib/server-collection-store.ts` (partagé).
+- Côté Claude (hors dépôt) : tâche programmée « Exos des profs » (chaque soir 18 h 46) qui lit SEULEMENT les mails des professeurs de
+  maths et de physique, en tire les exos et consignes et prévient l'élève ; règle de l'élève : rien du contenu des mails n'est mémorisé.
+Vérifié : 100 fichiers de tests, 1579 réussis + 1 échec attendu antérieur, `tsc`, lint, build (polices Google simulées : réseau fermé
+dans la session) ; captures Chromium à 390, 820 et 1280 px, sombre et clair ; parcours au navigateur : cocher dans la semaine, ajouter une
+tâche, cocher dans « Ce soir » jusqu'à « Tout est prêt. ». Non vérifié : un vrai flux iCal Google (réseau fermé ; l'analyse est testée sur
+un extrait au format Google), le raccourci iOS sur l'iPhone de l'élève, `CAPTURE_TOKEN` présent en production.
 
 ## Anomalies connues, non corrigées
 - Fatigue définie de 3 façons ; le budget de l'agenda ignore les check-ins.

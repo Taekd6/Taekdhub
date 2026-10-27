@@ -729,6 +729,7 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
         "ankiDeckChapters",
         "avatarDataUrl",
         "briefingOnOpen",
+        "calendarFeeds",
         "capacityByWeekday",
         "colleChapters",
         "contestDate",

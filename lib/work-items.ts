@@ -159,6 +159,18 @@ export function completeWorkItem(items: WorkItem[], id: string, now: Date = new 
 }
 
 /**
+ * COCHER / DÉCOCHER d'un tap (« Ce soir », la semaine). `updatedAt` est posé
+ * dans les deux sens : sans lui, une tâche ROUVERTE porterait un horodatage
+ * plus ancien que sa version « terminé » sur un autre appareil, et la fusion
+ * (lib/sync/collections.ts) la recocherait.
+ */
+export function toggleWorkItemDone(items: WorkItem[], id: string, now: Date = new Date()): WorkItem[] {
+  const current = items.find((item) => item.id === id);
+  if (!current || current.status === "abandonné") return items;
+  return updateWorkItem(items, id, { status: current.status === "terminé" ? "à faire" : "terminé", updatedAt: now.toISOString() }, now);
+}
+
+/**
  * SUPPRESSION — par changement de statut, jamais par retrait de la liste.
  *
  * Voir `WorkItemStatus` (lib/storage.ts) : la fusion par identifiant de
