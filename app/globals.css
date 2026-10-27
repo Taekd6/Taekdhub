@@ -1954,3 +1954,55 @@
     transform: none !important;
   }
 }
+
+/* ── Mission 25 : projecteur, faisceau de bordure, tuiles de chapitres ──────
+   Idées reprises de Magic UI (MIT, magicui.design) : « MagicCard » et
+   « BorderBeam », réécrits en CSS pur (pas de dépendance d'animation).
+
+   .spot : un halo suit le pointeur sur la carte. Les variables --mx/--my sont
+   posées par components/ui/spotlight.tsx (un seul écouteur pour toute l'app).
+   Rien au toucher : sur iPad, le halo n'apparaît pas, la carte reste nette. */
+.spot { position: relative; }
+.spot::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  mix-blend-mode: screen;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, -200%), rgb(var(--accent-rgb) / 0.16), transparent 60%);
+  opacity: 0; transition: opacity .35s ease;
+}
+.spot:hover::after { opacity: 1; }
+
+/* .beam : un trait de lumière qui fait le tour de la bordure. */
+@property --beam { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.beam { position: relative; isolation: isolate; }
+.beam::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none; z-index: 2;
+  background: conic-gradient(from var(--beam), transparent 0 72%, var(--beam-a, #67e8f9) 82%, var(--beam-b, #a78bfa) 90%, transparent 96%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: beamSpin 6s linear infinite;
+}
+@keyframes beamSpin { to { --beam: 360deg; } }
+
+/* Tuiles de chapitres (/chapitres). */
+.chap-tile {
+  border-radius: 1.25rem; background: rgb(var(--ink-rgb) / 0.03);
+  border: 1px solid rgb(var(--line-rgb) / 1); transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s;
+}
+.chap-tile:hover { transform: translateY(-2px); border-color: rgb(var(--accent-rgb) / 0.4); }
+.chap-num {
+  font-variant-numeric: tabular-nums; letter-spacing: -.04em; line-height: 1;
+  background: linear-gradient(160deg, rgb(var(--ink-rgb) / 0.55), rgb(var(--ink-rgb) / 0.08));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.chap-current .chap-num { background-image: linear-gradient(160deg, #67e8f9, #a78bfa); }
+.pill-seg { height: 6px; border-radius: 999px; background: rgb(var(--ink-rgb) / 0.1); transition: background .4s; }
+.pill-seg-on { background: linear-gradient(90deg, #34d399, #67e8f9); }
+.sky-chapitres { --s1: #042f2e; --s2: #0f766e; --s3: #4338ca; --s4: #22d3ee; }
+.stagger > * { animation: staggerIn .55s cubic-bezier(.16,1,.3,1) both; animation-delay: calc(var(--i, 0) * 35ms); }
+@keyframes staggerIn { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .beam::before { animation: none; }
+  .stagger > * { animation: none; }
+  .chap-tile:hover { transform: none; }
+}

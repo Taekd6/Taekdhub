@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { BookOpen, Check } from "lucide-react";
-import { Illustration } from "@/components/ui/illustrations";
-import { PageHero } from "@/components/ui/page-hero";
-import { Section } from "@/components/ui/section";
+import { BookOpen, Check, Pin } from "lucide-react";
+import type { CSSProperties } from "react";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -38,9 +36,28 @@ export function ChaptersList() {
     savePreferences({ ...preferences, currentChapterIds: next });
   }
 
+  const totalCards = rows.reduce((sum, row) => sum + row.cartes, 0);
+  const label = `${SHORT_SUBJECT[subject] ?? subject} · ${year === 2 ? "Spé" : "Sup"}`;
+
   return (
-    <div className="mx-auto max-w-[56rem] space-y-8">
-      <PageHero title="Mes chapitres" lede="Cours, méthodes et erreurs, chapitre par chapitre. Marque « En cours » (3 au maximum) ce que le prof traite : c'est ce qu'« Aujourd'hui » te montre." illustration={<Illustration name="notes" size={56} />} />
+    <div className="mx-auto max-w-[64rem] space-y-6">
+      {/* ── Bandeau (mission 25) : même ciel vivant que l'accueil et la semaine ── */}
+      <header className="sky sky-chapitres reveal relative isolate overflow-hidden rounded-[var(--radius-tile)] text-white">
+        <div aria-hidden className="sky-layer sky-a" />
+        <div aria-hidden className="sky-layer sky-b" />
+        <div aria-hidden className="sky-grain" />
+        <div className="relative flex flex-col gap-5 p-5 sm:p-7">
+          <div>
+            <p className="text-[0.8125rem] font-bold uppercase tracking-[0.12em] text-white/75">Mes chapitres</p>
+            <h1 className="t-display mt-1">{label}</h1>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="sky-chip">{current.length}/{CURRENT_CHAPTERS_MAX} en cours</span>
+            {ready && <span className="sky-chip">{withContent} sur {rows.length} avec du contenu</span>}
+            {ready && totalCards > 0 && <span className="sky-chip">{totalCards} cartes Anki</span>}
+          </div>
+        </div>
+      </header>
 
       <div className="flex flex-wrap items-center gap-3">
         <SegmentedControl ariaLabel="Matière" value={subject} onChange={setSubject} options={PROGRAMME_SUBJECTS.map((entry) => ({ value: entry, label: SHORT_SUBJECT[entry] ?? entry }))} />
@@ -55,56 +72,64 @@ export function ChaptersList() {
         />
       </div>
 
-      <Section variant="panel" title={`${SHORT_SUBJECT[subject] ?? subject} · ${year === 2 ? "Spé" : "Sup"}`} description={ready ? `${withContent} chapitre${withContent > 1 ? "s" : ""} sur ${rows.length} avec du contenu` : undefined}>
-        {!ready ? (
-          <Skeleton className="h-48 w-full rounded-xl" />
-        ) : rows.length === 0 ? (
-          <p className="t-meta py-6 text-center">Aucun chapitre pour ce choix.</p>
-        ) : (
-          <ul className="divide-y divide-line">
-            {rows.map((row) => {
-              const isCurrent = current.includes(row.chapter.id);
-              const full = !isCurrent && current.length >= CURRENT_CHAPTERS_MAX;
-              return (
-                <li key={row.chapter.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <Link href={`/chapitre/${row.chapter.id}`} className="row-hover flex min-h-14 min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl px-2 py-3 sm:px-3">
-                    <span className="t-body min-w-0 flex-1 font-semibold">{row.chapter.title}</span>
-                    <span className="flex flex-wrap items-center gap-1.5">
-                      <Badge on={row.hasCourse} label="Cours" icon />
-                      <Badge on={row.methodes > 0} label={`Méthodes ${row.methodes}`} />
-                      <Badge on={row.erreurs > 0} label={`Erreurs ${row.erreurs}`} />
-                      {row.cartes > 0 && <Badge on label={`Cartes ${row.cartes}`} />}
+      {!ready ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }, (_, index) => (
+            <Skeleton key={index} className="h-40 w-full rounded-[1.25rem]" />
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <p className="t-meta py-6 text-center">Aucun chapitre pour ce choix.</p>
+      ) : (
+        <ul key={`${subject}-${year}`} className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {rows.map((row, index) => {
+            const isCurrent = current.includes(row.chapter.id);
+            const full = !isCurrent && current.length >= CURRENT_CHAPTERS_MAX;
+            const pillars = [
+              { on: row.hasCourse, label: "Cours" },
+              { on: row.methodes > 0, label: "Méthodes" },
+              { on: row.erreurs > 0, label: "Erreurs" },
+              { on: row.cartes > 0, label: "Cartes" },
+            ];
+            const filled = pillars.filter((pillar) => pillar.on).length;
+            return (
+              <li key={row.chapter.id} style={{ "--i": index } as CSSProperties} className={cn("chap-tile spot relative flex min-h-40 flex-col", isCurrent && "chap-current beam")}>
+                <Link href={`/chapitre/${row.chapter.id}`} className="flex flex-1 flex-col gap-3 rounded-[inherit] p-4 sm:p-5" aria-label={`${row.chapter.title}${isCurrent ? " (en cours)" : ""}`}>
+                  <span aria-hidden className="chap-num t-display">{String(index + 1).padStart(2, "0")}</span>
+                  <span className="t-body pr-12 font-bold leading-snug">{row.chapter.title}</span>
+                  <span className="mt-auto flex flex-col gap-1.5">
+                    <span className="grid grid-cols-4 gap-1" aria-hidden>
+                      {pillars.map((pillar) => (
+                        <span key={pillar.label} className={cn("pill-seg", pillar.on && "pill-seg-on")} />
+                      ))}
                     </span>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => toggleCurrent(row.chapter.id)}
-                    disabled={full}
-                    aria-pressed={isCurrent}
-                    title={full ? `${CURRENT_CHAPTERS_MAX} chapitres en cours au maximum : retires-en un d'abord` : undefined}
-                    className={cn("press inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-xs font-semibold disabled:opacity-40", isCurrent ? "bg-accent/[0.14] text-accent" : "bg-inset text-muted hover:text-ink")}
-                  >
-                    {isCurrent ? "En cours ✓" : "En cours"}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Section>
+                    <span className="t-meta">
+                      {filled === 0
+                        ? "Rien de rangé pour l'instant"
+                        : [row.hasCourse && "cours", row.methodes > 0 && `${row.methodes} méthode${row.methodes > 1 ? "s" : ""}`, row.erreurs > 0 && `${row.erreurs} erreur${row.erreurs > 1 ? "s" : ""}`, row.cartes > 0 && `${row.cartes} cartes`].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => toggleCurrent(row.chapter.id)}
+                  disabled={full}
+                  aria-pressed={isCurrent}
+                  aria-label={isCurrent ? `Retirer « ${row.chapter.title} » des chapitres en cours` : `Marquer « ${row.chapter.title} » en cours`}
+                  title={full ? `${CURRENT_CHAPTERS_MAX} chapitres en cours au maximum : retires-en un d'abord` : isCurrent ? "En cours" : "Marquer en cours"}
+                  className={cn("press absolute right-3 top-3 grid h-11 w-11 place-items-center rounded-full transition-colors disabled:opacity-30", isCurrent ? "bg-accent/[0.18] text-accent" : "bg-inset text-subtle hover:text-ink")}
+                >
+                  {isCurrent ? <Check size={18} aria-hidden /> : <Pin size={16} aria-hidden />}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       <p className="t-meta flex items-center gap-2">
-        <BookOpen size={14} aria-hidden /> Pour ajouter du contenu : envoie ton cours, tes méthodes ou tes erreurs à Claude dans la conversation, il les range ici.
+        <BookOpen size={14} aria-hidden /> Épingle (3 au maximum) les chapitres que le prof traite : c&apos;est ce qu&apos;« Aujourd&apos;hui » te montre. Pour ranger du contenu, envoie-le à Claude dans la conversation.
       </p>
     </div>
-  );
-}
-
-function Badge({ on, label, icon = false }: { on: boolean; label: string; icon?: boolean }) {
-  return (
-    <span className={cn("inline-flex min-h-7 items-center gap-1 rounded-full px-2.5 text-2xs font-semibold", on ? "bg-emerald-400/[0.16] text-emerald-300" : "bg-inset text-subtle")}>
-      {icon && on && <Check size={12} aria-hidden />}
-      {label}
-    </span>
   );
 }

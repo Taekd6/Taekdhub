@@ -75,7 +75,7 @@ export function EveningWidget({ workItems, saveWorkItems, now, className }: { wo
   }
 
   return (
-    <section aria-labelledby="ce-soir" className={cn("surface lift reveal relative overflow-hidden p-5 sm:p-6", className)} style={{ "--i": 1 } as CSSProperties}>
+    <section aria-labelledby="ce-soir" className={cn("surface lift reveal spot relative overflow-hidden p-5 sm:p-6", className)} style={{ "--i": 1 } as CSSProperties}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="t-label">{evening ? "Ce soir" : "Aujourd'hui"}</p>
@@ -217,7 +217,7 @@ export function NowWidget({ events, hasFeeds, now, className }: { events: Calend
   const progress = status === "en cours" ? Math.min(100, Math.max(0, ((now.getTime() - start) / (end - start)) * 100)) : 0;
   const minutesLeft = Math.round(((status === "en cours" ? end : start) - now.getTime()) / 60000);
   return (
-    <Link href="/semaine" className={cn("surface lift reveal flex min-w-0 flex-col gap-2 p-4 sm:p-5", className)} style={{ "--i": 3 } as CSSProperties}>
+    <Link href="/semaine" className={cn("surface lift reveal spot flex min-w-0 flex-col gap-2 p-4 sm:p-5", status === "en cours" && "beam", className)} style={{ "--i": 3 } as CSSProperties}>
       <div className="flex flex-wrap items-center justify-between gap-1">
         <p className="t-label inline-flex items-center gap-2">
           {status === "en cours" && <span aria-hidden className="live-dot" />}
@@ -259,7 +259,7 @@ export function WeekWidget({ columns, now, className }: { columns: DayColumn[]; 
   const totalTasks = load.reduce((sum, day) => sum + day.taskCount, 0);
   const doneTasks = load.reduce((sum, day) => sum + day.doneCount, 0);
   return (
-    <Link href="/semaine" className={cn("surface lift reveal block p-5 sm:p-6", className)} style={{ "--i": 4 } as CSSProperties} aria-label="Ouvrir ma semaine">
+    <Link href="/semaine" className={cn("surface lift reveal spot block p-5 sm:p-6", className)} style={{ "--i": 4 } as CSSProperties} aria-label="Ouvrir ma semaine">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="t-label">Ma semaine</p>
