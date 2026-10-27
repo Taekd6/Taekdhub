@@ -49,6 +49,15 @@ export function WeekScreen() {
 
 
   const [openId, setOpenId] = useState<string | null>(null);
+  const weekTasks = useMemo(() => {
+    let total = 0;
+    let done = 0;
+    for (const column of columns) {
+      for (const block of column.blocks) if (block.kind === "tache") { total += 1; if (block.done) done += 1; }
+      for (const item of column.untimed) { total += 1; if (item.status === "terminé") done += 1; }
+    }
+    return { total, done };
+  }, [columns]);
   const toggle = (id: string) => saveWorkItems(toggleWorkItemDone(workItems, id));
   const open = (id: string) => setOpenId(id);
   const openSlot = (day: string, minute: number) => setSlot({ day, time: `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}` });
@@ -66,27 +75,46 @@ export function WeekScreen() {
 
   return (
     <div className="mx-auto max-w-[76rem]">
-      {/* ── En-tête ── */}
-      <header className="reveal mb-5 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="t-meta">{offset === 0 ? "Cette semaine" : offset === 1 ? "La semaine prochaine" : offset === -1 ? "La semaine dernière" : "Semaine"}</p>
-          <h1 className="t-display">
-            {RANGE_FMT.format(monday)} – {RANGE_FMT.format(addDays(monday, 6))}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" size="icon" aria-label="Semaine précédente" onClick={() => setOffset((value) => value - 1)}>
-            <ChevronLeft size={18} aria-hidden />
-          </Button>
-          <Button variant="secondary" size="sm" onClick={() => setOffset(0)} disabled={offset === 0}>
-            Aujourd&apos;hui
-          </Button>
-          <Button variant="secondary" size="icon" aria-label="Semaine suivante" onClick={() => setOffset((value) => value + 1)}>
-            <ChevronRight size={18} aria-hidden />
-          </Button>
-          <Button size="sm" onClick={() => openSlot(columns[dayIndex].day, columns[dayIndex].day === localDay(now) ? Math.min(23 * 60, Math.max(18 * 60, Math.ceil((now.getHours() * 60 + now.getMinutes()) / 30) * 30)) : 18 * 60)}>
-            <CalendarPlus size={16} aria-hidden /> Tâche
-          </Button>
+      {/* ── En-tête : un bandeau vivant, comme le ciel de l'accueil (mission 24) ── */}
+      <header className="sky sky-semaine reveal relative isolate mb-5 overflow-hidden rounded-[var(--radius-tile)] text-white">
+        <div aria-hidden className="sky-layer sky-a" />
+        <div aria-hidden className="sky-layer sky-b" />
+        <div aria-hidden className="sky-grain" />
+        <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-7">
+          <div className="min-w-0">
+            <p className="text-[0.8125rem] font-bold uppercase tracking-[0.12em] text-white/75">{offset === 0 ? "Cette semaine" : offset === 1 ? "La semaine prochaine" : offset === -1 ? "La semaine dernière" : "Semaine"}</p>
+            <h1 className="t-display mt-1">
+              {RANGE_FMT.format(monday)} – {RANGE_FMT.format(addDays(monday, 6))}
+            </h1>
+            {weekTasks.total > 0 && (
+              <div className="mt-3 flex items-center gap-3">
+                <span className="relative h-2 w-40 overflow-hidden rounded-full bg-white/25">
+                  <span className="absolute inset-y-0 left-0 rounded-full bg-white transition-[width] duration-700" style={{ width: `${Math.round((weekTasks.done / weekTasks.total) * 100)}%` }} />
+                </span>
+                <span className="text-[0.875rem] font-bold text-white/90">
+                  {weekTasks.done}/{weekTasks.total} tâches cochées
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" className="sky-chip press !p-0 h-10 w-10 justify-center" aria-label="Semaine précédente" onClick={() => setOffset((value) => value - 1)}>
+              <ChevronLeft size={18} aria-hidden />
+            </button>
+            <button type="button" className="sky-chip press h-10 disabled:opacity-50" onClick={() => setOffset(0)} disabled={offset === 0}>
+              Aujourd&apos;hui
+            </button>
+            <button type="button" className="sky-chip press !p-0 h-10 w-10 justify-center" aria-label="Semaine suivante" onClick={() => setOffset((value) => value + 1)}>
+              <ChevronRight size={18} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="press inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-[0.875rem] font-bold text-[#1e1b4b] [box-shadow:0_10px_24px_-10px_rgba(15,23,42,.6)]"
+              onClick={() => openSlot(columns[dayIndex].day, columns[dayIndex].day === localDay(now) ? Math.min(23 * 60, Math.max(18 * 60, Math.ceil((now.getHours() * 60 + now.getMinutes()) / 30) * 30)) : 18 * 60)}
+            >
+              <CalendarPlus size={16} aria-hidden /> Tâche
+            </button>
+          </div>
         </div>
       </header>
 
@@ -101,7 +129,7 @@ export function WeekScreen() {
           </Link>
         </div>
       )}
-      {calendar.errors.length > 0 && (
+      {calendar.errors.length > 0 && calendar.events.length === 0 && (
         <div role="status" className="reveal mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-amber-400/10 px-4 py-3 text-[0.875rem] font-semibold text-amber-300">
           <span>{calendar.errors.map((error) => `${error.label} : ${error.message}`).join(" · ")}</span>
           <Button variant="ghost" size="sm" onClick={calendar.refresh}>

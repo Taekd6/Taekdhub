@@ -1723,6 +1723,7 @@
 .sky-jour { --s1: #0369a1; --s2: #2563eb; --s3: #38bdf8; --s4: #a5f3fc; }
 .sky-crepuscule { --s1: #1e1b4b; --s2: #7c3aed; --s3: #db2777; --s4: #fb923c; }
 .sky-nuit { --s1: #020617; --s2: #1e1b4b; --s3: #0f766e; --s4: #6366f1; }
+.sky-semaine { --s1: #1e1b4b; --s2: #4338ca; --s3: #0891b2; --s4: #a78bfa; }
 .sky-layer {
   position: absolute;
   inset: -40%;
@@ -1865,6 +1866,69 @@
   .tick-on::after,
   .live-dot::after {
     animation: none;
+  }
+}
+
+
+/* MISSION 24 — transitions de page, étoile filante, fête de fin de soirée. */
+.page-in {
+  animation: pageIn 0.55s var(--ease-out) both;
+}
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(10px); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+.sky-shooting {
+  position: absolute;
+  top: 12%;
+  left: 60%;
+  width: 140px;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.95), transparent);
+  transform: rotate(-20deg) translateX(0);
+  opacity: 0;
+  animation: shooting 9s ease-in 3s infinite;
+}
+@keyframes shooting {
+  0%, 88% { opacity: 0; transform: rotate(-20deg) translateX(0); }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(-20deg) translateX(-420px); }
+}
+.sky-cloud {
+  position: absolute;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.55);
+  filter: blur(14px);
+  animation: cloudDrift 40s linear infinite;
+}
+@keyframes cloudDrift {
+  from { transform: translateX(-30%); }
+  to { transform: translateX(130%); }
+}
+.confetti {
+  position: absolute;
+  top: -10px;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confettiFall 1.6s cubic-bezier(.2,.7,.4,1) forwards;
+}
+@keyframes confettiFall {
+  0% { opacity: 1; transform: translate3d(0, 0, 0) rotate(0deg); }
+  100% { opacity: 0; transform: translate3d(var(--dx), 260px, 0) rotate(var(--rot)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-in,
+  .sky-shooting,
+  .sky-cloud,
+  .confetti {
+    animation: none;
+  }
+  .sky-shooting,
+  .confetti {
+    display: none;
   }
 }
 

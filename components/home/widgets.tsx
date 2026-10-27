@@ -29,6 +29,22 @@ const timeOf = (iso: string) => {
 
 /* ── CE SOIR ─────────────────────────────────────────────────────────── */
 
+/** Confettis, une fois, quand la dernière case de la soirée est cochée. */
+const CONFETTI_COLORS = ["var(--g1)", "var(--g2)", "#fbbf24", "#f472b6", "#34d399"];
+function Confetti() {
+  const pieces = Array.from({ length: 34 }, (_, i) => {
+    const r = (n: number) => ((Math.sin(i * 91.7 + n * 13.1) * 1000) % 1 + 1) % 1;
+    return { left: `${r(1) * 100}%`, dx: `${(r(2) - 0.5) * 160}px`, rot: `${(r(3) - 0.5) * 720}deg`, delay: `${r(4) * 0.25}s`, color: CONFETTI_COLORS[i % CONFETTI_COLORS.length] };
+  });
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-full overflow-hidden">
+      {pieces.map((piece, index) => (
+        <span key={index} className="confetti" style={{ left: piece.left, background: piece.color, animationDelay: piece.delay, "--dx": piece.dx, "--rot": piece.rot } as CSSProperties} />
+      ))}
+    </div>
+  );
+}
+
 export function EveningWidget({ workItems, saveWorkItems, now, className }: { workItems: WorkItem[]; saveWorkItems: (items: WorkItem[]) => void; now: Date; className?: string }) {
   const entries = useMemo(() => eveningList(workItems, now), [workItems, now]);
   const [title, setTitle] = useState("");
@@ -40,6 +56,12 @@ export function EveningWidget({ workItems, saveWorkItems, now, className }: { wo
   const allDone = total > 0 && done === total;
   const next = entries.find((entry) => !entry.done);
   const evening = now.getHours() >= 17;
+  // La fête n'a lieu qu'au moment où l'on coche la DERNIÈRE case, pas à chaque ouverture.
+  const [party, setParty] = useState(0);
+  function toggle(id: string, wasDone: boolean) {
+    saveWorkItems(toggleWorkItemDone(workItems, id, new Date()));
+    if (!wasDone && total > 0 && done === total - 1) setParty((value) => value + 1);
+  }
 
   function add(event: React.FormEvent) {
     event.preventDefault();
@@ -97,7 +119,7 @@ export function EveningWidget({ workItems, saveWorkItems, now, className }: { wo
               </button>
               <button
                 type="button"
-                onClick={() => saveWorkItems(toggleWorkItemDone(workItems, entry.item.id, new Date()))}
+                onClick={() => toggle(entry.item.id, entry.done)}
                 aria-pressed={entry.done}
                 aria-label={`${entry.done ? "Rouvrir" : "Terminé"} : ${entry.item.title}`}
                 className={cn("tick press grid h-9 w-9 shrink-0 place-items-center rounded-full max-lg:h-11 max-lg:w-11", entry.done && "tick-on")}
@@ -109,6 +131,7 @@ export function EveningWidget({ workItems, saveWorkItems, now, className }: { wo
         </ol>
       )}
 
+      {party > 0 && <Confetti key={party} />}
       <TaskDetail item={openId ? (workItems.find((item) => item.id === openId) ?? null) : null} workItems={workItems} saveWorkItems={saveWorkItems} onClose={() => setOpenId(null)} />
 
       {adding ? (

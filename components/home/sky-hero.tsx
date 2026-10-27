@@ -63,6 +63,13 @@ export function SkyHero({ name, examLabel, done, total, className }: { name?: st
           ))}
         </div>
       )}
+      {phase === "nuit" && <span aria-hidden className="sky-shooting" />}
+      {!night && (
+        <>
+          <span aria-hidden className="sky-cloud" style={{ top: "22%", width: 160, height: 34 }} />
+          <span aria-hidden className="sky-cloud" style={{ top: "48%", width: 220, height: 40, animationDuration: "55s", animationDelay: "-20s" }} />
+        </>
+      )}
       <div aria-hidden className={cn("sky-orb", night ? "sky-moon" : "sky-sun")} />
       <div aria-hidden className="sky-hills" />
       <div aria-hidden className="sky-grain" />
