@@ -529,3 +529,22 @@ Aucune lancée. Candidats, chacun à proposer avec son périmètre, accord requi
 - lib/vacances.ts : vacances et jours fériés 2026-2027 relevés dans l'agenda du Cahier de Prépa (mp-pascal). Ces jours-là, les cours de l'emploi du temps disparaissent (semaine, accueil) ; restent les tâches, le perso, les créneaux du soir (dès 18 h 30) et du dimanche, que l'élève pose lui-même pour réviser. Filtre appliqué dans hooks/use-calendar.ts. Tests : lib/vacances.test.ts (indépendants du fuseau).
 - Réglages : à l'écran, apparence, agendas, compte, Rappels ; le reste dans « Réglages avancés », replié. Rien de supprimé.
 - Vérifié : vitest 1581 ok, tsc, eslint, captures.
+
+## Mission 27 — session de travail en cycles (e52d2a3)
+Demande de l'élève (2026-10-27, minuit) : « un chrono 50 min / pause, qui s'enchaîne tout seul, que chaque session aboutisse à quelque chose,
+et qu'on puisse le lancer depuis la montre » ; code fait la nuit, déploiement autorisé explicitement par l'élève (« toutes les autorisations »).
+- lib/focus-session.ts (testé) : phases calculées depuis l'heure de début (rien ne tourne en arrière-plan : verrouillage, rechargement sans effet),
+  pas de pause après le dernier cycle, objectifs proposés (liste « Ce soir », puis le travail ouvert le plus urgent), alertes de fin de phase.
+- /session (components/focus/focus-session.tsx) : 1) « Qu'est-ce que tu vas finir ? » (propositions ou texte libre), rythme 25-60 / 5-15 / 1-4 cycles
+  (défaut 50/10 ×2, mémorisé) ; 2) anneau, phase, temps restant, objectif ; bascule = bip Web Audio + vibration + notification si la page vit ;
+  « Reprendre maintenant » pendant la pause ; écran gardé allumé (Wake Lock) ; 3) « Objectif atteint ? » : enregistre une WorkSession (temps de travail
+  seul), « Oui » coche la tâche (donc le rappel via la synchro Rappels), « Pas encore » la passe « en cours » ; victoires du jour (localStorage).
+- /api/session (lib/focus-handler.ts, testé) : même porte que /api/rappels (CAPTURE_TOKEN + MCP_USER_ID), LECTURE SEULE. GET → objectifs + choix ;
+  POST { objectif, cycles?, travail?, pause? } → horaire, alertes { titre, heure, date ISO locale, url } (la dernière porte l'URL de la tâche) et lien
+  `/session?objectif=…&debut=…` qui reprend la même session dans la page.
+- Navigation : onglet « Session » (5 onglets en bas, barre latérale).
+Raccourci iOS « Start session » (hors dépôt, à monter par l'élève) : GET /api/session → « Choisir dans la liste » → POST → un rappel à l'heure de chaque
+alerte dans une liste « Session » (ce sont eux qui font vibrer la montre, iPhone verrouillé) → focus Work. Une page web ne peut pas notifier de façon fiable
+téléphone verrouillé sans serveur à la minute (le cron n'est qu'horaire).
+Vérifié : vitest 1595 ok + 1 échec attendu, tsc, eslint, build (polices simulées), parcours Chromium 390 px sombre (choix → cycle → pause depuis le lien
+du raccourci → « Objectif atteint ? » → victoire). Non vérifié : le raccourci sur l'iPhone, les notifications iOS réelles.
