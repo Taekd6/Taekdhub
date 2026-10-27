@@ -12,6 +12,7 @@ import { addDays, buildWeek, hourRange, localDay, mondayOf, type DayColumn } fro
 import { toggleWorkItemDone } from "@/lib/work-items";
 import { TaskQuickAdd } from "@/components/week/task-quick-add";
 import { WeekTimeline } from "@/components/week/week-timeline";
+import { TaskDetail } from "@/components/week/task-detail";
 
 const RANGE_FMT = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
 const DAY_FMT = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
@@ -47,7 +48,9 @@ export function WeekScreen() {
   const [slot, setSlot] = useState<{ day: string; time: string | null } | null>(null);
 
 
+  const [openId, setOpenId] = useState<string | null>(null);
   const toggle = (id: string) => saveWorkItems(toggleWorkItemDone(workItems, id));
+  const open = (id: string) => setOpenId(id);
   const openSlot = (day: string, minute: number) => setSlot({ day, time: `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}` });
 
   if (!ready) {
@@ -127,12 +130,12 @@ export function WeekScreen() {
         </div>
         <p className="t-body mb-2 font-bold capitalize">{DAY_FMT.format(columns[dayIndex].date)}</p>
         <Untimed column={columns[dayIndex]} onToggle={toggle} />
-        <WeekTimeline hideHeader columns={[columns[dayIndex]]} range={range} now={now} onToggleTask={toggle} onSlot={openSlot} />
+        <WeekTimeline hideHeader columns={[columns[dayIndex]]} range={range} now={now} onToggleTask={open} onSlot={openSlot} />
       </div>
 
       {/* ── iPad et ordinateur : la semaine ── */}
       <div className="hidden md:block">
-        <WeekTimeline columns={columns} range={range} now={now} onToggleTask={toggle} onSlot={openSlot} />
+        <WeekTimeline columns={columns} range={range} now={now} onToggleTask={open} onSlot={openSlot} />
         {columns.some((column) => column.untimed.length > 0) && (
           <section className="surface mt-5 p-5" aria-label="Sans heure cette semaine">
             <h2 className="t-heading mb-3">Sans heure cette semaine</h2>
@@ -147,6 +150,7 @@ export function WeekScreen() {
         {calendar.loading ? "Je relis tes agendas…" : calendar.stale ? "Copie hors ligne de tes agendas." : "Touche un créneau vide pour y poser une tâche ; touche une tâche pour la cocher."}
       </p>
 
+      <TaskDetail item={openId ? (workItems.find((item) => item.id === openId) ?? null) : null} workItems={workItems} saveWorkItems={saveWorkItems} onClose={() => setOpenId(null)} />
       <TaskQuickAdd open={slot !== null} day={slot?.day ?? localDay(now)} time={slot?.time ?? null} onClose={() => setSlot(null)} onAdd={(item) => saveWorkItems([item, ...workItems])} />
     </div>
   );

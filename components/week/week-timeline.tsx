@@ -151,7 +151,7 @@ function Block({ block, top, height, onToggleTask }: { block: AgendaBlock & { la
   const className = cn("blk absolute overflow-hidden px-1.5 py-1 text-left", `blk-${block.kind}`, block.done && "blk-done");
   if (block.kind === "tache" && block.workItemId) {
     return (
-      <button type="button" className={cn(className, "press")} style={style} onClick={() => onToggleTask(block.workItemId!)} aria-label={`${block.done ? "Rouvrir" : "Terminé"} : ${block.title}`} aria-pressed={block.done}>
+      <button type="button" className={cn(className, "press")} style={style} onClick={() => onToggleTask(block.workItemId!)} aria-label={`Ouvrir : ${block.title}`}>
         {body}
       </button>
     );

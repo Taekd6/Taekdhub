@@ -14,6 +14,7 @@ import type { CalendarEvent } from "@/lib/calendar";
 import type { WorkItem } from "@/lib/storage";
 import { currentOrNext, eveningList, formatHm, localDay, nextExam, weekLoad, type DayColumn } from "@/lib/week-agenda";
 import { createWorkItem, toggleWorkItemDone } from "@/lib/work-items";
+import { TaskDetail } from "@/components/week/task-detail";
 
 /**
  * LES WIDGETS DE L'ACCUEIL (mission 18) — façon Revolut / Finary : une
@@ -33,6 +34,7 @@ export function EveningWidget({ workItems, saveWorkItems, now, className }: { wo
   const [title, setTitle] = useState("");
   const [time, setTime] = useState("");
   const [adding, setAdding] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
   const done = entries.filter((entry) => entry.done).length;
   const total = entries.length;
   const allDone = total > 0 && done === total;
@@ -87,12 +89,12 @@ export function EveningWidget({ workItems, saveWorkItems, now, className }: { wo
             <li key={entry.item.id} className="row-slide flex min-h-12 items-center gap-3 rounded-2xl px-1" style={{ "--i": index } as CSSProperties}>
               <span className="tabular w-11 shrink-0 text-right text-[0.8125rem] font-bold text-muted">{entry.time !== null ? formatHm(entry.time) : "—"}</span>
               <span aria-hidden className={cn("h-8 w-[3px] shrink-0 rounded-full", entry.done ? "bg-[rgb(var(--hairline-rgb)/0.15)]" : "bg-[linear-gradient(var(--g1),var(--g2))]")} />
-              <div className="min-w-0 flex-1">
+              <button type="button" onClick={() => setOpenId(entry.item.id)} className="press min-w-0 flex-1 rounded-xl text-left" aria-label={`Ouvrir : ${entry.item.title}`}>
                 <p className={cn("t-body truncate font-bold", entry.done && "text-muted line-through decoration-2")}>{entry.item.title}</p>
                 <p className="t-meta truncate">
-                  {[entry.item.subject, entry.reason === "demain" ? "pour demain" : entry.reason === "aujourdhui" ? "pour aujourd'hui" : null].filter(Boolean).join(" · ") || " "}
+                  {[entry.item.subject, entry.reason === "demain" ? "pour demain" : entry.reason === "aujourdhui" ? "pour aujourd'hui" : null, entry.item.note ? "contenu prêt" : null].filter(Boolean).join(" · ") || " "}
                 </p>
-              </div>
+              </button>
               <button
                 type="button"
                 onClick={() => saveWorkItems(toggleWorkItemDone(workItems, entry.item.id, new Date()))}
@@ -106,6 +108,8 @@ export function EveningWidget({ workItems, saveWorkItems, now, className }: { wo
           ))}
         </ol>
       )}
+
+      <TaskDetail item={openId ? (workItems.find((item) => item.id === openId) ?? null) : null} workItems={workItems} saveWorkItems={saveWorkItems} onClose={() => setOpenId(null)} />
 
       {adding ? (
         <form onSubmit={add} className="mt-4 flex flex-wrap items-center gap-2">

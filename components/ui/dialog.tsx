@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * DIALOGUE — une décision qui ne peut pas attendre (et il y en a peu).
@@ -45,7 +46,10 @@ export function Dialog({
 
   if (!open) return null;
 
-  return (
+  /* Rendu dans <body> (portail) : posé dans une carte animée (`transform`,
+     `filter`) ou à `overflow: hidden`, un `position: fixed` serait sinon
+     enfermé dans la carte (mission 23). */
+  const dialog = (
     <div className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center sm:p-6">
       <div onClick={dismissible ? onClose : undefined} className="animate-fade-in absolute inset-0 bg-black/30 backdrop-blur-[6px]" />
       <div
@@ -62,4 +66,5 @@ export function Dialog({
       </div>
     </div>
   );
+  return typeof document === "undefined" ? dialog : createPortal(dialog, document.body);
 }
