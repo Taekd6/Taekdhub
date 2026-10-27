@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
-import { Home, Library, Settings, CalendarRange } from "lucide-react";
+import { Home, Library, Settings, CalendarRange, Timer } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -34,6 +34,7 @@ import { cn } from "@/lib/cn";
 const DESTINATIONS = [
   { href: "/dashboard", label: "Aujourd'hui", short: "Aujourd'hui", icon: Home },
   { href: "/semaine", label: "Semaine", short: "Semaine", icon: CalendarRange },
+  { href: "/session", label: "Session", short: "Session", icon: Timer },
   { href: "/chapitres", label: "Chapitres", short: "Chapitres", icon: Library },
   { href: "/settings", label: "Réglages", short: "Réglages", icon: Settings },
 ];
@@ -48,6 +49,7 @@ const DESTINATIONS = [
 const SIDEBAR = [
   { href: "/dashboard", label: "Aujourd'hui", icon: Home },
   { href: "/semaine", label: "Ma semaine", icon: CalendarRange },
+  { href: "/session", label: "Session", icon: Timer },
   { href: "/chapitres", label: "Mes chapitres", icon: Library },
 ];
 
@@ -178,7 +180,7 @@ export function AppNav() {
           L'onglet actif est posé sur une pastille teintée. */}
       <nav
         aria-label="Sections"
-        className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-4 rounded-[2rem] px-1.5 py-1 lg:hidden print:hidden"
+        className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-[2rem] px-1.5 py-1 lg:hidden print:hidden"
       >
         {DESTINATIONS.map((destination) => {
           const { href, short, icon: Icon } = destination;
