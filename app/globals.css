@@ -1705,6 +1705,170 @@
 }
 
 
+/* ═══════════════════════════════════════════════════════════════════
+   MISSION 22 — LE CIEL DE L'ACCUEIL (components/home/sky-hero.tsx) et le
+   mouvement des widgets. Des dégradés qui dérivent, des étoiles qui
+   scintillent, un astre qui flotte, un relief en silhouette et un grain
+   fin : une « image » vivante sans aucun fichier à charger.
+   ═══════════════════════════════════════════════════════════════════ */
+.sky {
+  --s1: #1e1b4b;
+  --s2: #312e81;
+  --s3: #0e7490;
+  --s4: #f472b6;
+  background: linear-gradient(160deg, var(--s1), var(--s2) 55%, var(--s3));
+  box-shadow: 0 24px 60px -24px rgb(var(--g1-rgb) / 0.55);
+}
+.sky-aube { --s1: #312e81; --s2: #be185d; --s3: #fb923c; --s4: #fde68a; }
+.sky-jour { --s1: #0369a1; --s2: #2563eb; --s3: #38bdf8; --s4: #a5f3fc; }
+.sky-crepuscule { --s1: #1e1b4b; --s2: #7c3aed; --s3: #db2777; --s4: #fb923c; }
+.sky-nuit { --s1: #020617; --s2: #1e1b4b; --s3: #0f766e; --s4: #6366f1; }
+.sky-layer {
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.75;
+  animation: skyDrift 22s ease-in-out infinite alternate;
+}
+.sky-a { background: radial-gradient(40% 40% at 25% 30%, var(--s4), transparent 70%); }
+.sky-b { background: radial-gradient(35% 35% at 75% 60%, var(--s3), transparent 70%); animation-duration: 28s; animation-direction: alternate-reverse; }
+.sky-c { background: radial-gradient(30% 30% at 55% 15%, var(--s2), transparent 70%); animation-duration: 34s; }
+@keyframes skyDrift {
+  0% { transform: translate3d(-4%, -3%, 0) rotate(0deg) scale(1); }
+  50% { transform: translate3d(5%, 4%, 0) rotate(8deg) scale(1.08); }
+  100% { transform: translate3d(-2%, 6%, 0) rotate(-6deg) scale(1.02); }
+}
+.sky-star {
+  position: absolute;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 6px rgb(255 255 255 / 0.8);
+  animation: twinkle 4.5s ease-in-out infinite;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.sky-orb {
+  position: absolute;
+  right: 6%;
+  top: 30%;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 9999px;
+  animation: orbFloat 9s ease-in-out infinite;
+}
+.sky-sun {
+  background: radial-gradient(circle at 40% 40%, #fff7d6, #fde68a 45%, #fb923c 100%);
+  box-shadow: 0 0 60px 20px rgb(253 230 138 / 0.45), 0 0 140px 60px rgb(251 146 60 / 0.25);
+}
+.sky-moon {
+  background: radial-gradient(circle at 35% 35%, #ffffff, #e0e7ff 55%, #a5b4fc 100%);
+  box-shadow: 0 0 50px 14px rgb(199 210 254 / 0.35), inset -14px -10px 0 0 rgb(99 102 241 / 0.25);
+}
+@media (min-width: 640px) {
+  .sky-orb {
+    right: 9%;
+    top: 18%;
+    width: 6.5rem;
+    height: 6.5rem;
+  }
+}
+@keyframes orbFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.sky-hills {
+  position: absolute;
+  inset: auto -5% -1px -5%;
+  height: 42%;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 90% at 20% 100%, rgb(2 6 23 / 0.55), transparent 70%),
+    radial-gradient(55% 80% at 80% 100%, rgb(2 6 23 / 0.45), transparent 70%);
+}
+.sky-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.14;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.sky-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  background: rgb(255 255 255 / 0.16);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.22);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Coche de « Ce soir » : rebond + éclat quand on la coche. */
+.tick-on {
+  animation: tickPop 0.45s var(--ease-spring);
+}
+.tick-on::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 2px var(--g2);
+  animation: tickRing 0.6s var(--ease-out) forwards;
+  pointer-events: none;
+}
+.tick {
+  position: relative;
+}
+@keyframes tickPop {
+  0% { transform: scale(0.7); }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1.04); }
+}
+@keyframes tickRing {
+  from { opacity: 0.9; transform: scale(0.6); }
+  to { opacity: 0; transform: scale(1.5); }
+}
+
+/* Point « maintenant » de « En ce moment » : il respire. */
+.live-dot {
+  position: relative;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: rgb(var(--emerald-400-rgb));
+}
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: rgb(var(--emerald-400-rgb));
+  animation: livePulse 1.8s ease-out infinite;
+}
+@keyframes livePulse {
+  from { transform: scale(1); opacity: 0.7; }
+  to { transform: scale(3); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-layer,
+  .sky-star,
+  .sky-orb,
+  .tick-on,
+  .tick-on::after,
+  .live-dot::after {
+    animation: none;
+  }
+}
+
+
 /* IMPRESSION (le bilan, /bilan) — papier blanc, et tout ce qui entre en
    scène au défilement est montré d'emblée : une impression ne défile pas,
    les sections encore « en attente » sortiraient blanches. */

@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { HomeTopBar } from "@/components/home/hero";
-import { HomeGreeting } from "@/components/home/desktop-header";
+import { SkyHero } from "@/components/home/sky-hero";
 import { EveningWidget, ExamWidget, NowWidget, WeekWidget } from "@/components/home/widgets";
 import { useCalendarEvents } from "@/hooks/use-calendar";
-import { addDays, buildWeek, mondayOf } from "@/lib/week-agenda";
+import { addDays, buildWeek, eveningList, mondayOf, nextExam } from "@/lib/week-agenda";
 import { Skeleton } from "@/components/ui/state";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 
@@ -43,6 +43,10 @@ export function DashboardOverview() {
   const calendar = useCalendarEvents(preferences.calendarFeeds, monday, horizon);
   const columns = useMemo(() => buildWeek(monday, calendar.events, workItems), [monday, calendar.events, workItems]);
 
+  const evening = useMemo(() => eveningList(workItems, now), [workItems, now]);
+  const exam = useMemo(() => nextExam(calendar.events, workItems, now), [calendar.events, workItems, now]);
+  const examLabel = exam ? `${exam.title} · ${exam.days === 0 ? "aujourd'hui" : exam.days === 1 ? "demain" : `J-${exam.days}`}` : null;
+
   const contestDays = preferences.contestDate ? Math.max(0, Math.ceil((new Date(preferences.contestDate).getTime() - now.getTime()) / 86400000)) : null;
 
   if (!ready) {
@@ -58,7 +62,7 @@ export function DashboardOverview() {
   return (
     <div className="mx-auto max-w-[68rem]">
       <HomeTopBar name={preferences.displayName ?? ""} avatar={preferences.avatarDataUrl} contestDays={contestDays} className="mb-6 lg:hidden" />
-      <HomeGreeting className="mb-4 lg:mb-6" />
+      <SkyHero name={preferences.displayName || undefined} examLabel={examLabel} done={evening.filter((entry) => entry.done).length} total={evening.length} className="mb-5 lg:mb-6" />
 
       {/* ── WIDGETS : ce soir, la prochaine épreuve, le cours en cours, la semaine ── */}
       <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-12">

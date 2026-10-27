@@ -7,6 +7,7 @@ import { ArrowUpRight, Check, Clock, MapPin, Moon, Plus } from "lucide-react";
 import { GradientCard } from "@/components/ui/gradient-card";
 import { Ring } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { CountUp } from "@/components/ui/count-up";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import type { CalendarEvent } from "@/lib/calendar";
@@ -50,12 +51,16 @@ export function EveningWidget({ workItems, saveWorkItems, now, className }: { wo
   }
 
   return (
-    <section aria-labelledby="ce-soir" className={cn("surface reveal relative overflow-hidden p-5 sm:p-6", className)}>
+    <section aria-labelledby="ce-soir" className={cn("surface lift reveal relative overflow-hidden p-5 sm:p-6", className)} style={{ "--i": 1 } as CSSProperties}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="t-label">{evening ? "Ce soir" : "Aujourd'hui"}</p>
           <h2 id="ce-soir" className={cn("mt-1 leading-none", allDone ? "t-figure-md" : "t-figure-lg")}>
-            {total === 0 ? "Libre" : allDone ? "Tout est prêt." : `${done}/${total}`}
+            {total === 0 ? "Libre" : allDone ? "Tout est prêt." : (
+              <>
+                <CountUp value={done} />/{total}
+              </>
+            )}
           </h2>
           <p className="t-meta mt-2">
             {total === 0
@@ -131,14 +136,14 @@ const DAY_LONG = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numer
 export function ExamWidget({ events, workItems, now, className }: { events: CalendarEvent[]; workItems: WorkItem[]; now: Date; className?: string }) {
   const exam = useMemo(() => nextExam(events, workItems, now), [events, workItems, now]);
   return (
-    <GradientCard tone="review" href="/semaine" className={cn("p-4 text-white sm:p-6", className)} aria-label={exam ? `Prochaine épreuve : ${exam.title}` : "Aucune épreuve en vue"}>
+    <GradientCard tone="review" href="/semaine" index={2} wrapperClassName={className} float className={cn("reveal h-full p-4 text-white sm:p-6")} style={{ "--i": 2 } as CSSProperties} aria-label={exam ? `Prochaine épreuve : ${exam.title}` : "Aucune épreuve en vue"}>
       <div className="flex items-start justify-between">
         <p className="text-[0.75rem] font-bold uppercase tracking-[0.08em] text-white/75 sm:text-[0.8125rem]">Prochaine épreuve</p>
         <ArrowUpRight size={18} className="text-white/70" aria-hidden />
       </div>
       {exam ? (
         <>
-          <p className="t-card-figure mt-2 leading-none">{exam.days === 0 ? "Aujourd'hui" : exam.days === 1 ? "Demain" : `J-${exam.days}`}</p>
+          <p className="t-card-figure mt-2 leading-none">{exam.days === 0 ? "Aujourd'hui" : exam.days === 1 ? "Demain" : <>J-<CountUp value={exam.days} /></>}</p>
           <p className="t-subhead mt-3 truncate font-bold">{exam.title}</p>
           <p className="line-clamp-2 text-[0.8125rem] font-semibold first-letter:uppercase text-white/80 sm:text-[0.875rem]">
             {DAY_LONG.format(new Date(`${exam.day}T12:00:00`))}
@@ -185,9 +190,12 @@ export function NowWidget({ events, hasFeeds, now, className }: { events: Calend
   const progress = status === "en cours" ? Math.min(100, Math.max(0, ((now.getTime() - start) / (end - start)) * 100)) : 0;
   const minutesLeft = Math.round(((status === "en cours" ? end : start) - now.getTime()) / 60000);
   return (
-    <Link href="/semaine" className={cn("surface lift reveal flex min-w-0 flex-col gap-2 p-4 sm:p-5", className)}>
+    <Link href="/semaine" className={cn("surface lift reveal flex min-w-0 flex-col gap-2 p-4 sm:p-5", className)} style={{ "--i": 3 } as CSSProperties}>
       <div className="flex flex-wrap items-center justify-between gap-1">
-        <p className="t-label">{status === "en cours" ? "En ce moment" : "Ensuite"}</p>
+        <p className="t-label inline-flex items-center gap-2">
+          {status === "en cours" && <span aria-hidden className="live-dot" />}
+          {status === "en cours" ? "En ce moment" : "Ensuite"}
+        </p>
         <span className={cn("rounded-full px-2 py-0.5 text-[0.75rem] font-bold", status === "en cours" ? "bg-emerald-400/15 text-emerald-300" : "bg-inset text-muted")}>
           <Clock size={11} className="mr-1 inline -translate-y-px" aria-hidden />
           {minutesLeft >= 60 ? `${Math.floor(minutesLeft / 60)} h ${String(minutesLeft % 60).padStart(2, "0")}` : `${minutesLeft} min`}
@@ -224,7 +232,7 @@ export function WeekWidget({ columns, now, className }: { columns: DayColumn[]; 
   const totalTasks = load.reduce((sum, day) => sum + day.taskCount, 0);
   const doneTasks = load.reduce((sum, day) => sum + day.doneCount, 0);
   return (
-    <Link href="/semaine" className={cn("surface lift reveal block p-5 sm:p-6", className)} aria-label="Ouvrir ma semaine">
+    <Link href="/semaine" className={cn("surface lift reveal block p-5 sm:p-6", className)} style={{ "--i": 4 } as CSSProperties} aria-label="Ouvrir ma semaine">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="t-label">Ma semaine</p>
