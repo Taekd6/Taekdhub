@@ -56,8 +56,8 @@ describe("applyThemeMode", () => {
 
 describe("palettes — les valeurs de la maquette validée", () => {
   it("huit palettes — les quatre de la maquette, puis Forêt, Framboise, Braise, Lavande —, « Minuit » (id aurora) par défaut", () => {
-    expect(PALETTES.map((palette) => palette.id)).toEqual(["aurora", "sunset", "ocean", "neon", "foret", "framboise", "braise", "lavande", "studio"]);
-    expect(PALETTES.map((palette) => palette.label)).toEqual(["Minuit", "Sunset", "Océan", "Néon", "Forêt", "Framboise", "Braise", "Lavande", "Studio"]);
+    expect(PALETTES.map((palette) => palette.id)).toEqual(["aurora", "sunset", "ocean", "neon", "foret", "framboise", "braise", "lavande", "studio", "finance", "lime", "glacier"]);
+    expect(PALETTES.map((palette) => palette.label)).toEqual(["Minuit", "Sunset", "Océan", "Néon", "Forêt", "Framboise", "Braise", "Lavande", "Studio", "Finance", "Lime", "Glacier"]);
     expect(DEFAULT_PALETTE).toBe("aurora");
     const aurora = paletteById("aurora");
     expect([aurora.c1, aurora.c2, aurora.ink]).toEqual(["#818cf8", "#22d3ee", "#4338ca"]);

@@ -42,7 +42,7 @@
  * anti-flash qui les pose avant le premier rendu.
  */
 
-export type PaletteId = "aurora" | "sunset" | "ocean" | "neon" | "foret" | "framboise" | "braise" | "lavande" | "studio";
+export type PaletteId = "aurora" | "sunset" | "ocean" | "neon" | "foret" | "framboise" | "braise" | "lavande" | "studio" | "finance" | "lime" | "glacier";
 
 export interface Palette {
   id: PaletteId;
@@ -222,6 +222,57 @@ export const PALETTES: Palette[] = [
     review: ["#c4623f", "#d9894f"],
     dl: ["#c4623f", "#8f5a3c", "#a78b6b"],
   },
+  {
+    /* « FINANCE » (mission 21) — l'esprit Finary : marine profond, accent émeraude, une touche d'or pour les épreuves. */
+    id: "finance",
+    label: "Finance",
+    c1: "#34d399",
+    c2: "#a7f3d0",
+    ink: "#047857",
+    solid: ["#047857", "#065f46"],
+    cards: [
+      ["#065f46", "#0f766e"],
+      ["#1e3a5f", "#0f766e"],
+      ["#92400e", "#b45309"],
+      ["#134e4a", "#1e40af"],
+    ],
+    review: ["#065f46", "#0e7490"],
+    dl: ["#047857", "#b45309", "#1e40af"],
+  },
+  {
+    /* « LIME » (mission 21) — graphite et vert acide, l'esprit Linear / Raycast. */
+    id: "lime",
+    label: "Lime",
+    c1: "#a3e635",
+    c2: "#d9f99d",
+    ink: "#3f6212",
+    solid: ["#3f6212", "#365314"],
+    cards: [
+      ["#3f6212", "#4d7c0f"],
+      ["#27272a", "#3f6212"],
+      ["#365314", "#15803d"],
+      ["#1c1917", "#4d7c0f"],
+    ],
+    review: ["#365314", "#4d7c0f"],
+    dl: ["#4d7c0f", "#15803d", "#3f6212"],
+  },
+  {
+    /* « GLACIER » (mission 21) — l'esprit Revolut : clair, bleu électrique vers violet. */
+    id: "glacier",
+    label: "Glacier",
+    c1: "#3b82f6",
+    c2: "#8b5cf6",
+    ink: "#1d4ed8",
+    solid: ["#1d4ed8", "#4338ca"],
+    cards: [
+      ["#2563eb", "#7c3aed"],
+      ["#0284c7", "#2563eb"],
+      ["#4f46e5", "#db2777"],
+      ["#1d4ed8", "#0891b2"],
+    ],
+    review: ["#4f46e5", "#0ea5e9"],
+    dl: ["#2563eb", "#7c3aed", "#0891b2"],
+  },
 ];
 
 export const PALETTE_IDS: PaletteId[] = PALETTES.map((palette) => palette.id);
@@ -253,7 +304,7 @@ export function paletteById(id: PaletteId | string | undefined): Palette {
  * syntaxe récente (`?.`, `??`, étalement).
  */
 export function resolvePaletteId(raw: unknown): PaletteId {
-  const ids = ["aurora", "sunset", "ocean", "neon", "foret", "framboise", "braise", "lavande", "studio"];
+  const ids = ["aurora", "sunset", "ocean", "neon", "foret", "framboise", "braise", "lavande", "studio", "finance", "lime", "glacier"];
   const prefs = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   if (typeof prefs.palette === "string" && ids.indexOf(prefs.palette) >= 0) return prefs.palette as PaletteId;
   const accent = typeof prefs.accent === "string" ? prefs.accent.trim().toLowerCase() : "";

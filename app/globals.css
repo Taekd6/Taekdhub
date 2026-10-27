@@ -1676,6 +1676,34 @@
   --k: 150 140 124;
 }
 
+/* MISSION 21 — trois directions de couleur à choisir (Réglages → apparence). */
+:root[data-palette="finance"][data-theme="dark"],
+:root[data-palette="finance"]:not([data-theme="light"]) {
+  --canvas-rgb: 7 14 26;
+  --panel-rgb: 14 24 40;
+  --elevated-rgb: 20 32 52;
+  --line-rgb: 32 46 70;
+  --surface-bg: rgb(16 27 45 / 0.92);
+  --surface-border: rgb(255 255 255 / 0.06);
+  --accent-ink-rgb: 52 211 153;
+  --halo-a: 0.14;
+  --halo-b: 0.1;
+  --halo-c: 0.06;
+}
+:root[data-palette="lime"][data-theme="dark"],
+:root[data-palette="lime"]:not([data-theme="light"]) {
+  --canvas-rgb: 14 14 16;
+  --panel-rgb: 24 24 27;
+  --elevated-rgb: 32 32 36;
+  --line-rgb: 44 44 50;
+  --surface-bg: rgb(26 26 30 / 0.95);
+  --surface-border: rgb(255 255 255 / 0.07);
+  --accent-ink-rgb: 190 242 100;
+  --halo-a: 0.1;
+  --halo-b: 0.06;
+  --halo-c: 0.04;
+}
+
 
 /* IMPRESSION (le bilan, /bilan) — papier blanc, et tout ce qui entre en
    scène au défilement est montré d'emblée : une impression ne défile pas,
