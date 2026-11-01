@@ -548,3 +548,9 @@ alerte dans une liste « Session » (ce sont eux qui font vibrer la montre, iPho
 téléphone verrouillé sans serveur à la minute (le cron n'est qu'horaire).
 Vérifié : vitest 1595 ok + 1 échec attendu, tsc, eslint, build (polices simulées), parcours Chromium 390 px sombre (choix → cycle → pause depuis le lien
 du raccourci → « Objectif atteint ? » → victoire). Non vérifié : le raccourci sur l'iPhone, les notifications iOS réelles.
+
+## Mission 28 — reprise sur « JWT issued at future », file de tâches entre agents (f4f3af3)
+- Demande de l'élève (2026-11-01) : diagnostiquer l'erreur du connecteur et préparer une file de tâches partagée. Incident : get_today a échoué plusieurs fois alors que list_echeances et get_progress répondaient ; la route Hermes (même clé) répondait. Aucun JWT n'est fabriqué ni vérifié par le dépôt sur ce chemin : le message vient de Supabase. Cause racine NON démontrée ; l'erreur s'est résorbée seule, comme le 25/10.
+- lib/supabase-retry.ts (testé) : une seule reprise sur 401 « JWT issued at future » / PGRST303, journal limité au code ; branché sur db() de /api/mcp/[key] uniquement.
+- File de tâches : issues GitHub (modèle .github/ISSUE_TEMPLATE/tache-agent.yml, protocole docs/TACHES-AGENTS.md). Les trois labels gent:* restent à créer à la main dans GitHub.
+- Vérifié : lint, tsc, vitest 1600 + 1 échec attendu, build. Non vérifié : en production (branche locale, ni poussée ni déployée).
