@@ -554,3 +554,8 @@ du raccourci → « Objectif atteint ? » → victoire). Non vérifié : le racc
 - lib/supabase-retry.ts (testé) : une seule reprise sur 401 « JWT issued at future » / PGRST303, journal limité au code ; branché sur db() de /api/mcp/[key] uniquement.
 - File de tâches : issues GitHub (modèle .github/ISSUE_TEMPLATE/tache-agent.yml, protocole docs/TACHES-AGENTS.md). Les trois labels gent:* restent à créer à la main dans GitHub.
 - Vérifié : lint, tsc, vitest 1600 + 1 échec attendu, build. Non vérifié : en production (branche locale, ni poussée ni déployée).
+
+## Mission 29 — Hermes : script et fiche alignés sur MCP_HERMES_TOKEN (aecc681)
+- Constat (2026-11-01) : docs/HERMES.md et scripts/hermes-check.mjs n'existaient que sur la branche non fusionnée claude/finalisation-hermes-tests. Le script lisait TAEKDHUB_MCP_TOKEN (jeton d'un Preview) alors qu'Hermes et le serveur utilisent MCP_HERMES_TOKEN : faux 401. Corrigé ; seuls ces deux fichiers sont repris, rien d'autre de la branche.
+- Production vérifiée : /api/mcp-hermes refuse sans jeton et avec un jeton inventé (401), annonce get_today et list_echeances seuls, et répond en 200 aux deux. Consigne de fraîcheur active : séances non récentes, plan à présenter comme provisoire.
+- Vérifié : script contre la production, lint, tsc, vitest 1600 + 1 échec attendu. Non vérifié : aucune tâche Hermes planifiée n'a encore tourné.
