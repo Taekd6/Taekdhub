@@ -1,7 +1,6 @@
 name: Tâche technique pour un agent
 description: File de tâches partagée (Hermes, ChatGPT ou toi → Claude Code). Voir docs/TACHES-AGENTS.md.
 title: "[tâche] "
-labels: ["agent:a-prendre"]
 body:
   - type: textarea
     id: contexte
