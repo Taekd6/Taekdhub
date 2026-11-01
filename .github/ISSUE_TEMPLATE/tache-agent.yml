@@ -1,0 +1,40 @@
+name: Tâche technique pour un agent
+description: File de tâches partagée (Hermes, ChatGPT ou toi → Claude Code). Voir docs/TACHES-AGENTS.md.
+title: "[tâche] "
+labels: ["agent:a-prendre"]
+body:
+  - type: textarea
+    id: contexte
+    attributes:
+      label: Contexte
+      description: Le problème ou le besoin, en deux ou trois phrases. Aucun secret, aucune donnée personnelle.
+    validations:
+      required: true
+  - type: textarea
+    id: perimetre
+    attributes:
+      label: Périmètre
+      description: Fichiers ou zones concernés, et ce qui est explicitement hors périmètre.
+    validations:
+      required: true
+  - type: textarea
+    id: fin
+    attributes:
+      label: Critère de fin vérifiable
+      description: Ce qui prouve que c'est fait (test qui passe, comportement observable, commande et résultat attendu).
+    validations:
+      required: true
+  - type: dropdown
+    id: sensibilite
+    attributes:
+      label: Sensibilité
+      options:
+        - Normale (code, tests, documentation)
+        - Sensible (secret, variable Vercel, données, déploiement) — validation de Taekd avant toute action
+    validations:
+      required: true
+  - type: input
+    id: origine
+    attributes:
+      label: Demandé par
+      description: Taekd, Hermes, ChatGPT, Gemini…

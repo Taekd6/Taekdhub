@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { buildTodaySnapshot } from "@/lib/today-snapshot";
 import { isMcpKeyValid } from "@/lib/mcp-auth";
+import { fetchWithFutureJwtRetry } from "@/lib/supabase-retry";
 import { mutateCollection, type CollectionStore } from "@/lib/mcp-collections";
 import { addLockCards, courseLocks, lockFor, lockSentence, LOCK_CARDS_MAX, rateLockCards } from "@/lib/course-lock";
 import { toSubject } from "@/lib/annales";
@@ -33,6 +34,8 @@ process.env.TZ = process.env.MCP_TIMEZONE || "Europe/Paris";
 function db() {
   return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
     auth: { persistSession: false },
+    // Une seule reprise si Supabase juge la clé « issued at future » (voir lib/supabase-retry.ts).
+    global: { fetch: fetchWithFutureJwtRetry() },
   });
 }
 
