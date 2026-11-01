@@ -4,7 +4,7 @@ File unique : les **issues GitHub** de ce dépôt. Pas de copie dans Notion ni d
 
 ## Circuit
 
-1. **Créer** une issue avec le modèle « Tâche technique pour un agent » (Hermes, ChatGPT, Taekd). Elle reçoit le label `agent:a-prendre`.
+1. **Créer** une issue avec le modèle « Tâche technique pour un agent » (Hermes, ChatGPT, Taekd). Le modèle ne pose plus le label tout seul : ajoute `agent:a-prendre` à la main (une fois les labels créés), sinon Claude Code ignore l'issue.
 2. **Prendre** : Claude Code ne traite que les issues portant `agent:a-prendre`. Il passe le label à `agent:en-cours` et travaille sur une branche `claude/<sujet>`.
 3. **Rendre** : une pull request qui référence l'issue (`Closes #n`) et colle dans sa description le résultat réel de `pnpm lint`, `pnpm exec tsc --noEmit`, `pnpm test`, `pnpm build`, plus ce qui n'a PAS été vérifié. Label `agent:a-relire`.
 4. **Valider** : Taekd relit, fusionne ou refuse. Rien ne se fusionne ni ne se déploie sans lui.
