@@ -92,7 +92,9 @@ export function ExosClassiques({
 
   const papers = useMemo(() => {
     if (!data) return [];
-    const list = data.questions.filter((q) => (all || q.incontournable) && (!mpOnly || filiereRank(q.filiere) === 0));
+    /* Un sujet MPI qui a son jumeau MP (CCINP, Centrale…) répète les mêmes questions avec une autre numérotation : on garde le MP. */
+    const slugs = new Set(data.questions.map((q) => q.slug));
+    const list = data.questions.filter((q) => !(q.filiere === "MPI" && slugs.has(q.slug.replace(/_mpi_/, "_mp_"))) && (all || q.incontournable) && (!mpOnly || filiereRank(q.filiere) === 0));
     const groups = new Map<string, WikiQuestion[]>();
     for (const q of list) groups.set(q.slug, [...(groups.get(q.slug) ?? []), q]);
     return [...groups.values()]
