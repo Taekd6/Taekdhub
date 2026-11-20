@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { PROGRAMME, type ProgrammeChapter } from "@/lib/programme-data";
-import { EXO_SOURCE_LABEL, EXO_STATUS_LABEL, intervalFor, type CaseState, type DueCase, type ExoEntry, type ExoSource, type ExoStatus, type NewExo } from "@/lib/exos";
+import { EXO_SOURCE_LABEL, EXO_STATUS_LABEL, intervalFor, questionUrl, type CaseState, type DueCase, type ExoEntry, type ExoSource, type ExoStatus, type NewExo } from "@/lib/exos";
 
 const fr = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}`;
 
@@ -38,13 +38,15 @@ export function XSheet({ open, title, onClose, children }: { open: boolean; titl
   );
 }
 
-function OpenLinks({ entry }: { entry: ExoEntry }) {
+function OpenLinks({ entry, question = null }: { entry: ExoEntry; question?: string | null }) {
   if (!entry.url && !entry.urlCorrige && !entry.page) return null;
+  const href = questionUrl(entry, question);
+  const direct = href !== null && href !== entry.url;
   return (
     <div className="x-row" style={{ marginTop: 12 }}>
-      {entry.url && (
-        <a className="x-lnk" href={entry.url} target="_blank" rel="noopener noreferrer">
-          {entry.source === "annale" ? "Ouvrir le sujet et le corrigé ↗" : "Ouvrir l'énoncé ↗"}
+      {href && (
+        <a className="x-lnk" href={href} target="_blank" rel="noopener noreferrer">
+          {direct ? `Ouvrir Q${question} ↗` : entry.source === "annale" ? "Ouvrir le sujet et le corrigé ↗" : entry.source === "manuel" ? "Ouvrir le livre ↗" : "Ouvrir l'énoncé ↗"}
         </a>
       )}
       {entry.urlCorrige && (
@@ -118,7 +120,7 @@ export function GradeSheet({
           {state.note}
         </div>
       )}
-      <OpenLinks entry={entry} />
+      <OpenLinks entry={entry} question={question} />
       <GradeButtons state={state} onGrade={(status) => onGrade(status, note)} />
       <label className="x-label" htmlFor="x-grade-note">
         L&apos;erreur ou l&apos;idée à retenir (facultatif)
@@ -373,7 +375,7 @@ export function SessionSheet({
             </div>
           )}
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <OpenLinks entry={item.entry} />
+            <OpenLinks entry={item.entry} question={item.question} />
           </div>
           <p className="x-sub">Cherche-la sans regarder le corrigé, puis dis comment ça s&apos;est passé.</p>
           <GradeButtons

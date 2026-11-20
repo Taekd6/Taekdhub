@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useExos } from "@/hooks/use-exos";
 import { notesFor } from "@/lib/chapter-notes";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
-import { chapterStats, entryCases, EXO_SOURCE_LABEL, weakCases, dueCases, type CaseState, type ExoEntry, type ExoSource, type DueCase } from "@/lib/exos";
+import { chapterStats, entryCases, EXO_SOURCE_LABEL, questionUrl, resumeQuestion, weakCases, dueCases, type CaseState, type ExoEntry, type ExoSource, type DueCase } from "@/lib/exos";
 import type { ProgrammeChapter } from "@/lib/programme-data";
 import { AddSheet, GradeSheet, SessionSheet } from "@/components/exos/exos-sheets";
 
@@ -150,9 +150,14 @@ export function ExosChapter({ chapter, embedded = false }: { chapter: ProgrammeC
                     <div className="x-ex-n">
                       <span>{entry.titre}</span>
                       {entry.url ? (
-                        <a href={entry.url} target="_blank" rel="noopener noreferrer">
-                          {source === "annale" ? "Corrigé ↗" : source === "manuel" && entry.page ? `${entry.page} ↗` : "Énoncé ↗"}
-                        </a>
+                        (() => {
+                          const resume = source === "annale" ? resumeQuestion(chapter.id, entry, states, today) : null;
+                          return (
+                            <a href={questionUrl(entry, resume) ?? entry.url} target="_blank" rel="noopener noreferrer" title={resume ? `Reprendre à la question ${resume}` : undefined}>
+                              {source === "annale" ? (resume ? `Q${resume} ↗` : "Corrigé ↗") : source === "manuel" && entry.page ? `${entry.page} ↗` : "Énoncé ↗"}
+                            </a>
+                          );
+                        })()
                       ) : entry.page ? (
                         <span className="x-meta" style={{ fontWeight: 600, whiteSpace: "nowrap" }}>
                           {entry.page}

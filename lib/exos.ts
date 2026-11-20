@@ -571,6 +571,28 @@ export function exoFromUrl(url: string): { exo: NewExo; question: string | null 
   return { exo: { source: "autre", titre: `${host} · ${last.replace(/[-_]/g, " ")}`.slice(0, 160), url: trimmed }, question: null };
 }
 
+const WIKI_CORRIGE = /^(https?:\/\/(?:www\.)?wikiprepa\.fr\/concours\/ecrit\/[^/?#]+\/corrige)(?:[?#].*)?$/i;
+
+/**
+ * Lien direct vers une question : sur Wikiprepa, chaque question du corrigé a
+ * son ancre `#qN`. Ailleurs (BEOS, manuel, lien collé), le lien de l'entrée.
+ */
+export function questionUrl(entry: ExoEntry, question: string | null): string | null {
+  if (!entry.url) return null;
+  const wiki = WIKI_CORRIGE.exec(entry.url.trim());
+  if (wiki && question && /^\d+$/.test(question)) return `${wiki[1]}#q${question}`;
+  return entry.url;
+}
+
+/** La question où reprendre : la première jamais faite, sinon la première à revoir, sinon aucune. */
+export function resumeQuestion(chapterId: string, entry: ExoEntry, states: Map<string, CaseState>, today: string): string | null {
+  const cases = entryCases(chapterId, entry).filter((item) => item.question);
+  const fresh = cases.find((item) => !states.get(item.key));
+  if (fresh) return fresh.question;
+  const due = cases.find((item) => (states.get(item.key)?.next ?? "9999") <= today);
+  return due?.question ?? null;
+}
+
 /** Ajoute la question à une entrée existante si elle n'y est pas (un 2e lien vers le même sujet, autre question). */
 export function withQuestion(entry: ExoEntry, question: string | null): ExoEntry {
   if (!question || entry.questions.includes(question)) return entry;

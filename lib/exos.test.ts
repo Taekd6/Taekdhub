@@ -15,6 +15,8 @@ import {
   intervalFor,
   normalizeExoEntries,
   parseCaseKey,
+  questionUrl,
+  resumeQuestion,
   progression,
   streakDays,
   activityDays,
@@ -222,5 +224,28 @@ describe("connecteur", () => {
     expect(logChapterExos([], added.items, reduction, [{ exo: "inconnu", statut: "seul" }], NOW, "2026-11-20").ok).toBe(false);
     expect(logChapterExos([], added.items, reduction, [{ exo: "Livre · exo 1", statut: "seul" }], NOW, "2026-11-20").ok).toBe(false);
     expect(logChapterExos([], added.items, reduction, [{ exo: "Livre · exo 1", questions: ["9"], statut: "seul" }], NOW, "2026-11-20").ok).toBe(false);
+  });
+});
+
+describe("liens directs par question", () => {
+  const wiki: ExoEntry = { id: "w", source: "annale", titre: "CCINP · MP 2021", url: "https://wikiprepa.fr/concours/ecrit/ccinp_physique-chimie_mp_2021/corrige#q18", questions: ["18", "19", "20"], createdAt: "2026-11-20T10:00:00.000Z" };
+  it("ancre Wikiprepa #qN pour chaque question", () => {
+    expect(questionUrl(wiki, "20")).toBe("https://wikiprepa.fr/concours/ecrit/ccinp_physique-chimie_mp_2021/corrige#q20");
+    expect(questionUrl(wiki, null)).toBe(wiki.url);
+  });
+  it("hors Wikiprepa, le lien de l'entrée", () => {
+    const beos: ExoEntry = { ...wiki, id: "b", source: "beos", url: "https://beos.prepas.org/sujet.php?id=7094", questions: [] };
+    expect(questionUrl(beos, "2")).toBe(beos.url);
+    expect(questionUrl({ ...wiki, url: undefined }, "2")).toBeNull();
+  });
+  it("reprend à la première question jamais faite, puis à la première à revoir", () => {
+    const states = caseStates([]);
+    expect(resumeQuestion(evn.id, wiki, states, "2026-11-20")).toBe("18");
+    const day = (d: string, q: string, status: ExoStatus) => attemptForGrade({ chapter: evn, entry: wiki, question: q, status }, new Date(`${d}T20:00:00`), d);
+    const done = caseStates([day("2026-11-20", "18", "seul"), day("2026-11-20", "19", "seul")]);
+    expect(resumeQuestion(evn.id, wiki, done, "2026-11-20")).toBe("20");
+    const all = caseStates([day("2026-11-10", "18", "rate"), day("2026-11-20", "19", "seul"), day("2026-11-20", "20", "seul")]);
+    expect(resumeQuestion(evn.id, wiki, all, "2026-11-20")).toBe("18");
+    expect(resumeQuestion(evn.id, wiki, all, "2026-11-12")).toBeNull();
   });
 });
