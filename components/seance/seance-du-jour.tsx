@@ -48,7 +48,7 @@ export function SeanceDuJour() {
           const anki = /anki/i.test(item.title);
           const late = item.dueDate !== null && item.dueDate < today;
           return (
-            <li key={item.id} className="rounded-2xl border bg-card p-4 shadow-sm">
+            <li key={item.id} className="rounded-2xl border bg-card p-4 shadow-surface">
               <div className="flex items-start gap-3">
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{index + 1}</span>
                 <div className="min-w-0 flex-1">
