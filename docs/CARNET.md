@@ -613,3 +613,6 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
   des liens sans ancre corrigée dans `addLinks`), question déjà suivie = fiche de notation. Contrôlé en production : systèmes ouverts
   280 questions / 60 incontournables, diffusion thermique 654 / 135, oxydoréduction 240 / 58, topologie-evn 177 sujets. 1624 tests.
   NON vérifié : l'écran lui-même sur l'iPad (pas de capture faite, pour économiser).
+- Booleanopera (`dacf18c`) : chaque chapitre de maths renvoie à son parcours « Cours » (`booleanoperaUrl`, `lib/wikiprepa-map.ts`) depuis les
+  onglets d'Exos ; Booleanopera garde son propre suivi Acquis / À revoir, rien n'est recopié. Anki (PC de l'élève, 2026-11-20) : 92 notes
+  en double jamais révisées supprimées, 1116 notes étiquetées `doublon-a-trier`, base vérifiée, envoi forcé vers AnkiWeb (choix de l'élève).
