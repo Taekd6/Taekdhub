@@ -10,6 +10,7 @@ import { Section } from "@/components/ui/section";
 import { EmptyState, Skeleton } from "@/components/ui/state";
 import { Tabs } from "@/components/ui/tabs";
 import { PdfButton } from "@/components/chapitre/pdf-button";
+import { ExosChapter } from "@/components/exos/exos-chapter";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { chapterErrors, formatStamp, notesFor, parseCourse, type CourseBlock } from "@/lib/chapter-notes";
 import { errorsDocument, methodsDocument, pdfFileName } from "@/lib/chapter-pdf";
@@ -70,6 +71,11 @@ export function ChapterPage({ chapter }: { chapter: ProgrammeChapter }) {
             id: "cours",
             label: "Cours",
             content: <CourseTab text={notes?.cours ?? null} updatedAt={notes?.coursUpdatedAt ?? null} />,
+          },
+          {
+            id: "exos",
+            label: "Exos",
+            content: <ExosChapter chapter={chapter} embedded />,
           },
           {
             id: "methodes",

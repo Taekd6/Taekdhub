@@ -1,6 +1,7 @@
 import { foldText } from "@/lib/annales";
 import { PROGRAMME, PROGRAMME_BY_ID, type ProgrammeChapter } from "@/lib/programme-data";
 import type { ErrorEntry } from "@/lib/storage";
+import { normalizeExoEntries, type ExoEntry } from "@/lib/exos";
 
 /**
  * LA PAGE D'UN CHAPITRE — le cours retapé et les méthodes, rangés par chapitre
@@ -45,6 +46,8 @@ export interface ChapterNotes {
   cours: string | null;
   coursUpdatedAt?: string;
   methodes: Methode[];
+  /** Le catalogue d'exercices du chapitre (lib/exos.ts) — références seulement. Absent tant qu'il est vide. */
+  exos?: ExoEntry[];
   updatedAt: string;
 }
 
@@ -127,6 +130,8 @@ export function normalizeChapterNotes(raw: unknown): ChapterNotes[] {
       methodes: (Array.isArray(entry.methodes) ? entry.methodes : []).map((methode) => normalizeMethode(methode, updatedAt)).filter((methode): methode is Methode => methode !== null),
       updatedAt,
     };
+    const exos = normalizeExoEntries(entry.exos, updatedAt);
+    if (exos.length) item.exos = exos;
     const known = byId.get(id);
     if (!known || item.updatedAt >= known.updatedAt) byId.set(id, item);
   }
@@ -145,6 +150,17 @@ export function chapterErrors(errors: ErrorEntry[], chapterId: string): ErrorEnt
 }
 
 /* ── Écritures (appelées par le connecteur) ─────────────────────── */
+
+/** Remplace le catalogue d'exercices d'un chapitre (lib/exos.ts) ; le cours et les méthodes ne bougent pas. */
+export function setChapterExos(all: ChapterNotes[], chapterId: string, exos: ExoEntry[], now: Date): ChapterNotes[] {
+  const stamp = now.toISOString();
+  return upsert(all, chapterId, (current) => {
+    const next: ChapterNotes = { ...current, updatedAt: stamp };
+    if (exos.length) next.exos = exos;
+    else delete next.exos;
+    return next;
+  });
+}
 
 export type Result<T> = { ok: true; items: ChapterNotes[]; value: T } | { ok: false; error: string };
 

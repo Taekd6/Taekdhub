@@ -10,6 +10,8 @@ import { toSubject } from "@/lib/annales";
 import { ERROR_SOURCES, ERROR_TYPES, normalizeErrorEntry, normalizeReviewItem, type ErrorEntry, type ErrorSource, type ErrorType, type ReviewItem } from "@/lib/storage";
 import { addMethodes, COURSE_CHUNK_MAX, findChapter, METHODS_PER_CALL_MAX, normalizeChapterNotes, notesFor, setCourse, STEPS_MAX, type ChapterNotes } from "@/lib/chapter-notes";
 import { addChapterErrors, describeChapter } from "@/lib/mcp-chapter-notes";
+import { addChapterExos, describeChapterExos, describeExosOverview, logChapterExos } from "@/lib/mcp-exos";
+import { normalizeAttempts } from "@/lib/attempts";
 import { addEcheances, deleteEcheance, describeEcheance, ECHEANCE_SUBJECTS, ECHEANCE_TYPES, ECHEANCES_MAX, listEcheances, updateEcheance } from "@/lib/mcp-echeances";
 
 /**
@@ -359,6 +361,111 @@ const mcp = createMcpHandler((server) => {
       if (!outcome.ok) return text(`Erreur : ${outcome.error}`);
       const { added, skipped, total } = outcome.value;
       return text(`${added} erreur${added > 1 ? "s" : ""} notée${added > 1 ? "s" : ""}${skipped ? `, ${skipped} déjà présente${skipped > 1 ? "s" : ""}` : ""} sur « ${found.chapter.title} » (${total} au total). Page du chapitre, onglet Erreurs.`);
+    }
+  );
+
+  server.registerTool(
+    "get_exos",
+    {
+      title: "Lire le suivi des exos (catalogue et cases cochées)",
+      description:
+        "Le suivi d'exercices de l'élève (écran Exos de TaekdHub) : un catalogue de RÉFÉRENCES par chapitre (sujets d'annales Wikiprepa, exos d'oral BEOS, exos de manuels) et l'état de chaque case (seul, avec indices, raté, date de retour). Sans chapitre : vue d'ensemble (cases à revoir aujourd'hui, maîtrise par chapitre, points faibles). Avec un chapitre : chaque entrée, son identifiant et ses cases. À lire avant de proposer des exos ou une séance, et avant log_exos.",
+      inputSchema: z.object({ chapitre: CHAPTER_FIELD.optional(), matiere: SUBJECT_HINT }),
+    },
+    async ({ chapitre, matiere }) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      try {
+        const [notes, attemptsRow] = await Promise.all([readChapterNotes(user_id), collectionStore(user_id, "attempts").read()]);
+        const attempts = normalizeAttempts(attemptsRow?.items);
+        const today = new Date().toLocaleDateString("en-CA");
+        if (!chapitre) return text(describeExosOverview(notes, attempts, today));
+        const found = findChapter(chapitre, matiere);
+        if (!found.ok) return text(`Erreur : ${found.error}`);
+        return text(describeChapterExos(found.chapter, notes, attempts, today));
+      } catch (cause) {
+        return text(`Erreur : ${failure(cause).error}`);
+      }
+    }
+  );
+
+  server.registerTool(
+    "add_exos",
+    {
+      title: "Ajouter des exos au catalogue d'un chapitre",
+      description:
+        "Range des RÉFÉRENCES d'exercices dans le catalogue d'un chapitre (écran Exos) : jamais l'énoncé, seulement le titre, le lien, les numéros de questions et, pour un manuel, le livre, le numéro et la page. Sources : annale (sujet d'écrit, lien Wikiprepa vers le corrigé, une case par question), beos (exo d'oral, lien vers la page BEOS, une case), manuel (« Titre du livre · ch. 3 · exo 3.7 », page, une case par question a, b, c…), autre. Même lien ou même titre = mise à jour de l'entrée existante (ses cases cochées sont gardées). Choisis des exos variés en concours, au programme MP, dont la méthode n'est pas annoncée.",
+      inputSchema: z.object({
+        chapitre: CHAPTER_FIELD,
+        matiere: SUBJECT_HINT,
+        exos: z
+          .array(
+            z.object({
+              source: z.enum(["annale", "beos", "manuel", "autre"]),
+              titre: z.string().min(1).max(160).describe("« CCINP Maths 1 · MP 2025 · Ex. 3 », « BEOS n° 6123 · Mines-Ponts 2024 », « Nom du manuel · ch. 3 · exo 3.7 »"),
+              detail: z.string().max(200).optional().describe("ce que l'exo travaille, ou « Corrigé p. 158 »"),
+              url: z.string().max(600).optional().describe("lien http(s) vers l'énoncé ou le corrigé"),
+              url_corrige: z.string().max(600).optional(),
+              questions: z.union([z.array(z.string().min(1).max(12)).max(40), z.number().int().min(0).max(40)]).optional().describe("libellés des questions ([\"1\",\"2\"] ou [\"a\",\"b\"]) ou leur nombre ; absent = une seule case"),
+              concours: z.string().max(60).optional(),
+              annee: z.number().int().min(1990).max(2100).optional(),
+              niveau: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional().describe("difficulté indicative, 1 à 3"),
+              page: z.string().max(30).optional().describe("« p. 142 »"),
+            })
+          )
+          .min(1)
+          .max(60),
+      }),
+    },
+    async ({ chapitre, matiere, exos }) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const found = findChapter(chapitre, matiere);
+      if (!found.ok) return text(`Erreur : ${found.error}`);
+      const inputs = exos.map(({ url_corrige, ...rest }) => ({ ...rest, ...(url_corrige ? { urlCorrige: url_corrige } : {}) }));
+      const outcome = await mutateCollection(collectionStore(user_id, "chapterNotes"), (current) => addChapterExos(normalizeChapterNotes(current), found.chapter, inputs, new Date())).catch(failure);
+      if (!outcome.ok) return text(`Erreur : ${outcome.error}`);
+      const { added, updated, total } = outcome.value;
+      return text(`${added} exo${added > 1 ? "s" : ""} ajouté${added > 1 ? "s" : ""}${updated ? `, ${updated} mis à jour` : ""} dans « ${found.chapter.title} » (${total} au catalogue). Écran Exos.`);
+    }
+  );
+
+  server.registerTool(
+    "log_exos",
+    {
+      title: "Cocher des cases du suivi des exos",
+      description:
+        "Note ce que l'élève a fait sur des exos du catalogue : statut seul (réussi sans aide), indices (réussi avec indices) ou rate (raté, ou corrigé ouvert). Une tentative par case ; la date de retour se calcule seule (raté 3 j, indices 7 j, seul 14 puis 30, 60…). Entrée par identifiant (get_exos) ou par titre ; questions à cocher si l'entrée en a. Un piège noté apparaît dans la séance de révision. Ne coche que ce que l'élève t'a dit avoir fait.",
+      inputSchema: z.object({
+        chapitre: CHAPTER_FIELD,
+        matiere: SUBJECT_HINT,
+        cases: z
+          .array(
+            z.object({
+              exo: z.string().min(1).max(160).describe("identifiant ou titre de l'entrée"),
+              questions: z.array(z.string().min(1).max(12)).max(40).optional(),
+              statut: z.enum(["seul", "indices", "rate"]),
+              piege: z.string().max(300).optional().describe("l'erreur ou l'idée à retenir, en une ligne"),
+            })
+          )
+          .min(1)
+          .max(30),
+      }),
+    },
+    async ({ chapitre, matiere, cases }) => {
+      const user_id = await ownerId();
+      if (!user_id) return text(NO_OWNER);
+      const found = findChapter(chapitre, matiere);
+      if (!found.ok) return text(`Erreur : ${found.error}`);
+      try {
+        const notes = await readChapterNotes(user_id);
+        const now = new Date();
+        const outcome = await mutateCollection(collectionStore(user_id, "attempts"), (current) => logChapterExos(current, notes, found.chapter, cases, now, now.toLocaleDateString("en-CA"))).catch(failure);
+        if (!outcome.ok) return text(`Erreur : ${outcome.error}`);
+        return text(`Cases cochées sur « ${found.chapter.title} » :\n${outcome.value.logged.map((line) => `- ${line}`).join("\n")}`);
+      } catch (cause) {
+        return text(`Erreur : ${failure(cause).error}`);
+      }
     }
   );
 
