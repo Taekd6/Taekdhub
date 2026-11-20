@@ -659,3 +659,9 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 - `chapterNotes` révision 25 → 26 : 23 entrées source "autre" (TP/TD/sujets corrigés de cahier-de-prepa.fr, fortierq.github.io, Doc-Solus Centrale 2025, ENS prépa oral…) dans o-automates, o-graphes, o-arbres-tas, o-logique, o-ocaml, i-sql, i-prog-dyn, i-recursivite, p1-circuits. Ids `web-*`. Liens vers documents entiers (`questions` vide).
 - Toujours maigres : i-ia-jeux (3), i-recursivite (3), p1-machines (2) : rien de fiable trouvé.
 - Reste ouvert : manuels hors Freslon (PDF Dropbox > 5 Mio).
+
+### 2026-11-20 (nuit, fin 3) — Liaisons Booleanopera et Anki (code, commit d58fc91)
+- Booleanopera : pas d'API (pages rendues côté serveur, aucun JSON). Signet `javascript:` à lancer sur booleanopera.fr connecté : il lit `/classe/<pseudo>` et rouvre TaekdHub sur `/exos#bo=…` (fragment, jamais envoyé à un serveur, aucun mot de passe). Relevé rangé dans `preferences.booleanopera` (collection `preferences`, donc synchronisé, pas de migration). Ligne « Booleanopera » + bouton « Mettre à jour » en haut de /exos. Le compte Taekd était quasi vide le 2026-11-20 (1 brique en cours).
+- Anki : relevé AnkiConnect automatique à l'ouverture de /anki sur ordinateur si le dernier relevé complet a plus de 6 h ; silencieux si Anki est fermé. AnkiWeb n'a pas d'API : rien de ce côté.
+- Vérifié : tsc, eslint, 108 fichiers de tests (1631 réussis + 1 échec attendu). NON vérifié : le signet sur le vrai site (page testée en lecture seulement), l'auto-relevé avec un vrai Anki, `next build` (polices Google inaccessibles dans le bac à sable). Non déployé, pas de PR.
+- Cahier de prépa (mp-pascal) : connecté dans le navigateur intégré ; dossiers Informatique TC et Mathématiques, programme de colles, agenda. Rien de lu ni de relié.
