@@ -128,7 +128,7 @@ export function ExosChapter({ chapter, embedded = false }: { chapter: ProgrammeC
         )}
         {wikiSlugsFor(chapter.id).length > 0 && (
           <button type="button" className="x-tab" aria-pressed={filter === "classiques"} onClick={() => setFilter("classiques")}>
-            Classiques
+            Concours
           </button>
         )}
       </div>

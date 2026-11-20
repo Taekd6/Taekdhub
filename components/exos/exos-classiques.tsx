@@ -40,7 +40,7 @@ export function ExosClassiques({
   const slugs = useMemo(() => wikiSlugsFor(chapter.id), [chapter.id]);
   const [data, setData] = useState<Loaded | null>(() => cache.get(chapter.id) ?? null);
   const [error, setError] = useState<string | null>(null);
-  const [all, setAll] = useState(false);
+  const [all, setAll] = useState(true);
   const [mpOnly, setMpOnly] = useState(false);
 
   useEffect(() => {
@@ -119,10 +119,10 @@ export function ExosClassiques({
     <div className="x-card">
       <div className="x-row" style={{ justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
         <div>
-          <h4 style={{ margin: 0 }}>Classiques des concours</h4>
+          <h4 style={{ margin: 0 }}>Toutes les questions de concours</h4>
           <p className="x-meta" style={{ marginTop: 4 }}>
             {data.questions.length
-              ? `${doneClassiques} faite${doneClassiques > 1 ? "s" : ""} sur ${totalClassiques} incontournables · ${data.questions.length} questions en tout`
+              ? `${data.questions.length} questions · tous concours et filières (Mines-Ponts, Centrale, X-ENS, CCINP, E3A, PT…) · ${doneClassiques}/${totalClassiques} incontournables faits (en gras)`
               : `${subjects.length} sujets de concours sur ce chapitre`}
             {" · "}
             <a href={`https://wikiprepa.fr/concours/chapitre/${slugs[0]}`} target="_blank" rel="noopener noreferrer">
@@ -141,7 +141,7 @@ export function ExosClassiques({
         <div className="x-tabs" role="group" aria-label="Afficher" style={{ margin: 0 }}>
           {data.questions.length > 0 && (
             <button type="button" className="x-tab" aria-pressed={!all} onClick={() => setAll((v) => !v)}>
-              {all ? "Toutes" : "Incontournables"}
+              {all ? "Tout afficher" : "Incontournables seuls"}
             </button>
           )}
           <button type="button" className="x-tab" aria-pressed={mpOnly} onClick={() => setMpOnly((v) => !v)}>
