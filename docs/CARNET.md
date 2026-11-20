@@ -654,3 +654,8 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 - BEOS n'a pas d'URL de recherche exploitable : les numéros viennent de recherches web ciblées (`allowed_domains=beos.prepas.org`) puis lecture des métadonnées. Couverture partielle, à compléter par thème.
 - Manuels : Freslon déjà entièrement dans le catalogue (152 exos avec pages). Monier-Haberer, Fiat, Beury, Gozard, Coutens (Dropbox, `/Prépa MP/...`) dépassent la limite de lecture (5 Mio) et le shell n'a pas accès aux liens Dropbox (proxy 403) : non lisibles depuis la session. Piste : dossier connecté depuis l'app desktop, ou sommaires collés.
 - Reste : BEOS info/OCaml et physique (peu indexés), manuels hors Freslon, chapitres de sup en maths.
+
+### 2026-11-20 (nuit, fin 2) — Catalogue : 23 ressources web info/OCaml/circuits
+- `chapterNotes` révision 25 → 26 : 23 entrées source "autre" (TP/TD/sujets corrigés de cahier-de-prepa.fr, fortierq.github.io, Doc-Solus Centrale 2025, ENS prépa oral…) dans o-automates, o-graphes, o-arbres-tas, o-logique, o-ocaml, i-sql, i-prog-dyn, i-recursivite, p1-circuits. Ids `web-*`. Liens vers documents entiers (`questions` vide).
+- Toujours maigres : i-ia-jeux (3), i-recursivite (3), p1-machines (2) : rien de fiable trouvé.
+- Reste ouvert : manuels hors Freslon (PDF Dropbox > 5 Mio).
