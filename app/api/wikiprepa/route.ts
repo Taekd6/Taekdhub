@@ -33,8 +33,13 @@ export async function GET(req: Request) {
   if (!res.ok) return Response.json({ error: `Wikiprepa : ${res.status}.` }, { status: res.status === 404 ? 404 : 502 });
   const html = await res.text();
   const questions = parseWikiChapter(html);
+  if (params.has("resume")) {
+    const by = (key: "filiere" | "difficulte") => Object.fromEntries([...new Set(questions.map((q) => q[key] ?? "?"))].map((v) => [v, questions.filter((q) => (q[key] ?? "?") === v).length]));
+    return Response.json({ chapitre: slug, taille: html.length, total: questions.length, incontournables: questions.filter((q) => q.incontournable).length, filieres: by("filiere"), difficultes: by("difficulte"), exemples: questions.slice(0, 3), liens: (html.match(/\/concours\/ecrit\/[a-z0-9_-]+(?:\/[a-z#0-9-]*)?/gi) ?? []).slice(0, 8) });
+  }
+  const keep = params.has("classiques") ? questions.filter((q) => q.incontournable) : questions;
   return Response.json(
-    { chapitre: slug, source: `${WIKI_BASE}/concours/chapitre/${slug}`, taille: html.length, total: questions.length, incontournables: questions.filter((q) => q.incontournable).length, questions },
+    { chapitre: slug, source: `${WIKI_BASE}/concours/chapitre/${slug}`, taille: html.length, total: questions.length, incontournables: questions.filter((q) => q.incontournable).length, questions: keep },
     { headers: { "cache-control": "public, s-maxage=86400, stale-while-revalidate=604800" } },
   );
 }
