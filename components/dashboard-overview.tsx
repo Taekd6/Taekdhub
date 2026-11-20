@@ -62,6 +62,10 @@ export function DashboardOverview() {
   return (
     <div className="mx-auto max-w-[68rem]">
       <HomeTopBar name={preferences.displayName ?? ""} avatar={preferences.avatarDataUrl} contestDays={contestDays} className="mb-6 lg:hidden" />
+      <a href="/aujourdhui" className="mb-5 flex items-center justify-between rounded-2xl bg-primary px-5 py-4 text-primary-foreground shadow-sm">
+        <span className="text-lg font-semibold">Lancer la séance du jour</span>
+        <span aria-hidden="true">→</span>
+      </a>
       <SkyHero name={preferences.displayName || undefined} examLabel={examLabel} done={evening.filter((entry) => entry.done).length} total={evening.length} className="mb-5 lg:mb-6" />
 
       {/* ── WIDGETS : ce soir, la prochaine épreuve, le cours en cours, la semaine ── */}
