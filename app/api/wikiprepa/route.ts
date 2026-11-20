@@ -1,4 +1,4 @@
-import { parseWikiChapter, WIKI_BASE, WIKI_SLUG } from "@/lib/wikiprepa";
+import { parseWikiChapter, parseWikiChapterList, WIKI_BASE, WIKI_SLUG } from "@/lib/wikiprepa";
 
 /**
  * GET /api/wikiprepa?chapitre=<slug> → les questions d'un chapitre Wikiprepa
@@ -8,7 +8,17 @@ import { parseWikiChapter, WIKI_BASE, WIKI_SLUG } from "@/lib/wikiprepa";
 export const revalidate = 86400;
 
 export async function GET(req: Request) {
-  const slug = new URL(req.url).searchParams.get("chapitre") ?? "";
+  const params = new URL(req.url).searchParams;
+  if (params.has("liste")) {
+    try {
+      const res = await fetch(`${WIKI_BASE}/concours/chapitres`, { headers: { "user-agent": "TaekdHub (outil perso de suivi de révisions)" }, next: { revalidate: 86400 }, signal: AbortSignal.timeout(15000) });
+      if (!res.ok) return Response.json({ error: `Wikiprepa : ${res.status}.` }, { status: 502 });
+      return Response.json({ chapitres: parseWikiChapterList(await res.text()) }, { headers: { "cache-control": "public, s-maxage=86400" } });
+    } catch {
+      return Response.json({ error: "Wikiprepa ne répond pas." }, { status: 502 });
+    }
+  }
+  const slug = params.get("chapitre") ?? "";
   if (!WIKI_SLUG.test(slug) || slug.length > 80) return Response.json({ error: "Chapitre inconnu." }, { status: 400 });
   let res: Response;
   try {

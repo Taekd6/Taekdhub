@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { paperTitle, parseWikiChapter } from "@/lib/wikiprepa";
 
 const card = (slug: string, q: string, extra: string) =>
-  `<div class="card"><h3>Titre ${q}</h3>${extra}<a href="/concours/ecrit/${slug}/corrige#q${q}">Indice et corrigé</a></div>`;
+  `<div class="card"><h3>${slug}, Q${q}</h3>${extra}<a href="/concours/ecrit/${slug}/corrige#q${q}">Indice et corrigé de ${slug}, Q${q}</a></div>`;
 
 describe("lecture d'une page de chapitre Wikiprepa", () => {
   it("une question par lien, avec badge, temps et difficulté", () => {
-    const html = `<html><script>var x = "<a href='/concours/ecrit/faux_x_mp_2020/corrige#q1'>"</script><body>
+    const html = `<html><p>Classiques : Incontournables (60)</p><script>var x = "<a href='/concours/ecrit/faux_x_mp_2020/corrige#q1'>"</script><body>
       ${card("ccinp_physique-chimie_mp_2021", "21", "<span>Incontournable</span><p>Temps estimé : ≈ 6 min</p><p>Difficulté : Application directe</p>")}
       ${card("banque-pt_physique-b_pt_2025", "1", "<p>Temps estimé : ≈ 4 min</p><p>Difficulté : Intermédiaire</p>")}
       ${card("ccinp_physique-chimie_mp_2021", "21", "")}

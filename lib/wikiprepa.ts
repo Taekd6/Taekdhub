@@ -25,8 +25,6 @@ export interface WikiQuestion {
   incontournable: boolean;
   minutes: number | null;
   difficulte: string | null;
-  /** Le thème de la question quand la carte l'affiche. */
-  theme: string | null;
 }
 
 export const WIKI_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -57,9 +55,9 @@ export function parseWikiChapter(html: string): WikiQuestion[] {
   for (let i = 1; i < parts.length; i += 2) {
     const [slug, question] = parts[i].split("#");
     const key = `${slug}#${question}`;
-    const card = (parts[i - 1] ?? "").replace(/\s+/g, " ").trim().slice(-600);
+    const card = (parts[i - 1] ?? "").replace(/\s+/g, " ").trim().slice(-1500);
     const prior = seen.has(key);
-    const meta = describeCard(card, slug, question);
+    const meta = describeCard(card, slug);
     if (prior) {
       // La même question peut être reliée deux fois (titre et bouton) : on garde la carte la plus riche.
       const existing = out.find((item) => `${item.slug}#${item.question}` === key);
@@ -91,18 +89,33 @@ export function paperTitle(slug: string): { titre: string; filiere: string; anne
   return { titre: [name, ep, filiere.toUpperCase(), year].filter(Boolean).join(" "), filiere: filiere.toUpperCase(), annee };
 }
 
-function describeCard(card: string, slug: string, question: string) {
+function describeCard(chunk: string, slug: string) {
   const base = paperTitle(slug);
+  // Le texte du lien de la carte précédente (« Indice et corrigé de …, Qn ») ouvre le morceau : on ne garde que ce qui suit.
+  const cut = chunk.lastIndexOf("Indice et corrigé");
+  let card = chunk;
+  if (cut >= 0) {
+    const rest = chunk.slice(cut);
+    const end = /Q\d+/.exec(rest);
+    card = end ? rest.slice(end.index + end[0].length) : "";
+  }
   const minutes = /Temps estimé\s*:?\s*≈?\s*(\d+)\s*min/i.exec(card)?.[1];
   const difficulte = /Difficulté\s*:?\s*(Application directe|Intermédiaire|Exigeant|Difficile)/i.exec(card)?.[1] ?? null;
-  // Thème : le texte entre « Qn » et le badge/temps, quand la carte en affiche un.
-  const after = new RegExp(`Q${question}\\b\\s*(.{4,140}?)\\s*(?:Incontournable|Temps estimé|Difficulté|Indice et corrigé|$)`, "i").exec(card)?.[1]?.trim() ?? null;
-  const theme = after && !/^[,·:-]?\s*$/.test(after) ? after.replace(/^[,·:–-]\s*/, "") : null;
   return {
     ...base,
-    incontournable: /Incontournable/i.test(card.slice(-260)),
+    incontournable: /\bIncontournable\b(?!s)/i.test(card),
     minutes: minutes ? Number(minutes) : null,
     difficulte: difficulte ? difficulte.charAt(0).toUpperCase() + difficulte.slice(1).toLowerCase() : null,
-    theme,
   };
+}
+
+/** La page « Tous les chapitres » → (slug, intitulé), sans doublon. */
+export function parseWikiChapterList(html: string): { slug: string; label: string }[] {
+  const out = new Map<string, string>();
+  const re = /<a\b[^>]*?href="(?:https?:\/\/(?:www\.)?wikiprepa\.fr)?\/concours\/chapitre\/([a-z0-9-]+)\/?"[^>]*>([\s\S]*?)<\/a>/gi;
+  for (let m = re.exec(html); m; m = re.exec(html)) {
+    const label = decode(m[2].replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+    if (label && !out.has(m[1])) out.set(m[1], label.slice(0, 120));
+  }
+  return [...out].map(([slug, label]) => ({ slug, label }));
 }
