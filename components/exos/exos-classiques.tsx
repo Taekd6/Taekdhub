@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { caseKey, type CaseState, type ExoEntry, type NewExo } from "@/lib/exos";
 import type { ProgrammeChapter } from "@/lib/programme-data";
 import { filiereRank, type WikiQuestion, type WikiSubject } from "@/lib/wikiprepa";
-import { wikiSlugsFor } from "@/lib/wikiprepa-map";
+import { booleanoperaUrl, wikiSlugsFor } from "@/lib/wikiprepa-map";
 
 /**
  * ONGLET « CLASSIQUES » D'UN CHAPITRE : les questions de concours que
@@ -126,6 +126,14 @@ export function ExosClassiques({
             <a href={`https://wikiprepa.fr/concours/chapitre/${slugs[0]}`} target="_blank" rel="noopener noreferrer">
               Wikiprepa ↗
             </a>
+            {booleanoperaUrl(chapter.id) && (
+              <>
+                {" · "}
+                <a href={booleanoperaUrl(chapter.id)!} target="_blank" rel="noopener noreferrer">
+                  Cours Booleanopera ↗
+                </a>
+              </>
+            )}
           </p>
         </div>
         <div className="x-tabs" role="group" aria-label="Afficher" style={{ margin: 0 }}>

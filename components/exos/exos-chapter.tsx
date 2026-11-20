@@ -10,7 +10,7 @@ import { chapterStats, entryCases, EXO_SOURCE_LABEL, questionUrl, resumeQuestion
 import type { ProgrammeChapter } from "@/lib/programme-data";
 import { AddSheet, GradeSheet, SessionSheet } from "@/components/exos/exos-sheets";
 import { ExosClassiques } from "@/components/exos/exos-classiques";
-import { wikiSlugsFor } from "@/lib/wikiprepa-map";
+import { booleanoperaUrl, wikiSlugsFor } from "@/lib/wikiprepa-map";
 
 const BASE = "https://wikiprepa.fr/concours/chapitre/";
 const SOURCE_HINT: Record<ExoSource, string> = {
@@ -121,6 +121,11 @@ export function ExosChapter({ chapter, embedded = false }: { chapter: ProgrammeC
             <em className="num">{count}</em>
           </button>
         ))}
+        {booleanoperaUrl(chapter.id) && (
+          <a className="x-tab" href={booleanoperaUrl(chapter.id)!} target="_blank" rel="noopener noreferrer">
+            Cours Booleanopera ↗
+          </a>
+        )}
         {wikiSlugsFor(chapter.id).length > 0 && (
           <button type="button" className="x-tab" aria-pressed={filter === "classiques"} onClick={() => setFilter("classiques")}>
             Classiques

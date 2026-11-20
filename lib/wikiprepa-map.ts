@@ -83,3 +83,27 @@ export const WIKI_CHAPTERS: Record<string, string[]> = {
 export function wikiSlugsFor(chapterId: string): string[] {
   return WIKI_CHAPTERS[chapterId] ?? [];
 }
+
+/** Chapitre de maths → parcours « Cours » de Booleanopera (cours en briques + exos liés, suivi Acquis / À revoir sur le site). Relevé le 2026-11-20. */
+const BOOLEANOPERA: Record<string, number> = {
+  "m1-structures": 42, "m2-groupes-anneaux": 42,
+  "m1-reels-suites": 47, "m1-series": 47, "m2-series-compl": 47,
+  "m1-ev": 49, "m1-applications-lineaires": 49, "m1-matrices": 49, "m1-determinants": 49, "m2-algebre-lineaire": 49,
+  "m1-integration": 58, "m2-integration": 58,
+  "m2-evn": 61,
+  "m1-arithmetique": 70,
+  "m2-suites-fonctions": 75,
+  "m2-reduction": 77,
+  "m2-integrales-parametre": 83,
+  "m1-prehilbertiens": 86, "m2-euclidiens": 86,
+  "m2-series-entieres": 94,
+  "m1-denombrement": 96, "m1-probas": 96, "m2-probas": 96,
+  "m1-fonctions": 101, "m1-limites-continuite": 101, "m1-derivabilite": 101, "m1-convexite": 101,
+  "m2-calcul-diff": 102,
+  "m1-equadiff": 232, "m2-equadiff": 232,
+};
+
+export function booleanoperaUrl(chapterId: string): string | null {
+  const id = BOOLEANOPERA[chapterId];
+  return id ? `https://www.booleanopera.fr/parcours/voir/${id}/` : null;
+}
