@@ -604,3 +604,12 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
   la page reste affichée. Les 15 sujets Wikiprepa du catalogue ouverts un par un : tous existent, numéros de questions conformes
   (attention : sur certains sujets Banque PT B 2020-2021, l'ancre ne suit pas le numéro affiché ; aucun dans le catalogue).
 - Reste : sujets Wikiprepa des autres chapitres, manuels de physique, ouverture d'un PDF à la bonne page (Dropbox ne le permet pas sur iPad).
+- Onglet « Classiques » (`8bfac42` → `8a4ee98`, 2026-11-20, accord de l'élève) : `app/api/wikiprepa` lit côté serveur une page de
+  chapitre Wikiprepa (`?chapitre=<slug>`, cache un jour ; `?liste` = tous les chapitres ; `?resume` = comptes), `lib/wikiprepa.ts` la
+  réduit aux cartes de questions (épreuve, Qn, lien `#qN`, badge Incontournable, temps, difficulté) ; en maths, Wikiprepa ne liste que des
+  sujets entiers (pas d'ancre par question, corrigés PDF externes) : on liste les sujets. `lib/wikiprepa-map.ts` : chapitre du programme →
+  pages Wikiprepa (tous les chapitres sauf m1-logique). Écran `components/exos/exos-classiques.tsx` : incontournables groupés par sujet,
+  MP/MPI d'abord, filtre « Toutes » et « MP seulement » ; tap = ouvre le corrigé à la question et la range dans le catalogue (comparaison
+  des liens sans ancre corrigée dans `addLinks`), question déjà suivie = fiche de notation. Contrôlé en production : systèmes ouverts
+  280 questions / 60 incontournables, diffusion thermique 654 / 135, oxydoréduction 240 / 58, topologie-evn 177 sujets. 1624 tests.
+  NON vérifié : l'écran lui-même sur l'iPad (pas de capture faite, pour économiser).
