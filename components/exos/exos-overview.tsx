@@ -8,6 +8,7 @@ import { activityDays, chapterStats, dueCases, forecast, progression, streakDays
 import { ChapterRadar, ForecastChart, MasteryRing, ProgressChart, StatusDonut, STATUS_COLOR } from "@/components/exos/exos-charts";
 import { AddSheet, SessionSheet } from "@/components/exos/exos-sheets";
 import { wikiPieges } from "@/components/exos/exos-chapter";
+import { PROGRAMME, PROGRAMME_SUBJECTS } from "@/lib/programme-data";
 
 const pct = (value: number | null) => (value === null ? "—" : `${Math.round(value * 100)} %`);
 const SHORT: Record<string, string> = {
@@ -81,6 +82,20 @@ export function ExosOverview() {
     for (const item of due) out[item.entry.source] += 1;
     return out;
   }, [due]);
+  const folders = useMemo(() => {
+    const byId = new Map(stats.map((item) => [item.chapter.id, item]));
+    const order = (a: { year: number }, b: { year: number }) => b.year - a.year;
+    return PROGRAMME_SUBJECTS.filter((subject) => matiere === "Tout" || subject === matiere || (matiere === "Info" && subject.startsWith("Informatique"))).map((subject) => {
+      const chapters = PROGRAMME.filter((chapter) => chapter.subject === subject)
+        .map((chapter, index) => ({ chapter, index, year: chapter.year }))
+        .sort((a, b) => order(a, b) || a.index - b.index)
+        .map((x) => x.chapter);
+      const withExos = chapters.flatMap((chapter) => (byId.has(chapter.id) ? [byId.get(chapter.id)!] : []));
+      const others = chapters.filter((chapter) => !byId.has(chapter.id));
+      const sum = (key: "cases" | "done" | "due") => withExos.reduce((n, item) => n + item[key], 0);
+      return { subject, withExos, others, cases: sum("cases"), done: sum("done"), due: sum("due") };
+    });
+  }, [stats, matiere]);
   const dateLabel = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
   if (!mounted) return <div className="exos exos-page"><h1 className="x-h1">Exos</h1><div className="x-emptyc">Chargement…</div></div>;
 
@@ -104,6 +119,98 @@ export function ExosOverview() {
       </div>
 
       <div className="x-grid">
+        <section className="x-card" id="catalogue" aria-label="Exos par matière">
+          <div className="x-head">
+            <div>
+              <p className="x-kicker">Annales, BEOS et manuels · spé puis sup</p>
+              <h2 className="x-title">Par matière</h2>
+            </div>
+            <button type="button" className="x-btn tint sm" onClick={() => setAdding(true)}>
+              + Ajouter
+            </button>
+          </div>
+          {!ready ? (
+            <div className="x-emptyc">Chargement…</div>
+          ) : (
+            <div className="x-folders">
+              {folders.map((folder) => (
+                <div key={folder.subject} className="x-folder">
+                  <div className="x-fhead">
+                    <h3>{folder.subject}</h3>
+                    <div className="x-meta">
+                      {folder.withExos.length} chapitre{folder.withExos.length > 1 ? "s" : ""} avec exos ·{" "}
+                      <b className="num" style={{ color: "var(--x-ink)" }}>
+                        {folder.done}
+                      </b>
+                      /{folder.cases} cases
+                      {folder.due ? (
+                        <>
+                          {" · "}
+                          <span className="x-todo">{folder.due} à revoir</span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                  {folder.withExos.length === 0 ? (
+                    <p className="x-meta">Pas encore d&apos;exos rangés dans cette matière.</p>
+                  ) : (
+                    <div className="x-chaps">
+                      {folder.withExos.map((item) => {
+                        const share = (n: number) => (item.cases ? (n / item.cases) * 100 : 0);
+                        return (
+                          <Link key={item.chapter.id} href={`/exos/${item.chapter.id}`} className="x-chap">
+                            <span className="x-yr">{item.chapter.year === 2 ? "Spé" : "Sup"}</span>
+                            <h4>{item.chapter.title}</h4>
+                            <div className="x-meta">
+                              <b className="num" style={{ color: "var(--x-ink)" }}>
+                                {item.done}
+                              </b>
+                              /{item.cases} cases{item.mastery !== null ? ` · ${pct(item.mastery)}` : ""}
+                              {item.due ? (
+                                <>
+                                  {" · "}
+                                  <span className="x-todo">{item.due} à revoir</span>
+                                </>
+                              ) : null}
+                            </div>
+                            <div className="x-bar">
+                              <i className="b-ok" style={{ width: `${share(item.seul)}%` }} />
+                              <i className="b-mid" style={{ width: `${share(item.indices)}%` }} />
+                              <i className="b-bad" style={{ width: `${share(item.rate)}%` }} />
+                            </div>
+                            <div className="x-meta" style={{ marginTop: 8 }}>
+                              {[
+                                item.bySource.annale.cases ? `Annales ${item.bySource.annale.done}/${item.bySource.annale.cases}` : null,
+                                item.bySource.beos.cases ? `BEOS ${item.bySource.beos.done}/${item.bySource.beos.cases}` : null,
+                                item.bySource.manuel.cases ? `Manuels ${item.bySource.manuel.done}/${item.bySource.manuel.cases}` : null,
+                                item.bySource.autre.cases ? `TD ${item.bySource.autre.done}/${item.bySource.autre.cases}` : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {folder.others.length > 0 && (
+                    <details className="x-others">
+                      <summary>Autres chapitres ({folder.others.length})</summary>
+                      <div className="x-olist">
+                        {folder.others.map((chapter) => (
+                          <Link key={chapter.id} href={`/exos/${chapter.id}`}>
+                            <em>{chapter.year === 2 ? "Spé" : "Sup"}</em> {chapter.title}
+                          </Link>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         <section className="x-card c4 x-hero" aria-label="Séance du jour">
           <div>
             <p className="x-kicker">Séance du jour</p>
@@ -303,62 +410,6 @@ export function ExosOverview() {
           </p>
         </section>
 
-        <section className="x-card" id="catalogue" aria-label="Catalogue par chapitre">
-          <div className="x-head">
-            <div>
-              <p className="x-kicker">Annales, BEOS et manuels</p>
-              <h2 className="x-title">Chapitres</h2>
-            </div>
-            <button type="button" className="x-btn tint sm" onClick={() => setAdding(true)}>
-              + Ajouter
-            </button>
-          </div>
-          {!ready ? (
-            <div className="x-emptyc">Chargement…</div>
-          ) : stats.length === 0 ? (
-            <div className="x-emptyc">
-              Aucun catalogue pour l&apos;instant. Claude range ici, chapitre par chapitre, les sujets d&apos;annales, les exos BEOS et ceux de tes manuels ; tu peux aussi coller un lien.
-            </div>
-          ) : (
-            <div className="x-chaps">
-              {stats.map((item) => {
-                const share = (n: number) => (item.cases ? (n / item.cases) * 100 : 0);
-                return (
-                  <Link key={item.chapter.id} href={`/exos/${item.chapter.id}`} className="x-chap">
-                    <h4>{item.chapter.title}</h4>
-                    <div className="x-meta">
-                      <b className="num" style={{ color: "var(--x-ink)" }}>
-                        {item.done}
-                      </b>
-                      /{item.cases} cases{item.mastery !== null ? ` · ${pct(item.mastery)}` : ""}
-                      {item.due ? (
-                        <>
-                          {" · "}
-                          <span className="x-todo">{item.due} à revoir</span>
-                        </>
-                      ) : null}
-                    </div>
-                    <div className="x-bar">
-                      <i className="b-ok" style={{ width: `${share(item.seul)}%` }} />
-                      <i className="b-mid" style={{ width: `${share(item.indices)}%` }} />
-                      <i className="b-bad" style={{ width: `${share(item.rate)}%` }} />
-                    </div>
-                    <div className="x-meta" style={{ marginTop: 8 }}>
-                      {[
-                        item.bySource.annale.cases ? `Annales ${item.bySource.annale.done}/${item.bySource.annale.cases}` : null,
-                        item.bySource.beos.cases ? `BEOS ${item.bySource.beos.done}/${item.bySource.beos.cases}` : null,
-                        item.bySource.manuel.cases ? `Manuels ${item.bySource.manuel.done}/${item.bySource.manuel.cases}` : null,
-                        item.bySource.autre.cases ? `TD ${item.bySource.autre.done}/${item.bySource.autre.cases}` : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </section>
       </div>
 
       <AddSheet open={adding} defaultChapterId={catalogue[0]?.chapter.id} onLinks={addLinks} onEntry={(chapter, exo) => addEntries(chapter, [exo])} onClose={() => setAdding(false)} />

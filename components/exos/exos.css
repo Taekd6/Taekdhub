@@ -192,3 +192,16 @@
   .exos .x-draw, .exos .x-fade, .exos .x-grow, .exos .x-pop { animation: none; stroke-dashoffset: 0; opacity: 1; transform: none; }
   .exos .x-arc, .exos .x-chap, .exos.x-scrim, .exos .x-sheet { transition: none; animation: none; opacity: 1; }
 }
+
+/* Dossiers par matière */
+.exos .x-folders { display: grid; gap: 14px; }
+.exos .x-folder { background: var(--x-solid); border-radius: 20px; padding: 14px; box-shadow: 0 0 0 0.5px var(--x-line); }
+.exos .x-fhead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 10px; }
+.exos .x-fhead h3 { margin: 0; font-size: 18px; font-weight: 700; }
+.exos .x-folder .x-chap { position: relative; box-shadow: 0 0 0 0.5px var(--x-line); }
+.exos .x-yr { float: right; font-size: 11px; font-weight: 600; color: var(--x-muted); margin-left: 6px; }
+.exos .x-others { margin-top: 10px; }
+.exos .x-others summary { cursor: pointer; color: var(--x-muted); font-size: 13px; font-weight: 600; padding: 6px 0; }
+.exos .x-olist { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; }
+.exos .x-olist a { text-decoration: none; color: var(--x-ink); font-size: 13px; padding: 6px 10px; border-radius: 999px; box-shadow: 0 0 0 0.5px var(--x-line); }
+.exos .x-olist em { font-style: normal; color: var(--x-muted); font-size: 11px; }
