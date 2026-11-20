@@ -35,7 +35,7 @@ const short = (id: string, title: string) => SHORT[id] ?? (title.length > 18 ? `
 export function ExosOverview() {
   const { ready, today, catalogue, states, grade, addEntries, addLinks } = useExos();
   const [mode, setMode] = useState<"mastery" | "volume">("mastery");
-  const [matiere, setMatiere] = useState<"Tout" | "Mathématiques" | "Physique" | "Chimie">("Tout");
+  const [matiere, setMatiere] = useState<"Tout" | "Mathématiques" | "Physique" | "Chimie" | "Info">("Tout");
   const [adding, setAdding] = useState(false);
   const [session, setSession] = useState<{ title: string; items: DueCase[] } | null>(null);
   /* Rien de daté au rendu serveur : la page est générée au build (UTC, autre jour possible) et l'iPad est à l'heure de Paris. */
@@ -53,7 +53,7 @@ export function ExosOverview() {
   const done = all.length;
   const counts = useMemo(() => {
     const out = { seul: 0, indices: 0, rate: 0 };
-    for (const item of stats) if (matiere === "Tout" || item.chapter.subject === matiere) for (const key of ["seul", "indices", "rate"] as const) out[key] += item[key];
+    for (const item of stats) if (matiere === "Tout" || item.chapter.subject === matiere || (matiere === "Info" && item.chapter.subject.startsWith("Informatique"))) for (const key of ["seul", "indices", "rate"] as const) out[key] += item[key];
     return out;
   }, [stats, matiere]);
   const mastery = done ? all.reduce((sum, state) => sum + (state.status === "seul" ? 1 : state.status === "indices" ? 0.5 : 0), 0) / done : 0;
@@ -162,9 +162,9 @@ export function ExosOverview() {
               <h2 className="x-title">Statuts</h2>
             </div>
             <div className="x-seg">
-              {(["Tout", "Mathématiques", "Physique", "Chimie"] as const).map((value) => (
+              {(["Tout", "Mathématiques", "Physique", "Chimie", "Info"] as const).map((value) => (
                 <button key={value} type="button" aria-pressed={matiere === value} onClick={() => setMatiere(value)}>
-                  {value === "Mathématiques" ? "Maths" : value === "Physique" ? "Phys." : value === "Chimie" ? "Chimie" : "Tout"}
+                  {value === "Mathématiques" ? "Maths" : value === "Physique" ? "Phys." : value === "Chimie" ? "Chimie" : value === "Info" ? "Info" : "Tout"}
                 </button>
               ))}
             </div>

@@ -446,6 +446,69 @@ const CHIMIE_SPE: Entry[] = [
   ]],
 ];
 
+
+/* Informatique : tronc commun (Python, SQL) et option MP (OCaml). `questions` = les classiques à savoir écrire sans aide. */
+const INFO_TC: Entry[] = [
+  ["i-python-complexite", "Python : bases, invariants et complexité", ["complexite", "invariant de boucle", "terminaison"], [
+    "Prouver la terminaison et la correction d'une boucle avec un variant et un invariant.",
+    "Calculer la complexité d'une double boucle et d'une fonction récursive simple.",
+  ]],
+  ["i-tris-recherche", "Tris et recherche", ["tri", "dichotomie", "tri fusion", "tri rapide"], [
+    "Écrire la recherche dichotomique et justifier sa complexité logarithmique.",
+    "Écrire le tri par insertion et le tri fusion ; donner leurs complexités.",
+    "Écrire le tri rapide (partition) et discuter son pire cas.",
+  ]],
+  ["i-recursivite", "Récursivité et diviser pour régner", ["recursif", "diviser pour regner", "exponentiation rapide"], [
+    "Écrire l'exponentiation rapide récursive et sa complexité.",
+    "Établir la relation de récurrence d'un algorithme diviser-pour-régner et la résoudre.",
+  ]],
+  ["i-graphes", "Graphes : parcours et plus courts chemins", ["graphe", "bfs", "dfs", "dijkstra", "a etoile"], [
+    "Représenter un graphe par liste et par matrice d'adjacence.",
+    "Écrire le parcours en largeur (file) et en profondeur (pile ou récursif).",
+    "Écrire l'algorithme de Dijkstra avec une file de priorité ; dire pourquoi les poids doivent être positifs.",
+    "Expliquer A* et le rôle d'une heuristique admissible.",
+  ]],
+  ["i-prog-dyn", "Programmation dynamique", ["programmation dynamique", "memoisation", "sac a dos"], [
+    "Écrire une mémoïsation par dictionnaire et la version ascendante d'une même récurrence.",
+    "Résoudre le sac à dos 0/1 et la plus longue sous-suite commune.",
+  ]],
+  ["i-sql", "Bases de données et SQL", ["sql", "base de donnees", "jointure"], [
+    "Écrire une requête avec jointure, GROUP BY, HAVING et une sous-requête.",
+    "Distinguer clé primaire et clé étrangère ; lire un schéma relationnel.",
+  ]],
+  ["i-ia-jeux", "Apprentissage et jeux", ["k plus proches voisins", "k moyennes", "min max", "jeux"], [
+    "Écrire l'algorithme des k plus proches voisins et la matrice de confusion.",
+    "Écrire l'algorithme des k-moyennes et dire pourquoi il converge.",
+    "Écrire min-max sur un arbre de jeu avec une heuristique et une profondeur limite.",
+  ]],
+];
+
+const INFO_OPTION: Entry[] = [
+  ["o-ocaml", "OCaml : listes, récursion terminale, types", ["ocaml", "recursion terminale", "filtrage"], [
+    "Écrire map, filter, fold_left et une version récursive terminale avec accumulateur.",
+    "Définir un type somme et l'utiliser par filtrage exhaustif.",
+  ]],
+  ["o-arbres-tas", "Arbres, ABR et tas", ["arbre binaire", "abr", "tas", "file de priorite"], [
+    "Écrire les parcours préfixe, infixe, postfixe d'un arbre binaire.",
+    "Insérer et rechercher dans un ABR ; complexité selon la hauteur.",
+    "Implémenter un tas binaire dans un tableau et le tri par tas.",
+  ]],
+  ["o-logique", "Logique propositionnelle", ["logique", "formes normales", "sat"], [
+    "Mettre une formule en forme normale conjonctive et disjonctive.",
+    "Écrire l'évaluation d'une formule et le test de satisfiabilité par force brute.",
+  ]],
+  ["o-automates", "Langages réguliers et automates", ["automate", "langage rationnel", "kleene", "determinisation"], [
+    "Déterminiser un automate par la construction des parties.",
+    "Énoncer le théorème de Kleene et passer d'une expression régulière à un automate (Glushkov ou Thompson).",
+    "Utiliser le lemme de l'étoile pour montrer qu'un langage n'est pas rationnel.",
+  ]],
+  ["o-graphes", "Graphes (option) : arbres couvrants, tri topologique", ["kruskal", "union find", "tri topologique", "composantes fortement connexes"], [
+    "Écrire Kruskal avec union-find et justifier sa correction.",
+    "Écrire un tri topologique par parcours en profondeur.",
+    "Calculer les composantes fortement connexes (Kosaraju).",
+  ]],
+];
+
 export const PROGRAMME: readonly ProgrammeChapter[] = [
   ...chapters("Mathématiques", 1, MATHS_SUP),
   ...chapters("Mathématiques", 2, MATHS_SPE),
@@ -453,9 +516,11 @@ export const PROGRAMME: readonly ProgrammeChapter[] = [
   ...chapters("Physique", 2, PHYSIQUE_SPE),
   ...chapters("Chimie", 1, CHIMIE_SUP),
   ...chapters("Chimie", 2, CHIMIE_SPE),
+  ...chapters("Informatique TC", 2, INFO_TC),
+  ...chapters("Informatique Spé", 2, INFO_OPTION),
 ];
 
 /** Les matières couvertes par la carte, dans l'ordre de l'application. */
-export const PROGRAMME_SUBJECTS: readonly Subject[] = ["Mathématiques", "Physique", "Chimie"];
+export const PROGRAMME_SUBJECTS: readonly Subject[] = ["Mathématiques", "Physique", "Chimie", "Informatique TC", "Informatique Spé"];
 
 export const PROGRAMME_BY_ID: ReadonlyMap<string, ProgrammeChapter> = new Map(PROGRAMME.map((chapter) => [chapter.id, chapter]));

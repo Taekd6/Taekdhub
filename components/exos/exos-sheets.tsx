@@ -177,7 +177,7 @@ export function AddSheet({
     const spe = PROGRAMME.filter((item) => item.year === 2);
     const sup = PROGRAMME.filter((item) => item.year === 1);
     return [
-      ...["Mathématiques", "Physique", "Chimie"].map((subject) => ({ label: `${subject} · spé`, items: spe.filter((item) => item.subject === subject) })),
+      ...["Mathématiques", "Physique", "Chimie", "Informatique TC", "Informatique Spé"].map((subject) => ({ label: `${subject} · spé`, items: spe.filter((item) => item.subject === subject) })),
       ...["Mathématiques", "Physique", "Chimie"].map((subject) => ({ label: `${subject} · sup`, items: sup.filter((item) => item.subject === subject) })),
     ].filter((group) => group.items.length);
   }, []);
