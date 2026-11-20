@@ -666,3 +666,8 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 - Vérifié : tsc, eslint, 108 fichiers de tests (1631 réussis + 1 échec attendu). NON vérifié : le signet sur le vrai site (page testée en lecture seulement), l'auto-relevé avec un vrai Anki, `next build` (polices Google inaccessibles dans le bac à sable). Non déployé, pas de PR.
 - Cahier de prépa (mp-pascal) : connecté dans le navigateur intégré ; dossiers Informatique TC et Mathématiques, programme de colles, agenda. Rien de lu ni de relié.
 - Mise en ligne (accord explicite de l'élève, 2026-11-20 23:10) : `claude/exos-pc-refonte` fusionnée dans `main` en avance rapide (819aba4 → 52c45d9, aucun conflit, rien de forcé). Déploiement production Vercel `dpl_6B4fAE7t…` READY. Aucune PR. À savoir : une autre session (Opus) pousse aussi sur `main` ; refaire `git fetch` avant tout push.
+
+### 2026-11-20 (nuit, fin 4) — Exos en sombre (code 034018b), mis en ligne
+- `components/exos/exos.css` : thème sombre (variables `--x-*`), plus de carte claire arrondie sur le fond de l'app, boutons `--x-btn`, feuilles et catalogue assombris ; radar des chapitres en couleurs claires (`exos-charts.tsx`) ; ligne Booleanopera en `x-meta` (plus de majuscules automatiques).
+- Vérifié : tsc, eslint, 108 fichiers de tests. NON vérifié à l'œil : l'aperçu Vercel est protégé (connexion Vercel) et le navigateur intégré n'y est pas connecté. Les 14 tuiles de chapitres restent étroites (non retouchées).
+- Mise en ligne sur ordre de l'élève (« fusionne », 2026-11-20 23:18) : `main` 52c45d9 → 034018b en avance rapide, rien de forcé, pas de PR.
