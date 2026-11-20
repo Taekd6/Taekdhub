@@ -728,6 +728,7 @@ describe("normalizePreferences — frontière de trust réelle, pas trois champs
       [
         "ankiDeckChapters",
         "avatarDataUrl",
+        "booleanopera",
         "briefingOnOpen",
         "calendarFeeds",
         "capacityByWeekday",

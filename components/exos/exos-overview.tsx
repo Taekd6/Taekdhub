@@ -7,6 +7,7 @@ import { useExos } from "@/hooks/use-exos";
 import { activityDays, chapterStats, dueCases, forecast, progression, streakDays, weakCases, weakChapters, weekStart, addDays, type DueCase } from "@/lib/exos";
 import { ChapterRadar, ForecastChart, MasteryRing, ProgressChart, StatusDonut, STATUS_COLOR } from "@/components/exos/exos-charts";
 import { AddSheet, SessionSheet } from "@/components/exos/exos-sheets";
+import { BooleanoperaLink } from "@/components/exos/booleanopera-link";
 import { wikiPieges } from "@/components/exos/exos-chapter";
 import { PROGRAMME, PROGRAMME_SUBJECTS } from "@/lib/programme-data";
 
@@ -133,6 +134,7 @@ export function ExosOverview() {
           </a>
         </div>
       </div>
+      <BooleanoperaLink />
 
       <div className="x-grid">
         <section className="x-card c4 x-hero" aria-label="Séance du jour">

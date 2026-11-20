@@ -5,6 +5,7 @@ import { normalizeSheets, type ExerciseSheet } from "@/lib/exercise-sheets";
 import { normalizeAvatar } from "@/lib/avatar";
 import { normalizePerformanceWindows, type PerformanceWindow } from "@/lib/performance-windows";
 import { normalizeAnkiSnapshots, type AnkiSnapshot } from "@/lib/anki-snapshot";
+import { normalizeBooleanopera, type BooleanoperaReport } from "@/lib/booleanopera";
 import { normalizeChapterNotes, type ChapterNotes } from "@/lib/chapter-notes";
 import { normalizeCalendarFeeds, type CalendarFeed } from "@/lib/calendar";
 import { SRS_LADDER } from "@/lib/spaced-repetition";
@@ -171,6 +172,8 @@ export type Preferences = {
    * Prime sur toute association déduite automatiquement.
    */
   ankiDeckChapters: Record<string, string | null>;
+  /** Dernier relevé de ton suivi sur booleanopera.fr (lib/booleanopera.ts), ou `null` si jamais fait. */
+  booleanopera: BooleanoperaReport | null;
   /**
    * « REFAIRE SANS AIDE » (lib/exercises.ts) : délais, en jours, avant la
    * 1re, 2e, 3e… nouvelle tentative d'un exercice raté. Le dernier délai
@@ -328,6 +331,7 @@ const defaults: Preferences = {
   programmeSeen: [],
   colleChapters: [],
   ankiDeckChapters: {},
+  booleanopera: null,
   retryDelaysDays: [2, 5, 12],
   weeklyFocus: null,
   performanceWindows: null,
@@ -1535,6 +1539,7 @@ export function normalizePreferences(raw: unknown): Preferences {
     programmeSeen: normalizeProgrammeIds(item.programmeSeen),
     colleChapters: normalizeProgrammeIds(item.colleChapters),
     ankiDeckChapters: normalizeDeckChapters(item.ankiDeckChapters),
+    booleanopera: normalizeBooleanopera(item.booleanopera),
     retryDelaysDays: normalizeRetryDelays(item.retryDelaysDays),
     weeklyFocus: normalizeWeeklyFocus(item.weeklyFocus),
     performanceWindows: normalizePerformanceWindows(item.performanceWindows),

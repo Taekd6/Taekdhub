@@ -87,6 +87,21 @@ export function AnkiOverview() {
   const mappings = useMemo(() => (full ? mapDecks(full.decks.map((deck) => deck.name), preferences.ankiDeckChapters) : []), [full, preferences.ankiDeckChapters]);
   const byChapter = useMemo(() => ankiByChapter(full, preferences.ankiDeckChapters), [full, preferences.ankiDeckChapters]);
 
+  // Relevé automatique à l'ouverture, sur ordinateur seulement (AnkiConnect n'existe pas ailleurs) :
+  // uniquement si le dernier relevé complet a plus de 6 h. Silencieux s'il échoue (Anki fermé) ;
+  // le bouton ci-dessous reste le seul moyen de voir l'explication de l'erreur.
+  const autoTried = useRef(false);
+  useEffect(() => {
+    if (!ready || platform === null || platform === "ios" || platform === "android" || autoTried.current) return;
+    autoTried.current = true;
+    if (full && snapshotAgeHours(full.takenAt, new Date()) < 6) return;
+    void readAnkiSnapshot(fetchTransport(), new Date(), setBusy)
+      .then((snapshot) => store(snapshot, `Relevé automatique fait : ${snapshot.decks.length} paquets.`))
+      .catch(() => undefined)
+      .finally(() => setBusy(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, platform]);
+
   if (!ready) {
     return (
       <div className="mx-auto max-w-[60rem] space-y-6">
