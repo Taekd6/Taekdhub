@@ -9,6 +9,8 @@ import { usePrepahubData } from "@/hooks/use-prepahub-data";
 import { chapterStats, entryCases, EXO_SOURCE_LABEL, questionUrl, resumeQuestion, weakCases, dueCases, type CaseState, type ExoEntry, type ExoSource, type DueCase } from "@/lib/exos";
 import type { ProgrammeChapter } from "@/lib/programme-data";
 import { AddSheet, GradeSheet, SessionSheet } from "@/components/exos/exos-sheets";
+import { ExosClassiques } from "@/components/exos/exos-classiques";
+import { wikiSlugsFor } from "@/lib/wikiprepa-map";
 
 const BASE = "https://wikiprepa.fr/concours/chapitre/";
 const SOURCE_HINT: Record<ExoSource, string> = {
@@ -19,7 +21,7 @@ const SOURCE_HINT: Record<ExoSource, string> = {
 };
 const SOURCE_TITLE: Record<ExoSource, string> = { annale: "Annales d'écrit · Wikiprepa", beos: "Oraux · BEOS", manuel: "Manuels", autre: "TD et autres" };
 
-type Filter = "tout" | ExoSource | "revoir";
+type Filter = "tout" | ExoSource | "revoir" | "classiques";
 
 function caseClass(state: CaseState | undefined, today: string): string {
   if (!state) return "";
@@ -119,10 +121,25 @@ export function ExosChapter({ chapter, embedded = false }: { chapter: ProgrammeC
             <em className="num">{count}</em>
           </button>
         ))}
+        {wikiSlugsFor(chapter.id).length > 0 && (
+          <button type="button" className="x-tab" aria-pressed={filter === "classiques"} onClick={() => setFilter("classiques")}>
+            Classiques
+          </button>
+        )}
       </div>
 
       {!ready ? (
         <div className="x-emptyc">Chargement…</div>
+      ) : filter === "classiques" ? (
+        <ExosClassiques
+          chapter={chapter}
+          entries={entries}
+          states={states}
+          today={today}
+          onPick={(entry, question) => setPicked({ entry, question })}
+          onAddLink={(url) => addLinks(chapter, [url])}
+          onAddSubject={(exo) => addEntries(chapter, [exo])}
+        />
       ) : entries.length === 0 ? (
         <div className="x-card">
           <div className="x-emptyc">

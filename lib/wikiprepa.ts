@@ -119,3 +119,27 @@ export function parseWikiChapterList(html: string): { slug: string; label: strin
   }
   return [...out].map(([slug, label]) => ({ slug, label }));
 }
+
+export interface WikiSubject {
+  slug: string;
+  url: string;
+  titre: string;
+  filiere: string;
+  annee: number | null;
+}
+
+/** Pages de maths : Wikiprepa y relie des sujets entiers (`/concours/ecrit/<slug>`), sans ancre par question. */
+export function parseWikiSubjects(html: string): WikiSubject[] {
+  const out = new Map<string, WikiSubject>();
+  const re = /href="(?:https?:\/\/(?:www\.)?wikiprepa\.fr)?\/concours\/ecrit\/([a-z0-9_-]+)\/?"/gi;
+  for (let m = re.exec(html); m; m = re.exec(html)) {
+    if (out.has(m[1])) continue;
+    out.set(m[1], { slug: m[1], url: `${WIKI_BASE}/concours/ecrit/${m[1]}`, ...paperTitle(m[1]) });
+  }
+  return [...out.values()];
+}
+
+/** Ordre d'affichage : MP/MPI d'abord, puis le plus récent. */
+export function filiereRank(filiere: string): number {
+  return /\bMP\b|^MP|MPI/.test(filiere) ? 0 : 1;
+}

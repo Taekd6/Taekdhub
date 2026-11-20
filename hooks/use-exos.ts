@@ -89,9 +89,11 @@ export function useExos() {
       for (const url of urls) {
         const parsed = exoFromUrl(url);
         if (!parsed) continue;
-        const index = list.findIndex((entry) => entry.url && parsed.exo.url && entry.url.toLowerCase() === parsed.exo.url.toLowerCase());
-        if (index >= 0) {
-          list[index] = withQuestion(list[index], parsed.question);
+        const bare = (url: string) => url.replace(/#.*$/, "").replace(/\/+$/, "").toLowerCase();
+        const index = list.findIndex((entry) => entry.url && parsed.exo.url && bare(entry.url) === bare(parsed.exo.url) && (!parsed.question || entry.questions.includes(parsed.question)));
+        const sameSubject = index >= 0 ? index : list.findIndex((entry) => entry.url && parsed.exo.url && bare(entry.url) === bare(parsed.exo.url));
+        if (sameSubject >= 0) {
+          list[sameSubject] = withQuestion(list[sameSubject], parsed.question);
         } else {
           const result = addExos(list, [parsed.exo], new Date());
           if (!result.ok) continue;

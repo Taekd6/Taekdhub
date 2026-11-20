@@ -21,3 +21,14 @@ describe("lecture d'une page de chapitre Wikiprepa", () => {
     expect(paperTitle("centrale_physique-chimie-1_mp_2020").titre).toBe("CentraleSupélec Physique-Chimie 1 MP 2020");
   });
 });
+
+describe("sujets de maths et ordre", () => {
+  it("relève les sujets sans ancre, une fois chacun", async () => {
+    const { parseWikiSubjects, filiereRank } = await import("@/lib/wikiprepa");
+    const html = `<a href="/concours/ecrit/mines_maths-1_mp-mpi_2025">A</a><a href="/concours/ecrit/mines_maths-1_mp-mpi_2025">B</a><a href="/concours/ecrit/centrale_maths-2_pc_2025">C</a><a href="/concours/ecrit/x_y_mp_2020/corrige#q3">D</a>`;
+    const sujets = parseWikiSubjects(html);
+    expect(sujets.map((s) => s.slug)).toEqual(["mines_maths-1_mp-mpi_2025", "centrale_maths-2_pc_2025"]);
+    expect(filiereRank(sujets[0].filiere)).toBe(0);
+    expect(filiereRank(sujets[1].filiere)).toBe(1);
+  });
+});

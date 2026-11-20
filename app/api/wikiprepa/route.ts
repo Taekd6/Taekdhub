@@ -1,4 +1,4 @@
-import { parseWikiChapter, parseWikiChapterList, WIKI_BASE, WIKI_SLUG } from "@/lib/wikiprepa";
+import { parseWikiChapter, parseWikiChapterList, parseWikiSubjects, WIKI_BASE, WIKI_SLUG } from "@/lib/wikiprepa";
 
 /**
  * GET /api/wikiprepa?chapitre=<slug> → les questions d'un chapitre Wikiprepa
@@ -39,7 +39,7 @@ export async function GET(req: Request) {
   }
   const keep = params.has("classiques") ? questions.filter((q) => q.incontournable) : questions;
   return Response.json(
-    { chapitre: slug, source: `${WIKI_BASE}/concours/chapitre/${slug}`, taille: html.length, total: questions.length, incontournables: questions.filter((q) => q.incontournable).length, questions: keep },
+    { chapitre: slug, source: `${WIKI_BASE}/concours/chapitre/${slug}`, taille: html.length, total: questions.length, incontournables: questions.filter((q) => q.incontournable).length, questions: keep, sujets: questions.length ? [] : parseWikiSubjects(html) },
     { headers: { "cache-control": "public, s-maxage=86400, stale-while-revalidate=604800" } },
   );
 }
