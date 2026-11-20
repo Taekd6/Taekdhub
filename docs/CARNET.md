@@ -624,3 +624,8 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 - Exos rangés par matière (2026-11-20, `7d63999`) : /exos ouvre sur un dossier par matière (Maths, Physique, Chimie, Info TC, Info Spé)
   avec chapitres avec exos, cases faites/total et à revoir ; chapitres spé puis sup dans l'ordre du programme, les chapitres sans exos
   repliés dans « Autres chapitres ». Graphiques en dessous ; le filtre Maths/Phys./Chimie/Info s'applique aussi aux dossiers.
+
+## 2026-11-20 — Catalogue Exos enrichi (données Supabase, chapterNotes rev 18 → 20)
+- Freslon, *Exercices incontournables MP* (manuel, sommaire du PDF Dropbox, questions = [] faute de décompte fiable) : 99 exos ajoutés — m2-groupes-anneaux 15 (ch. 1), m2-euclidiens 10 (ch. 3), m2-calcul-diff 18 (ch. 5 + 13), m1-convexite 3 (ch. 6), m2-series-entieres 14 (ch. 10), m2-integration 5 (11.1–11.5), m2-integrales-parametre 7 (11.6–11.12), m2-equadiff 11 (ch. 12), m2-probas 16 (ch. 14–15). Le livre est désormais couvert en entier.
+- Annales Wikiprepa (parties entières vérifiées sur le corrigé) : CCINP PC MP 2022 P. I → p2-mecanique, P. VII → p2-diffusion ; CCINP PC MP 2023 P. III → p2-electrostatique, P. V → p2-electronique, P. VII → p2-optique-ondulatoire, P. VIII → c2-piles-electrolyse.
+- Autres livres de /Prépa MP/ (Monier, Gozard, Beury, Fiat) > 5 Mo : non lisibles via Dropbox fetch, non traités.
