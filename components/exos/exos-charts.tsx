@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId as useReactId, useState } from "react";
 import type { WeekPoint } from "@/lib/exos";
 
 /**
@@ -11,6 +11,11 @@ import type { WeekPoint } from "@/lib/exos";
  */
 
 const fr = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}`;
+/** Un identifiant sûr dans url(#…) : React 19 en produit avec « » ou « : », que WebKit peut refuser. */
+function useId(): string {
+  return `x${useReactId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+}
+
 const pct = (value: number) => `${Math.round(value * 100)}%`;
 const DOW = ["L", "M", "M", "J", "V", "S", "D"];
 

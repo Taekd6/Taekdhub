@@ -134,6 +134,7 @@
 .exos .x-tab[aria-pressed="true"] { background: var(--x-ink); color: var(--x-bg); }
 .exos .x-tab em { font-style: normal; opacity: 0.6; margin-left: 4px; font-weight: 500; }
 .exos .x-srcs { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@container (min-width: 620px) { .exos .x-srcs.two { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @container (min-width: 800px) { .exos .x-srcs.three { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @container (min-width: 560px) and (max-width: 799px) { .exos .x-srcs.three { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .exos .x-srcs > .x-card { grid-column: auto; }

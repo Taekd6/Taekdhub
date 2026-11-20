@@ -2,7 +2,7 @@
 
 import "./exos.css";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useExos } from "@/hooks/use-exos";
 import { notesFor } from "@/lib/chapter-notes";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -15,9 +15,9 @@ const SOURCE_HINT: Record<ExoSource, string> = {
   annale: "Sujets d'écrit · une case par question",
   beos: "Oraux, tous concours · une case par exo",
   manuel: "Livre, exo, page · une case par question",
-  autre: "Liens collés",
+  autre: "TD du prof et liens collés",
 };
-const SOURCE_TITLE: Record<ExoSource, string> = { annale: "Annales d'écrit · Wikiprepa", beos: "Oraux · BEOS", manuel: "Manuels", autre: "Autres" };
+const SOURCE_TITLE: Record<ExoSource, string> = { annale: "Annales d'écrit · Wikiprepa", beos: "Oraux · BEOS", manuel: "Manuels", autre: "TD et autres" };
 
 type Filter = "tout" | ExoSource | "revoir";
 
@@ -46,8 +46,12 @@ export function ExosChapter({ chapter, embedded = false }: { chapter: ProgrammeC
   const [picked, setPicked] = useState<{ entry: ExoEntry; question: string | null } | null>(null);
   const [adding, setAdding] = useState(false);
   const [session, setSession] = useState<{ title: string; items: DueCase[] } | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  const sources = (["annale", "beos", "manuel", "autre"] as const).filter((source) => source !== "autre" || entries.some((entry) => entry.source === "autre"));
+  /* Seules les sources qui ont des entrées : une colonne vide prend de la place pour rien (l'ajout reste en bas de chaque colonne et dans « + Ajouter »). */
+  const filled = (["annale", "beos", "manuel", "autre"] as const).filter((source) => entries.some((entry) => entry.source === source));
+  const sources = filled.length ? filled : (["annale", "beos", "manuel"] as const);
   const visible = (entry: ExoEntry) => {
     if (filter === "tout") return true;
     if (filter === "revoir") return entryCases(chapter.id, entry).some(({ key }) => (states.get(key)?.next ?? "9999") <= today);
@@ -132,7 +136,7 @@ export function ExosChapter({ chapter, embedded = false }: { chapter: ProgrammeC
           </div>
         </div>
       ) : (
-        <div className={`x-srcs ${sources.length >= 3 ? "three" : ""}`}>
+        <div className={`x-srcs ${sources.length >= 3 ? "three" : sources.length === 2 ? "two" : ""}`}>
           {sources.map((source) => {
             const list = entries.filter((entry) => entry.source === source && visible(entry));
             if (filter !== "tout" && filter !== "revoir" && filter !== source) return null;
@@ -229,6 +233,7 @@ export function ExosChapter({ chapter, embedded = false }: { chapter: ProgrammeC
     </div>
   );
 
+  if (!mounted) return <div className="exos exos-page"><div className="x-emptyc">Chargement…</div></div>;
   if (embedded) {
     return (
       <div className="exos exos-page">

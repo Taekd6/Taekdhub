@@ -2,7 +2,7 @@
 
 import "./exos.css";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useExos } from "@/hooks/use-exos";
 import { activityDays, chapterStats, dueCases, forecast, progression, streakDays, weakCases, weakChapters, weekStart, addDays, type DueCase } from "@/lib/exos";
 import { ChapterRadar, ForecastChart, MasteryRing, ProgressChart, StatusDonut, STATUS_COLOR } from "@/components/exos/exos-charts";
@@ -38,6 +38,9 @@ export function ExosOverview() {
   const [matiere, setMatiere] = useState<"Tout" | "Mathématiques" | "Physique" | "Chimie">("Tout");
   const [adding, setAdding] = useState(false);
   const [session, setSession] = useState<{ title: string; items: DueCase[] } | null>(null);
+  /* Rien de daté au rendu serveur : la page est générée au build (UTC, autre jour possible) et l'iPad est à l'heure de Paris. */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const all = useMemo(() => [...states.values()], [states]);
   const stats = useMemo(() => catalogue.map((item) => chapterStats(item, states, today)), [catalogue, states, today]);
@@ -79,12 +82,15 @@ export function ExosOverview() {
     return out;
   }, [due]);
   const dateLabel = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  if (!mounted) return <div className="exos exos-page"><h1 className="x-h1">Exos</h1><div className="x-emptyc">Chargement…</div></div>;
 
   return (
     <div className="exos exos-page">
       <div className="x-top">
         <div>
-          <div className="x-date">{dateLabel}</div>
+          <div className="x-date" suppressHydrationWarning>
+            {dateLabel}
+          </div>
           <h1 className="x-h1">Exos</h1>
         </div>
         <div className="x-row">
@@ -338,9 +344,14 @@ export function ExosOverview() {
                       <i className="b-bad" style={{ width: `${share(item.rate)}%` }} />
                     </div>
                     <div className="x-meta" style={{ marginTop: 8 }}>
-                      {item.bySource.annale.cases ? `Annales ${item.bySource.annale.done}/${item.bySource.annale.cases}` : ""}
-                      {item.bySource.beos.cases ? ` · BEOS ${item.bySource.beos.done}/${item.bySource.beos.cases}` : ""}
-                      {item.bySource.manuel.cases ? ` · Manuels ${item.bySource.manuel.done}/${item.bySource.manuel.cases}` : ""}
+                      {[
+                        item.bySource.annale.cases ? `Annales ${item.bySource.annale.done}/${item.bySource.annale.cases}` : null,
+                        item.bySource.beos.cases ? `BEOS ${item.bySource.beos.done}/${item.bySource.beos.cases}` : null,
+                        item.bySource.manuel.cases ? `Manuels ${item.bySource.manuel.done}/${item.bySource.manuel.cases}` : null,
+                        item.bySource.autre.cases ? `TD ${item.bySource.autre.done}/${item.bySource.autre.cases}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </div>
                   </Link>
                 );

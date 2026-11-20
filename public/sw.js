@@ -44,7 +44,7 @@
 // v3 : ajout de /memoire (mémoire des chapitres, FSRS).
 // v2 : retrait de la banque d'exercices — les coquilles de /exercises,
 // /session et /concours précachées en v1 sont supprimées à l'activation.
-const VERSION = "v5";
+const VERSION = "v6";
 const SHELL = `taekdhub-shell-${VERSION}`;
 const ASSETS = `taekdhub-assets-${VERSION}`;
 const CURRENT = [SHELL, ASSETS];
