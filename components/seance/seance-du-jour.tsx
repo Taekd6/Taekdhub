@@ -48,34 +48,33 @@ export function SeanceDuJour() {
         {items.map((item, index) => {
           const chapter = chapterForTask(item);
           const anki = /anki/i.test(item.title);
+          const href = chapter ? `/exos/${chapter.id}` : anki ? "/anki" : `/echeances?t=${item.id}`;
           
           return (
-            <li key={item.id} className="rounded-2xl border bg-card p-4 shadow-surface">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{index + 1}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium leading-snug">{item.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    ≈ {item.estimatedMinutes} min{item.dueTime ? ` · ${item.dueTime}` : ""}
-                    
-                  </p>
-                  {item.note && <p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{item.note}</p>}
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {anki && (
-                      <Link href="/anki" className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium">
-                        Anki →
-                      </Link>
-                    )}
-                    {chapter && (
-                      <Link href={`/exos/${chapter.id}`} className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium">
-                        Exos · {chapter.title} →
-                      </Link>
-                    )}
-                    <button type="button" onClick={() => finish(item)} className="rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">
-                      Fait ✓
-                    </button>
-                  </div>
-                </div>
+            <li key={item.id} className="overflow-hidden rounded-2xl border bg-card shadow-surface">
+              <Link href={href} className="flex items-start gap-3 p-4 active:opacity-70">
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary">{index + 1}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold leading-snug">{item.title}</span>
+                  <span className="block text-xs text-muted-foreground">≈ {item.estimatedMinutes} min{item.dueTime ? ` · ${item.dueTime}` : ""}</span>
+                  {item.note && <span className="mt-1 line-clamp-2 block text-sm text-muted-foreground">{item.note}</span>}
+                </span>
+                <span aria-hidden="true" className="self-center text-xl text-muted-foreground">›</span>
+              </Link>
+              <div className="flex flex-wrap gap-2 border-t px-4 py-3">
+                {anki && (
+                  <Link href="/anki" className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
+                    Anki
+                  </Link>
+                )}
+                {chapter && (
+                  <Link href={`/exos/${chapter.id}`} className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
+                    Exos · {chapter.title}
+                  </Link>
+                )}
+                <button type="button" onClick={() => finish(item)} className="ml-auto rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground">
+                  Fait ✓
+                </button>
               </div>
             </li>
           );

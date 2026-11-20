@@ -15,6 +15,9 @@ export function chapterForTask(item: Pick<WorkItem, "title" | "subject"> & { not
       if (key.length >= 8 && text.includes(key) && (!best || key.length > best.len || (key.length === best.len && chapter.year === 2))) best = { chapter, len: key.length };
     }
   }
-  return best?.chapter ?? null;
+  if (best) return best.chapter;
+  /* Sinon, le titre COMPLET d'un chapitre cité dans la note (« Coche … dans Exos → Thermodynamique en systèmes ouverts »). */
+  const note = fold(item.note ?? "");
+  return PROGRAMME.find((chapter) => chapter.subject === item.subject && note.includes(fold(chapter.title))) ?? null;
 }
 
