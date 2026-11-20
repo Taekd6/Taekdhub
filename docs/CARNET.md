@@ -621,3 +621,6 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
   source `autre`, lien vers la page officielle des oraux). Programme (`ed0b662`) : 7 chapitres Informatique TC et 5 Informatique Spé
   (OCaml), avec leurs algorithmes classiques en questions de cours ; Exos affiche « Info ». Catalogue info (révision 15 → 16) : 34 cases
   « Classique : … » écrites APRÈS la mise en ligne de `ed0b662`. NON fait : tri des 1116 notes Anki `doublon-a-trier` (choix de l'élève).
+- Exos rangés par matière (2026-11-20, `7d63999`) : /exos ouvre sur un dossier par matière (Maths, Physique, Chimie, Info TC, Info Spé)
+  avec chapitres avec exos, cases faites/total et à revoir ; chapitres spé puis sup dans l'ordre du programme, les chapitres sans exos
+  repliés dans « Autres chapitres ». Graphiques en dessous ; le filtre Maths/Phys./Chimie/Info s'applique aussi aux dossiers.
