@@ -188,7 +188,7 @@ export function ChapterRadar({ items }: { items: RadarItem[] }) {
   const n = items.length;
   const angle = (k: number) => -Math.PI / 2 + (2 * Math.PI * k) / n;
   const pt = (k: number, v: number) => [cx + r * v * Math.cos(angle(k)), cy + r * v * Math.sin(angle(k))] as const;
-  const color = (v: number) => (v >= 0.7 ? "#1d7a35" : v >= 0.45 ? "#0a6cff" : "#d12a21");
+  const color = (v: number) => (v >= 0.7 ? "#5fd97c" : v >= 0.45 ? "#6aa4ff" : "#ff8a82");
   return (
     <svg className="x-chart" viewBox="-78 0 496 300" role="img" aria-label="Maîtrise par chapitre">
       <defs>

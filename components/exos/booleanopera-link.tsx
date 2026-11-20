@@ -43,7 +43,7 @@ export function BooleanoperaLink() {
   const report = preferences.booleanopera;
   return (
     <div className="x-row" style={{ gap: 12, flexWrap: "wrap", alignItems: "center", margin: "8px 0 16px" }}>
-      <span className="x-date">
+      <span className="x-meta">
         {report
           ? `Booleanopera, relevé du ${dateFmt.format(new Date(report.takenAt))} : ${report.acquired} acquises · ${report.inProgress} en cours · ${report.toReview} à revoir · ${report.boardPassages} passage(s) au tableau`
           : "Booleanopera : aucun relevé pour l'instant"}
@@ -51,10 +51,10 @@ export function BooleanoperaLink() {
       <button type="button" className="x-btn soft" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
         {open ? "Fermer" : "Mettre à jour"}
       </button>
-      {message ? <span className="x-date">{message}</span> : null}
+      {message ? <span className="x-meta">{message}</span> : null}
       {open ? (
         <div style={{ flexBasis: "100%" }}>
-          <p className="x-date">
+          <p className="x-meta">
             1. Glisse ce bouton dans ta barre de favoris : {" "}
             <a ref={link} className="x-btn soft" onClick={(event) => event.preventDefault()}>
               Relevé Booleanopera
