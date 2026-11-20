@@ -641,3 +641,10 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 - Chaque entrée = un sujet entier (cas unique, `questions` vide) ; le découpage par question reste à faire.
 - Reste : BEOS par chapitre, annales physique-chimie (p1-thermo, c2-piles-electrolyse, etc. quasi vides), manuels physique, info/OCaml (0 annale), liens Hadamard/Booleanopera. Amélioration code possible : `exoFromUrl` pour les URLs maths sans `/corrige`.
 - Ne pas fusionner `claude/exos-pc-refonte` sans accord explicite.
+
+### 2026-11-20 (nuit, suite) — Catalogue : physique-chimie, chimie, info (données Supabase, pas de code)
+- `chapterNotes` révision 21 → 24, ajout seul (dédup par préfixe d'url), 62 notes (7 créées vides pour les chapitres sans note : magnétostatique, Maxwell, ondes EM/mécaniques, quantique, thermo stat, courbes i-E).
+- Physique-chimie : ~315 sujets Wikiprepa (`/concours/ecrit/<slug>/corrige`, MP/MPI en priorité, PC/PSI en complément) sur tous les chapitres p1-*, p2-*, c1-*, c2-* ; plus aucun chapitre à 0 exo (485 annales au total).
+- Info : Wikiprepa n'a qu'un chapitre info (`informatique-en-mathematiques`) → 5 sujets CCINP Maths 2 MP ajoutés à `i-python-complexite`.
+- Chaque entrée est un sujet entier (une case). Découpage question par question à faire plus tard (la page Wikiprepa donne les parties).
+- Reste : BEOS (accès à beos.prepas.org non autorisé en session, à relancer), exos de manuels (physique, chimie) et oraux info/OCaml (BEOS), chapitres encore à ≤3 exos : i-sql, o-*, i-ia-jeux, i-prog-dyn, i-recursivite, m1-convexite, p1-circuits, p1-machines.
