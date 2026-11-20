@@ -588,3 +588,11 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 - 5 tâches ajoutées pour le soir du 2026-11-20 (`workItems`, révision 48 → 49, donc Rappels) : Freslon 4.3, 4.4, 4.11, 4.15 et BEOS 7094.
 - À faire : sujets d'écrit Wikiprepa par chapitre (pages non lues : l'élève n'était pas là pour autoriser leur lecture), manuels de physique
   (Fiat 5,4 Mo et Beury 22 Mo, trop lourds pour la lecture Dropbox), Monier (5,9 Mo), Coutens et Gozard.
+- Physique ce soir (demande de l'élève : thermo, diffusion, 1er principe en système ouvert) : catalogue `p2-thermo-ouverts` 9 entrées et
+  `p2-diffusion` 7 (révision 11 → 12) ; `workItems` 49 → 50 : 20:00 cours systèmes ouverts + Anki physique, 20:30 CCINP MP 2021 III.2
+  Q18–Q25, 21:15 cours diffusion thermique, 21:35 CCINP MP 2026 partie V Q20–Q29 ; les 5 tâches de maths décalées au 2026-11-21 14:00–15:35.
+  Plusieurs adresses Wikiprepa construites sur le modèle d'adresses vérifiées : NON vérifiées.
+- Correctif (`234c642`, 2026-11-20) : l'élève signale une erreur à l'ouverture d'Exos sur l'iPad, non reproduite sous Chromium. Corrections
+  issues d'un audit : écran d'erreur lisible `app/(app)/exos/error.tsx` (message, digest, pile, bouton « Copier le message »), rendu côté
+  client seul (montage), ids SVG sans « : » (Safari), service worker `v6`, colonnes de sources vides masquées. Vérifié : 1618 tests, `tsc`,
+  lint, build ; déployé READY sur `taekdhub` et `taekdhub-vcrx`. Cause réelle NON confirmée : attendre le texte de l'écran d'erreur s'il revient.
