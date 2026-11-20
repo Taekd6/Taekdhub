@@ -648,3 +648,9 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 - Info : Wikiprepa n'a qu'un chapitre info (`informatique-en-mathematiques`) → 5 sujets CCINP Maths 2 MP ajoutés à `i-python-complexite`.
 - Chaque entrée est un sujet entier (une case). Découpage question par question à faire plus tard (la page Wikiprepa donne les parties).
 - Reste : BEOS (accès à beos.prepas.org non autorisé en session, à relancer), exos de manuels (physique, chimie) et oraux info/OCaml (BEOS), chapitres encore à ≤3 exos : i-sql, o-*, i-ia-jeux, i-prog-dyn, i-recursivite, m1-convexite, p1-circuits, p1-machines.
+
+### 2026-11-20 (nuit, fin) — Catalogue : BEOS (62 oraux) + état des manuels
+- `chapterNotes` révision 24 → 25 : 62 exos BEOS (MP/MPI, maths surtout, 4 en physique) rangés par chapitre, lien `https://beos.prepas.org/sujet.php?id=N`, mots-clés relevés sur la page. Total BEOS dans le catalogue : 65.
+- BEOS n'a pas d'URL de recherche exploitable : les numéros viennent de recherches web ciblées (`allowed_domains=beos.prepas.org`) puis lecture des métadonnées. Couverture partielle, à compléter par thème.
+- Manuels : Freslon déjà entièrement dans le catalogue (152 exos avec pages). Monier-Haberer, Fiat, Beury, Gozard, Coutens (Dropbox, `/Prépa MP/...`) dépassent la limite de lecture (5 Mio) et le shell n'a pas accès aux liens Dropbox (proxy 403) : non lisibles depuis la session. Piste : dossier connecté depuis l'app desktop, ou sommaires collés.
+- Reste : BEOS info/OCaml et physique (peu indexés), manuels hors Freslon, chapitres de sup en maths.
