@@ -616,3 +616,8 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 - Booleanopera (`dacf18c`) : chaque chapitre de maths renvoie à son parcours « Cours » (`booleanoperaUrl`, `lib/wikiprepa-map.ts`) depuis les
   onglets d'Exos ; Booleanopera garde son propre suivi Acquis / À revoir, rien n'est recopié. Anki (PC de l'élève, 2026-11-20) : 92 notes
   en double jamais révisées supprimées, 1116 notes étiquetées `doublon-a-trier`, base vérifiée, envoi forcé vers AnkiWeb (choix de l'élève).
+- Classiques maths et info (2026-11-20, l'élève : « tu as l'autorisation de tout faire ») : banque d'oral CCINP MP rangée par chapitre
+  (répartition 2025-2026 publiée par le lycée Schweitzer) dans `chapterNotes` (révision 14 → 15, 113 cases « Banque CCINP · exo N »,
+  source `autre`, lien vers la page officielle des oraux). Programme (`ed0b662`) : 7 chapitres Informatique TC et 5 Informatique Spé
+  (OCaml), avec leurs algorithmes classiques en questions de cours ; Exos affiche « Info ». Catalogue info (révision 15 → 16) : 34 cases
+  « Classique : … » écrites APRÈS la mise en ligne de `ed0b662`. NON fait : tri des 1116 notes Anki `doublon-a-trier` (choix de l'élève).
