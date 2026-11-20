@@ -1,7 +1,7 @@
 # Carnet de bord TaekdHub
 
 > Lu en premier à chaque session, avec `git status`. Si ce carnet et le dépôt divergent,
-> le signaler et se fier au dépôt. Dernière mise à jour : 2026-10-27, commit de code `b34f989` (mission 18, branche `claude/mission-18-semaine`, FUSIONNÉE dans `main` `2d74b8a` le 2026-10-27 sur accord explicite de l'élève ; déploiement Vercel automatique, non relu : accès Vercel refusé à la session).
+> le signaler et se fier au dépôt. ÉCART CONSTATÉ le 2026-11-20 : ce paragraphe datait du 2026-10-27 alors que `main` était à `e4eccd9` (PR #38, mission 29) ; se fier au dépôt et à la section « Mission 30 » en bas. Ancienne mention : dernière mise à jour 2026-10-27, commit de code `b34f989` (mission 18, branche `claude/mission-18-semaine`, FUSIONNÉE dans `main` `2d74b8a` le 2026-10-27 sur accord explicite de l'élève ; déploiement Vercel automatique, non relu : accès Vercel refusé à la session).
 > Les PR #28 à #31 sont FUSIONNÉES dans `main` ; les paragraphes « PR #28 ouverte » plus bas sont périmés.
 > Branche de travail actuelle : `claude/clever-meitner-elomfy` (la PR #34, accueil « À faire », est fusionnée dans `main` : `65f5c06`). La PR #32 est fusionnée dans `main` (`718084b`). La PR #33 (missions 13 et 14) est FUSIONNÉE (`74a6d7c`) et déployée en production (déploiement `dpl_73ewod7zcU48zdTeHEyF3vjSPVJK`, READY).
 
@@ -559,3 +559,24 @@ du raccourci → « Objectif atteint ? » → victoire). Non vérifié : le racc
 - Constat (2026-11-01) : docs/HERMES.md et scripts/hermes-check.mjs n'existaient que sur la branche non fusionnée claude/finalisation-hermes-tests. Le script lisait TAEKDHUB_MCP_TOKEN (jeton d'un Preview) alors qu'Hermes et le serveur utilisent MCP_HERMES_TOKEN : faux 401. Corrigé ; seuls ces deux fichiers sont repris, rien d'autre de la branche.
 - Production vérifiée : /api/mcp-hermes refuse sans jeton et avec un jeton inventé (401), annonce get_today et list_echeances seuls, et répond en 200 aux deux. Consigne de fraîcheur active : séances non récentes, plan à présenter comme provisoire.
 - Vérifié : script contre la production, lint, tsc, vitest 1600 + 1 échec attendu. Non vérifié : aucune tâche Hermes planifiée n'a encore tourné.
+
+## Mission 30 — écran Exos : catalogue annales / BEOS / manuels et suivi case par case (5bdde59)
+Demande de l'élève (2026-11-20) : suivre dans TaekdHub les questions d'annales faites (Wikiprepa n'a pas de compte), les exos d'oral BEOS
+(tous concours) et ceux de ses manuels, en cochant ; voir sa progression et travailler ses points faibles ; Claude branché dessus. Prototype
+(artifact « Suivi des annales ») puis maquette validés par l'élève ; style CLAIR choisi par lui, forcé sur cet écran quel que soit le thème.
+Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. NON fusionnée, NON déployée : accord explicite requis.
+- Données, AUCUNE migration : catalogue = champ facultatif `exos` de `chapterNotes` (une entrée = une RÉFÉRENCE : titre, lien http(s),
+  questions, concours, année, niveau, page ; jamais d'énoncé recopié) ; une case cochée = une tentative `attempts`, clé
+  `exo:<chapitre>:<entrée>[#<question>]`. L'état d'une case se recalcule (lib/exos.ts) : seul → 14, 30, 60, 120, 240 j ; indices → 7 j ;
+  raté → 3 j. « Annuler » retire la dernière tentative seulement.
+- Écrans : `/exos` (séance du jour, maîtrise, statuts, progression 12 semaines, radar, points faibles avec conseil, prévision 14 jours,
+  chapitres), `/exos/<id>` (3 colonnes annales / BEOS / manuels, une case par question, filtres), onglet « Exos » de `/chapitre/<id>`,
+  entrée « Exos » dans la barre latérale et la barre du bas (6 onglets). Coller un lien Wikiprepa range le sujet et sa question.
+- Raté : le piège noté part dans le carnet d'erreurs du chapitre (`errors`, donc PDF et cartes Anki que Claude en tire) et une tâche
+  « Refaire : … » est datée au jour du retour (`workItems`, donc Rappels par le raccourci).
+- Connecteur de Claude : `get_exos`, `add_exos`, `log_exos` (`lib/mcp-exos.ts`). Hermes : rien.
+- Vérifié : 105 fichiers de tests, 1618 réussis + 1 échec attendu antérieur, `tsc`, lint, build (polices Google simulées) ; navigateur réel
+  à 1180 px et 390 px avec données fictives : écrans, case → Raté + piège (tentative, erreur, tâche datée créées), lien collé, séance.
+- NON vérifié : sur l'iPad de l'élève, les trois outils contre la vraie base, un vrai lien BEOS (format d'adresse supposé).
+- Attention avant le déploiement : l'ancienne version de l'app ne connaît pas `exos` ; ne pas remplir le catalogue en base avant que la
+  nouvelle version soit en production sur tous les appareils.
