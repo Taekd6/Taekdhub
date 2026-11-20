@@ -6,6 +6,7 @@ describe("chapitre d'une tâche", () => {
     expect(chapterForTask({ title: "Physique : cours systèmes ouverts + cartes Anki physique", subject: "Physique" })?.id).toBe("p2-thermo-ouverts");
     expect(chapterForTask({ title: "Physique : cours diffusion thermique", subject: "Physique" })?.id).toBe("p2-diffusion");
     expect(chapterForTask({ title: "Physique : Classiques diffusion thermique (incontournables MP)", subject: "Physique" })?.id).toBe("p2-diffusion");
+    expect(chapterForTask({ title: "Rapport d'étape TIPE (M. Balavoine)", subject: "Physique", note: "transformations" })).toBeNull();
     expect(chapterForTask({ title: "Anki : cartes du jour", subject: null })).toBeNull();
   });
 });

@@ -22,10 +22,11 @@ export function SeanceDuJour() {
   const items = useMemo(
     () =>
       workItems
-        .filter((item) => item.status !== "terminé" && item.status !== "abandonné" && item.dueDate !== null && item.dueDate <= today)
+        .filter((item) => item.status !== "terminé" && item.status !== "abandonné" && item.dueDate === today)
         .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? "") || (a.dueTime ?? "99").localeCompare(b.dueTime ?? "99")),
     [workItems, today]
   );
+  const late = useMemo(() => workItems.filter((item) => item.status !== "terminé" && item.status !== "abandonné" && item.dueDate !== null && item.dueDate < today).length, [workItems, today]);
   const done = useMemo(() => workItems.filter((item) => item.status === "terminé" && item.dueDate === today).length, [workItems, today]);
 
   if (!mounted || !ready) return <p className="text-sm text-muted-foreground">Chargement…</p>;
@@ -40,13 +41,14 @@ export function SeanceDuJour() {
         <p className="text-sm text-muted-foreground">
           {items.length ? `${items.length} tâche${items.length > 1 ? "s" : ""} · ≈ ${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")}` : "Rien de prévu aujourd'hui."}
           {done ? ` · ${done} déjà faite${done > 1 ? "s" : ""}` : ""}
+          {late ? ` · ${late} en retard des jours précédents (dans Échéances)` : ""}
         </p>
       </div>
       <ol className="space-y-3">
         {items.map((item, index) => {
           const chapter = chapterForTask(item);
           const anki = /anki/i.test(item.title);
-          const late = item.dueDate !== null && item.dueDate < today;
+          
           return (
             <li key={item.id} className="rounded-2xl border bg-card p-4 shadow-surface">
               <div className="flex items-start gap-3">
@@ -55,7 +57,7 @@ export function SeanceDuJour() {
                   <p className="font-medium leading-snug">{item.title}</p>
                   <p className="text-xs text-muted-foreground">
                     ≈ {item.estimatedMinutes} min{item.dueTime ? ` · ${item.dueTime}` : ""}
-                    {late ? " · en retard" : ""}
+                    
                   </p>
                   {item.note && <p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{item.note}</p>}
                   <div className="mt-3 flex flex-wrap gap-2">
