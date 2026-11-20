@@ -596,3 +596,11 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
   issues d'un audit : écran d'erreur lisible `app/(app)/exos/error.tsx` (message, digest, pile, bouton « Copier le message »), rendu côté
   client seul (montage), ids SVG sans « : » (Safari), service worker `v6`, colonnes de sources vides masquées. Vérifié : 1618 tests, `tsc`,
   lint, build ; déployé READY sur `taekdhub` et `taekdhub-vcrx`. Cause réelle NON confirmée : attendre le texte de l'écran d'erreur s'il revient.
+- Liens directs (`8fc1d07`, 2026-11-20, accord de l'élève) : `questionUrl` (ancre Wikiprepa `#qN` par question) et `resumeQuestion`
+  (première question jamais faite, sinon première à revoir) dans `lib/exos.ts` ; bouton « Ouvrir Qn ↗ » dans la fiche de notation et la
+  séance ; le lien de la carte d'annale s'ouvre sur la question où reprendre. 3 tests ajoutés (1621 réussis). Déployé READY sur `taekdhub`.
+- Données (`chapterNotes` 12 → 14) : liens BEOS directs `https://beos.prepas.org/sujet.php?id=N` pour 7094, 8463, 8900 (vérifiés : bons
+  concours et chapitres) ; 53 exos Freslon reliés à l'aperçu Dropbox du livre (adresse d'aperçu du propriétaire, AUCUN lien de partage créé),
+  la page reste affichée. Les 15 sujets Wikiprepa du catalogue ouverts un par un : tous existent, numéros de questions conformes
+  (attention : sur certains sujets Banque PT B 2020-2021, l'ancre ne suit pas le numéro affiché ; aucun dans le catalogue).
+- Reste : sujets Wikiprepa des autres chapitres, manuels de physique, ouverture d'un PDF à la bonne page (Dropbox ne le permet pas sur iPad).
