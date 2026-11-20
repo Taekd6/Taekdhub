@@ -564,7 +564,7 @@ du raccourci → « Objectif atteint ? » → victoire). Non vérifié : le racc
 Demande de l'élève (2026-11-20) : suivre dans TaekdHub les questions d'annales faites (Wikiprepa n'a pas de compte), les exos d'oral BEOS
 (tous concours) et ceux de ses manuels, en cochant ; voir sa progression et travailler ses points faibles ; Claude branché dessus. Prototype
 (artifact « Suivi des annales ») puis maquette validés par l'élève ; style CLAIR choisi par lui, forcé sur cet écran quel que soit le thème.
-Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. NON fusionnée, NON déployée : accord explicite requis.
+Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `main` (avance rapide, `3fcde4d`) le 2026-11-20 sur accord explicite de l'élève (« Fusionne ») ; production READY sur les deux projets Vercel (`dpl_7WHu5wsYX879TzVtTzkw1975wvBx`). Page en production non ouverte par la session (réseau fermé vers vercel.app).
 - Données, AUCUNE migration : catalogue = champ facultatif `exos` de `chapterNotes` (une entrée = une RÉFÉRENCE : titre, lien http(s),
   questions, concours, année, niveau, page ; jamais d'énoncé recopié) ; une case cochée = une tentative `attempts`, clé
   `exo:<chapitre>:<entrée>[#<question>]`. L'état d'une case se recalcule (lib/exos.ts) : seul → 14, 30, 60, 120, 240 j ; indices → 7 j ;
@@ -580,3 +580,11 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. NON fusionnée, NO
 - NON vérifié : sur l'iPad de l'élève, les trois outils contre la vraie base, un vrai lien BEOS (format d'adresse supposé).
 - Attention avant le déploiement : l'ancienne version de l'app ne connaît pas `exos` ; ne pas remplir le catalogue en base avant que la
   nouvelle version soit en production sur tous les appareils.
+- Mise en service (2026-11-20, demande de l'élève : « je veux qu'on l'utilise dès ce soir ») : catalogue écrit par SQL dans `chapterNotes`
+  (révision 10 → 11, garde de révision, cours et méthodes conservés) : m2-evn 26 entrées (Freslon ch. 4 exos 4.1–4.17, BEOS 7094, TD du prof
+  Suites–EVN exos 1–5, 15, 17, 19), m2-series-compl 14 (Freslon 7.1–7.6, 8.1–8.8), m2-suites-fonctions 9 (Freslon 9.1–9.8, BEOS 8900),
+  m2-reduction 15 (Freslon 2.1–2.14, BEOS 8463). Questions comptées dans le corrigé du manuel (heuristique). Numéros BEOS relevés dans des
+  oraux blancs publiés ; l'adresse exacte d'un exo BEOS n'est pas connue : le lien ouvre BEOS, on y cherche le numéro.
+- 5 tâches ajoutées pour le soir du 2026-11-20 (`workItems`, révision 48 → 49, donc Rappels) : Freslon 4.3, 4.4, 4.11, 4.15 et BEOS 7094.
+- À faire : sujets d'écrit Wikiprepa par chapitre (pages non lues : l'élève n'était pas là pour autoriser leur lecture), manuels de physique
+  (Fiat 5,4 Mo et Beury 22 Mo, trop lourds pour la lecture Dropbox), Monier (5,9 Mo), Coutens et Gozard.
