@@ -26,6 +26,14 @@ const SHORT: Record<string, string> = {
   "m2-probas": "Probas",
   "m2-groupes-anneaux": "Groupes, anneaux",
 };
+const MATIERES = ["Tout", "Mathématiques", "Physique", "Chimie", "Info"] as const;
+const MATIERE_LABEL: Record<(typeof MATIERES)[number], string> = { Tout: "Tout", Mathématiques: "Maths", Physique: "Physique", Chimie: "Chimie", Info: "Info" };
+const SOURCES = [
+  ["annale", "Annales"],
+  ["beos", "BEOS"],
+  ["manuel", "Manuels"],
+  ["autre", "TD"],
+] as const;
 const short = (id: string, title: string) => SHORT[id] ?? (title.length > 18 ? `${title.slice(0, 17)}…` : title);
 
 /**
@@ -93,7 +101,8 @@ export function ExosOverview() {
       const withExos = chapters.flatMap((chapter) => (byId.has(chapter.id) ? [byId.get(chapter.id)!] : []));
       const others = chapters.filter((chapter) => !byId.has(chapter.id));
       const sum = (key: "cases" | "done" | "due") => withExos.reduce((n, item) => n + item[key], 0);
-      return { subject, withExos, others, cases: sum("cases"), done: sum("done"), due: sum("due") };
+      const coverage = SOURCES.map(([source, label]) => ({ source, label, cases: withExos.reduce((n, item) => n + item.bySource[source].cases, 0) }));
+      return { subject, withExos, others, coverage, cases: sum("cases"), done: sum("done"), due: sum("due") };
     });
   }, [stats, matiere]);
   const dateLabel = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
@@ -108,7 +117,14 @@ export function ExosOverview() {
           </div>
           <h1 className="x-h1">Exos</h1>
         </div>
-        <div className="x-row">
+        <div className="x-row x-topbar">
+          <div className="x-seg" role="group" aria-label="Matière">
+            {MATIERES.map((value) => (
+              <button key={value} type="button" aria-pressed={matiere === value} onClick={() => setMatiere(value)}>
+                {MATIERE_LABEL[value]}
+              </button>
+            ))}
+          </div>
           <button type="button" className="x-btn soft" onClick={() => setAdding(true)}>
             + Ajouter
           </button>
@@ -119,98 +135,6 @@ export function ExosOverview() {
       </div>
 
       <div className="x-grid">
-        <section className="x-card" id="catalogue" aria-label="Exos par matière">
-          <div className="x-head">
-            <div>
-              <p className="x-kicker">Annales, BEOS et manuels · spé puis sup</p>
-              <h2 className="x-title">Par matière</h2>
-            </div>
-            <button type="button" className="x-btn tint sm" onClick={() => setAdding(true)}>
-              + Ajouter
-            </button>
-          </div>
-          {!ready ? (
-            <div className="x-emptyc">Chargement…</div>
-          ) : (
-            <div className="x-folders">
-              {folders.map((folder) => (
-                <div key={folder.subject} className="x-folder">
-                  <div className="x-fhead">
-                    <h3>{folder.subject}</h3>
-                    <div className="x-meta">
-                      {folder.withExos.length} chapitre{folder.withExos.length > 1 ? "s" : ""} avec exos ·{" "}
-                      <b className="num" style={{ color: "var(--x-ink)" }}>
-                        {folder.done}
-                      </b>
-                      /{folder.cases} cases
-                      {folder.due ? (
-                        <>
-                          {" · "}
-                          <span className="x-todo">{folder.due} à revoir</span>
-                        </>
-                      ) : null}
-                    </div>
-                  </div>
-                  {folder.withExos.length === 0 ? (
-                    <p className="x-meta">Pas encore d&apos;exos rangés dans cette matière.</p>
-                  ) : (
-                    <div className="x-chaps">
-                      {folder.withExos.map((item) => {
-                        const share = (n: number) => (item.cases ? (n / item.cases) * 100 : 0);
-                        return (
-                          <Link key={item.chapter.id} href={`/exos/${item.chapter.id}`} className="x-chap">
-                            <span className="x-yr">{item.chapter.year === 2 ? "Spé" : "Sup"}</span>
-                            <h4>{item.chapter.title}</h4>
-                            <div className="x-meta">
-                              <b className="num" style={{ color: "var(--x-ink)" }}>
-                                {item.done}
-                              </b>
-                              /{item.cases} cases{item.mastery !== null ? ` · ${pct(item.mastery)}` : ""}
-                              {item.due ? (
-                                <>
-                                  {" · "}
-                                  <span className="x-todo">{item.due} à revoir</span>
-                                </>
-                              ) : null}
-                            </div>
-                            <div className="x-bar">
-                              <i className="b-ok" style={{ width: `${share(item.seul)}%` }} />
-                              <i className="b-mid" style={{ width: `${share(item.indices)}%` }} />
-                              <i className="b-bad" style={{ width: `${share(item.rate)}%` }} />
-                            </div>
-                            <div className="x-meta" style={{ marginTop: 8 }}>
-                              {[
-                                item.bySource.annale.cases ? `Annales ${item.bySource.annale.done}/${item.bySource.annale.cases}` : null,
-                                item.bySource.beos.cases ? `BEOS ${item.bySource.beos.done}/${item.bySource.beos.cases}` : null,
-                                item.bySource.manuel.cases ? `Manuels ${item.bySource.manuel.done}/${item.bySource.manuel.cases}` : null,
-                                item.bySource.autre.cases ? `TD ${item.bySource.autre.done}/${item.bySource.autre.cases}` : null,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
-                            </div>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                  {folder.others.length > 0 && (
-                    <details className="x-others" open>
-                      <summary>Autres chapitres : questions de concours dans l&apos;onglet « Concours » ({folder.others.length})</summary>
-                      <div className="x-olist">
-                        {folder.others.map((chapter) => (
-                          <Link key={chapter.id} href={`/exos/${chapter.id}`}>
-                            <em>{chapter.year === 2 ? "Spé" : "Sup"}</em> {chapter.title}
-                          </Link>
-                        ))}
-                      </div>
-                    </details>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
         <section className="x-card c4 x-hero" aria-label="Séance du jour">
           <div>
             <p className="x-kicker">Séance du jour</p>
@@ -265,15 +189,8 @@ export function ExosOverview() {
         <section className="x-card c4 wide" aria-label="Statuts">
           <div className="x-head">
             <div>
-              <p className="x-kicker">Répartition</p>
+              <p className="x-kicker">Répartition{matiere === "Tout" ? "" : ` · ${MATIERE_LABEL[matiere]}`}</p>
               <h2 className="x-title">Statuts</h2>
-            </div>
-            <div className="x-seg">
-              {(["Tout", "Mathématiques", "Physique", "Chimie", "Info"] as const).map((value) => (
-                <button key={value} type="button" aria-pressed={matiere === value} onClick={() => setMatiere(value)}>
-                  {value === "Mathématiques" ? "Maths" : value === "Physique" ? "Phys." : value === "Chimie" ? "Chimie" : value === "Info" ? "Info" : "Tout"}
-                </button>
-              ))}
             </div>
           </div>
           <div className="x-mast">
@@ -300,6 +217,102 @@ export function ExosOverview() {
             </div>
           </div>
         </section>
+
+        <section className="x-card" id="catalogue" aria-label="Exos par matière">
+          <div className="x-head">
+            <div>
+              <p className="x-kicker">Annales, BEOS et manuels · spé puis sup</p>
+              <h2 className="x-title">Par matière</h2>
+            </div>
+          </div>
+          {!ready ? (
+            <div className="x-emptyc">Chargement…</div>
+          ) : (
+            <div className="x-folders">
+              {folders.map((folder) => (
+                <div key={folder.subject} className="x-folder">
+                  <div className="x-fhead">
+                    <div>
+                      <h3>{folder.subject}</h3>
+                      <div className="x-meta">
+                        {folder.withExos.length} chapitre{folder.withExos.length > 1 ? "s" : ""} avec exos · {folder.others.length} sans
+                      </div>
+                    </div>
+                    <div className="x-fstats">
+                      <div>
+                        <b className="num">{folder.done}</b>
+                        <span>/{folder.cases} cases</span>
+                      </div>
+                      {folder.due ? <span className="x-pill due">{folder.due} à revoir</span> : null}
+                    </div>
+                  </div>
+                  <div className="x-cover" aria-label={`Sources rangées en ${folder.subject}`}>
+                    {folder.coverage.map((c) => (
+                      <span key={c.source} className={c.cases ? "x-cv on" : "x-cv off"}>
+                        {c.label} <b className="num">{c.cases || "0"}</b>
+                      </span>
+                    ))}
+                  </div>
+                  {folder.withExos.length === 0 ? (
+                    <p className="x-meta">Pas encore d&apos;exos rangés dans cette matière.</p>
+                  ) : (
+                    <div className="x-chaps">
+                      {folder.withExos.map((item) => {
+                        const share = (n: number) => (item.cases ? (n / item.cases) * 100 : 0);
+                        return (
+                          <Link key={item.chapter.id} href={`/exos/${item.chapter.id}`} className="x-chap">
+                            <div className="x-chap-top">
+                              <span className="x-yr">{item.chapter.year === 2 ? "Spé" : "Sup"}</span>
+                              {item.due ? <span className="x-pill due">{item.due} à revoir</span> : null}
+                            </div>
+                            <h4>{item.chapter.title}</h4>
+                            <div className="x-chap-num">
+                              <b className="num">{item.done}</b>
+                              <span>/{item.cases} cases</span>
+                              {item.mastery !== null ? <em className="num">{pct(item.mastery)}</em> : null}
+                            </div>
+                            <div className="x-bar">
+                              <i className="b-ok" style={{ width: `${share(item.seul)}%` }} />
+                              <i className="b-mid" style={{ width: `${share(item.indices)}%` }} />
+                              <i className="b-bad" style={{ width: `${share(item.rate)}%` }} />
+                            </div>
+                            <div className="x-schips">
+                              {SOURCES.map(([source, label]) => {
+                                const c = item.bySource[source];
+                                return c.cases ? (
+                                  <span key={source} className="x-sc on">
+                                    {label} <b className="num">{c.done}/{c.cases}</b>
+                                  </span>
+                                ) : (
+                                  <span key={source} className="x-sc off" title={`Aucun exo « ${label} » rangé dans ce chapitre`}>
+                                    {label} —
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {folder.others.length > 0 && (
+                    <details className="x-others" open>
+                      <summary>Autres chapitres : questions de concours dans l&apos;onglet « Concours » ({folder.others.length})</summary>
+                      <div className="x-olist">
+                        {folder.others.map((chapter) => (
+                          <Link key={chapter.id} href={`/exos/${chapter.id}`}>
+                            <em>{chapter.year === 2 ? "Spé" : "Sup"}</em> {chapter.title}
+                          </Link>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
 
         <section className="x-card c7" aria-label="Progression">
           <div className="x-head">
