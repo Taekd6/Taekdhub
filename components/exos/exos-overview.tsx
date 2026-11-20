@@ -194,8 +194,8 @@ export function ExosOverview() {
                     </div>
                   )}
                   {folder.others.length > 0 && (
-                    <details className="x-others">
-                      <summary>Autres chapitres ({folder.others.length})</summary>
+                    <details className="x-others" open>
+                      <summary>Autres chapitres : questions de concours dans l&apos;onglet « Concours » ({folder.others.length})</summary>
                       <div className="x-olist">
                         {folder.others.map((chapter) => (
                           <Link key={chapter.id} href={`/exos/${chapter.id}`}>
