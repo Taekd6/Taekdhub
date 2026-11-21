@@ -676,3 +676,8 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 - `npx modern-web-guidance@latest install` (source GoogleChrome/modern-web-guidance, commit 64a6d70) : guides dans `.agents/skills/modern-web-guidance`, lien symbolique `.claude/skills/modern-web-guidance`, `skills-lock.json` à la racine.
 - Sert à consulter les bonnes pratiques HTML/CSS/JS client avant de toucher à l'interface (le skill appelle `npx modern-web-guidance search/retrieve`, réseau requis). Aucun code de l'app modifié.
 - Branche `claude/modern-web-guidance`, non fusionnée, pas de PR.
+
+### 2026-11-21 — modern-web-guidance fusionné, unslop installé (code c55f5f6)
+- `modern-web-guidance` fusionné dans `main` en avance rapide (f3dd185 → 63b0f7c) sur ordre de l'élève (« fusionne »). Poussé, déploiement Vercel automatique non relu. Pas de PR.
+- `unslop` (heydamir, CC BY 4.0) copié dans `.claude/skills/unslop` (branche `claude/unslop`, non fusionnée). Aucun code d'interface modifié.
+- Audit visuel fait, direction à valider par l'élève avant toute modification : dégradés (54 occurrences, surtout `globals.css`), accent indigo `129 140 248` et fond nuit bleuté « Minuit », `font-semibold` ×531 contre `font-medium` ×17, `uppercase` ×15, `animate-pulse`/`hover:scale`.
