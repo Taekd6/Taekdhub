@@ -107,7 +107,7 @@ export function AppNav() {
           bords : elle flotte, le contenu défile dessous. `sticky` et non
           `fixed` : la page garde son flux normal, et la barre ne recouvre
           jamais une ancre atteinte au clavier. */}
-      <header className={cn("sticky top-0 z-40 px-3 pt-3 sm:px-4 lg:hidden print:hidden", onHome && "max-lg:hidden")}>
+      <header className={cn("vt-nav-top sticky top-0 z-40 px-3 pt-3 sm:px-4 lg:hidden print:hidden", onHome && "max-lg:hidden")}>
         <div className="glass mx-auto flex h-14 max-w-[var(--shell-max)] items-center gap-2 rounded-full pl-3 pr-2 sm:pl-4">
           <Link
             href="/dashboard"
@@ -126,7 +126,7 @@ export function AppNav() {
               <span
                 aria-hidden
                 className={cn(
-                  "pointer-events-none absolute bottom-0 left-0 top-0 rounded-full bg-accent/10 transition-[transform,width,opacity] duration-500 ease-[cubic-bezier(.16,1,.3,1)]",
+                  "pointer-events-none absolute bottom-0 left-0 top-0 rounded-full bg-accent/10 transition-[transform,width,opacity] duration-[650ms] ease-[var(--ease-spring-soft)]",
                   box ? "opacity-100" : "opacity-0"
                 )}
                 style={box ? { width: box.width, transform: `translateX(${box.left}px)` } : undefined}
@@ -182,7 +182,7 @@ export function AppNav() {
           L'onglet actif est posé sur une pastille teintée. */}
       <nav
         aria-label="Sections"
-        className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-6 rounded-[2rem] px-1.5 py-1 lg:hidden print:hidden"
+        className="vt-nav-tab glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-6 rounded-[2rem] px-1.5 py-1 lg:hidden print:hidden"
       >
         {DESTINATIONS.map((destination) => {
           const { href, short, icon: Icon } = destination;
@@ -228,7 +228,7 @@ function Sidebar() {
     );
   };
   return (
-    <aside className="glass fixed inset-y-0 left-0 z-40 hidden w-[var(--sidebar-w)] flex-col px-3 pb-4 pt-5 lg:flex print:hidden">
+    <aside className="vt-nav-side glass fixed inset-y-0 left-0 z-40 hidden w-[var(--sidebar-w)] flex-col px-3 pb-4 pt-5 lg:flex print:hidden">
       <Link href="/dashboard" className="press mb-6 flex min-h-11 items-center rounded-lg px-2" aria-label="TaekdHub — accueil">
         <Wordmark />
       </Link>

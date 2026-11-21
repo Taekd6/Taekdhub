@@ -1,3 +1,4 @@
+import { NavTransitions } from "@/components/ui/nav-transitions";
 import { AccountProvider } from "@/components/account/account-provider";
 import { AppNav } from "@/components/app-nav";
 import { StorageAlert } from "@/components/storage-alert";
@@ -31,6 +32,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="halo halo-b" />
           <div className="halo halo-c" />
         </div>
+        <div aria-hidden className="scroll-progress print:hidden" />
+        <NavTransitions />
         <ActivityTracker />
         <AppNav />
         {/* Plus de bannières d'alerte dans l'application (2026-10-24, à la demande de l'élève : TaekdHub est un outil d'organisation, il ne doit pas le relancer). `components/alerts/alert-center.tsx` et `lib/alerts.ts` sont conservés ; les notifications iPhone se règlent dans Réglages. */}

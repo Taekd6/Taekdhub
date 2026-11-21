@@ -256,7 +256,9 @@
     /* La courbe des feuilles et des barres d'iOS : départ franc, arrivée
        qui se pose sans rebond. */
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-    --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Ressorts RÉELS (linear(), Baseline 2023) : `--ease-spring` dépasse de 12 % puis se pose (appui, pastille qui pop), `--ease-spring-soft` de 4,5 % (soulèvement, pastille glissante). Même durée de l'ordre de 0,5 à 0.7 s. */
+    --ease-spring: linear(0, 0.078 3.6%, 0.261 7.1%, 0.482 10.7%, 0.694 14.3%, 0.871 17.9%, 1 21.4%, 1.081 25%, 1.119 28.6%, 1.126 32.1%, 1.112 35.7%, 1.087 39.3%, 1.058 42.9%, 1.032 46.4%, 1.012 50%, 0.997 53.6%, 0.988 57.1%, 0.984 60.7%, 0.984 64.3%, 0.987 67.9%, 0.99 71.4%, 0.993 75%, 0.997 78.6%, 0.999 82.1%, 1.001 85.7%, 1.002 92.9%, 1);
+    --ease-spring-soft: linear(0, 0.099 3.6%, 0.308 7.1%, 0.535 10.7%, 0.729 14.3%, 0.874 17.9%, 0.968 21.4%, 1.02 25%, 1.042 28.6%, 1.046 32.1%, 1.039 35.7%, 1.029 39.3%, 1.019 42.9%, 1.011 46.4%, 1.005 50%, 1.001 53.6%, 0.999 57.1%, 1);
     --stagger: 70ms;
     /* Rayons : continus et plus grands sur les conteneurs, plus serrés à
        l'intérieur (un rayon intérieur = extérieur − marge). */
@@ -788,15 +790,15 @@
      l'animation garderait la main sur `transform`, et `.lift:hover` ne
      pourrait plus rien déplacer. */
   .reveal {
-    animation: reveal 0.8s var(--ease-out) backwards;
+    animation: reveal 0.95s var(--ease-out) backwards;
     animation-delay: calc(min(var(--i, 0), 6) * var(--stagger));
   }
 
   @keyframes reveal {
     from {
       opacity: 0;
-      transform: translateY(22px) scale(0.98);
-      filter: blur(8px);
+      transform: translateY(28px) scale(0.97);
+      filter: blur(10px);
     }
     to {
       opacity: 1;
@@ -889,7 +891,7 @@
 
   .lift {
     transition:
-      transform 0.5s var(--ease-out),
+      transform 0.7s var(--ease-spring-soft),
       border-color 0.3s ease,
       box-shadow 0.5s var(--ease-out),
       background-color 0.3s ease;
@@ -905,8 +907,8 @@
 
   .press {
     transition-property: transform, background-color, border-color, color, opacity, filter, box-shadow;
-    transition-duration: 0.2s;
-    transition-timing-function: ease;
+    transition-duration: 0.5s, 0.2s, 0.2s, 0.2s, 0.2s, 0.2s, 0.3s;
+    transition-timing-function: var(--ease-spring), ease, ease, ease, ease, ease, ease;
   }
 
   .press:active {
@@ -1215,27 +1217,27 @@
 
   .tilt-hover {
     transition:
-      transform 0.5s var(--ease-out),
+      transform 0.7s var(--ease-spring-soft),
       box-shadow 0.5s var(--ease-out);
   }
 
   .tilt-hover:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
   }
 
   .bounce-press {
     transition:
-      transform 0.25s var(--ease-spring),
+      transform 0.55s var(--ease-spring),
       box-shadow 0.25s ease,
       filter 0.25s ease;
   }
 
   .bounce-press:hover {
-    transform: translateY(-1px);
+    transform: translateY(-3px) scale(1.04);
   }
 
   .bounce-press:active {
-    transform: scale(0.97);
+    transform: scale(0.94);
   }
 
   .row-slide {
@@ -2102,4 +2104,77 @@
   .beam::before { animation: none; }
   .stagger > * { animation: none; }
   .chap-tile:hover { transform: none; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   NAVIGATION — transitions de page (components/ui/nav-transitions.tsx),
+   barre de progression de lecture et nom de transition des barres.
+   Tout est de l'amélioration progressive, et coupé sous reduced-motion.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Les barres de navigation restent en place pendant la transition. */
+.vt-nav-top { view-transition-name: nav-top; }
+.vt-nav-tab { view-transition-name: nav-tab; }
+.vt-nav-side { view-transition-name: nav-side; }
+
+/* La nouvelle page ne rejoue pas son entrée : la transition la montre déjà. */
+:root.vt-running .page-in {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: vtOut 0.3s var(--ease-out) both;
+  }
+  ::view-transition-new(root) {
+    animation: vtIn 0.6s var(--ease-out) both;
+  }
+  ::view-transition-group(nav-top),
+  ::view-transition-group(nav-tab),
+  ::view-transition-group(nav-side) {
+    animation-duration: 0s;
+  }
+}
+
+@keyframes vtOut {
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.995);
+    filter: blur(6px);
+  }
+}
+
+@keyframes vtIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.99);
+    filter: blur(8px);
+  }
+}
+
+/* Barre de progression de lecture : un fil d'accent en haut de l'écran, tracé
+   par le défilement lui-même (CSS pur, hors du fil principal). */
+.scroll-progress {
+  display: none;
+}
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .scroll-progress {
+      display: block;
+      position: fixed;
+      inset: 0 0 auto 0;
+      height: 2px;
+      z-index: 60;
+      pointer-events: none;
+      background: rgb(var(--accent-rgb));
+      transform-origin: left center;
+      transform: scaleX(0);
+      animation: scrollGrow linear both;
+      animation-timeline: scroll(root block);
+    }
+    @keyframes scrollGrow {
+      to { transform: scaleX(1); }
+    }
+  }
 }
