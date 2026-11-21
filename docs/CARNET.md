@@ -671,3 +671,8 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 - `components/exos/exos.css` : thème sombre (variables `--x-*`), plus de carte claire arrondie sur le fond de l'app, boutons `--x-btn`, feuilles et catalogue assombris ; radar des chapitres en couleurs claires (`exos-charts.tsx`) ; ligne Booleanopera en `x-meta` (plus de majuscules automatiques).
 - Vérifié : tsc, eslint, 108 fichiers de tests. NON vérifié à l'œil : l'aperçu Vercel est protégé (connexion Vercel) et le navigateur intégré n'y est pas connecté. Les 14 tuiles de chapitres restent étroites (non retouchées).
 - Mise en ligne sur ordre de l'élève (« fusionne », 2026-11-20 23:18) : `main` 52c45d9 → 034018b en avance rapide, rien de forcé, pas de PR.
+
+### 2026-11-21 — Skill modern-web-guidance installé (code 8ac7494)
+- `npx modern-web-guidance@latest install` (source GoogleChrome/modern-web-guidance, commit 64a6d70) : guides dans `.agents/skills/modern-web-guidance`, lien symbolique `.claude/skills/modern-web-guidance`, `skills-lock.json` à la racine.
+- Sert à consulter les bonnes pratiques HTML/CSS/JS client avant de toucher à l'interface (le skill appelle `npx modern-web-guidance search/retrieve`, réseau requis). Aucun code de l'app modifié.
+- Branche `claude/modern-web-guidance`, non fusionnée, pas de PR.
