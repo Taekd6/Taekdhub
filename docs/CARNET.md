@@ -688,3 +688,10 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 - Nouvelle palette « Cobalt » (`lib/theme.ts` + bloc `[data-palette="cobalt"]` de `globals.css`) : surfaces pleines, accent bleu clair, couleurs unies. NON mise par défaut : « Minuit » reste le défaut car l'historique de `theme.ts` note que le graphite « Sobre » avait été jugé terne ; à choisir dans Réglages.
 - Les dégradés des autres palettes (dont Minuit) sont conservés : leur retrait dépend du choix de palette de l'élève.
 - Vérifié : tsc, eslint, 108 fichiers de tests (1631 réussis + 1 échec attendu). NON vérifié à l'œil (pas de rendu navigateur, `next build` impossible : polices Google). Non fusionné, pas de PR, non déployé.
+
+### 2026-11-21 — Animations « site premium » (code b491fa7, branche `claude/unslop`)
+- Demande de l'élève : des animations d'un vrai site premium, pas « le truc d'ancien » (la palette l'intéresse peu). La passe précédente avait retiré rebonds et inclinaisons : remplacés ici par de vrais ressorts.
+- `components/ui/nav-transitions.tsx` (monté dans `AppShell`) : View Transitions entre pages sur clic de lien interne (capture + `router.push`, attend le changement de chemin, 700 ms au plus). Barres de navigation en `view-transition-name` (`.vt-nav-*`), `.page-in` coupé pendant la transition. Sans API ou en reduced-motion : navigation normale.
+- `globals.css` : `--ease-spring` (+12 %) et `--ease-spring-soft` (+4,5 %) en `linear()`, appliqués à `.lift`, `.press`, `.tilt-hover`, `.bounce-press`, boutons ronds du chrono et pastille glissante de la navigation ; `.reveal` plus ample ; barre de progression de lecture (`animation-timeline: scroll()`, repli = masquée).
+- Limite connue : un lien qui demande `replace` ou `scroll={false}` navigue en `push` pendant la transition.
+- Vérifié : tsc, eslint, 108 fichiers de tests, `next dev` répond 200 sur /dashboard avec le nouveau balisage. NON vérifié à l'écran (pas de navigateur dans la session) : fluidité des transitions, ressorts, barre de progression. Non fusionné, pas de PR, non déployé.
