@@ -37,7 +37,7 @@ export function ActionButtons({ items, className }: { items: ActionItem[]; class
             <span
               aria-hidden
               className={cn(
-                "grid h-[3.625rem] w-[3.625rem] place-items-center rounded-full transition-transform duration-[250ms] ease-[cubic-bezier(.34,1.56,.64,1)] group-hover:-translate-y-[3px] group-hover:scale-[1.06] group-active:scale-[.92] motion-reduce:transform-none",
+                "grid h-[3.625rem] w-[3.625rem] place-items-center rounded-full transition-transform duration-[250ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:-translate-y-[3px] group-hover:scale-[1.06] group-active:scale-[.92] motion-reduce:transform-none",
                 item.primary ? "grad-brand [box-shadow:0_10px_24px_-8px_var(--g1)]" : "bg-[var(--action-bg)] text-ink [box-shadow:var(--action-lift)]"
               )}
             >

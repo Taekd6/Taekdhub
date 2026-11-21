@@ -255,8 +255,8 @@
        dépasse sa cible et revient, c'est le « rebond » de la maquette. */
     /* La courbe des feuilles et des barres d'iOS : départ franc, arrivée
        qui se pose sans rebond. */
-    --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
-    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
     --stagger: 70ms;
     /* Rayons : continus et plus grands sur les conteneurs, plus serrés à
        l'intérieur (un rayon intérieur = extérieur − marge). */
@@ -489,7 +489,7 @@
   */
   .t-display {
     font-size: clamp(2.25rem, 1.2rem + 3.4vw, 3.75rem);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.05;
     letter-spacing: -0.028em;
     text-wrap: balance;
@@ -499,7 +499,7 @@
      entre le titre d'écran et le titre de section. */
   .t-title {
     font-size: clamp(1.5rem, 1.2rem + 1.1vw, 2rem);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.12;
     letter-spacing: -0.022em;
     text-wrap: balance;
@@ -507,7 +507,7 @@
 
   .t-heading {
     font-size: clamp(1.25rem, 1.12rem + 0.45vw, 1.5rem);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.2;
     letter-spacing: -0.018em;
     text-wrap: balance;
@@ -515,7 +515,7 @@
 
   .t-subhead {
     font-size: 1.0625rem;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.35;
     letter-spacing: -0.01em;
   }
@@ -541,7 +541,7 @@
    */
   .t-label {
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.35;
     letter-spacing: -0.005em;
     text-transform: none;
@@ -606,7 +606,7 @@
      comme une forme avant de se lire comme une valeur. Trois tailles
      nommées pour que deux indicateurs voisins ne divergent jamais. */
   .t-figure {
-    font-weight: 700;
+    font-weight: 600;
     font-variant-numeric: tabular-nums lining-nums;
     letter-spacing: -0.035em;
     line-height: 1;
@@ -631,7 +631,7 @@
      téléphone, comme la maquette, un peu plus sur grand écran. */
   .t-hero {
     font-size: clamp(4rem, 3.2rem + 2.4vw, 5.25rem);
-    font-weight: 700;
+    font-weight: 600;
     font-variant-numeric: tabular-nums lining-nums;
     letter-spacing: -0.045em;
     line-height: 1;
@@ -642,7 +642,7 @@
      grand écran : sous le héros de l'accueil, au-dessus des tuiles. */
   .t-card-figure {
     font-size: clamp(2.5rem, 2rem + 2.2vw, 3.75rem);
-    font-weight: 700;
+    font-weight: 600;
     font-variant-numeric: tabular-nums lining-nums;
     letter-spacing: -0.045em;
     line-height: 1;
@@ -651,7 +651,7 @@
   /* Chiffre d'une petite tuile (« 8 jours », « 14 h 20 ») — 32 px. */
   .t-stat {
     font-size: 2rem;
-    font-weight: 700;
+    font-weight: 600;
     font-variant-numeric: tabular-nums lining-nums;
     letter-spacing: -0.03em;
     line-height: 1.1;
@@ -660,7 +660,7 @@
   /* Signe d'une carte de matière (« ∫ », « Aa ») — 26 px. */
   .t-glyph {
     font-size: 1.625rem;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1;
     letter-spacing: -0.02em;
   }
@@ -668,7 +668,7 @@
   /* Titre d'une carte en dégradé (« Révisions du jour ») — 17 px. */
   .t-card-title {
     font-size: 1.0625rem;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.25;
     letter-spacing: -0.01em;
   }
@@ -676,7 +676,7 @@
   /* Signature « TaekdHub » dans la barre haute. */
   .t-wordmark {
     font-size: 1.1875rem;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: -0.025em;
     line-height: 1;
   }
@@ -1035,7 +1035,7 @@
     place-items: center;
     flex-shrink: 0;
     color: #fff;
-    font-weight: 900;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
     border-radius: 9999px;
   }
@@ -1220,7 +1220,7 @@
   }
 
   .tilt-hover:hover {
-    transform: translateY(-6px) rotate(-1deg);
+    transform: translateY(-2px);
   }
 
   .bounce-press {
@@ -1231,11 +1231,11 @@
   }
 
   .bounce-press:hover {
-    transform: translateY(-3px) scale(1.06);
+    transform: translateY(-1px);
   }
 
   .bounce-press:active {
-    transform: scale(0.92);
+    transform: scale(0.97);
   }
 
   .row-slide {
@@ -1654,7 +1654,7 @@
 }
 :root[data-palette="studio"] .t-label {
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1666,7 +1666,7 @@
 :root[data-palette="studio"] .t-figure,
 :root[data-palette="studio"] .t-card-figure,
 :root[data-palette="studio"] .t-display {
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.035em;
 }
 :root[data-palette="studio"] .blk:not(.blk-tache) {
@@ -1674,6 +1674,103 @@
 }
 :root[data-palette="studio"] .blk-cours {
   --k: 150 140 124;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   PALETTE « COBALT » (passe unslop, nov. 2026) — graphite neutre, un seul
+   accent, surfaces pleines à filet fin, aucun verre ni halo. Les couleurs
+   unies viennent de lib/theme.ts (chaque paire de dégradé est identique).
+   ═══════════════════════════════════════════════════════════════════ */
+:root[data-palette="cobalt"] {
+  --canvas-rgb: 250 250 250;
+  --panel-rgb: 255 255 255;
+  --elevated-rgb: 244 244 245;
+  --line-rgb: 232 232 234;
+  --ink-rgb: 23 23 23;
+  --muted-rgb: 115 115 115;
+  --subtle-rgb: 115 115 115;
+  --hairline-rgb: 23 23 23;
+  --inset-rgb: 118 118 128;
+  --inset-alpha: 0.08;
+  --surface-bg: rgb(255 255 255);
+  --surface-blur: none;
+  --surface-border: rgb(232 232 234);
+  --surface-border-hover: rgb(212 212 216);
+  --surface-lift-rest: 0 1px 2px rgb(0 0 0 / 0.05);
+  --surface-lift-up: 0 1px 2px rgb(0 0 0 / 0.05), 0 8px 24px rgb(0 0 0 / 0.06);
+  --surface-shadow: var(--surface-lift-rest);
+  --action-bg: rgb(244 244 245);
+  --action-lift: inset 0 0 0 1px rgb(232 232 234);
+  --glass-bg: rgb(250 250 250 / 0.92);
+  --glass-edge: inset 0 0 0 1px rgb(232 232 234);
+  --chip-on-bg: rgb(255 255 255);
+  --chip-on-ring: rgb(232 232 234);
+  --chip-on-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+  --halo-a: 0;
+  --halo-b: 0;
+  --halo-c: 0;
+  --radius-tile: 1rem;
+  --radius-inner: 0.75rem;
+}
+:root[data-palette="cobalt"][data-theme="dark"] {
+  --canvas-rgb: 20 20 21;
+  --panel-rgb: 25 25 27;
+  --elevated-rgb: 35 35 37;
+  --line-rgb: 44 44 47;
+  --ink-rgb: 237 237 237;
+  --muted-rgb: 161 161 166;
+  --subtle-rgb: 133 133 139;
+  --hairline-rgb: 255 255 255;
+  --inset-rgb: 255 255 255;
+  --inset-alpha: 0.06;
+  --surface-bg: rgb(25 25 27);
+  --surface-border: rgb(255 255 255 / 0.08);
+  --surface-border-hover: rgb(255 255 255 / 0.14);
+  --surface-lift-rest: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --surface-lift-up: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  --surface-shadow: var(--surface-lift-rest);
+  --action-bg: rgb(35 35 37);
+  --action-lift: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  --glass-bg: rgb(20 20 21 / 0.92);
+  --glass-edge: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  --chip-on-bg: rgb(44 44 47);
+  --chip-on-ring: transparent;
+  --chip-on-shadow: none;
+  --accent-ink-rgb: 122 167 255;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="cobalt"][data-theme="system"] {
+    --canvas-rgb: 20 20 21;
+    --panel-rgb: 25 25 27;
+    --elevated-rgb: 35 35 37;
+    --line-rgb: 44 44 47;
+    --ink-rgb: 237 237 237;
+    --muted-rgb: 161 161 166;
+    --subtle-rgb: 133 133 139;
+    --hairline-rgb: 255 255 255;
+    --inset-rgb: 255 255 255;
+    --inset-alpha: 0.06;
+    --surface-bg: rgb(25 25 27);
+    --surface-border: rgb(255 255 255 / 0.08);
+    --surface-border-hover: rgb(255 255 255 / 0.14);
+    --surface-lift-rest: inset 0 1px 0 rgb(255 255 255 / 0.04);
+    --surface-lift-up: inset 0 1px 0 rgb(255 255 255 / 0.08);
+    --surface-shadow: var(--surface-lift-rest);
+    --action-bg: rgb(35 35 37);
+    --action-lift: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+    --glass-bg: rgb(20 20 21 / 0.92);
+    --glass-edge: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+    --chip-on-bg: rgb(44 44 47);
+    --chip-on-ring: transparent;
+    --chip-on-shadow: none;
+    --accent-ink-rgb: 122 167 255;
+  }
+}
+:root[data-palette="cobalt"] .surface,
+:root[data-palette="cobalt"] .glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* MISSION 21 — trois directions de couleur à choisir (Réglages → apparence). */
@@ -1804,7 +1901,7 @@
   border-radius: 9999px;
   padding: 0.375rem 0.75rem;
   font-size: 0.8125rem;
-  font-weight: 700;
+  font-weight: 600;
   background: rgb(255 255 255 / 0.16);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.22);
   -webkit-backdrop-filter: blur(12px);

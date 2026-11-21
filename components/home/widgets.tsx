@@ -165,7 +165,7 @@ export function ExamWidget({ events, workItems, now, className }: { events: Cale
   return (
     <GradientCard tone="review" href="/semaine" index={2} wrapperClassName={className} float className={cn("reveal h-full p-4 text-white sm:p-6")} style={{ "--i": 2 } as CSSProperties} aria-label={exam ? `Prochaine épreuve : ${exam.title}` : "Aucune épreuve en vue"}>
       <div className="flex items-start justify-between">
-        <p className="text-[0.75rem] font-bold uppercase tracking-[0.08em] text-white/75 sm:text-[0.8125rem]">Prochaine épreuve</p>
+        <p className="text-[0.75rem] font-medium text-white/75 sm:text-[0.8125rem]">Prochaine épreuve</p>
         <ArrowUpRight size={18} className="text-white/70" aria-hidden />
       </div>
       {exam ? (

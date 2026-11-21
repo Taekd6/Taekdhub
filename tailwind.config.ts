@@ -9,6 +9,12 @@ export default {
     "./lib/**/*.{ts,tsx}",
   ],
   theme: {
+    // Graisses unslop : 400 texte, 500 emphase, 600 au plus. Les classes
+    // font-semibold/bold/extrabold/black restent valides mais ne dépassent plus 600.
+    fontWeight: {
+      thin: "300", light: "300", normal: "400", medium: "500",
+      semibold: "500", bold: "600", extrabold: "600", black: "600",
+    },
     extend: {
       colors: {
         // Neutres — CSS variables (voir app/globals.css) : mêmes noms de

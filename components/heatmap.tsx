@@ -61,7 +61,7 @@ export function Heatmap({ workByDay, days = 84 }: { workByDay: Record<string, nu
               <span
                 key={key}
                 title={`${date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} : ${seconds ? formatSpan(seconds) : "rien"}`}
-                className="pop h-4 w-4 rounded-[5px] transition-transform duration-200 hover:scale-125 sm:h-5 sm:w-5 sm:rounded-[6px]"
+                className="pop h-4 w-4 rounded-[5px] transition-transform duration-200 sm:h-5 sm:w-5 sm:rounded-[6px]"
                 // Les cases apparaissent colonne après colonne, en rebond.
                 style={{ background: cellColor(step), "--pop-delay": `${Math.floor(index / 7) * 40}ms` } as React.CSSProperties}
               />

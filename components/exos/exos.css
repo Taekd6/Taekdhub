@@ -206,7 +206,7 @@
 .exos .x-chap { display: flex; flex-direction: column; gap: 0; min-width: 0; text-decoration: none; color: var(--x-ink); background: var(--x-solid); border-radius: 18px; padding: 14px 15px 13px; box-shadow: var(--x-lift); transition: transform 0.15s, box-shadow 0.2s; }
 .exos .x-chap:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(106, 164, 255, 0.4), 0 14px 26px -14px rgba(0, 0, 0, 0.8); }
 .exos .x-chap-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 20px; }
-.exos .x-yr { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--x-muted); }
+.exos .x-yr { font-size: 11px; font-weight: 500; letter-spacing: 0; color: var(--x-muted); }
 .exos .x-chap h4 { margin: 4px 0 0; font-size: 15px; line-height: 1.25; font-weight: 700; overflow-wrap: anywhere; min-height: 2.5em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .exos .x-chap-num { display: flex; align-items: baseline; gap: 4px; margin-top: 10px; font-size: 12.5px; color: var(--x-muted); }
 .exos .x-chap-num b { font-size: 22px; line-height: 1; color: var(--x-ink); letter-spacing: -0.03em; }

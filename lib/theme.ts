@@ -42,7 +42,7 @@
  * anti-flash qui les pose avant le premier rendu.
  */
 
-export type PaletteId = "aurora" | "sunset" | "ocean" | "neon" | "foret" | "framboise" | "braise" | "lavande" | "studio" | "finance" | "lime" | "glacier";
+export type PaletteId = "aurora" | "sunset" | "ocean" | "neon" | "foret" | "framboise" | "braise" | "lavande" | "studio" | "finance" | "lime" | "glacier" | "cobalt";
 
 export interface Palette {
   id: PaletteId;
@@ -272,6 +272,30 @@ export const PALETTES: Palette[] = [
     ],
     review: ["#4f46e5", "#0ea5e9"],
     dl: ["#2563eb", "#7c3aed", "#0891b2"],
+  },
+  {
+    /*
+     * « COBALT » (novembre 2026, passe unslop) — graphite et UN accent bleu clair,
+     * sans dégradé : chaque paire de couleurs est une couleur unie, les cartes
+     * sont des paliers de gris-bleu. À choisir dans Réglages ; « Minuit »
+     * reste le défaut (l'élève avait jugé le graphite « Sobre » terne : on ne
+     * le lui impose donc pas). Neutres et surfaces pleines :
+     * `[data-palette="cobalt"]` dans app/globals.css.
+     */
+    id: "cobalt",
+    label: "Cobalt",
+    c1: "#7aa7ff",
+    c2: "#7aa7ff",
+    ink: "#1d4ed8",
+    solid: ["#2f5fd0", "#2f5fd0"],
+    cards: [
+      ["#232a3a", "#232a3a"],
+      ["#2a3245", "#2a3245"],
+      ["#303a50", "#303a50"],
+      ["#1e2433", "#1e2433"],
+    ],
+    review: ["#2f5fd0", "#2f5fd0"],
+    dl: ["#2f5fd0", "#6b7487", "#a3a9b8"],
   },
 ];
 

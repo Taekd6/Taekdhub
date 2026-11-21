@@ -48,7 +48,7 @@ export function ChaptersList() {
         <div aria-hidden className="sky-grain" />
         <div className="relative flex flex-col gap-5 p-5 sm:p-7">
           <div>
-            <p className="text-[0.8125rem] font-bold uppercase tracking-[0.12em] text-white/75">Mes chapitres</p>
+            <p className="text-[0.8125rem] font-medium text-white/75">Mes chapitres</p>
             <h1 className="t-display mt-1">{label}</h1>
           </div>
           <div className="flex flex-wrap gap-2">

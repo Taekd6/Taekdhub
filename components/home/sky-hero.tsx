@@ -76,7 +76,7 @@ export function SkyHero({ name, examLabel, done, total, className }: { name?: st
 
       <div className="relative flex min-h-[13rem] flex-col justify-between gap-6 p-6 sm:min-h-[15rem] sm:p-8">
         <div className="flex items-start justify-between gap-4">
-          <p className="text-[0.8125rem] font-bold uppercase tracking-[0.12em] text-white/75 first-letter:uppercase" suppressHydrationWarning>
+          <p className="text-[0.8125rem] font-medium text-white/75 first-letter:uppercase" suppressHydrationWarning>
             {now ? dateFmt.format(now) : " "}
           </p>
           <p className="tabular text-[0.9375rem] font-bold text-white/85" suppressHydrationWarning>

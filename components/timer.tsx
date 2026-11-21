@@ -559,7 +559,7 @@ function RoundAction({
       <span
         aria-hidden
         className={cn(
-          "grid place-items-center rounded-full transition-transform duration-[250ms] ease-[cubic-bezier(.34,1.56,.64,1)] group-hover:-translate-y-[3px] group-hover:scale-[1.06] group-active:scale-[.92] motion-reduce:transform-none",
+          "grid place-items-center rounded-full transition-transform duration-[250ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:-translate-y-[3px] group-hover:scale-[1.06] group-active:scale-[.92] motion-reduce:transform-none",
           primary
             ? "grad-brand h-[5.25rem] w-[5.25rem] [box-shadow:0_14px_30px_-10px_var(--g1)]"
             : "mt-2.5 h-16 w-16 bg-[var(--action-bg)] text-ink [box-shadow:var(--action-lift)]"

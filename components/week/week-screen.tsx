@@ -82,7 +82,7 @@ export function WeekScreen() {
         <div aria-hidden className="sky-grain" />
         <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-7">
           <div className="min-w-0">
-            <p className="text-[0.8125rem] font-bold uppercase tracking-[0.12em] text-white/75">{offset === 0 ? "Cette semaine" : offset === 1 ? "La semaine prochaine" : offset === -1 ? "La semaine dernière" : "Semaine"}</p>
+            <p className="text-[0.8125rem] font-medium text-white/75">{offset === 0 ? "Cette semaine" : offset === 1 ? "La semaine prochaine" : offset === -1 ? "La semaine dernière" : "Semaine"}</p>
             <h1 className="t-display mt-1">
               {RANGE_FMT.format(monday)} – {RANGE_FMT.format(addDays(monday, 6))}
             </h1>
