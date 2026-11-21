@@ -681,3 +681,10 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 - `modern-web-guidance` fusionné dans `main` en avance rapide (f3dd185 → 63b0f7c) sur ordre de l'élève (« fusionne »). Poussé, déploiement Vercel automatique non relu. Pas de PR.
 - `unslop` (heydamir, CC BY 4.0) copié dans `.claude/skills/unslop` (branche `claude/unslop`, non fusionnée). Aucun code d'interface modifié.
 - Audit visuel fait, direction à valider par l'élève avant toute modification : dégradés (54 occurrences, surtout `globals.css`), accent indigo `129 140 248` et fond nuit bleuté « Minuit », `font-semibold` ×531 contre `font-medium` ×17, `uppercase` ×15, `animate-pulse`/`hover:scale`.
+
+### 2026-11-21 — Passe unslop sur le visuel (code 8d4ed25, branche `claude/unslop`)
+- Sur ordre de l'élève (« Applique et passe à un site plus moderne »). Direction : graphite neutre, un seul accent, pas de dégradé, graisses 400 à 600, une seule courbe de mouvement.
+- Appliqué à TOUTES les palettes : `tailwind.config.ts` (`semibold` = 500, `bold`/`extrabold`/`black` = 600), graisses CSS 700/900 → 600, courbe `cubic-bezier(0.22,1,0.36,1)` partout (plus de rebond, plus d'inclinaison au survol), étiquettes en capitales espacées → casse normale (accueil, semaine, chapitres, Exos). Reste en capitales : l'étiquette de la palette Studio.
+- Nouvelle palette « Cobalt » (`lib/theme.ts` + bloc `[data-palette="cobalt"]` de `globals.css`) : surfaces pleines, accent bleu clair, couleurs unies. NON mise par défaut : « Minuit » reste le défaut car l'historique de `theme.ts` note que le graphite « Sobre » avait été jugé terne ; à choisir dans Réglages.
+- Les dégradés des autres palettes (dont Minuit) sont conservés : leur retrait dépend du choix de palette de l'élève.
+- Vérifié : tsc, eslint, 108 fichiers de tests (1631 réussis + 1 échec attendu). NON vérifié à l'œil (pas de rendu navigateur, `next build` impossible : polices Google). Non fusionné, pas de PR, non déployé.
