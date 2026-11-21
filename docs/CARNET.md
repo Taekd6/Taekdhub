@@ -704,3 +704,9 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 ### 2026-11-21 — Classiques : recueils d'exos en ligne (données Supabase, rév. 29)
 - +43 entrées `source: autre`, ids `cl-<recueil>-<chapitre>`, titre « Classiques · … », avec lien et page quand connue : Panis « Exercices MP* » (16 chapitres, pages de la table des matières), Malherbe (révisions oraux), MPI 906/907 (séries entières, intégration), Marceau (RMS algèbre), Chaptal, Allasia (recueil MP*), Panis (résultats classiques), Mines-Ponts (exemples d'oraux), ISM (questions de cours Centrale), PSI Parc (chauffe oraux).
 - Limite : ce sont des recueils pointés par chapitre, pas des exos individuels ; contenu des PDF non relu en entier (pages de Panis lues dans sa table des matières, autres pages d'après les tables des matières des résultats de recherche).
+
+### 2026-11-21 — Catalogue : annales sup, questions de physique-chimie, BEOS (données Supabase, rév. 30 → 33)
+- Rév. 30–32 : annales Wikiprepa pour m1-complexes, m1-polynomes, m1-limites-continuite (+ fractions, dérivabilité) ; import au niveau de la QUESTION (incontournables, `corrige#qN`) pour 35 chapitres de physique-chimie : 510 questions dans 300 groupes d'épreuves. Niveau A/I/E/D → 1/2/3 (le schéma n'accepte que 1|2|3).
+- Rév. 33 : 49 entrées `source: beos` (id `beos-<N>`, lien `beos.prepas.org/sujet.php?id=N`, concours, année, mots-clés en détail, niveau 2) réparties sur les chapitres de maths MP d'après les mots-clés BEOS. Sujets trouvés par recherche ciblée (le listing n'expose que 10 lignes) : échantillon, PAS la base entière (~9 500 épreuves).
+- État : 77 notes, 2 867 exos (885 au départ de la session).
+- Reste sans contenu dédié : info/OCaml, m1-logique/sommes/fonctions/ev/applications-linéaires/déterminants/asymptotique/séries/dénombrement/convexité ; BEOS physique et info ; maths annales = sujets entiers, pas par question.
