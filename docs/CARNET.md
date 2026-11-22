@@ -738,3 +738,12 @@ Branche `claude/mission-30-exos`, partie de `main` `e4eccd9`. FUSIONNÉE dans `m
 - `lib/exo-concours.ts` + `components/exos/concours-badge.tsx` : pastilles colorées CCINP, Centrale, Mines, X-ENS, e3a, PT, ENAC, BEOS. PAS de logos officiels (non téléchargeables ici, droits) : pastilles dessinées.
 - Vérifié : tsc, eslint, 110 fichiers de tests (1643 réussis + 1 échec attendu). NON vérifié à l'écran (pas de navigateur) : défilement, surbrillance, rendu de la recherche et des pastilles. Non fusionné, pas de PR, non déployé en production.
 - Limite : les tâches du planning (Aujourd'hui, échéances) n'ouvrent pas encore un exo précis ; seul le parcours Exos (séance, recherche) est relié.
+
+### 2026-11-22 — Anki : « Ouvrir dans Anki » par chapitre (code c60587e, branche `claude/anki-ouvrir-paquet`)
+- Demande de l'élève : dans les fiches/hubs, chaque chapitre doit renvoyer pile au bon paquet Anki, pour tous ses paquets.
+- Relevé complet fait sur son PC (console Anki, lecture seule) : 530 paquets avec sous-paquets, 29 091 cartes, 1 545 dues, écrit dans `ankiSnapshots` (revision 8, id `anki:2026-11-22`). L'ancien relevé n'avait que 8 paquets racine.
+- `lib/anki-chapter-decks.ts` : table chapitre -> paquet(s) parent(s), écrite à la main (les noms « 11 Diffusion thermique » ne se rapprochent pas sûrement des titres du programme ; `lib/anki-mapping.ts` reste la voie du diagnostic). Chaque paquet vérifié présent dans le relevé. Sans paquet : p1-statique-fluides, c1-cristallo, c1-acide-base, c1-e-ph.
+- `ankiStudyUrl` : `anki://x-callback-url/study?deck=…`, ajouté dans AnkiMobile 25.07.1 (notes de version App Store), ABSENT du manuel officiel. iOS/iPadOS seulement ; sur ordinateur, pas de lien mort.
+- UI : `ChapterAnkiLink` (page du chapitre : en-tête et onglet Cartes ; pastille sur les vignettes de /chapitres) ; `AnkiLink` des hubs mémoire ouvre la séance du paquet sur iOS.
+- Vérifié : tsc, eslint, 111 fichiers de tests (1650 réussis + 1 échec attendu). NON vérifié sur iPad : le lien `study` (version d'AnkiMobile de l'élève à confirmer) et le rendu. Non fusionné, pas de PR, non déployé.
+- Limites : la table est statique (un paquet renommé dans Anki casse son lien, le relevé est à refaire) ; chapitre à plusieurs paquets = le premier ouvre, les autres en « + » ; pas de réglage manuel chapitre -> paquet.
