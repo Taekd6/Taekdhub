@@ -238,3 +238,18 @@
 @media (max-width: 640px) {
   .exos .x-topbar { justify-content: flex-start; }
 }
+
+/* Pastilles de concours, repère de l'exo ciblé et recherche */
+.exos .x-cb { display: inline-flex; align-items: center; font: 600 11px sans-serif; font-family: inherit; letter-spacing: 0.01em; padding: 2px 8px; border-radius: 99px; color: var(--cb); background: color-mix(in srgb, var(--cb) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cb) 38%, transparent); white-space: nowrap; flex: none; }
+.exos .x-ex { scroll-margin-top: 96px; }
+.exos .x-ex.focus { box-shadow: 0 0 0 2px var(--x-accent), 0 0 0 6px var(--x-accent-soft); animation: x-focus 2.4s ease-out 1; }
+.exos .x-q.focus { outline: 2px solid var(--x-accent); outline-offset: 2px; }
+@keyframes x-focus { from { background: var(--x-accent-soft); } to { background: var(--x-solid); } }
+@media (prefers-reduced-motion: reduce) { .exos .x-ex.focus { animation: none; } }
+.exos .x-search { position: relative; }
+.exos .x-search input { padding-left: 14px; }
+.exos .x-hits { display: grid; gap: 8px; margin-top: 12px; }
+.exos .x-hit { display: grid; gap: 4px; background: var(--x-solid); border-radius: 14px; padding: 10px 12px; box-shadow: 0 0 0 0.5px var(--x-line); text-decoration: none; color: var(--x-ink); }
+.exos .x-hit:hover, .exos .x-hit:focus-visible { box-shadow: 0 0 0 1.5px var(--x-accent); }
+.exos .x-hit-t { display: flex; align-items: center; gap: 8px; font: 700 13.5px sans-serif; font-family: inherit; overflow-wrap: anywhere; }
+.exos .x-hit-m { color: var(--x-muted); font-size: 12px; overflow-wrap: anywhere; }

@@ -10,6 +10,8 @@ import { chapterStats, entryCases, EXO_SOURCE_LABEL, questionUrl, resumeQuestion
 import type { ProgrammeChapter } from "@/lib/programme-data";
 import { AddSheet, GradeSheet, SessionSheet } from "@/components/exos/exos-sheets";
 import { ExosClassiques } from "@/components/exos/exos-classiques";
+import { ConcoursBadge } from "@/components/exos/concours-badge";
+import { exoAnchor, parseExoTarget } from "@/lib/exo-target";
 import { booleanoperaUrl, wikiSlugsFor } from "@/lib/wikiprepa-map";
 
 const BASE = "https://wikiprepa.fr/concours/chapitre/";
@@ -50,6 +52,21 @@ export function ExosChapter({ chapter, embedded = false }: { chapter: ProgrammeC
   const [session, setSession] = useState<{ title: string; items: DueCase[] } | null>(null);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  /* Lien direct (#exo-<id>, avec ?q=<question>) : affiche tout, descend jusqu'à l'exo visé et le met en évidence. */
+  const [target, setTarget] = useState<{ id: string; question: string | null } | null>(null);
+  useEffect(() => {
+    if (!mounted) return;
+    const wanted = parseExoTarget(window.location.hash);
+    if (wanted) {
+      setFilter("tout");
+      setTarget(wanted);
+    }
+  }, [mounted]);
+  useEffect(() => {
+    if (!target || !ready) return;
+    const frame = requestAnimationFrame(() => document.getElementById(exoAnchor(target.id))?.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
+    return () => cancelAnimationFrame(frame);
+  }, [target, ready, entries.length]);
 
   /* Seules les sources qui ont des entrées : une colonne vide prend de la place pour rien (l'ajout reste en bas de chaque colonne et dans « + Ajouter »). */
   const filled = (["annale", "beos", "manuel", "autre"] as const).filter((source) => entries.some((entry) => entry.source === source));
@@ -168,9 +185,12 @@ export function ExosChapter({ chapter, embedded = false }: { chapter: ProgrammeC
                 <p className="x-meta">{SOURCE_HINT[source]}</p>
                 {list.length === 0 && <p className="x-meta">{filter === "revoir" ? "Rien à revoir ici." : "Rien de rangé pour l'instant."}</p>}
                 {list.map((entry) => (
-                  <div key={entry.id} className="x-ex">
+                  <div key={entry.id} id={exoAnchor(entry.id)} className={`x-ex ${target?.id === entry.id ? "focus" : ""}`}>
                     <div className="x-ex-n">
-                      <span>{entry.titre}</span>
+                      <span style={{ display: "inline-flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                        <ConcoursBadge entry={entry} />
+                        {entry.titre}
+                      </span>
                       {entry.url ? (
                         (() => {
                           const resume = source === "annale" ? resumeQuestion(chapter.id, entry, states, today) : null;
@@ -196,7 +216,7 @@ export function ExosChapter({ chapter, embedded = false }: { chapter: ProgrammeC
                           <button
                             key={key}
                             type="button"
-                            className={`x-q ${question ? "" : "wide"} ${caseClass(state, today)}`}
+                            className={`x-q ${question ? "" : "wide"} ${caseClass(state, today)} ${target?.id === entry.id && target.question === question && question ? "focus" : ""}`}
                             title={caseTitle(state, today)}
                             aria-label={`${question ? `Question ${question}` : entry.titre} : ${caseTitle(state, today)}`}
                             onClick={() => setPicked({ entry, question })}

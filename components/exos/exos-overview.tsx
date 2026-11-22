@@ -9,6 +9,9 @@ import { ChapterRadar, ForecastChart, MasteryRing, ProgressChart, StatusDonut, S
 import { AddSheet, SessionSheet } from "@/components/exos/exos-sheets";
 import { BooleanoperaLink } from "@/components/exos/booleanopera-link";
 import { wikiPieges } from "@/components/exos/exos-chapter";
+import { ConcoursBadge } from "@/components/exos/concours-badge";
+import { searchExos } from "@/lib/exos-search";
+import { exoHref } from "@/lib/exo-target";
 import { PROGRAMME, PROGRAMME_SUBJECTS } from "@/lib/programme-data";
 
 const pct = (value: number | null) => (value === null ? "—" : `${Math.round(value * 100)} %`);
@@ -47,6 +50,7 @@ export function ExosOverview() {
   const [mode, setMode] = useState<"mastery" | "volume">("mastery");
   const [matiere, setMatiere] = useState<"Tout" | "Mathématiques" | "Physique" | "Chimie" | "Info">("Tout");
   const [adding, setAdding] = useState(false);
+  const [query, setQuery] = useState("");
   const [session, setSession] = useState<{ title: string; items: DueCase[] } | null>(null);
   /* Rien de daté au rendu serveur : la page est générée au build (UTC, autre jour possible) et l'iPad est à l'heure de Paris. */
   const [mounted, setMounted] = useState(false);
@@ -106,6 +110,7 @@ export function ExosOverview() {
       return { subject, withExos, others, coverage, cases: sum("cases"), done: sum("done"), due: sum("due") };
     });
   }, [stats, matiere]);
+  const hits = useMemo(() => searchExos(catalogue, query), [catalogue, query]);
   const dateLabel = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
   if (!mounted) return <div className="exos exos-page"><h1 className="x-h1">Exos</h1><div className="x-emptyc">Chargement…</div></div>;
 
@@ -135,6 +140,41 @@ export function ExosOverview() {
         </div>
       </div>
       <BooleanoperaLink />
+
+      <section className="x-card x-search" aria-label="Rechercher un exo" style={{ marginBottom: 14 }}>
+        <input
+          className="x-field"
+          type="search"
+          inputMode="search"
+          enterKeyHint="search"
+          autoComplete="off"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Chercher un exo : ccinp 2023, machines, q46, centrale mp…"
+          aria-label="Rechercher un exo par concours, année, chapitre ou question"
+        />
+        {query.trim() !== "" && (
+          <div className="x-hits" role="list">
+            {hits.length === 0 ? (
+              <p className="x-meta">Aucun exo ne correspond. Essaie un seul mot (concours, année ou chapitre).</p>
+            ) : (
+              hits.map(({ chapter, entry, question }) => (
+                <Link key={`${chapter.id}/${entry.id}`} role="listitem" className="x-hit" href={exoHref(chapter.id, entry.id, question)}>
+                  <span className="x-hit-t">
+                    <ConcoursBadge entry={entry} />
+                    {entry.titre}
+                    {question ? ` · Q${question}` : ""}
+                  </span>
+                  <span className="x-hit-m">
+                    {chapter.title}
+                    {entry.detail ? ` · ${entry.detail}` : ""}
+                  </span>
+                </Link>
+              ))
+            )}
+          </div>
+        )}
+      </section>
 
       <div className="x-grid">
         <section className="x-card c4 x-hero" aria-label="Séance du jour">

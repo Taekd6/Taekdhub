@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
+import { ConcoursBadge } from "@/components/exos/concours-badge";
+import { exoHref } from "@/lib/exo-target";
 import { PROGRAMME, type ProgrammeChapter } from "@/lib/programme-data";
 import { EXO_SOURCE_LABEL, EXO_STATUS_LABEL, intervalFor, questionUrl, type CaseState, type DueCase, type ExoEntry, type ExoSource, type ExoStatus, type NewExo } from "@/lib/exos";
 
@@ -355,7 +358,8 @@ export function SessionSheet({
               <i key={step.state.key + k} className={k < index ? "done" : k === index ? "cur" : ""} />
             ))}
           </div>
-          <p className="x-kicker" style={{ color: "var(--x-accent)" }}>
+          <p className="x-kicker" style={{ color: "var(--x-accent)", display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <ConcoursBadge entry={item.entry} />
             {item.chapter.title}
           </p>
           <h2 style={{ marginTop: 6 }}>
@@ -376,6 +380,11 @@ export function SessionSheet({
           )}
           <div style={{ display: "flex", justifyContent: "center" }}>
             <OpenLinks entry={item.entry} question={item.question} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
+            <Link className="x-lnk plain" href={exoHref(item.chapter.id, item.entry.id, item.question)} onClick={onClose}>
+              Voir dans le chapitre →
+            </Link>
           </div>
           <p className="x-sub">Cherche-la sans regarder le corrigé, puis dis comment ça s&apos;est passé.</p>
           <GradeButtons
