@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChapterAnkiLink } from "@/components/anki/chapter-anki-link";
 import { useMemo, useState } from "react";
 import { BookOpen, Check, Pin } from "lucide-react";
 import type { CSSProperties } from "react";
@@ -121,6 +122,7 @@ export function ChaptersList() {
                 >
                   {isCurrent ? <Check size={18} aria-hidden /> : <Pin size={16} aria-hidden />}
                 </button>
+                <ChapterAnkiLink chapterId={row.chapter.id} label={row.chapter.title} icon className="absolute bottom-3 right-3" />
               </li>
             );
           })}

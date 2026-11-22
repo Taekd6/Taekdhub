@@ -3,7 +3,7 @@
 import { ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { ankiDeckSearchUrl, ankiOpenUrl, detectAnkiPlatform, type AnkiPlatform } from "@/lib/anki";
+import { ankiDeckSearchUrl, ankiOpenUrl, ankiStudyUrl, detectAnkiPlatform, type AnkiPlatform } from "@/lib/anki";
 import { cn } from "@/lib/cn";
 
 /**
@@ -23,7 +23,9 @@ export function AnkiLink({ deck, size = "sm", className }: { deck?: string; size
   const platform = useAnkiPlatform();
   if (!platform) return null;
 
-  const open = ankiOpenUrl(platform);
+  // Sur iOS, avec un nom de paquet : la séance d'étude de CE paquet (AnkiMobile 25.07.1+) ; sinon l'application.
+  const study = ankiStudyUrl(deck, platform);
+  const open = study ?? ankiOpenUrl(platform);
   const search = ankiDeckSearchUrl(deck, platform);
 
   if (!open) {
@@ -46,7 +48,7 @@ export function AnkiLink({ deck, size = "sm", className }: { deck?: string; size
         )}
         data-anki-link="open"
       >
-        <ExternalLink size={14} strokeWidth={2.6} aria-hidden /> Ouvrir Anki
+        <ExternalLink size={14} strokeWidth={2.6} aria-hidden /> {study ? "Étudier ce paquet" : "Ouvrir Anki"}
       </a>
       {deck && (
         <span className="t-meta text-2xs">
@@ -65,7 +67,7 @@ export function AnkiLink({ deck, size = "sm", className }: { deck?: string; size
   );
 }
 
-function useAnkiPlatform(): AnkiPlatform | null {
+export function useAnkiPlatform(): AnkiPlatform | null {
   const [platform, setPlatform] = useState<AnkiPlatform | null>(null);
   useEffect(() => {
     setPlatform(detectAnkiPlatform(navigator.userAgent, navigator.maxTouchPoints ?? 0));

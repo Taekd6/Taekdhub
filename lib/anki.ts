@@ -17,8 +17,9 @@
  *       cartes du paquet. D'où le choix ci-dessous — le bouton principal
  *       ouvre l'application (on y étudie en touchant le paquet, dont on
  *       affiche le nom), et la recherche n'est qu'un lien secondaire.
- *     Il n'existe pas, à notre connaissance, d'URL documentée qui ouvre
- *     directement la séance d'étude d'un paquet donné.
+ *     Depuis AnkiMobile 25.07.1, `anki://x-callback-url/study?deck=…` ouvre
+ *     directement la séance d'étude d'un paquet (voir `ankiStudyUrl`) ; elle
+ *     n'est pas dans le manuel officiel, seulement dans les notes de version.
  *
  *   Android — AnkiDroid (paquet `com.ichi2.anki`) : AnkiDroid ne déclare
  *   pas le schéma `anki://` nu. Les versions récentes acceptent
@@ -60,6 +61,19 @@ export function ankiOpenUrl(platform: AnkiPlatform): string | null {
     return `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${ANKIDROID_PACKAGE};end`;
   }
   return null;
+}
+
+/**
+ * Lien qui ouvre la SÉANCE D'ÉTUDE d'un paquet (et de ses sous-paquets) dans
+ * AnkiMobile : `anki://x-callback-url/study?deck=…`. Ajouté dans AnkiMobile
+ * 25.07.1 (notes de version de l'App Store) ; il n'est pas encore dans le
+ * manuel officiel. Le nom du paquet garde ses « :: » (encodés). iOS
+ * seulement ; `null` ailleurs ou sans nom. Dans une version plus ancienne
+ * d'AnkiMobile, le lien ouvre simplement l'application.
+ */
+export function ankiStudyUrl(deck: string | undefined, platform: AnkiPlatform): string | null {
+  if (platform !== "ios" || !deck?.trim()) return null;
+  return `anki://x-callback-url/study?deck=${encodeURIComponent(deck.trim())}`;
 }
 
 /**

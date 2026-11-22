@@ -9,6 +9,7 @@ import { PageHero } from "@/components/ui/page-hero";
 import { Section } from "@/components/ui/section";
 import { EmptyState, Skeleton } from "@/components/ui/state";
 import { Tabs } from "@/components/ui/tabs";
+import { ChapterAnkiLink } from "@/components/anki/chapter-anki-link";
 import { PdfButton } from "@/components/chapitre/pdf-button";
 import { ExosChapter } from "@/components/exos/exos-chapter";
 import { usePrepahubData } from "@/hooks/use-prepahub-data";
@@ -56,9 +57,12 @@ export function ChapterPage({ chapter }: { chapter: ProgrammeChapter }) {
         lede="Le cours, les méthodes, tes erreurs et tes cartes."
         illustration={<Illustration name="notes" size={56} />}
         actions={
-          <Link href="/programme" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-            <ArrowLeft size={14} aria-hidden /> Programme
-          </Link>
+          <>
+            <ChapterAnkiLink chapterId={chapter.id} />
+            <Link href="/programme" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+              <ArrowLeft size={14} aria-hidden /> Programme
+            </Link>
+          </>
         }
       />
 
@@ -159,9 +163,12 @@ export function ChapterPage({ chapter }: { chapter: ProgrammeChapter }) {
                 title="Cartes Anki"
                 description={cards ? `Paquet ${courseDeckName(cards)}` : undefined}
                 action={
-                  <Link href="/anki" className={buttonVariants({ variant: "secondary", size: "md" })}>
-                    Ouvrir Anki
-                  </Link>
+                  <span className="flex flex-wrap items-center gap-3">
+                    <ChapterAnkiLink chapterId={chapter.id} size="md" showEmpty />
+                    <Link href="/anki" className={buttonVariants({ variant: "secondary", size: "md" })}>
+                      Ouvrir Anki
+                    </Link>
+                  </span>
                 }
               >
                 {!cards ? (
